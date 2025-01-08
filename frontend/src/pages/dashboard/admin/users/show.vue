@@ -1,0 +1,171 @@
+<script setup>
+
+const props = defineProps({
+  isDrawerOpen: {
+    type: Boolean,
+    required: true
+  },
+  user: {
+    type: Object,
+    required: true
+  },
+  rolesList: {
+    type: Object,
+    required: true
+  },
+  genders: {
+    type: Object,
+    required: true
+  }
+
+})
+
+const emit = defineEmits([
+  'update:isDrawerOpen',
+  'close'
+])
+
+const listGenders = ref(props.genders)
+
+const email = ref('')
+const name = ref('')
+const password = ref('')
+const last_name = ref('')
+const phone = ref('')
+const isPhone = ref(false)
+const address = ref('')
+const isAddress = ref(false)
+const document = ref('')
+const isDocument = ref(false)
+const gender_id = ref('')
+const genderOld_id = ref('')
+const isGender = ref(false)
+
+const assignedRoles = ref([])
+
+watchEffect(() => {
+    if (props.isDrawerOpen) {
+
+        if (!(Object.entries(props.user).length === 0) && props.user.constructor === Object) {
+            email.value = props.user.email
+            password.value = props.user.password
+            name.value = props.user.name
+            last_name.value = props.user.last_name
+            phone.value = props.user.user_detail?.phone ?? '----'
+            isPhone.value = (props.user.user_detail?.phone === null) ? true : false
+            address.value = props.user.user_detail?.address ?? '----'
+            isAddress.value = (props.user.user_detail?.address === null) ? true : false
+            document.value = props.user.user_detail?.document ?? '----'
+            isDocument.value = (props.user.user_detail?.document === null) ? true : false
+
+            genderOld_id.value = props.user.user_detail?.gender?.id
+            gender_id.value = props.user.user_detail?.gender?.name
+            isGender.value = (props.user.user_detail?.gender === null) ? true : false
+
+            assignedRoles.value = props.user.assignedRoles
+        }
+    }
+})
+
+const closeUserDetailDialog = function() {
+    emit('update:isDrawerOpen', false)
+    emit('close')
+}
+
+</script>
+
+<template>
+    <!-- DIALOG-->
+    <VDialog
+        :model-value="props.isDrawerOpen"
+        max-width="600"
+        persistent
+        >
+        <!-- Dialog close btn -->
+        <DialogCloseBtn @click="closeUserDetailDialog" />
+
+        <!-- Dialog Content -->
+        <VCard title="User details">
+            <VDivider class="mt-4"/>
+            <VCardText>
+                <VRow>
+                    <VCol md="6" cols="12">
+                        <VTextField
+                            v-model="name"
+                            label="Name"
+                            readonly
+                        />
+                    </VCol>
+                    <VCol md="6" cols="12">
+                        <VTextField
+                            v-model="last_name"
+                            label="Last name"
+                            readonly
+                        />
+                    </VCol>
+                    <VCol md="12" cols="12">
+                        <VTextField
+                            v-model="email"
+                            label="E-mail"
+                            readonly
+                        />
+                    </VCol>
+                    <VCol md="6" cols="12">
+                        <VTextField
+                            v-model="phone"
+                            type="password"
+                            label="Password"
+                            readonly
+                        />
+                    </VCol>                    
+                    <VCol md="6" cols="12">
+                        <VTextField
+                            v-model="phone"
+                            type="tel"
+                            label="Phone"
+                            :readonly="!isPhone"
+                            :disabled="isPhone"
+                        />
+                    </VCol>
+                    <VCol md="6" cols="12">
+                        <VAutocomplete
+                            v-model="gender_id"
+                            label="Gender"
+                            :items="listGenders"
+                            :readonly="!isGender"
+                            :disabled="isGender"
+                        />
+                    </VCol>
+                    <VCol md="6" cols="12">
+                        <VTextField
+                            v-model="document"
+                            type="tel"
+                            label="Document"
+                            :readonly="!isDocument"
+                            :disabled="isDocument"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextarea
+                            v-model="address"
+                            rows="3"
+                            label="Address"
+                            :readonly="!isAddress"
+                            :disabled="isAddress"
+                            />
+                    </VCol>               
+                    <VCol md="12" cols="12">
+                        <VCombobox
+                            v-model="assignedRoles"
+                            chips
+                            multiple
+                            :items="rolesList"
+                            label="Roles assigned to the user"
+                            readonly
+                        />
+                    </VCol>
+                </VRow>
+            </VCardText>
+        </VCard>
+    </VDialog>
+</template>
