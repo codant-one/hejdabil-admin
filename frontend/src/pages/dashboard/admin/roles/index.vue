@@ -436,6 +436,6 @@ const downloadCSV = async () => {
 
 <route lang="yaml">
   meta:
-    action: ver
+    action: view
     subject: roles
 </route>

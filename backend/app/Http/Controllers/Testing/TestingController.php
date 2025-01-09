@@ -15,7 +15,7 @@ class TestingController extends Controller
 
         $user = User::find(1);
 
-        $url = env('APP_DOMAIN_ADMIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
+        $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
             'subject' => 'Password change request',
