@@ -40,11 +40,6 @@ class UsersController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;;
 
             $query = User::with(['roles', 'userDetail.gender'])
-                         ->whereHas('roles', function ($query) {
-                            $query->where('name', 'SuperAdmin')
-                                  ->orWhere('name', 'administrator')
-                                  ->orWhere('name', 'Operator');
-                         })
                          ->applyFilters(
                             $request->only([
                                 'search',
