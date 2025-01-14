@@ -124,13 +124,38 @@ const logout = async () => {
 
           <VDivider class="my-2" />
 
-          
+          <!--  👉 Roles -->
+          <VListItem :to="{ name: 'dashboard-admin-roles' }" v-if="$can('view', 'roles')">
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="mdi-account-lock-open"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Roles</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 Users -->
+          <VListItem :to="{ name: 'dashboard-admin-users' }" v-if="$can('view', 'users')">
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="mdi-account"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Users</VListItemTitle>
+          </VListItem>
+
           <!--  👉 Profile -->
           <VListItem :to="{ name: 'dashboard-profile' }">
             <template #prepend>
               <VIcon
                 class="me-2"
-                icon="tabler-user"
+                icon="tabler-user-cog"
                 size="22"
               />
             </template>

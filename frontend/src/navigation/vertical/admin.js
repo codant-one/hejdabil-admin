@@ -1,19 +1,22 @@
 export default [
   { 
-    heading: 'MODULES'
-  },
-  { 
-    title: 'Roles', 
-    icon: { icon: 'mdi-account-lock-open' },
-    to: 'dashboard-admin-roles', 
-    action: 'view' , 
-    subject: 'roles'
-  },
-  { 
-    title: 'Users', 
-    icon: { icon: 'mdi-account' },
-    to: 'dashboard-admin-users', 
-    action: 'view', 
-    subject: 'users'
+    title: 'ADMINISTRATION',
+    icon: { icon:'tabler-home-cog' },
+    children:[
+      { 
+        title: 'Attributes', 
+        icon: { icon: 'mdi-database-cog' },
+        // action: 'ver',
+        // subject: 'atributos',
+        children: [
+          { 
+            title: 'Invoices', 
+            to: 'dashboard-admin-invoices', 
+            // action: 'ver', 
+            // subject: 'atributos', 
+          }
+        ]
+      }
+    ]
   }
 ]

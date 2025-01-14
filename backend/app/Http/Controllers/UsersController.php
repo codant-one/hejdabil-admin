@@ -91,7 +91,8 @@ class UsersController extends Controller
                 'title' => 'Account created successfully!!!',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
-                'password' => $request->password
+                'password' => $request->password,
+                'buttonLink' => env('APP_DOMAIN'),
             ];
     
             try {
