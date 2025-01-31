@@ -356,7 +356,7 @@ const editProduct = id => {
                 <td
                     colspan="7"
                     class="text-center">
-                    Datos no disponibles
+                    Data not available
                 </td>
                 </tr>
             </tfoot>
@@ -402,10 +402,10 @@ const editProduct = id => {
                     color="secondary"
                     variant="tonal"
                     @click="isConfirmApproveDialogVisible = false">
-                    Cancelar
+                    Cancel
                 </VBtn>
                 <VBtn @click="stateProduct(state_id)">
-                    Aceptar
+                    Accept
                 </VBtn>
                 </VCardText>
             </VCard>
@@ -432,10 +432,10 @@ const editProduct = id => {
                     color="secondary"
                     variant="tonal"
                     @click="isConfirmDeleteDialogVisible = false">
-                    Cancelar
+                    Cancel
                 </VBtn>
                 <VBtn @click="removeProduct">
-                    Aceptar
+                    Accept
                 </VBtn>
                 </VCardText>
             </VCard>

@@ -511,7 +511,7 @@ const onSubmit = () => {
         font-size: 24px;
         font-style: normal;
         font-weight: 600;
-        line-height: 16px;
+        line-height: 24px;
         color: white;
     }
 

@@ -10,6 +10,7 @@ class Supplier extends Model
     use HasFactory;
 
     protected $guarded = [];
+    protected $appends = ['full_name'];
 
     /**** Relationship ****/
     public function user() {
@@ -146,23 +147,28 @@ class Supplier extends Model
                 'bank' => $request->bank,
                 'account_number' => $request->account_number,
                 'reference' => $request->reference,
-                'iban' => $request->iban,
-                'compensation_number' => $request->compensation_number,
-                'iban_number' => $request->iban_number,
-                'bic' => $request->bic,
-                'bank_transfer' => $request->bank_transfer,
-                'plus_spin' => $request->plus_spin,
-                'whistle' => $request->whistle,
-                'registration_fee' => $request->registration_fee,
-                'insurance_company' => $request->insurance_company,
-                'financial_company' => $request->financial_company,
-                'interest' => $request->interest,
-                'avi_fee' => $request->avi_fee,
-                'installation_fee' => $request->installation_fee
+                'iban' => $request->iban === 'null' ? null : $request->iban,
+                'compensation_number' => $request->compensation_number === 'null' ? null : $request->compensation_number,
+                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
+                'bic' => $request->bic === 'null' ? null : $request->bic,
+                'bank_transfer' => $request->bank_transfer === 'null' ? null : $request->bank_transfer,
+                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
+                'whistle' => $request->whistle === 'null' ? null : $request->whistle,
+                'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
+                'insurance_company' => $request->insurance_company === 'null' ? null : $request->insurance_company,
+                'financial_company' => $request->financial_company === 'null' ? null : $request->financial_company,
+                'interest' => $request->interest === 'null' ? null : $request->interest,
+                'avi_fee' => $request->avi_fee === 'null' ? null : $request->avi_fee,
+                'installation_fee' => $request->installation_fee === 'null' ? null : $request->installation_fee
             ]
         );
 
         return $supplier;
+    }
+
+    public function getFullNameAttribute()
+    {
+        return "{$this->user->name} {$this->user->last_name}";
     }
 
 }

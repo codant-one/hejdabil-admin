@@ -212,7 +212,7 @@ const resolveStatusPayment = payment_state_id => {
           <td
             colspan="6"
             class="text-center">
-            Datos no disponibles
+            Data not available
           </td>
         </tr>
       </tfoot>

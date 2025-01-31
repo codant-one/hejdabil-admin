@@ -28,6 +28,8 @@ class ClientFactory extends Factory
 
         return [
             'supplier_id' => rand(1,15),
+            'fullname' => $this->faker->name,
+            'email' => $this->faker->email,
             'address' => $this->faker->address,
             'street' => $this->faker->streetName,
             'postal_code' => $this->faker->buildingNumber,

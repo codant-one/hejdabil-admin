@@ -18,7 +18,8 @@ use App\Http\Controllers\{
     GenderController,
     ProxyController,
     DashboardController,
-    SupplierController
+    SupplierController,
+    ClientController
 };
 
 /*
@@ -62,6 +63,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('permissions', PermissionController::class);
     Route::apiResource('suppliers', SupplierController::class);
+    Route::apiResource('clients', ClientController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -91,14 +93,6 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::get('/', [UserMenuController::class, 'index']);
         Route::post('/add', [UserMenuController::class, 'store']);
         Route::post('/update', [UserMenuController::class, 'update']);
-    });
-
-    //Profile
-    Route::group(['prefix' => 'profile'], function () {
-       Route::post('/', [ClientController::class, 'profile']);
-       Route::post('/changeAvatar', [ClientController::class, 'changeAvatar']);
-       Route::post('/changePassword', [ClientController::class, 'changePassword']);
-       Route::post('/changePhone', [ClientController::class, 'changePhone']);       
     });
 
 });

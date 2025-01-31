@@ -116,7 +116,7 @@ const downloadCSV = async () => {
       CONTACT: element.user.name + ' ' + (element.user.last_name ?? ''),
       EMAIL: element.user.email,
       COMPANY: element.company ?? '',
-      ORGANIZATION_NUMBER: element.organization_number,
+      ORGANIZATION_NUMBER: element.organization_number ?? '',
       REGISTERED_CLIENTS:  element.client_count
     }
 
@@ -257,11 +257,24 @@ const downloadCSV = async () => {
                   </div>
                 </td>
                 <td class="text-wrap">
-                  <div class="d-flex flex-column">
-                    <span class="font-weight-medium">
-                      {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
-                    </span>
-                    <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="supplier.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + supplier.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(supplier.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
+                    </div>
                   </div>
                 </td>
                 <td class="text-wrap w-15">
@@ -333,7 +346,7 @@ const downloadCSV = async () => {
                 <td
                   colspan="7"
                   class="text-center">
-                  Datos no disponibles
+                  Data not available
                 </td>
               </tr>
             </tfoot>
@@ -378,10 +391,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmDeleteDialogVisible = false">
-              Cancelar
+              Cancel
           </VBtn>
           <VBtn @click="removeSupplier">
-              Aceptar
+              Accept
           </VBtn>
         </VCardText>
       </VCard>
