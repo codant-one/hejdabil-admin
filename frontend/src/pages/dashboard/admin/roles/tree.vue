@@ -41,11 +41,11 @@ const closeTreeDialog  = function(){
                         <strong>View Dashboard</strong>&emsp;/&emsp;<code>Allows you to view the control panel</code>
                     </li>
                     <ul class="tab">
-                        <li class="n2">
-                            <strong>Modules</strong>
+                        <li class="n1">
+                            <strong>Proflle</strong>
                         </li>
-                        <li class="tab n3">
-                            <strong>View Roles</strong>&emsp;/&emsp;<code>Read-only access to the roles module</code>
+                        <li class="tab n2">
+                            <strong>Roles</strong>&emsp;/&emsp;<code>Read-only access to the roles module</code>
                         </li>
                         <ul class="tab">
                             <li class="tab n3">
@@ -58,8 +58,8 @@ const closeTreeDialog  = function(){
                                 <strong>Delete roles</strong>&emsp;/&emsp;<code>Allows the removal of roles</code>
                             </li>
                         </ul>
-                        <li class="tab n3">
-                            <strong>View users</strong>&emsp;/&emsp;<code>Read-only access to the users module</code>
+                        <li class="tab n2">
+                            <strong>Users</strong>&emsp;/&emsp;<code>Read-only access to the users module</code>
                         </li>
                         <ul class="tab">
                             <li class="tab n3">
@@ -71,6 +71,77 @@ const closeTreeDialog  = function(){
                             <li class="tab n3">
                                 <strong>Delete users</strong>&emsp;/&emsp;<code>Allows deletion of users</code>
                             </li>
+                        </ul>
+                    </ul>
+                    <ul class="tab">
+                        <li class="n1">
+                            <strong>Modules</strong>
+                        </li>
+                        <li class="tab n2">
+                            <strong>Suppliers</strong>&emsp;/&emsp;<code>Read-only access to the suppliers module</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Create suppliers</strong>&emsp;/&emsp;<code>Allows the creation of suppliers</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Edit suppliers</strong>&emsp;/&emsp;<code>Allows editing of suppliers</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Delete suppliers</strong>&emsp;/&emsp;<code>Allows the removal of suppliers</code>
+                            </li>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Clients</strong>&emsp;/&emsp;<code>Read-only access to the clients module</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Create clients</strong>&emsp;/&emsp;<code>Allows the creation of clients</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Edit clients</strong>&emsp;/&emsp;<code>Allows editing of clients</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Delete clients</strong>&emsp;/&emsp;<code>Allows deletion of clients</code>
+                            </li>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Billing</strong>&emsp;/&emsp;<code>Read-only access to the billing module</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Create billing</strong>&emsp;/&emsp;<code>Allows the creation of invoices</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Edit billing</strong>&emsp;/&emsp;<code>Allows editing of invoices</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Delete billing</strong>&emsp;/&emsp;<code>Allows deletion of invoices</code>
+                            </li>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Administration</strong>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n2">
+                                <strong>Attributes</strong>
+                            </li>
+                            <ul class="tab">
+                                <li class="tab n3">
+                                    <strong>Invoices</strong>&emsp;/&emsp;<code>Read-only access to the invoice attributes module</code>
+                                </li>
+                                <ul class="tab">
+                                    <li class="tab n3">
+                                        <strong>Create invoices</strong>&emsp;/&emsp;<code>Allows the creation of invoice attributes</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Edit invoices</strong>&emsp;/&emsp;<code>Allows editing of invoice attributes</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Delete invoices</strong>&emsp;/&emsp;<code>Allows deletion of invoice attributes</code>
+                                    </li>
+                                </ul>
+                            </ul>
                         </ul>
                     </ul>
                 </ol>

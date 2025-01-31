@@ -42,6 +42,10 @@ class Auth {
         return axios.post('auth/completed', data)
     }
 
+    company() {
+        return axios.get('auth/company')
+    }
+
 }
 
 const auth = new Auth();

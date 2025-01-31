@@ -1,10 +1,407 @@
 <script setup>
 
+import { useSuppliersStores } from '@/stores/useSuppliers'
+import { excelParser } from '@/plugins/csv/excelParser'
+import { themeConfig } from '@themeConfig'
+import { avatarText, formatNumber } from '@/@core/utils/formatters'
+import Toaster from "@/components/common/Toaster.vue";
+import router from '@/router'
 
+const suppliersStores = useSuppliersStores()
+
+const suppliers = ref([])
+const searchQuery = ref('')
+const rowPerPage = ref(10)
+const currentPage = ref(1)
+const totalPages = ref(1)
+const totalSuppliers = ref(0)
+const isRequestOngoing = ref(true)
+const isConfirmDeleteDialogVisible = ref(false)
+const selectedSupplier = ref({})
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
+
+// 👉 Computing pagination data
+const paginationData = computed(() => {
+  const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
+
+  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalSuppliers.value } registros`
+})
+
+// 👉 watching current page
+watchEffect(() => {
+  if (currentPage.value > totalPages.value)
+    currentPage.value = totalPages.value
+})
+
+watchEffect(fetchData)
+
+async function fetchData() {
+
+  let data = {
+    search: searchQuery.value,
+    orderByField: 'id',
+    orderBy: 'desc',
+    limit: rowPerPage.value,
+    page: currentPage.value
+  }
+
+  isRequestOngoing.value = true
+
+  await suppliersStores.fetchSuppliers(data)
+
+  suppliers.value = suppliersStores.getSuppliers
+  totalPages.value = suppliersStores.last_page
+  totalSuppliers.value = suppliersStores.suppliersTotalCount
+
+  isRequestOngoing.value = false
+}
+
+const editSupplier = supplierData => {
+  router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
+}
+
+const showDeleteDialog = supplierData => {
+  isConfirmDeleteDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+}
+
+const seeSupplier = supplierData => {
+  router.push({ name : 'dashboard-admin-suppliers-id', params: { id: supplierData.id } })
+}
+
+const removeSupplier = async () => {
+  isConfirmDeleteDialogVisible.value = false
+  let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
+  selectedSupplier.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Supplier deleted!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
+
+const downloadCSV = async () => {
+
+  isRequestOngoing.value = true
+
+  let data = { limit: -1 }
+
+  await suppliersStores.fetchSuppliers(data)
+
+  let dataArray = [];
+      
+  suppliersStores.getSuppliers.forEach(element => {
+
+    let data = {
+      ID: element.id,
+      CONTACT: element.user.name + ' ' + (element.user.last_name ?? ''),
+      EMAIL: element.user.email,
+      COMPANY: element.company ?? '',
+      ORGANIZATION_NUMBER: element.organization_number,
+      REGISTERED_CLIENTS:  element.client_count
+    }
+
+    dataArray.push(data)
+  })
+
+  excelParser()
+    .exportDataFromJSON(dataArray, "suppliers", "csv");
+
+  isRequestOngoing.value = false
+
+}
 </script>
 
 <template>
   <section>
-    Suppliers
+    <v-row>
+      <VDialog
+        v-model="isRequestOngoing"
+        width="300"
+        persistent>
+          
+        <VCard
+          color="primary"
+          width="300">
+            
+          <VCardText class="pt-3">
+            Loading
+            <VProgressLinear
+              indeterminate
+              color="white"
+              class="mb-0"/>
+          </VCardText>
+        </VCard>
+      </VDialog>
+
+      <v-col cols="12">
+        <v-alert
+          v-if="advisor.show"
+          :type="advisor.type"
+          class="mb-6">
+            
+          {{ advisor.message }}
+        </v-alert>
+
+        <Toaster />
+
+        <v-card title="">
+          <v-card-text class="d-flex flex-wrap py-4 gap-4">
+            <div
+              class="me-3"
+              style="width: 80px;">
+              
+              <VSelect
+                v-model="rowPerPage"
+                density="compact"
+                variant="outlined"
+                :items="[10, 20, 30, 50]"/>
+            </div>
+
+            <div class="d-flex align-center">
+              <VBtn
+                variant="tonal"
+                color="secondary"
+                prepend-icon="tabler-file-export"
+                @click="downloadCSV">
+                Export
+              </VBtn>
+            </div>
+
+            <v-spacer />
+
+            <div class="d-flex align-center flex-wrap gap-4">
+              <!-- 👉 Search  -->
+              <div class="search">
+                <VTextField
+                  v-model="searchQuery"
+                  placeholder="Search"
+                  density="compact"
+                  clearable
+                />
+              </div>
+
+              <!-- 👉 Add user button -->
+              <v-btn
+                v-if="$can('create','suppliers')"
+                prepend-icon="tabler-plus"
+                :to="{ name: 'dashboard-admin-suppliers-add' }">
+                  Create Supplier
+              </v-btn>
+            </div>
+          </v-card-text>
+
+          <v-divider />
+
+          <v-table class="text-no-wrap">
+            <!-- 👉 table head -->
+            <thead>
+              <tr>
+                <th scope="col"> #ID </th>
+                <th scope="col"> COMPANY </th>
+                <th scope="col"> CONTACT </th>
+                <th scope="col"> # REGISTERED CLIENTS </th>
+                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">
+                  ACTIONS
+                </th>
+              </tr>
+            </thead>
+            <!-- 👉 table body -->
+            <tbody>
+              <tr 
+                v-for="supplier in suppliers"
+                :key="supplier.id"
+                style="height: 3.75rem;">
+
+                <td> {{ supplier.id }} </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="supplier.logo ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="supplier.logo"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + supplier.logo"
+                      />
+                        <span v-else>{{ avatarText(supplier.company) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
+                        {{ supplier.company }}
+                      </span>
+                      <span class="text-sm text-disabled">
+                        Organization Number: {{ supplier.organization_number }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex flex-column">
+                    <span class="font-weight-medium">
+                      {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
+                    </span>
+                    <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
+                  </div>
+                </td>
+                <td class="text-wrap w-15">
+                  {{ supplier.client_count }}
+                </td>
+                <!-- 👉 Acciones -->
+                <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+                  <VBtn
+                    v-if="$can('view', 'suppliers')"
+                    icon
+                    variant="text"
+                    color="default"
+                    size="x-small"
+                    @click="seeSupplier(supplier)">
+                    <VTooltip
+                      open-on-focus
+                      location="top"
+                      activator="parent">
+                      View
+                    </VTooltip>
+                    <VIcon
+                      size="28"
+                      icon="tabler-eye"
+                      class="me-1"
+                    />
+                  </VBtn> 
+                  <VBtn
+                    v-if="$can('edit', 'suppliers')"
+                    icon
+                    size="x-small"
+                    color="default"
+                    variant="text"
+                    @click="editSupplier(supplier)"
+                    >
+                    <VTooltip
+                      open-on-focus
+                      location="top"
+                      activator="parent">
+                      Edit
+                    </VTooltip>
+                    <VIcon
+                        size="22"
+                        icon="tabler-edit" />
+                  </VBtn>
+
+                  <VBtn
+                    v-if="$can('delete','suppliers')"
+                    icon
+                    size="x-small"
+                    color="default"
+                    variant="text"
+                    @click="showDeleteDialog(supplier)">
+                    <VTooltip
+                      open-on-focus
+                      location="top"
+                      activator="parent">
+                      Delete
+                    </VTooltip>   
+                    <VIcon
+                      size="22"
+                      icon="tabler-trash" />
+                  </VBtn>
+                </td>
+              </tr>
+            </tbody>
+            <!-- 👉 table footer  -->
+            <tfoot v-show="!suppliers.length">
+              <tr>
+                <td
+                  colspan="7"
+                  class="text-center">
+                  Datos no disponibles
+                </td>
+              </tr>
+            </tfoot>
+          </v-table>
+        
+          <v-divider />
+
+          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
+            <span class="text-sm text-disabled">
+              {{ paginationData }}
+            </span>
+
+            <VPagination
+              v-model="currentPage"
+              size="small"
+              :total-visible="5"
+              :length="totalPages"/>
+          
+          </VCardText>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- 👉 Confirm Delete -->
+    <VDialog
+      v-model="isConfirmDeleteDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Delete Supplier">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Are you sure you want to delete Supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmDeleteDialogVisible = false">
+              Cancelar
+          </VBtn>
+          <VBtn @click="removeSupplier">
+              Aceptar
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
+
+<style scope>
+    .search {
+        width: 100%;
+    }
+
+    @media(min-width: 991px){
+        .search {
+            width: 30rem;
+        }
+    }
+</style>
+<route lang="yaml">
+  meta:
+    action: view
+    subject: suppliers
+</route>

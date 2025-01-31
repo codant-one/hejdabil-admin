@@ -18,6 +18,7 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\UserRegisterToken;
+use App\Models\Supplier;
 
 class UsersController extends Controller
 {
@@ -40,6 +41,11 @@ class UsersController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;;
 
             $query = User::with(['roles', 'userDetail.gender'])
+                         ->whereHas('roles', function ($query) {
+                            $query->where('name', 'SuperAdmin')
+                                ->orWhere('name', 'Administrator')
+                                ->orWhere('name', 'Operator');
+                         })
                          ->applyFilters(
                             $request->only([
                                 'search',
@@ -365,5 +371,48 @@ class UsersController extends Controller
             ], 500);
         }
     }
+
+    public function updateSupplier(Request $request): JsonResponse
+    {
+
+        try {
+
+            $user = Auth::user()->load(['userDetail.gender']);
+
+            if(Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $supplier = Supplier::where('user_id', $user->id)->first();
+                $supplier->updateOrCreateSupplier($request, $user);
+
+                if ($request->hasFile('logo')) {
+                    $image = $request->file('logo');
+
+                    $path = 'suppliers/';
+
+                    $file_data = uploadFile($image, $path, $supplier->logo);
+
+                    $supplier->logo = $file_data['filePath'];
+                    $supplier->update();
+                } 
+            }
+
+            $userData = getUserData($user->load(['userDetail.gender']));
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user_data' => $userData
+                ]
+            ], 200);
+
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 
 }

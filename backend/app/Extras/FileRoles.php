@@ -16,7 +16,6 @@
                 'last_name' => $user->last_name,
                 'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : $user->avatar,
                 'user_details' => $user->userDetail,
-                'client' => $user->client,
                 'roles' => $rol,
                 'hash' => $user->password,
                 'full_profile' => $user->full_profile,

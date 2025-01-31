@@ -42,6 +42,10 @@ div.v-avatar {
   width: 20%;
 }
 
+.v-tab.v-tab.v-tab {
+  height: var(--v-tabs-height) !important;
+}
+
 .v-btn {
   border-radius: 48px !important;
   height: 50px !important;

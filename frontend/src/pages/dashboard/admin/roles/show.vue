@@ -140,7 +140,7 @@ const closeRoleDetailDialog = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    Modules  
+                    Profile  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
@@ -202,6 +202,136 @@ const closeRoleDetailDialog = function(){
                                 :readonly="readonly"
                             />
                         </div>
+                    </div>
+                </VCardText>
+                <VCardTitle>
+                    Modules  
+                </VCardTitle>
+                <VCardText>
+                    <div class="ml-5">
+                        <VLabel style="font-weight: bold;">
+                            Suppliers
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view suppliers"
+                                value="view suppliers"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create suppliers"
+                                value="create suppliers"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit suppliers"
+                                value="edit suppliers"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete suppliers"
+                                value="delete suppliers"
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Clients
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view clients"
+                                value="view clients"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create clients"
+                                value="create clients"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit clients"
+                                value="edit clients"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete clients"
+                                value="delete clients"
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Billing
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view billing"
+                                value="view billing"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create billing"
+                                value="create billing"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit billing"
+                                value="edit billing"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete billing"
+                                value="delete billing"
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Administration
+                        </VLabel>
+                        <VCardText class="pt-2 pb-0">
+                            <div class="ml-5">
+                                <VLabel style="font-weight: bold;">
+                                    Attributes
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view invoices"
+                                        value="view invoices"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create invoices"
+                                        value="create invoices"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit invoices"
+                                        value="edit invoices"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete invoices"
+                                        value="delete invoices"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                            </div>
+                        </VCardText>
                     </div>
                 </VCardText>
             </VCardText>

@@ -1,6 +1,7 @@
 <script setup>
 
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
+import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import { useGendersStores } from '@/stores/useGenders'
 
@@ -9,6 +10,7 @@ const gendersStores = useGendersStores()
 const avatar = ref('')
 const avatarOld = ref('')
 const userData = ref(null)
+const role = ref(null)
 const userTab = ref(null)
 const isRequestOngoing = ref(true)
 
@@ -21,8 +23,12 @@ const advisor = ref({
 const tabs = [
   {
     icon: 'tabler-lock',
-    title: 'Seguridad',
-  }
+    title: 'Security',
+  },
+  {
+    icon: 'tabler-lock',
+    title: 'Company',
+  },
 ]
 
 const listGenders = ref([])
@@ -46,6 +52,7 @@ async function fetchData() {
 
   avatarOld.value = userData.value.avatar
   avatar.value = userData.value.avatar
+  role.value = userData.value.roles[0].name
 }
 
 const loadGenders = () => {
@@ -173,11 +180,12 @@ const onImageSelected = event => {
         md="7"
         lg="8"
       >
-        <!-- <VTabs
+        <VTabs
           v-model="userTab"
           class="v-tabs-pill"
-        > -->
-          <!-- <VTab
+          v-if="role === 'Supplier'"
+        >
+          <VTab
             v-for="tab in tabs"
             :key="tab.icon"
           >
@@ -187,19 +195,22 @@ const onImageSelected = event => {
               class="me-1"
             />
             <span>{{ tab.title }}</span>
-          </VTab> -->
-        <!-- </VTabs> -->
+          </VTab>
+        </VTabs>
 
-        <!-- <VWindow
+        <VWindow
           v-model="userTab"
-          class="mt-6 disable-tab-transition"
+          class="mt-3 disable-tab-transition"
           :touch="false"
-        > -->
-          <!-- <VWindowItem> -->
+        >
+          <VWindowItem>
             <TabSecurity 
             @alert="showAlert"/>
-          <!-- </VWindowItem>
-        </VWindow> -->
+          </VWindowItem>
+          <VWindowItem v-if="role === 'Supplier'">
+            <TabDealer />
+          </VWindowItem>
+        </VWindow>
       </VCol>
     </VRow>
   </section>

@@ -17,7 +17,8 @@ use App\Http\Controllers\{
     UserMenuController,
     GenderController,
     ProxyController,
-    DashboardController
+    DashboardController,
+    SupplierController
 };
 
 /*
@@ -49,6 +50,7 @@ Route::group([
         Route::post('logout', [AuthController::class , 'logout'])->name('logout');
         Route::post('me', [AuthController::class , 'me'])->name('me');
         Route::get('generateQR', [AuthController::class , 'generateQR'])->name('generateQR');
+        Route::get('company', [AuthController::class , 'companyDetail'])->name('companyDetail');
     });
 });
 
@@ -59,6 +61,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('users', UsersController::class);
     Route::apiResource('roles', RoleController::class);
     Route::apiResource('permissions', PermissionController::class);
+    Route::apiResource('suppliers', SupplierController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -70,6 +73,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::post('update/password', [UsersController::class, 'updatePassword']);
         Route::post('update/profile',  [UsersController::class, 'updateProfile']);
         Route::get('user/profile',  [UsersController::class, 'getProfile']);
+        Route::post('update/supplier', [UsersController::class, 'updateSupplier']);
     });
 
     //Roles

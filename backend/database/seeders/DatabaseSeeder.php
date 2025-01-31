@@ -17,7 +17,11 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
 
             StateSeeder::class,
-            GenderSeeder::class
+            GenderSeeder::class,
+
+            MorePermissionSeeder::class,
+            SupplierSeeder::class,
+            ClientSeeder::class
         ]);
 
     }

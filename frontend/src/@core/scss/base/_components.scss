@@ -128,10 +128,14 @@
 }
 
 // v-tab with pill support
+.p-0 {
+  padding: 0 !important;
+}
 
 .v-tabs.v-tabs-pill {
   .v-tab.v-btn {
-    border-radius: 6px !important;
+    border-radius: 24px !important;
+    height: 40px !important;
     transition: none;
 
     .v-tab__slider {

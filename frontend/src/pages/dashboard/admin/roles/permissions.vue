@@ -81,7 +81,7 @@ const closeModal = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    Modules  
+                    Profile  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
@@ -135,6 +135,120 @@ const closeModal = function(){
                                 value="delete users"
                             />
                         </div>
+                    </div>
+                </VCardText>
+                <VCardTitle>
+                    Modules  
+                </VCardTitle>
+                <VCardText>
+                    <div class="ml-5">
+                        <VLabel style="font-weight: bold;">
+                            Suppliers
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view suppliers"
+                                value="view suppliers"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create suppliers"
+                                value="create suppliers"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit suppliers"
+                                value="edit suppliers"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete suppliers"
+                                value="delete suppliers"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Clients
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view clients"
+                                value="view clients"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create clients"
+                                value="create clients"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit clients"
+                                value="edit clients"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete clients"
+                                value="delete clients"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Billing
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view billing"
+                                value="view billing"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create billing"
+                                value="create billing"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit billing"
+                                value="edit billing"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete billing"
+                                value="delete billing"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Administration
+                        </VLabel>
+                        <VCardText class="pt-2 pb-0">
+                            <div class="ml-5">
+                                <VLabel style="font-weight: bold;">
+                                    Attributes
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="view invoices"
+                                        value="view invoices"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="create invoices"
+                                        value="create invoices"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="edit invoices"
+                                        value="edit invoices"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="delete invoices"
+                                        value="delete invoices"
+                                    />
+                                </div>
+                            </div>
+                        </VCardText>
                     </div>
                 </VCardText>
             </VCardText>

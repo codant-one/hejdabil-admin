@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\UserRegisterToken;
+use App\Models\Supplier;
 
 class AuthController extends Controller
 {
@@ -193,7 +194,7 @@ class AuthController extends Controller
         if($user->password === $hash){
 
             $permissions = getPermissionsByRole(Auth::user());
-            $userData = getUserData(Auth::user()->load(['userDetail.gender']));
+            $userData = getUserData(Auth::user()->load(['userDetail.gender', 'supplier']));
 
             return response()->json([
                 'success' => true,
@@ -314,7 +315,7 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         $permissions = getPermissionsByRole(Auth::user());
-        $userData = getUserData(Auth::user()->load(['userDetail.gender']));
+        $userData = getUserData(Auth::user()->load(['userDetail.gender', 'supplier']));
 
         return [
             'accessToken' => $token,
@@ -322,6 +323,31 @@ class AuthController extends Controller
             'user_data' => $userData,
             'userAbilities' => $permissions
         ];
+    }
+
+    public function companyDetail()
+    {
+        try {
+            
+            $supplier = 
+                Supplier::where('user_id', Auth::user()->id)
+                        ->first();
+        
+            return response()->json([
+                'success' => true,
+                'message' => 'company',
+                'data' => [
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     private function sendMail($info, $id = 1){

@@ -9,8 +9,8 @@ class Gender extends Model
 {
     use HasFactory;
 
-    /**** Relationship ****/
-    
+    protected $guarded = [];
+  
     /**** Public methods ****/
     public static function forDropdown()
     {

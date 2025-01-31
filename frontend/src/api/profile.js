@@ -10,6 +10,10 @@ class Profile {
         return axios.post('users/update/password', data)
     }
 
+    updateSupplier(data) {
+        return axios.post('users/update/supplier', data)
+    }
+
 }
 
 const profile = new Profile();

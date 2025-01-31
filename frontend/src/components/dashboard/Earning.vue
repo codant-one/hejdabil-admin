@@ -88,7 +88,7 @@ const earningReports = [
     avatarIcon: 'tabler-chart-pie-2',
     avatarColor: 'primary',
     title: 'Beneficio neto',
-    subtitle: 'COP 12.40',
+    subtitle: 'KR 12.40',
     earnings: '$1,619',
     percentage: '18.6%',
   },

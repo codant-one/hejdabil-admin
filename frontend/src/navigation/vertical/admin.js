@@ -6,14 +6,14 @@ export default [
       { 
         title: 'Attributes', 
         icon: { icon: 'mdi-database-cog' },
-        // action: 'ver',
-        // subject: 'atributos',
+        action: 'view',
+        subject: 'invoices',
         children: [
           { 
             title: 'Invoices', 
             to: 'dashboard-admin-invoices', 
-            // action: 'ver', 
-            // subject: 'atributos', 
+            action: 'view', 
+            subject: 'invoices', 
           }
         ]
       }

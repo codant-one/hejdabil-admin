@@ -9,6 +9,7 @@ use Carbon\Carbon;
 
 use App\Models\UserDetails;
 use App\Models\UserMenu;
+use App\Models\Supplier;
 
 /**
  * Trait for models with stores
@@ -22,6 +23,10 @@ trait UserHelper
 
     public function userDetail() {
         return $this->hasOne(UserDetails::class, 'user_id', 'id');
+    }
+
+    public function supplier() {
+        return $this->hasOne(Supplier::class, 'user_id', 'id');
     }
 
     /**** Public methods ****/
