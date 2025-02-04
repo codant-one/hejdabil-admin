@@ -219,7 +219,6 @@ const downloadCSV = async () => {
       ID: element.id,
       CONTACT: element.fullname,
       EMAIL: element.email,
-      COMPANY: element.company ?? '',
       ORGANIZATION_NUMBER: element.organization_number ?? ''
     }
           
@@ -332,7 +331,7 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> CONTACT </th>
-                <th scope="col"> COMPANY </th>
+                <th scope="col"> ORGANIZATION NUMBER </th>
                 <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
                 <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')">
                   ACTIONS
@@ -356,27 +355,9 @@ const downloadCSV = async () => {
                   </div>
                 </td>
                 <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3" v-if="client.company">
-                    <VAvatar
-                      :variant="client.logo ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="client.logo"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + client.logo"
-                      />
-                        <span v-else>{{ avatarText(client.company) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium cursor-pointer text-primary" @click="seeClient(client)">
-                        {{ client.company }}
-                      </span>
-                      <span class="text-sm text-disabled">
-                        Organization Number: {{ client.organization_number }}
-                      </span>
-                    </div>
-                  </div>
+                  <span class="text-sm text-disabled" v-if="client.organization_number">
+                   # {{ client.organization_number ?? ''}}
+                  </span>
                 </td>
                 <td class="text-wrap" v-if="role !== 'Supplier'">
                   <div class="d-flex align-center gap-x-3" v-if="client.supplier">

@@ -39,12 +39,6 @@ class ClientRequest extends FormRequest
             'phone' => [
                 'required'
             ],
-            'bank' => [
-                'required'
-            ],
-            'account_number' => [
-                'required'
-            ],
             'fullname' => [
                 'required'
             ],
@@ -64,8 +58,6 @@ class ClientRequest extends FormRequest
             'street.required' => 'The street is required.',
             'postal_code.required' => 'The postal code is required.',
             'phone.required' => 'The phone is required.',
-            'bank.required' => 'The bank name is required.',
-            'account_number.required' => 'The account number is required.',
             'fullname.required' => 'The name is required.',
             'email.required' => 'The email is required.'
         ];
