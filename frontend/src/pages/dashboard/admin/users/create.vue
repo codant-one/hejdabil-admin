@@ -28,7 +28,6 @@ const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
-const document = ref('----')
 const assignedRoles = ref([])
 
 const advisor = ref({
@@ -49,7 +48,6 @@ const closeUserCreateDialog  = function(){
     last_name.value = ''
     phone.value = '----'
     address.value = '----'
-    document.value = '----'
     assignedRoles.value = []
   })
 }
@@ -89,7 +87,6 @@ const onSubmitCreate = () => {
             last_name.value = ''
             phone.value = '----'
             address.value = '----'
-            document.value = '----'
             assignedRoles.value = []
           })
 
@@ -196,14 +193,6 @@ const onSubmitCreate = () => {
                 type="tel"
                 label="Phone"
                 placeholder="+(XX) XXXXXXXXX"
-                disabled
-              />
-            </VCol>
-            <VCol cols="12" md="12">
-              <VTextField
-                v-model="document"
-                type="tel"
-                label="Document"
                 disabled
               />
             </VCol>

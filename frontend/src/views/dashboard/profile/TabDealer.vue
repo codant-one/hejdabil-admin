@@ -333,6 +333,7 @@ const onSubmit = () => {
                                     v-model="organization_number"
                                     label="Organization number"
                                     :rules="[requiredValidator]"
+                                    disabled
                                 />
                             </VCol>
                             <VCol cols="12" md="6">

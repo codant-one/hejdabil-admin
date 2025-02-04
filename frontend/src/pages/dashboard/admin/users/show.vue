@@ -28,8 +28,6 @@ const phone = ref('')
 const isPhone = ref(false)
 const address = ref('')
 const isAddress = ref(false)
-const document = ref('')
-const isDocument = ref(false)
 
 const assignedRoles = ref([])
 
@@ -45,8 +43,6 @@ watchEffect(() => {
             isPhone.value = (props.user.user_detail?.phone === null) ? true : false
             address.value = props.user.user_detail?.address ?? '----'
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
-            document.value = props.user.user_detail?.document ?? '----'
-            isDocument.value = (props.user.user_detail?.document === null) ? true : false
 
             assignedRoles.value = props.user.assignedRoles
         }
@@ -111,15 +107,6 @@ const closeUserDetailDialog = function() {
                             label="Phone"
                             :readonly="!isPhone"
                             :disabled="isPhone"
-                        />
-                    </VCol>
-                    <VCol md="12" cols="12">
-                        <VTextField
-                            v-model="document"
-                            type="tel"
-                            label="Document"
-                            :readonly="!isDocument"
-                            :disabled="isDocument"
                         />
                     </VCol>
                     <VCol cols="12" md="12">

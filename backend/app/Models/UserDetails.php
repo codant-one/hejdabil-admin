@@ -14,8 +14,7 @@ class UserDetails extends Model
     protected $fillable = [
         'user_id',
         'phone',
-        'address',
-        'document'
+        'address'
     ];
 
     /**** Relationship ****/
@@ -29,8 +28,7 @@ class UserDetails extends Model
             [    'user_id' => $user->id ],
             [
                 'phone' => $request->phone,
-                'address' => $request->address,
-                'document' => $request->document
+                'address' => $request->address
             ]
         );
 

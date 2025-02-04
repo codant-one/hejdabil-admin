@@ -144,17 +144,33 @@ async function fetchData() {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Document:
+                  Address:
                   <span class="text-body-2">
-                    {{ props.customerData.user.user_detail.document }}
+                    {{ props.customerData.address }}
                   </span>
                 </h6>
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Address:
+                  Street:
                   <span class="text-body-2">
-                    {{ props.customerData.user.user_detail.address }}
+                    {{ props.customerData.street }}
+                  </span>
+                </h6>
+              </VListItemTitle>
+              <VListItemTitle>
+                <h6 class="text-base font-weight-semibold">
+                  Postal code:
+                  <span class="text-body-2">
+                    {{ props.customerData.postal_code }}
+                  </span>
+                </h6>
+              </VListItemTitle>
+              <VListItemTitle>
+                <h6 class="text-base font-weight-semibold">
+                  Organization number:
+                  <span class="text-body-2">
+                    {{ props.customerData.organization_number }}
                   </span>
                 </h6>
               </VListItemTitle>

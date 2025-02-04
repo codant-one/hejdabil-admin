@@ -28,7 +28,6 @@ class UserDetailsFactory extends Factory
         $arr = array("\r\n", "\n", "\r");
 
         return [
-            'document' => strval(rand(1,22999999)),
             'phone' => $this->faker->e164PhoneNumber,
             'address' => str_replace($arr, '', $this->faker->address),
             'created_at' => $created_at,

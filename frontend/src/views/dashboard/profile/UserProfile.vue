@@ -36,7 +36,6 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
-const document = ref('')
 const avatar = ref(props.avatar)
 
 const avatarOld = ref(props.avatarOld)
@@ -68,7 +67,6 @@ async function fetchData() {
   last_name.value = userData.value.last_name ?? ''
   phone.value = userData.value.user_details?.phone
   address.value = userData.value.user_details?.address
-  document.value = userData.value.user_details?.document
 }
 
 const resetAvatar = () => {
@@ -88,7 +86,6 @@ const onSubmit = () =>{
       formData.append('phone', phone.value)
       formData.append('address', address.value)
       formData.append('image', avatarOld.value)
-      formData.append('document', document.value)
 
       isRequestOngoing.value = true
 
@@ -249,14 +246,6 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    Document:
-                    <span class="text-body-2">
-                      {{ document }}
-                    </span>
-                  </h6>
-                </VListItemTitle>
-                <VListItemTitle>
-                  <h6 class="text-base font-weight-semibold">
                     Address:
                     <span class="text-body-2">
                       {{ address }}
@@ -379,7 +368,7 @@ const closeUserEditDialog = ()=>{
                 </VCol>
                 <VCol
                   cols="12"
-                  md="12"
+                  md="6"
                 >
                   <VTextField
                     v-model="email"
@@ -397,14 +386,6 @@ const closeUserEditDialog = ()=>{
                     v-model="phone"
                     label="Phone"
                     placeholder="+(XX) XXXXXXXXX"
-                    :rules="[requiredValidator, phoneValidator]"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="document"
-                    type="tel"
-                    label="Document"
                     :rules="[requiredValidator, phoneValidator]"
                   />
                 </VCol>

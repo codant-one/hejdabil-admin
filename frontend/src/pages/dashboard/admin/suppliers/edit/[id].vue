@@ -310,7 +310,7 @@ const onSubmit = () => {
                                                     :rules="[emailValidator, requiredValidator]"
                                                     v-model="email"
                                                     label="E-mail"
-                                                    readonly
+                                                    disabled
                                                 />
                                             </VCol>
                                         </VRow>

@@ -20,7 +20,6 @@ const last_name = ref('')
 const phone = ref('')
 const address = ref('')
 const avatar = ref('')
-const document_ = ref('')
 
 const avatarOld = ref('')
 const titleApp = ref(import.meta.env.VITE_APP_TITLE)
@@ -44,7 +43,6 @@ async function fetchData() {
     last_name.value = data.last_name
     phone.value = data.user_details?.phone
     address.value = data.user_details?.address
-    document_.value = data.user_details?.document
 
     avatarOld.value = data.user_details?.avatar
 }
@@ -89,7 +87,6 @@ const onSubmit = () =>{
       formData.append('phone', phone.value)
       formData.append('address', address.value)
       formData.append('image', avatarOld.value)
-      formData.append('document', document_.value)
 
       isRequestOngoing.value = true
 
@@ -317,7 +314,7 @@ const blobToBase64 = blob => {
                 </VCol>
                 <VCol
                   cols="12"
-                  md="12"
+                  md="6"
                 >
                   <VTextField
                     v-model="email"
@@ -337,14 +334,6 @@ const blobToBase64 = blob => {
                     label="Phone"
                     placeholder="+(XX) XXXXXXXXX"
                     :rules="[phoneValidator, requiredValidator]"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VTextField
-                    v-model="document_"
-                    type="tel"
-                    label="Document"
-                    :rules="[requiredValidator, phoneValidator]"
                   />
                 </VCol>
                 <VCol

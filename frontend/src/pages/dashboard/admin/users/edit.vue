@@ -35,7 +35,6 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
-const document = ref('')
 const assignedRoles = ref([])
 
 const advisor = ref({
@@ -59,7 +58,6 @@ async function fetchData() {
       last_name.value = props.user.last_name
       phone.value = props.user.user_detail?.phone
       address.value = props.user.user_detail?.address
-      document.value = props.user.user_detail?.document
 
       assignedRoles.value = props.user.assignedRoles
 
@@ -82,7 +80,6 @@ const onSubmitEdit = () =>{
           last_name: last_name.value,
           phone: phone.value,
           address: address.value,
-          document: document.value,
           roles: assignedRoles.value
         }
 
@@ -205,17 +202,6 @@ const onSubmitEdit = () =>{
                             label="Phone"
                             placeholder="+(XX) XXXXXXXXX"
                             :rules="[phoneValidator, requiredValidator]"
-                          />
-                        </VCol>
-                        <VCol
-                          cols="12"
-                          md="12"
-                        >
-                          <VTextField
-                            v-model="document"
-                            type="tel"
-                            label="Document"
-                            :rules="[requiredValidator, phoneValidator]"
                           />
                         </VCol>
                         <VCol
