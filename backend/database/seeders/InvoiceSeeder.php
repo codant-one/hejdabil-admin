@@ -22,16 +22,16 @@ class InvoiceSeeder extends Seeder
                 'name_en' => 'Product / Service',
                 'name_se' => 'Produkt / tjänst',
                 'description_en' => 'Description of the product or service',
-                'description_se' => 'Beskrivelse av produktet eller tjenesten',
+                'description_se' => 'Beskrivning av produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
                 'type_id' => 2,
                 'name_en' => 'Quantity',
-                'name_se' => 'Antal ',
+                'name_se' => 'Antal',
                 'description_en' => 'Quantity of the product or service',
-                'description_se' => 'Mengden av produktet eller tjenesten',
+                'description_se' => 'Kvantitet av produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
@@ -40,7 +40,7 @@ class InvoiceSeeder extends Seeder
                 'name_en' => 'Unit Price',
                 'name_se' => 'À-pris',
                 'description_en' => 'Unit price of the product or service',
-                'description_se' => 'Enhetspris på produktet eller tjenesten',
+                'description_se' => 'Enhetspris för produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
@@ -49,7 +49,7 @@ class InvoiceSeeder extends Seeder
                 'name_en' => 'Amount',
                 'name_se' => 'Belopp',
                 'description_en' => 'Accumulated price amount per product or service',
-                'description_se' => 'Akkumulert prisbeløp per produkt eller tjeneste',
+                'description_se' => 'Ackumulerat prisbelopp per produkt eller tjänst',
                 'created_at' => now(),
                 'updated_at' => now()
             ]
