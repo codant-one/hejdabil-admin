@@ -40,7 +40,7 @@ class UsersController extends Controller
             
             $limit = $request->has('limit') ? $request->limit : 10;;
 
-            $query = User::with(['roles', 'userDetail.gender'])
+            $query = User::with(['roles', 'userDetail'])
                          ->whereHas('roles', function ($query) {
                             $query->where('name', 'SuperAdmin')
                                 ->orWhere('name', 'Administrator')
@@ -137,7 +137,7 @@ class UsersController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail.gender')->find($id);
+            $user = User::with('roles', 'userDetail')->find($id);
         
             if (!$user)
                 return response()->json([
@@ -171,7 +171,7 @@ class UsersController extends Controller
     {
         try {
 
-            $user = User::with('roles', 'userDetail.gender')->find($id);
+            $user = User::with('roles', 'userDetail')->find($id);
         
             if (!$user)
                 return response()->json([
@@ -207,7 +207,7 @@ class UsersController extends Controller
 
         try {
 
-            $user = Auth::user()->load(['userDetail.gender']);
+            $user = Auth::user()->load(['userDetail']);
             $user->updateProfile($request, $user);
 
             if ($request->hasFile('image')) {
@@ -221,7 +221,7 @@ class UsersController extends Controller
                 $user->update();
             } 
 
-            $userData = getUserData($user->load(['userDetail.gender']));
+            $userData = getUserData($user->load(['userDetail']));
 
             return response()->json([
                 'success' => true,
@@ -259,7 +259,7 @@ class UsersController extends Controller
 
         try {
 
-            $user = Auth::user()->load(['userDetail.gender']);
+            $user = Auth::user()->load(['userDetail']);
             $user->password = Hash::make($request->password);
             $user->save();
 
@@ -298,7 +298,7 @@ class UsersController extends Controller
 
         try {
 
-            $user = User::with(['userDetail.gender'])->find($id);
+            $user = User::with(['userDetail'])->find($id);
         
             if (!$user)
                 return response()->json([
@@ -377,7 +377,7 @@ class UsersController extends Controller
 
         try {
 
-            $user = Auth::user()->load(['userDetail.gender']);
+            $user = Auth::user()->load(['userDetail']);
 
             if(Auth::user()->getRoleNames()[0] === 'Supplier') {
                 $supplier = Supplier::where('user_id', $user->id)->first();
@@ -395,7 +395,7 @@ class UsersController extends Controller
                 } 
             }
 
-            $userData = getUserData($user->load(['userDetail.gender']));
+            $userData = getUserData($user->load(['userDetail']));
 
             return response()->json([
                 'success' => true,

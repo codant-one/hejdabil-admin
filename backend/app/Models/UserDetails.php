@@ -13,7 +13,6 @@ class UserDetails extends Model
     
     protected $fillable = [
         'user_id',
-        'gender_id',
         'phone',
         'address',
         'document'
@@ -24,16 +23,11 @@ class UserDetails extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    public function gender() {
-        return $this->belongsTo(Gender::class, 'gender_id', 'id');
-    }
-
      /**** Public methods ****/
     public static function updateOrCreateUser($request, $user) {
         $userD = UserDetails::updateOrCreate(
             [    'user_id' => $user->id ],
             [
-                'gender_id' => $request->gender_id,
                 'phone' => $request->phone,
                 'address' => $request->address,
                 'document' => $request->document

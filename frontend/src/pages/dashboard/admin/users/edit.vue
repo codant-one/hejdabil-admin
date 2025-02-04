@@ -15,12 +15,7 @@ const props = defineProps({
   rolesList: {
     type: Object,
     required: true
-  },
-  genders: {
-    type: Object,
-    required: true
   }
-
 })
 
 const emit = defineEmits([
@@ -34,8 +29,6 @@ const usersStores = useUsersStores()
 
 const refFormEdit = ref()
 
-const listGenders = ref(props.genders)
-
 const id = ref('')
 const email = ref('')
 const name = ref('')
@@ -43,8 +36,6 @@ const last_name = ref('')
 const phone = ref('')
 const address = ref('')
 const document = ref('')
-const gender_id = ref('')
-const genderOld_id = ref('')
 const assignedRoles = ref([])
 
 const advisor = ref({
@@ -69,9 +60,6 @@ async function fetchData() {
       phone.value = props.user.user_detail?.phone
       address.value = props.user.user_detail?.address
       document.value = props.user.user_detail?.document
-           
-      genderOld_id.value = props.user.user_detail?.gender?.id
-      gender_id.value = props.user.user_detail?.gender?.name
 
       assignedRoles.value = props.user.assignedRoles
 
@@ -95,7 +83,6 @@ const onSubmitEdit = () =>{
           phone: phone.value,
           address: address.value,
           document: document.value,
-          gender_id: (Number.isInteger(gender_id.value)) ? gender_id.value : genderOld_id.value,
           roles: assignedRoles.value
         }
 
@@ -222,21 +209,7 @@ const onSubmitEdit = () =>{
                         </VCol>
                         <VCol
                           cols="12"
-                          md="6"
-                        >
-                          <VAutocomplete
-                            v-model="gender_id"
-                            label="Gender"
-                            :rules="[requiredValidator]"
-                            :items="listGenders"
-                            item-title="name"
-                            item-value="id"
-                            :menu-props="{ maxHeight: '200px' }"
-                          />
-                        </VCol>
-                        <VCol
-                          cols="12"
-                          md="6"
+                          md="12"
                         >
                           <VTextField
                             v-model="document"

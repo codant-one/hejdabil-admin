@@ -6,15 +6,11 @@ import { initialAbility } from '@/plugins/casl/ability'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useProfileStores } from '@/stores/useProfile'
-import { useGendersStores } from '@/stores/useGenders'
 
 const router = useRouter()
 const ability = useAppAbility()
-const gendersStores = useGendersStores()
 const authStores = useAuthStores()
 const profileStores = useProfileStores()
-
-const listGenders = ref([])
 
 const refVForm = ref()
 const user_id = ref('')
@@ -24,8 +20,6 @@ const last_name = ref('')
 const phone = ref('')
 const address = ref('')
 const avatar = ref('')
-const gender_id = ref('')
-const genderOld_id = ref('')
 const document_ = ref('')
 
 const avatarOld = ref('')
@@ -36,17 +30,6 @@ const alert = ref({
   message: '',
   show: false,  
   type: '',
-})
-
-onMounted(async () => {
-
-  isRequestOngoing.value = true
-
-  await gendersStores.fetchGenders();
-  
-  loadGenders()
-
-  isRequestOngoing.value = false
 })
 
 watchEffect(fetchData)
@@ -64,13 +47,6 @@ async function fetchData() {
     document_.value = data.user_details?.document
 
     avatarOld.value = data.user_details?.avatar
-
-    genderOld_id.value = data.user_details?.gender?.id
-    gender_id.value = data.user_details?.gender?.name
-}
-
-const loadGenders = () => {
-  listGenders.value = gendersStores.getGenders
 }
 
 const logout = () => {
@@ -114,7 +90,6 @@ const onSubmit = () =>{
       formData.append('address', address.value)
       formData.append('image', avatarOld.value)
       formData.append('document', document_.value)
-      formData.append('gender_id', (Number.isInteger(gender_id.value)) ? gender_id.value : genderOld_id.value)
 
       isRequestOngoing.value = true
 
@@ -362,17 +337,6 @@ const blobToBase64 = blob => {
                     label="Phone"
                     placeholder="+(XX) XXXXXXXXX"
                     :rules="[phoneValidator, requiredValidator]"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VAutocomplete
-                    v-model="gender_id"
-                    label="Gender"
-                    :rules="[requiredValidator]"
-                    :items="listGenders"
-                    item-title="name"
-                    item-value="id"
-                    :menu-props="{ maxHeight: '200px' }"
                   />
                 </VCol>
                 <VCol cols="12" md="6">

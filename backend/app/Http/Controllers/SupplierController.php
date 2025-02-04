@@ -39,7 +39,7 @@ class SupplierController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Supplier::with(['user.userDetail.gender'])
+            $query = Supplier::with(['user.userDetail'])
                              ->clientsCount()
                              ->applyFilters(
                                 $request->only([
@@ -79,7 +79,6 @@ class SupplierController extends Controller
 
             $password = Str::random(8);
             $request->merge(['password' => $password]);
-            $request->merge(['gender_id' => 2]);
 
             $supplier = Supplier::createSupplier($request);
 
@@ -120,7 +119,7 @@ class SupplierController extends Controller
                 'success' => true,
                 'email_response' => $responseMail,
                 'data' => [ 
-                    'supplier' => Supplier::with(['user.userDetail.gender'])->find($supplier->id)
+                    'supplier' => Supplier::with(['user.userDetail'])->find($supplier->id)
                 ]
             ]);
 
@@ -140,7 +139,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail.gender'])
+            $supplier = Supplier::with(['user.userDetail'])
                                 ->clientsCount()
                                 ->find($id);
 
@@ -174,7 +173,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail.gender'])->find($id);
+            $supplier = Supplier::with(['user.userDetail'])->find($id);
         
             if (!$supplier)
                 return response()->json([

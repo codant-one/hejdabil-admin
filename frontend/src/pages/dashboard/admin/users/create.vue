@@ -7,12 +7,7 @@ const props = defineProps({
   rolesList: {
     type: Object,
     required: true
-  },
-  genders: {
-    type: Object,
-    required: true
   }
-
 })
 
 const emit = defineEmits([
@@ -22,8 +17,6 @@ const emit = defineEmits([
 ])
 
 const usersStores = useUsersStores()
-
-const listGenders = ref(props.genders)
 
 const refFormCreate = ref()
 
@@ -36,7 +29,6 @@ const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
 const document = ref('----')
-const gender_id = ref('Male')
 const assignedRoles = ref([])
 
 const advisor = ref({
@@ -57,7 +49,6 @@ const closeUserCreateDialog  = function(){
     last_name.value = ''
     phone.value = '----'
     address.value = '----'
-    gender_id.value = 'Male'
     document.value = '----'
     assignedRoles.value = []
   })
@@ -72,8 +63,7 @@ const onSubmitCreate = () => {
         email: email.value,
         password: password.value,
         last_name: last_name.value,
-        roles: assignedRoles.value,
-        gender_id: 1
+        roles: assignedRoles.value
       }
 
       usersStores.addUser(data)
@@ -99,7 +89,6 @@ const onSubmitCreate = () => {
             last_name.value = ''
             phone.value = '----'
             address.value = '----'
-            gender_id.value = 'Male'
             document.value = '----'
             assignedRoles.value = []
           })
@@ -210,18 +199,7 @@ const onSubmitCreate = () => {
                 disabled
               />
             </VCol>
-            <VCol cols="12" md="6">
-              <VAutocomplete
-                v-model="gender_id"
-                label="Gender"
-                :items="listGenders"
-                item-title="name"
-                item-value="id"
-                :menu-props="{ maxHeight: '200px' }"
-                disabled
-              />
-            </VCol>
-            <VCol cols="12" md="6">
+            <VCol cols="12" md="12">
               <VTextField
                 v-model="document"
                 type="tel"

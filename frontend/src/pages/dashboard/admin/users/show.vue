@@ -12,20 +12,13 @@ const props = defineProps({
   rolesList: {
     type: Object,
     required: true
-  },
-  genders: {
-    type: Object,
-    required: true
   }
-
 })
 
 const emit = defineEmits([
   'update:isDrawerOpen',
   'close'
 ])
-
-const listGenders = ref(props.genders)
 
 const email = ref('')
 const name = ref('')
@@ -37,9 +30,6 @@ const address = ref('')
 const isAddress = ref(false)
 const document = ref('')
 const isDocument = ref(false)
-const gender_id = ref('')
-const genderOld_id = ref('')
-const isGender = ref(false)
 
 const assignedRoles = ref([])
 
@@ -57,10 +47,6 @@ watchEffect(() => {
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
             document.value = props.user.user_detail?.document ?? '----'
             isDocument.value = (props.user.user_detail?.document === null) ? true : false
-
-            genderOld_id.value = props.user.user_detail?.gender?.id
-            gender_id.value = props.user.user_detail?.gender?.name
-            isGender.value = (props.user.user_detail?.gender === null) ? true : false
 
             assignedRoles.value = props.user.assignedRoles
         }
@@ -107,7 +93,7 @@ const closeUserDetailDialog = function() {
                         <VTextField
                             v-model="email"
                             label="E-mail"
-                            readonly
+                            disabled
                         />
                     </VCol>
                     <VCol md="6" cols="12">
@@ -115,7 +101,7 @@ const closeUserDetailDialog = function() {
                             v-model="phone"
                             type="password"
                             label="Password"
-                            readonly
+                            disabled
                         />
                     </VCol>                    
                     <VCol md="6" cols="12">
@@ -127,16 +113,7 @@ const closeUserDetailDialog = function() {
                             :disabled="isPhone"
                         />
                     </VCol>
-                    <VCol md="6" cols="12">
-                        <VAutocomplete
-                            v-model="gender_id"
-                            label="Gender"
-                            :items="listGenders"
-                            :readonly="!isGender"
-                            :disabled="isGender"
-                        />
-                    </VCol>
-                    <VCol md="6" cols="12">
+                    <VCol md="12" cols="12">
                         <VTextField
                             v-model="document"
                             type="tel"

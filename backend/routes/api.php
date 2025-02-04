@@ -15,7 +15,6 @@ use App\Http\Controllers\{
     RoleController,
     PermissionController,
     UserMenuController,
-    GenderController,
     ProxyController,
     DashboardController,
     SupplierController,
@@ -98,7 +97,6 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
 });
 
 //Public Endpoints
-Route::apiResource('genders', GenderController::class);
 Route::get('emails', [TestingController::class , 'emails'])->name('emails');
 
 //PROXY

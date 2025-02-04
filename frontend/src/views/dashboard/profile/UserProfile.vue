@@ -9,10 +9,6 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  listGenders: {
-    type: Object,
-    required: true
-  },
   avatarOld: {
     type: [String, Object],
     required: true
@@ -42,14 +38,9 @@ const phone = ref('')
 const address = ref('')
 const document = ref('')
 const avatar = ref(props.avatar)
-const gender_id = ref('')
-const genderOld_id = ref('')
-const gender_ = ref('')
 
 const avatarOld = ref(props.avatarOld)
 const roles = ref('')
-
-const genders = ref(props.listGenders)
 
 const alert = ref({
     message: '',
@@ -78,9 +69,6 @@ async function fetchData() {
   phone.value = userData.value.user_details?.phone
   address.value = userData.value.user_details?.address
   document.value = userData.value.user_details?.document
-  gender_.value = userData.value.user_details?.gender.name
-  genderOld_id.value = userData.value.user_details?.gender.id
-  gender_id.value = userData.value.user_details?.gender.id
 }
 
 const resetAvatar = () => {
@@ -101,7 +89,6 @@ const onSubmit = () =>{
       formData.append('address', address.value)
       formData.append('image', avatarOld.value)
       formData.append('document', document.value)
-      formData.append('gender_id', (Number.isInteger(gender_id.value)) ? gender_id.value : genderOld_id.value)
 
       isRequestOngoing.value = true
 
@@ -262,14 +249,6 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    Gender:
-                    <span class="text-body-2">
-                      {{ gender_ }}
-                    </span>
-                  </h6>
-                </VListItemTitle>
-                <VListItemTitle>
-                  <h6 class="text-base font-weight-semibold">
                     Document:
                     <span class="text-body-2">
                       {{ document }}
@@ -400,14 +379,14 @@ const closeUserEditDialog = ()=>{
                 </VCol>
                 <VCol
                   cols="12"
-                  md="6"
+                  md="12"
                 >
                   <VTextField
                     v-model="email"
                     label="E-mail"
                     type="email"
                     :rules="[requiredValidator, emailValidator]"
-                    readonly
+                    disabled
                   />
                 </VCol>
                 <VCol
@@ -419,17 +398,6 @@ const closeUserEditDialog = ()=>{
                     label="Phone"
                     placeholder="+(XX) XXXXXXXXX"
                     :rules="[requiredValidator, phoneValidator]"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <VAutocomplete
-                    v-model="gender_id"
-                    label="Gender"
-                    :rules="[requiredValidator]"
-                    :items="genders"
-                    item-title="name"
-                    item-value="id"
-                    :menu-props="{ maxHeight: '200px' }"
                   />
                 </VCol>
                 <VCol cols="12" md="6">

@@ -10,13 +10,11 @@ import { avatarText } from '@/@core/utils/formatters'
 
 import { useUsersStores } from '@/stores/useUsers'
 import { useRolesStores } from '@/stores/useRoles'
-import { useGendersStores } from '@/stores/useGenders'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 
 const usersStores = useUsersStores()
 const rolesStores = useRolesStores()
-const gendersStores = useGendersStores()
 
 const users = ref([])
 const searchQuery = ref('')
@@ -41,17 +39,11 @@ const userOnline = ref([])
 
 const isRequestOngoing = ref(true)
 
-const listGenders = ref([])
-
 const advisor = ref({
   type: '',
   message: '',
   show: false
 })
-
-const loadGenders = () => {
-  listGenders.value = gendersStores.getGenders
-}
 
 let interval = null
 
@@ -72,16 +64,11 @@ const onlineList = () => {
   })
 }
 
-const searchRoles =() => {
+const searchRoles = () => {
   rolesStores.allRoles().then(response => {
-    const index = response.roles.indexOf('SuperAdmin')
-    
-    if (index !== -1)
-      response.roles.splice(index, 1);
-
-    rolesList.value = response.roles
+    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier');
   }).catch(error => { })
-}
+};
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -126,11 +113,6 @@ async function fetchData() {
 
   searchRoles()
   onlineList()
-
-  if(listGenders.value.length === 0) {
-    await gendersStores.fetchGenders();
-    loadGenders()
-  }
 
   isRequestOngoing.value = false
 }
@@ -288,10 +270,9 @@ const downloadCSV = async () => {
               </VBtn>
             </div>
 
-            <div class="me-3" v-if="listGenders.length > 0">
+            <div class="me-3">
               <create
                 :rolesList="rolesList"
-                :genders="listGenders"
                 @close="roleUsers = []"
                 @data="fetchData"
                 @alert="showAlert"/>
@@ -530,11 +511,9 @@ const downloadCSV = async () => {
           </VCardText>
 
           <show 
-            v-if="listGenders.length > 0"
             v-model:isDrawerOpen="isUserDetailDialog"
             :rolesList="rolesList"
             :user="selectedUser"
-            :genders="listGenders"
             @close="roleUsers = []"/>
 
           <password
@@ -544,11 +523,9 @@ const downloadCSV = async () => {
             @alert="showAlert"/>
 
           <edit
-            v-if="listGenders.length > 0"
             v-model:isDrawerOpen="isUserEditDialog"
             :rolesList="rolesList"
             :user="selectedUser"
-            :genders="listGenders"
             @data="fetchData"
             @close="roleUsers = []"
             @alert="showAlert"/>

@@ -136,14 +136,6 @@ async function fetchData() {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Gender:
-                  <span class="text-body-2">
-                    {{ props.customerData.user.user_detail.gender.name }}
-                  </span>
-                </h6>
-              </VListItemTitle>
-              <VListItemTitle>
-                <h6 class="text-base font-weight-semibold">
                     Phone:
                   <span class="text-body-2">
                     {{ props.customerData.user.user_detail.phone }}

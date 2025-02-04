@@ -107,7 +107,6 @@ class Supplier extends Model
             'reference' => $request->reference
         ]);
 
-        $request->merge(['gender_id' => $user->userDetail->gender_id]);
         User::updateUser($request, $user);
         
         $user->assignRole('Supplier');

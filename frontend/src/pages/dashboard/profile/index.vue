@@ -3,16 +3,13 @@
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
-import { useGendersStores } from '@/stores/useGenders'
-
-const gendersStores = useGendersStores()
 
 const avatar = ref('')
 const avatarOld = ref('')
 const userData = ref(null)
 const role = ref(null)
 const userTab = ref(null)
-const isRequestOngoing = ref(true)
+const isRequestOngoing = ref(false)
 
 const advisor = ref({
   type: '',
@@ -31,19 +28,6 @@ const tabs = [
   },
 ]
 
-const listGenders = ref([])
-
-onMounted(async () => {
-
-  isRequestOngoing.value = true
-
-  await gendersStores.fetchGenders();
-
-  loadGenders()
-
-  isRequestOngoing.value = false
-})
-
 watchEffect(fetchData)
 
 async function fetchData() { 
@@ -53,10 +37,6 @@ async function fetchData() {
   avatarOld.value = userData.value.avatar
   avatar.value = userData.value.avatar
   role.value = userData.value.roles[0].name
-}
-
-const loadGenders = () => {
-  listGenders.value = gendersStores.getGenders
 }
 
 const showAlert = function(alert) {
@@ -162,7 +142,7 @@ const onImageSelected = event => {
     </VAlert>
 
 
-    <VRow v-if="listGenders.length > 0">
+    <VRow>
       <VCol
         cols="12"
         md="5"
@@ -171,7 +151,6 @@ const onImageSelected = event => {
         <UserProfile
           :user="userData"
           :avatarOld="avatarOld"
-          :listGenders="listGenders"
           :avatar="avatar"
           @onImageSelected="onImageSelected" />
       </VCol>
