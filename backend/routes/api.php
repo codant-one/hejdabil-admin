@@ -18,7 +18,9 @@ use App\Http\Controllers\{
     ProxyController,
     DashboardController,
     SupplierController,
-    ClientController
+    ClientController,
+    TypeController,
+    InvoiceController
 };
 
 /*
@@ -63,6 +65,8 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('permissions', PermissionController::class);
     Route::apiResource('suppliers', SupplierController::class);
     Route::apiResource('clients', ClientController::class);
+    Route::apiResource('types', TypeController::class);
+    Route::apiResource('invoices', InvoiceController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');

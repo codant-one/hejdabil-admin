@@ -162,6 +162,7 @@ class Supplier extends Model
         return $supplier;
     }
 
+    /**** attributes ****/
     public function getFullNameAttribute()
     {
         return "{$this->user->name} {$this->user->last_name}";

@@ -20,7 +20,10 @@ class DatabaseSeeder extends Seeder
 
             MorePermissionSeeder::class,
             SupplierSeeder::class,
-            ClientSeeder::class
+            ClientSeeder::class,
+
+            TypeSeeder::class,
+            InvoiceSeeder::class
         ]);
 
     }

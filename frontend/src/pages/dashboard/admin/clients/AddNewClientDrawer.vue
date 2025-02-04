@@ -93,20 +93,16 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData()
 
-      if (!isEdit.value)
-        formData.append('supplier_id', supplier_id.value)
-        formData.append('email', email.value)
-
-        if (isEdit.value)
-        formData.append('supplier_id', supplier_id.value)
-
-        formData.append('fullname', fullname.value)
-        formData.append('organization_number', organization_number.value)
-        formData.append('address', address.value)
-        formData.append('street', street.value)
-        formData.append('postal_code', postal_code.value)
-        formData.append('phone', phone.value)
-        formData.append('reference', reference.value)
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('email', email.value)
+      formData.append('fullname', fullname.value)
+      formData.append('organization_number', organization_number.value)
+      formData.append('address', address.value)
+      formData.append('street', street.value)
+      formData.append('postal_code', postal_code.value)
+      formData.append('phone', phone.value)
+      formData.append('reference', reference.value)
 
       emit('clientData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
