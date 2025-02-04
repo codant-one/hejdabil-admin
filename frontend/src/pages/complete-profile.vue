@@ -24,7 +24,7 @@ const document_ = ref('')
 
 const avatarOld = ref('')
 const titleApp = ref(import.meta.env.VITE_APP_TITLE)
-const isRequestOngoing = ref(true)
+const isRequestOngoing = ref(false)
 
 const alert = ref({
   message: '',
@@ -317,14 +317,14 @@ const blobToBase64 = blob => {
                 </VCol>
                 <VCol
                   cols="12"
-                  md="6"
+                  md="12"
                 >
                   <VTextField
                     v-model="email"
                     label="E-mail"
                     type="email"
                     :rules="[requiredValidator, emailValidator]"
-                    readonly
+                    disabled
                   />
                 </VCol>
                 <VCol
