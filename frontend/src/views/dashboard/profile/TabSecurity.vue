@@ -54,7 +54,6 @@ async function fetchData() {
   token.value = data.value.token
   is_2fa.value = data.value.is_2fa
 
-
   isRequestOngoing.value = false
 }
 
@@ -75,7 +74,7 @@ const chance2fa = (code) => {
       advisor.value.type = 'success' 
       
       emit('alert', advisor)
-
+      fetchData()
       isRequestOngoing.value = false
     }).catch(err => {
 
@@ -100,7 +99,6 @@ const chance2fa = (code) => {
     emit('alert', advisor)
   }, 5000)
 
-  fetchData()
 }
 
 const onSubmit = () => {
