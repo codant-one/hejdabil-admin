@@ -30,7 +30,6 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
-const reference = ref('')
 
 watchEffect(fetchData)
 
@@ -54,7 +53,6 @@ async function fetchData() {
     name.value  = props.customerData.user.name
     last_name.value = props.customerData.user.last_name 
     email.value = props.customerData.user.email
-    reference.value = props.customerData.reference
   }
 }
 
@@ -136,14 +134,6 @@ const copy = (account) => {
                       Phone:
                       <span class="text-body-2">
                           {{ props.customerData.phone }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Reference:
-                      <span class="text-body-2">
-                          {{ props.customerData.reference }}
                       </span>
                     </h6>
                   </VListItemTitle>

@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('postal_code');
             $table->string('phone');
             $table->string('link')->nullable();
-            $table->string('reference')->nullable();
             $table->string('bank');
             $table->string('iban')->nullable();
             $table->string('compensation_number')->nullable();

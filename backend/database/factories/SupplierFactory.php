@@ -33,7 +33,6 @@ class SupplierFactory extends Factory
             'street' => $this->faker->streetName,
             'postal_code' => $this->faker->buildingNumber,
             'phone' => $this->faker->phoneNumber,
-            'reference' => $this->faker->name,
             'bank' => $this->faker->name,
             'account_number' => $this->faker->bankAccountNumber,
             'created_at' => now(),

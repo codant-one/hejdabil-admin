@@ -32,7 +32,6 @@ const phone = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
-const reference = ref('')
 const bank = ref('')
 const iban = ref('')
 const compensation_number = ref('')
@@ -82,7 +81,6 @@ async function fetchData() {
     name.value  = supplier.value.user.name
     last_name.value = supplier.value.user.last_name 
     email.value = supplier.value.user.email
-    reference.value = supplier.value.reference
 
     iban.value = supplier.value.iban
     compensation_number.value = supplier.value.compensation_number
@@ -188,7 +186,6 @@ const onSubmit = () => {
             formData.append('postal_code', postal_code.value)
             formData.append('phone', phone.value)
             formData.append('link', link.value)
-            formData.append('reference', reference.value)
             formData.append('bank', bank.value)
             formData.append('iban', iban.value)
             formData.append('compensation_number', compensation_number.value)
@@ -371,12 +368,6 @@ const onSubmit = () => {
                                     v-model="link"
                                     :rules="[urlValidator]"
                                     label="Page"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="reference"
-                                    label="Reference"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">

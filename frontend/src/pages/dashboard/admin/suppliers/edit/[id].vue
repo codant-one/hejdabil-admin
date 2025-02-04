@@ -29,7 +29,6 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
-const reference = ref('')
 
 onMounted(async () => {
 
@@ -67,7 +66,6 @@ watchEffect(async() => {
         name.value  = supplier.value.user.name
         last_name.value = supplier.value.user.last_name 
         email.value = supplier.value.user.email
-        reference.value = supplier.value.reference
     }
 
     isRequestOngoing.value = false
@@ -107,7 +105,6 @@ const onSubmit = () => {
             formData.append('name', name.value)
             formData.append('last_name', last_name.value)
             formData.append('email', email.value)
-            formData.append('reference', reference.value)
 
             isRequestOngoing.value = true
 
@@ -314,12 +311,6 @@ const onSubmit = () => {
                                                     v-model="email"
                                                     label="E-mail"
                                                     readonly
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="12">
-                                                <VTextField
-                                                    v-model="reference"
-                                                    label="reference"
                                                 />
                                             </VCol>
                                         </VRow>

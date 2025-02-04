@@ -83,8 +83,7 @@ class Supplier extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'reference' => $request->reference
+            'account_number' => $request->account_number
         ]);
 
         return $supplier;
@@ -103,8 +102,7 @@ class Supplier extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'reference' => $request->reference
+            'account_number' => $request->account_number
         ]);
 
         User::updateUser($request, $user);
@@ -145,7 +143,6 @@ class Supplier extends Model
                 'phone' => $request->phone,
                 'bank' => $request->bank,
                 'account_number' => $request->account_number,
-                'reference' => $request->reference,
                 'iban' => $request->iban === 'null' ? null : $request->iban,
                 'compensation_number' => $request->compensation_number === 'null' ? null : $request->compensation_number,
                 'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
