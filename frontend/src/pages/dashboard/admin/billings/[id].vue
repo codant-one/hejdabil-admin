@@ -136,11 +136,11 @@ const download = () => {
                 <p class="mb-0">
                    E-mail: {{ invoice.client.email }}
                 </p>
-                <p class="mb-0" v-if="invoice.client.organization_number">
+                <p class="mb-0" v-if="invoice.client.organization_number !== null">
                     Organization number: {{ invoice.client.organization_number ?? '' }}
                 </p>
-                <p class="mb-0" v-if="invoice.client.reference">
-                    Reference: {{ invoice.client.reference ?? '' }}
+                <p class="mb-0" v-if="invoice.reference !== null">
+                    Reference: {{ invoice.reference ?? '' }}
                 </p>    
                 <p class="mt-5 mb-0 text-sm">After the due date, interest is charged according to the Interest Act.</p>           
             </div>

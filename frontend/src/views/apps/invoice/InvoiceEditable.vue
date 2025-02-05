@@ -68,7 +68,7 @@ const invoice = ref({
     supplier_id: null,
     invoice_date: null,
     due_date:null,
-    subtotal: props.total,
+    subtotal: 0,
     tax: 0,
     total: 0,
     reference: null,
@@ -86,6 +86,7 @@ watch(() => props.total, (val) => {
     total.value = (val * tax) + val
 
     invoice.value.total = (val * tax) + val
+    invoice.value.subtotal = val
 })
 
 watch(() => invoice.value.tax, (val) => {
@@ -93,6 +94,7 @@ watch(() => invoice.value.tax, (val) => {
 
     total.value = (subtotal.value * tax) + subtotal.value
     invoice.value.total = (subtotal.value * tax) + subtotal.value
+    invoice.value.subtotal = subtotal.value
 })
 
 watchEffect(fetchData)

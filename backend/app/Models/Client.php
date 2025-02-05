@@ -71,7 +71,7 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
-            'reference' => $request->reference
+            'reference' => $request->reference === 'null' ? null : $request->reference
         ]);
         
         return $client;
@@ -89,7 +89,7 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
-            'reference' => $request->reference
+            'reference' => $request->reference === 'null' ? null : $request->reference
         ]);
 
         return $client;

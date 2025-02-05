@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('invoice_date');
             $table->date('due_date');
             $table->string('payment_terms');
-            $table->string('reference');
+            $table->string('reference')->nullable();
             $table->double('subtotal', 10, 2);
             $table->integer('tax');
             $table->double('total', 10, 2);
