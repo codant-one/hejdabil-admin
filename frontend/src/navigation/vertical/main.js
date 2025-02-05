@@ -17,9 +17,9 @@ export default [
       subject: 'clients'
     },
     { 
-      title: 'Billing', 
+      title: 'Billings', 
       icon: { icon: 'tabler-clipboard-list' },
-      to: 'dashboard-admin-billing', 
+      to: 'dashboard-admin-billings', 
       action: 'view', 
       subject: 'billing'
     }

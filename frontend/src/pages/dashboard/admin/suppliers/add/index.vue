@@ -198,9 +198,10 @@ const onSubmit = () => {
                                                     label="Page"
                                                 />
                                             </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
+                                            <VCol cols="12" md="12">
+                                                <VTextarea
                                                     v-model="address"
+                                                    rows="3"
                                                     :rules="[requiredValidator]"
                                                     label="Address"
                                                 />

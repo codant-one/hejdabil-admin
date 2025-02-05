@@ -21,6 +21,10 @@ class Supplier extends Model
         return $this->hasMany(Client::class, 'supplier_id', 'id');
     }
 
+    public function billings() {
+        return $this->hasMany(Billing::class, 'supplier_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeClientsCount($query)
     {

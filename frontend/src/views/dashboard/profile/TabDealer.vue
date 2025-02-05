@@ -284,10 +284,10 @@ const onSubmit = () => {
 
                 <VCardText class="tw-bg-tertiary p-0">
                     <VRow no-gutters>
-                        <VCol cols="12" md="4" class="d-flex col-logo">
+                        <VCol cols="12" md="3" class="d-flex col-logo">
                             <img :src="logo ?? logo_" class="logo-store"/>
                         </VCol>
-                        <VCol cols="12" md="8" class="d-flex">
+                        <VCol cols="12" md="9" class="d-flex">
                             <VCardItem class="px-0">
                                 <span class="store-name pb-3">{{ company }}</span>
                             </VCardItem>
@@ -328,7 +328,7 @@ const onSubmit = () => {
                                     @change="onImageSelected"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="organization_number"
                                     label="Organization number"
@@ -336,9 +336,10 @@ const onSubmit = () => {
                                     disabled
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
-                                <VTextField
+                            <VCol cols="12" md="12">
+                                <VTextarea
                                     v-model="address"
+                                    rows="3"
                                     :rules="[requiredValidator]"
                                     label="Address"
                                 />
@@ -488,7 +489,7 @@ const onSubmit = () => {
         max-width: 173.96px;
         border-radius: 16px;
         border: 1px solid #E1E1E1;
-        margin-top: -53%;
+        margin-top: -70%;
         margin-left: 10%;
         z-index: 9999;
         background-color: #F5F5F5;

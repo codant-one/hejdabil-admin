@@ -20,7 +20,8 @@ use App\Http\Controllers\{
     SupplierController,
     ClientController,
     TypeController,
-    InvoiceController
+    InvoiceController,
+    BillingController
 };
 
 /*
@@ -67,6 +68,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('clients', ClientController::class);
     Route::apiResource('types', TypeController::class);
     Route::apiResource('invoices', InvoiceController::class);
+    Route::apiResource('billings', BillingController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -96,6 +98,12 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::get('/', [UserMenuController::class, 'index']);
         Route::post('/add', [UserMenuController::class, 'store']);
         Route::post('/update', [UserMenuController::class, 'update']);
+    });
+
+    //Billing
+    Route::group(['prefix' => 'billings'], function () {
+        Route::get('/updateState/{id}', [BillingController::class, 'updateState']);
+        Route::get('/data/all', [BillingController::class, 'all']);
     });
 
 });

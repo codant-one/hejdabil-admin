@@ -7,6 +7,7 @@ import { RouteTransitions, Skins } from '@core/enums'
 import logo from '@images/logo.svg?raw'
 import logoWhite from '@images/logo_white.svg'
 import logoFull from '@images/logo.svg'
+import logoBlack from '@images/logo_black.png'
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
 export const { themeConfig, layoutConfig } = defineThemeConfig({
@@ -14,6 +15,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     title: import.meta.env.VITE_APP_TITLE,
     logo: h('div', { innerHTML: logo, style: 'line-height:0; color: rgb(var(--v-global-theme-primary))' }),
     logoFull: h('img', { src: logoFull, style: 'width: 150px' }),
+    logoBlack: h('img', { src: logoBlack, style: 'width: 200px' }),
     logoWhite: h('img', { src: logoWhite, style: 'width: 40px' }),
     contentWidth: ContentWidth.Boxed,
     contentLayoutNav: AppContentLayoutNav.Vertical,

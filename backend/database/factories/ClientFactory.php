@@ -23,9 +23,6 @@ class ClientFactory extends Factory
 
     public function definition(): array
     {
-        $mod_create_date = strtotime(Carbon::now()->format('Y-m-d H:m:s')."- ".rand(1,60)." days");
-        $created_at = date("Y-m-d H:m:s", $mod_create_date);
-
         return [
             'supplier_id' => rand(1,15),
             'fullname' => $this->faker->name,

@@ -13,8 +13,8 @@ class Invoice extends Model
 
     protected $guarded = [];
 
-     /**** Relationship ****/
-     public function type() {
+    /**** Relationship ****/
+    public function type() {
         return $this->belongsTo(Type::class, 'type_id', 'id');
     }
 

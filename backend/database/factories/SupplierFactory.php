@@ -23,9 +23,6 @@ class SupplierFactory extends Factory
 
     public function definition(): array
     {
-        $mod_create_date = strtotime(Carbon::now()->format('Y-m-d H:m:s')."- ".rand(1,60)." days");
-        $created_at = date("Y-m-d H:m:s", $mod_create_date);
-
         return [
             'company' => $this->faker->company,
             'organization_number' => $this->faker->buildingNumber,
