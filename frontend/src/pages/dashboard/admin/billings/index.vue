@@ -163,7 +163,7 @@ const updateState = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice deleted!' : res.data.message,
+    message: res.data.success ? 'Invoice updated!' : res.data.message,
     show: true
   }
 
