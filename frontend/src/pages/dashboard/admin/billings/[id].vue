@@ -356,14 +356,15 @@ const download = () => {
     }
 
     body {
-      background: none !important;
+    //   background: none !important;
+      background-color:  #F2EFFF;
     }
 
     @page { margin: 0; size: auto; }
 
     .layout-page-content,
     .v-row,
-    .v-col-md-9 {
+    .v-col-md-10 {
       padding: 0;
       margin: 0;
     }
@@ -398,3 +399,8 @@ const download = () => {
     }
 }
 </style>
+<route lang="yaml">
+    meta:
+        action: view
+        subject: billing
+</route>

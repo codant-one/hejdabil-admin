@@ -103,8 +103,10 @@ class Billing extends Model
             array_push($details, $array);
         }
 
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+
         $billing = self::create([
-            'supplier_id' => $request->supplier_id === 'null' ? null : $request->supplier_id,
+            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
             'invoice_date' =>  $request->invoice_date,

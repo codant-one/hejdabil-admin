@@ -333,7 +333,7 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','billing')"
+                v-if="$can('create','billing') && clients.length > 0"
                 prepend-icon="tabler-plus"
                 @click="addInvoice">
                   Add invoice
@@ -481,7 +481,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!billings.length">
               <tr>
                 <td
-                  colspan="7"
+                  colspan="8"
                   class="text-center">
                   Data not available
                 </td>
