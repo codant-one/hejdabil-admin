@@ -46,19 +46,32 @@ const printInvoice = () => {
 }
 
 const download = () => {
-  const element = document.getElementById('invoice-detail');
+    const element = document.getElementById('invoice-detail');
 
-  const options = {
-    margin: 0,
-    filename: 'invoice-' + Number(route.params.id) + '.pdf',
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 4, allowTaint: true },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-    pagebreak: { mode: 'css' } 
-  };
+    if (!element) {
+        console.error('No se encontró el elemento con ID "invoice-detail"');
+        return;
+    }
 
-  console.log('aaa', element)
-  html2pdf().set(options).from(element).save();
+    const clonedElement = element.cloneNode(true);
+    document.body.appendChild(clonedElement);
+
+    const options = {
+        margin: 0,
+        filename: `invoice-${Number(route.params.id)}.pdf`,
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 4, allowTaint: true, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: 'css' }
+    };
+
+    html2pdf()
+        .set(options)
+        .from(clonedElement)
+        .save()
+        .then(() => {
+        document.body.removeChild(clonedElement);
+        });
 };
 </script>
 
@@ -123,10 +136,10 @@ const download = () => {
                 <p class="mb-0">
                    E-mail: {{ invoice.client.email }}
                 </p>
-                <p class="mb-0">
+                <p class="mb-0" v-if="invoice.client.organization_number">
                     Organization number: {{ invoice.client.organization_number ?? '' }}
                 </p>
-                <p class="mb-0">
+                <p class="mb-0" v-if="invoice.client.reference">
                     Reference: {{ invoice.client.reference ?? '' }}
                 </p>    
                 <p class="mt-5 mb-0 text-sm">After the due date, interest is charged according to the Interest Act.</p>           
@@ -357,14 +370,14 @@ const download = () => {
 
     body {
     //   background: none !important;
-      background-color:  #F2EFFF;
+      background:  #F2EFFF !important;
     }
 
     @page { margin: 0; size: auto; }
 
     .layout-page-content,
     .v-row,
-    .v-col-md-10 {
+    .v-col-md-10, .v-col-md-3 {
       padding: 0;
       margin: 0;
     }
