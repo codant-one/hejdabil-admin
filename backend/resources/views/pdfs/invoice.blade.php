@@ -11,7 +11,7 @@
             font-family: 'Gelion Regular';
             font-style: normal;
             font-weight: 400;
-            src: url('{{ asset('fonts/Gelion-Regular.ttf') }}') format('truetype');
+            src: url('{{ asset('fonts/gelion-Regular.ttf') }}') format('truetype');
             font-display: swap;
         }
 
