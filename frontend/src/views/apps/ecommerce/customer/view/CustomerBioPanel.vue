@@ -152,7 +152,7 @@ async function fetchData() {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Street:
+                  City:
                   <span class="text-body-2">
                     {{ props.customerData.street }}
                   </span>

@@ -83,7 +83,6 @@ trait UserHelper
 
     public static function deleteUser($id) {
         $user = self::find($id);
-        $user->roles()->detach();
         $user->delete();
     }
 

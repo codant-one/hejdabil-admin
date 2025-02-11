@@ -101,6 +101,11 @@ async function fetchData() {
     isRequestOngoing.value = false
 }
 
+const resetAvatar = () => {
+  logo.value = null
+  logoOld.value = null
+}
+
 const resizeImage = function(file, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -168,7 +173,6 @@ const onImageSelected = event => {
         logo.value = 'data:image/jpeg;base64,' + r
     })
 }
-
 
 const onSubmit = () => {
     
@@ -240,7 +244,6 @@ const onSubmit = () => {
             }
     })
 }
-
 </script>
 
 <template>
@@ -284,15 +287,15 @@ const onSubmit = () => {
 
                 <VCardText class="tw-bg-tertiary p-0">
                     <VRow no-gutters>
-                        <VCol cols="12" md="3" class="d-flex col-logo">
-                            <img :src="logo ?? logo_" class="logo-store"/>
+                        <VCol cols="12" md="12" class="d-flex col-logo">
+                            <VImg :src="logo ?? logo_" class="logo-store" contain/>
                         </VCol>
-                        <VCol cols="12" md="9" class="d-flex">
-                            <VCardItem class="px-0">
+                        <VCol cols="12" md="12" class="py-0 info-logo-store">
+                            <VCardItem class="info-store">
                                 <span class="store-name pb-3">{{ company }}</span>
                             </VCardItem>
-                            <VCardItem class="px-0" v-if="address !== null">
-                                <span class="store-address pb-3 ms-5">
+                            <VCardItem class="info-store" v-if="address !== null">
+                                <span class="store-address pb-3">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="18" viewBox="0 0 15 18" fill="none">
                                         <path fill-rule="evenodd" clip-rule="evenodd" d="M3.25736 3.25736C4.38258 2.13214 5.9087 1.5 7.5 1.5C9.0913 1.5 10.6174 2.13214 11.7426 3.25736C12.8679 4.38258 13.5 5.9087 13.5 7.5C13.5 9.82354 11.9882 12.0782 10.3305 13.8279C9.51704 14.6866 8.701 15.3896 8.08749 15.8781C7.85916 16.0599 7.65973 16.2114 7.5 16.3294C7.34027 16.2114 7.14084 16.0599 6.91251 15.8781C6.299 15.3896 5.48296 14.6866 4.66946 13.8279C3.0118 12.0782 1.5 9.82354 1.5 7.5C1.5 5.9087 2.13214 4.38258 3.25736 3.25736ZM7.08357 17.8738C7.08379 17.8739 7.08397 17.874 7.5 17.25L7.91603 17.874C7.6641 18.042 7.33549 18.0417 7.08357 17.8738ZM7.08357 17.8738L7.5 17.25C7.91603 17.874 7.91678 17.8735 7.91699 17.8734L7.91857 17.8723L7.92357 17.869L7.94076 17.8574C7.95536 17.8474 7.97619 17.8332 8.00283 17.8147C8.0561 17.7778 8.13265 17.7241 8.22916 17.6544C8.42209 17.5151 8.69523 17.3117 9.02188 17.0516C9.674 16.5323 10.5455 15.7821 11.4195 14.8596C13.1368 13.0468 15 10.4265 15 7.5C15 5.51088 14.2098 3.60322 12.8033 2.1967C11.3968 0.790176 9.48912 0 7.5 0C5.51088 0 3.60322 0.790176 2.1967 2.1967C0.790176 3.60322 0 5.51088 0 7.5C0 10.4265 1.8632 13.0468 3.58054 14.8596C4.45454 15.7821 5.326 16.5323 5.97812 17.0516C6.30477 17.3117 6.57791 17.5151 6.77084 17.6544C6.86735 17.7241 6.9439 17.7778 6.99717 17.8147C7.02381 17.8332 7.04464 17.8474 7.05924 17.8574L7.07643 17.869L7.08143 17.8723L7.08357 17.8738ZM6 7.5C6 6.67157 6.67157 6 7.5 6C8.32843 6 9 6.67157 9 7.5C9 8.32843 8.32843 9 7.5 9C6.67157 9 6 8.32843 6 7.5ZM7.5 4.5C5.84315 4.5 4.5 5.84315 4.5 7.5C4.5 9.15685 5.84315 10.5 7.5 10.5C9.15685 10.5 10.5 9.15685 10.5 7.5C10.5 5.84315 9.15685 4.5 7.5 4.5Z" fill="white"/>
                                     </svg>
@@ -305,7 +308,29 @@ const onSubmit = () => {
             </VCard>
         </VCol>
         <VCol cols="12">
-            <VCard title="Edit company information">
+            <VCard>
+                <VCardTitle class="px-6 py-5 d-flex justify-content-center align-center">
+                    <span>Edit company information</span>
+                    <VBtn
+                        icon
+                        variant="text"
+                        color="primary"
+                        class="ms-1"
+                        size="small"
+                        @click="resetAvatar"
+                        >
+                            <VTooltip
+                                open-on-focus
+                                location="top"
+                                activator="parent">
+                                Delete logo
+                            </VTooltip>
+                            <VIcon
+                                icon="tabler-camera-x"
+                                size="24"
+                            />
+                        </VBtn>
+                </VCardTitle>
                 <VCardText>
                     <VForm
                         ref="refVForm"
@@ -326,6 +351,7 @@ const onSubmit = () => {
                                     accept="image/png, image/jpeg, image/bmp, image/webp"
                                     prepend-icon="tabler-camera"
                                     @change="onImageSelected"
+                                    @click:clear="resetAvatar"
                                 />
                             </VCol>
                             <VCol cols="12" md="12">
@@ -348,7 +374,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="street"
                                     :rules="[requiredValidator]"
-                                    label="Street"
+                                    label="City"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -483,16 +509,29 @@ const onSubmit = () => {
         height: 170px;
     }
 
+    .info-logo-store {
+        display: flex;
+        padding-left: 14rem !important;
+    }
+
+    .info-store {
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 24px;
+        padding-bottom: 24px;
+    }
+
     .logo-store {
         width: 173.96px;
         height: 173.96px;
         max-width: 173.96px;
         border-radius: 16px;
         border: 1px solid #E1E1E1;
-        margin-top: -70%;
-        margin-left: 10%;
+        top: 10%;
+        left: 3%;
         z-index: 9999;
         background-color: #F5F5F5;
+        position: absolute;
     }
 
     .tw-bg-tertiary {
@@ -514,12 +553,32 @@ const onSubmit = () => {
         font-weight: 600;
         line-height: 16px;
         color: white;
+        margin-inline-start: 20px;
     }
 
     @media (max-width: 776px) {
+
+        .info-logo-store {
+            margin-top: 8%;
+            margin-bottom: 2%;
+            flex-direction: column;
+            padding-left: 1rem !important;
+        }
+
         .logo-store {
-            margin-top: -39%;
-            margin-left: 8%;
+            top: 5%;
+            left:5%;
+        }
+
+        .info-store {
+            padding-left: 0;
+            padding-right: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        .store-address {
+            margin-inline-start: 0;
         }
     }
 </style>

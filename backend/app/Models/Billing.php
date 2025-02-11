@@ -4,9 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+
+use Carbon\Carbon;
+use PDF;
+
+use App\Models\Invoice;
 
 class Billing extends Model
 {
@@ -29,17 +36,23 @@ class Billing extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->whereHas('client', function ($q) use ($search) {
-            $q->where(function ($query) use ($search) {
-                $query->where('fullname', 'LIKE', '%' . $search . '%');
-            });
-        })->orWhereHas('supplier', function ($q) use ($search) {
-            $q->whereHas('user', function ($q) use ($search) {
-                $q->where(function ($query) use ($search) {
-                    $query->where('name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('last_name', 'LIKE', '%' . $search . '%')
-                            ->orWhere('email', 'LIKE', '%' . $search . '%');
-                });
+        $query->where(function($query) use ($search) {
+            $query->whereHas('client', function ($q) use ($search) {
+                $q->withTrashed()
+                  ->where(function ($query) use ($search) {
+                      $query->where('fullname', 'LIKE', '%' . $search . '%');
+                  });
+            })
+            ->orWhereHas('supplier', function ($q) use ($search) {
+                $q->withTrashed()
+                  ->whereHas('user', function ($q) use ($search) {
+                      $q->withTrashed()
+                        ->where(function ($query) use ($search) {
+                            $query->where('name', 'LIKE', '%' . $search . '%')
+                                  ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                                  ->orWhere('email', 'LIKE', '%' . $search . '%');
+                        });
+                  });
             });
         });
     }
@@ -116,9 +129,28 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
+            'note' => $request->note === 'null' ? null : $request->note,
             'detail' => json_encode($details, true)
         ]);
+
+        $date = Carbon::now()->timestamp;
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->update();
         
+        self::sendMail($billing); 
+
         return $billing;
     }
 
@@ -144,5 +176,39 @@ class Billing extends Model
             $billing = self::find($id);
             $billing->delete();
         }
+    }
+
+    public static function sendMail($billing) {
+      
+        $billing = self::with(['client'])->find($billing->id);
+
+        $data = [
+            'user' => $billing->client->fullname,
+            'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
+            'billing' => $billing,
+            'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
+            'buttonText' => 'Download',
+            'pdfFile' => asset('storage/'.$billing->file)
+        ];
+
+        $clientEmail = $billing->client->email;
+        $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+            
+        try {
+            \Mail::send(
+                'emails.invoices.notifications'
+                , $data
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
+
+            return true;
+        } catch (\Exception $e){
+            Log::info("Error mail => ". $e);
+            return false;
+        }
+        
+         
     }
 }

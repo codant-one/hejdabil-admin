@@ -110,6 +110,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
 
 //Public Endpoints
 Route::get('emails', [TestingController::class , 'emails'])->name('emails');
+Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);

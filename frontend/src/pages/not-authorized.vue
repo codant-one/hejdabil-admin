@@ -3,7 +3,7 @@
 import { initialAbility } from '@/plugins/casl/ability'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
-// import { useAuthStores } from '@/stores/useAuth'
+import { useAuthStores } from '@/stores/useAuth'
 
 import page401 from '@images/pages/401.png'
 import miscMaskDark from '@images/pages/misc-mask-dark.png'
@@ -12,7 +12,7 @@ import miscMaskLight from '@images/pages/misc-mask-light.png'
 const router = useRouter()
 const ability = useAppAbility()
 const authThemeMask = useGenerateImageVariant(miscMaskLight, miscMaskDark)
-// const authStores = useAuthStores()
+const authStores = useAuthStores()
 
 const back = function(){
   const abilities = localStorage.getItem('userAbilities')
@@ -29,22 +29,22 @@ const back = function(){
     router.replace('/info')
   } else {
 
-    // authStores.logout()
-    //     .then(response => {
-    //         // Remove "user_data" from localStorage
-    //         localStorage.removeItem('user_data')
+    authStores.logout()
+      .then(response => {
+        // Remove "user_data" from localStorage
+        localStorage.removeItem('user_data')
 
-    //         // Remove "accessToken" from localStorage
-    //         localStorage.removeItem('accessToken')
-            
-    //         // Remove "userAbilities" from localStorage
-    //         localStorage.removeItem('userAbilities')
+        // Remove "accessToken" from localStorage
+        localStorage.removeItem('accessToken')
+        
+        // Remove "userAbilities" from localStorage
+        localStorage.removeItem('userAbilities')
 
-    //         // Reset ability to initial ability
-    //         ability.update(initialAbility)
-    //         router.push('/login')
+        // Reset ability to initial ability
+        ability.update(initialAbility)
+        router.push('/login')
 
-    //     })
+      })
   }
 }
 </script>

@@ -210,7 +210,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="street"
                                                     :rules="[requiredValidator]"
-                                                    label="Street"
+                                                    label="City"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">

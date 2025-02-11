@@ -67,11 +67,12 @@ const invoice = ref({
     client_id: null,
     supplier_id: null,
     invoice_date: null,
-    due_date:null,
+    due_date: null,
     subtotal: 0,
     tax: 0,
     total: 0,
     reference: null,
+    note: null,
     details: props.data
 })
 
@@ -97,14 +98,46 @@ watch(() => invoice.value.tax, (val) => {
     invoice.value.subtotal = subtotal.value
 })
 
+watch(() => invoice.value.days, () => {
+    calculateDueDate()
+})
+
+watch(() => invoice.value.invoice_date, () => {
+    calculateDueDate()
+})
+
 watchEffect(fetchData)
 
 async function fetchData() {
-    if(props.role === 'Supplier')
+    const invoice_date = new Date();
+    const year = invoice_date.getFullYear();
+    const month = String(invoice_date.getMonth() + 1).padStart(2, '0');
+    const day = String(invoice_date.getDate()).padStart(2, '0');
+
+    invoice.value.invoice_date = `${year}-${month}-${day}`
+
+    if(props.role === 'Supplier' && supplier.value.billings)
         invoice.value.id = supplier.value.billings.length + 1
     else
         invoice.value.id = props.invoice_id + 1
 }
+
+const calculateDueDate = () => {
+    if (invoice.value.invoice_date && invoice.value.days) {
+        const invoiceDateUTC = new Date(`${invoice.value.invoice_date}T00:00:00Z`);
+
+        const daysToAdd = parseInt(invoice.value.days);
+        const dueDateUTC = new Date(invoiceDateUTC);
+        dueDateUTC.setUTCDate(invoiceDateUTC.getUTCDate() + daysToAdd);
+
+        const year = dueDateUTC.getUTCFullYear();
+        const month = String(dueDateUTC.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(dueDateUTC.getUTCDate()).padStart(2, '0');
+        const formattedDueDate = `${year}-${month}-${day}`;
+
+        invoice.value.due_date = formattedDueDate;
+    }
+};
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -118,33 +151,14 @@ const startDateTimePickerConfig = computed(() => {
     const config = {
         dateFormat: 'Y-m-d',
         position: 'auto right',
-        disable: [
-        {
+        disable: [{
             from: formatToISO(tomorrow),
             to: '2099-12-31' // Una fecha futura lejana para bloquear indefinidamente
-        }
-        ]
+        }]
     }
 
     return config
 })
-
-const endDateTimePickerConfig = computed(() => {
-    const now = new Date();
-
-    const formatToISO = (date) => date.toISOString().split('T')[0];
-
-    return {
-        dateFormat: 'Y-m-d',
-        position: 'auto right',
-        disable: [
-            {
-                from: '1900-01-01', // Fecha muy antigua para bloquear todo antes de hoy
-                to: formatToISO(new Date(now.setDate(now.getDate() - 1))) // Hasta ayer
-            }
-        ]
-    };
-});
 
 const selectSupplier = async() => {
 
@@ -170,27 +184,9 @@ const selectClient = async() => {
         invoice.value.reference = client.value.reference
     } else 
         client.value = null
+
+    emit('data', invoice.value)
 }
-
-const resolvePrice = (data) => {
-    const priceMapping = {
-        video_id: 'videos',
-        title_optimization_id: 'optimizations',
-        ia_image_id: 'images',
-        redaction_id: 'redactions',
-        task_id: 'tasks'
-    };
-
-    const key = Object.keys(priceMapping).find(k => data[k] !== null);
-
-    if (key) {
-        const priceKey = priceMapping[key];
-        total.value += price;
-        return price
-    }
-
-    return 0;
-};
 
 // 👉 Add item function
 const addItem = () => {
@@ -318,20 +314,16 @@ const inputData = () => {
 
                     <span style="min-inline-size: 10.5rem;">
                         <AppDateTimePicker
-                            :key="JSON.stringify(endDateTimePickerConfig)"
                             v-model="invoice.due_date"
                             density="compact"
                             placeholder="YYYY-MM-DD"
-                            :rules="[requiredValidator]"
-                            :config="endDateTimePickerConfig"
-                            @input="inputData"
-                            clearable
+                            readonly
                         />
                     </span>
                 </div>
 
                 <!-- 👉 Days -->
-                <div class="d-flex align-center justify-sm-end mb-0 mt-1">
+                <div class="d-flex align-center justify-sm-end mb-0 mt-2">
                     <span class="me-2">
                         Payment Terms:
                     </span>
@@ -343,6 +335,17 @@ const inputData = () => {
                             label="Days"
                             :min="1"
                         />
+                    </span>
+                </div>
+
+                <div class="d-flex flex-column align-center justify-sm-end mb-0 mt-2" v-if="client">
+                    <span class="text-h6 font-weight-medium w-100 my-3">
+                        Billing Address
+                    </span>
+                    <span class="d-flex flex-column w-100">
+                        <span class="font-weight-bold">{{ client.address }}</span>
+                        <span>{{ client.street }}</span>
+                        <span>{{ client.postal_code }}</span>
                     </span>
                 </div>
             </div>
@@ -375,19 +378,9 @@ const inputData = () => {
                     class="mb-3"
                     style="width: 400px"
                     :rules="[requiredValidator]"
-                      @update:modelValue="selectClient"
+                    @update:modelValue="selectClient"
                     clearable
                 />
-            </div>
-            <div class="mt-4 my-sm-4" style="width: 400px" v-if="client">
-                <h6 class="text-h6 font-weight-medium mb-6">
-                    Billing Address
-                </h6>
-                <span class="d-flex flex-column">
-                    <span class="font-weight-bold">{{ client.address }}</span>
-                    <span>{{ client.street }}</span>
-                    <span>{{ client.postal_code }}</span>
-                </span>
             </div>
         </VCardText>
 
@@ -531,6 +524,18 @@ const inputData = () => {
                     <span v-else> ?? </span>
                 </VCol>
             </VRow>
+        </VCardText>
+
+        <VCardText class="mb-sm-4 px-0">
+            <p class="font-weight-medium text-sm text-high-emphasis mb-2">
+                Note:
+            </p>
+            <VTextarea
+                v-model="invoice.note"
+                placeholder="Write a note here (optional)..."
+                @input="inputData"
+                :rows="2"
+            />
         </VCardText>
     </VCard>
 </template>

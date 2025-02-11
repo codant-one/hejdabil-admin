@@ -1,9 +1,11 @@
 <script setup>
 
+import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
 
+const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
 const emitter = inject("emitter")
 
@@ -113,51 +115,52 @@ const onSubmit = () => {
 
     if (isValid) {
         
-        let formData = new FormData()
+      let formData = new FormData()
 
-        formData.append('client_id', invoice.value.client_id)
-        formData.append('due_date', invoice.value.due_date)
-        formData.append('invoice_id', invoice.value.id)
-        formData.append('invoice_date', invoice.value.invoice_date)
-        formData.append('subtotal', invoice.value.subtotal)
-        formData.append('supplier_id', invoice.value.supplier_id)
-        formData.append('tax', invoice.value.tax)
-        formData.append('total', invoice.value.total)
-        formData.append('reference', invoice.value.reference)
-        formData.append('payment_terms', invoice.value.days)
+      formData.append('client_id', invoice.value.client_id)
+      formData.append('due_date', invoice.value.due_date)
+      formData.append('invoice_id', invoice.value.id)
+      formData.append('invoice_date', invoice.value.invoice_date)
+      formData.append('subtotal', invoice.value.subtotal)
+      formData.append('supplier_id', invoice.value.supplier_id)
+      formData.append('tax', invoice.value.tax)
+      formData.append('total', invoice.value.total)
+      formData.append('note', invoice.value.note)
+      formData.append('reference', invoice.value.reference)
+      formData.append('payment_terms', invoice.value.days)
 
-        invoice.value.details.forEach((element) => {
-            formData.append(`details[]`, JSON.stringify(element));
-        });
+      invoice.value.details.forEach((element) => {
+          formData.append(`details[]`, JSON.stringify(element));
+      });
 
-        isRequestOngoing.value = true
+      isRequestOngoing.value = true
 
-        billingsStores.addBilling(formData)
-            .then((res) => {
-                let data = {
-                    message: 'Invoice created successfully',
-                    error: false
-                }
-                
-                isRequestOngoing.value = false
-                
-                router.push({ name : 'dashboard-admin-billings'})
-                emitter.emit('toast', data)
-            })
-            .catch((err) => {
-                advisor.value.show = true
-                advisor.value.type = 'error'
-                advisor.value.message = Object.values(err.message).flat().join('<br>')
+      billingsStores.addBilling(formData)
+          .then((res) => {
+              let data = {
+                  message: 'Invoice created successfully',
+                  error: false
+              }
+              
+              isRequestOngoing.value = false
+              
+              router.push({ name : 'dashboard-admin-billings'})
+              emitter.emit('toast', data)
+          })
+          .catch((err) => {
+              advisor.value.show = true
+              advisor.value.type = 'error'
+              advisor.value.message = Object.values(err.message).flat().join('<br>')
 
-                setTimeout(() => { 
-                    advisor.value.show = false
-                    advisor.value.type = ''
-                    advisor.value.message = ''
-                }, 3000)
-            
-                isRequestOngoing.value = false
-            })
-        }
+              setTimeout(() => { 
+                  advisor.value.show = false
+                  advisor.value.type = ''
+                  advisor.value.message = ''
+              }, 3000)
+          
+              isRequestOngoing.value = false
+          })
+      }
     })
 }
 

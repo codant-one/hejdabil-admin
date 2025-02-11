@@ -106,8 +106,8 @@ const download = () => {
         md="10"
       >
         <VCard class="pa-10" id="invoice-detail">
-          <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
-            <div class="ma-sm-4">
+          <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
+            <div class="ma-sm-4 d-flex flex-column">
               <div class="d-flex align-center mb-6">
                 <VNodeRenderer
                     v-if="!invoice.supplier"
@@ -128,65 +128,61 @@ const download = () => {
                 </div>
               </div>
               <p class="mb-0">
-                    Client No: {{ invoice.client.id }}
-                </p>
-                <p class="mb-0">
-                    Name:  {{ invoice.client.fullname }}
-                </p>
-                <p class="mb-0">
-                   E-mail: {{ invoice.client.email }}
-                </p>
-                <p class="mb-0" v-if="invoice.client.organization_number !== null">
-                    Organization number: {{ invoice.client.organization_number ?? '' }}
-                </p>
-                <p class="mb-0" v-if="invoice.reference !== null">
-                    Reference: {{ invoice.reference ?? '' }}
-                </p>    
-                <p class="mt-5 mb-0 text-sm">After the due date, interest is charged according to the Interest Act.</p>           
+                Client No: {{ invoice.client.id }}
+              </p>
+              <p class="mb-0">
+                  Name:  {{ invoice.client.fullname }}
+              </p>
+              <p class="mb-0">
+                  E-mail: {{ invoice.client.email }}
+              </p>
+              <p class="mb-0" v-if="invoice.client.organization_number !== null">
+                  Organization number: {{ invoice.client.organization_number ?? '' }}
+              </p>
+              <p class="mb-0" v-if="invoice.reference !== null">
+                  Reference: {{ invoice.reference ?? '' }}
+              </p>    
+              <p class="mt-auto mb-0 text-sm">After the due date, interest is charged according to the Interest Act.</p>           
             </div>
 
             <div class="mt-4 ma-sm-4 text-right">
               <h6 class="font-weight-medium text-h6">
-                Invoice No #{{ invoice.id }}
+                Invoice No #{{ invoice.invoice_id }}
               </h6>
 
               <!-- 👉 Issue Date -->
               <p class="mt-12 mb-0">
-                <span>Invoice Date </span>
-                <span>{{ new Date(invoice.invoice_date).toLocaleDateString('en-GB') }}</span>
+                <span>Invoice Date: </span>
+                <span>{{ new Date(`${invoice.invoice_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
               </p>
 
               <!-- 👉 Due Date -->
               <p class="mb-0">
                 <span>Due date: </span>
-                <span>{{ new Date(invoice.due_date).toLocaleDateString('en-GB') }}</span>
+                <span>{{ new Date(`${invoice.due_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
               </p>
+
               <p class="mb-0">
                 <span>Payment Terms: </span>
                 <span>{{ invoice.payment_terms }}</span>
               </p>
-            </div>
-          </VCardText>
 
-          <!-- 👉 Payment Details -->
-          <VCardText class="d-flex justify-space-between flex-wrap flex-column flex-sm-row print-row px-0">
-            <div class="my-sm-4"></div>
-
-            <div class="mt-4 my-sm-4">
-                <h6 class="text-h6 font-weight-medium mb-6">
+              <p class="mb-0 mt-5">
+                <span class="text-h6 font-weight-medium mb-6">
                     Billing Address
-                </h6>
-                <span class="d-flex flex-column">
-                    <span class="font-weight-bold">{{ invoice.client.address }}</span>
-                    <span>{{ invoice.client.street }}</span>
-                    <span>{{ invoice.client.postal_code }}</span>
                 </span>
+                <span class="d-flex flex-column">
+                  <span class="font-weight-bold">{{ invoice.client.address }}</span>
+                  <span>{{ invoice.client.street }}</span>
+                  <span>{{ invoice.client.postal_code }}</span>
+                </span>
+              </p>
             </div>
           </VCardText>
 
           <!-- 👉 Table -->
-          <VTable class="invoice-preview-table border" style="border-radius: 8px !important">
-            <thead>
+          <VTable class="invoice-preview-table border mt-5" style="border-radius: 8px !important">
+            <thead class="invoice-background">
               <tr>
                 <template v-for="(invoice, index) in types" :key="invoice.id">
                     <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(types.length - 1)) }%;`">
@@ -210,7 +206,6 @@ const download = () => {
           <!-- Total -->
           <VCardText class="d-flex justify-space-between flex-column flex-sm-row print-row px-0">
             <VSpacer />
-
             <div class="my-2">
               <table>
                 <tbody>
@@ -246,71 +241,82 @@ const download = () => {
             </div>
           </VCardText>
 
-          <VDivider class="mt-4 mb-3" />
+          <VDivider />
          
-          <VCardText class="mb-sm-4 px-0">
+          <VCardText class="px-0 print-column">
             <VRow>
-                <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
-                        Address
-                    </span>
-                    <span  v-if="!invoice">
-                        Hejdå Bil AB
-                        Abrahamsbergsvägen 47
-                        16830 BROMMA
-                    </span>
-                    <span v-else class="d-flex flex-column">
-                        <span>{{ invoice.supplier.address }}</span>
-                        <span>{{ invoice.supplier.street }}</span>
-                        <span>{{ invoice.supplier.postal_code }}</span>
-                    </span>
-                    <span class="me-2 text-h6 mt-2">
-                        Registered office of the company
-                    </span>
-                    <span> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2">
-                        Swish
-                    </span>
-                    <span> ?? </span>
-                </VCol>
-                <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
-                        Org.nr.
-                    </span>
-                    <span v-if="!invoice.supplier"> 559374-0268 </span>
-                    <span v-else> {{ invoice.supplier.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2">
-                        VAT reg. no.
-                    </span>
-                    <span v-if="!invoice.supplier"> SE559374026801 ?? </span>
-                    <span v-else> ?? </span>
-                </VCol>
-                <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
-                        Website
-                    </span>
-                    <span v-if="!invoice.supplier"> www.hejdabil.se </span>
-                    <span v-else> {{ invoice.supplier.link }} </span>
-                    <span class="me-2 text-h6 mt-2">
-                        Company e-mail
-                    </span>
-                    <span v-if="!invoice.supplier"> info@hejdabil.se </span>
-                    <span v-else> {{ invoice.supplier.user.email }} </span>
-                </VCol>
-                <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
-                        Bank account number
-                    </span>
-                    <span v-if="!invoice.supplier"> 9960 1821054721 </span>
-                    <span v-else> {{ invoice.supplier.account_number }} </span>
-                    <span class="me-2 text-h6 mt-2">
-                        Bankgiro
-                    </span>
-                    <span v-if="!invoice.supplier"> 5886-4976 </span>
-                    <span v-else> ?? </span>
-                </VCol>
+              <VCol cols="12" md="3" class="d-flex flex-column">
+                  <span class="me-2 text-h6">
+                      Address
+                  </span>
+                  <span  v-if="!invoice">
+                      Hejdå Bil AB
+                      Abrahamsbergsvägen 47
+                      16830 BROMMA
+                  </span>
+                  <span v-else class="d-flex flex-column">
+                      <span>{{ invoice.supplier.address }}</span>
+                      <span>{{ invoice.supplier.street }}</span>
+                      <span>{{ invoice.supplier.postal_code }}</span>
+                  </span>
+                  <span class="me-2 text-h6 mt-2">
+                      Registered office of the company
+                  </span>
+                  <span> Stockholm, Sweden </span>
+                  <span class="me-2 text-h6 mt-2">
+                      Swish
+                  </span>
+                  <span> ?? </span>
+              </VCol>
+              <VCol cols="12" md="3" class="d-flex flex-column">
+                  <span class="me-2 text-h6">
+                      Org.nr.
+                  </span>
+                  <span v-if="!invoice.supplier"> 559374-0268 </span>
+                  <span v-else> {{ invoice.supplier.organization_number }} </span>
+                  <span class="me-2 text-h6 mt-2">
+                      VAT reg. no.
+                  </span>
+                  <span v-if="!invoice.supplier"> SE559374026801 ?? </span>
+                  <span v-else> ?? </span>
+              </VCol>
+              <VCol cols="12" md="3" class="d-flex flex-column">
+                  <span class="me-2 text-h6">
+                      Website
+                  </span>
+                  <span v-if="!invoice.supplier"> www.hejdabil.se </span>
+                  <span v-else> {{ invoice.supplier.link }} </span>
+                  <span class="me-2 text-h6 mt-2">
+                      Company e-mail
+                  </span>
+                  <span v-if="!invoice.supplier"> info@hejdabil.se </span>
+                  <span v-else> {{ invoice.supplier.user.email }} </span>
+              </VCol>
+              <VCol cols="12" md="3" class="d-flex flex-column">
+                  <span class="me-2 text-h6">
+                      Bank account number
+                  </span>
+                  <span v-if="!invoice.supplier"> 9960 1821054721 </span>
+                  <span v-else> {{ invoice.supplier.account_number }} </span>
+                  <span class="me-2 text-h6 mt-2">
+                      Bankgiro
+                  </span>
+                  <span v-if="!invoice.supplier"> 5886-4976 </span>
+                  <span v-else> ?? </span>
+              </VCol>
             </VRow>
-        </VCardText>
+          </VCardText>
+
+          <VDivider v-if="invoice.note"/>
+
+          <VCardText class="px-0" v-if="invoice.note">
+            <div class="d-flex">
+              <h6 class="text-base font-weight-medium me-1">
+                Note:
+              </h6>
+              <span> {{ invoice.note }}</span>
+            </div>
+          </VCardText>
         </VCard>
       </VCol>
 
@@ -362,15 +368,31 @@ const download = () => {
     --v-table-row-height: 44px !important;
   }
 
+  .invoice-background {
+    background-color: #F2EFFF;
+  }
+
   @media print {
     .v-theme--dark {
       --v-theme-surface: 255, 255, 255;
       --v-theme-on-surface: 94, 86, 105;
     }
 
-    body {
-    //   background: none !important;
-      background:  #F2EFFF !important;
+    .invoice-background {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background-color: #F2EFFF !important;
+    }
+
+    .print-column {
+      display: flex;
+      flex-wrap: wrap;
+      page-break-inside: avoid;
+
+      .v-col-md-3 {
+        flex: 0 0 25%;
+        max-width: 25%;
+      }
     }
 
     @page { margin: 0; size: auto; }
@@ -413,7 +435,7 @@ const download = () => {
 }
 </style>
 <route lang="yaml">
-    meta:
-        action: view
-        subject: billing
+  meta:
+    action: view
+    subject: billing
 </route>

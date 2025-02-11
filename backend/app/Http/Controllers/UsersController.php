@@ -392,7 +392,10 @@ class UsersController extends Controller
 
                     $supplier->logo = $file_data['filePath'];
                     $supplier->update();
-                } 
+                } else {
+                    $supplier->logo = null;
+                    $supplier->update();
+                }
             }
 
             $userData = getUserData($user->load(['userDetail']));

@@ -478,7 +478,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!users.length">
               <tr>
                 <td
-                  colspan="7"
+                  colspan="6"
                   class="text-center text-body-1"
                 >
                   There are no users

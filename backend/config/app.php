@@ -170,6 +170,8 @@ return [
         App\Providers\RouteServiceProvider::class,
         shweshi\OpenGraph\Providers\OpenGraphProvider::class,
 
+        Barryvdh\DomPDF\ServiceProvider::class,
+
     ])->toArray(),
 
     /*
@@ -186,6 +188,7 @@ return [
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
         'OpenGraph' => shweshi\OpenGraph\Facades\OpenGraphFacade::class,
+        'PDF' => Barryvdh\DomPDF\Facade::class,
     ])->toArray(),
 
 ];

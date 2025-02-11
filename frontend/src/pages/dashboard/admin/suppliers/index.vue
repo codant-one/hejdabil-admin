@@ -344,7 +344,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!suppliers.length">
               <tr>
                 <td
-                  colspan="7"
+                  colspan="5"
                   class="text-center">
                   Data not available
                 </td>
@@ -383,7 +383,7 @@ const downloadCSV = async () => {
       <VCard title="Delete Supplier">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to delete Supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Are you sure you want to delete supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">

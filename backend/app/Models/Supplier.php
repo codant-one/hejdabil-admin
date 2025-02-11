@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Supplier extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $guarded = [];
     protected $appends = ['full_name'];
@@ -169,7 +170,10 @@ class Supplier extends Model
     /**** attributes ****/
     public function getFullNameAttribute()
     {
-        return "{$this->user->name} {$this->user->last_name}";
+        if ($this->user)
+            return "{$this->user->name} {$this->user->last_name}";
+        else
+            return "";
     }
 
 }

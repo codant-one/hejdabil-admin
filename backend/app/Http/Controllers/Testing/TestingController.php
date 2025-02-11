@@ -8,6 +8,8 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 use App\Models\User;
+use App\Models\Billing;
+use App\Models\Invoice;
 
 class TestingController extends Controller
 {
@@ -25,9 +27,13 @@ class TestingController extends Controller
         
         $buttonLink = $url;
         $title = 'testing';
-        $text =  'in inglish';
-        $buttonText = 'go to';
+        $text =  'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:';
+        $buttonText = 'Download';
         $user = $user->name . ' ' . $user->last_name;
+        $invoice= 1;
+        $billing = Billing::find(33);
+        $text_info = 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.';
+        $pdfFile = 'pdfFile';
 
         // $data = [
         //     'title' => $info['title'] ?? null,
@@ -39,13 +45,35 @@ class TestingController extends Controller
         //     'buttonText' =>  $info['buttonText'] ?? null
         // ];
 
-        return view('emails.auth.notifications', 
+        return view('emails.invoices.notifications', 
             compact(
+                'invoice',
+                'billing',
                 'buttonLink',
                 'buttonText',
                 'title',
                 'text',
-                'user'
+                'text_info',
+                'user',
+                'pdfFile'
+            )
+        );
+    }
+
+    public function pdfs() {
+
+        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(33);
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        return view('pdfs.invoice', 
+            compact(
+                'billing',
+                'types',
+                'invoices'
             )
         );
     }

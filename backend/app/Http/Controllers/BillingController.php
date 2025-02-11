@@ -33,7 +33,13 @@ class BillingController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Billing::with(['supplier', 'client', 'state'])
+            $query = Billing::with(['supplier' => function($query) {
+                                $query->withTrashed()->with(['user' => function($query) {
+                                    $query->withTrashed();
+                                }]);
+                            }, 'client' => function($query) {
+                                $query->withTrashed();
+                            }, 'state'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -48,16 +54,19 @@ class BillingController extends Controller
             $count = $query->count();
 
             $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $suppliers = Supplier::with(['user' => function($query) {
+                $query->withTrashed();
+            }])->withTrashed()->get();
             $clients = Client::when(
-                    Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
-                        return $query->where('supplier_id', Auth::user()->supplier->id);
-                    }
-            )->get();
+                Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->withTrashed()->get();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'suppliers' => Supplier::with(['user'])->get(),
+                    'suppliers' => $suppliers,
                     'clients' => $clients,
                     'billings' => $billings,
                     'billingsTotalCount' => $count
@@ -102,7 +111,14 @@ class BillingController extends Controller
     {
         try {
 
-            $billing = Billing::with(['supplier', 'client', 'state'])->find($id);
+            $billing = 
+                Billing::with(['supplier' => function($query) {
+                    $query->withTrashed()->with(['user' => function($query) {
+                        $query->withTrashed();
+                    }]);
+                }, 'client' => function($query) {
+                    $query->withTrashed();
+                }, 'state'])->find($id);
 
             if (!$billing)
                 return response()->json([
