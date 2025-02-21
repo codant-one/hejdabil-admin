@@ -411,12 +411,12 @@ const onSubmit = () => {
                                     label="IBAN"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="compensation_number"
                                     label="Compensation number"
                                 />
-                            </VCol>
+                            </VCol> -->
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="account_number"
@@ -436,12 +436,12 @@ const onSubmit = () => {
                                     label="BIC"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="bank_transfer"
                                     label="Bank transfer"
                                 />
-                            </VCol>
+                            </VCol> -->
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="plus_spin"
@@ -451,7 +451,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="whistle"
-                                    label="Whistle"
+                                    label="Swish"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
