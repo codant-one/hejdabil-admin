@@ -147,7 +147,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      IBAN:
+                      Bankgiro:
                       <span class="text-body-2">
                           {{ props.customerData.iban }}
                       </span>
@@ -195,7 +195,7 @@ const copy = (account) => {
                   </VListItemTitle> -->
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Plus giro:
+                      Plusgiro:
                       <span class="text-body-2">
                           {{ props.customerData.plus_spin }}
                       </span>

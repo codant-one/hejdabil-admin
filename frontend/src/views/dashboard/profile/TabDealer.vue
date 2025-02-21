@@ -408,7 +408,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="iban"
-                                    label="IBAN"
+                                    label="Bankgiro"
                                 />
                             </VCol>
                             <!-- <VCol cols="12" md="6">
@@ -445,7 +445,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="plus_spin"
-                                    label="Plus giro"
+                                    label="Plusgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
