@@ -358,7 +358,7 @@ const downloadCSV = async () => {
                 </td>
                 <td class="text-wrap">
                   <span class="text-sm text-disabled" v-if="client.organization_number">
-                   # {{ client.organization_number ?? ''}}
+                   {{ client.organization_number ?? ''}}
                   </span>
                 </td>
                 <td class="text-wrap">
