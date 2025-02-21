@@ -526,7 +526,7 @@ const downloadCSV = async () => {
 
     @media(min-width: 991px){
         .search {
-            width: 30rem;
+            width: 25rem;
         }
     }
 </style>
