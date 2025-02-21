@@ -372,18 +372,18 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    v-model="street"
-                                    :rules="[requiredValidator]"
-                                    label="City"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <VTextField
                                     v-model="postal_code"
                                     :rules="[requiredValidator]"
                                     label="Postal code"
                                 />
                             </VCol>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="street"
+                                    :rules="[requiredValidator]"
+                                    label="City"
+                                />
+                            </VCol>                            
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="phone"
@@ -445,7 +445,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="plus_spin"
-                                    label="Plus spin"
+                                    label="Plus giro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -454,42 +454,42 @@ const onSubmit = () => {
                                     label="Swish"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="registration_fee"
                                     label="Registration fee"
                                 />
-                            </VCol>
-                            <VCol cols="12" md="6">
+                            </VCol> -->
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="insurance_company"
                                     label="Insurance company"
                                 />
-                            </VCol>
-                            <VCol cols="12" md="6">
+                            </VCol> -->
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="financial_company"
                                     label="Financial company"
                                 />
-                            </VCol>
-                            <VCol cols="12" md="6">
+                            </VCol> -->
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="interest"
                                     label="Interest"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
+                                /> -->
+                            <!-- </VCol> -->
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="avi_fee"
                                     label="Avi fee"
                                 />
-                            </VCol>
-                            <VCol cols="12" md="6">
+                            </VCol> -->
+                            <!-- <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="installation_fee"
                                     label="Installation fee"
                                 />
-                            </VCol>
+                            </VCol> -->
                             <VCol cols="12">
                                 <VBtn type="submit">
                                     Save

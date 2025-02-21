@@ -153,14 +153,14 @@ const copy = (account) => {
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <VListItemTitle>
+                  <!-- <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Compensation number:
                       <span class="text-body-2">
                           {{ props.customerData.compensation_number }}
                       </span>
                     </h6>
-                  </VListItemTitle>
+                  </VListItemTitle> -->
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Account number:
@@ -185,25 +185,17 @@ const copy = (account) => {
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <VListItemTitle>
+                  <!-- <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Bank transfer:
                       <span class="text-body-2">
                           {{ props.customerData.bank_transfer }}
                       </span>
                     </h6>
-                  </VListItemTitle>
+                  </VListItemTitle> -->
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Bank transfer:
-                      <span class="text-body-2">
-                          {{ props.customerData.bank_transfer }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Plus spin:
+                      Plus giro:
                       <span class="text-body-2">
                           {{ props.customerData.plus_spin }}
                       </span>
@@ -217,7 +209,7 @@ const copy = (account) => {
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <VListItemTitle>
+                  <!-- <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Registration fee:
                       <span class="text-body-2">
@@ -264,7 +256,7 @@ const copy = (account) => {
                           {{ props.customerData.installation_fee }}
                       </span>
                     </h6>
-                  </VListItemTitle>
+                  </VListItemTitle> -->
                 </VListItem>
               </VList>
             </VCol>
