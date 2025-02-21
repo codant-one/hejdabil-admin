@@ -204,16 +204,16 @@ const handleDrawerModelValueUpdate = val => {
             </VCol>
             <VCol cols="12" md="6">
                 <VTextField
-                    v-model="street"
+                    v-model="postal_code"
                     :rules="[requiredValidator]"
-                    label="City"
+                    label="Postal code"
                 />
             </VCol>
             <VCol cols="12" md="6">
                 <VTextField
-                    v-model="postal_code"
+                    v-model="street"
                     :rules="[requiredValidator]"
-                    label="Postal code"
+                    label="City"
                 />
             </VCol>
             <VCol cols="12" md="6">
