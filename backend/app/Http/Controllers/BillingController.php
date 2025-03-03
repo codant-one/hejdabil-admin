@@ -247,61 +247,54 @@ class BillingController extends Controller
 
             $billing = Billing::with(['client'])->find($id);
 
-            if($billing) {
-                $data = [
-                    'user' => $billing->client->fullname,
-                    'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
-                    'billing' => $billing,
-                    'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
-                    'buttonText' => 'Download',
-                    'pdfFile' => asset('storage/'.$billing->file)
-                ];
+            $data = [
+                'user' => $billing->client->fullname,
+                'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
+                'billing' => $billing,
+                'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
+                'buttonText' => 'Download',
+                'pdfFile' => asset('storage/'.$billing->file)
+            ];
 
-                if($request->emailDefault === true) {
-                    $clientEmail = $billing->client->email;
-                    $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
-                        
-                    try {
-                        \Mail::send(
-                            'emails.invoices.notifications'
-                            , $data
-                            , function ($message) use ($clientEmail, $subject) {
-                                $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                                $message->to($clientEmail)->subject($subject);
-                        });
+            if($request->emailDefault === true) {
+                $clientEmail = $billing->client->email;
+                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                    
+                try {
+                    \Mail::send(
+                        'emails.invoices.notifications'
+                        , $data
+                        , function ($message) use ($clientEmail, $subject) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($clientEmail)->subject($subject);
+                    });
 
-                    } catch (\Exception $e){
-                        Log::info("Error mail => ". $e);
-                    }
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
                 }
+            }
 
-                foreach($request->emails as $email) {
+            foreach($request->emails as $email) {
 
-                    $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
-                        
-                    try {
-                        \Mail::send(
-                            'emails.invoices.notifications'
-                            , $data
-                            , function ($message) use ($email, $subject) {
-                                $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                                $message->to($email)->subject($subject);
-                        });
+                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                    
+                try {
+                    \Mail::send(
+                        'emails.invoices.notifications'
+                        , $data
+                        , function ($message) use ($email, $subject) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($email)->subject($subject);
+                    });
 
-                    } catch (\Exception $e){
-                        Log::info("Error mail => ". $e);
-                    }
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
                 }
+            }
 
-                return response()->json([
-                    'success' => true
-                ]);
-            
-            } else 
-                return response()->json([
-                    'success' => false
-                ]);
-
+            return response()->json([
+                'success' => true
+            ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
