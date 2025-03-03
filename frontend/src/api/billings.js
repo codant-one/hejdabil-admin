@@ -18,12 +18,16 @@ class Billings {
         return axios.post(`/billings/${data.id}`, data.data)
     }
 
-    delete(id){
+    delete(id) {
         return axios.delete(`/billings/${id}`)
     }
 
-    updateState(id){
+    updateState(id) {
         return axios.get(`/billings/updateState/${id}`)
+    }
+
+    sendMails(data) {
+        return axios.post(`/billings/sendMails/${data.id}`, data)
     }
 
     all(){

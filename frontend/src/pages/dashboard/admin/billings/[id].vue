@@ -13,6 +13,11 @@ const types = ref([])
 const invoices = ref([])
 const invoice = ref(null)
 const isRequestOngoing = ref(true)
+const isConfirmSendMailVisible = ref(false)
+const emailDefault = ref(true)
+const selectedTags = ref([])
+const existingTags = ref([])
+const isValid = ref(false)
 
 const advisor = ref({
   type: '',
@@ -41,6 +46,60 @@ async function fetchData() {
   }
 }
 
+const addTag = (event) => {
+  const newTag = event.target.value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (newTag && emailRegex.test(newTag)) {
+    if (!selectedTags.value.includes(newTag)) {
+      selectedTags.value.push(newTag);
+
+      if (!existingTags.value.includes(newTag)) {
+        existingTags.value.push(newTag);
+      }
+
+    }
+  } else {
+    isValid.value = true
+    selectedTags.value.pop();
+  }
+};
+
+const sendMails = async () => {
+  isConfirmSendMailVisible.value = false
+  isRequestOngoing.value = true
+
+  let data = {
+    id: invoice.value.id,
+    emailDefault: emailDefault.value,
+    emails: selectedTags.value
+  }
+
+  let res = await billingsStores.sendMails(data)
+
+  isRequestOngoing.value = false
+  
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Invoice sent!' : res.data.message,
+    show: true
+  }
+
+  setTimeout(() => {
+    selectedTags.value = []
+    existingTags.value = []
+    emailDefault.value = true 
+
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
+
 const printInvoice = () => {
   window.print()
 }
@@ -54,6 +113,35 @@ const download = () => {
     }
 
     const clonedElement = element.cloneNode(true);
+
+    clonedElement.style.margin = '0';
+    clonedElement.style.padding = '0';
+    clonedElement.style.display = 'flex';
+    clonedElement.style.flexDirection = 'column';
+
+    const pageHeightInPixels = 11 * 96;
+    clonedElement.style.minHeight = `${pageHeightInPixels}px`;
+    clonedElement.style.height = `100%`;
+
+    const invoiceBackground = clonedElement.querySelector('.invoice-background');
+
+    if (invoiceBackground) {
+      invoiceBackground.style.height = 'auto';
+      invoiceBackground.style.flexGrow = '0';
+      invoiceBackground.style.flexShrink = '0';
+    }
+
+    const footer = clonedElement.querySelector('.print-column');
+
+    if (footer) {
+      footer.style.position = 'absolute';
+      footer.style.bottom = '0';
+      footer.style.width = '90%';
+      const footerHeight = footer.offsetHeight;
+
+      clonedElement.style.paddingBottom = `${footerHeight}px`;
+    }
+      
     document.body.appendChild(clonedElement);
 
     const options = {
@@ -142,16 +230,16 @@ const download = () => {
               <p class="mb-0" v-if="invoice.reference !== null">
                   Reference: {{ invoice.reference ?? '' }}
               </p>    
-              <p class="mt-auto mb-0 text-sm">After the due date, interest is charged according to the Interest Act.</p>           
+              <p class="mt-auto mb-0 text-xs">After the due date, interest is charged according to the Interest Act.</p>           
             </div>
 
-            <div class="mt-4 ma-sm-4 text-right">
+            <div class="ma-sm-4 text-right">
               <h6 class="font-weight-medium text-h6">
                 Invoice No #{{ invoice.invoice_id }}
               </h6>
 
               <!-- 👉 Issue Date -->
-              <p class="mt-12 mb-0">
+              <p class="mt-3 mb-0">
                 <span>Invoice Date: </span>
                 <span>{{ new Date(`${invoice.invoice_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
               </p>
@@ -167,7 +255,7 @@ const download = () => {
                 <span>{{ invoice.payment_terms }}</span>
               </p>
 
-              <p class="mb-0 mt-5">
+              <p class="mb-0">
                 <span class="text-h6 font-weight-medium mb-6">
                     Billing Address
                 </span>
@@ -240,82 +328,69 @@ const download = () => {
               </table>
             </div>
           </VCardText>
-
-          <VDivider />
          
-          <VCardText class="px-0 print-column">
-            <VRow>
+          <VCardText class="px-0 print-column border-divider"  style="margin-top: auto!important;">
+            <VRow class="mt-3">
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
                       Address
                   </span>
-                  <span  v-if="!invoice">
-                      Hejdå Bil AB
-                      Abrahamsbergsvägen 47
-                      16830 BROMMA
+                  <span class="text-footer" v-if="!invoice.supplier">
+                    16830 BROMMA <br>
+                    Hejdå Bil AB <br>
+                    Abrahamsbergsvägen 47
                   </span>
                   <span v-else class="d-flex flex-column">
-                      <span>{{ invoice.supplier.address }}</span>
-                      <span>{{ invoice.supplier.street }}</span>
-                      <span>{{ invoice.supplier.postal_code }}</span>
+                    <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
+                    <span class="text-footer">{{ invoice.supplier.address }}</span>
+                    <span class="text-footer">{{ invoice.supplier.street }}</span>
                   </span>
                   <span class="me-2 text-h6 mt-2">
                       Registered office of the company
                   </span>
-                  <span> Stockholm, Sweden </span>
-                  <span class="me-2 text-h6 mt-2">
+                  <span class="text-footer"> Stockholm, Sweden </span>
+                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.swish">
                       Swish
                   </span>
-                  <span> ?? </span>
+                  <span class="text-footer" v-if="invoice.supplier?.swish"> {{ invoice.supplier?.swish }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
                       Org.nr.
                   </span>
-                  <span v-if="!invoice.supplier"> 559374-0268 </span>
-                  <span v-else> {{ invoice.supplier.organization_number }} </span>
-                  <span class="me-2 text-h6 mt-2">
+                  <span class="text-footer" v-if="!invoice.supplier"> 559374-0268 </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.organization_number }} </span>
+                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.vat">
                       VAT reg. no.
                   </span>
-                  <span v-if="!invoice.supplier"> SE559374026801 ?? </span>
-                  <span v-else> ?? </span>
+                  <span class="text-footer" v-if="!invoice.supplier"> SE559374026801 </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.vat }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
                       Website
                   </span>
-                  <span v-if="!invoice.supplier"> www.hejdabil.se </span>
-                  <span v-else> {{ invoice.supplier.link }} </span>
+                  <span class="text-footer" v-if="!invoice.supplier"> www.hejdabil.se </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.link }} </span>
                   <span class="me-2 text-h6 mt-2">
                       Company e-mail
                   </span>
-                  <span v-if="!invoice.supplier"> info@hejdabil.se </span>
-                  <span v-else> {{ invoice.supplier.user.email }} </span>
+                  <span class="text-footer" v-if="!invoice.supplier"> info@hejdabil.se </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.user.email }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
+                  <span class="me-2 text-h6" v-if="!invoice.supplier || invoice.supplier?.account_number">
                       Bank account number
                   </span>
-                  <span v-if="!invoice.supplier"> 9960 1821054721 </span>
-                  <span v-else> {{ invoice.supplier.account_number }} </span>
-                  <span class="me-2 text-h6 mt-2">
+                  <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>
+                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.iban">
                       Bankgiro
                   </span>
-                  <span v-if="!invoice.supplier"> 5886-4976 </span>
-                  <span v-else> ?? </span>
+                  <span class="text-footer" v-if="!invoice.supplier"> 5886-4976 </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.iban }} </span>
               </VCol>
             </VRow>
-          </VCardText>
-
-          <VDivider v-if="invoice.note"/>
-
-          <VCardText class="px-0" v-if="invoice.note">
-            <div class="d-flex">
-              <h6 class="text-base font-weight-medium me-1">
-                Note:
-              </h6>
-              <span> {{ invoice.note }}</span>
-            </div>
           </VCardText>
         </VCard>
       </VCol>
@@ -335,6 +410,15 @@ const download = () => {
               @click="download"
             >
               Download
+            </VBtn>
+
+            <VBtn
+              block
+              prepend-icon="mdi-email-fast"
+              class="mb-2"
+              @click="isConfirmSendMailVisible = true"
+            >
+              Send
             </VBtn>
 
             <VBtn
@@ -360,6 +444,54 @@ const download = () => {
         </VCard>
       </VCol>
     </VRow>
+     <!-- 👉 Confirm Delete -->
+     <VDialog
+      v-model="isConfirmSendMailVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Send invoice by email">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Are you sure you want to send invoices to the following email addresses?.
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+          <VCheckbox
+            v-model="emailDefault"
+            :label="invoice.client.email"
+          />
+
+          <VCombobox
+            v-model="selectedTags"
+            :items="existingTags"
+            label="Enter emails to send invoice"
+            multiple
+            chips
+            deletable-chips
+            clearable
+            @keydown.enter.prevent="addTag"
+            @input="isValid = false"
+          /> 
+          <span class="text-xs text-error" v-if="isValid">Email must be a valid email</span>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmSendMailVisible = false">
+              Cancel
+          </VBtn>
+          <VBtn @click="sendMails">
+              Send
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -370,6 +502,14 @@ const download = () => {
 
   .invoice-background {
     background-color: #F2EFFF;
+  }
+
+  .border-divider {
+    border-top: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  }
+
+  .text-footer {
+    font-size: 0.75rem !important;
   }
 
   @media print {
@@ -388,10 +528,14 @@ const download = () => {
       display: flex;
       flex-wrap: wrap;
       page-break-inside: avoid;
+      position: fixed;
+      bottom: 0;
+      width: 90%;
 
       .v-col-md-3 {
         flex: 0 0 25%;
         max-width: 25%;
+        padding-right: 5px !important;
       }
     }
 

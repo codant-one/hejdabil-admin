@@ -22,6 +22,7 @@ const address = ref('')
 const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
+const swish = ref('')
 const bank = ref('')
 const account_number = ref('')
 const name = ref('')
@@ -60,6 +61,7 @@ const onSubmit = () => {
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', phone.value)
+            formData.append('swish', swish.value)
 
             //bank
             formData.append('bank', bank.value)
@@ -225,6 +227,13 @@ const onSubmit = () => {
                                                     v-model="phone"
                                                     :rules="[requiredValidator, phoneValidator]"
                                                     label="Phone"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="swish"
+                                                    :rules="[phoneValidator]"
+                                                    label="Swish"
                                                 />
                                             </VCol>
                                         </VRow>

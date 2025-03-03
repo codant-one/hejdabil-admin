@@ -72,8 +72,11 @@ const invoice = ref({
     tax: 0,
     total: 0,
     reference: null,
-    note: null,
     details: props.data
+})
+
+watch(() => props.supplier, (val) => {
+    supplier.value = val
 })
 
 watch(props.data, val => {
@@ -116,9 +119,9 @@ async function fetchData() {
 
     invoice.value.invoice_date = `${year}-${month}-${day}`
 
-    if(props.role === 'Supplier' && supplier.value.billings)
+    if(props.role === 'Supplier' && supplier.value.billings) {
         invoice.value.id = supplier.value.billings.length + 1
-    else
+    }else
         invoice.value.id = props.invoice_id + 1
 }
 
@@ -161,17 +164,21 @@ const startDateTimePickerConfig = computed(() => {
 })
 
 const selectSupplier = async() => {
-
     var selected = suppliers.value.filter(element => element.id === invoice.value.supplier_id)[0]
 
     if(selected) {
         supplier.value = selected
         invoice.value.id = supplier.value.billings.length + 1
+        
+        clients.value = clients.value.filter(item => item.supplier_id === invoice.value.supplier_id)
     } else {
         supplier.value = []
         invoice.value.id = props.invoice_id + 1
+        clients.value = props.clients
     } 
     
+    invoice.value.client_id = null 
+
     emit('data', invoice.value)
 }
 
@@ -257,7 +264,7 @@ const inputData = () => {
                 <p class="mb-0" v-if="client">
                    E-mail: {{ client.email }}
                 </p>
-                <p class="mb-0" v-if="client">
+                <p class="mb-0" v-if="client?.organization_number">
                     Organization number: {{ client.organization_number ?? '' }}
                 </p>
                 <p class="mb-0 mt-2" v-if="client">
@@ -468,74 +475,62 @@ const inputData = () => {
                     <span class="me-2 text-h6">
                         Address
                     </span>
-                    <span  v-if="supplier.length === 0">
-                        Hejdå Bil AB
+                    <span class="text-footer" v-if="supplier.length === 0">
+                        16830 BROMMA <br>
+                        Hejdå Bil AB <br>
                         Abrahamsbergsvägen 47
-                        16830 BROMMA
                     </span>
                     <span v-else class="d-flex flex-column">
-                        <span>{{ supplier.address }}</span>
-                        <span>{{ supplier.street }}</span>
-                        <span>{{ supplier.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.address }}</span>
+                        <span class="text-footer">{{ supplier.street }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Registered office of the company
                     </span>
-                    <span> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2">
+                    <span class="text-footer"> Stockholm, Sweden </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.swish">
                         Swish
                     </span>
-                    <span> ?? </span>
+                    <span class="text-footer" v-if="supplier.swish"> {{ supplier.swish }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Org.nr.
                     </span>
-                    <span v-if="supplier.length === 0"> 559374-0268 </span>
-                    <span v-else> {{ supplier.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2">
+                    <span class="text-footer" v-if="supplier.length === 0"> 559374-0268 </span>
+                    <span class="text-footer" v-else> {{ supplier.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.vat || supplier.length === 0">
                         VAT reg. no.
                     </span>
-                    <span v-if="supplier.length === 0"> SE559374026801 ?? </span>
-                    <span v-else> ?? </span>
+                    <span class="text-footer" v-if="supplier.length === 0"> SE559374026801 </span>
+                    <span class="text-footer" v-else> {{ supplier.vat }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Website
                     </span>
-                    <span v-if="supplier.length === 0"> www.hejdabil.se </span>
-                    <span v-else> {{ supplier.link }} </span>
+                    <span class="text-footer" v-if="supplier.length === 0"> www.hejdabil.se </span>
+                    <span class="text-footer" v-else> {{ supplier.link }} </span>
                     <span class="me-2 text-h6 mt-2">
                         Company e-mail
                     </span>
-                    <span v-if="supplier.length === 0"> info@hejdabil.se </span>
-                    <span v-else> {{ supplier.user.email }} </span>
+                    <span class="text-footer" v-if="supplier.length === 0"> info@hejdabil.se </span>
+                    <span class="text-footer" v-else> {{ supplier.user.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
+                    <span class="me-2 text-h6" v-if="supplier.account_number || supplier.length === 0">
                         Bank account number
                     </span>
-                    <span v-if="supplier.length === 0"> 9960 1821054721 </span>
-                    <span v-else> {{ supplier.account_number }} </span>
-                    <span class="me-2 text-h6 mt-2">
+                    <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
+                    <span class="text-footer" v-else> {{ supplier.account_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.iban || supplier.length === 0">
                         Bankgiro
                     </span>
-                    <span v-if="supplier.length === 0"> 5886-4976 </span>
-                    <span v-else> ?? </span>
+                    <span class="text-footer" v-if="supplier.length === 0"> 5886-4976 </span>
+                    <span class="text-footer" v-else> {{ supplier.iban }} </span>
                 </VCol>
             </VRow>
-        </VCardText>
-
-        <VCardText class="mb-sm-4 px-0">
-            <p class="font-weight-medium text-sm text-high-emphasis mb-2">
-                Note:
-            </p>
-            <VTextarea
-                v-model="invoice.note"
-                placeholder="Write a note here (optional)..."
-                @input="inputData"
-                :rows="2"
-            />
         </VCardText>
     </VCard>
 </template>
@@ -544,4 +539,9 @@ const inputData = () => {
   .w-70 {
     width: 70% !important;
   }
+
+  .text-footer {
+    font-size: 0.75rem !important;
+  }
+
 </style>

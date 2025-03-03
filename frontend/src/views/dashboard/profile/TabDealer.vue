@@ -34,19 +34,12 @@ const last_name = ref('')
 const email = ref('')
 const bank = ref('')
 const iban = ref('')
-const compensation_number = ref('')
 const account_number = ref('')
 const iban_number = ref('')
 const bic = ref('')
-const bank_transfer = ref('')
 const plus_spin = ref('')
-const whistle = ref('')
-const registration_fee = ref('')
-const insurance_company = ref('')
-const financial_company = ref('')
-const interest = ref('')
-const avi_fee = ref('')
-const installation_fee = ref('')
+const swish = ref('')
+const vat = ref('')
 
 const alert = ref({
     message: '',
@@ -83,18 +76,11 @@ async function fetchData() {
     email.value = supplier.value.user.email
 
     iban.value = supplier.value.iban
-    compensation_number.value = supplier.value.compensation_number
     iban_number.value = supplier.value.iban_number
     bic.value = supplier.value.bic
-    bank_transfer.value = supplier.value.bank_transfer
     plus_spin.value = supplier.value.plus_spin
-    whistle.value = supplier.value.whistle
-    registration_fee.value = supplier.value.registration_fee
-    insurance_company.value = supplier.value.insurance_company
-    financial_company.value = supplier.value.financial_company
-    interest.value = supplier.value.interest
-    avi_fee.value = supplier.value.avi_fee
-    installation_fee.value = supplier.value.installation_fee
+    swish.value = supplier.value.swish
+    vat.value = supplier.value.vat
 
     logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : null 
 
@@ -192,19 +178,12 @@ const onSubmit = () => {
             formData.append('link', link.value)
             formData.append('bank', bank.value)
             formData.append('iban', iban.value)
-            formData.append('compensation_number', compensation_number.value)
             formData.append('account_number', account_number.value)       
             formData.append('iban_number', iban_number.value)
             formData.append('bic', bic.value)
-            formData.append('bank_transfer', bank_transfer.value)
             formData.append('plus_spin', plus_spin.value)
-            formData.append('whistle', whistle.value)
-            formData.append('registration_fee', registration_fee.value)
-            formData.append('insurance_company', insurance_company.value)
-            formData.append('financial_company', financial_company.value)
-            formData.append('interest', interest.value)
-            formData.append('avi_fee', avi_fee.value)
-            formData.append('installation_fee', installation_fee.value)
+            formData.append('swish', swish.value)
+            formData.append('vat', vat.value)
 
             isRequestOngoing.value = true 
 
@@ -411,12 +390,6 @@ const onSubmit = () => {
                                     label="Bankgiro"
                                 />
                             </VCol>
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="compensation_number"
-                                    label="Compensation number"
-                                />
-                            </VCol> -->
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="account_number"
@@ -436,12 +409,6 @@ const onSubmit = () => {
                                     label="BIC"
                                 />
                             </VCol>
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="bank_transfer"
-                                    label="Bank transfer"
-                                />
-                            </VCol> -->
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="plus_spin"
@@ -450,46 +417,17 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    v-model="whistle"
+                                    v-model="swish"
                                     label="Swish"
+                                    :rules="[phoneValidator]"
                                 />
                             </VCol>
-                            <!-- <VCol cols="12" md="6">
+                            <VCol cols="12" md="6">
                                 <VTextField
-                                    v-model="registration_fee"
-                                    label="Registration fee"
+                                    v-model="vat"
+                                    label="Vat"
                                 />
-                            </VCol> -->
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="insurance_company"
-                                    label="Insurance company"
-                                />
-                            </VCol> -->
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="financial_company"
-                                    label="Financial company"
-                                />
-                            </VCol> -->
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="interest"
-                                    label="Interest"
-                                /> -->
-                            <!-- </VCol> -->
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="avi_fee"
-                                    label="Avi fee"
-                                />
-                            </VCol> -->
-                            <!-- <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="installation_fee"
-                                    label="Installation fee"
-                                />
-                            </VCol> -->
+                            </VCol>
                             <VCol cols="12">
                                 <VBtn type="submit">
                                     Save

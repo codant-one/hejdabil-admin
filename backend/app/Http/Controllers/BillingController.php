@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -236,6 +237,70 @@ class BillingController extends Controller
               'success' => false,
               'message' => 'database_error',
               'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function sendMails(Request $request, $id)
+    {
+        try {
+
+            $billing = Billing::with(['client'])->find($id);
+
+            $data = [
+                'user' => $billing->client->fullname,
+                'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
+                'billing' => $billing,
+                'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
+                'buttonText' => 'Download',
+                'pdfFile' => asset('storage/'.$billing->file)
+            ];
+
+            if($request->emailDefault === true) {
+                $clientEmail = $billing->client->email;
+                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                    
+                try {
+                    \Mail::send(
+                        'emails.invoices.notifications'
+                        , $data
+                        , function ($message) use ($clientEmail, $subject) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($clientEmail)->subject($subject);
+                    });
+
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
+                }
+            }
+
+            foreach($request->emails as $email) {
+
+                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                    
+                try {
+                    \Mail::send(
+                        'emails.invoices.notifications'
+                        , $data
+                        , function ($message) use ($email, $subject) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($email)->subject($subject);
+                    });
+
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
+                }
+            }
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
             ], 500);
         }
     }

@@ -88,7 +88,8 @@ class Supplier extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'bank' => $request->bank,
-            'account_number' => $request->account_number
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
         ]);
 
         return $supplier;
@@ -107,7 +108,8 @@ class Supplier extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'bank' => $request->bank,
-            'account_number' => $request->account_number
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
         ]);
 
         User::updateUser($request, $user);
@@ -149,18 +151,11 @@ class Supplier extends Model
                 'bank' => $request->bank,
                 'account_number' => $request->account_number,
                 'iban' => $request->iban === 'null' ? null : $request->iban,
-                'compensation_number' => $request->compensation_number === 'null' ? null : $request->compensation_number,
                 'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
                 'bic' => $request->bic === 'null' ? null : $request->bic,
-                'bank_transfer' => $request->bank_transfer === 'null' ? null : $request->bank_transfer,
                 'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
-                'whistle' => $request->whistle === 'null' ? null : $request->whistle,
-                'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
-                'insurance_company' => $request->insurance_company === 'null' ? null : $request->insurance_company,
-                'financial_company' => $request->financial_company === 'null' ? null : $request->financial_company,
-                'interest' => $request->interest === 'null' ? null : $request->interest,
-                'avi_fee' => $request->avi_fee === 'null' ? null : $request->avi_fee,
-                'installation_fee' => $request->installation_fee === 'null' ? null : $request->installation_fee
+                'swish' => $request->swish === 'null' ? null : $request->swish,
+                'vat' => $request->vat === 'null' ? null : $request->vat
             ]
         );
 

@@ -17,14 +17,15 @@
 
         body {
             background-color:#FFFFFF;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
             font-family: 'Gelion Regular', Arial, sans-serif !important;
             color: #33303CAD;
             line-height: 1.5;
         }
 
         table {
-            border-radius: 16px !important;
+            border-radius: 6px !important;
             border-spacing: unset;
             font-size: 10px;
             font-weight: 400;
@@ -36,12 +37,16 @@
             font-weight: 700;
         }
 
-        table tr {
-            height: 40px;
-        }
-
         .invoice-background {
             background-color: #F2EFFF;
+        }
+
+        .invoice-background td:first-child {
+            border-top-left-radius: 6px !important;
+        }
+
+        .invoice-background td:last-child {
+            border-top-right-radius: 6px !important;
         }
 
         .data-from {
@@ -53,20 +58,22 @@
         }
 
         .mt-10 {
+            margin-top: 10px;
+        }
+
+        .mt-20 {
             margin-top: 20px;
         }
 
         .table-main {
             width: 100%;
-            height: 100%;
+            height: calc(100% - 150px); /* Resta el espacio necesario para el footer */
+            margin-bottom: 150px;
         }
 
         .number-invoice {
-            justify-content: end;
-            display: flex;
-            flex-direction: column;
-            width: auto;
-            align-items: end;
+            text-align: right;
+            width: 100%;
         }
 
         .font-weight-medium {
@@ -75,7 +82,7 @@
 
         .table-items {
             margin-top: 10px;
-            border-radius: 8px !important;
+            border-radius: 6px !important;
             border-width: thin !important;
             border-style: solid !important;
             border-color: rgba(47,43,61, 0.16) !important;
@@ -83,11 +90,6 @@
 
         .pr-0 {
             padding-right: 0;
-        }
-
-        .info-total {
-            display: flex;
-            flex-direction: row;
         }
 
         .info-total table tr {
@@ -158,13 +160,13 @@
                                         Reference: {{$billing->reference}}
                                     </p> 
                                     @endif   
-                                    <p class="mt-10 m-0">After the due date, interest is charged according to the Interest Act.</p>           
+                                    <p class="mt-20 m-0">After the due date, interest is charged according to the Interest Act.</p>           
                                 </td>
                                 <td width="35%" class="data-from number-invoice">
                                     <h3 class="font-weight-medium m-0">
                                         Invoice No #{{ $billing->invoice_id }}
                                     </h3>
-                                    <p class="mt-12 m-0 mt-10">
+                                    <p class="m-0 mt-2">
                                         <span>Invoice Date: </span>
                                         <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
                                     </p>
@@ -177,12 +179,12 @@
                                         <span>{{ $billing->payment_terms }}</span>
                                     </p>
                                     <p class="m-0 number-invoice">
-                                        <h4 class="font-weight-medium m-0 mt-10">
+                                        <h4 class="font-weight-medium m-0">
                                             Billing Address
                                         </h4>
                                         <span class="number-invoice">
-                                            <span class="font-weight-medium">{{ $billing->client->address }}</span>
-                                            <span>{{ $billing->client->street }}</span>
+                                            <span class="font-weight-medium">{{ $billing->client->address }}</span></br>
+                                            <span>{{ $billing->client->street }}</span></br>
                                             <span>{{ $billing->client->postal_code }}</span>
                                         </span>
                                     </p>
@@ -198,14 +200,26 @@
                             <thead class="invoice-background">
                                 <tr>
                                     @foreach($types as $type)
-                                    <td style="width: {{$type->type_id === 1 ? '40' : (60/(count($types) - 1)) }}%"> {{ $type->name_en }}</td>
+                                    <td 
+                                        style="
+                                            width: {{$type->type_id === 1 ? '40' : (60/(count($types) - 1)) }}%; 
+                                            padding-left: 10px !important;
+                                            text-align: start !important;
+                                            height: 40px !important;"> 
+                                            {{ $type->name_en }}
+                                        </td>
                                     @endforeach
                                 </tr>
                             </thead>
                             @foreach($invoices as $rowIndex => $row)
-                                <tr>
+                                <tr style="height: 40px !important;">
                                     @foreach($row as $colIndex => $column)
-                                        <td>
+                                        <td 
+                                            style="
+                                            padding-left: 10px !important; 
+                                            text-align: start !important; 
+                                            height: 40px !important; 
+                                            border-top: 1px solid #D9D9D9;">
                                             {{ $column['value'] }}
                                         </td>
                                     @endforeach
@@ -219,20 +233,20 @@
                     <td>
                         <table width="100%">
                             <tr>
-                                <td width="65%" class="data-from"></td>
-                                <td width="35%" class="data-from number-invoice pr-0 info-total">
+                                <td width="80%" class="data-from"></td>
+                                <td width="20%" class="data-from pr-0 info-total">
                                     <table width="100%">
                                         <tr>
                                             <td class="text">Subtotal:</td>
-                                            <td class="numbers"><span>{{ $billing->subtotal }} KR</span></td>
+                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->subtotal }} KR</span></td>
                                         </tr>
                                         <tr>
                                             <td class="text">Tax:</td>
-                                            <td class="numbers"><span>{{ $billing->tax }}%</span></td>
+                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->tax }}%</span></td>
                                         </tr>
                                         <tr>
                                             <td class="text">Total:</td>
-                                            <td class="numbers"><span>{{ $billing->total }} KR</span></td>
+                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->total }} KR</span></td>
                                         </tr>
                                     </table>                              
                                 </td>
@@ -240,155 +254,146 @@
                         </table>
                     </td>
                 </tr>
-                <!------------------------- BILL TO---------------------------------->
-                <tr>
-                    <td>
-                        <table width="100%" class="table-supplier border-top">
-                            <tr>
-                                <td>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0 mt-10">
-                                            Address
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>Hejdå Bil AB</span>
-                                                <span>Abrahamsbergsvägen 47</span>
-                                                <span>16830 BROMMA</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>{{ $billing->supplier->address }}</span>
-                                                <span>{{ $billing->supplier->street }}</span>
-                                                <span>{{ $billing->supplier->postal_code }}</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0">
-                                            Registered office of the company
-                                        </h4>
-                                        <span class="info-supplier">
-                                            <span>Stockholm, Sweden</span>
-                                        </span>
-                                    </p>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0">
-                                            Swish
-                                        </h4>
-                                        <span class="info-supplier">
-                                            <span>??</span>
-                                        </span>
-                                    </p>
-                                </td>
-                                <td>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0 mt-10">
-                                            Org.nr.
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>559374-0268</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>{{ $billing->supplier->organization_number }}</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0">
-                                            VAT reg. no.
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>SE559374026801 ??</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>??</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                </td>
-                                <td>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0 mt-10">
-                                            Website
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>www.hejdabil.se</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>{{ $billing->supplier->link }}</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0">
-                                            Company e-mail
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>info@hejdabil.se</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>{{ $billing->supplier->user->email }}</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                </td>
-                                <td>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0 mt-10">
-                                            Bank account number
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>9960 1821054721</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>{{ $billing->supplier->account_number }}</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                    <p class="m-0 info-supplier">
-                                        <h4 class="font-weight-medium m-0">
-                                            Bankgiro
-                                        </h4>
-                                        @if(!$billing->supplier)
-                                            <span class="info-supplier">
-                                                <span>5886-4976</span>
-                                            </span>
-                                        @else
-                                            <span class="info-supplier">
-                                                <span>??</span>
-                                            </span>
-                                        @endif
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                @if($billing->note)
-                <tr>
-                    <td>
-                        <table width="100%" class="border-top mt-10">
-                            <tr>
-                                <td>
-                                    <span class="mt-10">Note: {{$billing->note}}</span>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                @endif
             </tbody>
         </table>
+        <!------------------------- BILL TO---------------------------------->
+        <div style="position: fixed; bottom: 0; width: 100%; padding-bottom: 20px;">
+            <table width="100%" class="table-supplier border-top">
+                <tr>
+                    <td>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0 mt-10">
+                                Address
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>16830 BROMMA</span>
+                                    <span>Hejdå Bil AB</span>
+                                    <span>Abrahamsbergsvägen 47</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->postal_code }}</span>
+                                    <span>{{ $billing->supplier->address }}</span>
+                                    <span>{{ $billing->supplier->street }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Registered office of the company
+                            </h4>
+                            <span class="info-supplier">
+                                <span>Stockholm, Sweden</span>
+                            </span>
+                        </p>
+                        @if($billing->supplier && !is_null($billing->supplier->swish))
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Swish
+                            </h4>
+                            <span class="info-supplier">
+                                <span>{{ $billing->supplier->swish }}</span>
+                            </span>
+                        </p>
+                        @endif
+                    </td>
+                    <td>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0 mt-10">
+                                Org.nr.
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>559374-0268</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->organization_number }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        @if(($billing->supplier && !is_null($billing->supplier->vat)) || !$billing->supplier)
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                VAT reg. no.
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>SE559374026801</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->vat }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        @endif
+                    </td>
+                    <td>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0 mt-10">
+                                Website
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>www.hejdabil.se</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->link }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Company e-mail
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>info@hejdabil.se</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->user->email }}</span>
+                                </span>
+                            @endif
+                        </p>
+                    </td>
+                    <td>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0 mt-10">
+                                Bank account number
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>9960 1821054721</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->account_number }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        @if(($billing->supplier && !is_null($billing->supplier->iban)) || !$billing->supplier)
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Bankgiro
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>5886-4976</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->iban }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        @endif
+                    </td>
+                </tr>
+            </table>
+        </div>
     </body>
 </html>

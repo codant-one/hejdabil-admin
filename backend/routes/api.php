@@ -103,6 +103,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     //Billing
     Route::group(['prefix' => 'billings'], function () {
         Route::get('/updateState/{id}', [BillingController::class, 'updateState']);
+        Route::post('/sendMails/{id}', [BillingController::class, 'sendMails']);
         Route::get('/data/all', [BillingController::class, 'all']);
     });
 

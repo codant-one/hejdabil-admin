@@ -23,19 +23,12 @@ return new class extends Migration
             $table->string('link')->nullable();
             $table->string('bank');
             $table->string('iban')->nullable();
-            $table->string('compensation_number')->nullable();
             $table->string('account_number');
             $table->string('iban_number')->nullable();
             $table->string('bic')->nullable();
-            $table->string('bank_transfer')->nullable();
             $table->string('plus_spin')->nullable();
-            $table->string('whistle')->nullable();
-            $table->string('registration_fee')->nullable();
-            $table->string('insurance_company')->nullable();
-            $table->string('financial_company')->nullable();
-            $table->string('interest')->nullable();
-            $table->string('avi_fee')->nullable();
-            $table->string('installation_fee')->nullable();
+            $table->string('swish')->nullable();
+            $table->string('vat')->nullable();
             $table->string('logo')->nullable();
             $table->timestamps();
 

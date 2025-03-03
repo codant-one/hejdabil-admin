@@ -127,6 +127,10 @@ const showBilling = billingData => {
   router.push({ name : 'dashboard-admin-billings-id', params: { id: billingData.id } })
 }
 
+const editBilling = supplierData => {
+  router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: billingData.id } })
+}
+
 const showDeleteDialog = billingData => {
   isConfirmDeleteDialogVisible.value = true
   selectedBilling.value = { ...billingData }
@@ -354,7 +358,7 @@ const downloadCSV = async () => {
                 <th scope="col"> INVOICE DATE </th>
                 <th scope="col"> DUE DATE </th>
                 <th scope="col"> TOTAL </th>
-                <th scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')">
+                <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')">
                   ACTIONS
                 </th>
               </tr>
@@ -455,6 +459,24 @@ const downloadCSV = async () => {
                     <VIcon
                         size="22"
                         icon="tabler-eye" />
+                  </VBtn>
+
+                  <VBtn
+                    v-if="$can('edit', 'billing') && billing.state_id === 4"
+                    icon
+                    size="x-small"
+                    color="default"
+                    variant="text"
+                    @click="editBilling(billing)">
+                    <VTooltip
+                      open-on-focus
+                      location="top"
+                      activator="parent">
+                      Edit
+                    </VTooltip>
+                    <VIcon
+                        size="22"
+                        icon="tabler-edit" />
                   </VBtn>
 
                   <VBtn

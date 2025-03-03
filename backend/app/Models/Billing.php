@@ -129,7 +129,6 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
-            'note' => $request->note === 'null' ? null : $request->note,
             'detail' => json_encode($details, true)
         ]);
 

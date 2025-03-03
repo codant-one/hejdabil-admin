@@ -1,5 +1,6 @@
 <script setup>
 
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
@@ -7,6 +8,7 @@ import router from '@/router'
 
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
+const ability = useAppAbility()
 const emitter = inject("emitter")
 
 const advisor = ref({
@@ -51,7 +53,15 @@ async function fetchData() {
     role.value = userData.value.roles[0].name
 
     if(role.value === 'Supplier') {
-        supplier.value = userData.value.supplier
+      const { user_data, userAbilities } = await authStores.me(userData.value)
+
+      localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+      ability.update(userAbilities)
+
+      localStorage.setItem('user_data', JSON.stringify(user_data))
+
+      supplier.value = user_data.supplier
     }
 
     var item = {}
@@ -77,8 +87,15 @@ async function fetchData() {
 }
 
 const data = (data) => {
+  isRequestOngoing.value = true
+
   invoice.value = data
   invoiceData.value = data.details
+
+  setTimeout(() => {
+    isRequestOngoing.value = false
+  }, 500)
+  
 }
 
 const addProduct = value => {
@@ -125,7 +142,6 @@ const onSubmit = () => {
       formData.append('supplier_id', invoice.value.supplier_id)
       formData.append('tax', invoice.value.tax)
       formData.append('total', invoice.value.total)
-      formData.append('note', invoice.value.note)
       formData.append('reference', invoice.value.reference)
       formData.append('payment_terms', invoice.value.days)
 

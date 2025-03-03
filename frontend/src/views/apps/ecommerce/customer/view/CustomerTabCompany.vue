@@ -153,14 +153,6 @@ const copy = (account) => {
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <!-- <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Compensation number:
-                      <span class="text-body-2">
-                          {{ props.customerData.compensation_number }}
-                      </span>
-                    </h6>
-                  </VListItemTitle> -->
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Account number:
@@ -185,14 +177,6 @@ const copy = (account) => {
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <!-- <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Bank transfer:
-                      <span class="text-body-2">
-                          {{ props.customerData.bank_transfer }}
-                      </span>
-                    </h6>
-                  </VListItemTitle> -->
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
                       Plusgiro:
@@ -205,58 +189,18 @@ const copy = (account) => {
                     <h6 class="text-base font-weight-semibold">
                       Swish:
                       <span class="text-body-2">
-                          {{ props.customerData.whistle }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <!-- <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Registration fee:
-                      <span class="text-body-2">
-                          {{ props.customerData.registration_fee }}
+                          {{ props.customerData.swish }}
                       </span>
                     </h6>
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Insurance company:
+                      VAT reg. no:
                       <span class="text-body-2">
-                          {{ props.customerData.insurance_company }}
+                          {{ props.customerData.vat }}
                       </span>
                     </h6>
                   </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Financial company:
-                      <span class="text-body-2">
-                          {{ props.customerData.financial_company }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Interest:
-                      <span class="text-body-2">
-                          {{ props.customerData.interest }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Avi fee:
-                      <span class="text-body-2">
-                          {{ props.customerData.avi_fee }}
-                      </span>
-                    </h6>
-                  </VListItemTitle>
-                  <VListItemTitle>
-                    <h6 class="text-base font-weight-semibold">
-                      Installation fee:
-                      <span class="text-body-2">
-                          {{ props.customerData.installation_fee }}
-                      </span>
-                    </h6>
-                  </VListItemTitle> -->
                 </VListItem>
               </VList>
             </VCol>
