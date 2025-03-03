@@ -23,11 +23,11 @@ class Billing extends Model
 
     /**** Relationship ****/
     public function supplier() {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
     }
 
     public function client() {
-        return $this->belongsTo(Client::class, 'client_id', 'id');
+        return $this->belongsTo(Client::class, 'client_id', 'id')->withTrashed();
     }
 
     public function state() {
