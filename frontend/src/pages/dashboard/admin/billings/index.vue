@@ -467,6 +467,7 @@ const downloadCSV = async () => {
                     size="x-small"
                     color="default"
                     variant="text"
+                    class="d-none"
                     @click="editBilling(billing)">
                     <VTooltip
                       open-on-focus
