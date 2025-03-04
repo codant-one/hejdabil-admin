@@ -455,7 +455,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!clients.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 4 : 5"
+                  :colspan="role === 'Supplier' ? 6 : 7"
                   class="text-center">
                   Data not available
                 </td>

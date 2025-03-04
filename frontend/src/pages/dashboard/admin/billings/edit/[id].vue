@@ -75,6 +75,7 @@ async function fetchData() {
 
         let response = await billingsStores.all()
         
+        console.log(' clients.value',  clients.value)
         clients.value = response.data.data.clients
         suppliers.value = response.data.data.suppliers
         invoices.value = response.data.data.invoices
