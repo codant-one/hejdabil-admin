@@ -63,7 +63,7 @@ async function fetchData() {
         invoice.value.subtotal = billing.value.subtotal 
         invoice.value.total = billing.value.total
         invoice.value.tax = billing.value.tax
-        console.log('entra')
+        
         invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
             const detailObject = {};
             element.forEach((item) => {
