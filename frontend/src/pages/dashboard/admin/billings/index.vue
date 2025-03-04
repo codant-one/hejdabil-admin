@@ -372,7 +372,7 @@ const downloadCSV = async () => {
 
                 <td> {{ billing.invoice_id }} </td>
                 <td>
-                  <span v-if="billing.client.deleted_at !== null">o
+                  <span v-if="billing.client.deleted_at !== null">
                       <span class="text-sm text-error">Client deleted</span>
                   </span>
                   <VTooltip v-else>
