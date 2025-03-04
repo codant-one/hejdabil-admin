@@ -373,25 +373,10 @@ const downloadCSV = async () => {
                 <td> {{ billing.invoice_id }} </td>
                 <td>
                   <span v-if="billing.client.deleted_at !== null">
-                      <span class="text-sm text-error">Client deleted</span>
+                    <VChip color="error">
+                      Client deleted
+                    </VChip>
                   </span>
-                  <VTooltip v-else>
-                    <template #activator="{ props }">
-                        <VAvatar
-                            v-bind="props"
-                            :size="30"
-                            :color="resolveInvoiceStatusVariantAndIcon(billing.state_id).variant"
-                            variant="tonal"
-                        >
-                            <VIcon
-                                :size="20"
-                                :icon="resolveInvoiceStatusVariantAndIcon(billing.state_id).icon"
-                            />
-                        </VAvatar>
-                    </template>
-                    <p class="mb-0"> {{ billing.state.name }} </p>
-                    <p class="mb-0"> Total: ${{ formatNumber(billing.total ?? 0) }} </p>
-                  </VTooltip>
                   <VTooltip v-else>
                     <template #activator="{ props }">
                         <VAvatar
