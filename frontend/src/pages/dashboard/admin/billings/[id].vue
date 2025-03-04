@@ -78,7 +78,7 @@ const sendMails = async () => {
   let res = await billingsStores.sendMails(data)
 
   isRequestOngoing.value = false
-  
+
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
     message: res.data.success ? 'Invoice sent!' : res.data.message,

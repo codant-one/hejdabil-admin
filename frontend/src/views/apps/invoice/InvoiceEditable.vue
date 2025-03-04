@@ -42,6 +42,10 @@ const props = defineProps({
     total: {
         type: Number,
         required: true,
+    },
+    billing: {
+        type: Object,
+        required: false
     }
 })
 
@@ -74,6 +78,12 @@ const invoice = ref({
     reference: null,
     details: props.data
 })
+
+const extractDaysFromNetTermSplit = term => {
+    const parts = term.split(/\s+/);
+    const daysIndex = parts.findIndex(part => /days?/i.test(part));
+    return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
+}
 
 watch(() => props.supplier, (val) => {
     supplier.value = val
@@ -112,17 +122,34 @@ watch(() => invoice.value.invoice_date, () => {
 watchEffect(fetchData)
 
 async function fetchData() {
-    const invoice_date = new Date();
-    const year = invoice_date.getFullYear();
-    const month = String(invoice_date.getMonth() + 1).padStart(2, '0');
-    const day = String(invoice_date.getDate()).padStart(2, '0');
 
-    invoice.value.invoice_date = `${year}-${month}-${day}`
+    if(props.billing) {
+        invoice.value.id = props.billing.invoice_id
+        invoice.value.reference = props.billing.reference
+        invoice.value.invoice_date = props.billing.invoice_date
+        invoice.value.due_date = props.billing.due_date
+        invoice.value.days = extractDaysFromNetTermSplit(props.billing.payment_terms)
+        invoice.value.supplier_id = props.billing.supplier_id ?? null
+        invoice.value.client_id = props.billing.client_id
+        invoice.value.tax = props.billing.tax       
 
-    if(props.role === 'Supplier' && supplier.value.billings) {
-        invoice.value.id = supplier.value.billings.length + 1
-    }else
-        invoice.value.id = props.invoice_id + 1
+        supplier.value = props.billing.supplier
+        client.value = props.billing.client
+        
+    } else {
+
+        const invoice_date = new Date();
+        const year = invoice_date.getFullYear();
+        const month = String(invoice_date.getMonth() + 1).padStart(2, '0');
+        const day = String(invoice_date.getDate()).padStart(2, '0');
+
+        invoice.value.invoice_date = `${year}-${month}-${day}`
+
+        if(props.role === 'Supplier' && supplier.value.billings) {
+            invoice.value.id = supplier.value.billings.length + 1
+        } else
+            invoice.value.id = props.invoice_id + 1
+    }
 }
 
 const calculateDueDate = () => {
@@ -139,8 +166,10 @@ const calculateDueDate = () => {
         const formattedDueDate = `${year}-${month}-${day}`;
 
         invoice.value.due_date = formattedDueDate;
+
+        emit('data', invoice.value)
     }
-};
+}
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -271,6 +300,7 @@ const inputData = () => {
                     <VTextField
                         v-model="invoice.reference"
                         label="Reference"
+                        @input="$emit('data', invoice)"
                     />
                 </p>    
                 <p class="mt-5 mb-0 text-sm" v-if="client">After the due date, interest is charged according to the Interest Act.</p>           
@@ -284,11 +314,11 @@ const inputData = () => {
 
                     <span>
                         <VTextField
-                        v-model="invoice.id"
-                        disabled
-                        prefix="#"
-                        density="compact"
-                        style="inline-size: 10.5rem;"
+                            v-model="invoice.id"
+                            disabled
+                            prefix="#"
+                            density="compact"
+                            style="inline-size: 10.5rem;"
                         />
                     </span>
                 </h6>

@@ -127,7 +127,7 @@ const showBilling = billingData => {
   router.push({ name : 'dashboard-admin-billings-id', params: { id: billingData.id } })
 }
 
-const editBilling = supplierData => {
+const editBilling = billingData => {
   router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: billingData.id } })
 }
 
@@ -467,7 +467,6 @@ const downloadCSV = async () => {
                     size="x-small"
                     color="default"
                     variant="text"
-                    class="d-none"
                     @click="editBilling(billing)">
                     <VTooltip
                       open-on-focus

@@ -68,8 +68,6 @@ export const useBillingsStores = defineStore('billings', {
             
             return Billings.update(data)
                 .then((response) => {
-                    let pos = this.billings.findIndex((item) => item.id === response.data.data.billing.id)
-                    this.billings[pos] = response.data.data.billing
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

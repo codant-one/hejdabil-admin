@@ -144,6 +144,40 @@ class BillingController extends Controller
         }
     }
 
+      /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $billing = Billing::with(['supplier', 'client'])->find($id);
+        
+            if (!$billing)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Invoice not found'
+                ], 404);
+
+            $billing->updateBilling($request, $billing); 
+            
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'billing' => $billing
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Remove the specified resource from storage.
      */

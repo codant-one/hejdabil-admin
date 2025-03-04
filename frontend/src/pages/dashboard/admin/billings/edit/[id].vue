@@ -1,147 +1,222 @@
 <script setup>
 
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { useAuthStores } from '@/stores/useAuth'
+import { useBillingsStores } from '@/stores/useBillings'
+import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
-import { emailValidator, requiredValidator, phoneValidator, urlValidator } from '@/@core/utils/validators'
-import { useSuppliersStores } from '@/stores/useSuppliers'
 
-const suppliersStores = useSuppliersStores()
-
+const authStores = useAuthStores()
+const billingsStores = useBillingsStores()
+const ability = useAppAbility()
 const emitter = inject("emitter")
 const route = useRoute()
 
-const isRequestOngoing = ref(true)
-
-const isFormValid = ref(false)
-const refForm = ref()
-const currentTab = ref('tab-1')
-const isMobile = ref(false)
-
-const supplier = ref(null)
-const company = ref('')
-const organization_number = ref('')
-const link = ref('')
-const address = ref('')
-const street = ref('')
-const postal_code = ref('')
-const phone = ref('')
-const swish = ref('')
-const bank = ref('')
-const account_number = ref('')
-const name = ref('')
-const last_name = ref('')
-const email = ref('')
-
-onMounted(async () => {
-
-    checkIfMobile()
-   
-    window.addEventListener('resize', checkIfMobile);
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
 })
 
-const checkIfMobile = () => {
-    isMobile.value = window.innerWidth < 768;
+// 👉 Default Blank Data
+const validate = ref()
+const invoiceData = ref([])
+const band = ref(true)
+const total = ref(0)
+const isRequestOngoing = ref(true)
+const billing = ref([])
+const invoice = ref([])
+const invoices = ref([])
+const suppliers = ref([])
+const clients = ref([])
+const invoice_id = ref(0)
+
+const userData = ref(null)
+const role = ref(null)
+const supplier = ref([])
+
+const seeDialogRemove = ref(false)
+const selectedInvoice = ref({})
+
+const extractDaysFromNetTermSplit = term => {
+    const parts = term.split(/\s+/);
+    const daysIndex = parts.findIndex(part => /days?/i.test(part));
+    return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
 
-watchEffect(async() => {
+watchEffect(fetchData)
 
-    isRequestOngoing.value = true
+async function fetchData() {
+
+    if(Number(route.params.id)) { 
+        isRequestOngoing.value = true
+
+        billing.value = await billingsStores.showBilling(Number(route.params.id))
+
+        invoice.value.id = billing.value.invoice_id
+        invoice.value.reference = billing.value.reference
+        invoice.value.invoice_date = billing.value.invoice_date
+        invoice.value.due_date = billing.value.due_date
+        invoice.value.days = extractDaysFromNetTermSplit(billing.value.payment_terms)
+        invoice.value.supplier_id = billing.value.supplier_id ?? null
+        invoice.value.client_id = billing.value.client_id
+        invoice.value.subtotal = billing.value.subtotal 
+        invoice.value.total = billing.value.total
+        invoice.value.tax = billing.value.tax
+        console.log('entra')
+        invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
+            const detailObject = {};
+            element.forEach((item) => {
+                detailObject[item.id] = item.value;
+            });
+            return detailObject;
+        });
 
 
-    if(Number(route.params.id)) {
-        supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
-       
-        //company
-        company.value = supplier.value.company
-        organization_number.value = supplier.value.organization_number
-        link.value = supplier.value.link
-        address.value = supplier.value.address
-        street.value = supplier.value.street
-        postal_code.value = supplier.value.postal_code
-        phone.value = supplier.value.phone
-        swish.value = supplier.value.swish
+        let response = await billingsStores.all()
+        
+        clients.value = response.data.data.clients
+        suppliers.value = response.data.data.suppliers
+        invoices.value = response.data.data.invoices
+        invoice_id.value = response.data.data.invoice_id
 
-        //bank
-        bank.value = supplier.value.bank
-        account_number.value = supplier.value.account_number
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        role.value = userData.value.roles[0].name
 
-        // contact
-        name.value  = supplier.value.user.name
-        last_name.value = supplier.value.user.last_name 
-        email.value = supplier.value.user.email
+        if(role.value === 'Supplier') {
+            const { user_data, userAbilities } = await authStores.me(userData.value)
+
+            localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+            ability.update(userAbilities)
+
+            localStorage.setItem('user_data', JSON.stringify(user_data))
+
+            supplier.value = user_data.supplier
+        }
+
+        JSON.parse(billing.value.detail).forEach(details => {
+            var item = {}
+
+            details.forEach(detail => {
+                invoices.value.forEach(element => {
+                    if(detail.id === element.id) {
+                        item[parseInt(element.id)] = 
+                            element.type_id === 2 ? 
+                            parseInt(detail.value) : 
+                            detail.value
+
+                            if(element.id === 4)
+                                total.value += Number(detail.value)
+                    }
+                });
+            });
+
+            invoiceData.value?.push(item)
+            
+        });
+
+        isRequestOngoing.value = false
     }
+}
 
+const data = (data) => {
+  isRequestOngoing.value = true
+
+  invoice.value = data
+  invoiceData.value = data.details
+
+  setTimeout(() => {
     isRequestOngoing.value = false
-})
+  }, 500)
+  
+}
+
+const addProduct = value => {
+  invoiceData.value?.push(value)
+}
+
+const removeProduct = id => {
+  seeDialogRemove.value = true
+  selectedInvoice.value = { ...invoiceData.value[id] }
+}
+
+const deleteProduct = id => {
+  invoiceData.value?.splice(id, 1)
+
+  total.value = 0
+  invoiceData.value.forEach(element => {
+      total.value += Number(element.total)
+  });
+}
+
+const editProduct = () => {
+  total.value = 0
+  invoiceData.value.forEach(element => {
+
+    let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+    total.value += parseFloat(result);
+    element[4] = result; 
+  });
+}
 
 const onSubmit = () => {
 
-    refForm.value?.validate().then(({ valid }) => {
-        if (valid && currentTab.value === 0 && refForm.value.items.length < 10) {
-            currentTab.value++
-        } else if (!valid && currentTab.value === 0 && refForm.value.items.length === 9 || !valid && currentTab.value === 0 && refForm.value.items.length === 13) {
-            currentTab.value++
-        } else if (!valid && currentTab.value === 1 && refForm.value.items.length > 9) {
-            currentTab.value++
-        } else if (valid  && currentTab.value < 2 && refForm.value.items.length > 8) {
-            currentTab.value++
-        } else if (valid && currentTab.value === 2) {
-            let formData = new FormData()
+    validate.value?.validate().then(async ({ valid: isValid }) => {
 
-            formData.append('id', Number(route.params.id))
-            formData.append('_method', 'PUT')
+    if (isValid) {
+        
+        let formData = new FormData()
 
-            //company
-            formData.append('company', company.value)
-            formData.append('organization_number', organization_number.value)
-            formData.append('link', link.value)
-            formData.append('address', address.value)
-            formData.append('street', street.value)
-            formData.append('postal_code', postal_code.value)
-            formData.append('phone', phone.value)
-            formData.append('swish', swish.value)
+        formData.append('id', Number(route.params.id))
+        formData.append('_method', 'PUT')
+        formData.append('client_id', invoice.value.client_id)
+        formData.append('due_date', invoice.value.due_date)
+        formData.append('invoice_id', invoice.value.id)
+        formData.append('invoice_date', invoice.value.invoice_date)
+        formData.append('subtotal', invoice.value.subtotal)
+        formData.append('supplier_id', invoice.value.supplier_id)
+        formData.append('tax', invoice.value.tax)
+        formData.append('total', invoice.value.total)
+        formData.append('reference', invoice.value.reference)
+        formData.append('payment_terms', invoice.value.days)
 
-            //bank
-            formData.append('bank', bank.value)
-            formData.append('account_number', account_number.value)
+        invoice.value.details.forEach((element) => {
+            formData.append(`details[]`, JSON.stringify(element));
+        });
 
-            //contact
-            formData.append('name', name.value)
-            formData.append('last_name', last_name.value)
-            formData.append('email', email.value)
-
-            isRequestOngoing.value = true
-
-            let data = {
+        let data = {
                 data: formData, 
                 id: Number(route.params.id)
-            }
+        }
 
-            suppliersStores.updateSupplier(data)
-                .then((res) => {
-                    if (res.data.success) {
-                        
-                        let data = {
-                            message: 'Updated Supplier!',
-                            error: false
-                        }
+        isRequestOngoing.value = true
 
-                        router.push({ name : 'dashboard-admin-suppliers'})
-                        emitter.emit('toast', data)
-                    }
-                    isRequestOngoing.value = false
-                })
-                .catch((err) => {
-                    
-                    let data = {
-                        message: err,
-                        error: true
-                    }
+        billingsStores.updateBilling(data)
+            .then((res) => {
+                let data = {
+                    message: 'Updated Invoice!',
+                    error: false
+                }
+                
+                isRequestOngoing.value = false
+                
+                router.push({ name : 'dashboard-admin-billings'})
+                emitter.emit('toast', data)
+            })
+            .catch((err) => {
+                advisor.value.show = true
+                advisor.value.type = 'error'
+                advisor.value.message = Object.values(err.message).flat().join('<br>')
 
-                    router.push({ name : 'dashboard-admin-suppliers'})
-                    emitter.emit('toast', data)
-
-                    isRequestOngoing.value = false
-                })
+                setTimeout(() => { 
+                    advisor.value.show = false
+                    advisor.value.type = ''
+                    advisor.value.message = ''
+                }, 3000)
+            
+                isRequestOngoing.value = false
+            })
         }
     })
 }
@@ -149,220 +224,101 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <section>
-        <VRow>
-            <VDialog
-                v-model="isRequestOngoing"
-                width="300"
-                persistent>
-                
-                <VCard
-                    color="primary"
-                    width="300">
+  <VForm
+    ref="validate"
+    @submit.prevent="onSubmit"
+    >
+    <VDialog
+      v-model="isRequestOngoing"
+      width="300"
+      persistent>
                     
-                    <VCardText class="pt-3">
-                        Loading
-                        <VProgressLinear
-                        indeterminate
-                        color="white"
-                        class="mb-0"/>
-                    </VCardText>
-                </VCard>
-            </VDialog>
+      <VCard
+        color="primary"
+        width="300">         
+        <VCardText class="pt-3">
+          Loading
+          <VProgressLinear
+            indeterminate
+            color="white"
+            class="mb-0"/>
+        </VCardText>
+      </VCard>
+    </VDialog>
+    <VRow v-if="advisor.show">
+      <VCol cols="12">
+        <VAlert
+          v-if="advisor.show"
+          :type="advisor.type"
+          class="mb-6">       
+          {{ advisor.message }}
+        </VAlert>
+      </VCol>
+    </VRow>
+    <VRow v-if="band">
+      <!-- 👉 InvoiceEditable -->
+      <VCol
+        cols="12"
+        md="10"
+      >
+        <InvoiceEditable
+            v-if="clients.length > 0"
+            :data="invoiceData"
+            :clients="clients"
+            :suppliers="suppliers"
+            :invoices="invoices"
+            :invoice_id="invoice_id"
+            :userData="userData"
+            :role="role"
+            :supplier="supplier"
+            :total="total"
+            :billing="billing"
+            @push="addProduct"
+            @remove="removeProduct"
+            @delete="deleteProduct"
+            @edit="editProduct"
+            @data="data"
+        />
+        
+      </VCol>
 
-            <VCol cols="12" md="12">
-                <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
-                    <div class="d-flex flex-column justify-center">
-                        <h6 class="text-md-h4 text-h6 font-weight-medium">
-                            Edit a supplier 😃🌟
-                        </h6>
-                        <span>Recharge your company with suppliers 🎉</span>
-                    </div>
-                    <VSpacer />
-                    <div class="d-flex gap-4">
-                        <VBtn
-                            variant="tonal"
-                            color="secondary"
-                            class="mb-2"
-                            :to="{ name: 'dashboard-admin-suppliers' }"
-                            >
-                            Back
-                        </VBtn>
-                    </div>
-                </div>
-            </VCol>
-            <VCol cols="12" md="12">
-                <VForm
-                    ref="refForm"
-                    v-model="isFormValid"
-                    @submit.prevent="onSubmit">
-                    <VCard flat class="px-2 px-md-12">
-                        <VCardText class="px-2 pt-0 px-md-12 pt-md-5">                
-                            <VTabs
-                                v-model="currentTab"
-                                grow
-                                stacked
-                                disabled>
-                                <VTab>
-                                    <VIcon icon="mdi-domain" class="mb-0 mb-md-2" />
-                                    <span v-if="!isMobile">Company</span>
-                                </VTab>
-                                <VTab>
-                                    <VIcon icon="mdi-bank" class="mb-0 mb-md-2" />
-                                    <span v-if="!isMobile">Bank details</span>
-                                </VTab>
-                                <VTab>
-                                    <VIcon icon="mdi-account-tie" class="mb-0 mb-md-2"/>
-                                    <span v-if="!isMobile">Contact</span>
-                                </VTab>
-                            </VTabs>
-                            <VCardText class="px-2 px-md-12">
-                                <VWindow v-model="currentTab" class="pt-3">
-                                    <!-- company -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
-                                            <VCol cols="12" md="12">
-                                                <VTextField
-                                                    v-model="company"
-                                                    :rules="[requiredValidator]"
-                                                    label="Company name"
-                                                />
-                                            </VCol>   
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="organization_number"
-                                                    :rules="[requiredValidator]"
-                                                    label="Organization number"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="link"
-                                                    :rules="[urlValidator]"
-                                                    label="Page"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="12">
-                                                <VTextarea
-                                                    v-model="address"
-                                                    rows="3"
-                                                    :rules="[requiredValidator]"
-                                                    label="Address"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="street"
-                                                    :rules="[requiredValidator]"
-                                                    label="City"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="postal_code"
-                                                    :rules="[requiredValidator]"
-                                                    label="Postal code"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="phone"
-                                                    :rules="[requiredValidator, phoneValidator]"
-                                                    label="Phone"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="swish"
-                                                    :rules="[phoneValidator]"
-                                                    label="Swish"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
-                                    <!-- bank -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="bank"
-                                                    :rules="[requiredValidator]"
-                                                    label="Bank name"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="account_number"
-                                                    :rules="[requiredValidator]"
-                                                    label="Account number"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
-                                    <!-- contact -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="name"
-                                                    :rules="[requiredValidator]"
-                                                    label="Name"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="last_name"
-                                                    :rules="[requiredValidator]"
-                                                    label="Last name"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="12">
-                                                <VTextField
-                                                    :rules="[emailValidator, requiredValidator]"
-                                                    v-model="email"
-                                                    label="E-mail"
-                                                    disabled
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
-                                </VWindow>
-                            </VCardText>
-                        </VCardText>
-                    </VCard>
-                    <VRow class="mt-5">
-                        <!-- 👉 Submit and Cancel -->
-                        <VCol cols="12" md="12">
-                            <div class="text-center align-center justify-content-center">
-                                <VBtn
-                                    v-if="currentTab > 0"
-                                    variant="tonal"
-                                    color="secondary"
-                                    class="me-3"
-                                    @click="currentTab--"
-                                    >
-                                    Back
-                                </VBtn>
-                                <VBtn type="submit">
-                                    {{ (currentTab === 2) ? 'Update' : 'Next' }}
-                                </VBtn>
-                            </div>
-                        </VCol>
-                    </VRow>
-                </VForm>
-            </VCol>
-        </VRow>
-    </section>
+      <!-- 👉 Right Column: Invoice Action -->
+      <VCol
+        cols="12"
+        md="2"
+      >
+        <VCard class="mb-8">
+          <VCardText>
+            <!-- 👉 Send Invoice -->
+            <VBtn
+              block
+              prepend-icon="mdi-content-save"
+              class="mb-2"
+              type="submit"
+            >
+                Save
+            </VBtn>
+
+            <!-- 👉 Preview -->
+            <VBtn
+              block
+              color="default"
+              variant="tonal"
+              class="mb-2"
+              :to="{ name: 'dashboard-admin-billings' }"
+            >
+              Back
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VCol>
+
+    </VRow>
+  </VForm>
 </template>
 
-<style scoped>
-    .v-btn--disabled {
-        opacity: 1 !important;
-    }
-</style>
-
 <route lang="yaml">
-    meta:
-      action: edit
-      subject: suppliers
+  meta:
+    action: edit
+    subject: billing
 </route>

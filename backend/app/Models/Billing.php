@@ -155,13 +155,54 @@ class Billing extends Model
 
     public static function updateBilling($request, $billing) {
 
+        $details = [];
+
+        foreach($request->details as $item) {
+            $array = [];
+            foreach(json_decode($item, true) as $key => $value) {
+                $aux = [];
+                $aux['id'] = $key;
+                $aux['value'] = $key === 3 || $key === 4 ? number_format($value, 2, '.', '') : $value;
+
+                array_push($array, $aux);
+            }
+            array_push($details, $array);
+        }
+
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+
         $billing->update([
-            'type_id' => $request->type_id,
-            'name_en' => $request->name_en,
-            'name_se' => $request->name_se,
-            'description_en' => $request->description_en === 'null' ? null : $request->description_en,
-            'description_se' => $request->description_se === 'null' ? null : $request->description_se
+            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'client_id' =>  $request->client_id,
+            'invoice_id' =>  $request->invoice_id,
+            'invoice_date' =>  $request->invoice_date,
+            'due_date' =>  $request->due_date,
+            'payment_terms' =>  $request->payment_terms . ' days net',
+            'reference' => $request->reference === 'null' ? null : $request->reference,
+            'subtotal' =>  $request->subtotal,
+            'tax' =>  $request->tax,
+            'total' =>  $request->total,
+            'detail' => json_encode($details, true)
         ]);
+
+        $billing = self::find($billing->id);
+        $date = Carbon::now()->timestamp;
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->update();
+        
+        self::sendMail($billing); 
 
         return $billing;
     }
