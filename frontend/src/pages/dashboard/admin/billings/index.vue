@@ -462,7 +462,7 @@ const downloadCSV = async () => {
                   </VBtn>
 
                   <VBtn
-                    v-if="$can('edit', 'billing') && billing.state_id === 4"
+                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at !== null"
                     icon
                     size="x-small"
                     color="default"
