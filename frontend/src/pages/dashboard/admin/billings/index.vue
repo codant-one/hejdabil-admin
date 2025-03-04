@@ -372,6 +372,9 @@ const downloadCSV = async () => {
 
                 <td> {{ billing.invoice_id }} </td>
                 <td>
+                  <span v-if="billing.client.deleted_at !== null">
+                      Cliente eliminado
+                  </span>
                   <VTooltip>
                     <template #activator="{ props }">
                         <VAvatar
@@ -427,7 +430,7 @@ const downloadCSV = async () => {
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
                   <VBtn
-                    v-if="$can('edit', 'billing') && billing.state_id === 4"
+                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
                     icon
                     size="x-small"
                     color="default"
@@ -462,7 +465,7 @@ const downloadCSV = async () => {
                   </VBtn>
 
                   <VBtn
-                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at !== null"
+                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
                     icon
                     size="x-small"
                     color="default"
