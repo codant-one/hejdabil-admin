@@ -352,7 +352,7 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> # INVOICE </th>
-                <th scope="col"> STATUS </th>
+                <th class="text-center" scope="col"> STATUS </th>
                 <th scope="col"> CLIENT </th>
                 <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
                 <th scope="col"> INVOICE DATE </th>
@@ -371,7 +371,7 @@ const downloadCSV = async () => {
                 style="height: 3.75rem;">
 
                 <td> {{ billing.invoice_id }} </td>
-                <td>
+                <td class="text-center">
                   <span v-if="billing.client.deleted_at !== null">
                     <VChip color="error">
                       Client deleted
