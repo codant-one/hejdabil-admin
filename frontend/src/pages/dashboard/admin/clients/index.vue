@@ -81,7 +81,7 @@ async function fetchData() {
 
   
   if(role.value !== 'Supplier') {
-    await suppliersStores.fetchSuppliers({ limit: -1 })
+    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
   }
 
