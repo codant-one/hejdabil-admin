@@ -76,7 +76,7 @@ const invoice = ref({
     invoice_date: null,
     due_date: null,
     subtotal: 0,
-    tax: 0,
+    tax: 12,
     total: 0,
     reference: null,
     details: props.data
