@@ -21,6 +21,10 @@ class Suppliers {
     delete(id){
         return axios.delete(`/suppliers/${id}`)
     }
+
+    activate(id){
+        return axios.get(`/suppliers/activate/${id}`)
+    }
 }
 
 const suppliers = new Suppliers();

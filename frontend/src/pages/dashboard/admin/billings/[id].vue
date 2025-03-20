@@ -18,6 +18,7 @@ const emailDefault = ref(true)
 const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
+const file = ref(false)
 
 const advisor = ref({
   type: '',
@@ -37,7 +38,8 @@ async function fetchData() {
     types.value = response.data.data.invoices
 
     invoice.value = await billingsStores.showBilling(Number(route.params.id))
-    
+    file.value = themeConfig.settings.urlStorage + invoice.value.file
+
     JSON.parse(invoice.value.detail).forEach(row => {
         invoices.value?.push(row)   
     });
@@ -100,66 +102,44 @@ const sendMails = async () => {
   return true
 }
 
-const printInvoice = () => {
-  window.print()
+const printInvoice = async() => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
+    const blob = await response.blob();
+    
+    const blobUrl = URL.createObjectURL(blob);
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = blobUrl;
+    
+    iframe.onload = () => {
+      iframe.contentWindow.print();
+    };
+    
+    document.body.appendChild(iframe);
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-const download = () => {
-    const element = document.getElementById('invoice-detail');
+const download = async() => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
+    const blob = await response.blob();
+    
+    const blobUrl = URL.createObjectURL(blob);
 
-    if (!element) {
-        console.error('No se encontró el elemento con ID "invoice-detail"');
-        return;
-    }
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'invoice-' + invoice.value.invoice_id + '.pdf'; 
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-    const clonedElement = element.cloneNode(true);
-
-    clonedElement.style.margin = '0';
-    clonedElement.style.padding = '0';
-    clonedElement.style.display = 'flex';
-    clonedElement.style.flexDirection = 'column';
-
-    const pageHeightInPixels = 11 * 96;
-    clonedElement.style.minHeight = `${pageHeightInPixels}px`;
-    clonedElement.style.height = `100%`;
-
-    const invoiceBackground = clonedElement.querySelector('.invoice-background');
-
-    if (invoiceBackground) {
-      invoiceBackground.style.height = 'auto';
-      invoiceBackground.style.flexGrow = '0';
-      invoiceBackground.style.flexShrink = '0';
-    }
-
-    const footer = clonedElement.querySelector('.print-column');
-
-    if (footer) {
-      footer.style.position = 'absolute';
-      footer.style.bottom = '0';
-      footer.style.width = '90%';
-      const footerHeight = footer.offsetHeight;
-
-      clonedElement.style.paddingBottom = `${footerHeight}px`;
-    }
-      
-    document.body.appendChild(clonedElement);
-
-    const options = {
-        margin: 0,
-        filename: `invoice-${Number(route.params.id)}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 4, allowTaint: true, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
-        pagebreak: { mode: 'css' }
-    };
-
-    html2pdf()
-        .set(options)
-        .from(clonedElement)
-        .save()
-        .then(() => {
-        document.body.removeChild(clonedElement);
-        });
+  } catch (error) {
+    console.error('Error:', error);
+  }
 };
 </script>
 
@@ -261,8 +241,8 @@ const download = () => {
                 </span>
                 <span class="d-flex flex-column">
                   <span class="font-weight-bold">{{ invoice.client.address }}</span>
-                  <span>{{ invoice.client.street }}</span>
                   <span>{{ invoice.client.postal_code }}</span>
+                  <span>{{ invoice.client.street }}</span>
                 </span>
               </p>
             </div>
@@ -292,10 +272,9 @@ const download = () => {
           </VTable>
 
           <!-- Total -->
-          <VCardText class="d-flex justify-space-between flex-column flex-sm-row print-row px-0">
-            <VSpacer />
+          <VCardText class="d-flex flex-column print-column px-0" style="margin-top: auto !important;">
             <div class="my-2">
-              <table>
+              <table class="d-flex justify-end align-end">
                 <tbody>
                   <tr>
                     <td class="text-end">
@@ -327,9 +306,7 @@ const download = () => {
                 </tbody>
               </table>
             </div>
-          </VCardText>
-         
-          <VCardText class="px-0 print-column border-divider"  style="margin-top: auto!important;">
+          <div class="px-0 border-divider">
             <VRow class="mt-3">
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
@@ -341,8 +318,8 @@ const download = () => {
                     Abrahamsbergsvägen 47
                   </span>
                   <span v-else class="d-flex flex-column">
-                    <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
                     <span class="text-footer">{{ invoice.supplier.address }}</span>
+                    <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
                     <span class="text-footer">{{ invoice.supplier.street }}</span>
                   </span>
                   <span class="me-2 text-h6 mt-2">
@@ -391,6 +368,7 @@ const download = () => {
                   <span class="text-footer" v-else> {{ invoice.supplier.iban }} </span>
               </VCol>
             </VRow>
+          </div>
           </VCardText>
         </VCard>
       </VCol>

@@ -41,7 +41,8 @@
         },
         "files": [
             "app/Extras/FileRoles.php",
-            "app/Extras/FileManager.php"
+            "app/Extras/FileManager.php",
+            "app/Extras/Utils.php"
         ]
     },
     "autoload-dev": {

@@ -22,6 +22,7 @@ watchEffect(() => {
     } 
 
     setTimeout(() => {
+      toastsStores.items = {}
       toast.value = {
         type: '',
         message: '',

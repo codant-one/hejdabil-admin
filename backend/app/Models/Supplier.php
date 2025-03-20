@@ -15,7 +15,7 @@ class Supplier extends Model
 
     /**** Relationship ****/
     public function user() {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
     }
 
     public function clients() {
@@ -24,6 +24,10 @@ class Supplier extends Model
 
     public function billings() {
         return $this->hasMany(Billing::class, 'supplier_id', 'id');
+    }
+
+    public function state() {
+        return $this->belongsTo(State::class, 'state_id', 'id');
     }
 
     /**** Scopes ****/
@@ -56,6 +60,10 @@ class Supplier extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('state_id') !== null) {
+            $query->where('state_id', $filters->get('state_id'));
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -126,6 +134,9 @@ class Supplier extends Model
     public static function deleteSuppliers($ids) {
         foreach ($ids as $id) {
             $supplier = self::find($id);
+            $supplier->state_id = 5;
+            $supplier->save();
+
             $user = User::find($supplier->user_id);
 
             if($supplier->logo)
@@ -135,6 +146,17 @@ class Supplier extends Model
             
             User::deleteUser($user->id);
         }
+    }
+
+    public static function activateSupplier($id) {
+        $supplier = self::onlyTrashed()->where('id', $id)->first();
+        $supplier->restore();
+        $supplier->state_id = 2;
+        $supplier->save();
+
+        $user = User::onlyTrashed()->where('id', $supplier->user_id)->first();
+        $user->restore();
+        $user->assignRole('Supplier');
     }
 
     public static function updateOrCreateSupplier($request, $user) {

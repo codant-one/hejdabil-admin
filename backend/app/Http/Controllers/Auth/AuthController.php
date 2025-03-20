@@ -48,7 +48,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'missing_params',
-                'errors' => $validator->errors()
+                'errors' => implode (', ', $validator->errors()->all())
             ], 400);
         }
 

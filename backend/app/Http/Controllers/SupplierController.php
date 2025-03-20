@@ -38,13 +38,15 @@ class SupplierController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Supplier::with(['user.userDetail'])
+            $query = Supplier::with(['user.userDetail', 'state'])
+                             ->withTrashed()
                              ->clientsCount()
                              ->applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
-                                    'orderBy'
+                                    'orderBy',
+                                    'state_id'
                                 ])
                             );
 
@@ -139,6 +141,7 @@ class SupplierController extends Controller
         try {
 
             $supplier = Supplier::with(['user.userDetail'])
+                                ->withTrashed()
                                 ->clientsCount()
                                 ->find($id);
 
@@ -216,6 +219,37 @@ class SupplierController extends Controller
                 ], 404);
             
             $supplier->deleteSupplier($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function activate($id)
+    {
+        try {
+
+            $supplier = Supplier::onlyTrashed()->where('id', $id)->first();
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Supplier not found'
+                ], 404);
+            
+            $supplier->activateSupplier($id);
 
             return response()->json([
                 'success' => true,

@@ -3,7 +3,7 @@
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText, formatNumber } from '@/@core/utils/formatters'
+import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -17,7 +17,14 @@ const totalPages = ref(1)
 const totalSuppliers = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmActiveDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const state_id = ref(null)
+
+const states = ref ([
+  { id: 2, name: "Active" },
+  { id: 5, name: "Deleted" }
+])
 
 const advisor = ref({
   type: '',
@@ -48,7 +55,8 @@ async function fetchData() {
     orderByField: 'id',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    state_id: state_id.value
   }
 
   isRequestOngoing.value = true
@@ -62,12 +70,24 @@ async function fetchData() {
   isRequestOngoing.value = false
 }
 
+const resolveStatus = state_id => {
+  if (state_id === 2)
+    return { color: 'success' }
+  if (state_id === 5)
+    return { color: 'warning' }
+}
+
 const editSupplier = supplierData => {
   router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
 }
 
 const showDeleteDialog = supplierData => {
   isConfirmDeleteDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+}
+
+const showActivateDialog = supplierData => {
+  isConfirmActiveDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
 }
 
@@ -83,6 +103,30 @@ const removeSupplier = async () => {
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
     message: res.data.success ? 'Supplier deleted!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
+
+const activateSupplier = async () => {
+  isConfirmActiveDialogVisible.value = false
+  let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
+  selectedSupplier.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Supplier activated!' : res.data.message,
     show: true
   }
 
@@ -117,7 +161,8 @@ const downloadCSV = async () => {
       EMAIL: element.user.email,
       COMPANY: element.company ?? '',
       ORGANIZATION_NUMBER: element.organization_number ?? '',
-      REGISTERED_CLIENTS:  element.client_count
+      REGISTERED_CLIENTS:  element.client_count,
+      STATE: element.state.name
     }
 
     dataArray.push(data)
@@ -188,8 +233,19 @@ const downloadCSV = async () => {
             </div>
 
             <v-spacer />
+            <div class="d-flex align-center" style="width: 200px;">
+              <VSelect
+                  v-model="state_id"
+                  placeholder="States"
+                  :items="states"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"/>
+            </div>
 
-            <div class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center flex-wrap gap-4">              
               <!-- 👉 Search  -->
               <div class="search">
                 <VTextField
@@ -219,6 +275,7 @@ const downloadCSV = async () => {
                 <th scope="col"> #ID </th>
                 <th scope="col"> COMPANY </th>
                 <th scope="col"> CONTACT </th>
+                <th scope="col"> STATE </th>
                 <th scope="col"> # REGISTERED CLIENTS </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">
                   ACTIONS
@@ -277,6 +334,14 @@ const downloadCSV = async () => {
                     </div>
                   </div>
                 </td>
+                <td> 
+                  <VChip
+                    label
+                    :color="resolveStatus(supplier.state.id)?.color"
+                  >
+                    {{ supplier.state.name }}
+                  </VChip>
+                </td>
                 <td class="text-wrap w-15">
                   {{ supplier.client_count }}
                 </td>
@@ -302,7 +367,7 @@ const downloadCSV = async () => {
                     />
                   </VBtn> 
                   <VBtn
-                    v-if="$can('edit', 'suppliers')"
+                    v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
                     icon
                     size="x-small"
                     color="default"
@@ -321,7 +386,7 @@ const downloadCSV = async () => {
                   </VBtn>
 
                   <VBtn
-                    v-if="$can('delete','suppliers')"
+                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
                     icon
                     size="x-small"
                     color="default"
@@ -336,6 +401,24 @@ const downloadCSV = async () => {
                     <VIcon
                       size="22"
                       icon="tabler-trash" />
+                  </VBtn>
+
+                  <VBtn
+                    v-if="$can('delete','suppliers') && supplier.state_id === 5"
+                    icon
+                    size="x-small"
+                    color="default"
+                    variant="text"
+                    @click="showActivateDialog(supplier)">
+                    <VTooltip
+                      open-on-focus
+                      location="top"
+                      activator="parent">
+                      Activate
+                    </VTooltip>   
+                    <VIcon
+                      size="22"
+                      icon="tabler-rosette-discount-check" />
                   </VBtn>
                 </td>
               </tr>
@@ -394,6 +477,36 @@ const downloadCSV = async () => {
               Cancel
           </VBtn>
           <VBtn @click="removeSupplier">
+              Accept
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm Delete -->
+    <VDialog
+      v-model="isConfirmActiveDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Activate Supplier">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Are you sure you want to activate supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmActiveDialogVisible = false">
+              Cancel
+          </VBtn>
+          <VBtn @click="activateSupplier">
               Accept
           </VBtn>
         </VCardText>

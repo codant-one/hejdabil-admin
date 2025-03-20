@@ -27,7 +27,7 @@
                             <strong>Due date:</strong> {!! $billing->due_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Total:</strong> {!! $billing->total !!} KR
+                            <strong>Total:</strong> {!! formatCurrency($billing->total) !!} KR
                         </p><br>
                     </td>
                 </tr>

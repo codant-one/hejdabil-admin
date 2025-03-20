@@ -147,8 +147,6 @@ const removeBilling = async () => {
     show: true
   }
 
-  await fetchData()
-
   setTimeout(() => {
     advisor.value = {
       type: '',
@@ -156,6 +154,8 @@ const removeBilling = async () => {
       show: false
     }
   }, 3000)
+
+  await fetchData()
 
   return true
 }
@@ -171,8 +171,6 @@ const updateState = async () => {
     show: true
   }
 
-  await fetchData()
-
   setTimeout(() => {
     advisor.value = {
       type: '',
@@ -180,6 +178,8 @@ const updateState = async () => {
       show: false
     }
   }, 3000)
+
+  await fetchData()
 
   return true
 }
@@ -392,7 +392,7 @@ const downloadCSV = async () => {
                         </VAvatar>
                     </template>
                     <p class="mb-0"> {{ billing.state.name }} </p>
-                    <p class="mb-0"> Total: ${{ formatNumber(billing.total ?? 0) }} </p>
+                    <p class="mb-0"> Total: KR {{ formatNumber(billing.total ?? 0) }} </p>
                   </VTooltip>
               </td>
                 <td class="text-wrap">

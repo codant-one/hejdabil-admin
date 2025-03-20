@@ -64,6 +64,9 @@ const suppliers = ref(props.suppliers)
 const supplier = ref(props.supplier)
 const subtotal = ref(props.total)
 const total = ref('0.00')
+const taxOptions = ref([12, 20, 25, "Custom"]);
+const selectedTax = ref(12);
+const isCustomTax = computed(() => selectedTax.value === "Custom");
 
 const invoice = ref({
     id: 1,
@@ -131,8 +134,9 @@ async function fetchData() {
         invoice.value.days = extractDaysFromNetTermSplit(props.billing.payment_terms)
         invoice.value.supplier_id = props.billing.supplier_id ?? null
         invoice.value.client_id = props.billing.client_id
-        invoice.value.tax = props.billing.tax       
+        invoice.value.tax = props.billing.tax 
 
+        selectedTax.value = taxOptions.value.includes(props.billing.tax) ? props.billing.tax : "Custom";
         supplier.value = props.billing.supplier
         client.value = props.billing.client
         
@@ -151,6 +155,13 @@ async function fetchData() {
             invoice.value.id = props.invoice_id + 1
     }
 }
+
+const handleTaxChange = () => {
+  if (!isCustomTax.value)
+    invoice.value.tax = selectedTax.value
+  else
+    invoice.value.tax = 0
+};
 
 const calculateDueDate = () => {
     if (invoice.value.invoice_date && invoice.value.days) {
@@ -381,8 +392,8 @@ const inputData = () => {
                     </span>
                     <span class="d-flex flex-column w-100">
                         <span class="font-weight-bold">{{ client.address }}</span>
-                        <span>{{ client.street }}</span>
                         <span>{{ client.postal_code }}</span>
+                        <span>{{ client.street }}</span>
                     </span>
                 </div>
             </div>
@@ -466,13 +477,25 @@ const inputData = () => {
                             <td class="pe-16"> Tax: </td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
-                                    <VTextField
-                                        v-model="invoice.tax"
-                                        type="number"
+                                    <VSelect
+                                        v-model="selectedTax"
+                                        :items="taxOptions"
                                         label="Tax"
+                                        append-icon="tabler-percentage"
+                                        @update:modelValue="handleTaxChange"
+                                        style="width: 150px;"
+                                        />
+
+                                    <VTextField
+                                        v-if="isCustomTax"
+                                        v-model.number="invoice.tax"
+                                        class="mt-2"
+                                        type="number"
+                                        label="Customized Tax"
                                         :min="0"
                                         :step="0.01"
                                         suffix="%"
+                                        style="width: 150px;"
                                     />
                                 </h6>
                             </td>
@@ -511,8 +534,8 @@ const inputData = () => {
                         Abrahamsbergsvägen 47
                     </span>
                     <span v-else class="d-flex flex-column">
-                        <span class="text-footer">{{ supplier.postal_code }}</span>
                         <span class="text-footer">{{ supplier.address }}</span>
+                        <span class="text-footer">{{ supplier.postal_code }}</span>
                         <span class="text-footer">{{ supplier.street }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">

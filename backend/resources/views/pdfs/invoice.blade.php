@@ -27,7 +27,7 @@
         table {
             border-radius: 6px !important;
             border-spacing: unset;
-            font-size: 10px;
+            font-size: 0.8rem;
             font-weight: 400;
             letter-spacing: normal;
             text-transform: none;
@@ -50,7 +50,7 @@
         }
 
         .data-from {
-            padding: 24px;
+            padding: 32px;
         }
 
         .m-0 {
@@ -72,8 +72,12 @@
         }
 
         .number-invoice {
+            align-items: end;
+            justify-content: end;
             text-align: right;
-            width: 100%;
+            width: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .font-weight-medium {
@@ -101,7 +105,7 @@
         }
 
         .info-total .numbers {
-            width: 30% !important;
+            width: auto !important;
             text-align: end;
         }
 
@@ -132,16 +136,16 @@
                                 <td width="65%" class="data-from">
                                     <div class="d-flex align-center mb-6">
                                         @if(!$billing->supplier)
-                                            <img src="{{ public_path('logos/logo_black.png') }}" width="auto" height="50" alt="logo-main">  
+                                            <img src="{{ public_path('logos/logo_black.png') }}" width="150" alt="logo-main">  
                                         @else
                                             @if($billing->supplier->logo)
-                                                <img src="{{ public_path('storage/'.$billing->supplier->logo) }}" width="auto" height="50" alt="logo-main">
+                                                <img src="{{ public_path('storage/'.$billing->supplier->logo) }}" width="150" alt="logo-main">
                                             @else
-                                                <img src="{{ public_path('logos/logo_black.png') }}" width="auto" height="50" alt="logo-main">
+                                                <img src="{{ public_path('logos/logo_black.png') }}" width="150" alt="logo-main">
                                             @endif
                                         @endif
                                     </div>
-                                    <p class="m-0">
+                                    <p class="m-0 mt-10">
                                     Client No: {{$billing->client_id}}
                                     </p>
                                     <p class="m-0">
@@ -163,10 +167,10 @@
                                     <p class="mt-20 m-0">After the due date, interest is charged according to the Interest Act.</p>           
                                 </td>
                                 <td width="35%" class="data-from number-invoice">
-                                    <h3 class="font-weight-medium m-0">
+                                    <h4 class="font-weight-medium m-0">
                                         Invoice No #{{ $billing->invoice_id }}
-                                    </h3>
-                                    <p class="m-0 mt-2">
+                                    </h4>
+                                    <p class="m-0 mt-10">
                                         <span>Invoice Date: </span>
                                         <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
                                     </p>
@@ -178,14 +182,14 @@
                                         <span>Payment Terms: </span>
                                         <span>{{ $billing->payment_terms }}</span>
                                     </p>
-                                    <p class="m-0 number-invoice">
+                                    <p class="m-0 number-invoice mt-10">
                                         <h4 class="font-weight-medium m-0">
                                             Billing Address
                                         </h4>
                                         <span class="number-invoice">
-                                            <span class="font-weight-medium">{{ $billing->client->address }}</span></br>
-                                            <span>{{ $billing->client->street }}</span></br>
-                                            <span>{{ $billing->client->postal_code }}</span>
+                                            <p class="m-0 font-weight-medium">{{ $billing->client->address }}</p>
+                                            <p class="m-0">{{ $billing->client->postal_code }}</p>
+                                            <p class="m-0">{{ $billing->client->street }}</p>
                                         </span>
                                     </p>
                                 </td>
@@ -220,7 +224,10 @@
                                             text-align: start !important; 
                                             height: 40px !important; 
                                             border-top: 1px solid #D9D9D9;">
-                                            {{ $column['value'] }}
+                                            {{ ($column['id'] === 2 || $column['id'] === 3)
+                                                ? formatCurrency($column['value'])
+                                                : $column['value'] 
+                                            }}
                                         </td>
                                     @endforeach
                                 </tr>
@@ -228,54 +235,51 @@
                         </table>     
                     </td>
                 </tr>
-                <!---------------------------TOTAL------------------------->
-                <tr>
-                    <td>
-                        <table width="100%">
-                            <tr>
-                                <td width="80%" class="data-from"></td>
-                                <td width="20%" class="data-from pr-0 info-total">
-                                    <table width="100%">
-                                        <tr>
-                                            <td class="text">Subtotal:</td>
-                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->subtotal }} KR</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text">Tax:</td>
-                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->tax }}%</span></td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text">Total:</td>
-                                            <td class="numbers" style="text-align: right;"><span>{{ $billing->total }} KR</span></td>
-                                        </tr>
-                                    </table>                              
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
             </tbody>
         </table>
         <!------------------------- BILL TO---------------------------------->
         <div style="position: fixed; bottom: 0; width: 100%; padding-bottom: 20px;">
-            <table width="100%" class="table-supplier border-top">
+            <table width="100%" class="table-supplier">
                 <tr>
-                    <td>
+                    <td width="25%"></td>
+                    <td width="25%"></td>
+                    <td width="25%"></td>
+                    <td width="25%" class="info-total">
+                        <table width="100%">
+                            <tr>
+                                <td class="text">Subtotal:</td>
+                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->subtotal) }} KR</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text">Tax:</td>
+                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->tax) }}%</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text">Total:</td>
+                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->total) }} KR</span></td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+            <table width="100%" class="table-supplier border-top mt-10">
+                <tr>
+                    <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Address
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
-                                    <span>16830 BROMMA</span>
-                                    <span>Hejdå Bil AB</span>
-                                    <span>Abrahamsbergsvägen 47</span>
+                                    <p class="m-0">16830 BROMMA</p>
+                                    <p class="m-0">Hejdå Bil AB</p>
+                                    <p>Abrahamsbergsvägen 47</p>
                                 </span>
                             @else
                                 <span class="info-supplier">
-                                    <span>{{ $billing->supplier->postal_code }}</span>
-                                    <span>{{ $billing->supplier->address }}</span>
-                                    <span>{{ $billing->supplier->street }}</span>
+                                    <p class="m-0">{{ $billing->supplier->address }}</p>
+                                    <p class="m-0">{{ $billing->supplier->postal_code }}</p>
+                                    <p class="m-0">{{ $billing->supplier->street }}</p>
                                 </span>
                             @endif
                         </p>
@@ -298,7 +302,7 @@
                         </p>
                         @endif
                     </td>
-                    <td>
+                    <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Org.nr.
@@ -330,7 +334,7 @@
                         </p>
                         @endif
                     </td>
-                    <td>
+                    <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Website
@@ -360,7 +364,7 @@
                             @endif
                         </p>
                     </td>
-                    <td>
+                    <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Bank account number

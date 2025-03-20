@@ -107,6 +107,11 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::get('/data/all', [BillingController::class, 'all']);
     });
 
+    //Suppliers
+    Route::group(['prefix' => 'suppliers'], function () {
+        Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+    });
+
 });
 
 //Public Endpoints

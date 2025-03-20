@@ -85,6 +85,18 @@ export const useSuppliersStores = defineStore('suppliers', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
+        },
+        activateSupplier(id) {
+            this.setLoading(true)
+
+            return Suppliers.activate(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
         }
     }
 })

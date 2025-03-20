@@ -277,7 +277,6 @@ const blobToBase64 = blob => {
                     accept="image/png, image/jpeg, image/bmp"
                     placeholder="Avatar"
                     prepend-icon="tabler-camera"
-                    :rules="[requiredValidator]"
                     @change="onImageSelected"
                     @click:clear="resetAvatar"
                   />

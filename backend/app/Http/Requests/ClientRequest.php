@@ -72,7 +72,7 @@ class ClientRequest extends FormRequest
         throw new HttpResponseException(response()->json([
             'success' => false,
             'feedback' => 'params_validation_failed',
-            'message' => $validator->errors()
+            'message' => implode (', ', $validator->errors()->all())
         ], 400));
     }
 

@@ -44,9 +44,9 @@ const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
         if (valid && currentTab.value === 0 && refForm.value.items.length < 10) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 0 && refForm.value.items.length === 9 || !valid && currentTab.value === 0 && refForm.value.items.length === 13) {
+        } else if ((!valid && currentTab.value === 0 && refForm.value.items.length === 10) || (!valid && currentTab.value === 0 && refForm.value.items.length === 13)) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 1 && refForm.value.items.length > 9) {
+        } else if (!valid && currentTab.value === 1 && refForm.value.items.length > 10) {
             currentTab.value++
         } else if (valid  && currentTab.value < 2 && refForm.value.items.length > 8) {
             currentTab.value++
@@ -89,9 +89,9 @@ const onSubmit = () => {
                     isRequestOngoing.value = false
                 })
                 .catch((err) => {
-                    
+
                     let data = {
-                        message: err,
+                        message: err.message,
                         error: true
                     }
 
@@ -210,16 +210,16 @@ const onSubmit = () => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="street"
+                                                    v-model="postal_code"
                                                     :rules="[requiredValidator]"
-                                                    label="City"
+                                                    label="Postal code"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="postal_code"
+                                                    v-model="street"
                                                     :rules="[requiredValidator]"
-                                                    label="Postal code"
+                                                    label="City"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
