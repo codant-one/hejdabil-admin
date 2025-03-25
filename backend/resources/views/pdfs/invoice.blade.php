@@ -152,12 +152,12 @@
                                 <td width="65%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
                                         @if(!$billing->supplier)
-                                            <img src="{{ public_path('logos/logo_black.png') }}" width="150" alt="logo-main">  
+                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">  
                                         @else
                                             @if($billing->supplier->logo)
-                                                <img src="{{ public_path('storage/'.$billing->supplier->logo) }}" width="150" alt="logo-main">
+                                                <img src="{{ asset('storage/'.$billing->supplier->logo) }}" width="150" alt="logo-main">
                                             @else
-                                                <img src="{{ public_path('logos/logo_black.png') }}" width="150" alt="logo-main">
+                                                <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                             @endif
                                         @endif
                                     </div>
