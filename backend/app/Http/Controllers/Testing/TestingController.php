@@ -62,7 +62,7 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(105);
+        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(38);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
