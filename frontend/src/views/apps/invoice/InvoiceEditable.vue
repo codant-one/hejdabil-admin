@@ -315,7 +315,7 @@ const inputData = () => {
                     <span class="me-2 text-start w-35">Client No:</span>
                     <span>
                         <VTextField
-                            v-model="client.id"
+                            v-model="client.order_id"
                             disabled
                             prefix="#"
                             density="compact"
@@ -377,7 +377,10 @@ const inputData = () => {
                 <p class="mt-5 mb-0 text-sm" v-if="client">After the due date, interest is charged according to the Interest Act.</p>           
             </div>
             <div class="mt-4 ma-sm-4 text-right d-flex flex-column">
-                <h3 class="mb-0" v-if="client">
+                <h1 class="mb-0 text-center faktura">
+                    FAKTURA
+                </h1>
+                <h3 class="mb-0 mt-2" v-if="client">
                     {{ client.fullname }}
                 </h3>
                 <p class="mb-0 mt-2" v-if="client" style="min-width: 250px;">
@@ -590,6 +593,13 @@ const inputData = () => {
 </template>
 
 <style scoped>
+ .faktura {
+    font-size: 32px;
+    color: #9966FF;
+    border-top: 2px solid #9966FF;
+    border-bottom: 2px solid #9966FF;
+  }
+  
   .w-70 {
     width: 70% !important;
   }

@@ -210,7 +210,7 @@ const download = async() => {
               </h6>
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
                 <span class="me-2 text-start w-35">Client No:</span>
-                 {{ invoice.client.id }}
+                 {{ invoice.client.order_id }}
               </p>
               <!-- 👉 Issue Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
@@ -235,7 +235,10 @@ const download = async() => {
             </div>
 
             <div class="ma-sm-4 text-right d-flex flex-column">
-              <h3 class="mb-0">
+              <h1 class="mb-0 text-center faktura">
+                FAKTURA
+              </h1>
+              <h3 class="mb-0 mt-2">
                 {{ invoice.client.fullname }}
               </h3>
               <p class="mb-0 mt-auto">
@@ -485,6 +488,13 @@ const download = async() => {
 </template>
 
 <style lang="scss">
+  .faktura {
+    font-size: 32px;
+    color: #9966FF;
+    border-top: 2px solid #9966FF;
+    border-bottom: 2px solid #9966FF;
+  }
+
   .invoice-preview-table {
     --v-table-row-height: 44px !important;
   }

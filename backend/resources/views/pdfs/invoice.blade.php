@@ -81,6 +81,13 @@
             padding-top: 8px !important;
         }
 
+        .faktura {
+            font-size: 32px;
+            color: #9966FF;
+            border-top: 2px solid #9966FF;
+            border-bottom: 2px solid #9966FF;
+        }
+
         .table-main {
             width: 100%;
             height: calc(100% - 150px); /* Resta el espacio necesario para el footer */
@@ -163,7 +170,10 @@
                                     </div>
                                 </td>
                                 <td width="35%" class="data-from pb-0">
-                                    <h3 class="m-0" style="text-align: right;">
+                                    <span class="m-0 faktura" style="display: flex; width: 150px; margin-left: auto;">
+                                        FAKTURA
+                                    </span>
+                                    <h3 class="m-0 mt-10" style="text-align: right;">
                                         {{$billing->client->fullname}}
                                     </h3> 
                                     @if($billing->reference)
@@ -191,7 +201,7 @@
                                         </tr>
                                         <tr>
                                             <td width="30%">Client No:</td>
-                                            <td>{{ $billing->client_id }}</td>
+                                            <td>{{ $billing->client->order_id }}</td>
                                         </tr>
                                         <tr>
                                             <td width="30%">Invoice Date:</td>
