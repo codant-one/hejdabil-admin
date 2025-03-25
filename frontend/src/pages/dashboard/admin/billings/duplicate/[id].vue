@@ -168,8 +168,6 @@ const onSubmit = () => {
         
         let formData = new FormData()
 
-        formData.append('id', Number(route.params.id))
-        formData.append('_method', 'PUT')
         formData.append('client_id', invoice.value.client_id)
         formData.append('due_date', invoice.value.due_date)
         formData.append('invoice_id', invoice.value.id)
@@ -185,23 +183,18 @@ const onSubmit = () => {
             formData.append(`details[]`, JSON.stringify(element));
         });
 
-        let data = {
-                data: formData, 
-                id: Number(route.params.id)
-        }
-
         isRequestOngoing.value = true
 
-        billingsStores.updateBilling(data)
+        billingsStores.addBilling(formData)
             .then((res) => {
                 let data = {
-                    message: 'Updated Invoice!',
+                    message: 'Invoice duplicated successfully',
                     error: false
                 }
                 
                 isRequestOngoing.value = false
                 
-                router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.data.billing.id } })
+                router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.billing.id } })
                 emitter.emit('toast', data)
             })
             .catch((err) => {
@@ -292,11 +285,11 @@ const onSubmit = () => {
             <!-- 👉 Send Invoice -->
             <VBtn
               block
-              prepend-icon="mdi-content-save"
+              prepend-icon="tabler-send"
               class="mb-2"
               type="submit"
             >
-                Save
+                Duplicate
             </VBtn>
 
             <!-- 👉 Preview -->
@@ -319,6 +312,6 @@ const onSubmit = () => {
 
 <route lang="yaml">
   meta:
-    action: edit
+    action: create
     subject: billing
 </route>

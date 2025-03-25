@@ -58,14 +58,16 @@ const emit = defineEmits([
     'edit'
 ])
 
+const route = useRoute()
+
 const clients = ref(props.clients)
 const client = ref(null)
 const suppliers = ref(props.suppliers)
 const supplier = ref(props.supplier)
 const subtotal = ref(props.total)
 const total = ref('0.00')
-const taxOptions = ref([12, 20, 25, "Custom"]);
-const selectedTax = ref(12);
+const taxOptions = ref([0, 12, 20, 25, "Custom"]);
+const selectedTax = ref(0);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 
 const invoice = ref({
@@ -76,7 +78,7 @@ const invoice = ref({
     invoice_date: null,
     due_date: null,
     subtotal: 0,
-    tax: 12,
+    tax: 0,
     total: 0,
     reference: null,
     details: props.data
@@ -127,7 +129,7 @@ watchEffect(fetchData)
 async function fetchData() {
 
     if(props.billing) {
-        invoice.value.id = props.billing.invoice_id
+        invoice.value.id = props.billing.invoice_id + (route.path.includes('/duplicate/') ? 1 : 0)
         invoice.value.reference = props.billing.reference
         invoice.value.invoice_date = props.billing.invoice_date
         invoice.value.due_date = props.billing.due_date
@@ -137,7 +139,6 @@ async function fetchData() {
         invoice.value.tax = props.billing.tax 
 
         selectedTax.value = taxOptions.value.includes(props.billing.tax) ? props.billing.tax : "Custom";
-        supplier.value = props.billing.supplier
         client.value = props.billing.client
         
     } else {
@@ -295,34 +296,11 @@ const inputData = () => {
                         />
                     </div>
                 </div>
-                <p class="mb-0" v-if="client">
-                    Client No: {{ client.id }}
-                </p>
-                <p class="mb-0" v-if="client">
-                    Name:  {{ client.fullname }}
-                </p>
-                <p class="mb-0" v-if="client">
-                   E-mail: {{ client.email }}
-                </p>
-                <p class="mb-0" v-if="client?.organization_number">
-                    Organization number: {{ client.organization_number ?? '' }}
-                </p>
-                <p class="mb-0 mt-2" v-if="client">
-                    <VTextField
-                        v-model="invoice.reference"
-                        label="Reference"
-                        @input="$emit('data', invoice)"
-                    />
-                </p>    
-                <p class="mt-5 mb-0 text-sm" v-if="client">After the due date, interest is charged according to the Interest Act.</p>           
-            </div>
-            <div class="mt-4 ma-sm-4 text-right">
                 <!-- 👉 Invoice Id -->
-                <h6 class="d-flex align-center font-weight-medium justify-sm-end text-xl mb-1">
-                    <span class="me-2 text-h6">
+                <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
+                    <span class="me-2 text-start w-35 text-h6">
                         Invoice No:
                     </span>
-
                     <span>
                         <VTextField
                             v-model="invoice.id"
@@ -333,10 +311,21 @@ const inputData = () => {
                         />
                     </span>
                 </h6>
-
+                <div class="d-flex align-center justify-sm-start mb-1 text-right" v-if="client">
+                    <span class="me-2 text-start w-35">Client No:</span>
+                    <span>
+                        <VTextField
+                            v-model="client.id"
+                            disabled
+                            prefix="#"
+                            density="compact"
+                            style="inline-size: 10.5rem;"
+                        />
+                    </span>
+                </div>
                 <!-- 👉 Issue Date -->
-                <div class="d-flex align-center justify-sm-end mb-1 text-right">
-                    <span class="me-2">
+                <div class="d-flex align-center justify-sm-start mb-1 text-right">
+                    <span class="me-2 text-start w-35">
                         Invoice Date:
                     </span>
 
@@ -355,8 +344,8 @@ const inputData = () => {
                 </div>
 
                 <!-- 👉 Due Date -->
-                <div class="d-flex align-center justify-sm-end mb-0">
-                    <span class="me-2">
+                <div class="d-flex align-center justify-sm-start mb-0">
+                    <span class="me-2 text-start w-35">
                         Due date:
                     </span>
 
@@ -371,8 +360,8 @@ const inputData = () => {
                 </div>
 
                 <!-- 👉 Days -->
-                <div class="d-flex align-center justify-sm-end mb-0 mt-2">
-                    <span class="me-2">
+                <div class="d-flex align-center justify-sm-start mb-0 mt-2">
+                    <span class="me-2 text-start w-35">
                         Payment Terms:
                     </span>
 
@@ -384,9 +373,21 @@ const inputData = () => {
                             :min="1"
                         />
                     </span>
-                </div>
-
-                <div class="d-flex flex-column align-center justify-sm-end mb-0 mt-2" v-if="client">
+                </div>   
+                <p class="mt-5 mb-0 text-sm" v-if="client">After the due date, interest is charged according to the Interest Act.</p>           
+            </div>
+            <div class="mt-4 ma-sm-4 text-right d-flex flex-column">
+                <h3 class="mb-0" v-if="client">
+                    {{ client.fullname }}
+                </h3>
+                <p class="mb-0 mt-2" v-if="client" style="min-width: 250px;">
+                    <VTextField
+                        v-model="invoice.reference"
+                        label="Reference"
+                        @input="$emit('data', invoice)"
+                    />
+                </p> 
+                <div class="d-flex flex-column align-center justify-sm-end mb-0 mt-auto" v-if="client">
                     <span class="text-h6 font-weight-medium w-100 my-3">
                         Billing Address
                     </span>
@@ -529,9 +530,9 @@ const inputData = () => {
                         Address
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0">
+                        Abrahamsbergsvägen 47 <br>
                         16830 BROMMA <br>
-                        Hejdå Bil AB <br>
-                        Abrahamsbergsvägen 47
+                        Hejdå Bil AB
                     </span>
                     <span v-else class="d-flex flex-column">
                         <span class="text-footer">{{ supplier.address }}</span>

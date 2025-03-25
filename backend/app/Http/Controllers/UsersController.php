@@ -417,5 +417,48 @@ class UsersController extends Controller
         }
     }
 
+    public function updateLogo(Request $request): JsonResponse
+    {
+
+        try {
+
+            $user = Auth::user()->load(['userDetail']);
+
+            if(Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $supplier = Supplier::where('user_id', $user->id)->first();
+                
+                if ($request->hasFile('logo')) {
+                    $image = $request->file('logo');
+
+                    $path = 'suppliers/';
+
+                    $file_data = uploadFile($image, $path, $supplier->logo);
+
+                    $supplier->logo = $file_data['filePath'];
+                    $supplier->update();
+                } else {
+                    $supplier->logo = null;
+                    $supplier->update();
+                }
+            }
+
+            $userData = getUserData($user->load(['userDetail']));
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user_data' => $userData
+                ]
+            ], 200);
+
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 
 }

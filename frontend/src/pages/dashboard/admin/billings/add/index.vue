@@ -160,7 +160,7 @@ const onSubmit = () => {
               
               isRequestOngoing.value = false
               
-              router.push({ name : 'dashboard-admin-billings'})
+              router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.billing.id } })
               emitter.emit('toast', data)
           })
           .catch((err) => {

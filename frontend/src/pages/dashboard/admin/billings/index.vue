@@ -357,6 +357,7 @@ const downloadCSV = async () => {
                 <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
                 <th scope="col"> INVOICE DATE </th>
                 <th scope="col"> DUE DATE </th>
+                <th class="text-center" scope="col"> INVOICE SENT </th>
                 <th scope="col"> TOTAL </th>
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')">
                   ACTIONS
@@ -428,6 +429,14 @@ const downloadCSV = async () => {
                 </td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
+                <td class="text-center"> 
+                  <VChip
+                    label
+                    :color="billing.is_sent === 0 ? 'warning' : 'success'"
+                  >
+                    {{ billing.is_sent === 0 ? 'NOT SENT' : 'SENT' }}
+                  </VChip>
+                </td>
                 <td> KR {{ formatNumber(billing.total) ?? '0.00' }} </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
@@ -508,7 +517,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!billings.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 7 : 8"
+                  :colspan="role === 'Supplier' ? 8 : 9"
                   class="text-center">
                   Data not available
                 </td>

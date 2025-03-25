@@ -4,7 +4,8 @@ import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { useBillingsStores } from '@/stores/useBillings'
 import { formatNumber } from '@/@core/utils/formatters'
-import html2pdf from 'html2pdf.js';
+import Toaster from "@/components/common/Toaster.vue";
+import router from '@/router'
 
 const billingsStores = useBillingsStores()
 const route = useRoute()
@@ -123,6 +124,10 @@ const printInvoice = async() => {
   }
 }
 
+const duplicate = () => {
+  router.push({ name : 'dashboard-admin-billings-duplicate-id', params: { id: Number(route.params.id) } })
+}
+
 const download = async() => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
@@ -145,6 +150,7 @@ const download = async() => {
 
 <template>
   <section>
+    <Toaster />
     <VDialog
       v-model="isRequestOngoing"
       width="300"
@@ -195,47 +201,44 @@ const download = async() => {
                     />
                 </div>
               </div>
-              <p class="mb-0">
-                Client No: {{ invoice.client.id }}
-              </p>
-              <p class="mb-0">
-                  Name:  {{ invoice.client.fullname }}
-              </p>
-              <p class="mb-0">
-                  E-mail: {{ invoice.client.email }}
-              </p>
-              <p class="mb-0" v-if="invoice.client.organization_number !== null">
-                  Organization number: {{ invoice.client.organization_number ?? '' }}
-              </p>
-              <p class="mb-0" v-if="invoice.reference !== null">
-                  Reference: {{ invoice.reference ?? '' }}
-              </p>    
-              <p class="mt-auto mb-0 text-xs">After the due date, interest is charged according to the Interest Act.</p>           
-            </div>
-
-            <div class="ma-sm-4 text-right">
-              <h6 class="font-weight-medium text-h6">
-                Invoice No #{{ invoice.invoice_id }}
+              <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-0">
+                <span class="me-2 text-start w-35 text-h6">
+                  Invoice No:
+                </span>
+                <span class="text-h6">{{ invoice.invoice_id }}</span>
+                
               </h6>
-
+              <p class="d-flex align-center justify-sm-start mb-0 text-right">
+                <span class="me-2 text-start w-35">Client No:</span>
+                 {{ invoice.client.id }}
+              </p>
               <!-- 👉 Issue Date -->
-              <p class="mt-3 mb-0">
-                <span>Invoice Date: </span>
+              <p class="d-flex align-center justify-sm-start mb-0 text-right">
+                <span class="me-2 text-start w-35">Invoice Date: </span>
                 <span>{{ new Date(`${invoice.invoice_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
               </p>
 
               <!-- 👉 Due Date -->
-              <p class="mb-0">
-                <span>Due date: </span>
+              <p class="d-flex align-center justify-sm-start mb-0 text-right">
+                <span class="me-2 text-start w-35">Due date: </span>
                 <span>{{ new Date(`${invoice.due_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
               </p>
 
-              <p class="mb-0">
-                <span>Payment Terms: </span>
+              <p class="d-flex align-center justify-sm-start mb-0 text-right">
+                <span class="me-2 text-start w-35">Payment Terms: </span>
                 <span>{{ invoice.payment_terms }}</span>
               </p>
+              <p class="d-flex align-center justify-sm-start mb-0 text-right" v-if="invoice.reference !== null">
+                <span class="me-2 text-start w-35">Reference:</span> {{ invoice.reference ?? '' }}
+              </p>    
+              <p class="mt-5 mb-0 text-xs">After the due date, interest is charged according to the Interest Act.</p>           
+            </div>
 
-              <p class="mb-0">
+            <div class="ma-sm-4 text-right d-flex flex-column">
+              <h3 class="mb-0">
+                {{ invoice.client.fullname }}
+              </h3>
+              <p class="mb-0 mt-auto">
                 <span class="text-h6 font-weight-medium mb-6">
                     Billing Address
                 </span>
@@ -313,9 +316,9 @@ const download = async() => {
                       Address
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier">
+                    Abrahamsbergsvägen 47 <br>
                     16830 BROMMA <br>
-                    Hejdå Bil AB <br>
-                    Abrahamsbergsvägen 47
+                    Hejdå Bil AB
                   </span>
                   <span v-else class="d-flex flex-column">
                     <span class="text-footer">{{ invoice.supplier.address }}</span>
@@ -380,7 +383,15 @@ const download = async() => {
       >
         <VCard>
           <VCardText>
-            <!-- 👉 Send Invoice Trigger button -->
+            <VBtn
+              block
+              prepend-icon="mdi-content-copy"
+              class="mb-2"
+              @click="duplicate"
+            >
+              Duplicate
+            </VBtn>
+
             <VBtn
               block
               prepend-icon="mdi-cloud-download-outline"

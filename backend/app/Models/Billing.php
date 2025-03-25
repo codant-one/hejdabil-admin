@@ -147,8 +147,6 @@ class Billing extends Model
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
-        
-        self::sendMail($billing); 
 
         return $billing;
     }
@@ -201,8 +199,6 @@ class Billing extends Model
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
-        
-        self::sendMail($billing); 
 
         return $billing;
     }

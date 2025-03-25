@@ -216,7 +216,7 @@ const downloadCSV = async () => {
   clientsStores.getClients.forEach(element => {
 
     let data = {
-      ID: element.id,
+      ID: element.order_id,
       CONTACT: element.fullname,
       EMAIL: element.email,
       ORGANIZATION_NUMBER: element.organization_number ?? ''
@@ -344,10 +344,10 @@ const downloadCSV = async () => {
             <tbody>
               <tr 
                 v-for="client in clients"
-                :key="client.id"
+                :key="client.order_id"
                 style="height: 3.75rem;">
 
-                <td> {{ client.id }} </td>
+                <td> {{ client.order_id }} </td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
                     <span class="font-weight-medium">

@@ -65,6 +65,22 @@
             margin-top: 20px;
         }
 
+        .mt-auto {
+            margin-top: auto;
+        }
+
+        .w-30 {
+            width: 30%;
+        }
+
+        .pb-0 {
+            padding-bottom: 0 !important;
+        }
+
+        .pt-8 {
+            padding-top: 8px !important;
+        }
+
         .table-main {
             width: 100%;
             height: calc(100% - 150px); /* Resta el espacio necesario para el footer */
@@ -133,7 +149,7 @@
                     <td>
                         <table width="100%" class="invoice-background">
                             <tr>
-                                <td width="65%" class="data-from">
+                                <td width="65%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
                                         @if(!$billing->supplier)
                                             <img src="{{ public_path('logos/logo_black.png') }}" width="150" alt="logo-main">  
@@ -145,44 +161,60 @@
                                             @endif
                                         @endif
                                     </div>
-                                    <p class="m-0 mt-10">
-                                    Client No: {{$billing->client_id}}
-                                    </p>
-                                    <p class="m-0">
-                                        Name:  {{$billing->client->fullname}}
-                                    </p>
-                                    <p class="m-0">
-                                        E-mail: {{$billing->client->email}}
-                                    </p>
-                                    @if($billing->organization_number)
-                                    <p class="m-0">
-                                        Organization number: {{$billing->organization_number}}
-                                    </p>
-                                    @endif
+                                </td>
+                                <td width="35%" class="data-from pb-0">
+                                    <h3 class="m-0" style="text-align: right;">
+                                        {{$billing->client->fullname}}
+                                    </h3> 
                                     @if($billing->reference)
-                                    <p class="m-0">
-                                        Reference: {{$billing->reference}}
-                                    </p> 
-                                    @endif   
+                                    <div style="text-align: right;">
+                                        <span width="30%">Reference:</span>
+                                        <span>{{ $billing->reference }}</span>
+                                    </div>
+                                    @endif 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td width="65%" class="data-from pt-8">
+                                    <table width="100%" class="invoice-background">
+                                        <tr class="font-weight-medium m-0 d-flex">
+                                            <td width="30%">
+                                                <h4 class="font-weight-medium m-0 d-flex">
+                                                    Invoice No:
+                                                </h4>
+                                            </td>
+                                            <td>
+                                                <h4 class="font-weight-medium m-0 d-flex">
+                                                    {{ $billing->invoice_id }}
+                                                </h4>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30%">Client No:</td>
+                                            <td>{{ $billing->client_id }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30%">Invoice Date:</td>
+                                            <td>
+                                                <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30%">Due Date:</td>
+                                            <td>
+                                                <span>{{ \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td width="30%">Payment Terms:</td>
+                                            <td>{{ $billing->payment_terms }}</td>
+                                        </tr>
+                                    </table>
+ 
                                     <p class="mt-20 m-0">After the due date, interest is charged according to the Interest Act.</p>           
                                 </td>
-                                <td width="35%" class="data-from number-invoice">
-                                    <h4 class="font-weight-medium m-0">
-                                        Invoice No #{{ $billing->invoice_id }}
-                                    </h4>
-                                    <p class="m-0 mt-10">
-                                        <span>Invoice Date: </span>
-                                        <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
-                                    </p>
-                                    <p class="m-0">
-                                        <span>Due date: </span>
-                                        <span>{{ \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') }}</span>
-                                    </p>
-                                    <p class="m-0">
-                                        <span>Payment Terms: </span>
-                                        <span>{{ $billing->payment_terms }}</span>
-                                    </p>
-                                    <p class="m-0 number-invoice mt-10">
+                                <td width="35%" class="data-from pt-8" style="vertical-align: bottom;">
+                                    <div class="mt-auto number-invoice">
                                         <h4 class="font-weight-medium m-0">
                                             Billing Address
                                         </h4>
@@ -191,7 +223,7 @@
                                             <p class="m-0">{{ $billing->client->postal_code }}</p>
                                             <p class="m-0">{{ $billing->client->street }}</p>
                                         </span>
-                                    </p>
+                                    </div>
                                 </td>
                             </tr>
                         </table>
@@ -271,9 +303,9 @@
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
+                                    <p class="m-0">Abrahamsbergsvägen 47</p>
                                     <p class="m-0">16830 BROMMA</p>
-                                    <p class="m-0">Hejdå Bil AB</p>
-                                    <p>Abrahamsbergsvägen 47</p>
+                                    <p>Hejdå Bil AB</p>
                                 </span>
                             @else
                                 <span class="info-supplier">

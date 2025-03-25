@@ -93,7 +93,8 @@ class BillingController extends Controller
             $billing = Billing::createBilling($request);
 
             return response()->json([
-                'success' => true
+                'success' => true,
+                'billing' => $billing
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -280,6 +281,8 @@ class BillingController extends Controller
         try {
 
             $billing = Billing::with(['client'])->find($id);
+            $billing->is_sent = 1;
+            $billing->save();
 
             $data = [
                 'user' => $billing->client->fullname,

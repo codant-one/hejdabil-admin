@@ -81,6 +81,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::post('update/profile',  [UsersController::class, 'updateProfile']);
         Route::get('user/profile',  [UsersController::class, 'getProfile']);
         Route::post('update/supplier', [UsersController::class, 'updateSupplier']);
+        Route::post('update/supplier/logo', [UsersController::class, 'updateLogo']);
     });
 
     //Roles

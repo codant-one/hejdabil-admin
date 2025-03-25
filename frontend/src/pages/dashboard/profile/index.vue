@@ -4,12 +4,17 @@ import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 
+const route = useRoute();
+
 const avatar = ref('')
 const avatarOld = ref('')
 const userData = ref(null)
 const role = ref(null)
 const userTab = ref(null)
 const isRequestOngoing = ref(false)
+const isFormEdited = ref(false);
+const dialog = ref(false);
+let nextRoute = null;
 
 const advisor = ref({
   type: '',
@@ -28,6 +33,15 @@ const tabs = [
   },
 ]
 
+onBeforeRouteLeave((to, from, next) => {
+  if (isFormEdited.value) {
+    dialog.value = true;
+    nextRoute = next;
+  } else {
+    next();
+  }
+});
+
 watchEffect(fetchData)
 
 async function fetchData() { 
@@ -39,11 +53,25 @@ async function fetchData() {
   role.value = userData.value.roles[0].name
 }
 
+const showWindow = function(data) {
+  isFormEdited.value = data
+}
+
 const showAlert = function(alert) {
   advisor.value.show = alert.value.show
   advisor.value.type = alert.value.type
   advisor.value.message = alert.value.message
 }
+
+const confirmLeave = () => {
+  dialog.value = false;
+  nextRoute();
+};
+
+const cancelLeave = () => {
+  dialog.value = false;
+  nextRoute(false);
+};
 
 const resizeImage = function(file, maxWidth, maxHeight, quality) {
   return new Promise((resolve, reject) => {
@@ -183,15 +211,45 @@ const onImageSelected = event => {
           :touch="false"
         >
           <VWindowItem>
-            <TabSecurity 
-            @alert="showAlert"/>
+            <TabSecurity @alert="showAlert"/>
           </VWindowItem>
           <VWindowItem v-if="role === 'Supplier'">
-            <TabDealer />
+            <TabDealer 
+              @alert="showAlert"
+              @window="showWindow"/>
           </VWindowItem>
         </VWindow>
       </VCol>
     </VRow>
+     <!-- 👉 Confirm Delete -->
+     <VDialog
+      v-model="dialog"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="cancelLeave" />
+
+      <!-- Dialog Content -->
+      <VCard title="Exit without saving">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          <strong>Are you sure you want to out?</strong> There are changes to your form that haven't been saved yet.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="cancelLeave">
+              Cancel
+          </VBtn>
+          <VBtn @click="confirmLeave">
+              Accept
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 

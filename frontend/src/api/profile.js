@@ -14,6 +14,10 @@ class Profile {
         return axios.post('users/update/supplier', data)
     }
 
+    updateLogo(data) {
+        return axios.post('users/update/supplier/logo', data)
+    }
+
 }
 
 const profile = new Profile();
