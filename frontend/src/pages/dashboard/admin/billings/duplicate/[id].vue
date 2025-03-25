@@ -93,6 +93,8 @@ async function fetchData() {
             localStorage.setItem('user_data', JSON.stringify(user_data))
 
             supplier.value = user_data.supplier
+        } else {
+          supplier.value = billing.value.supplier
         }
 
         JSON.parse(billing.value.detail).forEach(details => {
