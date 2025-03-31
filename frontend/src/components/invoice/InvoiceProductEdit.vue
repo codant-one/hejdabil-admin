@@ -154,7 +154,13 @@ const removeProduct = () => {
             </tr>
             <tr>
               <td :colspan="props.invoices.length" class="pt-1">
-                <draggable v-model="notes" tag="div" item-key="order_id" @start="onStart" @end="onEnd" handle=".drag-handle">
+                <draggable 
+                  v-model="notes" 
+                  tag="div" 
+                  item-key="order_id" 
+                  @start="onStart" 
+                  @end="onEnd" 
+                  handle=".drag-handle">
                   <template #item="{ element }">
                     <div class="draggable-item py-2 px-2 d-flex">
                       <span class="drag-handle px-3 d-flex align-center">☰</span>
@@ -204,5 +210,4 @@ const removeProduct = () => {
     cursor: move;
     border-radius: 8px;
   }
-
 </style>

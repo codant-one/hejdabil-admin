@@ -163,7 +163,9 @@ const deleteProduct = id => {
 
     total.value = 0
     invoiceData.value.forEach(element => {
-        total.value += Number(element.total)
+      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+      total.value += parseFloat(result);
+      element[4] = result; 
     });
   }
 }

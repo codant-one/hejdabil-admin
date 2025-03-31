@@ -1,6 +1,7 @@
 <script setup>
 
 import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue"
+import draggable from 'vuedraggable'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -269,6 +270,15 @@ const addItem = () => {
     emit('push', item)
 }
 
+
+const onStart = async (e) => {
+  // console.log('oldIndex',e.oldIndex)
+}
+
+const onEnd = async (e) => {
+    // console.log('oldIndex',e.oldIndex)
+}
+
 const removeProduct = id => {
     emit('remove', id)
 }
@@ -454,23 +464,29 @@ const editNote = data => {
 
         <!-- 👉 Add purchased products -->
         <VCardText class="add-products-form px-0">
-            <div
-                v-for="(product, index) in invoice.details"
-                :key="index"
+            <draggable
                 class="my-4"
-            >
-                <InvoiceProductEdit
-                    :id="index"
-                    :data="product"
-                    :invoices="invoices"
-                    :notes="props.notes ? props.notes[index] : []"
-                    :isCreated="props.isCreated"
-                    @remove-product="removeProduct"
-                    @delete-product="deleteProduct"
-                    @edit-product="$emit('edit')"
-                    @edit-note="editNote"
-                />
-            </div>
+                v-model="invoice.details" 
+                tag="div" 
+                item-key="index" 
+                @start="onStart" 
+                @end="onEnd">
+                <template #item="{ element, index }">
+                    <div class="draggable-item py-2 px-2">
+                        <InvoiceProductEdit
+                            :id="index"
+                            :data="element"
+                            :invoices="invoices"
+                            :notes="props.notes ? props.notes[index] : []"
+                            :isCreated="props.isCreated"
+                            @remove-product="removeProduct"
+                            @delete-product="deleteProduct"
+                            @edit-product="$emit('edit')"
+                            @edit-note="editNote"
+                        />
+                    </div>
+                </template>
+            </draggable>
             <div class="mt-4">
                 <VBtn @click="addItem">
                     Add item
@@ -610,19 +626,24 @@ const editNote = data => {
 </template>
 
 <style scoped>
- .faktura {
-    font-size: 32px;
-    color: #9966FF;
-    border-top: 2px solid #9966FF;
-    border-bottom: 2px solid #9966FF;
-  }
-  
-  .w-70 {
-    width: 70% !important;
-  }
+    .draggable-item:hover {
+        background-color: #e9ecef;
+        cursor: move;
+        border-radius: 8px;
+    }
 
-  .text-footer {
-    font-size: 0.75rem !important;
-  }
+    .faktura {
+        font-size: 32px;
+        color: #9966FF;
+        border-top: 2px solid #9966FF;
+        border-bottom: 2px solid #9966FF;
+    }
+    
+    .w-70 {
+        width: 70% !important;
+    }
 
+    .text-footer {
+        font-size: 0.75rem !important;
+    }
 </style>
