@@ -301,9 +301,7 @@ const downloadCSV = async () => {
                 <th scope="col"> #ID </th>
                 <th scope="col"> ENGLISH INFO </th>
                 <th scope="col"> SWEDISH INFO </th>
-                <th scope="col" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">
-                  ACTIONS
-                </th>
+                <th scope="col" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -333,42 +331,32 @@ const downloadCSV = async () => {
                   </div>
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
-                  <VBtn
-                    v-if="$can('edit', 'invoices')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="editInvoice(invoice)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-edit" />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete','invoices')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showDeleteDialog(invoice)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Delete
-                    </VTooltip>   
-                    <VIcon
-                      size="22"
-                      icon="tabler-trash" />
-                  </VBtn>
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem
+                         v-if="$can('edit', 'invoices')"
+                         @click="editInvoice(invoice)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','invoices')"
+                        @click="showDeleteDialog(invoice)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>

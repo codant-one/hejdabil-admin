@@ -53,7 +53,10 @@ class Billing extends Model
                                   ->orWhere('email', 'LIKE', '%' . $search . '%');
                         });
                   });
-            });
+            })
+            ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
+            ->orWhere('detail', 'LIKE', '%' . $search . '%')
+            ->orWhere('notes', 'LIKE', '%' . $search . '%');
         });
     }
 

@@ -335,9 +335,7 @@ const downloadCSV = async () => {
                 <th scope="col"> PHONE </th>
                 <th scope="col"> ADDRESS </th>
                 <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
-                <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')">
-                  ACTIONS
-                </th>
+                <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -393,61 +391,32 @@ const downloadCSV = async () => {
                   </div>
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'clients') || $can('delete', 'clients')">      
-                  <!-- <VBtn
-                    v-if="$can('view', 'clients')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="seeClient(client)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      View
-                    </VTooltip>
-                    <VIcon
-                      size="28"
-                      icon="tabler-eye"
-                      class="me-1"
-                    />
-                  </VBtn>  -->
-                  <VBtn
-                    v-if="$can('edit', 'clients')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="editClient(client)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-edit" />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete','clients')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showDeleteDialog(client)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Delete
-                    </VTooltip>   
-                    <VIcon
-                      size="22"
-                      icon="tabler-trash" />
-                  </VBtn>
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'clients') || $can('delete', 'clients')">      
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem
+                         v-if="$can('edit', 'clients')"
+                         @click="editClient(client)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','clients')"
+                        @click="showDeleteDialog(client)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>

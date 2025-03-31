@@ -6,7 +6,6 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
-import { can } from '@layouts/plugins/casl'
 
 const suppliersStores = useSuppliersStores()
 
@@ -345,7 +344,7 @@ const downloadCSV = async () => {
                   {{ supplier.client_count }}
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">

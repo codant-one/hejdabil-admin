@@ -359,9 +359,7 @@ const downloadCSV = async () => {
                 <th scope="col"> DUE DATE </th>
                 <th class="text-center" scope="col"> INVOICE SENT </th>
                 <th scope="col"> TOTAL </th>
-                <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')">
-                  ACTIONS
-                </th>
+                <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -439,77 +437,48 @@ const downloadCSV = async () => {
                 </td>
                 <td> KR {{ formatNumber(billing.total) ?? '0.00' }} </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
-                  <VBtn
-                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="updateBilling(billing)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Pay
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-file-dollar" />
-                  </VBtn>
-                  <VBtn
-                    v-if="$can('edit', 'billing')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showBilling(billing)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      View
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-eye" />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="editBilling(billing)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-edit" />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete','billing')"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showDeleteDialog(billing)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Delete
-                    </VTooltip>   
-                    <VIcon
-                      size="22"
-                      icon="tabler-trash" />
-                  </VBtn>
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem
+                         v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
+                         @click="updateBilling(billing)">
+                        <template #prepend>
+                          <VIcon icon="tabler-file-dollar" />
+                        </template>
+                        <VListItemTitle>Pay</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('edit', 'billing')"
+                        @click="showBilling(billing)">
+                        <template #prepend>
+                          <VIcon icon="tabler-eye" />
+                        </template>
+                        <VListItemTitle>View</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('edit', 'billing') && billing.state_id === 4 && billing.client.deleted_at === null"
+                        @click="editBilling(billing)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','billing')"
+                        @click="showDeleteDialog(billing)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>

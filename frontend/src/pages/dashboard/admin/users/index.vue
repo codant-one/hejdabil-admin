@@ -319,9 +319,7 @@ const downloadCSV = async () => {
                 <th scope="col"> EMAIL </th>
                 <th scope="col"> ROLES </th>
                 <th scope="col"> PHONE </th>
-                <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')">
-                  ACTIONS 
-                </th>
+                <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
             </thead>
 
@@ -385,91 +383,48 @@ const downloadCSV = async () => {
                   {{ user.user_detail?.phone ?? '----' }}
                 </td>
                 <!-- 👉 acciones -->
-                <td style="width: 8rem;">
-                  <VBtn
-                    v-if="$can('view', 'users')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      View
-                    </VTooltip>
-                    <VIcon
-                      icon="tabler-eye"
-                      
-                      :size="22"
-                      @click="showUserDetailDialog(user)"
-                    />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('edit', 'users')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="showUserPasswordDialog(user)"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      Change password
-                    </VTooltip>
-                    <VIcon
-                      :size="22"
-                      icon="tabler-key"
-                    />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('edit', 'users')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="showUserEditDialog(user)"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                      :size="22"
-                      icon="tabler-edit"
-                    />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete', 'users')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="showUserDeleteDialog(user)"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      Delete
-                    </VTooltip>
-                    <VIcon
-                      :size="22"
-                      icon="tabler-trash"
-                    />
-                  </VBtn>
+                <td style="width: 3rem;">
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem
+                         v-if="$can('view', 'users')"
+                         @click="showUserDetailDialog(user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-eye" />
+                        </template>
+                        <VListItemTitle>View</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'users')"
+                         @click="showUserPasswordDialog(user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-key" />
+                        </template>
+                        <VListItemTitle>Change password</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'users')"
+                         @click="showUserEditDialog(user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','users')"
+                        @click="showUserDeleteDialog(user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>

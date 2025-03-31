@@ -236,9 +236,7 @@ const downloadCSV = async () => {
                   ROLE
                 </th>
 
-                <th scope="col" v-if="$can('view', 'roles') || $can('edit','roles') || $can('delete','roles')">
-                  ACTIONS
-                </th>
+                <th scope="col" v-if="$can('view', 'roles') || $can('edit','roles') || $can('delete','roles')"> </th>
               </tr>
             </thead>
 
@@ -260,69 +258,40 @@ const downloadCSV = async () => {
                 </td>
 
                 <!-- 👉 acciones -->
-                <td style="width: 8rem;">
-                  <VBtn
-                    v-if="$can('view', 'roles')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      View
-                    </VTooltip>
-                    <VIcon
-                      icon="tabler-eye"
-                      :size="22"
-                      @click="showRoleDetailDialog(rol)"
-                    />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('edit', 'roles')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="showRoleEditDialog(rol)"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                      :size="22"
-                      icon="tabler-edit"
-                    />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete', 'roles')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="showRoledDeleteDialog(rol)"
-                  >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent"
-                    >
-                      Delete
-                    </VTooltip>
-                    <VIcon
-                      :size="22"
-                      icon="tabler-trash"
-                    />
-                  </VBtn>
+                <td style="width: 3rem;">
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem
+                         v-if="$can('view', 'roles')"
+                         @click="showRoleDetailDialog(rol)">
+                        <template #prepend>
+                          <VIcon icon="tabler-eye" />
+                        </template>
+                        <VListItemTitle>View</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'roles')"
+                         @click="showRoleEditDialog(rol)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','roles')"
+                        @click="showRoledDeleteDialog(rol)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>
