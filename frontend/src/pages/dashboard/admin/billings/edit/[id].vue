@@ -30,6 +30,7 @@ const invoices = ref([])
 const suppliers = ref([])
 const clients = ref([])
 const invoice_id = ref(0)
+const notes = ref([])
 
 const userData = ref(null)
 const role = ref(null)
@@ -72,6 +73,20 @@ async function fetchData() {
             return detailObject;
         });
 
+        if(billing.value.notes) {
+          notes.value = JSON.parse(billing.value.notes).map((element, index) => {
+              const detailObject = [];
+              element.forEach((item, order) => {
+                  detailObject.push({ 
+                    id: index, 
+                    order_id: order + 1, 
+                    note: item
+                  });
+              });
+              return detailObject;
+          });
+        }
+
         let response = await billingsStores.all()
         
         clients.value = response.data.data.clients
@@ -93,7 +108,7 @@ async function fetchData() {
 
             supplier.value = user_data.supplier
         } else {
-          supplier.value = billing.value.supplier
+          supplier.value = billing.value.supplier ?? []
         }
 
         JSON.parse(billing.value.detail).forEach(details => {
@@ -143,12 +158,14 @@ const removeProduct = id => {
 }
 
 const deleteProduct = id => {
-  invoiceData.value?.splice(id, 1)
+  if(id > 0) {
+    invoiceData.value?.splice(id, 1)
 
-  total.value = 0
-  invoiceData.value.forEach(element => {
-      total.value += Number(element.total)
-  });
+    total.value = 0
+    invoiceData.value.forEach(element => {
+        total.value += Number(element.total)
+    });
+  }
 }
 
 const editProduct = () => {
@@ -159,6 +176,10 @@ const editProduct = () => {
     total.value += parseFloat(result);
     element[4] = result; 
   });
+}
+
+const editNote = data => {
+  notes.value[data.id] = data.notes
 }
 
 const onSubmit = () => {
@@ -182,8 +203,11 @@ const onSubmit = () => {
         formData.append('reference', invoice.value.reference)
         formData.append('payment_terms', invoice.value.days)
 
-        invoice.value.details.forEach((element) => {
-            formData.append(`details[]`, JSON.stringify(element));
+        invoice.value.details.forEach((element, index) => {
+          notes.value[index].forEach((element) => {
+            formData.append(`notes[]`, JSON.stringify(element));
+          });
+          formData.append(`details[]`, JSON.stringify(element));
         });
 
         let data = {
@@ -274,10 +298,13 @@ const onSubmit = () => {
             :supplier="supplier"
             :total="total"
             :billing="billing"
+            :isCreated="false"
+            :notes="notes"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
             @edit="editProduct"
+            @edit-note="editNote"
             @data="data"
         />
         

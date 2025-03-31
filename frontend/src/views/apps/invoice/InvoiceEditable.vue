@@ -46,6 +46,14 @@ const props = defineProps({
     billing: {
         type: Object,
         required: false
+    },
+    notes: {
+        type: Object,
+        required: false
+    },
+    isCreated: {
+        type: Boolean,
+        required: true
     }
 })
 
@@ -55,7 +63,8 @@ const emit = defineEmits([
     'delete',
     'setting',
     'data',
-    'edit'
+    'edit',
+    'editNote'
 ])
 
 const route = useRoute()
@@ -81,7 +90,8 @@ const invoice = ref({
     tax: 0,
     total: 0,
     reference: null,
-    details: props.data
+    details: props.data,
+    notes: []
 })
 
 const extractDaysFromNetTermSplit = term => {
@@ -270,6 +280,10 @@ const deleteProduct = id => {
 const inputData = () => {
     emit('data', invoice.value)
 }
+
+const editNote = data => {
+    emit('editNote', data)
+}
 </script>
 
 <template>
@@ -449,9 +463,12 @@ const inputData = () => {
                     :id="index"
                     :data="product"
                     :invoices="invoices"
+                    :notes="props.notes ? props.notes[index] : []"
+                    :isCreated="props.isCreated"
                     @remove-product="removeProduct"
                     @delete-product="deleteProduct"
                     @edit-product="$emit('edit')"
+                    @edit-note="editNote"
                 />
             </div>
             <div class="mt-4">

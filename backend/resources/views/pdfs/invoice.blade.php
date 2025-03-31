@@ -262,14 +262,23 @@
                                     @foreach($row as $colIndex => $column)
                                         <td 
                                             style="
+                                            {{ !is_null($notes) ? 'vertical-align: top;' : ''}}
                                             padding-left: 10px !important; 
                                             text-align: start !important; 
                                             height: 40px !important; 
                                             border-top: 1px solid #D9D9D9;">
+                                            <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
                                             {{ ($column['id'] === 2 || $column['id'] === 3)
                                                 ? formatCurrency($column['value'])
                                                 : $column['value'] 
                                             }}
+                                            </span>
+
+                                            @if($column['id'] === 1 && !is_null($notes))
+                                                @foreach ($notes[$rowIndex] as $note)
+                                                    <p class="m-0">{{ $note }}</p>
+                                                @endforeach
+                                            @endif
                                         </td>
                                     @endforeach
                                 </tr>

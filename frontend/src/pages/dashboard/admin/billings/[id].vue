@@ -12,6 +12,7 @@ const route = useRoute()
 
 const types = ref([])
 const invoices = ref([])
+const notes = ref([])
 const invoice = ref(null)
 const isRequestOngoing = ref(true)
 const isConfirmSendMailVisible = ref(false)
@@ -44,6 +45,12 @@ async function fetchData() {
     JSON.parse(invoice.value.detail).forEach(row => {
         invoices.value?.push(row)   
     });
+
+    if(invoice.value.notes) {
+      JSON.parse(invoice.value.notes).forEach(row => {
+          notes.value?.push(row)   
+      });
+    }
 
     isRequestOngoing.value = false
   }
@@ -269,11 +276,18 @@ const download = async() => {
             </thead>
 
             <tbody>
-                <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
-                    <td v-for="(column, colIndex) in row" :key="'col-' + colIndex">
-                    {{ column.value }}
-                    </td>
-                </tr>
+              <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
+                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="vertical-top py-2">
+                  <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
+                  <span v-if="column.id === 1"> 
+                    <span v-for="(value, index) in notes[rowIndex]" :key="index">
+                      <span class="d-flex flex-column"> 
+                        {{value}}
+                      </span>
+                    </span> 
+                  </span>         
+                </td>
+              </tr>
             </tbody>
           </VTable>
 
@@ -488,6 +502,10 @@ const download = async() => {
 </template>
 
 <style lang="scss">
+  .vertical-top {
+    vertical-align: top;
+  }
+
   .faktura {
     font-size: 32px;
     color: #9966FF;

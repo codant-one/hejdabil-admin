@@ -108,12 +108,14 @@ const removeProduct = id => {
 }
 
 const deleteProduct = id => {
-  invoiceData.value?.splice(id, 1)
+  if(id > 0) {
+    invoiceData.value?.splice(id, 1)
 
-  total.value = 0
-  invoiceData.value.forEach(element => {
-      total.value += Number(element.total)
-  });
+    total.value = 0
+    invoiceData.value.forEach(element => {
+        total.value += Number(element.total)
+    });
+  }
 }
 
 const editProduct = () => {
@@ -124,6 +126,10 @@ const editProduct = () => {
     total.value += parseFloat(result);
     element[4] = result; 
   });
+}
+
+const editNote = data => {
+  invoice.value.notes[data.id] = data.notes
 }
 
 const onSubmit = () => {
@@ -145,8 +151,13 @@ const onSubmit = () => {
       formData.append('reference', invoice.value.reference)
       formData.append('payment_terms', invoice.value.days)
 
-      invoice.value.details.forEach((element) => {
-          formData.append(`details[]`, JSON.stringify(element));
+      invoice.value.details.forEach((element, index) => {
+        if(invoice.value.notes.length > 0) {
+          invoice.value.notes[index].forEach((element) => {
+            formData.append(`notes[]`, JSON.stringify(element));
+          });
+        }
+        formData.append(`details[]`, JSON.stringify(element));
       });
 
       isRequestOngoing.value = true
@@ -231,10 +242,12 @@ const onSubmit = () => {
             :role="role"
             :supplier="supplier"
             :total="total"
+            :isCreated="true"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
             @edit="editProduct"
+            @edit-note="editNote"
             @data="data"
         />
         

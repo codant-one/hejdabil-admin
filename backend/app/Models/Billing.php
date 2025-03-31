@@ -103,6 +103,7 @@ class Billing extends Model
     public static function createBilling($request) {
 
         $details = [];
+        $groupedNotes = [];
 
         foreach($request->details as $item) {
             $array = [];
@@ -114,6 +115,21 @@ class Billing extends Model
                 array_push($array, $aux);
             }
             array_push($details, $array);
+        }        
+
+        if(isset($request->notes)) {
+            foreach ($request->notes as $item) {
+                $decodedItem = json_decode($item, true);
+                
+                $id = $decodedItem['id'];
+                $note = $decodedItem['note'];
+            
+                if (!isset($groupedNotes[$id])) {
+                    $groupedNotes[$id] = [];
+                }
+
+                $groupedNotes[$id][] = $note;
+            }
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
@@ -129,12 +145,14 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
-            'detail' => json_encode($details, true)
+            'detail' => json_encode($details, true),
+            'notes' => isset($request->notes) ? json_encode(array_values($groupedNotes)) : null
         ]);
 
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -143,7 +161,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
@@ -154,6 +172,7 @@ class Billing extends Model
     public static function updateBilling($request, $billing) {
 
         $details = [];
+        $groupedNotes = [];
 
         foreach($request->details as $item) {
             $array = [];
@@ -165,6 +184,21 @@ class Billing extends Model
                 array_push($array, $aux);
             }
             array_push($details, $array);
+        }
+
+        if(isset($request->notes)) {
+            foreach ($request->notes as $item) {
+                $decodedItem = json_decode($item, true);
+                
+                $id = $decodedItem['id'];
+                $note = $decodedItem['note'];
+            
+                if (!isset($groupedNotes[$id])) {
+                    $groupedNotes[$id] = [];
+                }
+
+                $groupedNotes[$id][] = $note;
+            }
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
@@ -180,13 +214,15 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
-            'detail' => json_encode($details, true)
+            'detail' => json_encode($details, true),
+            'notes' => isset($request->notes) ? json_encode(array_values($groupedNotes)) : null
         ]);
 
         $billing = self::find($billing->id);
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -195,7 +231,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
