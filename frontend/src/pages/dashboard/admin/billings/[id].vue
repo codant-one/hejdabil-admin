@@ -277,7 +277,7 @@ const download = async() => {
 
             <tbody>
               <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
-                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="vertical-top py-2">
+                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
                   <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
                   <span v-if="column.id === 1"> 
                     <span v-for="(value, index) in notes[rowIndex]" :key="index">

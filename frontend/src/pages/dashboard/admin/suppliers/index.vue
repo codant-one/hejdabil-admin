@@ -6,6 +6,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
+import { can } from '@layouts/plugins/casl'
 
 const suppliersStores = useSuppliersStores()
 
@@ -277,9 +278,7 @@ const downloadCSV = async () => {
                 <th scope="col"> CONTACT </th>
                 <th scope="col"> STATE </th>
                 <th scope="col"> # REGISTERED CLIENTS </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">
-                  ACTIONS
-                </th>
+                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -347,79 +346,48 @@ const downloadCSV = async () => {
                 </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 5rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
-                  <VBtn
-                    v-if="$can('view', 'suppliers')"
-                    icon
-                    variant="text"
-                    color="default"
-                    size="x-small"
-                    @click="seeSupplier(supplier)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      View
-                    </VTooltip>
-                    <VIcon
-                      size="28"
-                      icon="tabler-eye"
-                      class="me-1"
-                    />
-                  </VBtn> 
-                  <VBtn
-                    v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="editSupplier(supplier)"
-                    >
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Edit
-                    </VTooltip>
-                    <VIcon
-                        size="22"
-                        icon="tabler-edit" />
-                  </VBtn>
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <VIcon size="28" icon="mdi-cog-outline"/>
+                      </VBtn>
+                    </template>
 
-                  <VBtn
-                    v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showDeleteDialog(supplier)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Delete
-                    </VTooltip>   
-                    <VIcon
-                      size="22"
-                      icon="tabler-trash" />
-                  </VBtn>
-
-                  <VBtn
-                    v-if="$can('delete','suppliers') && supplier.state_id === 5"
-                    icon
-                    size="x-small"
-                    color="default"
-                    variant="text"
-                    @click="showActivateDialog(supplier)">
-                    <VTooltip
-                      open-on-focus
-                      location="top"
-                      activator="parent">
-                      Activate
-                    </VTooltip>   
-                    <VIcon
-                      size="22"
-                      icon="tabler-rosette-discount-check" />
-                  </VBtn>
+                    <VList>
+                      <VListItem 
+                        v-if="$can('view', 'suppliers')"
+                        @click="seeSupplier(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-eye" />
+                        </template>
+                        <VListItemTitle>View</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
+                         @click="editSupplier(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Edit</VListItemTitle>
+                      </VListItem>
+                      <VListItem 
+                        v-if="$can('delete','suppliers') && supplier.state_id === 2"
+                        @click="showDeleteDialog(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Delete</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                        v-if="$can('delete','suppliers') && supplier.state_id === 5"
+                        @click="showActivateDialog(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-rosette-discount-check" />
+                        </template>
+                        <VListItemTitle>Activate</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
                 </td>
               </tr>
             </tbody>

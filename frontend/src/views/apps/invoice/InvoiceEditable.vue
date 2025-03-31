@@ -260,7 +260,7 @@ const addItem = () => {
                 value = 1
             break
             case 3:
-                value = 0
+                value = '0.00'
             break   
         }
         item[parseInt(element.id)] = value

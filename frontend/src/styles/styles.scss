@@ -100,3 +100,7 @@ body {
 .v-text-field .v-input__details {
   padding-inline-start: 5px !important;
 }
+
+.v-table > .v-table__wrapper > table > tbody > tr > td, .v-table > .v-table__wrapper > table > tbody > tr > th, .v-table > .v-table__wrapper > table > thead > tr > td, .v-table > .v-table__wrapper > table > thead > tr > th, .v-table > .v-table__wrapper > table > tfoot > tr > td, .v-table > .v-table__wrapper > table > tfoot > tr > th {
+  padding: 0 8px !important;
+}

@@ -30,7 +30,7 @@ const invoices = ref([])
 const suppliers = ref([])
 const clients = ref([])
 const invoice_id = ref(0)
-const notes = ref([])
+const notes = ref(null)
 
 const userData = ref(null)
 const role = ref(null)
@@ -179,6 +179,10 @@ const editProduct = () => {
 }
 
 const editNote = data => {
+
+  if(notes.value === null)
+    notes.value = []
+
   notes.value[data.id] = data.notes
 }
 
@@ -202,9 +206,14 @@ const onSubmit = () => {
         formData.append('payment_terms', invoice.value.days)
 
         invoice.value.details.forEach((element, index) => {
-          notes.value[index].forEach((element) => {
-            formData.append(`notes[]`, JSON.stringify(element));
-          });
+          if(notes.value !== null && notes.value.length > 0) {
+            if(notes.value[index].length > 0) {
+              notes.value[index].forEach((element) => {
+                if(element.note !== '')
+                  formData.append(`notes[]`, JSON.stringify(element));
+              });
+            }
+          }
           formData.append(`details[]`, JSON.stringify(element));
         });
 

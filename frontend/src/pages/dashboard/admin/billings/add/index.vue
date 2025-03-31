@@ -153,9 +153,12 @@ const onSubmit = () => {
 
       invoice.value.details.forEach((element, index) => {
         if(invoice.value.notes.length > 0) {
-          invoice.value.notes[index].forEach((element) => {
-            formData.append(`notes[]`, JSON.stringify(element));
-          });
+          if(invoice.value.notes[index].length > 0) {
+            invoice.value.notes[index].forEach((element) => {
+              if(element.note !== '')
+                formData.append(`notes[]`, JSON.stringify(element));
+            });
+          }
         }
         formData.append(`details[]`, JSON.stringify(element));
       });
@@ -192,7 +195,7 @@ const onSubmit = () => {
 }
 
 </script>
-
+[]
 <template>
   <VForm
     ref="validate"

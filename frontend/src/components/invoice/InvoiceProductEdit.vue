@@ -35,7 +35,7 @@ const emit = defineEmits([
 ])
 
 const localProductData = ref(props.data)
-const notes = ref(props.isCreated ? [{ id: props.id, order_id: 1, note: '' }] : props.notes);
+const notes = ref(props.isCreated ? [] : props.notes);
 
 const fetchData =() => {
   localProductData.value = props.data
@@ -66,15 +66,14 @@ const onEnd = async (e) => {
 }
 
 const removeNote = (id) => {
-  if(id > 0) {
-    notes.value?.splice(id, 1)
+  notes.value?.splice(id, 1)
 
-    notes.value.forEach((element, index)  => {
-        element.order_id = index + 1
-    });
+  notes.value.forEach((element, index)  => {
+      element.order_id = index + 1
+  });
 
-    emit('editNote', {id: props.id, notes: notes.value})
-  }
+  emit('editNote', {id: props.id, notes: notes.value})
+
 }
 
 const removeProduct = () => {
@@ -166,8 +165,7 @@ const removeProduct = () => {
                         rows="2" 
                         class="mt-1"
                         @input="$emit('editNote', {id: props.id, notes: notes})"/>
-                        <VBtn 
-                          v-if="element.order_id > 1"
+                        <VBtn
                           icon="tabler-x"
                           variant="text"
                           @click="removeNote(element.order_id - 1)">
