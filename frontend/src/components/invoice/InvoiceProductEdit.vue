@@ -41,16 +41,22 @@ const fetchData =() => {
   localProductData.value = props.data
 }
 
+watch(() => props.notes, (val) => {
+  notes.value = val
+})
+
 watchEffect(fetchData)
 
 const addNote = () => {
-  const lastOrderId = notes.value.length > 0 ? notes.value[notes.value.length - 1].order_id : 0;
+  const lastOrderId = (notes.value && notes.value.length > 0) ? notes.value[notes.value.length - 1].order_id : 0;
 
   notes.value.push({ 
     id: props.id, 
     order_id: lastOrderId + 1, 
     note: '' 
   });
+
+  emit('editNote', {id: props.id, notes: notes.value})
 };
 
 const onStart = async (e) => {

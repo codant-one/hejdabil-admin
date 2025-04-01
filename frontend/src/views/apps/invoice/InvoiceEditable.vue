@@ -65,7 +65,8 @@ const emit = defineEmits([
     'setting',
     'data',
     'edit',
-    'editNote'
+    'editNote',
+    'orderNote'
 ])
 
 const route = useRoute()
@@ -79,6 +80,7 @@ const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref(0);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
+const notes = ref(props.notes ?? [])
 
 const invoice = ref({
     id: 1,
@@ -276,7 +278,18 @@ const onStart = async (e) => {
 }
 
 const onEnd = async (e) => {
-    // console.log('oldIndex',e.oldIndex)
+    const newNotes = notes.value.flatMap(group => 
+        group.filter(item => item.id === e.newIndex)
+    ).map(element => ({ ...element, id: e.oldIndex }));
+
+    const oldNotes = notes.value.flatMap(group => 
+        group.filter(item => item.id === e.oldIndex)
+    ).map(element => ({ ...element, id: e.newIndex }));
+
+    notes.value[e.oldIndex] = newNotes
+    notes.value[e.newIndex] = oldNotes
+
+    emit('orderNote', notes.value)
 }
 
 const removeProduct = id => {
@@ -292,6 +305,7 @@ const inputData = () => {
 }
 
 const editNote = data => {
+    notes.value[data.id] = data.notes
     emit('editNote', data)
 }
 </script>
@@ -477,7 +491,7 @@ const editNote = data => {
                             :id="index"
                             :data="element"
                             :invoices="invoices"
-                            :notes="props.notes ? props.notes[index] : []"
+                            :notes="(notes && notes[index]) ? notes[index] : []"
                             :isCreated="props.isCreated"
                             @remove-product="removeProduct"
                             @delete-product="deleteProduct"

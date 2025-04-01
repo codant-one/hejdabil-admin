@@ -180,6 +180,10 @@ const editProduct = () => {
   });
 }
 
+const orderNote = data => {
+  notes.value = data
+}
+
 const editNote = data => {
 
   if(notes.value === null)
@@ -309,6 +313,7 @@ const onSubmit = () => {
             @delete="deleteProduct"
             @edit="editProduct"
             @edit-note="editNote"
+            @order-note="orderNote"
             @data="data"
         />
         

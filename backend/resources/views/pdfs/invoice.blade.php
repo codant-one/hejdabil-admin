@@ -275,9 +275,11 @@
                                             </span>
 
                                             @if($column['id'] === 1 && !is_null($notes))
-                                                @foreach ($notes[$rowIndex] as $note)
-                                                    <p class="m-0">{{ $note }}</p>
-                                                @endforeach
+                                                @if(isset($notes[$rowIndex]))
+                                                    @foreach ($notes[$rowIndex] as $note)
+                                                        <p class="m-0">{{ $note }}</p>
+                                                    @endforeach
+                                                @endif
                                             @endif
                                         </td>
                                     @endforeach

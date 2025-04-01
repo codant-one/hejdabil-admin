@@ -110,6 +110,7 @@ const removeProduct = id => {
 const deleteProduct = id => {
   if(id > 0) {
     invoiceData.value?.splice(id, 1)
+    invoice.value.notes.splice(id, 1);
 
     total.value = 0
     invoiceData.value.forEach(element => {
@@ -128,6 +129,10 @@ const editProduct = () => {
     total.value += parseFloat(result);
     element[4] = result; 
   });
+}
+
+const orderNote = data => {
+  invoice.value.notes = data
 }
 
 const editNote = data => {
@@ -197,7 +202,7 @@ const onSubmit = () => {
 }
 
 </script>
-[]
+
 <template>
   <VForm
     ref="validate"
@@ -253,6 +258,7 @@ const onSubmit = () => {
             @delete="deleteProduct"
             @edit="editProduct"
             @edit-note="editNote"
+            @order-note="orderNote"
             @data="data"
         />
         
