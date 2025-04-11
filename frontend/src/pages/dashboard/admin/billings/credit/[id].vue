@@ -9,17 +9,13 @@ import router from '@/router'
 
 const billingsStores = useBillingsStores()
 const route = useRoute()
+const emitter = inject("emitter")
 
 const types = ref([])
 const invoices = ref([])
 const notes = ref([])
 const invoice = ref(null)
 const isRequestOngoing = ref(true)
-const isConfirmSendMailVisible = ref(false)
-const emailDefault = ref(true)
-const selectedTags = ref([])
-const existingTags = ref([])
-const isValid = ref(false)
 const file = ref(false)
 
 const advisor = ref({
@@ -32,7 +28,7 @@ watchEffect(fetchData)
 
 async function fetchData() {
 
-  if(Number(route.params.id) && route.name === 'dashboard-admin-billings-id') { 
+  if(Number(route.params.id) && route.name === 'dashboard-admin-billings-credit-id') {
 
     isRequestOngoing.value = true
 
@@ -56,103 +52,36 @@ async function fetchData() {
   }
 }
 
-const addTag = (event) => {
-  const newTag = event.target.value.trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const credit = async () => {
+    isRequestOngoing.value = true
 
-  if (newTag && emailRegex.test(newTag)) {
-    if (!selectedTags.value.includes(newTag)) {
-      selectedTags.value.push(newTag);
+    billingsStores.credit(Number(route.params.id))
+        .then((res) => {
+            let data = {
+                message: 'Successful credit',
+                error: false
+            }
+            
+            isRequestOngoing.value = false
+            
+            router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.data.billing.id } })
+            emitter.emit('toast', data)
+        })
+        .catch((err) => {
+            console.log('aqui', err)
+            advisor.value.show = true
+            advisor.value.type = 'error'
+            advisor.value.message = Object.values(err.message).flat().join('<br>')
 
-      if (!existingTags.value.includes(newTag)) {
-        existingTags.value.push(newTag);
-      }
-
-    }
-  } else {
-    isValid.value = true
-    selectedTags.value.pop();
-  }
-};
-
-const sendMails = async () => {
-  isConfirmSendMailVisible.value = false
-  isRequestOngoing.value = true
-
-  let data = {
-    id: invoice.value.id,
-    emailDefault: emailDefault.value,
-    emails: selectedTags.value
-  }
-
-  let res = await billingsStores.sendMails(data)
-
-  isRequestOngoing.value = false
-
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice sent!' : res.data.message,
-    show: true
-  }
-
-  setTimeout(() => {
-    selectedTags.value = []
-    existingTags.value = []
-    emailDefault.value = true 
-
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
-
-  return true
+            setTimeout(() => { 
+                advisor.value.show = false
+                advisor.value.type = ''
+                advisor.value.message = ''
+            }, 3000)
+        
+            isRequestOngoing.value = false
+        })
 }
-
-const printInvoice = async() => {
-  try {
-    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
-    const blob = await response.blob();
-    
-    const blobUrl = URL.createObjectURL(blob);
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = blobUrl;
-    
-    iframe.onload = () => {
-      iframe.contentWindow.print();
-    };
-    
-    document.body.appendChild(iframe);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-const duplicate = () => {
-  router.push({ name : 'dashboard-admin-billings-duplicate-id', params: { id: Number(route.params.id) } })
-}
-
-const download = async() => {
-  try {
-    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
-    const blob = await response.blob();
-    
-    const blobUrl = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = 'invoice-' + invoice.value.invoice_id + '.pdf'; 
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-  } catch (error) {
-    console.error('Error:', error);
-  }
-};
 </script>
 
 <template>
@@ -222,18 +151,18 @@ const download = async() => {
               <!-- 👉 Issue Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
                 <span class="me-2 text-start w-35">Invoice Date: </span>
-                <span>{{ new Date(`${invoice.invoice_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
+                <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <!-- 👉 Due Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
                 <span class="me-2 text-start w-35">Due date: </span>
-                <span>{{ new Date(`${invoice.due_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
+                <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
                 <span class="me-2 text-start w-35">Payment Terms: </span>
-                <span>{{ invoice.payment_terms }}</span>
+                <span>0 days net</span>
               </p>
               <p class="d-flex align-center justify-sm-start mb-0 text-right" v-if="invoice.reference !== null">
                 <span class="me-2 text-start w-35">Reference:</span> {{ invoice.reference ?? '' }}
@@ -243,15 +172,7 @@ const download = async() => {
 
             <div class="ma-sm-4 text-right d-flex flex-column">
               <h1 class="mb-0 text-center faktura">
-                {{ 
-                  invoice.state_id === 9 ? 
-                  'KREDIT FAKTURA' : 
-                  (
-                    invoice.payment_terms === '0 days net' ?
-                    'KONTANT FAKTURA' :
-                    'FAKTURA' 
-                  )
-                }}
+                KREDIT FAKTURA
               </h1>
               <h3 class="mb-0 mt-2">
                 {{ invoice.client.fullname }}
@@ -286,14 +207,17 @@ const download = async() => {
             <tbody>
               <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
                 <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
-                  <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
-                  <span v-if="column.id === 1"> 
-                    <span v-for="(value, index) in notes[rowIndex]" :key="index">
-                      <span class="d-flex flex-column"> 
-                        {{value}}
-                      </span>
-                    </span> 
-                  </span>         
+                    <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">
+                        <span v-if="column.id === 3 || column.id === 4">-</span>
+                        {{ column.value }}
+                    </span>                
+                    <span v-if="column.id === 1"> 
+                        <span v-for="(value, index) in notes[rowIndex]" :key="index">
+                        <span class="d-flex flex-column"> 
+                            {{value}}
+                        </span>
+                        </span>
+                    </span>         
                 </td>
               </tr>
             </tbody>
@@ -321,13 +245,13 @@ const download = async() => {
 
                     <td class="font-weight-medium text-high-emphasis text-end">
                       <p class="mb-0">
-                        {{ formatNumber(invoice.subtotal) }} kr
+                        -{{ formatNumber(invoice.subtotal) }} kr
                       </p>
                       <p class="mb-0">
-                        {{ formatNumber(invoice.tax) }} %
+                        -{{ formatNumber(invoice.tax) }} %
                       </p>
                       <p class="mb-0">
-                        {{ formatNumber(invoice.total) }} kr
+                        -{{ formatNumber(invoice.total) }} kr
                       </p>
                     </td>
                   </tr>
@@ -409,41 +333,12 @@ const download = async() => {
         <VCard>
           <VCardText>
             <VBtn
-              v-if="invoice.state_id !== 9"
               block
-              prepend-icon="mdi-content-copy"
+              prepend-icon="tabler-send"
               class="mb-2"
-              @click="duplicate"
+              @click="credit"
             >
-              Duplicate
-            </VBtn>
-
-            <VBtn
-              block
-              prepend-icon="mdi-cloud-download-outline"
-              class="mb-2"
-              @click="download"
-            >
-              Download
-            </VBtn>
-
-            <VBtn
-              block
-              prepend-icon="mdi-email-fast"
-              class="mb-2"
-              @click="isConfirmSendMailVisible = true"
-            >
-              Send
-            </VBtn>
-
-            <VBtn
-              block
-              variant="tonal"
-              color="secondary"
-              class="mb-2"
-              @click="printInvoice"
-            >
-              Print
+              Generate
             </VBtn>
 
             <VBtn
@@ -459,55 +354,6 @@ const download = async() => {
         </VCard>
       </VCol>
     </VRow>
-     <!-- 👉 Confirm Delete -->
-     <VDialog
-      v-model="isConfirmSendMailVisible"
-      persistent
-      class="v-dialog-sm" >
-      <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
-
-      <!-- Dialog Content -->
-      <VCard title="Send invoice by email">
-        <VDivider class="mt-4"/>
-        <VCardText>
-          Are you sure you want to send invoices to the following email addresses?.
-        </VCardText>
-        <VCardText class="d-flex flex-column gap-2">
-          <VCheckbox
-            v-model="emailDefault"
-            :label="invoice.client.email"
-          />
-
-          <VCombobox
-            v-model="selectedTags"
-            :items="existingTags"
-            label="Enter emails to send invoicess"
-            multiple
-            chips
-            deletable-chips
-            clearable
-            @blur="addTag"
-            @keydown.enter.prevent="addTag"
-            @input="isValid = false"
-          />
-          <span class="text-xs text-error" v-if="isValid">Email must be a valid email</span>
-        </VCardText>
-
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmSendMailVisible = false">
-              Cancel
-          </VBtn>
-          <VBtn @click="sendMails">
-              Send
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
   </section>
 </template>
 
@@ -607,6 +453,6 @@ const download = async() => {
 </style>
 <route lang="yaml">
   meta:
-    action: view
+    action: delete
     subject: billing
 </route>

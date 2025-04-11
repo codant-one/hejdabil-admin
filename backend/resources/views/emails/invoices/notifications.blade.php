@@ -27,7 +27,20 @@
                             <strong>Due date:</strong> {!! $billing->due_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Total:</strong> {!! formatCurrency($billing->total) !!} KR
+                            <strong>Total:</strong> {!! formatCurrency($billing->total) !!} kr
+                        </p><br>
+                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
+                            Additionally, the company that generated the invoice has the following information:
+                        </p>
+                        <br>
+                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
+                            <strong>Company name:</strong> {!! $billing->supplier->company !!}
+                        </p>
+                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
+                            <strong># Organization:</strong> {!! $billing->supplier->organization_number !!}
+                        </p>
+                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
+                            <strong>E-mail:</strong> {!! $billing->supplier->user->email !!}
                         </p><br>
                     </td>
                 </tr>

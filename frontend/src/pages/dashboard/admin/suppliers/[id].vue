@@ -49,7 +49,7 @@ async function fetchData() {
 
   isRequestOngoing.value = true
 
-  if(Number(route.params.id)) {
+  if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-id') {
     supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
     // online.value = supplier.value.user.online
 

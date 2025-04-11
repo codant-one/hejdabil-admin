@@ -1,43 +1,35 @@
 <script setup>
 
 import { useBillingsStores } from '@/stores/useBillings'
-import { excelParser } from '@/plugins/csv/excelParser'
-import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
+import { themeConfig } from '@themeConfig'
 import router from '@/router'
-import Toaster from "@/components/common/Toaster.vue";
 
+const props = defineProps({
+  client_id: {
+    type: Number,
+    required: true
+  }
+})
+
+const emit = defineEmits(['alert', 'loading'])
 const billingsStores = useBillingsStores()
 
-const clients = ref([])
-const suppliers = ref([])
 const billings = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalBillings = ref(0)
-const isRequestOngoing = ref(true)
 const isConfirmStateDialogVisible = ref(false)
 const isConfirmSendMailVisible = ref(false)
 const emailDefault = ref(true)
 const selectedTags = ref([])
 const existingTags = ref([])
-const isValid = ref(false)
 const selectedBilling = ref({})
-
-const supplier_id = ref(null)
-const client_id = ref(null)
-const state_id = ref(null)
+const isValid = ref(false)
 const userData = ref(null)
 const role = ref(null)
-const totalSum = ref(0)
-
-const states = ref ([
-  { id: 4, name: "Pending" },
-  { id: 7, name: "Paid" },
-  { id: 8, name: "Expired" }
-])
 
 const advisor = ref({
   type: '',
@@ -45,58 +37,35 @@ const advisor = ref({
   show: false
 })
 
-// 👉 Computing pagination data
 const paginationData = computed(() => {
   const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros y su total`
-})
-
-// 👉 watching current page
-watchEffect(() => {
-  if (currentPage.value > totalPages.value)
-    currentPage.value = totalPages.value
+  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros`
 })
 
 watchEffect(fetchData)
 
 async function fetchData() {
 
-  let data = {
-    search: searchQuery.value,
-    orderByField: 'id',
-    orderBy: 'desc',
-    limit: rowPerPage.value,
-    page: currentPage.value,
-    supplier_id: supplier_id.value,
-    client_id: client_id.value,
-    state_id: state_id.value
-  }
+    let data = {
+        search: searchQuery.value,
+        orderByField: 'id',
+        orderBy: 'desc',
+        limit: rowPerPage.value,
+        page: currentPage.value,
+        client_id: props.client_id
+    }
 
-  isRequestOngoing.value = true
+    await billingsStores.fetchBillings(data)
 
-  await billingsStores.fetchBillings(data)
+    billings.value = billingsStores.getBillings
+    totalPages.value = billingsStores.last_page
+    totalBillings.value = billingsStores.billingsTotalCount
 
-  billings.value = billingsStores.getBillings
-  totalPages.value = billingsStores.last_page
-  totalBillings.value = billingsStores.billingsTotalCount
-  totalSum.value = billingsStores.totalSum
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    role.value = userData.value.roles[0].name
 
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-
-  clients.value = billingsStores.clients
-
-  if(role.value !== 'Supplier') {
-    suppliers.value = billingsStores.suppliers
-  }
-
-  isRequestOngoing.value = false
-}
-
-const addInvoice = () => {
-    router.push({ name : 'dashboard-admin-billings-add' })
 }
 
 const updateBilling = billingData => {
@@ -114,7 +83,12 @@ const editBilling = billingData => {
 
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false
+
+  emit('loading', true)
+
   let res = await billingsStores.updateState(selectedBilling.value.id)
+
+  emit('loading', false)
   selectedBilling.value = {}
 
   advisor.value = {
@@ -123,12 +97,16 @@ const updateState = async () => {
     show: true
   }
 
+  emit('alert', advisor)
+
   setTimeout(() => {
     advisor.value = {
       type: '',
       message: '',
       show: false
     }
+
+    emit('alert', advisor)
   }, 3000)
 
   await fetchData()
@@ -191,7 +169,7 @@ const addTag = (event) => {
 
 const sendMails = async () => {
   isConfirmSendMailVisible.value = false
-  isRequestOngoing.value = true
+  emit('loading', true)
 
   let data = {
     id: selectedBilling.value.id,
@@ -200,14 +178,16 @@ const sendMails = async () => {
   }
 
   let res = await billingsStores.sendMails(data)
-
-  isRequestOngoing.value = false
+  
+  emit('loading', false)
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
     message: res.data.success ? 'Invoice sent!' : res.data.message,
     show: true
   }
+
+  emit('alert', advisor)
 
   setTimeout(() => {
     selectedTags.value = []
@@ -219,190 +199,61 @@ const sendMails = async () => {
       message: '',
       show: false
     }
+
+    emit('alert', advisor)
   }, 3000)
 
   await fetchData()
   
   return true
 }
-
-const downloadCSV = async () => {
-
-  isRequestOngoing.value = true
-
-  let data = { limit: -1 }
-
-  await billingsStores.fetchBillings(data)
-
-  let dataArray = [];
-      
-  billingsStores.getBillings.forEach(element => {
-
-    let data = {
-      INVOICE_ID: element.invoice_id,
-      STATUS: element.state.name,
-      CLIENT: element.client.fullname,
-      CLIENT_EMAIL: element.client.email,
-      SUPPLIER: element.supplier.user.name + ' '+ element.supplier.user.last_name,
-      SUPPLIER_EMAIL: element.supplier.user.email,
-      INVOICE_DATE: element.invoice_date,
-      DUE_DATE: element.due_date,
-      TOTAL: element.total + ' kr'
-    }
-          
-    dataArray.push(data)
-  })
-
-  excelParser()
-    .exportDataFromJSON(dataArray, "billings", "csv");
-
-  isRequestOngoing.value = false
-
-}
 </script>
 
 <template>
-  <section>
-    <Toaster />
-    <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="300"
-        persistent>
-          
-        <VCard
-          color="primary"
-          width="300">
-            
-          <VCardText class="pt-3">
-            Loading
-            <VProgressLinear
-              indeterminate
-              color="white"
-              class="mb-0"/>
-          </VCardText>
-        </VCard>
-      </VDialog>
-
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            
-          {{ advisor.message }}
-        </VAlert>
-
-        <VCard title="Filters">
-          <VCardText>
-            <VRow>
-              <VCol cols="12" md="4">
-                <VSelect
-                  v-model="state_id"
-                  placeholder="States"
-                  :items="states"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-              </VCol>
-              <VCol cols="12" md="4">
-                <VSelect
-                  v-model="client_id"
-                  placeholder="Clients"
-                  :items="clients"
-                  :item-title="item => item.fullname"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-              </VCol>
-              <VCol cols="12" md="4">
-                <VSelect
-                  v-if="role !== 'Supplier'"
-                  v-model="supplier_id"
-                  placeholder="Suppliers"
-                  :items="suppliers"
-                  :item-title="item => item.full_name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-
-                  <VTextField
-                    v-else
-                    v-model="searchQuery"
-                    placeholder="Search"
-                    density="compact"
-                    clearable
-                  />
-              </VCol>
-            </VRow>
-          </VCardText>
-          <VDivider />
-          <VCardText class="d-flex flex-wrap py-4 gap-4">
+    <section>
+        <VCard title="Billings">
+            <VCardText class="d-flex flex-wrap py-4 gap-4">
             <div
-              class="me-3"
-              style="width: 80px;">
-              
-              <VSelect
+                class="me-3"
+                style="width: 80px;">
+                    
+                <VSelect
                 v-model="rowPerPage"
                 density="compact"
                 variant="outlined"
                 :items="[10, 20, 30, 50]"/>
             </div>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV">
-                Export
-              </VBtn>
-            </div>
-
             <VSpacer />
 
             <div class="d-flex align-center flex-wrap gap-4">
-
-              <!-- 👉 Search  -->
-              <div class="search" v-if="role !== 'Supplier'">
+                <!-- 👉 Search  -->
+                <div style="width: 10rem;">
                 <VTextField
-                  v-model="searchQuery"
-                  placeholder="Search"
-                  density="compact"
-                  clearable
+                    v-model="searchQuery"
+                    placeholder="Buscar"
+                    density="compact"
+                    clearable
                 />
-              </div>
-
-              <!-- 👉 Add user button -->
-              <VBtn
-                v-if="$can('create','billing') && clients.length > 0"
-                prepend-icon="tabler-plus"
-                @click="addInvoice">
-                  Add invoice
-              </VBtn>
+                </div>
             </div>
-          </VCardText>
+            </VCardText>
 
-          <VDivider />
+            <VDivider />
 
-          <VTable class="text-no-wrap">
+            <VTable class="text-no-wrap">
             <!-- 👉 table head -->
             <thead>
-              <tr>
-                <th scope="col"> # INVOICE </th>
-                <th scope="col"> CLIENT </th>
-                <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
-                <th scope="col"> TOTAL </th>
-                <th scope="col"> INVOICE DATE </th>
-                <th scope="col"> DUE DATE </th>
-                <th class="text-center" scope="col"> STATUS </th>
-                <th class="text-center" scope="col"> INVOICE SENT </th>                
-                <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
-              </tr>
+                <tr>
+                  <th scope="col"> # INVOICE </th>
+                  <th scope="col"> CLIENT </th>
+                  <th scope="col"> TOTAL </th>
+                  <th scope="col"> INVOICE DATE </th>
+                  <th scope="col"> DUE DATE </th>
+                  <th class="text-center" scope="col"> STATUS </th>
+                  <th class="text-center" scope="col"> INVOICE SENT </th>                
+                  <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
+                </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
@@ -416,11 +267,6 @@ const downloadCSV = async () => {
                     <span class="font-weight-medium cursor-pointer text-primary" @click="showBilling(billing)">
                       {{ billing.client.fullname ?? '' }}
                     </span>
-                </td>                
-                <td class="text-wrap" v-if="role !== 'Supplier'">
-                  <span class="font-weight-medium"  v-if="billing.supplier">
-                    {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
-                  </span>
                 </td>
                 <td> {{ formatNumber(billing.total) ?? '0.00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
@@ -487,7 +333,7 @@ const downloadCSV = async () => {
                     </template>
                     <VList>
                       <VListItem
-                         v-if="$can('edit', 'billing') && (billing.state_id === 7 || billing.state_id === 9)"
+                         v-if="$can('edit', 'billing')"
                          @click="printInvoice(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-printer" />
@@ -495,7 +341,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Print</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'billing') && billing.state_id === 7"
+                         v-if="$can('edit', 'billing')"
                          @click="duplicate(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-content-copy" />
@@ -503,7 +349,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Duplicate</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'billing') && (billing.state_id === 7 || billing.state_id === 9)"
+                         v-if="$can('edit', 'billing')"
                          @click="send(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
@@ -511,7 +357,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Send</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('edit', 'billing') && (billing.state_id === 4 || billing.state_id === 8)"
+                        v-if="$can('edit', 'billing') && billing.state_id === 4"
                         @click="editBilling(billing)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
@@ -519,7 +365,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Edit</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('delete','billing') && billing.state_id === 7"
+                        v-if="$can('delete','billing')"
                         @click="credit(billing)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
@@ -533,37 +379,31 @@ const downloadCSV = async () => {
             </tbody>
             <!-- 👉 table footer  -->
             <tfoot v-show="!billings.length">
-              <tr>
+                <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 8 : 9"
-                  class="text-center">
-                  Data not available
+                    :colspan="role === 'Supplier' ? 8 : 9"
+                    class="text-center">
+                    Data not available
                 </td>
-              </tr>
+                </tr>
             </tfoot>
-          </VTable>
-        
-          <VDivider />
+            </VTable>
+                
+            <VDivider />
 
-          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
+            <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
             <span class="text-sm text-disabled">
-              {{ paginationData }}
-            </span>
-
-            <span class="text-sm text-disabled">
-              <strong>TOTAL: {{ formatNumber(totalSum ?? 0) }} kr</strong>
+                {{ paginationData }}
             </span>
 
             <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="5"
-              :length="totalPages"/>
-          
-          </VCardText>
+                v-model="currentPage"
+                size="small"
+                :total-visible="5"
+                :length="totalPages"/>
+                
+            </VCardText>
         </VCard>
-      </VCol>
-    </VRow>
 
     <!-- 👉 Confirm send -->
     <VDialog
@@ -644,26 +484,5 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
-  </section>
+    </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100%;
-    }
-
-    .justify-content-center {
-      justify-content: center !important;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 30rem;
-        }
-    }
-</style>
-<route lang="yaml">
-  meta:
-    action: view
-    subject: billing
-</route>

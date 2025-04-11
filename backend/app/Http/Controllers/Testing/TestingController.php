@@ -31,7 +31,7 @@ class TestingController extends Controller
         $buttonText = 'Download';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $billing = Billing::find(33);
+        $billing = Billing::with(['client', 'supplier.user'])->find(33);
         $text_info = 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.';
         $pdfFile = 'pdfFile';
 

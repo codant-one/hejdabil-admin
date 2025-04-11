@@ -55,6 +55,10 @@ const props = defineProps({
     isCreated: {
         type: Boolean,
         required: true
+    },
+    isCredit: {
+        type: Boolean,
+        required: true
     }
 })
 
@@ -368,7 +372,15 @@ const editNote = data => {
                     </span>
 
                     <span style="inline-size: 10.5rem;">
+                        <VTextField
+                            v-if="props.isCredit"
+                            v-model="invoice.invoice_date"
+                            disabled
+                            density="compact"
+                            style="inline-size: 10.5rem;"
+                        />
                         <AppDateTimePicker
+                            v-else
                             :key="JSON.stringify(startDateTimePickerConfig)"
                             v-model="invoice.invoice_date"
                             density="compact"
@@ -388,7 +400,15 @@ const editNote = data => {
                     </span>
 
                     <span style="min-inline-size: 10.5rem;">
+                        <VTextField
+                            v-if="props.isCredit"
+                            v-model="invoice.due_date"
+                            disabled
+                            density="compact"
+                            style="inline-size: 10.5rem;"
+                        />
                         <AppDateTimePicker
+                            v-else
                             v-model="invoice.due_date"
                             density="compact"
                             placeholder="YYYY-MM-DD"
@@ -408,7 +428,8 @@ const editNote = data => {
                             v-model="invoice.days"
                             type="number"
                             label="Days"
-                            :min="1"
+                            :disabled="props.isCredit"
+                            :min="0"
                         />
                     </span>
                 </div>   
@@ -416,7 +437,15 @@ const editNote = data => {
             </div>
             <div class="mt-4 ma-sm-4 text-right d-flex flex-column">
                 <h1 class="mb-0 text-center faktura">
-                    FAKTURA
+                    {{ 
+                        invoice.state_id === 9 ? 
+                        'KREDIT FAKTURA' : 
+                        (
+                            parseInt(invoice.days) === 0 ?
+                            'KONTANT FAKTURA' :
+                            'FAKTURA' 
+                        )
+                    }}
                 </h1>
                 <h3 class="mb-0 mt-2" v-if="client">
                     {{ client.fullname }}
@@ -425,6 +454,7 @@ const editNote = data => {
                     <VTextField
                         v-model="invoice.reference"
                         label="Reference"
+                        :disabled="props.isCredit"
                         @input="$emit('data', invoice)"
                     />
                 </p> 
@@ -452,6 +482,7 @@ const editNote = data => {
                     :items="suppliers"
                     :item-title="item => item.full_name"
                     :item-value="item => item.id"
+                    :disabled="props.isCredit"
                     placeholder="Suppliers"
                     class="mb-3"
                     style="width: 400px"
@@ -464,6 +495,7 @@ const editNote = data => {
                     :items="clients"
                     :item-title="item => item.fullname"
                     :item-value="item => item.id"
+                    :disabled="props.isCredit"
                     placeholder="Clients"
                     class="mb-3"
                     style="width: 400px"
@@ -478,6 +510,27 @@ const editNote = data => {
 
         <!-- 👉 Add purchased products -->
         <VCardText class="add-products-form px-0">
+
+            <VTable class="invoice-preview-table border mt-5" style="border-radius: 8px !important">
+            
+        
+
+            <tbody>
+              <tr v-for="(row, rowIndex) in invoice.details" :key="'row-' + rowIndex">
+                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
+                  <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
+                  <span v-if="column.id === 1"> 
+                    <span v-for="(value, index) in notes[rowIndex]" :key="index">
+                      <span class="d-flex flex-column"> 
+                        {{value}}
+                      </span>
+                    </span> 
+                  </span>         
+                </td>
+              </tr>
+            </tbody>
+          </VTable>
+
             <draggable
                 class="my-4"
                 v-model="invoice.details" 
@@ -520,7 +573,7 @@ const editNote = data => {
                             <td class="pe-16"> Subtotal:</td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
-                                    {{ formatNumber(subtotal) }} KR
+                                    {{ formatNumber(subtotal) }} kr
                                 </h6>
                             </td>
                         </tr>
@@ -562,7 +615,7 @@ const editNote = data => {
                             <td class="pe-16">Total: </td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
-                                    {{ formatNumber(total) }} KR
+                                    {{ formatNumber(total) }} kr
                                 </h6>
                             </td>
                         </tr>

@@ -82,7 +82,7 @@
         }
 
         .faktura {
-            font-size: 32px;
+            font-size: 24px;
             color: #9966FF;
             border-top: 2px solid #9966FF;
             border-bottom: 2px solid #9966FF;
@@ -156,7 +156,7 @@
                     <td>
                         <table width="100%" class="invoice-background">
                             <tr>
-                                <td width="65%" class="data-from pb-0">
+                                <td width="35%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
                                         @if(!$billing->supplier)
                                             <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">  
@@ -169,9 +169,17 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td width="35%" class="data-from pb-0">
-                                    <span class="m-0 faktura" style="display: flex; width: 150px; margin-left: auto;">
-                                        FAKTURA
+                                <td width="65%" class="data-from pb-0">
+                                    <span class="m-0 faktura" style="display: flex; max-width: 250px; width: fit-content; margin-left: auto;">
+                                        {{ 
+                                            $billing->state_id === 9 ? 
+                                            'KREDIT FAKTURA' : 
+                                            ( 
+                                                $billing->payment_terms === '0 days net' ?
+                                                'KONTANT FAKTURA' :
+                                                'FAKTURA'
+                                            )
+                                        }}
                                     </span>
                                     <h3 class="m-0 mt-10" style="text-align: right;">
                                         {{$billing->client->fullname}}
@@ -184,6 +192,8 @@
                                     @endif 
                                 </td>
                             </tr>
+                        </table>
+                        <table width="100%" class="invoice-background">
                             <tr>
                                 <td width="65%" class="data-from pt-8">
                                     <table width="100%" class="invoice-background">
@@ -301,7 +311,7 @@
                         <table width="100%">
                             <tr>
                                 <td class="text">Subtotal:</td>
-                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->subtotal) }} KR</span></td>
+                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->subtotal) }} kr</span></td>
                             </tr>
                             <tr>
                                 <td class="text">Tax:</td>
@@ -309,7 +319,7 @@
                             </tr>
                             <tr>
                                 <td class="text">Total:</td>
-                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->total) }} KR</span></td>
+                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->total) }} kr</span></td>
                             </tr>
                         </table>
                     </td>

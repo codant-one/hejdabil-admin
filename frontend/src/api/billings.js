@@ -33,6 +33,10 @@ class Billings {
     all(){
         return axios.get(`/billings/data/all`)
     }
+
+    credit(id) {
+        return axios.get(`/billings/credit/${id}`)
+    }
     
 }
 

@@ -47,7 +47,7 @@ watchEffect(async() => {
     isRequestOngoing.value = true
 
 
-    if(Number(route.params.id)) {
+    if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-edit-id') {
         supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
        
         //company

@@ -220,7 +220,7 @@ const editProduct = id => {
                 <tr 
                     v-for="product in myProductsList"
                     :key="product.id"
-                    style="height: 3.75rem;">
+                    style="height: 3rem;">
                     <td class="text-wrap px-1"> 
                         <div class="d-flex align-center gap-x-2">
                             <VAvatar

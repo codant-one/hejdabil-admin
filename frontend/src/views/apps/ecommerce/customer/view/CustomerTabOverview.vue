@@ -51,7 +51,7 @@ async function fetchData() {
               xxxxx
             </h4>
             <div>
-              <span class="text-primary text-h4 me-2">KR {{ formatNumber(balance) ?? '0.00' }}</span>
+              <span class="text-primary text-h4 me-2">{{ formatNumber(balance) ?? '0.00' }} kr</span>
               <span class="text-body-1">xxxx</span>
               <p class="mb-0 text-base text-disabled">
                 xxxxxx
@@ -86,7 +86,7 @@ async function fetchData() {
                 xxxx
               </VChip>
               <p class="mb-0 text-base text-disabled">
-                KR {{ formatNumber(props.customerData.sales) ?? '0.00' }}
+                {{ formatNumber(props.customerData.sales) ?? '0.00' }} kr
               </p>
             </div>
           </VCardText>
@@ -107,16 +107,10 @@ async function fetchData() {
               rounded
             />
             <h4 class="text-h4">
-              Lista de deseos
+              xxx
             </h4>
             <div>
-              <p class="mb-1">
-                <span class="text-warning text-h5 me-2">{{ props.customerData.user.favorites.length }}</span>
-                <span class="text-body-1">artículos en la lista de deseos</span>
-              </p>
-              <p class="mb-0 text-disabled">
-                Artículos agregados por el cliente.
-              </p>
+              xxxx
             </div>
           </VCardText>
         </VCard>
@@ -136,16 +130,10 @@ async function fetchData() {
               rounded
             />
             <h4 class="text-h4 mb-2">
-              Cupones
+              xx
             </h4>
             <div>
-              <p class="mb-1">
-                <span class="text-info text-h5 me-2">0</span>
-                <span class="text-body-1">Cupones que obtuvieron</span>
-              </p>
-              <p class="mb-0 text-disabled">
-                Para usar cupón en sus próximas compras
-              </p>
+             xxx
             </div>
           </VCardText>
         </VCard>

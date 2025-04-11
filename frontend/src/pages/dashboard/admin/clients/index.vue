@@ -342,13 +342,13 @@ const downloadCSV = async () => {
             <tbody>
               <tr 
                 v-for="client in clients"
-                :key="client.order_id"
-                style="height: 3.75rem;">
+                :key="client.id"
+                style="height: 3rem;">
 
                 <td> {{ client.order_id }} </td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
-                    <span class="font-weight-medium">
+                    <span class="font-weight-medium cursor-pointer text-primary" @click="seeClient(client)">
                       {{ client.fullname }} 
                     </span>
                     <span class="text-sm text-disabled">{{ client.email }}</span>
@@ -395,7 +395,12 @@ const downloadCSV = async () => {
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <VIcon size="28" icon="mdi-cog-outline"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                          <path d="M19 16v6"></path>
+                          <path d="M22 19l-3 3l-3 -3"></path>
+                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                        </svg>
                       </VBtn>
                     </template>
                     <VList>

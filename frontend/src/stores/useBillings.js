@@ -8,7 +8,8 @@ export const useBillingsStores = defineStore('billings', {
         clients: {},
         loading: false,
         last_page: 1,
-        billingsTotalCount: 6
+        billingsTotalCount: 6,
+        totalSum: 0
     }),
     getters:{
         getBillings(){
@@ -29,6 +30,7 @@ export const useBillingsStores = defineStore('billings', {
                     this.billings = response.data.data.billings.data
                     this.last_page = response.data.data.billings.last_page
                     this.billingsTotalCount = response.data.data.billingsTotalCount
+                    this.totalSum = response.data.data.totalSum
                 })
                 .catch(error => console.log(error))
                 .finally(() => {
@@ -126,6 +128,18 @@ export const useBillingsStores = defineStore('billings', {
                     this.setLoading(false)
                 })
          
+        },
+        credit(id) {
+            this.setLoading(true)
+
+            return Billings.credit(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
         },
     }
 })

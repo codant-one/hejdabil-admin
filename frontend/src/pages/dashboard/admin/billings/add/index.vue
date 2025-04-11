@@ -87,15 +87,8 @@ async function fetchData() {
 }
 
 const data = (data) => {
-  isRequestOngoing.value = true
-
   invoice.value = data
   invoiceData.value = data.details
-
-  setTimeout(() => {
-    isRequestOngoing.value = false
-  }, 500)
-  
 }
 
 const addProduct = value => {
@@ -253,6 +246,7 @@ const onSubmit = () => {
             :supplier="supplier"
             :total="total"
             :isCreated="true"
+            :isCredit="false"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"

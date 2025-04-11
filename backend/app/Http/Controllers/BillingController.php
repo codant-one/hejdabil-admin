@@ -53,7 +53,8 @@ class BillingController extends Controller
                             );
 
             $count = $query->count();
-
+            $totalSum = number_format($query->sum('total'), 2);
+            
             $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
             $suppliers = Supplier::with(['user' => function($query) {
                 $query->withTrashed();
@@ -70,7 +71,8 @@ class BillingController extends Controller
                     'suppliers' => $suppliers,
                     'clients' => $clients,
                     'billings' => $billings,
-                    'billingsTotalCount' => $count
+                    'billingsTotalCount' => $count,
+                    'totalSum' => $totalSum
                 ]
             ]);
 
@@ -195,6 +197,7 @@ class BillingController extends Controller
                     'message' => 'Invoice not found'
                 ], 404);
             
+
             $billing->deleteBilling($id);
 
             return response()->json([
@@ -276,11 +279,42 @@ class BillingController extends Controller
         }
     }
 
+    public function credit($id)
+    {
+        try {
+
+            $billing = Billing::find($id);
+        
+            if (!$billing)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Invoice not found'
+                ], 404);
+            
+            $billing = Billing::createCredit($billing);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'billing' => $billing
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function sendMails(Request $request, $id)
     {
         try {
 
-            $billing = Billing::with(['client'])->find($id);
+            $billing = Billing::with(['client', 'supplier.user'])->find($id);
             $billing->is_sent = 1;
             $billing->save();
 

@@ -19,6 +19,8 @@ const valueCount = ref(null)
 const valueText = ref(null)
 const icon = ref('tabler-shopping-cart')
 const sales = ref(null)
+const userData = ref(null)
+const role = ref(null)
 
 watchEffect(fetchData)
 
@@ -35,6 +37,9 @@ async function fetchData() {
     sales.value = null //CALCULAR MAS ADELANTE
   }
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+
 }
 </script>
 
@@ -46,6 +51,7 @@ async function fetchData() {
         <VCardText class="text-center pt-15">
           <!-- 👉 Avatar -->
           <VAvatar
+            v-if="props.isSupplier"
             rounded
             :size="100"
             :color="!props.customerData.customer ? 'primary' : undefined"
@@ -63,9 +69,26 @@ async function fetchData() {
             </span>
           </VAvatar>
 
+          <VAvatar
+            v-else
+            rounded
+            :size="100"
+            color="primary"
+            variant="tonal"
+          >
+            <span
+              class="text-5xl font-weight-medium"
+            >
+              {{ avatarText(props.customerData.fullname) }}
+            </span>
+          </VAvatar>
+
           <!-- 👉 Customer fullName -->
-          <h4 class="text-h4 mt-4">
+          <h4 class="text-h4 mt-4" v-if="props.isSupplier">
             {{ props.customerData.user.name }}  {{ props.customerData.user.last_name ?? '' }}
+          </h4>
+          <h4 class="text-h4 mt-4" v-else>
+            {{ props.customerData.fullname }}
           </h4>
           <span class="text-sm"> {{ props.isSupplier ? 'Supplier' : 'Client' }} ID #{{ props.customerData.id }}</span>
 
@@ -94,7 +117,7 @@ async function fetchData() {
                 <VIcon icon="tabler-currency-dollar" />
               </VAvatar>
               <div class="d-flex flex-column align-start">
-                <span class="text-body-1 font-weight-medium">KR {{ formatNumber(sales) ?? '0.00' }}</span>
+                <span class="text-body-1 font-weight-medium">{{ formatNumber(sales) ?? '0.00' }} kr</span>
                 <span class="text-body-2">Total Sales</span>
               </div>
             </div>
@@ -114,11 +137,11 @@ async function fetchData() {
                 <h6 class="text-base font-weight-semibold">
                   Name:
                   <span class="text-body-2">
-                    {{ props.customerData.user.name }}
+                    {{ props.isSupplier ? props.customerData.user.name : props.customerData.fullname }}
                   </span>
                 </h6>
               </VListItemTitle>
-              <VListItemTitle>
+              <VListItemTitle v-if="props.isSupplier">
                 <h6 class="text-base font-weight-semibold">
                   Lastname:
                   <span class="text-body-2">
@@ -130,7 +153,7 @@ async function fetchData() {
                 <h6 class="text-base font-weight-semibold">
                   E-mail:
                   <span class="text-body-2">
-                    {{ props.customerData.user.email }}
+                    {{ props.isSupplier ? props.customerData.user.email : props.customerData.email }}
                   </span>
                 </h6>
               </VListItemTitle>
@@ -138,7 +161,7 @@ async function fetchData() {
                 <h6 class="text-base font-weight-semibold">
                     Phone:
                   <span class="text-body-2">
-                    {{ props.customerData.user.user_detail.phone }}
+                    {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
                   </span>
                 </h6>
               </VListItemTitle>
@@ -171,6 +194,14 @@ async function fetchData() {
                   Organization number:
                   <span class="text-body-2">
                     {{ props.customerData.organization_number }}
+                  </span>
+                </h6>
+              </VListItemTitle>
+              <VListItemTitle v-if="role !== 'Supplier'">
+                <h6 class="text-base font-weight-semibold">
+                  Supplier:
+                  <span class="text-body-2">
+                    {{ props.customerData.supplier.user.name }} {{ props.customerData.supplier.user.last_name }}
                   </span>
                 </h6>
               </VListItemTitle>

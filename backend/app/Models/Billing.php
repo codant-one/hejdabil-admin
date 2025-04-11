@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use PDF;
 
 use App\Models\Invoice;
+use App\Models\Supplier;
 
 class Billing extends Model
 {
@@ -242,6 +243,64 @@ class Billing extends Model
         return $billing;
     }
 
+    public static function createCredit($billing) {
+
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+
+        if($isSupplier) {
+            $supplier = Supplier::with(['billings'])->where('user_id', Auth::user()->id)->first();
+            $invoice_id = count($supplier->billings) + 1;
+        } else {
+            $invoice_id = self::whereNull('supplier_id')->count() + 1;
+        }
+
+        $array = json_decode($billing->detail, true);
+
+        foreach ($array[0] as &$item) {
+            if ($item['id'] == 3 || $item['id'] == 4) {
+                $numericValue = is_numeric($item['value']) ? (float)$item['value'] : null;
+                if ($numericValue !== null) {
+                    $item['value'] = '-' . ltrim($item['value'], '-'); // Agrega signo negativo (o lo mantiene si ya lo tiene)
+                }
+            }
+        }
+
+        $billing = self::create([
+            'supplier_id' => $billing->supplier_id,
+            'client_id' =>  $billing->client_id,
+            'state_id' => 9,
+            'invoice_id' =>  $invoice_id,
+            'invoice_date' => now(),
+            'due_date' =>  now(),
+            'payment_terms' =>  '0 days net',
+            'reference' => $billing->reference,
+            'subtotal' => '-' . $billing->subtotal,
+            'tax' =>  '-' . $billing->tax,
+            'total' =>  '-' . $billing->total,
+            'detail' => json_encode($array, true),
+            'notes' => $billing->notes
+        ]);
+
+        $date = Carbon::now()->timestamp;
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+        $notes = json_decode($billing->notes, true);
+
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->update();
+
+        return $billing;
+    }
+
     public static function deleteBilling($id) {
         self::deleteBillings(array($id));
     }
@@ -255,7 +314,7 @@ class Billing extends Model
 
     public static function sendMail($billing) {
       
-        $billing = self::with(['client'])->find($billing->id);
+        $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
         $data = [
             'user' => $billing->client->fullname,

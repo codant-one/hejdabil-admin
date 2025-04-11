@@ -49,7 +49,7 @@ watchEffect(fetchData)
 
 async function fetchData() {
 
-    if(Number(route.params.id)) { 
+    if(Number(route.params.id) && route.name === 'dashboard-admin-billings-edit-id') {
         isRequestOngoing.value = true
 
         billing.value = await billingsStores.showBilling(Number(route.params.id))
@@ -137,15 +137,8 @@ async function fetchData() {
 }
 
 const data = (data) => {
-  isRequestOngoing.value = true
-
   invoice.value = data
   invoiceData.value = data.details
-
-  setTimeout(() => {
-    isRequestOngoing.value = false
-  }, 500)
-  
 }
 
 const addProduct = value => {
@@ -313,8 +306,9 @@ const onSubmit = () => {
             :supplier="supplier"
             :total="total"
             :billing="billing"
-            :isCreated="false"
             :notes="notes"
+            :isCreated="false"
+            :isCredit="false"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
