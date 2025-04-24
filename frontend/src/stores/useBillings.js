@@ -9,7 +9,15 @@ export const useBillingsStores = defineStore('billings', {
         loading: false,
         last_page: 1,
         billingsTotalCount: 6,
-        totalSum: 0
+        totalSum: 0,
+        totalTax: 0,
+        totalNeto: 0,
+        totalPending: 0,
+        totalPaid: 0,
+        totalExpired: 0,
+        pendingTax: 0,
+        paidTax: 0,
+        expiredTax: 0
     }),
     getters:{
         getBillings(){
@@ -31,6 +39,14 @@ export const useBillingsStores = defineStore('billings', {
                     this.last_page = response.data.data.billings.last_page
                     this.billingsTotalCount = response.data.data.billingsTotalCount
                     this.totalSum = response.data.data.totalSum
+                    this.totalTax = response.data.data.totalTax
+                    this.totalNeto = response.data.data.totalNeto
+                    this.totalPending = response.data.data.totalPending
+                    this.totalPaid = response.data.data.totalPaid
+                    this.totalExpired = response.data.data.totalExpired
+                    this.pendingTax = response.data.data.pendingTax
+                    this.paidTax = response.data.data.paidTax
+                    this.expiredTax = response.data.data.expiredTax
                 })
                 .catch(error => console.log(error))
                 .finally(() => {

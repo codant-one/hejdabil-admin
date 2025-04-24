@@ -32,12 +32,16 @@ const state_id = ref(null)
 const userData = ref(null)
 const role = ref(null)
 const totalSum = ref(0)
-
-const states = ref ([
-  { id: 4, name: "Pending" },
-  { id: 7, name: "Paid" },
-  { id: 8, name: "Expired" }
-])
+const totalTax = ref(0)
+const totalNeto = ref(0)
+const totalPending = ref(0)
+const totalPaid = ref(0)
+const totalExpired = ref(0)
+const pendingTax = ref(0)
+const paidTax = ref(0)
+const expiredTax = ref(0)
+const bgColor = ref(null)
+const textColor = ref(null)
 
 const advisor = ref({
   type: '',
@@ -50,7 +54,7 @@ const paginationData = computed(() => {
   const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros y su total`
+  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros`
 })
 
 // 👉 watching current page
@@ -74,7 +78,7 @@ async function fetchData() {
     state_id: state_id.value
   }
 
-  isRequestOngoing.value = true
+  isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   await billingsStores.fetchBillings(data)
 
@@ -82,6 +86,14 @@ async function fetchData() {
   totalPages.value = billingsStores.last_page
   totalBillings.value = billingsStores.billingsTotalCount
   totalSum.value = billingsStores.totalSum
+  totalTax.value = billingsStores.totalTax
+  totalNeto.value = billingsStores.totalNeto
+  totalPending.value = billingsStores.totalPending
+  totalPaid.value = billingsStores.totalPaid
+  totalExpired.value = billingsStores.totalExpired
+  pendingTax.value = billingsStores.pendingTax
+  paidTax.value = billingsStores.paidTax
+  expiredTax.value = billingsStores.expiredTax
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
@@ -112,6 +124,25 @@ const editBilling = billingData => {
   router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: billingData.id } })
 }
 
+const updateStateId = newStateId => {
+  state_id.value = newStateId
+
+  switch(newStateId) {
+    case 4: 
+      bgColor.value = 'bg-light-warning'
+      textColor.value = 'text-warning'
+    break
+    case 7:
+      bgColor.value = 'bg-light-info'
+      textColor.value = 'text-info'
+    break
+    case 8:
+      bgColor.value = 'bg-light-error'
+      textColor.value = 'text-error'
+    break   
+  }
+}
+
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false
   let res = await billingsStores.updateState(selectedBilling.value.id)
@@ -134,6 +165,10 @@ const updateState = async () => {
   await fetchData()
 
   return true
+}
+
+const openLink = function (billingData) {
+  window.open(themeConfig.settings.urlStorage + billingData.file)
 }
 
 const printInvoice = async(billing) => {
@@ -275,7 +310,7 @@ const downloadCSV = async () => {
           width="300">
             
           <VCardText class="pt-3">
-            Loading
+           Lastning
             <VProgressLinear
               indeterminate
               color="white"
@@ -296,29 +331,65 @@ const downloadCSV = async () => {
         <VCard title="Filters">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="4">
-                <VSelect
-                  v-model="state_id"
-                  placeholder="States"
-                  :items="states"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
+              <VCol cols="12" md="8" class="border-e d-flex justify-content-between align-center">
+
+                <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
+                  <div
+                    v-for="{ title, state_id, tax, value, icon, color } in [
+                      { title: 'Pending', state_id: 4, tax: formatNumber(pendingTax ?? '0.00') + ' kr', value: formatNumber(totalPending ?? '0.00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
+                      { title: 'Paid', state_id: 7, tax: formatNumber(paidTax ?? '0.00') + ' kr', value: formatNumber(totalPaid ?? '0.00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
+                      { title: 'Expired', state_id: 8, tax: formatNumber(expiredTax ?? '0.00') + ' kr', value: formatNumber(totalExpired ?? '0.00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
+                    ]"
+                    :key="title"
+                  >
+                    <div class="d-flex cursor-pointer" @click="updateStateId(state_id)">
+                      <VAvatar
+                        variant="tonal"
+                        :color="color"
+                        rounded
+                        size="65"
+                        class="me-2"
+                      >
+                        <VIcon
+                          :icon="icon"
+                          size="45"
+                        />
+                      </VAvatar>
+                      <div>
+                        <h5 
+                          class="text-h5 font-weight-medium"
+                          :class="`text-${color}`"
+                        >
+                          {{ title }}
+                        </h5>
+                        <h6
+                          class="text-h6"
+                          :class="`text-${color}`"
+                        >
+                          {{ value }}
+                        </h6>
+                        <span 
+                          class="text-sm"
+                          :class="`text-${color}`">
+                          varav moms {{ tax }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </VCol>
-              <VCol cols="12" md="4">
+              <VCol cols="12" md="4" class="d-flex flex-column">
                 <VSelect
                   v-model="client_id"
-                  placeholder="Clients"
                   :items="clients"
                   :item-title="item => item.fullname"
                   :item-value="item => item.id"
+                  placeholder="Clients"
+                  class="mb-2"
                   autocomplete="off"
                   clearable
                   clear-icon="tabler-x"/>
-              </VCol>
-              <VCol cols="12" md="4">
+
                 <VSelect
                   v-if="role !== 'Supplier'"
                   v-model="supplier_id"
@@ -389,18 +460,18 @@ const downloadCSV = async () => {
 
           <VDivider />
 
-          <VTable class="text-no-wrap">
+          <VTable class="text-no-wrap" style="border-radius: 0 !important">
             <!-- 👉 table head -->
-            <thead>
+            <thead :class="bgColor">
               <tr>
-                <th scope="col"> # INVOICE </th>
-                <th scope="col"> CLIENT </th>
-                <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
-                <th scope="col"> TOTAL </th>
-                <th scope="col"> INVOICE DATE </th>
-                <th scope="col"> DUE DATE </th>
-                <th class="text-center" scope="col"> STATUS </th>
-                <th class="text-center" scope="col"> INVOICE SENT </th>                
+                <th scope="col"> <span :class="textColor"> # INVOICE </span> </th>
+                <th scope="col"> <span :class="textColor"> CLIENT </span> </th>
+                <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> SUPPLIER </span> </th>
+                <th scope="col"> <span :class="textColor"> TOTAL </span> </th>
+                <th scope="col"> <span :class="textColor"> INVOICE DATE </span> </th>
+                <th scope="col"> <span :class="textColor"> DUE DATE </span> </th>
+                <th class="text-center" scope="col"> <span :class="textColor"> STATUS </span> </th>
+                <th class="text-center" scope="col"> <span :class="textColor"> INVOICE SENT </span> </th>                
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
             </thead>
@@ -487,7 +558,7 @@ const downloadCSV = async () => {
                     </template>
                     <VList>
                       <VListItem
-                         v-if="$can('edit', 'billing') && (billing.state_id === 7 || billing.state_id === 9)"
+                         v-if="$can('edit', 'billing')"
                          @click="printInvoice(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-printer" />
@@ -495,7 +566,15 @@ const downloadCSV = async () => {
                         <VListItemTitle>Print</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'billing') && billing.state_id === 7"
+                         v-if="$can('edit', 'billing')"
+                         @click="openLink(billing)">
+                        <template #prepend>
+                          <VIcon icon="mdi-file-pdf-box" />
+                        </template>
+                        <VListItemTitle>View as PDF</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'billing')"
                          @click="duplicate(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-content-copy" />
@@ -503,7 +582,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Duplicate</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'billing') && (billing.state_id === 7 || billing.state_id === 9)"
+                         v-if="$can('edit', 'billing')"
                          @click="send(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
@@ -551,6 +630,8 @@ const downloadCSV = async () => {
             </span>
 
             <span class="text-sm text-disabled">
+              <strong class="me-5">NETO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
+              <strong class="me-5">TAX: {{ formatNumber(totalTax ?? 0) }} kr</strong>
               <strong>TOTAL: {{ formatNumber(totalSum ?? 0) }} kr</strong>
             </span>
 
@@ -648,19 +729,19 @@ const downloadCSV = async () => {
 </template>
 
 <style scope>
+  .search {
+    width: 100%;
+  }
+
+  .justify-content-center {
+    justify-content: center !important;
+  }
+
+  @media(min-width: 991px){
     .search {
-        width: 100%;
+      width: 30rem;
     }
-
-    .justify-content-center {
-      justify-content: center !important;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 30rem;
-        }
-    }
+  }
 </style>
 <route lang="yaml">
   meta:

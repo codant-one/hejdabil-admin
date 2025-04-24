@@ -19,7 +19,7 @@
           md="6"
         >
           <AppTextField
-            label="Phone"
+            label="Telefon"
             placeholder="+(123) 456-7890"
           />
         </VCol>
@@ -101,7 +101,7 @@
         >
           <AppTextField
             placeholder="126, New Street"
-            label="Address"
+            label="Adress"
           />
         </VCol>
 

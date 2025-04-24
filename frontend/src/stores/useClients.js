@@ -60,13 +60,16 @@ export const useClientsStores = defineStore('clients', {
                 })
             
         },
-        updateClient(data) {
+        updateClient(data, list = true) {
             this.setLoading(true)
             
             return Clients.update(data)
                 .then((response) => {
-                    let pos = this.clients.findIndex((item) => item.id === response.data.data.client.id)
-                    this.clients[pos] = response.data.data.client
+                    if(list) {
+                        let pos = this.clients.findIndex((item) => item.id === response.data.data.client.id)
+                        this.clients[pos] = response.data.data.client
+                    }
+
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

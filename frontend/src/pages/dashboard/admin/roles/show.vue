@@ -73,7 +73,7 @@ const closeRoleDetailDialog = function(){
                     <VCol cols="12">
                         <VTextField
                             v-model="name"
-                            label="Name"
+                            label="Namn"
                             readonly
                         />
                     </VCol>

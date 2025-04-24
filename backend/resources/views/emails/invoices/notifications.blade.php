@@ -8,7 +8,7 @@
                 <tr>
                     <td align="center" style="padding:0;margin:0;">
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:54px;color:#9966FF;font-size:36px">
-                            <strong>Dear: {!! $user !!},</strong>
+                            <strong>Kära nån: {!! $user !!},</strong>
                         </p>
                     </td>
                 </tr>
@@ -18,29 +18,29 @@
                             {!! $text !!}
                         </p><br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Invoice number:</strong> {!! $billing->invoice_id !!}
+                            <strong>Fakturanummer:</strong> {!! $billing->invoice_id !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Invoice date:</strong> {!! $billing->invoice_date !!}
+                            <strong>Fakturadatum:</strong> {!! $billing->invoice_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Due date:</strong> {!! $billing->due_date !!}
+                            <strong>Förfallodag:</strong> {!! $billing->due_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Total:</strong> {!! formatCurrency($billing->total) !!} kr
+                            <strong>Summa att betala:</strong> {!! formatCurrency($billing->total) !!} kr
                         </p><br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            Additionally, the company that generated the invoice has the following information:
+                            Dessutom har det företag som genererade fakturan följande information:
                         </p>
                         <br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Company name:</strong> {!! $billing->supplier->company !!}
+                            <strong>Företagets namn:</strong> {!! $billing->supplier->company !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong># Organization:</strong> {!! $billing->supplier->organization_number !!}
+                            <strong>Org.nr.</strong> {!! $billing->supplier->organization_number !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>E-mail:</strong> {!! $billing->supplier->user->email !!}
+                            <strong>E-post:</strong> {!! $billing->supplier->user->email !!}
                         </p><br>
                     </td>
                 </tr>

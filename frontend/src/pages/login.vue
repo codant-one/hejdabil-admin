@@ -156,10 +156,10 @@ const onSubmit = () => {
               <img :src="favicon" />        
               
               <h5 class="text-h5 font-weight-semibold mb-1 d-block">
-                Welcome to your Panel! 👋🏻
+                Välkommen till din panel! 👋🏻
               </h5>
               <p class="mb-0">
-                Log in to your account
+                Logga in på ditt konto
               </p>
             </VCardText>
             <VCardText>
@@ -173,7 +173,7 @@ const onSubmit = () => {
                     <VTextField
                       class="login"
                       v-model="email"
-                      label="E-mail"
+                      label="E-post"
                       type="email"
                       :rules="[requiredValidator, emailValidator]"
                       :error-messages="errors.email"
@@ -186,7 +186,7 @@ const onSubmit = () => {
                     <VTextField
                       class="login"
                       v-model="password"
-                      label="Password"
+                      label="Lösenord"
                       :error-messages="errors.password"
                       :rules="[requiredValidator]"
                       :type="isPasswordVisible ? 'text' : 'password'"
@@ -198,7 +198,7 @@ const onSubmit = () => {
                     <div class="d-flex align-center flex-wrap justify-space-between mt-2 mb-4">
                       <VCheckbox
                         v-model="remember_me"
-                        label="Remember me"
+                        label="Kom ihåg mig"
                         class="letter"
                       />
                   
@@ -206,7 +206,7 @@ const onSubmit = () => {
                           class="text-primary letter"
                           :to="{ name: 'forgot-password' }"
                         >
-                        Forgot your password?
+                          Har du glömt ditt lösenord?
                         </RouterLink>
                     </div>
 
@@ -214,7 +214,7 @@ const onSubmit = () => {
                       block
                       type="submit"
                     > 
-                      Login
+                      Logga in
                       <VProgressCircular
                         v-if="load"
                         indeterminate

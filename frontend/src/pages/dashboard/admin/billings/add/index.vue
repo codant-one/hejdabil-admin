@@ -210,7 +210,7 @@ const onSubmit = () => {
         color="primary"
         width="300">         
         <VCardText class="pt-3">
-          Loading
+         Lastning
           <VProgressLinear
             indeterminate
             color="white"

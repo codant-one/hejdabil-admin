@@ -1,11 +1,11 @@
 export default [
     { 
-        heading: 'Dashboard',
+        heading: 'Instrumentpanel',
         action: 'view' , 
         subject: 'dashboard'
     },
     {
-        title: 'Home', 
+        title: 'Hem', 
         icon: { icon: 'tabler-home' },
         to: 'dashboard-panel', 
         action: 'view' , 

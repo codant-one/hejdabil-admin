@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -54,6 +55,14 @@ class BillingController extends Controller
 
             $count = $query->count();
             $totalSum = number_format($query->sum('total'), 2);
+            $totalTax = number_format($query->sum(DB::raw('total - subtotal')), 2);
+            $totalNeto = number_format($query->sum('subtotal'), 2);
+            $totalPending = number_format(Billing::where('state_id', 4)->sum('total'), 2);
+            $totalPaid = number_format(Billing::whereIn('state_id', [7, 9])->sum('total'), 2);
+            $totalExpired = number_format(Billing::where('state_id', 8)->sum('total'), 2);
+            $pendingTax = number_format(Billing::where('state_id', 4)->sum(DB::raw('total - subtotal')), 2);
+            $paidTax = number_format(Billing::whereIn('state_id', [7, 9])->sum(DB::raw('total - subtotal')), 2);
+            $expiredTax = number_format(Billing::where('state_id', 8)->sum(DB::raw('total - subtotal')), 2);
             
             $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
             $suppliers = Supplier::with(['user' => function($query) {
@@ -72,7 +81,15 @@ class BillingController extends Controller
                     'clients' => $clients,
                     'billings' => $billings,
                     'billingsTotalCount' => $count,
-                    'totalSum' => $totalSum
+                    'totalSum' => $totalSum,
+                    'totalTax' => $totalTax,
+                    'totalNeto' => $totalNeto,
+                    'totalPending' => $totalPending,
+                    'totalPaid' => $totalPaid,
+                    'totalExpired' => $totalExpired,
+                    'pendingTax' => $pendingTax,
+                    'paidTax' => $paidTax,
+                    'expiredTax' => $expiredTax
                 ]
             ]);
 
@@ -128,7 +145,7 @@ class BillingController extends Controller
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
 
             return response()->json([
@@ -160,7 +177,7 @@ class BillingController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
 
             $billing->updateBilling($request, $billing); 
@@ -194,7 +211,7 @@ class BillingController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
             
 
@@ -226,7 +243,7 @@ class BillingController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
             
             $billing->state_id = 7;
@@ -289,7 +306,7 @@ class BillingController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
             
             $billing = Billing::createCredit($billing);
@@ -320,16 +337,16 @@ class BillingController extends Controller
 
             $data = [
                 'user' => $billing->client->fullname,
-                'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
+                'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
                 'billing' => $billing,
-                'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
-                'buttonText' => 'Download',
+                'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+                'buttonText' => 'Nedladdningar',
                 'pdfFile' => asset('storage/'.$billing->file)
             ];
 
             if($request->emailDefault === true) {
                 $clientEmail = $billing->client->email;
-                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
                     
                 try {
                     \Mail::send(
@@ -347,7 +364,7 @@ class BillingController extends Controller
 
             foreach($request->emails as $email) {
 
-                $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+                $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
                     
                 try {
                     \Mail::send(

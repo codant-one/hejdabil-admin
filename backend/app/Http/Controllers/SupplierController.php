@@ -89,10 +89,10 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Welcome to HejdåBil';
+            $subject = 'Välkommen till HejdåBil';
             
             $data = [
-                'title' => 'Account created successfully!!!',
+                'title' => 'Konto skapat framgångsrikt!!!',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email'=> $email,
                 'password' => $password,
@@ -110,7 +110,7 @@ class SupplierController extends Controller
                 });
 
                 $message = 'send_email';
-                $responseMail = 'Email sent to supplier successfully.';
+                $responseMail = 'E-post skickad till leverantör framgångsrikt.';
             } catch (\Exception $e){
                 $message = 'error';
                 $responseMail = $e->getMessage();
@@ -149,7 +149,7 @@ class SupplierController extends Controller
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Supplier not found'
+                    'message' => 'Leverantören hittades inte'
                 ], 404);
 
             return response()->json([
@@ -181,7 +181,7 @@ class SupplierController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Supplier not found'
+                    'message' => 'Leverantören hittades inte'
                 ], 404);
 
             $supplier->updateSupplier($request, $supplier); 
@@ -215,7 +215,7 @@ class SupplierController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Supplier not found'
+                    'message' => 'Leverantören hittades inte'
                 ], 404);
             
             $supplier->deleteSupplier($id);
@@ -246,7 +246,7 @@ class SupplierController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Supplier not found'
+                    'message' => 'Leverantören hittades inte'
                 ], 404);
             
             $supplier->activateSupplier($id);

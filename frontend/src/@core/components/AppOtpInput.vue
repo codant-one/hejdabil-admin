@@ -49,7 +49,7 @@ const handleKeyDown = (event, index) => {
 <template>
   <div>
     <h6 class="text-base font-weight-bold mb-3 d-none d-md-block">
-      Enter your 6-digit security code
+      Ange din 6-siffriga säkerhetskod
     </h6>
     <div
       ref="refOtpComp"

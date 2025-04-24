@@ -25,7 +25,7 @@ class VerifyJwt
                 return Response()->json([
                     'success' => false,
                     'feedback' => 'invalid_token',
-                    'message' => 'Invalid token'
+                    'message' => 'Ogiltig token'
                 ], 401);
             }
             
@@ -33,14 +33,14 @@ class VerifyJwt
                 return Response()->json([
                     'success' => false,
                     'feedback' => 'expired_token',
-                    'message' => 'Expired token'
+                    'message' => 'Utgången Token'
                 ], 401);
             }
 
             return Response()->json([
                 'success' => false,
                 'feedback' => $e,
-                'message' => 'Error token'
+                'message' => 'Token för fel'
             ], 401);
 
         }

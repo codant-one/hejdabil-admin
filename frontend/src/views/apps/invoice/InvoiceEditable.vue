@@ -341,7 +341,7 @@ const editNote = data => {
                 <!-- 👉 Invoice Id -->
                 <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
                     <span class="me-2 text-start w-35 text-h6">
-                        Invoice No:
+                         Faktura nr:
                     </span>
                     <span>
                         <VTextField
@@ -354,7 +354,7 @@ const editNote = data => {
                     </span>
                 </h6>
                 <div class="d-flex align-center justify-sm-start mb-1 text-right" v-if="client">
-                    <span class="me-2 text-start w-35">Client No:</span>
+                    <span class="me-2 text-start w-35">Kund nr:</span>
                     <span>
                         <VTextField
                             v-model="client.order_id"
@@ -368,7 +368,7 @@ const editNote = data => {
                 <!-- 👉 Issue Date -->
                 <div class="d-flex align-center justify-sm-start mb-1 text-right">
                     <span class="me-2 text-start w-35">
-                        Invoice Date:
+                        Fakturadatum:
                     </span>
 
                     <span style="inline-size: 10.5rem;">
@@ -396,7 +396,7 @@ const editNote = data => {
                 <!-- 👉 Due Date -->
                 <div class="d-flex align-center justify-sm-start mb-0">
                     <span class="me-2 text-start w-35">
-                        Due date:
+                        Förfallodag:
                     </span>
 
                     <span style="min-inline-size: 10.5rem;">
@@ -420,7 +420,7 @@ const editNote = data => {
                 <!-- 👉 Days -->
                 <div class="d-flex align-center justify-sm-start mb-0 mt-2">
                     <span class="me-2 text-start w-35">
-                        Payment Terms:
+                        Betalningsvillkor:
                     </span>
 
                     <span style="width: 10.5rem;">
@@ -433,7 +433,7 @@ const editNote = data => {
                         />
                     </span>
                 </div>   
-                <p class="mt-5 mb-0 text-sm" v-if="client">After the due date, interest is charged according to the Interest Act.</p>           
+                <p class="mt-5 mb-0 text-sm" v-if="client">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
             </div>
             <div class="mt-4 ma-sm-4 text-right d-flex flex-column">
                 <h1 class="mb-0 text-center faktura">
@@ -460,10 +460,10 @@ const editNote = data => {
                 </p> 
                 <div class="d-flex flex-column align-center justify-sm-end mb-0 mt-auto" v-if="client">
                     <span class="text-h6 font-weight-medium w-100 my-3">
-                        Billing Address
+                        Faktureringsadress
                     </span>
                     <span class="d-flex flex-column w-100">
-                        <span class="font-weight-bold">{{ client.address }}</span>
+                        <span>{{ client.address }}</span>
                         <span>{{ client.postal_code }}</span>
                         <span>{{ client.street }}</span>
                     </span>
@@ -570,7 +570,7 @@ const editNote = data => {
                 <table class="w-100">
                     <tbody>
                         <tr>
-                            <td class="pe-16"> Subtotal:</td>
+                            <td class="pe-16"> Netto:</td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
                                     {{ formatNumber(subtotal) }} kr
@@ -643,7 +643,7 @@ const editNote = data => {
                         <span class="text-footer">{{ supplier.street }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
-                        Registered office of the company
+                        Bolagets säte
                     </span>
                     <span class="text-footer"> Stockholm, Sweden </span>
                     <span class="me-2 text-h6 mt-2" v-if="supplier.swish">
@@ -658,26 +658,26 @@ const editNote = data => {
                     <span class="text-footer" v-if="supplier.length === 0"> 559374-0268 </span>
                     <span class="text-footer" v-else> {{ supplier.organization_number }} </span>
                     <span class="me-2 text-h6 mt-2" v-if="supplier.vat || supplier.length === 0">
-                        VAT reg. no.
+                        Momsreg.nr.
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> SE559374026801 </span>
                     <span class="text-footer" v-else> {{ supplier.vat }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
-                        Website
+                        Webbplats
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> www.hejdabil.se </span>
                     <span class="text-footer" v-else> {{ supplier.link }} </span>
                     <span class="me-2 text-h6 mt-2">
-                        Company e-mail
+                        Företagets e-post
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> info@hejdabil.se </span>
                     <span class="text-footer" v-else> {{ supplier.user.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6" v-if="supplier.account_number || supplier.length === 0">
-                        Bank account number
+                        Kontonummer
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
                     <span class="text-footer" v-else> {{ supplier.account_number }} </span>

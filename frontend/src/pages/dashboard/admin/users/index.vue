@@ -89,7 +89,7 @@ watchEffect(fetchData)
 
 // 👉 Fetch users
 async function fetchData() {
-  isRequestOngoing.value = true
+  isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   let data = {
     search: searchQuery.value,
@@ -228,7 +228,7 @@ const downloadCSV = async () => {
           width="300">
             
           <VCardText class="pt-3">
-            Loading
+           Lastning
 
             <VProgressLinear
               indeterminate
@@ -410,7 +410,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-key" />
                         </template>
-                        <VListItemTitle>Change password</VListItemTitle>
+                        <VListItemTitle>Ändra lösenord</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users')"

@@ -72,19 +72,19 @@ class SupplierRequest extends FormRequest
     public function messages()
     {
         return [
-            'company.required' => 'The company is required.',
-            'organization_number.required' => 'The organization number is required.',
-            'address.required' => 'The address is required.',
-            'street.required' => 'The street is required.',
-            'postal_code.required' => 'The postal code is required.',
-            'phone.required' => 'The phone is required.',
-            'bank.required' => 'The bank name is required.',
-            'account_number.required' => 'The account number is required.',
-            'name.required' => 'The first name is required.',
-            'last_name.required' => 'The last name is required.',
-            'email.required' => 'The email is required.',
-            'email.email' => 'The email format is not allowed.',
-            'email.unique' => 'A user with the entered email already exists.'
+            'company.required' => 'Företaget är obligatoriskt.',
+            'organization_number.required' => 'Organisationsnumret är obligatoriskt.',
+            'address.required' => 'Adressen är obligatorisk.',
+            'street.required' => 'Gatan är obligatorisk.',
+            'postal_code.required' => 'Postnumret är obligatoriskt.',
+            'phone.required' => 'Telefonen är obligatorisk.',
+            'bank.required' => 'Bankens namn är obligatoriskt. ',
+            'account_number.required' => 'Kontonumret är obligatoriskt.',
+            'name.required' => 'Förnamnet är obligatoriskt.',
+            'last_name.required' => 'Efternamnet är obligatoriskt.',
+            'email.required' => 'E-postadressen är obligatorisk.',
+            'email.email' => 'E-postformatet är inte tillåtet.',
+            'email.unique' => 'En användare med den angivna e-postadressen finns redan.'
         ];
     }
 

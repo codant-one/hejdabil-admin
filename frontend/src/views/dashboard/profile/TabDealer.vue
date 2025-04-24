@@ -184,7 +184,7 @@ const onImageSelected = event => {
 
                 advisor.value.type = 'error'
                 advisor.value.show = true
-                advisor.value.message = 'An error has occurred...! (Server Error)'
+                advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                 emit('alert', advisor)
 
                 setTimeout(() => {
@@ -255,7 +255,7 @@ const onSubmit = () => {
 
                     advisor.value.type = 'error'
                     advisor.value.show = true
-                    advisor.value.message = 'An error has occurred...! (Server Error)'
+                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                     emit('alert', advisor)
 
                     setTimeout(() => {
@@ -279,7 +279,7 @@ const onSubmit = () => {
         color="primary"
         width="300">
         <VCardText class="pt-3">
-          Loading
+         Lastning
           <VProgressLinear
             indeterminate
             color="white"
@@ -378,7 +378,7 @@ const onSubmit = () => {
                                     v-model="form.address"
                                     rows="3"
                                     :rules="[requiredValidator]"
-                                    label="Address"
+                                    label="Adress"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -399,7 +399,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.phone"
                                     :rules="[requiredValidator, phoneValidator]"
-                                    label="Phone"
+                                    label="Telefon"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">

@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Invoice Template</title>
+        <title>Fakturamall</title>
     </head>
     <style>
 
@@ -186,7 +186,7 @@
                                     </h3> 
                                     @if($billing->reference)
                                     <div style="text-align: right;">
-                                        <span width="30%">Reference:</span>
+                                        <span width="30%">Vår referens: </span>
                                         <span>{{ $billing->reference }}</span>
                                     </div>
                                     @endif 
@@ -200,7 +200,7 @@
                                         <tr class="font-weight-medium m-0 d-flex">
                                             <td width="30%">
                                                 <h4 class="font-weight-medium m-0 d-flex">
-                                                    Invoice No:
+                                                    Faktura nr:
                                                 </h4>
                                             </td>
                                             <td>
@@ -210,36 +210,36 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td width="30%">Client No:</td>
+                                            <td width="30%">Kund nr:</td>
                                             <td>{{ $billing->client->order_id }}</td>
                                         </tr>
                                         <tr>
-                                            <td width="30%">Invoice Date:</td>
+                                            <td width="30%">Fakturadatum:</td>
                                             <td>
                                                 <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td width="30%">Due Date:</td>
+                                            <td width="30%">Förfallodag:</td>
                                             <td>
                                                 <span>{{ \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') }}</span>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td width="30%">Payment Terms:</td>
+                                            <td width="30%">Betalningsvillkor:</td>
                                             <td>{{ $billing->payment_terms }}</td>
                                         </tr>
                                     </table>
  
-                                    <p class="mt-20 m-0">After the due date, interest is charged according to the Interest Act.</p>           
+                                    <p class="mt-20 m-0">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
                                 </td>
                                 <td width="35%" class="data-from pt-8" style="vertical-align: bottom;">
                                     <div class="mt-auto number-invoice">
                                         <h4 class="font-weight-medium m-0">
-                                            Billing Address
+                                            Faktureringsadress
                                         </h4>
                                         <span class="number-invoice">
-                                            <p class="m-0 font-weight-medium">{{ $billing->client->address }}</p>
+                                            <p class="m-0">{{ $billing->client->address }}</p>
                                             <p class="m-0">{{ $billing->client->postal_code }}</p>
                                             <p class="m-0">{{ $billing->client->street }}</p>
                                         </span>
@@ -310,15 +310,15 @@
                     <td width="25%" class="info-total">
                         <table width="100%">
                             <tr>
-                                <td class="text">Subtotal:</td>
+                                <td class="text">Netto:</td>
                                 <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->subtotal) }} kr</span></td>
                             </tr>
                             <tr>
-                                <td class="text">Tax:</td>
+                                <td class="text">Moms:</td>
                                 <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->tax) }}%</span></td>
                             </tr>
                             <tr>
-                                <td class="text">Total:</td>
+                                <td class="text">Summa att betala:</td>
                                 <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->total) }} kr</span></td>
                             </tr>
                         </table>
@@ -330,7 +330,7 @@
                     <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
-                                Address
+                                Adress
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
@@ -348,7 +348,7 @@
                         </p>
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
-                                Registered office of the company
+                                Bolagets säte
                             </h4>
                             <span class="info-supplier">
                                 <span>Stockholm, Sweden</span>
@@ -383,7 +383,7 @@
                         @if(($billing->supplier && !is_null($billing->supplier->vat)) || !$billing->supplier)
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
-                                VAT reg. no.
+                                Momsreg.nr.
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
@@ -400,7 +400,7 @@
                     <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
-                                Website
+                                Webbplats
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
@@ -414,7 +414,7 @@
                         </p>
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
-                                Company e-mail
+                                Företagets e-post
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
@@ -430,7 +430,7 @@
                     <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
-                                Bank account number
+                                Kontonummer
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">

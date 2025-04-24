@@ -68,7 +68,7 @@ async function fetchData() {
     supplier_id: supplier_id.value
   }
 
-  isRequestOngoing.value = true
+  isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   await clientsStores.fetchClients(data)
 
@@ -246,7 +246,7 @@ const downloadCSV = async () => {
           width="300">
             
           <VCardText class="pt-3">
-            Loading
+           Lastning
             <VProgressLinear
               indeterminate
               color="white"

@@ -96,7 +96,7 @@ const credit = async () => {
         width="300">
                         
         <VCardText class="pt-3">
-          Loading
+         Lastning
           <VProgressLinear
             indeterminate
             color="white"
@@ -139,35 +139,35 @@ const credit = async () => {
               </div>
               <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-0">
                 <span class="me-2 text-start w-35 text-h6">
-                  Invoice No:
+                   Faktura nr:
                 </span>
                 <span class="text-h6">{{ invoice.invoice_id }}</span>
                 
               </h6>
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Client No:</span>
+                <span class="me-2 text-start w-35">Kund nr:</span>
                  {{ invoice.client.order_id }}
               </p>
               <!-- 👉 Issue Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Invoice Date: </span>
+                <span class="me-2 text-start w-35">Fakturadatum: </span>
                 <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <!-- 👉 Due Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Due date: </span>
+                <span class="me-2 text-start w-35">Förfallodag: </span>
                 <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Payment Terms: </span>
+                <span class="me-2 text-start w-35">Betalningsvillkor: </span>
                 <span>0 days net</span>
               </p>
               <p class="d-flex align-center justify-sm-start mb-0 text-right" v-if="invoice.reference !== null">
-                <span class="me-2 text-start w-35">Reference:</span> {{ invoice.reference ?? '' }}
+                <span class="me-2 text-start w-35">Vår referens:</span> {{ invoice.reference ?? '' }}
               </p>    
-              <p class="mt-5 mb-0 text-xs">After the due date, interest is charged according to the Interest Act.</p>           
+              <p class="mt-5 mb-0 text-xs">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
             </div>
 
             <div class="ma-sm-4 text-right d-flex flex-column">
@@ -179,10 +179,10 @@ const credit = async () => {
               </h3>
               <p class="mb-0 mt-auto">
                 <span class="text-h6 font-weight-medium mb-6">
-                    Billing Address
+                    Faktureringsadress
                 </span>
                 <span class="d-flex flex-column">
-                  <span class="font-weight-bold">{{ invoice.client.address }}</span>
+                  <span>{{ invoice.client.address }}</span>
                   <span>{{ invoice.client.postal_code }}</span>
                   <span>{{ invoice.client.street }}</span>
                 </span>
@@ -232,7 +232,7 @@ const credit = async () => {
                     <td class="text-end">
                       <div class="me-5">
                         <p class="mb-0">
-                          Subtotal:
+                          Netto:
                         </p>
                         <p class="mb-0">
                             Tax:
@@ -275,7 +275,7 @@ const credit = async () => {
                     <span class="text-footer">{{ invoice.supplier.street }}</span>
                   </span>
                   <span class="me-2 text-h6 mt-2">
-                      Registered office of the company
+                      Bolagets säte
                   </span>
                   <span class="text-footer"> Stockholm, Sweden </span>
                   <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.swish">
@@ -290,26 +290,26 @@ const credit = async () => {
                   <span class="text-footer" v-if="!invoice.supplier"> 559374-0268 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.organization_number }} </span>
                   <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.vat">
-                      VAT reg. no.
+                      Momsreg.nr.
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> SE559374026801 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.vat }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
-                      Website
+                      Webbplats
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> www.hejdabil.se </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.link }} </span>
                   <span class="me-2 text-h6 mt-2">
-                      Company e-mail
+                      Företagets e-post
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> info@hejdabil.se </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.user.email }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6" v-if="!invoice.supplier || invoice.supplier?.account_number">
-                      Bank account number
+                      Kontonummer
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>

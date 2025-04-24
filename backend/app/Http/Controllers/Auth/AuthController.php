@@ -60,7 +60,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'invalid_credentials',
-                'errors' => 'Invalid username or password'
+                'errors' => 'Ogiltigt användarnamn eller lösenord'
             ], 400);
         }
 
@@ -136,7 +136,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'invalid_code',
-            'errors' => 'Incorrect verification code'
+            'errors' => 'Felaktig verifieringskod'
         ], 400);
     }
 
@@ -174,7 +174,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'invalid_code',
-            'errors' => 'Incorrect verification code'
+            'errors' => 'Felaktig verifieringskod'
         ], 400);
     }
 
@@ -208,7 +208,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'params_validation_failed',
-                'error' => 'Data does not match'
+                'error' => 'Data stämmer inte överens'
             ], 400);
         }
 
@@ -225,7 +225,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Log out successfully'
+            'message' => 'Logga ut framgångsrikt'
         ], 200);
     }
 
@@ -240,7 +240,7 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invalid token'
+                    'message' => 'Ogiltig token'
                 ], 404);
 
             if (Carbon::parse($emailConfirm->updated_at)->addMinutes(720)->isPast()) {
@@ -249,14 +249,14 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'error_token',
-                    'message' => 'Expired Token'
+                    'message' => 'Utgången Token'
                 ], 404);
                 
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Email confirmation successful',
+                'message' => 'E-postbekräftelse framgångsrik',
                 'data' => [ 
                     'token' => $token
                 ]
@@ -283,7 +283,7 @@ class AuthController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Unregistered user'
+                    'message' => 'Oregistrerad användare'
                 ], 404);
 
             if ($user->email_verified_at == null) {
@@ -293,7 +293,7 @@ class AuthController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Your request has been processed successfully. Email verified. Please log in.',
+                'message' => 'Din begäran har behandlats framgångsrikt. E-post verifierad. Vänligen logga in.',
             ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -375,9 +375,9 @@ class AuthController extends Controller
                     $message->to($email)->subject($subject);
             });
 
-            return "Your request has been processed successfully. Email verified. Please log in.";
+            return "Din begäran har behandlats framgångsrikt. E-post verifierad. Vänligen logga in.";
         } catch (\Exception $e){
-            return "Error sending email. ".$e;
+            return "Fel vid sändning av e-post. ".$e;
         }        
 
         return "";

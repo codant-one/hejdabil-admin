@@ -115,7 +115,7 @@ const onSubmitEdit = () =>{
                   if(error.message.hasOwnProperty('email'))
                     advisor.value.message = error.message.email[0]
                 } else {
-                  advisor.value.message = 'An error has occurred...! (Server Error)'
+                  advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                 }
 
                 emit('alert', advisor)
@@ -160,7 +160,7 @@ const onSubmitEdit = () =>{
                         >
                           <VTextField
                             v-model="name"
-                            label="Name"
+                            label="Namn"
                             :rules="[requiredValidator]"
                           />
                         </VCol>
@@ -170,7 +170,7 @@ const onSubmitEdit = () =>{
                         >
                           <VTextField
                             v-model="last_name"
-                            label="Last name"
+                            label="Efternamn"
                             :rules="[requiredValidator]"
                           />
                         </VCol>
@@ -180,7 +180,7 @@ const onSubmitEdit = () =>{
                         >
                           <VTextField
                             v-model="email"
-                            label="E-mail"
+                            label="E-post"
                             disabled
                           />
                         </VCol>
@@ -199,7 +199,7 @@ const onSubmitEdit = () =>{
                           <VTextField
                             v-model="phone"
                             type="tel"
-                            label="Phone"
+                            label="Telefon"
                             placeholder="+(XX) XXXXXXXXX"
                             :rules="[phoneValidator, requiredValidator]"
                           />
@@ -211,7 +211,7 @@ const onSubmitEdit = () =>{
                           <VTextarea
                             v-model="address"
                             rows="3"
-                            label="Address"
+                            label="Adress"
                             :rules="[requiredValidator]"
                           />
                         </VCol>                

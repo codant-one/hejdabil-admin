@@ -77,7 +77,7 @@ const dialogModelValueUpdate = val => {
             >
               <VTextField
                 v-model="cardDetails.name"
-                label="Name"
+                label="Namn"
               />
             </VCol>
 

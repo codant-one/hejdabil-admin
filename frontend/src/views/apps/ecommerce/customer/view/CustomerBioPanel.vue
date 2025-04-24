@@ -2,6 +2,10 @@
 
 import { themeConfig } from '@themeConfig'
 import { avatarText, formatNumber } from '@/@core/utils/formatters'
+import { toRaw } from 'vue'
+import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { useSuppliersStores } from '@/stores/useSuppliers'
+
 const props = defineProps({
   customerData: {
     type: Object,
@@ -13,14 +17,32 @@ const props = defineProps({
   }
 })
 
-const route = useRoute()
+const emit = defineEmits([
+    'update'
+])
 
+const route = useRoute()
+const suppliersStores = useSuppliersStores()
+
+const suppliers = ref([])
+const supplier_id = ref(null)
+const organization_number = ref('')
+const address = ref('')
+const street = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
+const reference = ref('')
 const valueCount = ref(null)
 const valueText = ref(null)
 const icon = ref('tabler-shopping-cart')
 const sales = ref(null)
 const userData = ref(null)
 const role = ref(null)
+const refForm = ref()
+
+const isUserEditDialog = ref(false)
 
 watchEffect(fetchData)
 
@@ -30,6 +52,15 @@ async function fetchData() {
     valueCount.value = props.customerData.orders_count ?? 0
     valueText.value = 'Pedidos'
     icon.value = 'tabler-shopping-cart'
+
+    fullname.value = props.customerData.fullname
+    email.value = props.customerData.email
+    organization_number.value = props.customerData.organization_number
+    address.value = props.customerData.address
+    street.value = props.customerData.street
+    postal_code.value = props.customerData.postal_code
+    phone.value = props.customerData.phone
+
   } else {
     valueCount.value = props.customerData.product_count ?? 0
     valueText.value = 'Clients'
@@ -40,7 +71,46 @@ async function fetchData() {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
 
+  if(role.value !== 'Supplier' && route.name.includes('clients')) {
+    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
+    suppliers.value = toRaw(suppliersStores.getSuppliers)
+
+    supplier_id.value = props.customerData.supplier.id
+  }
 }
+
+const showUserEditDialog = u =>{
+  isUserEditDialog.value = true
+}
+
+const closeUserEditDialog = ()=>{
+  isUserEditDialog.value = false
+}
+
+const onSubmit = () => {
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      let formData = new FormData()
+
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('email', email.value)
+      formData.append('fullname', fullname.value)
+      formData.append('organization_number', organization_number.value)
+      formData.append('address', address.value)
+      formData.append('street', street.value)
+      formData.append('postal_code', postal_code.value)
+      formData.append('phone', phone.value)
+      formData.append('reference', reference.value)
+      formData.append('_method', 'PUT')
+
+      emit('update', { data: formData, id: props.customerData.id} )
+
+      closeUserEditDialog()
+    }
+  })
+}
+
 </script>
 
 <template>
@@ -175,17 +245,17 @@ async function fetchData() {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  City:
+                  Postal code:
                   <span class="text-body-2">
-                    {{ props.customerData.street }}
+                    {{ props.customerData.postal_code}}
                   </span>
                 </h6>
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Postal code:
+                  City:
                   <span class="text-body-2">
-                    {{ props.customerData.postal_code }}
+                    {{ props.customerData.street }}
                   </span>
                 </h6>
               </VListItemTitle>
@@ -197,7 +267,7 @@ async function fetchData() {
                   </span>
                 </h6>
               </VListItemTitle>
-              <VListItemTitle v-if="role !== 'Supplier'">
+              <VListItemTitle v-if="role !== 'Supplier' && route.name.includes('clients') && suppliers.length > 0">
                 <h6 class="text-base font-weight-semibold">
                   Supplier:
                   <span class="text-body-2">
@@ -208,8 +278,120 @@ async function fetchData() {
             </VListItem>
           </VList>
         </VCardText>
+
+        <VCardText class="d-flex justify-center" v-if="route.name.includes('clients')">
+          <VBtn
+            variant="elevated"
+            class="me-3"
+            @click="showUserEditDialog()"
+          >
+            Edit
+          </VBtn>
+  
+            </VCardText>
       </VCard>
     </VCol>
+
+    <!-- DIALOG Edit personal information -->
+    <VDialog
+      v-model="isUserEditDialog"
+      max-width="800"
+      persistent
+    >
+      <!-- Dialog close btn -->
+      <DialogCloseBtn @click="closeUserEditDialog" />
+
+      <!-- Dialog Content -->
+      <VCard title="Update Client">    
+        <VDivider class="mt-4"/>  
+        <VForm
+          ref="refForm"
+          @submit.prevent="onSubmit"
+        >      
+          <VCardText class="pt-2 mt-6">
+            <VRow>
+              <VCol cols="12" md="12">
+                <VSelect
+                  v-if="role !== 'Supplier'"
+                  v-model="supplier_id"
+                  placeholder="Suppliers"
+                  :items="suppliers"
+                  :item-title="item => item.full_name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"
+                  :menu-props="{ maxHeight: '300px' }"/>
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="fullname"
+                    label="Fullname"
+                    :rules="[requiredValidator]"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="email"
+                    :rules="[emailValidator, requiredValidator]"
+                    label="E-post"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="organization_number"
+                    label="Organization number"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="address"
+                    :rules="[requiredValidator]"
+                    label="Adress"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="postal_code"
+                    :rules="[requiredValidator]"
+                    label="Postal code"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="street"
+                    :rules="[requiredValidator]"
+                    label="City"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="phone"
+                    :rules="[requiredValidator, phoneValidator]"
+                    label="Telefon"
+                />
+              </VCol>
+              <VCol cols="12" md="6">
+                <VTextField
+                    v-model="reference"
+                    label="Reference"
+                />
+              </VCol>
+              <!-- 👉 Form Actions -->
+              <VCol
+                cols="12"
+                class="d-flex flex-wrap gap-4 justify-center"
+              >
+                <VBtn type="submit">
+                  Spara ändringar
+                </VBtn>
+              </VCol>
+            </VRow>
+          </VCardText>
+        </VForm>
+      </VCard>      
+    </VDialog> 
+
   </VRow>
 </template>
 

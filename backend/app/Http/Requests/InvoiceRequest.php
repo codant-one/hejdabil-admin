@@ -47,11 +47,11 @@ class InvoiceRequest extends FormRequest
     public function messages()
     {
         return [
-            'type_id.required' => 'The type is required.',
-            'type_id.integer' => 'The type format must be integer.',
-            'type_id.exists' => 'The type entered does not exist.',
-            'name_en.required' => 'The name in English is required.',
-            'name_se.required' => 'The name in Swedish is required.'
+            'type_id.required' => 'Typen är obligatorisk.',
+            'type_id.integer' => 'Typformatet måste vara integer.',
+            'type_id.exists' => 'Den angivna typen finns inte.',
+            'name_en.required' => 'Namnet på engelska är obligatoriskt.',
+            'name_se.required' => 'Namnet på svenska är obligatoriskt.'
         ];
     }
 

@@ -82,7 +82,7 @@ const dialogModelValueUpdate = val => {
             >
               <VTextField
                 v-model="userData.fullName.split(' ')[1]"
-                label="Last Name"
+                label="Efternamn"
               />
             </VCol>
 

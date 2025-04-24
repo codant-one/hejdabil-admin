@@ -44,10 +44,10 @@ class ProfileRequest extends FormRequest
     public function messages()
     {
         return [
-            'phone.required' => 'Phone is required.',
-            'address.required' => 'Address is required.',
-            'last_name.required' => 'Last_name is required.',
-            'image.required' => 'Image is required.',
+            'phone.required' => 'Telefon krävs.',
+            'address.required' => 'Adress krävs.',
+            'last_name.required' => 'Efternamn krävs.',
+            'image.required' => 'Bild krävs.',
         ];
     }
 

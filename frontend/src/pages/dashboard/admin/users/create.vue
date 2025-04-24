@@ -108,7 +108,7 @@ const onSubmitCreate = () => {
             if(error.message.hasOwnProperty('email'))
               advisor.value.message = error.message.email[0]
           } else {
-            advisor.value.message = 'An error has occurred...! (Server Error)'
+            advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
           }
 
           emit('alert', advisor)
@@ -158,21 +158,21 @@ const onSubmitCreate = () => {
             <VCol md="6" cols="12">
               <VTextField
                 v-model="name"
-                label="Name"
+                label="Namn"
                 :rules="[requiredValidator]"
                 />
             </VCol>
             <VCol md="6" cols="12">
               <VTextField
                 v-model="last_name"
-                label="Last name"
+                label="Efternamn"
                 :rules="[requiredValidator]"
               />
             </VCol>
             <VCol cols="12" md="12">
               <VTextField
                 v-model="email"
-                label="E-mail"
+                label="E-post"
                 type="email"
                 :rules="[requiredValidator,emailValidator]"
               />
@@ -191,7 +191,7 @@ const onSubmitCreate = () => {
               <VTextField
                 v-model="phone"
                 type="tel"
-                label="Phone"
+                label="Telefon"
                 placeholder="+(XX) XXXXXXXXX"
                 disabled
               />
@@ -200,7 +200,7 @@ const onSubmitCreate = () => {
               <VTextarea
                 v-model="address"
                 rows="3"
-                label="Address"
+                label="Adress"
                 disabled
               />
             </VCol>

@@ -40,10 +40,10 @@ class RoleRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'The name is required.',
-            'permissions.required' => 'The permissions are required.',
-            'permissions.array' => 'The permissions format is not allowed.',
-            'permissions.exists' => 'The permission entered does not exist.'
+            'name.required' => 'Namnet är obligatoriskt.',
+            'permissions.required' => 'Behörigheterna är obligatoriska.',
+            'permissions.array' => 'Behörighetsformatet är inte tillåtet.',
+            'permissions.exists' => 'Den angivna behörigheten finns inte.'
         ];
     }
 

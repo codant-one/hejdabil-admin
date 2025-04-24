@@ -79,7 +79,7 @@ const notifications = ref([
     </VCardText>
 
     <VCardText class="d-flex flex-wrap gap-4">
-      <VBtn>Save changes</VBtn>
+      <VBtn>Spara ändringar</VBtn>
       <VBtn
         color="secondary"
         variant="tonal"

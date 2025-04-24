@@ -118,7 +118,7 @@ const editUserPassword = function(){
                         <VCol cols="12">
                             <VTextField
                                 v-model="email"
-                                label="E-mail"
+                                label="E-post"
                                 readonly
                             />
                         </VCol>

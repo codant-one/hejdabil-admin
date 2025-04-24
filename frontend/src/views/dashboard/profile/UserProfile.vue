@@ -73,7 +73,7 @@ const resetAvatar = () => {
   avatar.value = null
 }
 
-const onSubmit = () =>{
+const onSubmit = () => {
   refVForm.value?.validate().then(({ valid: isValid }) => {
     if (isValid) {
 
@@ -95,7 +95,7 @@ const onSubmit = () =>{
           window.scrollTo(0, 0)
                     
           alert.value.type = 'success'
-          alert.value.message = 'Personal information updated. The page will be automatically reloaded to observe the changes..!'
+          alert.value.message = 'Personlig information uppdaterad. Sidan kommer automatiskt att laddas om för att observera ändringarna...!'
           alert.value.show = true
                     
           localStorage.setItem('user_data', JSON.stringify(response.user_data))
@@ -113,7 +113,7 @@ const onSubmit = () =>{
         }).catch(error => {
           alert.value.type = 'error'
           alert.value.show = true
-          alert.value.message = 'An error has occurred...! (Server Error)'
+          alert.value.message = 'Ett fel har inträffat...! (Serverfel)'
                     
           setTimeout(() => {
             alert.value.show = false,
@@ -155,7 +155,7 @@ const closeUserEditDialog = ()=>{
           width="300">
             
           <VCardText class="pt-3">
-            Loading
+           Lastning
 
             <VProgressLinear
               indeterminate
@@ -330,7 +330,7 @@ const closeUserEditDialog = ()=>{
                   />
                 </div>
                 <p class="text-body-1 mb-0">
-                  Allowed formats JPG, GIF, PNG.
+                  Tillåtna format JPG, GIF, PNG.
                 </p>
                 <VBtn 
                   color="secondary"
@@ -352,7 +352,7 @@ const closeUserEditDialog = ()=>{
                 >
                   <VTextField
                     v-model="name"
-                    label="Name"
+                    label="Namn"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -362,7 +362,7 @@ const closeUserEditDialog = ()=>{
                 >
                   <VTextField
                     v-model="last_name"
-                    label="Last name"
+                    label="Efternamn"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -372,7 +372,7 @@ const closeUserEditDialog = ()=>{
                 >
                   <VTextField
                     v-model="email"
-                    label="E-mail"
+                    label="E-post"
                     type="email"
                     :rules="[requiredValidator, emailValidator]"
                     disabled
@@ -384,7 +384,7 @@ const closeUserEditDialog = ()=>{
                 >
                   <VTextField
                     v-model="phone"
-                    label="Phone"
+                    label="Telefon"
                     placeholder="+(XX) XXXXXXXXX"
                     :rules="[requiredValidator, phoneValidator]"
                   />
@@ -396,7 +396,7 @@ const closeUserEditDialog = ()=>{
                   <VTextarea
                     v-model="address"
                     rows="3"
-                    label="Address"
+                    label="Adress"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -406,7 +406,7 @@ const closeUserEditDialog = ()=>{
                   class="d-flex flex-wrap gap-4 justify-center"
                 >
                   <VBtn type="submit">
-                    Save changes
+                    Spara ändringar
                   </VBtn>
                 </VCol>
               </VRow>

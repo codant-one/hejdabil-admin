@@ -96,7 +96,7 @@ const onSubmit = () =>{
           window.scrollTo(0, 0)
           
           alert.value.type = 'success'
-          alert.value.message = 'Personal information updated. The page will be automatically reloaded to observe the changes..!'
+          alert.value.message = 'Personlig information uppdaterad. Sidan kommer automatiskt att laddas om för att observera ändringarna...!'
           alert.value.show = true
           
           localStorage.setItem('user_data', JSON.stringify(response.user_data))
@@ -112,7 +112,7 @@ const onSubmit = () =>{
         }).catch(error => {
           alert.value.type = 'error'
           alert.value.show = true
-          alert.value.message = 'An error has occurred...! (Server Error)'
+          alert.value.message = 'Ett fel har inträffat...! (Serverfel)'
           
           isRequestOngoing.value = false
           
@@ -206,7 +206,7 @@ const blobToBase64 = blob => {
         width="300">
             
         <VCardText class="pt-3">
-          Loading
+          Lastning
           <VProgressLinear
             indeterminate
             color="white"
@@ -220,14 +220,14 @@ const blobToBase64 = blob => {
       md="8"
     >
       <h1 class="text-center">
-        Complete user profile
+        Komplett användarprofil
       </h1>
       <VCard
-        :title="'Welcome to ' + titleApp "
+        :title="'Välkommen till' + titleApp "
         class="my-5"
       >
         <VCardText>
-          <p>In order to use our panel normally, we need you to fill out the form with your details the first time you log in. This way, you can then use all the functions we have prepared for you.</p>
+          <p>För att du ska kunna använda vår panel på ett normalt sätt behöver vi att du fyller i formuläret med dina uppgifter första gången du loggar in. På så sätt kan du sedan använda alla de funktioner som vi har förberett för dig.</p>
         </VCardText>
       </VCard>
       <VDivider />
@@ -282,7 +282,7 @@ const blobToBase64 = blob => {
                   />
                 </div>
                 <p class="text-body-1 mb-0">
-                  Allowed formats JPG, GIF, PNG.
+                  Tillåtna format JPG, GIF, PNG.
                 </p>
               </div>
             </VCardText>
@@ -297,7 +297,7 @@ const blobToBase64 = blob => {
                 >
                   <VTextField
                     v-model="name"
-                    label="Name"
+                    label="Namn"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -307,7 +307,7 @@ const blobToBase64 = blob => {
                 >
                   <VTextField
                     v-model="last_name"
-                    label="Last name"
+                    label="Efternamn"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -317,7 +317,7 @@ const blobToBase64 = blob => {
                 >
                   <VTextField
                     v-model="email"
-                    label="E-mail"
+                    label="E-post"
                     type="email"
                     :rules="[requiredValidator, emailValidator]"
                     disabled
@@ -330,7 +330,7 @@ const blobToBase64 = blob => {
                   <VTextField
                     v-model="phone"
                     type="tel"
-                    label="Phone"
+                    label="Telefon"
                     placeholder="+(XX) XXXXXXXXX"
                     :rules="[phoneValidator, requiredValidator]"
                   />
@@ -342,7 +342,7 @@ const blobToBase64 = blob => {
                   <VTextarea
                     v-model="address"
                     rows="3"
-                    label="Address"
+                    label="Adress"
                     :rules="[requiredValidator]"
                   />
                 </VCol>
@@ -352,10 +352,10 @@ const blobToBase64 = blob => {
                   class="d-flex flex-wrap gap-4 justify-buttons"
                 >
                   <VBtn type="submit">
-                    Save Changes
+                    Spara ändringar
                   </VBtn>
                   <VBtn @click="logout">
-                    Log out
+                    Logga ut
                   </VBtn>
                 </VCol>
               </VRow>

@@ -74,21 +74,21 @@ const closeUserDetailDialog = function() {
                     <VCol md="6" cols="12">
                         <VTextField
                             v-model="name"
-                            label="Name"
+                            label="Namn"
                             readonly
                         />
                     </VCol>
                     <VCol md="6" cols="12">
                         <VTextField
                             v-model="last_name"
-                            label="Last name"
+                            label="Efternamn"
                             readonly
                         />
                     </VCol>
                     <VCol md="12" cols="12">
                         <VTextField
                             v-model="email"
-                            label="E-mail"
+                            label="E-post"
                             disabled
                         />
                     </VCol>
@@ -104,7 +104,7 @@ const closeUserDetailDialog = function() {
                         <VTextField
                             v-model="phone"
                             type="tel"
-                            label="Phone"
+                            label="Telefon"
                             :readonly="!isPhone"
                             :disabled="isPhone"
                         />
@@ -113,7 +113,7 @@ const closeUserDetailDialog = function() {
                         <VTextarea
                             v-model="address"
                             rows="3"
-                            label="Address"
+                            label="Adress"
                             :readonly="!isAddress"
                             :disabled="isAddress"
                             />

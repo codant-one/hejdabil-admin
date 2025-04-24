@@ -99,7 +99,7 @@ class InvoiceController extends Controller
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
 
             return response()->json([
@@ -130,7 +130,7 @@ class InvoiceController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
 
             $invoice->updateInvoice($request, $invoice); 
@@ -164,7 +164,7 @@ class InvoiceController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Invoice not found'
+                    'message' => 'Fakturan hittades inte'
                 ], 404);
             
             $invoice->deleteInvoice($id);

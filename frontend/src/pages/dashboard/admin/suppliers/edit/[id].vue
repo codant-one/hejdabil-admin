@@ -161,7 +161,7 @@ const onSubmit = () => {
                     width="300">
                     
                     <VCardText class="pt-3">
-                        Loading
+                       Lastning
                         <VProgressLinear
                         indeterminate
                         color="white"
@@ -247,7 +247,7 @@ const onSubmit = () => {
                                                     v-model="address"
                                                     rows="3"
                                                     :rules="[requiredValidator]"
-                                                    label="Address"
+                                                    label="Adress"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -268,7 +268,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="phone"
                                                     :rules="[requiredValidator, phoneValidator]"
-                                                    label="Phone"
+                                                    label="Telefon"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -306,21 +306,21 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="name"
                                                     :rules="[requiredValidator]"
-                                                    label="Name"
+                                                    label="Namn"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="last_name"
                                                     :rules="[requiredValidator]"
-                                                    label="Last name"
+                                                    label="Efternamn"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="12">
                                                 <VTextField
                                                     :rules="[emailValidator, requiredValidator]"
                                                     v-model="email"
-                                                    label="E-mail"
+                                                    label="E-post"
                                                     disabled
                                                 />
                                             </VCol>

@@ -105,7 +105,7 @@ class RoleController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Rol no encontrado'
+                    'message' => 'Rollen hittades inte'
                 ], 404);
 
             $role->updateRole($request, $role); 
@@ -139,7 +139,7 @@ class RoleController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Rol no encontrado'
+                    'message' => 'Rollen hittades inte'
                 ], 404);
 
             $role->deleteRole($id);

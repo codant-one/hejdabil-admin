@@ -47,6 +47,41 @@ const showLoading = function(value) {
   isRequestOngoing.value = value
 }
 
+const update = clientData => {
+
+    isRequestOngoing.value = true
+
+    clientsStores.updateClient(clientData, false)
+        .then((res) => {
+            if (res.data.success) {
+                advisor.value = {
+                    type: 'success',
+                    message: 'Client updated!',
+                    show: true
+                }
+                
+                fetchData()
+            }
+            isRequestOngoing.value = false
+        })
+        .catch((err) => {
+            advisor.value = {
+                type: 'error',
+                message: err.message,
+                show: true
+            }
+            isRequestOngoing.value = false
+        })
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+}
+
 </script>
 
 <template>
@@ -62,7 +97,7 @@ const showLoading = function(value) {
                 width="300">
                             
                 <VCardText class="pt-3">
-                    Loading
+                   Lastning
                     <VProgressLinear
                         indeterminate
                         color="white"
@@ -119,7 +154,8 @@ const showLoading = function(value) {
         >
             <CustomerBioPanel 
                 :customer-data="client"
-                :is-supplier="false" />
+                :is-supplier="false"
+                @update="update" />
         </VCol>
         <VCol
             cols="12"

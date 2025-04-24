@@ -31,7 +31,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'Email not registered'
+                'errors' => 'E-post inte registrerad'
             ], 404);
 
         $passwordReset = PasswordReset::updateOrCreate(
@@ -43,7 +43,7 @@ class PasswordResetController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.$passwordReset['token'].'&user='.$email;
         
         $info = [
-            'subject' => 'Password change request',
+            'subject' => 'Begäran om ändring av lösenord',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ];     
@@ -65,7 +65,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'The password reset token is invalid'
+                'errors' => 'Token för återställning av lösenord är ogiltig'
             ], 404);
             
         if (Carbon::parse($passwordReset->updated_at)->addMinutes(720)->isPast()) {
@@ -73,7 +73,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'The password reset token is invalid'
+                'errors' => 'Token för återställning av lösenord är ogiltig'
             ], 404);
         }
 
@@ -90,7 +90,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'The token is invalid!'
+                'errors' => 'Token är ogiltig!'
             ], 404);
 
         $tokenValidated = json_decode($this->find($request->token)->content());
@@ -101,7 +101,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'Email not registered'
+                'errors' => 'E-post inte registrerad'
             ], 404);
 
         $user->password = Hash::make($request->password);
@@ -109,7 +109,7 @@ class PasswordResetController extends Controller
         $user->update();
 
         $info = [
-            'subject' => 'Hi '.$user->name.'!. Your password has been updated.',
+            'subject' => 'Hej '.$user->name.'!. Ditt lösenord har uppdaterats.',
             'buttonLink' => env('APP_DOMAIN'),
             'email' => 'emails.auth.reset_password'
         ];     
@@ -119,7 +119,7 @@ class PasswordResetController extends Controller
         return response()->json([
             'success' => $responseMail['success'],
             'message' => 'reset_password',
-            'data' => 'Password has been updated'
+            'data' => 'Lösenordet har uppdaterats'
         ], 200);
 
     }
@@ -147,10 +147,10 @@ class PasswordResetController extends Controller
             });
 
             $response['success'] = true;
-            $response['message'] = "Your request has been processed successfully.";
+            $response['message'] = "Din begäran har behandlats framgångsrikt.";
         } catch (\Exception $e){
             $response['success'] = false;
-            $response['message'] = "An error occurred, the email could not be sent. ".$e;
+            $response['message'] = "Ett fel inträffade, e-postmeddelandet kunde inte skickas. ".$e;
         }        
 
         return $response;

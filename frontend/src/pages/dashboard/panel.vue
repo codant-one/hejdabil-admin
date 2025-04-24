@@ -35,7 +35,7 @@ async function fetchData() {
         width="300">
             
         <VCardText class="pt-3">
-          Loading
+         Lastning
 
           <VProgressLinear
             indeterminate
@@ -53,14 +53,14 @@ async function fetchData() {
       >
         <div class="pe-3">
           <h3 class="text-h3 text-high-emphasis mb-1">
-            Welcome back, <span class="font-weight-medium"> {{ name }} 👋🏻 </span>
+            Välkommen tillbaka, <span class="font-weight-medium"> {{ name }} 👋🏻 </span>
           </h3>
 
           <div
             class="mb-7 text-wrap"
             style="max-inline-size: 800px;"
           >
-            In this panel you will find relevant information about car sales.
+            I den här panelen hittar du relevant information om bilförsäljning.
           </div>
 
         </div>

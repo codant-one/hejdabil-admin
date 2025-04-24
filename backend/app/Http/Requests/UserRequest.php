@@ -49,15 +49,15 @@ class UserRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'The name is required.',
-            'last_name.required' => 'The last name is required.',
-            'email.required' => 'The email is required.',
-            'email.email' => 'The email format is not allowed.',
-            'email.unique' => 'A user with the entered email already exists.',
-            'password.required' => 'The password is required.',
-            'roles.required' => 'The role is required.',
-            'roles.array' => 'The role format is not allowed.',
-            'roles.exists' => 'The entered role does not exist.'
+            'name.required' => 'Namnet är obligatoriskt.',
+            'last_name.required' => 'Efternamnet är obligatoriskt.',
+            'email.required' => 'E-postadressen är obligatorisk.',
+            'email.email' => 'E-postformatet är inte tillåtet.',
+            'email. unique' => 'En användare med den angivna e-postadressen finns redan.',
+            'password.required' => 'Lösenordet är obligatoriskt.',
+            'roles.required' => 'Rollen är obligatorisk.',
+            'roles.array' => 'Rollformatet är inte tillåtet.',
+            'roles.exists' => 'Den angivna rollen finns inte.'
         ];
     }
 

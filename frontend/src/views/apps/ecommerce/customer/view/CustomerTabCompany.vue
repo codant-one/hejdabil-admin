@@ -115,17 +115,17 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      City:
+                      Postal code:
                       <span class="text-body-2">
-                          {{ props.customerData.street }}
+                          {{ props.customerData.postal_code }}
                       </span>
                     </h6>
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Postal code:
+                      City:
                       <span class="text-body-2">
-                          {{ props.customerData.postal_code }}
+                          {{ props.customerData.street }}
                       </span>
                     </h6>
                   </VListItemTitle>

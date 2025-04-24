@@ -86,6 +86,9 @@ class Billing extends Model
 
         if ($filters->get('state_id') !== null) {
             $query->where('state_id', $filters->get('state_id'));
+
+            if($filters->get('state_id') === '7')
+                $query->orWhere('state_id', 9);
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -318,15 +321,15 @@ class Billing extends Model
 
         $data = [
             'user' => $billing->client->fullname,
-            'text' => 'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:',
+            'text' => 'Vi hoppas att detta meddelande får dig att må bra.<br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
             'billing' => $billing,
-            'text_info' => 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.',
-            'buttonText' => 'Download',
+            'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+            'buttonText' => 'Nedladdningar',
             'pdfFile' => asset('storage/'.$billing->file)
         ];
 
         $clientEmail = $billing->client->email;
-        $subject = 'Your invoice #'. $billing->invoice_id . ' is available';
+        $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
             
         try {
             \Mail::send(

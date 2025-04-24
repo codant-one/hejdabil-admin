@@ -134,7 +134,7 @@ const logout = async () => {
               />
             </template>
 
-            <VListItemTitle>Roles</VListItemTitle>
+            <VListItemTitle>Roller</VListItemTitle>
           </VListItem>
 
           <!--  👉 Users -->
@@ -147,7 +147,7 @@ const logout = async () => {
               />
             </template>
 
-            <VListItemTitle>Users</VListItemTitle>
+            <VListItemTitle>Användare</VListItemTitle>
           </VListItem>
 
           <!--  👉 Profile -->
@@ -160,7 +160,7 @@ const logout = async () => {
               />
             </template>
 
-            <VListItemTitle>Profile</VListItemTitle>
+            <VListItemTitle>Profil</VListItemTitle>
           </VListItem>
  
           <!-- 👉 Logout -->
@@ -176,7 +176,7 @@ const logout = async () => {
               />
             </template>
 
-            <VListItemTitle>Log out</VListItemTitle>
+            <VListItemTitle>Logga ut</VListItemTitle>
           </VListItem>
         </VList>
       </VMenu>

@@ -60,7 +60,7 @@ const isFullfilOnline = ref(true)
             md="4"
           >
             <AppTextField
-              label="Address"
+              label="Adress"
               placeholder="123 , New Street"
             />
           </VCol>
@@ -80,7 +80,7 @@ const isFullfilOnline = ref(true)
             md="4"
           >
             <AppTextField
-              label="Phone"
+              label="Telefon"
               placeholder="+1 (234) 456-7890"
             />
           </VCol>

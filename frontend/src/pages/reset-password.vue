@@ -87,7 +87,7 @@ const onSubmit = () => {
                 } else {
                     advisor.value.show = true
                     advisor.value.type = 'error'
-                    advisor.value.message = 'An error has occurred...! (Server Error)'
+                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                 }
 
                 setTimeout(() => {

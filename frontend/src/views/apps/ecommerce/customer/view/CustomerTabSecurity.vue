@@ -138,7 +138,7 @@ const onSubmit = () => {
   <VRow>
     <VCol cols="12">
       <!-- 👉 Change password -->
-      <VCard title="Change password">
+      <VCard title="Ändra lösenord">
         <VCardText>
           <VAlert
             variant="tonal"
@@ -184,7 +184,7 @@ const onSubmit = () => {
 
               <VCol cols="12">
                 <VBtn type="submit">
-                  Change password
+                  Ändra lösenord
                 </VBtn>
               </VCol>
             </VRow>

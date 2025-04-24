@@ -59,7 +59,7 @@ const onSubmit = () => {
           } else {
             advisor.value.show = true
             advisor.value.type = 'error'
-            advisor.value.message = 'An error has occurred...! (Server Error)'
+            advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
           }
 
           setTimeout(() => {
@@ -107,10 +107,10 @@ const onSubmit = () => {
         >
           <VCardText class="pt-2 px-2 px-md-6">
             <h5 class="text-h5 font-weight-semibold mb-1">
-              Forgot your password? 🔒
+              Har du glömt ditt lösenord? 🔒
             </h5>
             <p class="mb-0 letter">
-              Enter your email and we will send you a link to reset your password.
+              Ange din e-postadress så skickar vi en länk till dig för att återställa ditt lösenord.
             </p>
           </VCardText>
 
@@ -123,7 +123,7 @@ const onSubmit = () => {
                 <VCol cols="12">
                   <VTextField
                     v-model="email"
-                    label="E-mail"
+                    label="E-post"
                     type="email"
                     :rules="[requiredValidator, emailValidator]"
                     :error-messages="errors"
@@ -136,7 +136,7 @@ const onSubmit = () => {
                     block
                     type="submit"
                   >
-                    Send
+                    Skicka
                     <VProgressCircular
                       v-if="load"
                       indeterminate
@@ -155,7 +155,7 @@ const onSubmit = () => {
                       icon="tabler-chevron-left"
                       class="flip-in-rtl"
                     />
-                    <span>Back to login</span>
+                    <span>Tillbaka till inloggning</span>
                   </RouterLink>
                 </VCol>
               </VRow>

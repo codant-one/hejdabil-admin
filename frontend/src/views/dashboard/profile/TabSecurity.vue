@@ -139,7 +139,7 @@ const onSubmit = () => {
           window.scrollTo(0, 0)
 
           advisor.value.show = true
-          advisor.value.message = 'An error has occurred...! (Server Error)'
+          advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
           advisor.value.type = 'error'
                 
           emit('alert', advisor)
@@ -172,7 +172,7 @@ const onSubmit = () => {
         color="primary"
         width="300">
         <VCardText class="pt-3">
-          Loading
+         Lastning
           <VProgressLinear
             indeterminate
             color="white"
@@ -184,7 +184,7 @@ const onSubmit = () => {
 
     <VRow>
       <VCol cols="12" class="pb-0">
-        <VCard title="Change password">
+        <VCard title="Ändra lösenord">
           <VCardText>
             <VAlert
               variant="tonal"
@@ -231,7 +231,7 @@ const onSubmit = () => {
 
                 <VCol cols="12">
                   <VBtn type="submit">
-                    Change password
+                    Ändra lösenord
                   </VBtn>
                 </VCol>
               </VRow>

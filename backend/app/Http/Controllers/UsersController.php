@@ -91,10 +91,10 @@ class UsersController extends Controller
             );
 
             $email = $user->email;
-            $subject = 'Welcome to HejdåBil';
+            $subject = 'Välkommen till HejdåBil';
     
             $data = [
-                'title' => 'Account created successfully!!!',
+                'title' => 'Konto skapat framgångsrikt!!!',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,
@@ -143,7 +143,7 @@ class UsersController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'User not found'
+                    'message' => 'Användaren hittades inte'
                 ], 404);
 
             $user->updateUser($request, $user); 
@@ -177,7 +177,7 @@ class UsersController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'User not found'
+                    'message' => 'Användaren hittades inte'
                 ], 404);
             
             $user->deleteUser($id);
@@ -304,7 +304,7 @@ class UsersController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'User not found'
+                    'message' => 'Användaren hittades inte'
                 ], 404);
 
             $user->password = Hash::make($request->password);

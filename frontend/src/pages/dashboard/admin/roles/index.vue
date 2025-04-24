@@ -54,7 +54,7 @@ watchEffect(fetchData)
 
 // 👉 Fetch roles
 async function fetchData() {
-  isRequestOngoing.value = true
+  isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   let data = {
     search: searchQuery.value,
@@ -149,7 +149,7 @@ const downloadCSV = async () => {
           width="300">
             
           <VCardText class="pt-3">
-            Loading
+           Lastning
 
             <VProgressLinear
               indeterminate

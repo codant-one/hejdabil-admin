@@ -186,7 +186,7 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="email"
                     :rules="[emailValidator, requiredValidator]"
-                    label="E-mail"
+                    label="E-post"
                 />
             </VCol>
             <VCol cols="12" md="6">
@@ -199,7 +199,7 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="address"
                     :rules="[requiredValidator]"
-                    label="Address"
+                    label="Adress"
                 />
             </VCol>
             <VCol cols="12" md="6">
@@ -220,7 +220,7 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="phone"
                     :rules="[requiredValidator, phoneValidator]"
-                    label="Phone"
+                    label="Telefon"
                 />
             </VCol>
             <VCol cols="12" md="6">

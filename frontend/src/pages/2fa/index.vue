@@ -116,7 +116,7 @@ const onSubmit = () => {
                     block
                     type="submit"
                   >
-                  Send
+                  Skicka
                     <VProgressCircular
                       v-if="load"
                       indeterminate

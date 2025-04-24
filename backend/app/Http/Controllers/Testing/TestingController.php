@@ -20,19 +20,19 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Password change request',
+            'subject' => 'Begäran om ändring av lösenord',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
         
         $buttonLink = $url;
         $title = 'testing';
-        $text =  'We hope this message finds you well. <br> Please be advised that we have generated a new invoice in your name with the following details:';
-        $buttonText = 'Download';
+        $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
+        $buttonText = 'Nedladdningar';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $billing = Billing::with(['client', 'supplier.user'])->find(33);
-        $text_info = 'Please find attached the invoice in PDF format. You can download and review it at any time. <br> If you have any questions or need more information, please do not hesitate to contact us.';
+        $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
 
         // $data = [

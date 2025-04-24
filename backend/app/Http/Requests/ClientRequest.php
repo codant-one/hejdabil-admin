@@ -54,12 +54,12 @@ class ClientRequest extends FormRequest
     public function messages()
     {
         return [
-            'address.required' => 'The address is required.',
-            'street.required' => 'The street is required.',
-            'postal_code.required' => 'The postal code is required.',
-            'phone.required' => 'The phone is required.',
-            'fullname.required' => 'The name is required.',
-            'email.required' => 'The email is required.'
+            'address.required' => 'Adressen är obligatorisk.',
+            'street.required' => 'Gatan är obligatorisk.',
+            'postal_code.required' => 'Postnumret är obligatoriskt.',
+            'phone.required' => 'Telefonen är obligatorisk.',
+            'fullname.required' => 'Namnet är obligatoriskt.',
+            'email.required' => 'E-postadressen är obligatorisk.'
         ];
     }
 

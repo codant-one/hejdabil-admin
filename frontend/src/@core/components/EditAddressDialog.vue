@@ -104,12 +104,12 @@ const dialogModelValueUpdate = val => {
               />
             </VCol>
 
-            <!-- 👉 Billing Address -->
+            <!-- 👉 Faktureringsadress -->
             <VCol cols="12">
               <VTextarea
                 v-model="billingAddress.address"
                 rows="2"
-                label="Billing Address"
+                label="Faktureringsadress"
               />
             </VCol>
 

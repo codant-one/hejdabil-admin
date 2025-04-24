@@ -1,16 +1,16 @@
 export default [
   { 
-    title: 'ADMINISTRATION',
+    title: 'FÖRVALTNING',
     icon: { icon:'tabler-home-cog' },
     children:[
       { 
-        title: 'Attributes', 
+        title: 'Attribut', 
         icon: { icon: 'mdi-database-cog' },
         action: 'view',
         subject: 'invoices',
         children: [
           { 
-            title: 'Invoices', 
+            title: 'Fakturor', 
             to: 'dashboard-admin-invoices', 
             action: 'view', 
             subject: 'invoices', 

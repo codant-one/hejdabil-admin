@@ -118,7 +118,7 @@ const onSubmitEdit = () =>{
                     else if(error.message.hasOwnProperty('permissions'))
                         advisor.value.message = error.message.permissions[0]
                 } else {
-                    advisor.value.message = 'An error has occurred...! (Server Error)'
+                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                 }
 
                 emit('alert', advisor)
@@ -167,7 +167,7 @@ const onSubmitEdit = () =>{
                         <VCol cols="12">
                             <VTextField
                                 v-model="name"
-                                label="Name"
+                                label="Namn"
                                 :rules="[requiredValidator]"
                             />
                         </VCol>

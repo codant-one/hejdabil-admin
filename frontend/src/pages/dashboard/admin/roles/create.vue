@@ -90,7 +90,7 @@ const onSubmitCreate = () =>{
                     else if(error.message.hasOwnProperty('permissions'))
                         advisor.value.message = error.message.permissions[0]
                 } else {
-                    advisor.value.message = 'An error has occurred...! (Server Error)'
+                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
                 }
 
                 emit('alert', advisor)
