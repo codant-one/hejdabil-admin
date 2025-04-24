@@ -134,7 +134,7 @@ class Supplier extends Model
     public static function deleteSuppliers($ids) {
         foreach ($ids as $id) {
             $supplier = self::find($id);
-            $supplier->state_id = 5;
+            $supplier->state_id = 1;
             $supplier->save();
 
             $user = User::find($supplier->user_id);

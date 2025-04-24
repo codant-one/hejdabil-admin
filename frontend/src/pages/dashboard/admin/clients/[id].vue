@@ -56,7 +56,7 @@ const update = clientData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Client updated!',
+                    message: 'Klienten uppdaterad!',
                     show: true
                 }
                 
@@ -122,14 +122,14 @@ const update = clientData => {
         <div>
             <div class="d-flex gap-2 align-center mb-2 flex-wrap">
             <h4 class="text-h4 font-weight-medium">
-                Client ID #{{ route.params.id }}
+                Klient ID #{{ route.params.id }}
             </h4>
             </div>
             <div>
             <span class="text-body-1" v-if="online">
                 {{  format(parseISO(online), 'MMMM d, yyyy, H:mm', { locale: es }).replace(/(^|\s)\S/g, (char) => char.toUpperCase()) }}
                 <span class="text-xs">
-                    (Last Connection)
+                    (Sista anslutningen)
                 </span>
             </span>
             </div>
@@ -141,7 +141,7 @@ const update = clientData => {
                 class="mb-2"
                 :to="{ name: 'dashboard-admin-clients' }"
                 >
-                Back
+                Tillbaka
             </VBtn>
         </div>
     </div>

@@ -58,7 +58,7 @@ const onSubmitCreate = () =>{
 
                 advisor.value.show = true
                 advisor.value.type = 'success'
-                advisor.value.message = 'Role created!'
+                advisor.value.message = 'Roll skapad!'
 
                 emit('alert', advisor)
                 emit('data')
@@ -124,7 +124,7 @@ const onSubmitCreate = () =>{
               v-bind="props"
               prepend-icon="tabler-plus"
             >
-            Create rol
+            Skapa roll
             </VBtn>
         </template>
 
@@ -132,7 +132,7 @@ const onSubmitCreate = () =>{
         <DialogCloseBtn @click="closeRolCreateDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Create rol">
+        <VCard title="Skapa roll">
             <VDivider class="mt-4"/>
             <VCardText>
                 <VForm
@@ -143,7 +143,7 @@ const onSubmitCreate = () =>{
                         <VCol cols="12">
                             <VTextField
                                 v-model="name"
-                                label="Nombre rol"
+                                label="Namn roll"
                                 :rules="[requiredValidator]"
                             />
                         </VCol>
@@ -154,7 +154,7 @@ const onSubmitCreate = () =>{
                             <VBtn
                             @click="isRolSelectedDialog = true"
                             >
-                                Permisos del Rol
+                                Behörighet för roll
                             </VBtn>
                         </VCol>
                     </VRow>
@@ -164,10 +164,10 @@ const onSubmitCreate = () =>{
                             variant="tonal"
                             @click="closeRolCreateDialog"
                         >
-                            Cancel
+                            Avbryt
                         </VBtn>
                         <VBtn type="submit">
-                            Create
+                            Skapa
                         </VBtn>
                     </VCardText>
                 </VForm>

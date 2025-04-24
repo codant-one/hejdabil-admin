@@ -71,7 +71,7 @@ const shippingAddress = ref('Optional')
 
       <VRadioGroup
         v-model="companyName"
-        label="Company name"
+        label="Företagets namn"
         class="mb-4"
       >
         <VRadio

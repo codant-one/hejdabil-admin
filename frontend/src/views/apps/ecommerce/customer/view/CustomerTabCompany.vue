@@ -75,7 +75,7 @@ const copy = (account) => {
   <!-- 👉 Payment Methods -->
   <VRow>
     <VCol cols="12" v-if="props.isSupplier">
-      <VCard title="General information">
+      <VCard title="Allmän information">
         <VCardText class="d-flex flex-column gap-y-4">
           <VRow>
             <VCol cols="12" md="6">
@@ -83,7 +83,7 @@ const copy = (account) => {
                 <VListItem>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Company:
+                      Företag:
                       <span class="text-body-2">
                         {{ props.customerData.company }}
                       </span>
@@ -91,7 +91,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Organization number:
+                      Organisationsnummer:
                       <span class="text-body-2">
                         {{ props.customerData.organization_number }}
                       </span>
@@ -99,7 +99,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Page:
+                      Sida:
                       <span class="text-body-2">
                           {{ props.customerData.link }}
                       </span>
@@ -107,7 +107,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Address:
+                      Adress:
                       <span class="text-body-2">
                           {{ props.customerData.address }}
                       </span>
@@ -115,7 +115,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Postal code:
+                      Postnummer:
                       <span class="text-body-2">
                           {{ props.customerData.postal_code }}
                       </span>
@@ -123,7 +123,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      City:
+                      Stad:
                       <span class="text-body-2">
                           {{ props.customerData.street }}
                       </span>
@@ -131,7 +131,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Phone:
+                      Telefon:
                       <span class="text-body-2">
                           {{ props.customerData.phone }}
                       </span>
@@ -155,7 +155,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Account number:
+                      Kontonummer:
                       <span class="text-body-2">
                           {{ props.customerData.account_number }}
                       </span>
@@ -163,7 +163,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Iban number:
+                      Iban nummer:
                       <span class="text-body-2">
                           {{ props.customerData.iban_number }}
                       </span>

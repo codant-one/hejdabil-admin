@@ -186,7 +186,7 @@ const editProduct = id => {
                 <div style="width: 10rem;">
                 <VTextField
                     v-model="searchQuery"
-                    placeholder="Buscar"
+                    placeholder="Sök"
                     density="compact"
                     clearable
                 />
@@ -356,7 +356,7 @@ const editProduct = id => {
                 <td
                     colspan="7"
                     class="text-center">
-                    Data not available
+                    Uppgifter ej tillgängliga
                 </td>
                 </tr>
             </tfoot>

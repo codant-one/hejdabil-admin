@@ -25,11 +25,11 @@ const advisor = ref({
 const tabs = [
   {
     icon: 'tabler-lock',
-    title: 'Security',
+    title: 'Säkerhet',
   },
   {
     icon: 'tabler-lock',
-    title: 'Company',
+    title: 'Företag',
   },
 ]
 
@@ -231,10 +231,10 @@ const onImageSelected = event => {
       <DialogCloseBtn @click="cancelLeave" />
 
       <!-- Dialog Content -->
-      <VCard title="Exit without saving">
+      <VCard title="Avsluta utan att spara">
         <VDivider class="mt-4"/>
         <VCardText>
-          <strong>Are you sure you want to out?</strong> There are changes to your form that haven't been saved yet.
+          <strong>Är du säker på att du vill gå ut?</strong> Det finns ändringar i ditt formulär som inte har sparats ännu.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -242,10 +242,10 @@ const onImageSelected = event => {
             color="secondary"
             variant="tonal"
             @click="cancelLeave">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="confirmLeave">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>

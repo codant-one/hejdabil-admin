@@ -22,8 +22,8 @@ const selectedSupplier = ref({})
 const state_id = ref(null)
 
 const states = ref ([
-  { id: 2, name: "Active" },
-  { id: 5, name: "Deleted" }
+  { id: 2, name: "Aktiv" },
+  { id: 1, name: "Inaktiv" }
 ])
 
 const advisor = ref({
@@ -37,7 +37,7 @@ const paginationData = computed(() => {
   const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalSuppliers.value } registros`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
 })
 
 // 👉 watching current page
@@ -73,7 +73,7 @@ async function fetchData() {
 const resolveStatus = state_id => {
   if (state_id === 2)
     return { color: 'success' }
-  if (state_id === 5)
+  if (state_id === 1)
     return { color: 'error' }
 }
 
@@ -102,7 +102,7 @@ const removeSupplier = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Supplier deleted!' : res.data.message,
+    message: res.data.success ? 'Leverantör borttagen!' : res.data.message,
     show: true
   }
 
@@ -126,7 +126,7 @@ const activateSupplier = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Supplier activated!' : res.data.message,
+    message: res.data.success ? 'Leverantör aktiverad!' : res.data.message,
     show: true
   }
 
@@ -157,12 +157,12 @@ const downloadCSV = async () => {
 
     let data = {
       ID: element.id,
-      CONTACT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      EMAIL: element.user.email,
-      COMPANY: element.company ?? '',
-      ORGANIZATION_NUMBER: element.organization_number ?? '',
-      REGISTERED_CLIENTS:  element.client_count,
-      STATE: element.state.name
+      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
+      E_POST: element.user.email,
+      FÖRETAG: element.company ?? '',
+      ORGANISATIONSNUMMER: element.organization_number ?? '',
+      REGISTRERADE_KUNDER:  element.client_count,
+      STATU: element.state.name
     }
 
     dataArray.push(data)
@@ -228,7 +228,7 @@ const downloadCSV = async () => {
                 color="secondary"
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV">
-                Export
+                Exportera
               </VBtn>
             </div>
 
@@ -236,7 +236,7 @@ const downloadCSV = async () => {
             <div class="d-flex align-center" style="width: 200px;">
               <VSelect
                   v-model="state_id"
-                  placeholder="States"
+                  placeholder="Status"
                   :items="states"
                   :item-title="item => item.name"
                   :item-value="item => item.id"
@@ -250,7 +250,7 @@ const downloadCSV = async () => {
               <div class="search">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search"
+                  placeholder="Sök"
                   density="compact"
                   clearable
                 />
@@ -261,7 +261,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','suppliers')"
                 prepend-icon="tabler-plus"
                 :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Create Supplier
+                  Skapa leverantör
               </v-btn>
             </div>
           </v-card-text>
@@ -273,10 +273,10 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> COMPANY </th>
-                <th scope="col"> CONTACT </th>
-                <th scope="col"> STATE </th>
-                <th scope="col"> # REGISTERED CLIENTS </th>
+                <th scope="col"> FÖRETAG </th>
+                <th scope="col"> KONTAKT </th>
+                <th scope="col"> STATUS </th>
+                <th scope="col"> # REGISTRERADE KUNDER </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
               </tr>
             </thead>
@@ -306,7 +306,7 @@ const downloadCSV = async () => {
                         {{ supplier.company }}
                       </span>
                       <span class="text-sm text-disabled">
-                        Organization Number: {{ supplier.organization_number }}
+                        Organisationsnummer: {{ supplier.organization_number }}
                       </span>
                     </div>
                   </div>
@@ -364,7 +364,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>View</VListItemTitle>
+                        <VListItemTitle>Utsikt</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
@@ -372,7 +372,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','suppliers') && supplier.state_id === 2"
@@ -380,15 +380,15 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Delete</VListItemTitle>
+                        <VListItemTitle>Radera</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('delete','suppliers') && supplier.state_id === 5"
+                        v-if="$can('delete','suppliers') && supplier.state_id === 1"
                         @click="showActivateDialog(supplier)">
                         <template #prepend>
                           <VIcon icon="tabler-rosette-discount-check" />
                         </template>
-                        <VListItemTitle>Activate</VListItemTitle>
+                        <VListItemTitle>Aktivera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -401,7 +401,7 @@ const downloadCSV = async () => {
                 <td
                   colspan="6"
                   class="text-center">
-                  Data not available
+                  Uppgifter ej tillgängliga
                 </td>
               </tr>
             </tfoot>
@@ -435,10 +435,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Delete Supplier">
+      <VCard title="Ta bort leverantör">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to delete supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -446,10 +446,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmDeleteDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="removeSupplier">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>
@@ -465,10 +465,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Activate Supplier">
+      <VCard title="Aktivera leverantör">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to activate supplier <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -476,10 +476,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmActiveDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="activateSupplier">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>

@@ -42,7 +42,7 @@ const deleteRole = function() {
       
         advisor.value.show = true
         advisor.value.type = 'success'
-        advisor.value.message = 'Role deleted!'
+        advisor.value.message = 'Roll raderad!'
             
         emit('alert', advisor)
         emit('data')
@@ -59,7 +59,7 @@ const deleteRole = function() {
         if(error.response.status == 403){
         advisor.value.show = true
         advisor.value.type = 'error'
-        advisor.value.message = 'You do not have enough permissions'
+        advisor.value.message = 'Du har inte tillräckligt med behörigheter'
         }
 
         setTimeout(() => {
@@ -84,22 +84,22 @@ const deleteRole = function() {
         <DialogCloseBtn @click="closeRoleDeleteDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Delete role">
+        <VCard title="Ta bort roll">
           <VDivider class="mt-4"/>
             <VCardText>
-              Are you sure you want to delete the role <strong>{{ role.name }}</strong>?
+              Är du säker att du vill ta bort rollen <strong>{{ role.name }}</strong>?
             </VCardText>
 
             <VCardText class="d-flex justify-end gap-3 flex-wrap">
                 <VBtn @click="closeRoleDeleteDialog">
-                    Cancel
+                  Avbryt
                 </VBtn>
             <VBtn
                 color="secondary"
                 variant="tonal"
                 @click="deleteRole"
             >
-                Delete
+              Radera
             </VBtn>
             </VCardText>
         </VCard>

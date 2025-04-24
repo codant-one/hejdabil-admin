@@ -31,7 +31,7 @@ const paginationData = computed(() => {
   const firstIndex = invoices.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = invoices.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalInvoices.value } registros`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalInvoices.value } register`
 })
 
 // 👉 watching current page
@@ -89,7 +89,7 @@ const removeInvoice = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice attribute deleted!' : res.data.message,
+    message: res.data.success ? 'Fakturans attribut raderat!' : res.data.message,
     show: true
   }
 
@@ -126,7 +126,7 @@ const submitCreate = invoiceData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Invoice attribute created! ',
+                    message: 'Fakturaattribut skapat! ',
                     show: true
                 }
                 fetchData()
@@ -158,7 +158,7 @@ const submitUpdate = invoiceData => {
             if (res.data.success) {
                     advisor.value = {
                     type: 'success',
-                    message: 'Invoice attribute updated!',
+                    message: 'Fakturans attribut uppdaterat!',
                     show: true
                 }
                 fetchData()
@@ -197,10 +197,8 @@ const downloadCSV = async () => {
 
     let data = {
       ID: element.id,
-      NAME_EN: element.name_es,
-      NAME_SE: element.name_se,
-      DESCRIPTION_EN: element.description_en ?? '',
-      DESCRIPTION_SE: element.description_se ?? ''
+      NAMN: element.name_se,
+      BESKRIVNING: element.description_se ?? ''
     }
           
     dataArray.push(data)
@@ -264,7 +262,7 @@ const downloadCSV = async () => {
                 color="secondary"
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV">
-                Export
+                Exportera
               </VBtn>
             </div>
 
@@ -276,7 +274,7 @@ const downloadCSV = async () => {
               <div class="search">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search"
+                  placeholder="Sök"
                   density="compact"
                   clearable
                 />
@@ -287,7 +285,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','invoices')"
                 prepend-icon="tabler-plus"
                 @click="isAddNewInvoiceDrawerVisible = true">
-                  Add invoice attribute
+                  Lägg till fakturaattribut
               </v-btn>
             </div>
           </v-card-text>
@@ -299,8 +297,9 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> ENGLISH INFO </th>
-                <th scope="col"> SWEDISH INFO </th>
+                <th scope="col"> NAMN </th>
+                <th scope="col"> BESKRIVNING </th>
+                <th scope="col"> TYP </th>
                 <th scope="col" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')"></th>
               </tr>
             </thead>
@@ -312,24 +311,9 @@ const downloadCSV = async () => {
                 style="height: 3rem;">
 
                 <td> {{ invoice.id }} </td>
-                <td class="text-wrap">
-                  <div class="d-flex flex-column">
-                    <span class="font-weight-medium">
-                      {{ invoice.name_en }} 
-                    </span>
-                    <span class="text-sm text-disabled">{{ invoice.description_en }}</span>
-                    <span class="text-sm text-disabled"> Type: {{ invoice.type.name_en }}</span>
-                  </div>
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex flex-column">
-                    <span class="font-weight-medium">
-                      {{ invoice.name_se }} 
-                    </span>
-                    <span class="text-sm text-disabled">{{ invoice.description_se }}</span>
-                    <span class="text-sm text-disabled"> Type: {{ invoice.type.name_se }}</span>
-                  </div>
-                </td>
+                <td class="text-wrap"> {{ invoice.name_se }} </td>
+                <td class="text-wrap"> {{ invoice.description_se }}</td>
+                <td class="text-wrap"> {{ invoice.type.name_se }}</td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
                   <VMenu>
@@ -350,7 +334,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','invoices')"
@@ -358,7 +342,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Delete</VListItemTitle>
+                        <VListItemTitle>Radera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -371,7 +355,7 @@ const downloadCSV = async () => {
                 <td
                   colspan="4"
                   class="text-center">
-                  Data not available
+                  Uppgifter ej tillgängliga
                 </td>
               </tr>
             </tfoot>
@@ -411,10 +395,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Delete Invoice">
+      <VCard title="Ta bort faktura">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to delete the Invoice <strong>{{ selectedInvoice.name_en }} / {{ selectedInvoice.name_se }}</strong>?
+          Är du säker att du vill ta bort fakturan <strong>{{ selectedInvoice.name_se }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -422,10 +406,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmDeleteDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="removeInvoice">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>

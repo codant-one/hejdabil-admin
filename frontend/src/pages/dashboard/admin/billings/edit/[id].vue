@@ -345,7 +345,7 @@ const onSubmit = () => {
               class="mb-2"
               :to="{ name: 'dashboard-admin-billings' }"
             >
-              Back
+              Tillbaka
             </VBtn>
           </VCardText>
         </VCard>

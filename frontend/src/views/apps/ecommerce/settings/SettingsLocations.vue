@@ -90,7 +90,7 @@ const isFullfilOnline = ref(true)
             md="4"
           >
             <AppTextField
-              label="City"
+              label="Stad"
               placeholder="New York"
             />
           </VCol>

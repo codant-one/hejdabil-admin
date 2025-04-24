@@ -70,7 +70,7 @@ const editUserPassword = function(){
 
                     advisor.value.show = true
                     advisor.value.type = 'success'
-                    advisor.value.message = 'Password changed'
+                    advisor.value.message = 'Lösenord ändrat'
                     
                     emit('update:isDrawerOpen', false)
                     emit('alert', advisor)
@@ -107,7 +107,7 @@ const editUserPassword = function(){
         <DialogCloseBtn @click="closeUserPasswordDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Edit user password">
+        <VCard title="Redigera användarens lösenord">
             <VDivider class="mt-4"/>
             <VForm
                 ref="refForm"
@@ -125,7 +125,7 @@ const editUserPassword = function(){
                         <VCol cols="12" >
                             <VTextField
                                 v-model="password"
-                                label="New password"
+                                label="Nytt lösenord"
                                 :type="isPasswordVisible ? 'text' : 'password'"
                                 :rules="[requiredValidator]"
                                 :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
@@ -139,10 +139,10 @@ const editUserPassword = function(){
                             variant="tonal"
                             @click="closeUserPasswordDialog"
                         >
-                            Cancel
+                            Avbryt
                         </VBtn>
                         <VBtn type="submit">
-                            Edit password
+                            Redigera lösenord
                         </VBtn>
                     </VCardText>
                 </VCardText>

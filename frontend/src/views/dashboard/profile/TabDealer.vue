@@ -235,7 +235,7 @@ const onSubmit = () => {
                     isRequestOngoing.value = false
 
                     advisor.value.type = 'success'
-                    advisor.value.message = 'Personal information updated. The page is automatically reloaded to see the effects..!'
+                    advisor.value.message = 'Personlig information uppdaterad. Sidan laddas om automatiskt för att se effekterna...!'
                     advisor.value.show = true
                     emit('alert', advisor)
 
@@ -321,7 +321,7 @@ const onSubmit = () => {
         <VCol cols="12">
             <VCard>
                 <VCardTitle class="px-6 py-5 d-flex justify-content-center align-center">
-                    <span>Edit company information</span>
+                    <span>Redigera företagsinformation</span>
                     <VBtn
                         icon
                         variant="text"
@@ -334,7 +334,7 @@ const onSubmit = () => {
                                 open-on-focus
                                 location="top"
                                 activator="parent">
-                                Delete logo
+                                Ta bort logotyp
                             </VTooltip>
                             <VIcon
                                 icon="tabler-camera-x"
@@ -350,7 +350,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="form.company"
-                                    label="Company name"
+                                    label="Företagets namn"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -368,7 +368,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="form.organization_number"
-                                    label="Organization number"
+                                    label="Organisationsnummer"
                                     :rules="[requiredValidator]"
                                     disabled
                                 />
@@ -385,14 +385,14 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.postal_code"
                                     :rules="[requiredValidator]"
-                                    label="Postal code"
+                                    label="Postnummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="form.street"
                                     :rules="[requiredValidator]"
-                                    label="City"
+                                    label="Stad"
                                 />
                             </VCol>                            
                             <VCol cols="12" md="6">
@@ -406,7 +406,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.link"
                                     :rules="[urlValidator]"
-                                    label="Page"
+                                    label="Sida"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -426,13 +426,13 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.account_number"
                                     :rules="[requiredValidator]"
-                                    label="Account number"
+                                    label="Kontonummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="form.iban_number"
-                                    label="Iban number"
+                                    label="Iban nummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -462,7 +462,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12">
                                 <VBtn type="submit">
-                                    Save
+                                    Spara
                                 </VBtn>
                             </VCol>
                         </VRow>

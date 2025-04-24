@@ -86,7 +86,7 @@ const onSubmitEdit = () =>{
                 
                 advisor.value.show = true
                 advisor.value.type = 'success'
-                advisor.value.message = 'Updated role!'
+                advisor.value.message = 'Uppdaterad roll!'
 
                 emit('alert', advisor)
                 emit('data')
@@ -149,7 +149,7 @@ const onSubmitEdit = () =>{
         <DialogCloseBtn @click="closeRoleEditDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Edit role">
+        <VCard title="Redigera roll">
             <VDivider class="mt-4"/>
             <VForm
                 ref="refFormEdit"
@@ -176,7 +176,7 @@ const onSubmitEdit = () =>{
                             class="text-center"
                         >
                             <VBtn @click="isRolSelectedDialog = true">
-                                Edit role permissions
+                                Redigera roll permissions
                             </VBtn>
                         </VCol>
                     </VRow>
@@ -186,13 +186,13 @@ const onSubmitEdit = () =>{
                             variant="tonal"
                             @click="closeRoleEditDialog"
                         >
-                            Cancel
+                            Avbryt
                         </VBtn>
                         <VBtn
                             
                             type="submit"
                         >
-                            Edit
+                            Redigera
                         </VBtn>
                     </VCardText>
                 </VCardText>

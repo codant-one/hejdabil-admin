@@ -39,7 +39,7 @@ const paginationData = computed(() => {
   const firstIndex = clients.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = clients.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalClients.value } registros`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalClients.value } register`
 })
 
 // 👉 watching current page
@@ -109,7 +109,7 @@ const removeClient = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Client deleted!' : res.data.message,
+    message: res.data.success ? 'Klient raderad!' : res.data.message,
     show: true
   }
 
@@ -146,7 +146,7 @@ const submitCreate = clientData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Client created! ',
+                    message: 'Kund skapad! ',
                     show: true
                 }
                 fetchData()
@@ -178,7 +178,7 @@ const submitUpdate = clientData => {
             if (res.data.success) {
                     advisor.value = {
                     type: 'success',
-                    message: 'Client updated!',
+                    message: 'Klienten uppdaterad!',
                     show: true
                 }
                 fetchData()
@@ -217,9 +217,9 @@ const downloadCSV = async () => {
 
     let data = {
       ID: element.order_id,
-      CONTACT: element.fullname,
-      EMAIL: element.email,
-      ORGANIZATION_NUMBER: element.organization_number ?? ''
+      KONTAKT: element.fullname,
+      E_POST: element.email,
+      ORGANISATIONSNUMMER: element.organization_number ?? ''
     }
           
     dataArray.push(data)
@@ -283,7 +283,7 @@ const downloadCSV = async () => {
                 color="secondary"
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV">
-                Export
+                Exportera
               </VBtn>
             </div>
 
@@ -293,7 +293,7 @@ const downloadCSV = async () => {
               <VSelect
                 v-if="role !== 'Supplier'"
                 v-model="supplier_id"
-                placeholder="Suppliers"
+                placeholder="Leverantörer"
                 :items="suppliers"
                 :item-title="item => item.full_name"
                 :item-value="item => item.id"
@@ -307,7 +307,7 @@ const downloadCSV = async () => {
               <div class="search">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search"
+                  placeholder="Sök"
                   density="compact"
                   clearable
                 />
@@ -318,7 +318,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','clients')"
                 prepend-icon="tabler-plus"
                 @click="isAddNewClientDrawerVisible = true">
-                  Add client
+                  Skapa kund
               </v-btn>
             </div>
           </v-card-text>
@@ -330,11 +330,11 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> CONTACT </th>
-                <th scope="col"> ORGANIZATION NUMBER </th>
-                <th scope="col"> PHONE </th>
-                <th scope="col"> ADDRESS </th>
-                <th scope="col" v-if="role !== 'Supplier'"> SUPPLIER </th>
+                <th scope="col"> KONTAKT </th>
+                <th scope="col"> ORGANISATIONSNUMMER </th>
+                <th scope="col"> TELEFON </th>
+                <th scope="col"> ADRESS </th>
+                <th scope="col" v-if="role !== 'Supplier'"> LEVERANTÖR </th>
                 <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
               </tr>
             </thead>
@@ -410,7 +410,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','clients')"
@@ -418,7 +418,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Delete</VListItemTitle>
+                        <VListItemTitle>Radera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -431,7 +431,7 @@ const downloadCSV = async () => {
                 <td
                   :colspan="role === 'Supplier' ? 6 : 7"
                   class="text-center">
-                  Data not available
+                  Uppgifter ej tillgängliga
                 </td>
               </tr>
             </tfoot>
@@ -471,10 +471,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Delete Client">
+      <VCard title="Ta bort klient">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to delete the client <strong>{{ selectedClient.fullname }}</strong>?
+          Är du säker att du vill ta bort klienten <strong>{{ selectedClient.fullname }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -482,10 +482,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmDeleteDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="removeClient">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>

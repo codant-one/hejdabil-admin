@@ -453,7 +453,7 @@ const editNote = data => {
                 <p class="mb-0 mt-2" v-if="client" style="min-width: 250px;">
                     <VTextField
                         v-model="invoice.reference"
-                        label="Reference"
+                        label="Vår referens"
                         :disabled="props.isCredit"
                         @input="$emit('data', invoice)"
                     />

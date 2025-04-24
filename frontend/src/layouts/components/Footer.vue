@@ -4,14 +4,14 @@
     <span class="d-flex align-center">
       &copy;
       {{ new Date().getFullYear() }}
-      Made with
+      Tillverkad med
       <VIcon
         icon="tabler-heart"
         color="error"
         size="1.25rem"
         class="mx-1"
       />
-      by <a
+      av <a
         href="https://codant.one/"
         target="_blank"
         rel="noopener noreferrer"

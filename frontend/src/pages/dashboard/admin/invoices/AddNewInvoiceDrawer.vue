@@ -35,7 +35,7 @@ const description_se = ref('')
 const isEdit = ref(false)
 
 const getTitle = computed(() => {
-  return isEdit.value ? 'Update invoice attribute': 'Add invoice attribute'
+  return isEdit.value ? 'Uppdatera fakturaattribut': 'Lägg till fakturaattribut'
 })
 
 watchEffect(async() => {
@@ -77,10 +77,10 @@ const onSubmit = () => {
       let formData = new FormData()
 
       formData.append('type_id', type_id.value)
-      formData.append('name_en', name_en.value)
+      formData.append('name_en', '---')
       formData.append('name_se', name_se.value)
       formData.append('description_en', description_en.value)
-      formData.append('description_se', description_se.value)
+      formData.append('description_se', '---')
 
       emit('invoiceData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
@@ -143,9 +143,9 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="12">
               <VSelect
                   v-model="type_id"
-                  placeholder="Types / Typer"
+                  placeholder="Typer"
                   :items="types"
-                  :item-title="item => item.name"
+                  :item-title="item => item.name_se"
                   :item-value="item => item.id"
                   autocomplete="off"
                   clearable
@@ -153,30 +153,30 @@ const handleDrawerModelValueUpdate = val => {
                   :menu-props="{ maxHeight: '300px' }"
                   :rules="[requiredValidator]"/>
             </VCol>
-            <VCol cols="12" md="6">
+            <!-- <VCol cols="12" md="6">
                 <VTextField
                     v-model="name_en"
                     label="English name"
                     :rules="[requiredValidator]"
                 />
-            </VCol>
-            <VCol cols="12" md="6">
+            </VCol> -->
+            <VCol cols="12" md="12">
                 <VTextField
                     v-model="name_se"
-                    label="Swedish name"
+                    label="Namn"
                     :rules="[requiredValidator]"
                 />
             </VCol>
-            <VCol cols="12" md="12">
+            <!-- <VCol cols="12" md="12">
                 <VTextarea
                     v-model="description_en"
                     label="English description"
                 />
-            </VCol>
+            </VCol> -->
             <VCol cols="12" md="12">
                 <VTextarea
                     v-model="description_se"
-                    label="Swedish description"
+                    label="Beskrivning"
                 />
             </VCol>
               <!-- 👉 Submit and Cancel -->
@@ -185,7 +185,7 @@ const handleDrawerModelValueUpdate = val => {
                   type="submit"
                   class="me-3"
                 >
-                  {{ isEdit ? 'Update': 'Add' }}
+                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
                 </VBtn>
                 <VBtn
                   type="reset"
@@ -193,7 +193,7 @@ const handleDrawerModelValueUpdate = val => {
                   color="secondary"
                   @click="closeNavigationDrawer"
                 >
-                  Cancel
+                  Avbryt
                 </VBtn>
               </VCol>
             </VRow>

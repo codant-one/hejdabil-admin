@@ -72,7 +72,7 @@ const onSubmitCreate = () => {
           
           advisor.value.show = true
           advisor.value.type = 'success'
-          advisor.value.message = 'User Created!'
+          advisor.value.message = 'Skapad av användaren!'
           
           emit('alert', advisor)
           emit('data')
@@ -141,13 +141,13 @@ const onSubmitCreate = () => {
         v-bind="props"
         prepend-icon="tabler-plus"
         >
-        Create users
+        Skapa användare
       </VBtn>
     </template>
 
     <DialogCloseBtn @click="closeUserCreateDialog " />
 
-    <VCard title="Create user">
+    <VCard title="Skapa användare">
       <VDivider class="mt-4"/>
       <VForm
         ref="refFormCreate"
@@ -180,7 +180,7 @@ const onSubmitCreate = () => {
             <VCol cols="12" md="6">
               <VTextField
                 v-model="password"
-                label="Password"
+                label="Lösenord"
                 :type="isPasswordVisible ? 'text' : 'password'"
                 :rules="[requiredValidator]"
                 :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
@@ -213,7 +213,7 @@ const onSubmitCreate = () => {
                 closable-chips
                 clear-icon="tabler-circle-x"
                 :items="rolesList"
-                label="Roles assigned to the user"
+                label="Roller som tilldelats användaren"
                 :rules="[requiredValidator]"
                 />
             </VCol>
@@ -224,10 +224,10 @@ const onSubmitCreate = () => {
               variant="tonal"
               @click="closeUserCreateDialog"
             >
-              Cancel
+              Avbryt
             </VBtn>
             <VBtn type="submit">
-              Create
+              Skapa
             </VBtn>
           </VCardText>
         </VCardText>

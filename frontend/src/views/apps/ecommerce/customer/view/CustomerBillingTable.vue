@@ -41,7 +41,7 @@ const paginationData = computed(() => {
   const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBillings.value } register`
 })
 
 watchEffect(fetchData)
@@ -81,6 +81,10 @@ const editBilling = billingData => {
   router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: billingData.id } })
 }
 
+const openLink = function (billingData) {
+  window.open(themeConfig.settings.urlStorage + billingData.file)
+}
+
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false
 
@@ -93,7 +97,7 @@ const updateState = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice updated!' : res.data.message,
+    message: res.data.success ? 'Fakturan uppdaterad!' : res.data.message,
     show: true
   }
 
@@ -183,7 +187,7 @@ const sendMails = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice sent!' : res.data.message,
+    message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
     show: true
   }
 
@@ -231,7 +235,7 @@ const sendMails = async () => {
                 <div style="width: 10rem;">
                 <VTextField
                     v-model="searchQuery"
-                    placeholder="Buscar"
+                    placeholder="Sök"
                     density="compact"
                     clearable
                 />
@@ -245,13 +249,13 @@ const sendMails = async () => {
             <!-- 👉 table head -->
             <thead>
                 <tr>
-                  <th scope="col"> # INVOICE </th>
-                  <th scope="col"> CLIENT </th>
+                  <th scope="col"> # FAKTURA </th>
+                  <th scope="col"> KUND </th>
                   <th scope="col"> TOTAL </th>
-                  <th scope="col"> INVOICE DATE </th>
-                  <th scope="col"> DUE DATE </th>
+                  <th scope="col"> FAKTURADATUM </th>
+                  <th scope="col"> UTGÅNGSDAG </th>
                   <th class="text-center" scope="col"> STATUS </th>
-                  <th class="text-center" scope="col"> INVOICE SENT </th>                
+                  <th class="text-center" scope="col"> FAKTURA SKICKAD </th>                
                   <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
                 </tr>
             </thead>
@@ -274,7 +278,7 @@ const sendMails = async () => {
                 <td class="text-center">
                   <span v-if="billing.client.deleted_at !== null">
                     <VChip color="error">
-                      Client deleted
+                      Klient borttagen
                     </VChip>
                   </span>
                   <template v-else>
@@ -315,7 +319,7 @@ const sendMails = async () => {
                     label
                     :color="billing.is_sent === 0 ? 'error' : 'info'"
                   >
-                    {{ billing.is_sent === 0 ? 'NOT SENT' : 'SENT' }}
+                    {{ billing.is_sent === 0 ? 'INTE SÄND' : 'SÄND' }}
                   </VChip>
                 </td>
                 <!-- 👉 Acciones -->
@@ -338,7 +342,15 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-printer" />
                         </template>
-                        <VListItemTitle>Print</VListItemTitle>
+                        <VListItemTitle>Skriv ut</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'billing')"
+                         @click="openLink(billing)">
+                        <template #prepend>
+                          <VIcon icon="mdi-file-pdf-box" />
+                        </template>
+                        <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -346,7 +358,7 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-content-copy" />
                         </template>
-                        <VListItemTitle>Duplicate</VListItemTitle>
+                        <VListItemTitle>Duplicera</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -354,7 +366,7 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
                         </template>
-                        <VListItemTitle>Send</VListItemTitle>
+                        <VListItemTitle>Skicka</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('edit', 'billing') && billing.state_id === 4"
@@ -362,7 +374,7 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','billing')"
@@ -370,7 +382,7 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Credit</VListItemTitle>
+                        <VListItemTitle>Kredit</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -383,7 +395,7 @@ const sendMails = async () => {
                 <td
                     :colspan="role === 'Supplier' ? 8 : 9"
                     class="text-center">
-                    Data not available
+                    Uppgifter ej tillgängliga
                 </td>
                 </tr>
             </tfoot>
@@ -415,10 +427,10 @@ const sendMails = async () => {
       <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Send invoice by email">
+      <VCard title="Skicka fakturan via e-post">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to send invoices to the following email addresses?.
+          Är du säker på att du vill skicka fakturor till följande e-postadresser?
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
           <VCheckbox
@@ -429,7 +441,7 @@ const sendMails = async () => {
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Enter emails to send invoice"
+            label="Ange e-postadresser för att skicka fakturan"
             multiple
             chips
             deletable-chips
@@ -438,7 +450,7 @@ const sendMails = async () => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           /> 
-          <span class="text-xs text-error" v-if="isValid">Email must be a valid email</span>
+          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -446,10 +458,10 @@ const sendMails = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmSendMailVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="sendMails">
-              Send
+              Skicka
           </VBtn>
         </VCardText>
       </VCard>
@@ -465,10 +477,10 @@ const sendMails = async () => {
       <DialogCloseBtn @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Update status">
+      <VCard title="Uppdatera status">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to update the invoice status <strong>#{{ selectedBilling.invoice_id }}</strong> to paid?
+          Är du säker på att du vill uppdatera fakturans status? <strong>#{{ selectedBilling.invoice_id }}</strong> till betalda?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -476,10 +488,10 @@ const sendMails = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmStateDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="updateState">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>

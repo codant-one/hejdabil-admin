@@ -347,7 +347,7 @@ const credit = async () => {
               variant="tonal"
               class="mb-2"
               :to="{ name: 'dashboard-admin-billings' }">
-              Back
+              Tillbaka
             </VBtn>
 
           </VCardText>

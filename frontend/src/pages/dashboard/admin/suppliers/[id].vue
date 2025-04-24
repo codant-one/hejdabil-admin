@@ -25,10 +25,10 @@ const online = ref(null)
 const isRequestOngoing = ref(true)
 
 const tabs = [
-    { title: 'Overview' },
-    { title: 'Security' },
-    { title: 'Billing' },
-    { title: 'Company' }
+    { title: 'Översikt' },
+    { title: 'Säkerhet' },
+    { title: 'Fakturering' },
+    { title: 'Företag' }
 ]
 
 const advisor = ref({
@@ -69,13 +69,13 @@ const handleDownload = async(data) => {
 
             advisor.value.type = 'success'
             advisor.value.show = true
-            advisor.value.message = 'Descarga Exitosa!'
+            advisor.value.message = 'Framgångsrik nedladdning!'
 
         } catch (error) {
 
             advisor.value.type = 'error'
             advisor.value.show = true
-            advisor.value.message = 'Error al descargar el documento:' + error
+            advisor.value.message = 'Fel vid nedladdning av dokument:' + error
         }
     } else {
         try {
@@ -95,13 +95,13 @@ const handleDownload = async(data) => {
 
             advisor.value.type = 'success'
             advisor.value.show = true
-            advisor.value.message = 'Descarga Exitosa!'
+            advisor.value.message = 'Framgångsrik nedladdning!'
 
         } catch (error) {
 
             advisor.value.type = 'error'
             advisor.value.show = true
-            advisor.value.message = 'Error al descargar la imagen:' + error
+            advisor.value.message = 'Fel vid nedladdning av bild:' + error
         }
     }
 
@@ -118,7 +118,7 @@ const handleCopy = (data) => {
 
     advisor.value.type = 'success'
     advisor.value.show = true
-    advisor.value.message = 'Cuenta Bancaria copiada!'
+    advisor.value.message = 'Bankkonto kopierat!'
 
     setTimeout(() => {
         advisor.value.show = false
@@ -166,14 +166,14 @@ const handleCopy = (data) => {
         <div>
             <div class="d-flex gap-2 align-center mb-2 flex-wrap">
             <h4 class="text-h4 font-weight-medium">
-                Supplier ID #{{ route.params.id }}
+                Leverantörens ID #{{ route.params.id }}
             </h4>
             </div>
             <div>
             <span class="text-body-1" v-if="online">
                 {{  format(parseISO(online), 'MMMM d, yyyy, H:mm', { locale: es }).replace(/(^|\s)\S/g, (char) => char.toUpperCase()) }}
                 <span class="text-xs">
-                    (Last Connection)
+                    (Sista anslutningen)
                 </span>
             </span>
             </div>
@@ -185,7 +185,7 @@ const handleCopy = (data) => {
                 class="mb-2"
                 :to="{ name: 'dashboard-admin-suppliers' }"
                 >
-                Back
+                Tillbaka
             </VBtn>
         </div>
     </div>

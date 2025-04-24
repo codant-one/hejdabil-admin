@@ -91,7 +91,7 @@ const onSubmitEdit = () =>{
 
                 advisor.value.show = true
                 advisor.value.type = 'success'
-                advisor.value.message = 'User updated!'
+                advisor.value.message = 'Användaren uppdaterad!'
 
                 emit('alert', advisor)
                 emit('data')
@@ -147,7 +147,7 @@ const onSubmitEdit = () =>{
         <DialogCloseBtn @click="closeUserEditDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Edit user">
+        <VCard title="Redigera användare">
           <VDivider class="mt-4"/>
             <VForm
                 ref="refFormEdit"
@@ -188,7 +188,7 @@ const onSubmitEdit = () =>{
                           <VTextField
                             v-model="phone"
                             type="password"
-                            label="Password"
+                            label="Lösenord"
                             disabled
                           />
                         </VCol> 
@@ -224,7 +224,7 @@ const onSubmitEdit = () =>{
                             closable-chips
                             clear-icon="tabler-circle-x"
                             :items="rolesList"
-                            label="Roles assigned to the user"
+                            label="Roller som tilldelats användaren"
                             :rules="[requiredValidator]"
                           />
                         </VCol>
@@ -235,10 +235,10 @@ const onSubmitEdit = () =>{
                             variant="tonal"
                             @click="closeUserEditDialog"
                         >
-                            Cancel
+                          Avbryt
                         </VBtn>
                         <VBtn type="submit">
-                            Edit
+                          Redigera
                         </VBtn>
                     </VCardText>
                 </VCardText>

@@ -67,7 +67,7 @@ const closeUserDetailDialog = function() {
         <DialogCloseBtn @click="closeUserDetailDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="User details">
+        <VCard title="Användaruppgifter">
             <VDivider class="mt-4"/>
             <VCardText>
                 <VRow>
@@ -96,7 +96,7 @@ const closeUserDetailDialog = function() {
                         <VTextField
                             v-model="phone"
                             type="password"
-                            label="Password"
+                            label="Lösenord"
                             disabled
                         />
                     </VCol>                    
@@ -124,7 +124,7 @@ const closeUserDetailDialog = function() {
                             chips
                             multiple
                             :items="rolesList"
-                            label="Roles assigned to the user"
+                            label="Roller som tilldelats användaren"
                             readonly
                         />
                     </VCol>

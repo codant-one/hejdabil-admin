@@ -1,6 +1,6 @@
 export default [
     { 
-      heading: 'MODULES'
+      heading: 'MODULER'
     },
     { 
       title: 'Leverantörer', 

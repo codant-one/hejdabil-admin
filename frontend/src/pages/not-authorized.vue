@@ -54,11 +54,11 @@ const back = function(){
     <div class="misc-center-content text-center mb-12">
       <!-- 👉 Title and subtitle -->
       <h4 class="text-h4 font-weight-medium mb-3">
-        You are not authorized! 🔐
+        Du är inte behörig! 🔐
       </h4>
-      <p>You do not have permission to access this page.!</p>
+      <p>Du har inte behörighet att komma åt den här sidan!</p>
       <VBtn @click="back">
-        Back to top
+        Tillbaka till början
       </VBtn>
     </div>
 

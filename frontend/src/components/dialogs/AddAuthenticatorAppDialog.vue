@@ -62,17 +62,17 @@ const handleOtp = (value) => {
     <VCard class="pa-5 pa-sm-8">
       <VCardItem>
         <VCardTitle class="text-h5 font-weight-medium text-center">
-          Add authenticator app
+          Lägg till autentiseringsapp
         </VCardTitle>
       </VCardItem>
 
       <VCardText class="pt-3">
         <h6 class="text-lg font-weight-medium mb-2">
-          Authenticator Apps
+          Appar för autentisering
         </h6>
 
         <p class="mb-6">
-          Using an authenticator app like Google Authenticator, Microsoft Authenticator, Authy, or 1Password, scan the QR code. It will generate a 6-digit code for you to enter next.
+          Använd en autentiseringsapp som Google Authenticator, Microsoft Authenticator, Authy eller 1Password och skanna QR-koden. Det kommer att generera en 6-siffrig kod som du ska ange nästa.
         </p>
 
         <div class="mb-4">
@@ -89,7 +89,7 @@ const handleOtp = (value) => {
         >
           <span class="text-lg font-weight-medium">{{ props.token }}</span>
           <p class="mb-0">
-            If you cannot scan the QR code, you can manually enter the secret key below.
+            Om du inte kan skanna QR-koden kan du ange den hemliga nyckeln manuellt nedan.
           </p>
         </VAlert>
         <VForm @submit.prevent="() => {}">
@@ -108,14 +108,14 @@ const handleOtp = (value) => {
               variant="tonal"
               @click="resetAuthCode"
             >
-              Cancel
+              Avbryt
             </VBtn>
 
             <VBtn
               type="submit"
               @click="formSubmit"
             >
-              {{ props.is_2fa ? 'Enable' : 'Disable' }}
+              {{ props.is_2fa ? 'Aktivera' : 'Avaktivera' }}
               <VIcon
                 end
                 icon="tabler-arrow-right"

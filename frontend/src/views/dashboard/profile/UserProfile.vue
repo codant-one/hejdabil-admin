@@ -207,14 +207,14 @@ const closeUserEditDialog = ()=>{
           <!-- 👉 Details -->
           <VCardText>
             <p class="text-sm text-uppercase text-disabled">
-              Details
+              Detaljer
             </p>
 
             <VList class="card-list mt-2">
               <VListItem>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    Name:
+                    Namn:
                     <span class="text-body-2">
                       {{ name }}
                     </span>
@@ -222,7 +222,7 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    Last name:
+                    Efternamn:
                     <span class="text-body-2">
                       {{ last_name }}
                     </span>
@@ -230,7 +230,7 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    E-mail:
+                    E-post:
                     <span class="text-body-2">
                       {{ email }}
                     </span>
@@ -238,7 +238,7 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                      Phone:
+                    Telefon:
                     <span class="text-body-2">
                       {{ phone }}
                     </span>
@@ -246,7 +246,7 @@ const closeUserEditDialog = ()=>{
                 </VListItemTitle>
                 <VListItemTitle>
                   <h6 class="text-base font-weight-semibold">
-                    Address:
+                    Adress:
                     <span class="text-body-2">
                       {{ address }}
                     </span>
@@ -263,7 +263,7 @@ const closeUserEditDialog = ()=>{
               class="me-3"
               @click="showUserEditDialog()"
             >
-              Edit
+              Redigera
             </VBtn>
           </VCardText>
         </VCard>
@@ -279,7 +279,7 @@ const closeUserEditDialog = ()=>{
         <DialogCloseBtn @click="closeUserEditDialog" />
 
         <!-- Dialog Content -->
-        <VCard title="Edit personal information">    
+        <VCard title="Redigera personlig information">    
           <VDivider class="mt-4"/>    
           <VCol 
             v-if="alert.show" 
@@ -337,7 +337,7 @@ const closeUserEditDialog = ()=>{
                   variant="tonal"
                   @click="deleteAvatar"
                 >
-                Delete Avatar
+                  Ta bort avatar
                 </VBtn>
               </div>
             </VCardText>

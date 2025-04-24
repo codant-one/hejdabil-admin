@@ -404,7 +404,7 @@ const downloadCSV = async () => {
                   <VTextField
                     v-else
                     v-model="searchQuery"
-                    placeholder="Search"
+                    placeholder="Sök"
                     density="compact"
                     clearable
                   />
@@ -430,7 +430,7 @@ const downloadCSV = async () => {
                 color="secondary"
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV">
-                Export
+                Exportera
               </VBtn>
             </div>
 
@@ -442,7 +442,7 @@ const downloadCSV = async () => {
               <div class="search" v-if="role !== 'Supplier'">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search"
+                  placeholder="Sök"
                   density="compact"
                   clearable
                 />
@@ -499,7 +499,7 @@ const downloadCSV = async () => {
                 <td class="text-center">
                   <span v-if="billing.client.deleted_at !== null">
                     <VChip color="error">
-                      Client deleted
+                      Klient borttagen
                     </VChip>
                   </span>
                   <template v-else>
@@ -540,7 +540,7 @@ const downloadCSV = async () => {
                     label
                     :color="billing.is_sent === 0 ? 'error' : 'info'"
                   >
-                    {{ billing.is_sent === 0 ? 'NOT SENT' : 'SENT' }}
+                    {{ billing.is_sent === 0 ? 'INTE SÄND' : 'SÄND' }}
                   </VChip>
                 </td>
                 <!-- 👉 Acciones -->
@@ -563,7 +563,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-printer" />
                         </template>
-                        <VListItemTitle>Print</VListItemTitle>
+                        <VListItemTitle>Skriv ut</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -571,7 +571,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
                         </template>
-                        <VListItemTitle>View as PDF</VListItemTitle>
+                        <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -579,7 +579,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-content-copy" />
                         </template>
-                        <VListItemTitle>Duplicate</VListItemTitle>
+                        <VListItemTitle>Duplicera</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -587,7 +587,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
                         </template>
-                        <VListItemTitle>Send</VListItemTitle>
+                        <VListItemTitle>Skicka</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('edit', 'billing') && (billing.state_id === 4 || billing.state_id === 8)"
@@ -595,7 +595,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','billing') && billing.state_id === 7"
@@ -603,7 +603,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Credit</VListItemTitle>
+                        <VListItemTitle>Kredit</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -616,7 +616,7 @@ const downloadCSV = async () => {
                 <td
                   :colspan="role === 'Supplier' ? 8 : 9"
                   class="text-center">
-                  Data not available
+                  Uppgifter ej tillgängliga
                 </td>
               </tr>
             </tfoot>
@@ -656,10 +656,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Send invoice by email">
+      <VCard title="Skicka fakturan via e-post">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to send invoices to the following email addresses?.
+          Är du säker på att du vill skicka fakturor till följande e-postadresser?
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
           <VCheckbox
@@ -670,7 +670,7 @@ const downloadCSV = async () => {
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Enter emails to send invoice"
+            label="Ange e-postadresser för att skicka fakturan"
             multiple
             chips
             deletable-chips
@@ -679,7 +679,7 @@ const downloadCSV = async () => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           /> 
-          <span class="text-xs text-error" v-if="isValid">Email must be a valid email</span>
+          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">

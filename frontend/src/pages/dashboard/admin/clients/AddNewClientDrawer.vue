@@ -41,7 +41,7 @@ const userData = ref(null)
 const role = ref(null)
 
 const getTitle = computed(() => {
-  return isEdit.value ? 'Update Client': 'Add Client'
+  return isEdit.value ? 'Uppdatera klient': 'Lägg till klient'
 })
 
 watchEffect(async() => {
@@ -166,7 +166,7 @@ const handleDrawerModelValueUpdate = val => {
               <VSelect
                 v-if="role !== 'Supplier'"
                 v-model="supplier_id"
-                placeholder="Suppliers"
+                placeholder="Leverantörer"
                 :items="suppliers"
                 :item-title="item => item.full_name"
                 :item-value="item => item.id"
@@ -178,7 +178,7 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="fullname"
-                    label="Fullname"
+                    label="Fullständigt namn"
                     :rules="[requiredValidator]"
                 />
             </VCol>
@@ -192,7 +192,7 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="organization_number"
-                    label="Organization number"
+                    label="Organisationsnummer"
                 />
             </VCol>
             <VCol cols="12" md="6">
@@ -206,14 +206,14 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="postal_code"
                     :rules="[requiredValidator]"
-                    label="Postal code"
+                    label="Postnummer"
                 />
             </VCol>
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="street"
                     :rules="[requiredValidator]"
-                    label="City"
+                    label="Stad"
                 />
             </VCol>
             <VCol cols="12" md="6">
@@ -226,7 +226,7 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="6">
                 <VTextField
                     v-model="reference"
-                    label="Reference"
+                    label="Vår referens"
                 />
             </VCol>
               <!-- 👉 Submit and Cancel -->
@@ -235,7 +235,7 @@ const handleDrawerModelValueUpdate = val => {
                   type="submit"
                   class="me-3"
                 >
-                  {{ isEdit ? 'Update': 'Add' }}
+                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
                 </VBtn>
                 <VBtn
                   type="reset"
@@ -243,7 +243,7 @@ const handleDrawerModelValueUpdate = val => {
                   color="secondary"
                   @click="closeNavigationDrawer"
                 >
-                  Cancel
+                  Avbryt
                 </VBtn>
               </VCol>
             </VRow>

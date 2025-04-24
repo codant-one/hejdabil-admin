@@ -121,7 +121,7 @@ const onSubmit = () => {
                     if (res.data.success) {
                         
                         let data = {
-                            message: 'Updated Supplier!',
+                            message: 'Uppdaterad leverantör!',
                             error: false
                         }
 
@@ -174,9 +174,9 @@ const onSubmit = () => {
                 <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                     <div class="d-flex flex-column justify-center">
                         <h6 class="text-md-h4 text-h6 font-weight-medium">
-                            Edit a supplier 😃🌟
+                            Redigera en leverantör 😃🌟
                         </h6>
-                        <span>Recharge your company with suppliers 🎉</span>
+                        <span>Ladda upp ditt företag med leverantörer 🎉</span>
                     </div>
                     <VSpacer />
                     <div class="d-flex gap-4">
@@ -186,7 +186,7 @@ const onSubmit = () => {
                             class="mb-2"
                             :to="{ name: 'dashboard-admin-suppliers' }"
                             >
-                            Back
+                            Tillbaka
                         </VBtn>
                     </div>
                 </div>
@@ -205,15 +205,15 @@ const onSubmit = () => {
                                 disabled>
                                 <VTab>
                                     <VIcon icon="mdi-domain" class="mb-0 mb-md-2" />
-                                    <span v-if="!isMobile">Company</span>
+                                    <span v-if="!isMobile">Företag</span>
                                 </VTab>
                                 <VTab>
                                     <VIcon icon="mdi-bank" class="mb-0 mb-md-2" />
-                                    <span v-if="!isMobile">Bank details</span>
+                                    <span v-if="!isMobile">Bankuppgifter</span>
                                 </VTab>
                                 <VTab>
                                     <VIcon icon="mdi-account-tie" class="mb-0 mb-md-2"/>
-                                    <span v-if="!isMobile">Contact</span>
+                                    <span v-if="!isMobile">Kontakt</span>
                                 </VTab>
                             </VTabs>
                             <VCardText class="px-2 px-md-12">
@@ -225,21 +225,21 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="company"
                                                     :rules="[requiredValidator]"
-                                                    label="Company name"
+                                                    label="Företagets namn"
                                                 />
                                             </VCol>   
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="organization_number"
                                                     :rules="[requiredValidator]"
-                                                    label="Organization number"
+                                                    label="Organisationsnummer"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="link"
                                                     :rules="[urlValidator]"
-                                                    label="Page"
+                                                    label="Sida"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="12">
@@ -254,14 +254,14 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="postal_code"
                                                     :rules="[requiredValidator]"
-                                                    label="Postal code"
+                                                    label="Postnummer"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="street"
                                                     :rules="[requiredValidator]"
-                                                    label="City"
+                                                    label="Stad"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -287,14 +287,14 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="bank"
                                                     :rules="[requiredValidator]"
-                                                    label="Bank name"
+                                                    label="Bankens namn"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="account_number"
                                                     :rules="[requiredValidator]"
-                                                    label="Account number"
+                                                    label="Kontonummer"
                                                 />
                                             </VCol>
                                         </VRow>
@@ -341,10 +341,10 @@ const onSubmit = () => {
                                     class="me-3"
                                     @click="currentTab--"
                                     >
-                                    Back
+                                    Tillbaka
                                 </VBtn>
                                 <VBtn type="submit">
-                                    {{ (currentTab === 2) ? 'Update' : 'Next' }}
+                                    {{ (currentTab === 2) ? 'Uppdatering' : 'Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>

@@ -110,7 +110,7 @@ const onSubmit = () => {
 
           advisor.value.show = true
           advisor.value.type = 'success'
-          advisor.value.message = 'Password changed'
+          advisor.value.message = 'Lösenord ändrat'
                     
           emit('alert', advisor)
 
@@ -146,9 +146,9 @@ const onSubmit = () => {
             class="mb-4 px-4 py-3"
           >
             <VAlertTitle class="mb-3">
-              Make sure these requirements are met
+              Se till att dessa krav är uppfyllda
             </VAlertTitle>
-            <span>Minimum 8 characters, uppercase, lowercase and numbers</span>
+            <span>Minst 8 tecken, stora och små bokstäver samt siffror</span>
           </VAlert>
 
           <VForm
@@ -161,7 +161,7 @@ const onSubmit = () => {
               >
                 <VTextField
                   v-model="password"
-                   label="New password"
+                   label="Nytt lösenord"
                   :type="isNewPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   :rules="[requiredValidator, passwordValidator]"
@@ -174,7 +174,7 @@ const onSubmit = () => {
               >
                 <VTextField
                   v-model="passwordConfirmation"
-                  label="Confirm password"
+                  label="Bekräfta lösenord"
                   :type="isConfirmPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                   :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"

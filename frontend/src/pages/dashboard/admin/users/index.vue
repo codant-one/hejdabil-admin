@@ -75,7 +75,7 @@ const paginationData = computed(() => {
   const firstIndex = users.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = users.value.length + (currentPage.value - 1) * rowPerPage.value
   
-  return `Showing ${ firstIndex } to ${ lastIndex } of ${ totalUsers.value } users`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalUsers.value } användare`
 })
 
 
@@ -197,11 +197,11 @@ const downloadCSV = async () => {
   
   usersStores.getUsers.forEach(element => {
     let data = {
-      NAME: element.name,
-      LAST_NAME: (element.last_name ?? ''),
-      EMAIL: element.email,
-      ROLES: element.roles.map(e => e['name']).join(','),
-      PHONE: element.user_detail.phone ?? ''
+      NAMN: element.name,
+      EFTERNAMN: (element.last_name ?? ''),
+      E_POST: element.email,
+      ROLL: element.roles.map(e => e['name']).join(','),
+      TELEFON: element.user_detail.phone ?? ''
     }
         
     dataArray.push(data)
@@ -266,7 +266,7 @@ const downloadCSV = async () => {
                 color="secondary"
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV">
-                  Export
+                  Exportera
               </VBtn>
             </div>
 
@@ -287,7 +287,7 @@ const downloadCSV = async () => {
               >
                 <VSelect
                   v-model="searchQuery"
-                  label="Filter by role"
+                  label="Filtrera efter roll"
                   clearable
                   clear-icon="tabler-x"
                   single-line
@@ -299,7 +299,7 @@ const downloadCSV = async () => {
               <div class="search rol-list-filter">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search user"
+                  placeholder="Sök användare"
                   density="compact"
                   clearable
                 />
@@ -315,10 +315,10 @@ const downloadCSV = async () => {
             <thead class="text-uppercase">
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> NAME </th>
-                <th scope="col"> EMAIL </th>
-                <th scope="col"> ROLES </th>
-                <th scope="col"> PHONE </th>
+                <th scope="col"> NAMN </th>
+                <th scope="col"> E-POST </th>
+                <th scope="col"> ROLL </th>
+                <th scope="col"> TELEFON </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
             </thead>
@@ -402,7 +402,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>View</VListItemTitle>
+                        <VListItemTitle>Utsikt</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users')"
@@ -418,7 +418,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','users')"
@@ -426,7 +426,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Delete</VListItemTitle>
+                        <VListItemTitle>Radera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -441,7 +441,7 @@ const downloadCSV = async () => {
                   colspan="6"
                   class="text-center text-body-1"
                 >
-                  There are no users
+                  Det finns inga användare
                 </td>
               </tr>
             </tfoot>

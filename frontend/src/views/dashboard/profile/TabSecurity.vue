@@ -115,7 +115,7 @@ const onSubmit = () => {
           window.scrollTo(0, 0)
 
           advisor.value.show = true
-          advisor.value.message = 'Password changed'
+          advisor.value.message = 'Lösenord ändrat'
           advisor.value.type = 'success'
 
           emit('alert', advisor)
@@ -192,9 +192,9 @@ const onSubmit = () => {
               class="mb-4"
             >
               <VAlertTitle class="mb-1">
-                Make sure these requirements are met
+                Se till att dessa krav är uppfyllda
               </VAlertTitle>
-              <span>Minimum 8 characters, uppercase, lowercase and numbers</span>
+              <span>Minst 8 tecken, stora och små bokstäver samt siffror</span>
             </VAlert>
 
             <VForm
@@ -208,7 +208,7 @@ const onSubmit = () => {
                 >
                   <VTextField
                     v-model="password"
-                    label="New password"
+                    label="Nytt lösenord"
                     :type="isNewPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                     :rules="[requiredValidator, passwordValidator]"
@@ -221,7 +221,7 @@ const onSubmit = () => {
                 >
                   <VTextField
                     v-model="passwordConfirmation"
-                    label="Confirm password"
+                    label="Bekräfta lösenord"
                     :type="isConfirmPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                     :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
@@ -244,16 +244,16 @@ const onSubmit = () => {
               <thead>
                 <tr>
                   <th scope="col">
-                    TYPE
+                    TYP
                   </th>
                   <th scope="col"></th>
                   <th scope="col"></th>
-                  <th scope="col">ENABLE</th>
+                  <th scope="col">AKTIVERA</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td> Two-factor authentication (2FA)  </td>
+                  <td> Tvåfaktorsautentisering (2FA)  </td>
                   <td> </td>
                   <td> </td>
                   <td>

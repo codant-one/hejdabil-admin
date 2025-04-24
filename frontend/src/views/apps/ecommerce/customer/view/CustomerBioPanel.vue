@@ -50,7 +50,7 @@ async function fetchData() {
 
   if (route.name.includes('clients')) {
     valueCount.value = props.customerData.orders_count ?? 0
-    valueText.value = 'Pedidos'
+    valueText.value = 'Beställningar'
     icon.value = 'tabler-shopping-cart'
 
     fullname.value = props.customerData.fullname
@@ -63,7 +63,7 @@ async function fetchData() {
 
   } else {
     valueCount.value = props.customerData.product_count ?? 0
-    valueText.value = 'Clients'
+    valueText.value = 'Kunder'
     icon.value = 'tabler-user'
     sales.value = null //CALCULAR MAS ADELANTE
   }
@@ -160,7 +160,7 @@ const onSubmit = () => {
           <h4 class="text-h4 mt-4" v-else>
             {{ props.customerData.fullname }}
           </h4>
-          <span class="text-sm"> {{ props.isSupplier ? 'Supplier' : 'Client' }} ID #{{ props.customerData.id }}</span>
+          <span class="text-sm"> {{ props.isSupplier ? 'Leverantör' : 'Klient' }} ID #{{ props.customerData.id }}</span>
 
           <div class="d-flex justify-center gap-x-5 mt-6">
             <div class="d-flex align-center">
@@ -188,7 +188,7 @@ const onSubmit = () => {
               </VAvatar>
               <div class="d-flex flex-column align-start">
                 <span class="text-body-1 font-weight-medium">{{ formatNumber(sales) ?? '0.00' }} kr</span>
-                <span class="text-body-2">Total Sales</span>
+                <span class="text-body-2">Total försäljning</span>
               </div>
             </div>
           </div>
@@ -198,14 +198,14 @@ const onSubmit = () => {
         <VCardText>
           <VDivider class="my-4" />
           <div class="text-disabled text-uppercase text-sm">
-            Details
+            Detaljer
           </div>
 
           <VList class="card-list mt-2">
             <VListItem>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Name:
+                  Namn:
                   <span class="text-body-2">
                     {{ props.isSupplier ? props.customerData.user.name : props.customerData.fullname }}
                   </span>
@@ -213,7 +213,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle v-if="props.isSupplier">
                 <h6 class="text-base font-weight-semibold">
-                  Lastname:
+                  Efternamn:
                   <span class="text-body-2">
                     {{ props.customerData.user.last_name ?? '' }}
                   </span>
@@ -221,7 +221,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  E-mail:
+                  E-post:
                   <span class="text-body-2">
                     {{ props.isSupplier ? props.customerData.user.email : props.customerData.email }}
                   </span>
@@ -229,7 +229,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                    Phone:
+                  Telefon:
                   <span class="text-body-2">
                     {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
                   </span>
@@ -237,7 +237,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Address:
+                  Adress:
                   <span class="text-body-2">
                     {{ props.customerData.address }}
                   </span>
@@ -245,7 +245,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Postal code:
+                  Postnummer:
                   <span class="text-body-2">
                     {{ props.customerData.postal_code}}
                   </span>
@@ -253,7 +253,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  City:
+                  Stad:
                   <span class="text-body-2">
                     {{ props.customerData.street }}
                   </span>
@@ -261,7 +261,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle>
                 <h6 class="text-base font-weight-semibold">
-                  Organization number:
+                  Organisationsnummer:
                   <span class="text-body-2">
                     {{ props.customerData.organization_number }}
                   </span>
@@ -269,7 +269,7 @@ const onSubmit = () => {
               </VListItemTitle>
               <VListItemTitle v-if="role !== 'Supplier' && route.name.includes('clients') && suppliers.length > 0">
                 <h6 class="text-base font-weight-semibold">
-                  Supplier:
+                  Leverantör:
                   <span class="text-body-2">
                     {{ props.customerData.supplier.user.name }} {{ props.customerData.supplier.user.last_name }}
                   </span>
@@ -285,12 +285,12 @@ const onSubmit = () => {
             class="me-3"
             @click="showUserEditDialog()"
           >
-            Edit
+          Redigera
           </VBtn>
   
-            </VCardText>
-      </VCard>
-    </VCol>
+      </VCardText>
+    </VCard>
+  </VCol>
 
     <!-- DIALOG Edit personal information -->
     <VDialog
@@ -302,7 +302,7 @@ const onSubmit = () => {
       <DialogCloseBtn @click="closeUserEditDialog" />
 
       <!-- Dialog Content -->
-      <VCard title="Update Client">    
+      <VCard title="Uppdatera klient">    
         <VDivider class="mt-4"/>  
         <VForm
           ref="refForm"
@@ -314,7 +314,7 @@ const onSubmit = () => {
                 <VSelect
                   v-if="role !== 'Supplier'"
                   v-model="supplier_id"
-                  placeholder="Suppliers"
+                  placeholder="Leverantörer"
                   :items="suppliers"
                   :item-title="item => item.full_name"
                   :item-value="item => item.id"
@@ -326,7 +326,7 @@ const onSubmit = () => {
               <VCol cols="12" md="6">
                 <VTextField
                     v-model="fullname"
-                    label="Fullname"
+                    label="Fullständigt namn"
                     :rules="[requiredValidator]"
                 />
               </VCol>
@@ -340,7 +340,7 @@ const onSubmit = () => {
               <VCol cols="12" md="6">
                 <VTextField
                     v-model="organization_number"
-                    label="Organization number"
+                    label="Organisationsnummer"
                 />
               </VCol>
               <VCol cols="12" md="6">
@@ -354,14 +354,14 @@ const onSubmit = () => {
                 <VTextField
                     v-model="postal_code"
                     :rules="[requiredValidator]"
-                    label="Postal code"
+                    label="Postnummer"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                     v-model="street"
                     :rules="[requiredValidator]"
-                    label="City"
+                    label="Stad"
                 />
               </VCol>
               <VCol cols="12" md="6">
@@ -374,7 +374,7 @@ const onSubmit = () => {
               <VCol cols="12" md="6">
                 <VTextField
                     v-model="reference"
-                    label="Reference"
+                    label="Vår referens"
                 />
               </VCol>
               <!-- 👉 Form Actions -->

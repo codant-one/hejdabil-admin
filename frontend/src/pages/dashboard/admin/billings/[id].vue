@@ -452,7 +452,7 @@ const download = async() => {
               variant="tonal"
               class="mb-2"
               :to="{ name: 'dashboard-admin-billings' }">
-              Back
+              Tillbaka
             </VBtn>
 
           </VCardText>
@@ -469,10 +469,10 @@ const download = async() => {
       <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Send invoice by email">
+      <VCard title="Skicka fakturan via e-post">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to send invoices to the following email addresses?.
+          Är du säker på att du vill skicka fakturor till följande e-postadresser?
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
           <VCheckbox
@@ -492,7 +492,7 @@ const download = async() => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           />
-          <span class="text-xs text-error" v-if="isValid">Email must be a valid email</span>
+          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">

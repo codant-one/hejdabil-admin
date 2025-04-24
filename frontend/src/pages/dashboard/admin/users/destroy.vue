@@ -40,7 +40,7 @@ const deleteUser = function() {
       
       advisor.value.show = true
       advisor.value.type = 'success'
-      advisor.value.message = 'User Deleted!'
+      advisor.value.message = 'Användare raderad!'
           
       emit('alert', advisor)
       emit('data')
@@ -58,7 +58,7 @@ const deleteUser = function() {
     if(error.response.status == 403){
       advisor.value.show = true
       advisor.value.type = 'error'
-      advisor.value.message = 'You do not have sufficient permissions'
+      advisor.value.message = 'Du har inte tillräckliga behörigheter'
     }
 
     setTimeout(() => {
@@ -85,7 +85,7 @@ const deleteUser = function() {
     <VCard title="Delete user">
       <VDivider class="mt-4"/>
       <VCardText>
-        Are you sure you want to delete user <strong>{{ user.email }}</strong>?
+        Är du säker att du vill ta bort användaren <strong>{{ user.email }}</strong>?
       </VCardText>
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -94,10 +94,10 @@ const deleteUser = function() {
           variant="tonal"
           @click="closeUserDeleteDialog"
           >
-          Cancel
+          Avbryt
         </VBtn>
         <VBtn @click="deleteUser" >
-          Delete
+          Radera
         </VBtn>
       </VCardText>
     </VCard>

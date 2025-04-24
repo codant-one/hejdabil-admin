@@ -43,16 +43,16 @@ const closeModal = function(){
         >
         <DialogCloseBtn @click="closeModal" />
 
-        <VCard title="Permissions">
+        <VCard title="Behörigheter">
             <VDivider class="mt-4"/>
             <VCardText>
                 <VCardTitle>
-                    General manager  
+                    Verkställande direktör  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
-                            Administrator
+                            Administratör
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -64,12 +64,12 @@ const closeModal = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    General  
+                    Allmänt  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
-                            Control panel
+                            Kontrollpanelen
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -81,12 +81,12 @@ const closeModal = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    Profile  
+                    Profil  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
-                            Roles
+                            Roller
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -111,7 +111,7 @@ const closeModal = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Users
+                            Användare
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -138,12 +138,12 @@ const closeModal = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    Modules  
+                    Moduler  
                 </VCardTitle>
                 <VCardText>
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
-                            Suppliers
+                            Leverantörer
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -168,7 +168,7 @@ const closeModal = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Clients
+                            Kunder
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -193,7 +193,7 @@ const closeModal = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Billing
+                            Fakturering
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -218,12 +218,12 @@ const closeModal = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Administration
+                            Förvaltning
                         </VLabel>
                         <VCardText class="pt-2 pb-0">
                             <div class="ml-5">
                                 <VLabel style="font-weight: bold;">
-                                    Attributes
+                                    Attribut
                                 </VLabel>
                                 <div class="demo-space-x ml-5">
                                     <VCheckbox
@@ -255,7 +255,7 @@ const closeModal = function(){
             <VCardText class="d-flex flex-wrap gap-3">
                 <VSpacer />
                 <VBtn @click="closeModal">
-                    Accept
+                    Acceptera
                 </VBtn>
             </VCardText>
         </VCard>

@@ -135,10 +135,10 @@ const onSubmit = () => {
         >
           <VCardText class="pt-2 px-2 px-md-6">
             <h5 class="text-h5 font-weight-semibold mb-1">
-              Reset password 🔒
+              Återställ lösenord 🔒
             </h5>
             <p class="mb-0 letter">
-              for <span class="font-weight-bold">{{ user }}</span>
+              för <span class="font-weight-bold">{{ user }}</span>
             </p>
           </VCardText>
 
@@ -151,7 +151,7 @@ const onSubmit = () => {
                 <VCol cols="12" class="pb-0">
                   <VTextField
                     v-model="password"
-                    label="New password"
+                    label="Nytt lösenord"
                     :type="isNewPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                     :rules="[requiredValidator, passwordValidator]"
@@ -163,7 +163,7 @@ const onSubmit = () => {
                 <VCol cols="12">
                   <VTextField
                     v-model="passwordConfirmation"
-                    label="Confirm password"
+                    label="Bekräfta lösenord"
                     :type="isConfirmPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                     :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
@@ -177,7 +177,7 @@ const onSubmit = () => {
                     block
                     type="submit"
                   >
-                  Send
+                  Skicka
                   <VProgressCircular
                       v-if="load"
                       indeterminate
@@ -196,7 +196,7 @@ const onSubmit = () => {
                       icon="tabler-chevron-left"
                       class="flip-in-rtl"
                     />
-                    <span>Back to login</span>
+                    <span>Tillbaka till inloggning</span>
                   </RouterLink>
                 </VCol>
               </VRow>

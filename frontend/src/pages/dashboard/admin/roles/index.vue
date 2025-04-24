@@ -40,7 +40,7 @@ const paginationData = computed(() => {
   const firstIndex = roles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = roles.value.length + (currentPage.value - 1) * rowPerPage.value
   
-  return `Showing ${ firstIndex } to ${ lastIndex } of ${ totalRoles.value } roles`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalRoles.value } roller`
 })
 
 // 👉 watching current page
@@ -122,7 +122,7 @@ const downloadCSV = async () => {
 
   rolesStores.getRoles.forEach(element => {
     let data = {
-      ROLE: element.name
+      ROLL: element.name
     }
         
     dataArray.push(data)
@@ -177,7 +177,7 @@ const downloadCSV = async () => {
               class="d-flex align-center"
               style="width: 135px;"
             >
-              <span class="text-no-wrap me-3">View:</span>
+              <span class="text-no-wrap me-3">Utsikt:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -204,7 +204,7 @@ const downloadCSV = async () => {
                 prepend-icon="tabler-file-export"
                 @click="downloadCSV"
               >
-                Export
+                Exportera
               </VBtn>
             </div>
 
@@ -213,7 +213,7 @@ const downloadCSV = async () => {
               <div class="search rol-list-filter">
                 <VTextField
                   v-model="searchQuery"
-                  placeholder="Search role"
+                  placeholder="Sök roll"
                   density="compact"
                   clearable
                 />
@@ -233,7 +233,7 @@ const downloadCSV = async () => {
                 </th>
 
                 <th scope="col">
-                  ROLE
+                  ROLL
                 </th>
 
                 <th scope="col" v-if="$can('view', 'roles') || $can('edit','roles') || $can('delete','roles')"> </th>
@@ -277,7 +277,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>View</VListItemTitle>
+                        <VListItemTitle>Utsikt</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'roles')"
@@ -285,7 +285,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
-                        <VListItemTitle>Edit</VListItemTitle>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','roles')"
@@ -293,7 +293,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Delete</VListItemTitle>
+                        <VListItemTitle>Radera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -308,7 +308,7 @@ const downloadCSV = async () => {
                   colspan="3"
                   class="text-center text-body-1"
                 >
-                  There are no roles
+                  Det finns inga roller
                 </td>
               </tr>
             </tfoot>
