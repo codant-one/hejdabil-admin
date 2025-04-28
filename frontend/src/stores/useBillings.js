@@ -157,5 +157,17 @@ export const useBillingsStores = defineStore('billings', {
                     this.setLoading(false)
                 })  
         },
+        reminder(id) {
+            this.setLoading(true)
+
+            return Billings.reminder(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        }
     }
 })

@@ -304,6 +304,31 @@ class Billing extends Model
         return $billing;
     }
 
+    public static function createReminder($billing) {
+
+        $billing = self::find($billing->id);
+        $date = Carbon::now()->timestamp;
+        $types = Invoice::all();
+        $details = json_decode($billing->detail, true);
+        $notes = json_decode($billing->notes, true);
+
+        foreach($details as $row)
+            $invoices[] = $row;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+
+        $billing->reminder = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->update();
+
+        self::sendMail($billing);
+
+        return $billing;
+    }
+
     public static function deleteBilling($id) {
         self::deleteBillings(array($id));
     }
@@ -315,25 +340,25 @@ class Billing extends Model
         }
     }
 
-    public static function sendMail($billing) {
+    public static function sendMail($billing) { //para recordatorios
       
         $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
         $data = [
             'user' => $billing->client->fullname,
-            'text' => 'Vi hoppas att detta meddelande får dig att må bra.<br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
+            'text' =>  'Vi hoppas att detta meddelande är till hjälp. <br> Vi skulle vilja informera dig om att följande faktura har förfallit på grund av utebliven betalning inom den fastställda tidsfristen:',
             'billing' => $billing,
-            'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+            'text_info' => 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.',
             'buttonText' => 'Nedladdningar',
-            'pdfFile' => asset('storage/'.$billing->file)
+            'pdfFile' => asset('storage/'.$billing->reminder)
         ];
 
         $clientEmail = $billing->client->email;
-        $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
+        $subject = 'Din faktura #'. $billing->invoice_id . ' har löpt ut';
             
         try {
             \Mail::send(
-                'emails.invoices.notifications'
+                'emails.invoices.reminder'
                 , $data
                 , function ($message) use ($clientEmail, $subject) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));

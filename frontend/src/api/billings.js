@@ -37,6 +37,10 @@ class Billings {
     credit(id) {
         return axios.get(`/billings/credit/${id}`)
     }
+
+    reminder(id) {
+        return axios.get(`/billings/reminder/${id}`)
+    }
     
 }
 

@@ -327,6 +327,37 @@ class BillingController extends Controller
         }
     }
 
+    public function reminder($id)
+    {
+        try {
+
+            $billing = Billing::find($id);
+        
+            if (!$billing)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fakturan hittades inte'
+                ], 404);
+            
+            $billing = Billing::createReminder($billing);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'billing' => $billing
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function sendMails(Request $request, $id)
     {
         try {

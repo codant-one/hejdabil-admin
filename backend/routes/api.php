@@ -107,6 +107,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::post('/sendMails/{id}', [BillingController::class, 'sendMails']);
         Route::get('/data/all', [BillingController::class, 'all']);
         Route::get('/credit/{id}', [BillingController::class, 'credit']);
+        Route::get('/reminder/{id}', [BillingController::class, 'reminder']);
     });
 
     //Suppliers
@@ -117,6 +118,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
 });
 
 //Public Endpoints
+Route::get('reminder', [TestingController::class , 'reminder'])->name('reminder');
 Route::get('emails', [TestingController::class , 'emails'])->name('emails');
 Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 

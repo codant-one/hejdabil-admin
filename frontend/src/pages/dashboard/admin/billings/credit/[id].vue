@@ -68,7 +68,6 @@ const credit = async () => {
             emitter.emit('toast', data)
         })
         .catch((err) => {
-            console.log('aqui', err)
             advisor.value.show = true
             advisor.value.type = 'error'
             advisor.value.message = Object.values(err.message).flat().join('<br>')

@@ -80,4 +80,51 @@ class TestingController extends Controller
         );
     }
 
+    public function reminder() {
+
+        $user = User::find(1);
+
+        $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
+
+        $info = [
+            'subject' => 'Begäran om ändring av lösenord',
+            'buttonLink' =>  $url ?? null,
+            'email' => 'emails.auth.forgot_pass_confirmation'
+        ]; 
+        
+        $buttonLink = $url;
+        $title = 'testing';
+        $text =  'Vi hoppas att detta meddelande är till hjälp. <br> Vi skulle vilja informera dig om att följande faktura har förfallit på grund av utebliven betalning inom den fastställda tidsfristen:';
+        $buttonText = 'Nedladdningar';
+        $user = $user->name . ' ' . $user->last_name;
+        $invoice= 1;
+        $billing = Billing::with(['client', 'supplier.user'])->find(33);
+        $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
+        $pdfFile = 'pdfFile';
+
+        // $data = [
+        //     'title' => $info['title'] ?? null,
+        //     'user' => $user->name . ' ' . $user->last_name,
+        //     'email' => $user->email,
+        //     'password' => Str::random(10),
+        //     'text' => $info['text'] ?? null,
+        //     'buttonLink' =>  $info['buttonLink'] ?? null,
+        //     'buttonText' =>  $info['buttonText'] ?? null
+        // ];
+
+        return view('emails.invoices.reminder', 
+            compact(
+                'invoice',
+                'billing',
+                'buttonLink',
+                'buttonText',
+                'title',
+                'text',
+                'text_info',
+                'user',
+                'pdfFile'
+            )
+        );
+    }
+
 }

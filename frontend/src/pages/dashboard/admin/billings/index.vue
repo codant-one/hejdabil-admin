@@ -21,6 +21,7 @@ const totalBillings = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmStateDialogVisible = ref(false)
 const isConfirmSendMailVisible = ref(false)
+const isConfirmSendMailReminder = ref(false)
 const emailDefault = ref(true)
 const selectedTags = ref([])
 const existingTags = ref([])
@@ -227,6 +228,55 @@ const printInvoice = async(billing) => {
 
 const duplicate = (billing) => {
   router.push({ name : 'dashboard-admin-billings-duplicate-id', params: { id: billing.id } })
+}
+
+const reminder = async () => {
+  isRequestOngoing.value = true
+  isConfirmSendMailReminder.value = false
+
+  billingsStores.reminder(Number(selectedBilling.value.id))
+    .then((res) => {
+        isRequestOngoing.value = false
+        selectedBilling.value = {}
+
+        advisor.value = {
+          type: res.data.success ? 'success' : 'error',
+          message: res.data.success ? 'Påminnelse skickad framgångsrikt' : res.data.message,
+          show: true
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false
+          }
+        }, 3000)
+
+    })
+    .catch((err) => {
+
+      advisor.value = {
+        type: 'error',
+        message: err.message,
+        show: true
+      }
+
+      setTimeout(() => {
+        advisor.value = {
+          type: '',
+          message: '',
+          show: false
+        }
+      }, 3000)
+    
+        isRequestOngoing.value = false
+    })
+}
+
+const sendReminder = billingData => {
+  isConfirmSendMailReminder.value = true
+  selectedBilling.value = { ...billingData }
 }
 
 const credit = (billing) => {
@@ -519,7 +569,7 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
                 <th scope="col"> <span :class="textColor"> KUND </span> </th>
                 <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
-                <th scope="col"> <span :class="textColor"> TOTAL </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> TOTAL </span> </th>
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> UTGÅNGSDAG </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> BETALAD </span> </th>
@@ -546,7 +596,7 @@ const downloadCSV = async () => {
                     {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
-                <td> {{ formatNumber(billing.total) ?? '0.00' }} kr</td>
+                <td class="text-end"> {{ formatNumber(billing.total) ?? '0.00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
                 <td class="text-center">    
@@ -630,6 +680,14 @@ const downloadCSV = async () => {
                           <VIcon icon="mdi-content-copy" />
                         </template>
                         <VListItemTitle>Duplicera</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('edit', 'billing') && billing.state_id === 8"
+                         @click="sendReminder(billing)">
+                        <template #prepend>
+                          <VIcon icon="mdi-email-fast" />
+                        </template>
+                        <VListItemTitle>Påminnelse</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'billing')"
@@ -740,6 +798,35 @@ const downloadCSV = async () => {
               Avbryt
           </VBtn>
           <VBtn @click="sendMails">
+              Skicka
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="isConfirmSendMailReminder"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmSendMailReminder = !isConfirmSendMailReminder" />
+
+      <!-- Dialog Content -->
+      <VCard title="Skicka påminnelse via e-post">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Vill du skicka ett påminnelsemeddelande för faktura <strong>#{{ selectedBilling.invoice_id }}</strong>?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmSendMailReminder = false">
+              Avbryt
+          </VBtn>
+          <VBtn @click="reminder">
               Skicka
           </VBtn>
         </VCardText>

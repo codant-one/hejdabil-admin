@@ -11,8 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            //
+        Schema::table('billings', function (Blueprint $table) {
+            $table->string('reminder')->nullable()->after('file');
         });
     }
 
@@ -21,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            //
+        Schema::table('billings', function (Blueprint $table) {
+            $table->dropColumn('reminder');
         });
     }
 };
