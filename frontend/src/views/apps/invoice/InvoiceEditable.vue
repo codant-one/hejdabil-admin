@@ -103,7 +103,7 @@ const invoice = ref({
 
 const extractDaysFromNetTermSplit = term => {
     const parts = term.split(/\s+/);
-    const daysIndex = parts.findIndex(part => /days?/i.test(part));
+    const daysIndex = parts.findIndex(part => /dagar?/i.test(part));
     return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
 
@@ -340,7 +340,7 @@ const editNote = data => {
                 </div>
                 <!-- 👉 Invoice Id -->
                 <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
-                    <span class="me-2 text-start w-35 text-h6">
+                    <span class="me-2 text-start w-40 text-h6">
                          Faktura nr:
                     </span>
                     <span>
@@ -354,7 +354,7 @@ const editNote = data => {
                     </span>
                 </h6>
                 <div class="d-flex align-center justify-sm-start mb-1 text-right" v-if="client">
-                    <span class="me-2 text-start w-35">Kund nr:</span>
+                    <span class="me-2 text-start w-40">Kund nr:</span>
                     <span>
                         <VTextField
                             v-model="client.order_id"
@@ -367,7 +367,7 @@ const editNote = data => {
                 </div>
                 <!-- 👉 Issue Date -->
                 <div class="d-flex align-center justify-sm-start mb-1 text-right">
-                    <span class="me-2 text-start w-35">
+                    <span class="me-2 text-start w-40">
                         Fakturadatum:
                     </span>
 
@@ -395,7 +395,7 @@ const editNote = data => {
 
                 <!-- 👉 Due Date -->
                 <div class="d-flex align-center justify-sm-start mb-0">
-                    <span class="me-2 text-start w-35">
+                    <span class="me-2 text-start w-40">
                         Förfallodag:
                     </span>
 
@@ -419,7 +419,7 @@ const editNote = data => {
 
                 <!-- 👉 Days -->
                 <div class="d-flex align-center justify-sm-start mb-0 mt-2">
-                    <span class="me-2 text-start w-35">
+                    <span class="me-2 text-start w-40">
                         Betalningsvillkor:
                     </span>
 
@@ -427,7 +427,7 @@ const editNote = data => {
                         <VTextField
                             v-model="invoice.days"
                             type="number"
-                            label="Days"
+                            label="Dagar"
                             :disabled="props.isCredit"
                             :min="0"
                         />
@@ -471,10 +471,10 @@ const editNote = data => {
             </div>
         </VCardText>
 
-        <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 px-0">
+        <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 p-0">
             <div class="my-sm-4">
                 <h6 class="text-h6 font-weight-medium" v-if="props.role !== 'Supplier'">
-                    Suppliers
+                    Leverantörer
                 </h6>
                 <VAutocomplete
                     v-if="props.role !== 'Supplier'"
@@ -483,20 +483,20 @@ const editNote = data => {
                     :item-title="item => item.full_name"
                     :item-value="item => item.id"
                     :disabled="props.isCredit"
-                    placeholder="Suppliers"
+                    placeholder="Leverantörer"
                     class="mb-3"
                     style="width: 400px"
                     @update:modelValue="selectSupplier"
                     clearable
                 />
-                <h6 class="text-h6 font-weight-medium"> Clients </h6>
+                <h6 class="text-h6 font-weight-medium"> Kunder </h6>
                 <VAutocomplete
                     v-model="invoice.client_id"
                     :items="clients"
                     :item-title="item => item.fullname"
                     :item-value="item => item.id"
                     :disabled="props.isCredit"
-                    placeholder="Clients"
+                    placeholder="Kunder"
                     class="mb-3"
                     style="width: 400px"
                     :rules="[requiredValidator]"
@@ -509,27 +509,7 @@ const editNote = data => {
         <VDivider />
 
         <!-- 👉 Add purchased products -->
-        <VCardText class="add-products-form px-0">
-
-            <VTable class="invoice-preview-table border mt-5" style="border-radius: 8px !important">
-            
-        
-
-            <tbody>
-              <tr v-for="(row, rowIndex) in invoice.details" :key="'row-' + rowIndex">
-                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
-                  <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
-                  <span v-if="column.id === 1"> 
-                    <span v-for="(value, index) in notes[rowIndex]" :key="index">
-                      <span class="d-flex flex-column"> 
-                        {{value}}
-                      </span>
-                    </span> 
-                  </span>         
-                </td>
-              </tr>
-            </tbody>
-          </VTable>
+        <VCardText class="add-products-form pt-0 px-0">
 
             <draggable
                 class="my-4"
@@ -556,7 +536,7 @@ const editNote = data => {
             </draggable>
             <div class="mt-4">
                 <VBtn @click="addItem">
-                    Add item
+                    Lägg till objekt
                 </VBtn>
             </div>
         </VCardText>
@@ -578,13 +558,13 @@ const editNote = data => {
                             </td>
                         </tr>
                         <tr>
-                            <td class="pe-16"> Tax: </td>
+                            <td class="pe-16"> Moms: </td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
                                     <VSelect
                                         v-model="selectedTax"
                                         :items="taxOptions"
-                                        label="Tax"
+                                        label="Moms"
                                         append-icon="tabler-percentage"
                                         @update:modelValue="handleTaxChange"
                                         style="width: 150px;"
@@ -595,7 +575,7 @@ const editNote = data => {
                                         v-model.number="invoice.tax"
                                         class="mt-2"
                                         type="number"
-                                        label="Customized Tax"
+                                        label="Customized Moms"
                                         :min="0"
                                         :step="0.01"
                                         suffix="%"
@@ -630,7 +610,7 @@ const editNote = data => {
             <VRow>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
-                        Address
+                        Adress
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0">
                         Abrahamsbergsvägen 47 <br>

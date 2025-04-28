@@ -32,10 +32,7 @@ class InvoiceRequest extends FormRequest
                 'required',
                 'exists:App\Models\Type,id'
             ],
-            'name_en' => [
-                'required'
-            ],
-            'name_se' => [
+            'name' => [
                 'required'
             ]
         ];
@@ -50,8 +47,7 @@ class InvoiceRequest extends FormRequest
             'type_id.required' => 'Typen är obligatorisk.',
             'type_id.integer' => 'Typformatet måste vara integer.',
             'type_id.exists' => 'Den angivna typen finns inte.',
-            'name_en.required' => 'Namnet på engelska är obligatoriskt.',
-            'name_se.required' => 'Namnet på svenska är obligatoriskt.'
+            'name.required' => 'namnet är obligatoriskt'
         ];
     }
 

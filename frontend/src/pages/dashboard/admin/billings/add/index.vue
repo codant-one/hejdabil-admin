@@ -168,7 +168,7 @@ const onSubmit = () => {
       billingsStores.addBilling(formData)
           .then((res) => {
               let data = {
-                  message: 'Invoice created successfully',
+                  message: 'Fakturan skapades framgångsrikt',
                   error: false
               }
               
@@ -272,7 +272,7 @@ const onSubmit = () => {
               class="mb-2"
               type="submit"
             >
-                Generate
+              Generera
             </VBtn>
 
             <!-- 👉 Preview -->

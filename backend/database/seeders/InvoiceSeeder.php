@@ -19,37 +19,29 @@ class InvoiceSeeder extends Seeder
         $invoices = [ 
             [
                 'type_id' => 1,
-                'name_en' => 'Product / Service',
-                'name_se' => 'Produkt / tjänst',
-                'description_en' => 'Description of the product or service',
-                'description_se' => 'Beskrivning av produkten eller tjänsten',
+                'name' => 'Produkt / tjänst',
+                'description' => 'Beskrivning av produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
                 'type_id' => 2,
-                'name_en' => 'Quantity',
-                'name_se' => 'Antal',
-                'description_en' => 'Quantity of the product or service',
-                'description_se' => 'Kvantitet av produkten eller tjänsten',
+                'name' => 'Antal',
+                'description' => 'Kvantitet av produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
                 'type_id' => 3,
-                'name_en' => 'Unit Price',
-                'name_se' => 'À-pris',
-                'description_en' => 'Unit price of the product or service',
-                'description_se' => 'Enhetspris för produkten eller tjänsten',
+                'name' => 'À-pris',
+                'description' => 'Enhetspris för produkten eller tjänsten',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
                 'type_id' => 3,
-                'name_en' => 'Amount',
-                'name_se' => 'Belopp',
-                'description_en' => 'Accumulated price amount per product or service',
-                'description_se' => 'Ackumulerat prisbelopp per produkt eller tjänst',
+                'name' => 'Belopp',
+                'description' => 'Ackumulerat prisbelopp per produkt eller tjänst',
                 'created_at' => now(),
                 'updated_at' => now()
             ]

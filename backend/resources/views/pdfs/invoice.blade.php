@@ -175,7 +175,7 @@
                                             $billing->state_id === 9 ? 
                                             'KREDIT FAKTURA' : 
                                             ( 
-                                                $billing->payment_terms === '0 days net' ?
+                                                $billing->payment_terms === '0 dagar netto' ?
                                                 'KONTANT FAKTURA' :
                                                 'FAKTURA'
                                             )
@@ -262,7 +262,7 @@
                                             padding-left: 10px !important;
                                             text-align: start !important;
                                             height: 40px !important;"> 
-                                            {{ $type->name_en }}
+                                            {{ $type->name }}
                                         </td>
                                     @endforeach
                                 </tr>

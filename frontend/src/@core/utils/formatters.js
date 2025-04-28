@@ -49,9 +49,21 @@ export const prefixWithPlus = value => value > 0 ? `+${value}` : value
 export const formatNumber = (value) => {
   if (!value) return value;
 
-  const numberString = value.toString();
+  const numberString = value.toString().replace(/,/g, '');
   const [integer, decimal] = numberString.split('.');
-  const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
-  return `${formattedInteger}${decimal ? `.${decimal}` : '.00'}`;
+  const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  return `${formattedInteger}${decimal ? '.' + decimal : '.00'}`;
+}
+
+export const formatNumberInteger = (value) => {
+  if (!value) return value;
+
+  const numberString = value.toString().replace(/,/g, '');
+  const [integer] = numberString.split('.');
+
+  const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  return formattedInteger;
 }

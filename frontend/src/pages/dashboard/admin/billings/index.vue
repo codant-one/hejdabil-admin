@@ -3,11 +3,12 @@
 import { useBillingsStores } from '@/stores/useBillings'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import router from '@/router'
 import Toaster from "@/components/common/Toaster.vue";
 
 const billingsStores = useBillingsStores()
+const emitter = inject("emitter")
 
 const clients = ref([])
 const suppliers = ref([])
@@ -40,8 +41,9 @@ const totalExpired = ref(0)
 const pendingTax = ref(0)
 const paidTax = ref(0)
 const expiredTax = ref(0)
-const bgColor = ref(null)
-const textColor = ref(null)
+const bgColor = ref('bg-light-secondary')
+const textColor = ref('text-secondary')
+const classTab = ref('border-bottom-secondary')
 
 const advisor = ref({
   type: '',
@@ -54,7 +56,7 @@ const paginationData = computed(() => {
   const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Mostrando ${ firstIndex } hasta ${ lastIndex } de ${ totalBillings.value } registros`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBillings.value } register`
 })
 
 // 👉 watching current page
@@ -65,7 +67,19 @@ watchEffect(() => {
 
 watchEffect(fetchData)
 
-async function fetchData() {
+async function fetchData(cleanFilters = false) {
+
+  if(cleanFilters === true) {
+    searchQuery.value = ''
+    rowPerPage.value = 10
+    currentPage.value = 1
+    supplier_id.value = null
+    client_id.value = null
+    state_id.value = null
+    bgColor.value = 'bg-light-secondary'
+    textColor.value = 'text-secondary'
+    classTab.value = 'border-bottom-secondary'
+  }
 
   let data = {
     search: searchQuery.value,
@@ -100,11 +114,22 @@ async function fetchData() {
 
   clients.value = billingsStores.clients
 
+  billings.value.forEach(billing => {
+    billing.checked = false;
+  });
+
   if(role.value !== 'Supplier') {
     suppliers.value = billingsStores.suppliers
   }
 
   isRequestOngoing.value = false
+
+}
+
+watchEffect(registerEvents)
+
+function registerEvents() {
+    emitter.on('cleanFilters', fetchData)
 }
 
 const addInvoice = () => {
@@ -131,15 +156,23 @@ const updateStateId = newStateId => {
     case 4: 
       bgColor.value = 'bg-light-warning'
       textColor.value = 'text-warning'
+      classTab.value = 'border-bottom-warning'
     break
     case 7:
       bgColor.value = 'bg-light-info'
       textColor.value = 'text-info'
+      classTab.value = 'border-bottom-info'
     break
     case 8:
       bgColor.value = 'bg-light-error'
       textColor.value = 'text-error'
-    break   
+      classTab.value = 'border-bottom-error'
+    break  
+    case null:
+      bgColor.value = 'bg-light-secondary'
+      textColor.value = 'text-secondary'
+      classTab.value = 'border-bottom-secondary'
+    break  
   }
 }
 
@@ -150,7 +183,7 @@ const updateState = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice updated!' : res.data.message,
+    message: res.data.success ? 'Fakturan uppdaterad!' : res.data.message,
     show: true
   }
 
@@ -240,7 +273,7 @@ const sendMails = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Invoice sent!' : res.data.message,
+    message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
     show: true
   }
 
@@ -261,6 +294,24 @@ const sendMails = async () => {
   return true
 }
 
+const resolveStatus = billing => {
+  if (billing.state_id === 4)
+    return {
+        text: billing.state.name,
+        color: 'warning',
+    }
+  if (billing.state_id === 7)
+    return {
+        text: billing.state.name,
+        color: 'info',
+    }
+  if (billing.state_id !== 4 && billing.state_id !== 7)
+    return {
+        text: billing.state.name,
+        color: 'error',
+    }
+}
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
@@ -274,14 +325,14 @@ const downloadCSV = async () => {
   billingsStores.getBillings.forEach(element => {
 
     let data = {
-      INVOICE_ID: element.invoice_id,
+      FAKTURANS_ID: element.invoice_id,
       STATUS: element.state.name,
-      CLIENT: element.client.fullname,
-      CLIENT_EMAIL: element.client.email,
-      SUPPLIER: element.supplier.user.name + ' '+ element.supplier.user.last_name,
-      SUPPLIER_EMAIL: element.supplier.user.email,
-      INVOICE_DATE: element.invoice_date,
-      DUE_DATE: element.due_date,
+      KUND: element.client.fullname,
+      KUNDENS_E_POST: element.client.email,
+      LEVERANTÖR: element.supplier ? (element.supplier.user.name + ' '+ element.supplier.user.last_name) : '',
+      LEVERANTÖRENS_E_POST: element.supplier ? element.supplier.user.email : '',
+      FAKTURADATUM: element.invoice_date,
+      UTGÅNGSDAG: element.due_date,
       TOTAL: element.total + ' kr'
     }
           
@@ -328,21 +379,22 @@ const downloadCSV = async () => {
           {{ advisor.message }}
         </VAlert>
 
-        <VCard title="Filters">
+        <VCard title="Filter">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="8" class="border-e d-flex justify-content-between align-center">
+              <VCol cols="12" md="9" class="border-e d-flex justify-content-between align-center">
 
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
                   <div
-                    v-for="{ title, state_id, tax, value, icon, color } in [
-                      { title: 'Pending', state_id: 4, tax: formatNumber(pendingTax ?? '0.00') + ' kr', value: formatNumber(totalPending ?? '0.00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
-                      { title: 'Paid', state_id: 7, tax: formatNumber(paidTax ?? '0.00') + ' kr', value: formatNumber(totalPaid ?? '0.00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
-                      { title: 'Expired', state_id: 8, tax: formatNumber(expiredTax ?? '0.00') + ' kr', value: formatNumber(totalExpired ?? '0.00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
+                    v-for="{ title, stateId, tax, value, icon, color } in [
+                      { title: 'Alla', stateId: null, tax: formatNumberInteger(totalTax ?? '0.00') + ' kr', value: formatNumberInteger(totalSum ?? '0.00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
+                      { title: 'Obetalda', stateId: 4, tax: formatNumberInteger(pendingTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPending ?? '0.00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
+                      { title: 'Betalda', stateId: 7, tax: formatNumberInteger(paidTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPaid ?? '0.00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
+                      { title: 'Utgått', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0.00') + ' kr', value: formatNumberInteger(totalExpired ?? '0.00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
                     ]"
                     :key="title"
                   >
-                    <div class="d-flex cursor-pointer" @click="updateStateId(state_id)">
+                    <div class="d-flex cursor-pointer" @click="updateStateId(stateId)" :class="stateId === state_id ? classTab : ''">
                       <VAvatar
                         variant="tonal"
                         :color="color"
@@ -378,13 +430,13 @@ const downloadCSV = async () => {
                   </div>
                 </div>
               </VCol>
-              <VCol cols="12" md="4" class="d-flex flex-column">
+              <VCol cols="12" md="3" class="d-flex flex-column">
                 <VSelect
                   v-model="client_id"
                   :items="clients"
                   :item-title="item => item.fullname"
                   :item-value="item => item.id"
-                  placeholder="Clients"
+                  placeholder="Kunder"
                   class="mb-2"
                   autocomplete="off"
                   clearable
@@ -393,7 +445,7 @@ const downloadCSV = async () => {
                 <VSelect
                   v-if="role !== 'Supplier'"
                   v-model="supplier_id"
-                  placeholder="Suppliers"
+                  placeholder="Leverantörer"
                   :items="suppliers"
                   :item-title="item => item.full_name"
                   :item-value="item => item.id"
@@ -453,7 +505,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','billing') && clients.length > 0"
                 prepend-icon="tabler-plus"
                 @click="addInvoice">
-                  Add invoice
+                  Lägg till faktura
               </VBtn>
             </div>
           </VCardText>
@@ -464,14 +516,15 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead :class="bgColor">
               <tr>
-                <th scope="col"> <span :class="textColor"> # INVOICE </span> </th>
-                <th scope="col"> <span :class="textColor"> CLIENT </span> </th>
-                <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> SUPPLIER </span> </th>
+                <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
+                <th scope="col"> <span :class="textColor"> KUND </span> </th>
+                <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
                 <th scope="col"> <span :class="textColor"> TOTAL </span> </th>
-                <th scope="col"> <span :class="textColor"> INVOICE DATE </span> </th>
-                <th scope="col"> <span :class="textColor"> DUE DATE </span> </th>
+                <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
+                <th scope="col"> <span :class="textColor"> UTGÅNGSDAG </span> </th>
+                <th class="text-center" scope="col"> <span :class="textColor"> BETALAD </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> STATUS </span> </th>
-                <th class="text-center" scope="col"> <span :class="textColor"> INVOICE SENT </span> </th>                
+                <th class="text-center" scope="col"> <span :class="textColor"> FAKTURA SKICKAD </span> </th>                
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
             </thead>
@@ -496,6 +549,22 @@ const downloadCSV = async () => {
                 <td> {{ formatNumber(billing.total) ?? '0.00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
+                <td class="text-center">    
+                  <!-- 
+                      4: pendiente  => warning
+                      7: pagado => info
+                      8: expirado => error
+                      9: credito => error
+                    -->          
+                  <VCheckbox
+                    color="info"
+                    class="w-100 text-center d-flex justify-content-center"
+                    :disabled="billing.state_id === 7 || billing.state_id === 9"
+                    v-model="billing.checked"
+                    :value="(billing.state_id === 7 || billing.state_id === 9) ? false : true"
+                    @click.prevent="updateBilling(billing)"
+                  />
+                </td>
                 <td class="text-center">
                   <span v-if="billing.client.deleted_at !== null">
                     <VChip color="error">
@@ -510,29 +579,10 @@ const downloadCSV = async () => {
                       9: credito => error
                     -->
                     <VChip
-                        v-if="billing.state_id !== 4"
-                        label
-                        :color="billing.state_id === 7 ? 'info' : 'error'"
-                      >
-                        {{ billing.state.name }}
-                    </VChip>
-                    <VCheckbox
-                      v-else
-                      :label="billing.state.name"
-                      color="warning"
-                      class="w-100 text-center d-flex justify-content-center"
-                      true-icon="tabler-check"
-                      @click.prevent="updateBilling(billing)"
-                    >
-                    <template #label>
-                      <VChip
-                        label
-                        color="warning"
-                      >
-                        {{ billing.state.name }}
-                      </VChip>
-                    </template>
-                    </VCheckbox>
+                      v-bind="resolveStatus(billing)"
+                      density="default"
+                      label
+                    />
                   </template>
                 </td>
                 <td class="text-center"> 
@@ -630,8 +680,8 @@ const downloadCSV = async () => {
             </span>
 
             <span class="text-sm text-disabled">
-              <strong class="me-5">NETO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
-              <strong class="me-5">TAX: {{ formatNumber(totalTax ?? 0) }} kr</strong>
+              <strong class="me-5">NETTO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
+              <strong class="me-5">MOMS: {{ formatNumber(totalTax ?? 0) }} kr</strong>
               <strong>TOTAL: {{ formatNumber(totalSum ?? 0) }} kr</strong>
             </span>
 
@@ -687,10 +737,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmSendMailVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="sendMails">
-              Send
+              Skicka
           </VBtn>
         </VCardText>
       </VCard>
@@ -706,10 +756,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Update status">
+      <VCard title="Uppdatera status">
         <VDivider class="mt-4"/>
         <VCardText>
-          Are you sure you want to update the invoice status <strong>#{{ selectedBilling.invoice_id }}</strong> to paid?
+          Är du säker på att du vill uppdatera fakturans status <strong>#{{ selectedBilling.invoice_id }}</strong> till betalda?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -717,10 +767,10 @@ const downloadCSV = async () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmStateDialogVisible = false">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="updateState">
-              Accept
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>
@@ -729,6 +779,36 @@ const downloadCSV = async () => {
 </template>
 
 <style scope>
+
+  .border-bottom-secondary {
+    border-bottom: 2px solid #2E0684;
+    padding-bottom: 10px;
+  }
+
+  .border-bottom-warning {
+    border-bottom: 2px solid #FFC549;
+    padding-bottom: 10px;
+  }
+
+  .border-bottom-info {
+    border-bottom: 2px solid #28C76F;
+    padding-bottom: 10px;
+  }
+
+  .border-bottom-error {
+    border-bottom: 2px solid #EA5455;
+    padding-bottom: 10px;
+  }
+
+  .v-input--disabled svg rect {
+    fill: #28C76F !important;
+  }
+
+  .v-input--disabled {
+    pointer-events: visible !important;
+    cursor: no-drop !important;
+  }
+
   .search {
     width: 100%;
   }

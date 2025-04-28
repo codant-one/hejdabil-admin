@@ -20,10 +20,8 @@ class Invoice extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('name_en', 'LIKE', '%' . $search . '%')
-              ->orWhere('name_se', 'LIKE', '%' . $search . '%')
-              ->orWhere('description_en', 'LIKE', '%' . $search . '%')
-              ->orWhere('description_se', 'LIKE', '%' . $search . '%');
+        $query->where('name', 'LIKE', '%' . $search . '%')
+              ->orWhere('description', 'LIKE', '%' . $search . '%');
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -57,10 +55,8 @@ class Invoice extends Model
 
         $invoice = self::create([
             'type_id' => $request->type_id,
-            'name_en' => $request->name_en,
-            'name_se' => $request->name_se,
-            'description_en' => $request->description_en === 'null' ? null : $request->description_en,
-            'description_se' => $request->description_se === 'null' ? null : $request->description_se
+            'name' => $request->name,
+            'description' => $request->description === 'null' ? null : $request->description
         ]);
         
         return $invoice;
@@ -70,10 +66,8 @@ class Invoice extends Model
 
         $invoice->update([
             'type_id' => $request->type_id,
-            'name_en' => $request->name_en,
-            'name_se' => $request->name_se,
-            'description_en' => $request->description_en === 'null' ? null : $request->description_en,
-            'description_se' => $request->description_se === 'null' ? null : $request->description_se
+            'name' => $request->name,
+            'description' => $request->description === 'null' ? null : $request->description
         ]);
 
         return $invoice;

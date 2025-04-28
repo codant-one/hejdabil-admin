@@ -41,7 +41,7 @@ const selectedInvoice = ref({})
 
 const extractDaysFromNetTermSplit = term => {
     const parts = term.split(/\s+/);
-    const daysIndex = parts.findIndex(part => /days?/i.test(part));
+    const daysIndex = parts.findIndex(part => /dagar?/i.test(part));
     return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
 
@@ -221,7 +221,7 @@ const onSubmit = () => {
         billingsStores.addBilling(formData)
             .then((res) => {
                 let data = {
-                    message: 'Invoice duplicated successfully',
+                    message: 'Fakturan duplicerad framgångsrikt',
                     error: false
                 }
                 
@@ -327,7 +327,7 @@ const onSubmit = () => {
               class="mb-2"
               type="submit"
             >
-                Duplicate
+                Duplicera
             </VBtn>
 
             <!-- 👉 Preview -->

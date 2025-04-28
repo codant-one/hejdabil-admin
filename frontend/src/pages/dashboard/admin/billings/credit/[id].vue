@@ -58,7 +58,7 @@ const credit = async () => {
     billingsStores.credit(Number(route.params.id))
         .then((res) => {
             let data = {
-                message: 'Successful credit',
+                message: 'Framgångsrik kredit',
                 error: false
             }
             
@@ -113,7 +113,7 @@ const credit = async () => {
     <VRow v-if="invoice">
       <VCol
         cols="12"
-        md="10"
+        md="9"
       >
         <VCard class="pa-10" id="invoice-detail">
           <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
@@ -138,34 +138,34 @@ const credit = async () => {
                 </div>
               </div>
               <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-0">
-                <span class="me-2 text-start w-35 text-h6">
+                <span class="me-2 text-start w-50 text-h6">
                    Faktura nr:
                 </span>
                 <span class="text-h6">{{ invoice.invoice_id }}</span>
                 
               </h6>
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Kund nr:</span>
+                <span class="me-2 text-start w-50">Kund nr:</span>
                  {{ invoice.client.order_id }}
               </p>
               <!-- 👉 Issue Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Fakturadatum: </span>
+                <span class="me-2 text-start w-50">Fakturadatum: </span>
                 <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <!-- 👉 Due Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Förfallodag: </span>
+                <span class="me-2 text-start w-50">Förfallodag: </span>
                 <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-35">Betalningsvillkor: </span>
-                <span>0 days net</span>
+                <span class="me-2 text-start w-50">Betalningsvillkor: </span>
+                <span>0 dagar netto</span>
               </p>
               <p class="d-flex align-center justify-sm-start mb-0 text-right" v-if="invoice.reference !== null">
-                <span class="me-2 text-start w-35">Vår referens:</span> {{ invoice.reference ?? '' }}
+                <span class="me-2 text-start w-50">Vår referens:</span> {{ invoice.reference ?? '' }}
               </p>    
               <p class="mt-5 mb-0 text-xs">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
             </div>
@@ -197,7 +197,7 @@ const credit = async () => {
                 <template v-for="(invoice, index) in types" :key="invoice.id">
                     <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(types.length - 1)) }%;`">
                         <span class="text-base font-weight-bold">
-                        {{ invoice.name_en }}
+                        {{ invoice.name }}
                         </span>
                     </td>
                 </template>
@@ -235,7 +235,7 @@ const credit = async () => {
                           Netto:
                         </p>
                         <p class="mb-0">
-                            Tax:
+                          Moms:
                         </p>
                         <p class="mb-0">
                           Total:
@@ -262,7 +262,7 @@ const credit = async () => {
             <VRow class="mt-3">
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
-                      Address
+                      Adress
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier">
                     Abrahamsbergsvägen 47 <br>
@@ -327,7 +327,7 @@ const credit = async () => {
 
       <VCol
         cols="12"
-        md="2"
+        md="3"
         class="d-print-none"
       >
         <VCard>
@@ -338,7 +338,7 @@ const credit = async () => {
               class="mb-2"
               @click="credit"
             >
-              Generate
+              Generera
             </VBtn>
 
             <VBtn

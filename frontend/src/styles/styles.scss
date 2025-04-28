@@ -104,3 +104,7 @@ body {
 .v-table > .v-table__wrapper > table > tbody > tr > td, .v-table > .v-table__wrapper > table > tbody > tr > th, .v-table > .v-table__wrapper > table > thead > tr > td, .v-table > .v-table__wrapper > table > thead > tr > th, .v-table > .v-table__wrapper > table > tfoot > tr > td, .v-table > .v-table__wrapper > table > tfoot > tr > th {
   padding: 0 8px !important;
 }
+
+.v-table > .v-table__wrapper > table > thead > tr > th {
+  font-weight: 700;
+}

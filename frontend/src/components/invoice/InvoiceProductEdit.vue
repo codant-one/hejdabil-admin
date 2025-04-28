@@ -93,14 +93,14 @@ const removeProduct = () => {
 
 <template>
   <!-- eslint-disable vue/no-mutating-props -->
-  <div class="add-products-header mb-4 d-none d-md-flex ps-5 pe-16">
+  <div class="add-products-header d-none d-md-flex px-5">
     <table class="w-100">
       <thead>
           <tr>
               <template v-for="(invoice, index) in props.invoices" :key="invoice.id">
                 <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(props.invoices.length - 1)) }%;`">
                     <span class="text-base font-weight-bold">
-                      {{ invoice.name_en }}
+                      {{ invoice.name }}
                     </span>
                 </td>
               </template>
@@ -125,8 +125,8 @@ const removeProduct = () => {
                   <VTextarea
                     v-if="invoice.type_id === 1"
                     v-model="localProductData[invoice.id]"
-                    :label="invoice.description_en"
-                    :placeholder="invoice.description_en"
+                    :label="invoice.description"
+                    :placeholder="invoice.description"
                     rows="3"
                     :readonly="localProductData.disabled"
                     :rules="[requiredValidator]"
@@ -135,8 +135,8 @@ const removeProduct = () => {
                     v-if="invoice.type_id === 2"
                     v-model="localProductData[invoice.id]"
                     type="number"
-                    :label="invoice.name_en"
-                    :placeholder="invoice.name_en"
+                    :label="invoice.name"
+                    :placeholder="invoice.name"
                     :min="1"
                     :readonly="localProductData.disabled"
                     :rules="[requiredValidator]"
@@ -146,14 +146,14 @@ const removeProduct = () => {
                     v-if="invoice.type_id === 3"
                     v-model="localProductData[invoice.id]"
                     type="number"
-                    :label="invoice.name_en"
-                    :placeholder="invoice.name_en"
+                    :label="invoice.name"
+                    :placeholder="invoice.name"
                     :min="0"
                     :step="0.01"
                     :readonly="localProductData.disabled"
                     @input="$emit('editProduct')"
                     :rules="[requiredValidator]"
-                    :disabled="invoice.name_en === 'Amount'"
+                    :disabled="invoice.name === 'Belopp'"
                   />
                 </td>
               </template>
@@ -172,8 +172,8 @@ const removeProduct = () => {
                       <span class="drag-handle px-3 d-flex align-center">☰</span>
                       <VTextarea 
                         v-model="element.note" 
-                        label="Note" 
-                        placeholder="Note" 
+                        label="Notera" 
+                        placeholder="Notera" 
                         rows="2" 
                         class="mt-1"
                         @input="$emit('editNote', {id: props.id, notes: notes})"/>
@@ -190,7 +190,7 @@ const removeProduct = () => {
             <tr>
               <td :colspan="props.invoices.length" class="pt-1">
                 <VBtn @click="addNote">
-                    Add note
+                    Lägg till anmärkning
                 </VBtn>
               </td>
             </tr>

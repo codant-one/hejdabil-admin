@@ -7,12 +7,24 @@ import {
   isNavLinkActive,
 } from '@layouts/utils'
 
+const emitter = inject("emitter")
 const props = defineProps({
   item: {
     type: null,
     required: true,
   },
 })
+
+const route = useRoute()
+
+const handleClick = (item) => {
+  const currentRoute = route.name;
+  const targetRoute = item.to;
+   
+  if (currentRoute === targetRoute) {
+    emitter.emit('cleanFilters', true)
+  }
+}
 
 const { width: windowWidth } = useWindowSize()
 const { isVerticalNavMini, dynamicI18nProps } = useLayouts()
@@ -29,6 +41,7 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
       :is="item.to ? 'RouterLink' : 'a'"
       v-bind="getComputedNavLinkToProp(item)"
       :class="{ 'router-link-active router-link-exact-active': isNavLinkActive(item, $router) }"
+      @click.prevent="handleClick(item)"
     >
       <Component
         :is="config.app.iconRenderer || 'div'"

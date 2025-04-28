@@ -14,10 +14,8 @@ return new class extends Migration
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('type_id')->nullable();
-            $table->string('name_en');
-            $table->string('name_se');
-            $table->string('description_en')->nullable();
-            $table->string('description_se')->nullable();
+            $table->string('name');
+            $table->string('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
             

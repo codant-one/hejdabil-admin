@@ -18,20 +18,17 @@ class TypeSeeder extends Seeder
     {
         $types = [ 
             [
-                'name_en' => 'Text',
-                'name_se' => 'Text',
+                'name' => 'Text',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
-                'name_en' => 'Number',
-                'name_se' => 'Nummer',
+                'name' => 'Nummer',
                 'created_at' => now(),
                 'updated_at' => now()
             ],
             [
-                'name_en' => 'Decimal',
-                'name_se' => 'Decimal',
+                'name' => 'Decimal',
                 'created_at' => now(),
                 'updated_at' => now()
             ]

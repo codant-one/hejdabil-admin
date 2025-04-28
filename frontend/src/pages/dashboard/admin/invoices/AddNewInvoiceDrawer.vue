@@ -28,10 +28,8 @@ const refForm = ref()
 
 const id = ref(0)
 const type_id = ref(null)
-const name_en = ref('')
-const name_se = ref('')
-const description_en = ref('')
-const description_se = ref('')
+const name = ref('')
+const description = ref('')
 const isEdit = ref(false)
 
 const getTitle = computed(() => {
@@ -46,10 +44,8 @@ watchEffect(async() => {
       isEdit.value = true
       id.value = props.invoice.id
       type_id.value = props.invoice.type_id
-      name_en.value = props.invoice.name_en
-      name_se.value = props.invoice.name_se
-      description_en.value = props.invoice.description_en
-      description_se.value = props.invoice.description_se
+      name.value = props.invoice.name
+      description.value = props.invoice.description
     }
   }
 })
@@ -61,10 +57,8 @@ const closeNavigationDrawer = () => {
     refForm.value?.reset()
     refForm.value?.resetValidation()
 
-    name_en.value = null
-    name_se.value = null
-    description_en.value = null
-    description_se.value = null
+    name.value = null
+    description.value = null
     
     isEdit.value = false 
     id.value = 0
@@ -77,10 +71,8 @@ const onSubmit = () => {
       let formData = new FormData()
 
       formData.append('type_id', type_id.value)
-      formData.append('name_en', '---')
-      formData.append('name_se', name_se.value)
-      formData.append('description_en', description_en.value)
-      formData.append('description_se', '---')
+      formData.append('name', name.value)
+      formData.append('description', description.value)
 
       emit('invoiceData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
@@ -145,7 +137,7 @@ const handleDrawerModelValueUpdate = val => {
                   v-model="type_id"
                   placeholder="Typer"
                   :items="types"
-                  :item-title="item => item.name_se"
+                  :item-title="item => item.name"
                   :item-value="item => item.id"
                   autocomplete="off"
                   clearable
@@ -153,29 +145,16 @@ const handleDrawerModelValueUpdate = val => {
                   :menu-props="{ maxHeight: '300px' }"
                   :rules="[requiredValidator]"/>
             </VCol>
-            <!-- <VCol cols="12" md="6">
-                <VTextField
-                    v-model="name_en"
-                    label="English name"
-                    :rules="[requiredValidator]"
-                />
-            </VCol> -->
             <VCol cols="12" md="12">
                 <VTextField
-                    v-model="name_se"
+                    v-model="name"
                     label="Namn"
                     :rules="[requiredValidator]"
                 />
             </VCol>
-            <!-- <VCol cols="12" md="12">
-                <VTextarea
-                    v-model="description_en"
-                    label="English description"
-                />
-            </VCol> -->
             <VCol cols="12" md="12">
                 <VTextarea
-                    v-model="description_se"
+                    v-model="description"
                     label="Beskrivning"
                 />
             </VCol>

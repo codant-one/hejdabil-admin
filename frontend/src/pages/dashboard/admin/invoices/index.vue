@@ -7,6 +7,7 @@ import AddNewInvoiceDrawer from './AddNewInvoiceDrawer.vue'
 
 const invoicesStores = useInvoicesStores()
 const typesStores = useTypesStores()
+const emitter = inject("emitter")
 
 const types = ref([])
 const invoices = ref([])
@@ -43,13 +44,15 @@ watchEffect(() => {
         selectedInvoice.value = {}
 })
 
-onMounted(async () => {
-  
-})
-
 watchEffect(fetchData)
 
-async function fetchData() {
+async function fetchData(cleanFilters = false) {
+
+  if(cleanFilters === true) {
+    searchQuery.value = ''
+    rowPerPage.value = 10
+    currentPage.value = 1
+  }
 
   let data = {
     search: searchQuery.value,
@@ -70,6 +73,12 @@ async function fetchData() {
   totalInvoices.value = invoicesStores.invoicesTotalCount
 
   isRequestOngoing.value = false
+}
+
+watchEffect(registerEvents)
+
+function registerEvents() {
+    emitter.on('cleanFilters', fetchData)
 }
 
 const editInvoice = invoiceData => {
@@ -197,8 +206,8 @@ const downloadCSV = async () => {
 
     let data = {
       ID: element.id,
-      NAMN: element.name_se,
-      BESKRIVNING: element.description_se ?? ''
+      NAMN: element.name,
+      BESKRIVNING: element.description ?? ''
     }
           
     dataArray.push(data)
@@ -311,9 +320,9 @@ const downloadCSV = async () => {
                 style="height: 3rem;">
 
                 <td> {{ invoice.id }} </td>
-                <td class="text-wrap"> {{ invoice.name_se }} </td>
-                <td class="text-wrap"> {{ invoice.description_se }}</td>
-                <td class="text-wrap"> {{ invoice.type.name_se }}</td>
+                <td class="text-wrap"> {{ invoice.name }} </td>
+                <td class="text-wrap"> {{ invoice.description }}</td>
+                <td class="text-wrap"> {{ invoice.type.name }}</td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
                   <VMenu>
@@ -398,7 +407,7 @@ const downloadCSV = async () => {
       <VCard title="Ta bort faktura">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort fakturan <strong>{{ selectedInvoice.name_se }}</strong>?
+          Är du säker att du vill ta bort fakturan <strong>{{ selectedInvoice.name }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">

@@ -8,6 +8,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
 const suppliersStores = useSuppliersStores()
+const emitter = inject("emitter")
 
 const suppliers = ref([])
 const searchQuery = ref('')
@@ -48,7 +49,14 @@ watchEffect(() => {
 
 watchEffect(fetchData)
 
-async function fetchData() {
+async function fetchData(cleanFilters = false) {
+
+  if(cleanFilters === true) {
+    searchQuery.value = ''
+    rowPerPage.value = 10
+    currentPage.value = 1
+    state_id.value = null
+  }
 
   let data = {
     search: searchQuery.value,
@@ -68,6 +76,13 @@ async function fetchData() {
   totalSuppliers.value = suppliersStores.suppliersTotalCount
 
   isRequestOngoing.value = false
+
+}
+
+watchEffect(registerEvents)
+
+function registerEvents() {
+    emitter.on('cleanFilters', fetchData)
 }
 
 const resolveStatus = state_id => {

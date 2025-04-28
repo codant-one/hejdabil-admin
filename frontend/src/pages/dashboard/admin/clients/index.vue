@@ -11,6 +11,7 @@ import router from '@/router'
 
 const clientsStores = useClientsStores()
 const suppliersStores = useSuppliersStores()
+const emitter = inject("emitter")
 
 const suppliers = ref([])
 const clients = ref([])
@@ -57,7 +58,14 @@ onMounted(async () => {
 
 watchEffect(fetchData)
 
-async function fetchData() {
+async function fetchData(cleanFilters = false) {
+
+  if(cleanFilters === true) {
+    searchQuery.value = ''
+    rowPerPage.value = 10
+    currentPage.value = 1
+    supplier_id.value = null
+  }
 
   let data = {
     search: searchQuery.value,
@@ -86,6 +94,12 @@ async function fetchData() {
   }
 
   isRequestOngoing.value = false
+}
+
+watchEffect(registerEvents)
+
+function registerEvents() {
+    emitter.on('cleanFilters', fetchData)
 }
 
 const editClient = clientData => {
