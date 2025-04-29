@@ -108,6 +108,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::get('/data/all', [BillingController::class, 'all']);
         Route::get('/credit/{id}', [BillingController::class, 'credit']);
         Route::get('/reminder/{id}', [BillingController::class, 'reminder']);
+        Route::get('/info/all', [BillingController::class, 'info']);
     });
 
     //Suppliers
