@@ -41,7 +41,10 @@ class Billings {
     reminder(id) {
         return axios.get(`/billings/reminder/${id}`)
     }
-    
+
+    info(){
+        return axios.get(`/billings/info/all`)
+    }
 }
 
 const billings = new Billings();

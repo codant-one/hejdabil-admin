@@ -1,9 +1,8 @@
 <script setup>
 
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { useBillingsStores } from '@/stores/useBillings'
-import { formatNumber } from '@/@core/utils/formatters'
+import VuePdfEmbed from 'vue-pdf-embed'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -186,221 +185,10 @@ const download = async() => {
         cols="12"
         md="9"
       >
-        <VCard class="pa-10" id="invoice-detail">
-          <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
-            <div class="ma-sm-4 d-flex flex-column">
-              <div class="d-flex align-center mb-6">
-                <VNodeRenderer
-                    v-if="!invoice.supplier"
-                    :nodes="themeConfig.app.logoBlack"
-                    class="me-3"
-                />
-                <div v-else>
-                    <VImg
-                        v-if="invoice.supplier.logo" 
-                        width="150"
-                        :src="themeConfig.settings.urlStorage + invoice.supplier.logo"
-                    />
-                    <VNodeRenderer
-                        v-else
-                        :nodes="themeConfig.app.logoBlack"
-                        class="me-3"
-                    />
-                </div>
-              </div>
-              <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-0">
-                <span class="me-2 text-start w-50 text-h6">
-                   Faktura nr:
-                </span>
-                <span class="text-h6">{{ invoice.invoice_id }}</span>
-                
-              </h6>
-              <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-50">Kund nr:</span>
-                 {{ invoice.client.order_id }}
-              </p>
-              <!-- 👉 Issue Date -->
-              <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-50">Fakturadatum: </span>
-                <span>{{ new Date(`${invoice.invoice_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
-              </p>
-
-              <!-- 👉 Due Date -->
-              <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-50">Förfallodag: </span>
-                <span>{{ new Date(`${invoice.due_date}T00:00:00`).toLocaleDateString('en-GB') }}</span>
-              </p>
-
-              <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-50">Betalningsvillkor: </span>
-                <span>{{ invoice.payment_terms }}</span>
-              </p>
-              <p class="d-flex align-center justify-sm-start mb-0 text-right" v-if="invoice.reference !== null">
-                <span class="me-2 text-start w-50">Vår referens:</span> {{ invoice.reference ?? '' }}
-              </p>    
-              <p class="mt-5 mb-0 text-xs">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
-            </div>
-
-            <div class="ma-sm-4 text-right d-flex flex-column">
-              <h1 class="mb-0 text-center faktura">
-                {{ 
-                  invoice.state_id === 9 ? 
-                  'KREDIT FAKTURA' : 
-                  (
-                    invoice.payment_terms === '0 dagar netto' ?
-                    'KONTANT FAKTURA' :
-                    'FAKTURA' 
-                  )
-                }}
-              </h1>
-              <h3 class="mb-0 mt-2">
-                {{ invoice.client.fullname }}
-              </h3>
-              <p class="mb-0 mt-auto">
-                <span class="text-h6 font-weight-medium mb-6">
-                    Faktureringsadress
-                </span>
-                <span class="d-flex flex-column">
-                  <span>{{ invoice.client.address }}</span>
-                  <span>{{ invoice.client.postal_code }}</span>
-                  <span>{{ invoice.client.street }}</span>
-                </span>
-              </p>
-            </div>
-          </VCardText>
-
-          <!-- 👉 Table -->
-          <VTable class="invoice-preview-table border mt-5" style="border-radius: 8px !important">
-            <thead class="invoice-background">
-              <tr>
-                <template v-for="(invoice, index) in types" :key="invoice.id">
-                    <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(types.length - 1)) }%;`">
-                        <span class="text-base font-weight-bold">
-                        {{ invoice.name }}
-                        </span>
-                    </td>
-                </template>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
-                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
-                  <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">{{ column.value }} </span>                
-                  <span v-if="column.id === 1"> 
-                    <span v-for="(value, index) in notes[rowIndex]" :key="index">
-                      <span class="d-flex flex-column"> 
-                        {{value}}
-                      </span>
-                    </span> 
-                  </span>         
-                </td>
-              </tr>
-            </tbody>
-          </VTable>
-
-          <!-- Total -->
-          <VCardText class="d-flex flex-column print-column px-0" style="margin-top: auto !important;">
-            <div class="my-2">
-              <table class="d-flex justify-end align-end">
-                <tbody>
-                  <tr>
-                    <td class="text-end">
-                      <div class="me-5">
-                        <p class="mb-0">
-                          Netto:
-                        </p>
-                        <p class="mb-0">
-                            Moms:
-                        </p>
-                        <p class="mb-0">
-                          Total:
-                        </p>
-                      </div>
-                    </td>
-
-                    <td class="font-weight-medium text-high-emphasis text-end">
-                      <p class="mb-0">
-                        {{ formatNumber(invoice.subtotal) }} kr
-                      </p>
-                      <p class="mb-0">
-                        {{ formatNumber(invoice.tax) }} %
-                      </p>
-                      <p class="mb-0">
-                        {{ formatNumber(invoice.total) }} kr
-                      </p>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          <div class="px-0 border-divider">
-            <VRow class="mt-3">
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Adress
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier">
-                    Abrahamsbergsvägen 47 <br>
-                    16830 BROMMA <br>
-                    Hejdå Bil AB
-                  </span>
-                  <span v-else class="d-flex flex-column">
-                    <span class="text-footer">{{ invoice.supplier.address }}</span>
-                    <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
-                    <span class="text-footer">{{ invoice.supplier.street }}</span>
-                  </span>
-                  <span class="me-2 text-h6 mt-2">
-                      Bolagets säte
-                  </span>
-                  <span class="text-footer"> Stockholm, Sweden </span>
-                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.swish">
-                      Swish
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.swish"> {{ invoice.supplier?.swish }} </span>
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Org.nr.
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 559374-0268 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.organization_number }} </span>
-                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.vat">
-                      Momsreg.nr.
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> SE559374026801 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.vat }} </span>
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Webbplats
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> www.hejdabil.se </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.link }} </span>
-                  <span class="me-2 text-h6 mt-2">
-                      Företagets e-post
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> info@hejdabil.se </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.user.email }} </span>
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6" v-if="!invoice.supplier || invoice.supplier?.account_number">
-                      Kontonummer
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>
-                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.iban">
-                      Bankgiro
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 5886-4976 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.iban }} </span>
-              </VCol>
-            </VRow>
-          </div>
-          </VCardText>
+        <VCard class="p-0" id="invoice-detail">
+          <VuePdfEmbed :source="themeConfig.settings.urlStorage + invoice.file" class="d-flex justify-content-center w-auto"/>
         </VCard>
       </VCol>
-
       <VCol
         cols="12"
         md="3"
@@ -512,6 +300,11 @@ const download = async() => {
 </template>
 
 <style lang="scss">
+
+  .justify-content-center {
+    justify-content: center !important;
+  }
+
   .vertical-top {
     vertical-align: top;
   }

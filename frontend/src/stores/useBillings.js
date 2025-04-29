@@ -12,6 +12,8 @@ export const useBillingsStores = defineStore('billings', {
         totalSum: 0,
         totalTax: 0,
         totalNeto: 0,
+        sum: 0,
+        tax: 0,
         totalPending: 0,
         totalPaid: 0,
         totalExpired: 0,
@@ -41,6 +43,8 @@ export const useBillingsStores = defineStore('billings', {
                     this.totalSum = response.data.data.totalSum
                     this.totalTax = response.data.data.totalTax
                     this.totalNeto = response.data.data.totalNeto
+                    this.sum = response.data.data.sum
+                    this.tax = response.data.data.tax
                     this.totalPending = response.data.data.totalPending
                     this.totalPaid = response.data.data.totalPaid
                     this.totalExpired = response.data.data.totalExpired
@@ -168,6 +172,30 @@ export const useBillingsStores = defineStore('billings', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        info() {
+            this.setLoading(true)
+
+            return Billings.info()
+                .then((response) => {
+                    this.suppliers = response.data.data.suppliers
+                    this.clients = response.data.data.clients
+                    this.totalSum = response.data.data.totalSum
+                    this.totalTax = response.data.data.totalTax
+                    this.totalNeto = response.data.data.totalNeto
+                    this.sum = response.data.data.sum
+                    this.tax = response.data.data.tax
+                    this.totalPending = response.data.data.totalPending
+                    this.totalPaid = response.data.data.totalPaid
+                    this.totalExpired = response.data.data.totalExpired
+                    this.pendingTax = response.data.data.pendingTax
+                    this.paidTax = response.data.data.paidTax
+                    this.expiredTax = response.data.data.expiredTax
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
     }
 })

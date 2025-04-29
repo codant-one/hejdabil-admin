@@ -36,6 +36,8 @@ const role = ref(null)
 const totalSum = ref(0)
 const totalTax = ref(0)
 const totalNeto = ref(0)
+const sum = ref(0)
+const tax = ref(0)
 const totalPending = ref(0)
 const totalPaid = ref(0)
 const totalExpired = ref(0)
@@ -103,6 +105,8 @@ async function fetchData(cleanFilters = false) {
   totalSum.value = billingsStores.totalSum
   totalTax.value = billingsStores.totalTax
   totalNeto.value = billingsStores.totalNeto
+  sum.value = billingsStores.sum
+  tax.value = billingsStores.tax
   totalPending.value = billingsStores.totalPending
   totalPaid.value = billingsStores.totalPaid
   totalExpired.value = billingsStores.totalExpired
@@ -117,6 +121,7 @@ async function fetchData(cleanFilters = false) {
 
   billings.value.forEach(billing => {
     billing.checked = false;
+    billing.sent = false
   });
 
   if(role.value !== 'Supplier') {
@@ -437,7 +442,7 @@ const downloadCSV = async () => {
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
                   <div
                     v-for="{ title, stateId, tax, value, icon, color } in [
-                      { title: 'Alla', stateId: null, tax: formatNumberInteger(totalTax ?? '0.00') + ' kr', value: formatNumberInteger(totalSum ?? '0.00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
+                      { title: 'Alla', stateId: null, tax: formatNumberInteger(tax ?? '0.00') + ' kr', value: formatNumberInteger(sum ?? '0.00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
                       { title: 'Obetalda', stateId: 4, tax: formatNumberInteger(pendingTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPending ?? '0.00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
                       { title: 'Betalda', stateId: 7, tax: formatNumberInteger(paidTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPaid ?? '0.00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
                       { title: 'Utgått', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0.00') + ' kr', value: formatNumberInteger(totalExpired ?? '0.00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
@@ -573,7 +578,6 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> UTGÅNGSDAG </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> BETALAD </span> </th>
-                <th class="text-center" scope="col"> <span :class="textColor"> STATUS </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> FAKTURA SKICKAD </span> </th>                
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
@@ -607,41 +611,23 @@ const downloadCSV = async () => {
                       9: credito => error
                     -->          
                   <VCheckbox
+                    v-model="billing.checked"
                     color="info"
                     class="w-100 text-center d-flex justify-content-center"
                     :disabled="billing.state_id === 7 || billing.state_id === 9"
-                    v-model="billing.checked"
                     :value="(billing.state_id === 7 || billing.state_id === 9) ? false : true"
                     @click.prevent="updateBilling(billing)"
                   />
                 </td>
                 <td class="text-center">
-                  <span v-if="billing.client.deleted_at !== null">
-                    <VChip color="error">
-                      Klient borttagen
-                    </VChip>
-                  </span>
-                  <template v-else>
-                    <!-- 
-                      4: pendiente  => warning
-                      7: pagado => info
-                      8: expirado => error
-                      9: credito => error
-                    -->
-                    <VChip
-                      v-bind="resolveStatus(billing)"
-                      density="default"
-                      label
-                    />
-                  </template>
-                </td>
-                <td class="text-center"> 
-                  <VChip
-                    label
-                    :color="billing.is_sent === 0 ? 'error' : 'info'"
-                  >
-                    {{ billing.is_sent === 0 ? 'INTE SÄND' : 'SÄND' }}
-                  </VChip>
+                  <VCheckbox
+                    v-model="billing.sent"
+                    color="info"
+                    class="w-100 text-center d-flex justify-content-center"
+                    :disabled="billing.is_sent === 1"
+                    :value="(billing.is_sent === 1) ? false : true"
+                    @click.prevent="send(billing)"
+                  />
                 </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
