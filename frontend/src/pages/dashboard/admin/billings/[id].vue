@@ -186,7 +186,7 @@ const download = async() => {
         md="9"
       >
         <VCard class="p-0" id="invoice-detail">
-          <VuePdfEmbed :source="themeConfig.settings.urlStorage + invoice.file" class="d-flex justify-content-center w-auto"/>
+          <VuePdfEmbed :source="themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + invoice.file" class="d-flex justify-content-center w-auto"/>
         </VCard>
       </VCol>
       <VCol

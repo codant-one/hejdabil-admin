@@ -70,14 +70,12 @@ class Billing extends Model
 
         if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
             $query->where('supplier_id', Auth::user()->supplier->id);
+        } elseif ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
         }
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
-        }
-
-        if ($filters->get('supplier_id') !== null) {
-            $query->where('supplier_id', $filters->get('supplier_id'));
         }
 
         if ($filters->get('client_id') !== null) {
