@@ -88,8 +88,6 @@ onMounted(async () => {
   if(role.value !== 'Supplier') {
     suppliers.value = billingsStores.suppliers
   }
-  
-  fetchData()
 })
 
 watchEffect(fetchData)
