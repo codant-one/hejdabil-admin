@@ -71,6 +71,24 @@ watchEffect(() => {
 onMounted(async () => {
   state_id.value = billingsStores.getStateId ?? state_id.value
   updateStateId(state_id.value)
+
+  await billingsStores.info()
+
+  sum.value = billingsStores.sum
+  tax.value = billingsStores.tax
+  totalPending.value = billingsStores.totalPending
+  totalPaid.value = billingsStores.totalPaid
+  totalExpired.value = billingsStores.totalExpired
+  pendingTax.value = billingsStores.pendingTax
+  paidTax.value = billingsStores.paidTax
+  expiredTax.value = billingsStores.expiredTax
+
+  clients.value = billingsStores.clients
+
+  if(role.value !== 'Supplier') {
+    suppliers.value = billingsStores.suppliers
+  }
+  
   fetchData()
 })
 
@@ -111,28 +129,14 @@ async function fetchData(cleanFilters = false) {
   totalSum.value = billingsStores.totalSum
   totalTax.value = billingsStores.totalTax
   totalNeto.value = billingsStores.totalNeto
-  sum.value = billingsStores.sum
-  tax.value = billingsStores.tax
-  totalPending.value = billingsStores.totalPending
-  totalPaid.value = billingsStores.totalPaid
-  totalExpired.value = billingsStores.totalExpired
-  pendingTax.value = billingsStores.pendingTax
-  paidTax.value = billingsStores.paidTax
-  expiredTax.value = billingsStores.expiredTax
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
-
-  clients.value = billingsStores.clients
 
   billings.value.forEach(billing => {
     billing.checked = false;
     billing.sent = false
   });
-
-  if(role.value !== 'Supplier') {
-    suppliers.value = billingsStores.suppliers
-  }
 
   isRequestOngoing.value = false
 
@@ -400,21 +404,12 @@ const downloadCSV = async () => {
     <VRow>
       <VDialog
         v-model="isRequestOngoing"
-        width="300"
+        width="auto"
         persistent>
-          
-        <VCard
+        <VProgressCircular
+          indeterminate
           color="primary"
-          width="300">
-            
-          <VCardText class="pt-3">
-           Lastning
-            <VProgressLinear
-              indeterminate
-              color="white"
-              class="mb-0"/>
-          </VCardText>
-        </VCard>
+          class="mb-0"/>
       </VDialog>
 
       <VCol cols="12">
@@ -434,10 +429,10 @@ const downloadCSV = async () => {
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
                   <div
                     v-for="{ title, stateId, tax, value, icon, color } in [
-                      { title: 'Alla', stateId: null, tax: formatNumberInteger(tax ?? '0.00') + ' kr', value: formatNumberInteger(sum ?? '0.00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
-                      { title: 'Obetalda', stateId: 4, tax: formatNumberInteger(pendingTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPending ?? '0.00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
-                      { title: 'Betalda', stateId: 7, tax: formatNumberInteger(paidTax ?? '0.00') + ' kr', value: formatNumberInteger(totalPaid ?? '0.00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
-                      { title: 'Utgått', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0.00') + ' kr', value: formatNumberInteger(totalExpired ?? '0.00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
+                      { title: 'Alla', stateId: null, tax: formatNumberInteger(tax ?? '0,00') + ' kr', value: formatNumberInteger(sum ?? '0,00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
+                      { title: 'Obetalda', stateId: 4, tax: formatNumberInteger(pendingTax ?? '0,00') + ' kr', value: formatNumberInteger(totalPending ?? '0,00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
+                      { title: 'Betalda', stateId: 7, tax: formatNumberInteger(paidTax ?? '0,00') + ' kr', value: formatNumberInteger(totalPaid ?? '0,00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
+                      { title: 'Utgått', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0,00') + ' kr', value: formatNumberInteger(totalExpired ?? '0,00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
                     ]"
                     :key="title"
                   >
@@ -592,7 +587,7 @@ const downloadCSV = async () => {
                     {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
-                <td class="text-end"> {{ formatNumber(billing.total) ?? '0.00' }} kr</td>
+                <td class="text-end"> {{ formatNumber(billing.total) ?? '0,00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
                 <td class="text-center">    

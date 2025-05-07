@@ -364,7 +364,7 @@ const colors = (id) => {
                             </span>
                         </div>
                         <div>Ventas:
-                            <span v-if="sales >= 0">KR {{ formatNumber(sales) ?? '0.00' }}</span>
+                            <span v-if="sales >= 0">KR {{ formatNumber(sales) ?? '0,00' }}</span>
                             <span v-else>
                                 <VIcon
                                     size="20"

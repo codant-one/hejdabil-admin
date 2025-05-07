@@ -54,7 +54,7 @@ export const formatNumber = (value) => {
 
   const formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  return `${formattedInteger}${decimal ? '.' + decimal : '.00'}`;
+  return `${formattedInteger}${decimal ? ',' + decimal : ',00'}`;
 }
 
 export const formatNumberInteger = (value) => {

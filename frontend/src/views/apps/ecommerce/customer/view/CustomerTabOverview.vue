@@ -51,7 +51,7 @@ async function fetchData() {
               xxxxx
             </h4>
             <div>
-              <span class="text-primary text-h4 me-2">{{ formatNumber(balance) ?? '0.00' }} kr</span>
+              <span class="text-primary text-h4 me-2">{{ formatNumber(balance) ?? '0,00' }} kr</span>
               <span class="text-body-1">xxxx</span>
               <p class="mb-0 text-base text-disabled">
                 xxxxxx
@@ -86,7 +86,7 @@ async function fetchData() {
                 xxxx
               </VChip>
               <p class="mb-0 text-base text-disabled">
-                {{ formatNumber(props.customerData.sales) ?? '0.00' }} kr
+                {{ formatNumber(props.customerData.sales) ?? '0,00' }} kr
               </p>
             </div>
           </VCardText>

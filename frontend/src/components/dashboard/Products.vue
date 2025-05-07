@@ -23,7 +23,7 @@ const popularProducts = [
     avatarImg: headphone,
     title: 'Beats Studio 2',
     subtitle: 'SKU: FXZ-9485',
-    stats: '$99.00',
+    stats: '$99,00',
   },
   {
     avatarImg: appleWatch,

@@ -45,22 +45,12 @@ export const useBillingsStores = defineStore('billings', {
             
             return Billings.get(params)
                 .then((response) => {
-                    this.suppliers = response.data.data.suppliers
-                    this.clients = response.data.data.clients
                     this.billings = response.data.data.billings.data
                     this.last_page = response.data.data.billings.last_page
                     this.billingsTotalCount = response.data.data.billingsTotalCount
                     this.totalSum = response.data.data.totalSum
                     this.totalTax = response.data.data.totalTax
                     this.totalNeto = response.data.data.totalNeto
-                    this.sum = response.data.data.sum
-                    this.tax = response.data.data.tax
-                    this.totalPending = response.data.data.totalPending
-                    this.totalPaid = response.data.data.totalPaid
-                    this.totalExpired = response.data.data.totalExpired
-                    this.pendingTax = response.data.data.pendingTax
-                    this.paidTax = response.data.data.paidTax
-                    this.expiredTax = response.data.data.expiredTax
                 })
                 .catch(error => console.log(error))
                 .finally(() => {
@@ -190,9 +180,6 @@ export const useBillingsStores = defineStore('billings', {
                 .then((response) => {
                     this.suppliers = response.data.data.suppliers
                     this.clients = response.data.data.clients
-                    this.totalSum = response.data.data.totalSum
-                    this.totalTax = response.data.data.totalTax
-                    this.totalNeto = response.data.data.totalNeto
                     this.sum = response.data.data.sum
                     this.tax = response.data.data.tax
                     this.totalPending = response.data.data.totalPending

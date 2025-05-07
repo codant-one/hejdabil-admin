@@ -187,7 +187,7 @@ const onSubmit = () => {
                 <VIcon icon="tabler-currency-dollar" />
               </VAvatar>
               <div class="d-flex flex-column align-start">
-                <span class="text-body-1 font-weight-medium">{{ formatNumber(sales) ?? '0.00' }} kr</span>
+                <span class="text-body-1 font-weight-medium">{{ formatNumber(sales) ?? '0,00' }} kr</span>
                 <span class="text-body-2">Total försäljning</span>
               </div>
             </div>

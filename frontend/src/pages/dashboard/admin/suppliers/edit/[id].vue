@@ -153,21 +153,12 @@ const onSubmit = () => {
         <VRow>
             <VDialog
                 v-model="isRequestOngoing"
-                width="300"
+                width="auto"
                 persistent>
-                
-                <VCard
-                    color="primary"
-                    width="300">
-                    
-                    <VCardText class="pt-3">
-                       Lastning
-                        <VProgressLinear
-                        indeterminate
-                        color="white"
-                        class="mb-0"/>
-                    </VCardText>
-                </VCard>
+                <VProgressCircular
+                indeterminate
+                color="primary"
+                class="mb-0"/>
             </VDialog>
 
             <VCol cols="12" md="12">

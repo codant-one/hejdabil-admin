@@ -252,21 +252,12 @@ const downloadCSV = async () => {
     <v-row>
       <VDialog
         v-model="isRequestOngoing"
-        width="300"
+        width="auto"
         persistent>
-          
-        <VCard
+        <VProgressCircular
+          indeterminate
           color="primary"
-          width="300">
-            
-          <VCardText class="pt-3">
-           Lastning
-            <VProgressLinear
-              indeterminate
-              color="white"
-              class="mb-0"/>
-          </VCardText>
-        </VCard>
+          class="mb-0"/>
       </VDialog>
 
       <v-col cols="12">
@@ -509,12 +500,12 @@ const downloadCSV = async () => {
 
 <style scope>
     .search {
-        width: 100%;
+        width: 100% !important;
     }
 
     @media(min-width: 991px){
         .search {
-            width: 25rem;
+            width: 25rem !important;
         }
     }
 </style>

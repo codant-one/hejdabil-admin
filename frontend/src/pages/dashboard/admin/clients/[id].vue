@@ -89,21 +89,12 @@ const update = clientData => {
     <v-row>
         <VDialog
             v-model="isRequestOngoing"
-            width="300"
+            width="auto"
             persistent>
-                        
-            <VCard
+            <VProgressCircular
+                indeterminate
                 color="primary"
-                width="300">
-                            
-                <VCardText class="pt-3">
-                   Lastning
-                    <VProgressLinear
-                        indeterminate
-                        color="white"
-                        class="mb-0"/>
-                </VCardText>
-            </VCard>
+                class="mb-0"/>
         </VDialog>
 
         <v-col cols="12">
