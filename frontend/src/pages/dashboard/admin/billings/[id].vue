@@ -175,15 +175,18 @@ const download = async() => {
     <VRow v-if="invoice">
       <VCol
         cols="12"
-        md="9"
+        md="8"
       >
-        <VCard class="p-0" id="invoice-detail">
-          <VuePdfEmbed :source="themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + invoice.file" class="d-flex justify-content-center w-auto"/>
+        <VCard class="p-0 d-flex justify-content-center" id="invoice-detail">
+          <VuePdfEmbed
+            :source="themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + invoice.file" 
+            style="max-width: 600px; width: 100%; transform: scale(0.8); transform-origin: top center;"
+            class="d-flex justify-content-center w-auto"/>
         </VCard>
       </VCol>
       <VCol
         cols="12"
-        md="3"
+        md="4"
         class="d-print-none"
       >
         <VCard>
