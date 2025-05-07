@@ -19,16 +19,26 @@ export const useBillingsStores = defineStore('billings', {
         totalExpired: 0,
         pendingTax: 0,
         paidTax: 0,
-        expiredTax: 0
+        expiredTax: 0,
+        state_id: null
     }),
     getters:{
         getBillings(){
             return this.billings
+        },
+        getStateId(){
+            return this.state_id
         }
     },
     actions: {
-        setLoading(payload){
+        setLoading(payload) {
             this.loading = payload
+        },
+        setStateId(state_id) {
+            this.state_id = state_id
+        },
+        cleanData() {
+            this.state_id = null
         },
         fetchBillings(params) {
             this.setLoading(true)

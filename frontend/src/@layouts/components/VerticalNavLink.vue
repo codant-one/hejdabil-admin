@@ -2,12 +2,14 @@
 import { useLayouts } from '@layouts'
 import { config } from '@layouts/config'
 import { can } from '@layouts/plugins/casl'
+import { useBillingsStores } from '@/stores/useBillings'
 import {
   getComputedNavLinkToProp,
   isNavLinkActive,
 } from '@layouts/utils'
 
 const emitter = inject("emitter")
+const billingsStores = useBillingsStores()
 const props = defineProps({
   item: {
     type: null,
@@ -22,6 +24,7 @@ const handleClick = (item) => {
   const targetRoute = item.to;
    
   if (currentRoute === targetRoute) {
+    billingsStores.cleanData()
     emitter.emit('cleanFilters', true)
   }
 }

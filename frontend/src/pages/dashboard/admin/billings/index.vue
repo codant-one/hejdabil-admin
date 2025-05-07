@@ -68,6 +68,12 @@ watchEffect(() => {
     currentPage.value = totalPages.value
 })
 
+onMounted(async () => {
+  state_id.value = billingsStores.getStateId ?? state_id.value
+  updateStateId(state_id.value)
+  fetchData()
+})
+
 watchEffect(fetchData)
 
 async function fetchData(cleanFilters = false) {
@@ -135,7 +141,7 @@ async function fetchData(cleanFilters = false) {
 watchEffect(registerEvents)
 
 function registerEvents() {
-    emitter.on('cleanFilters', fetchData)
+  emitter.on('cleanFilters', fetchData)
 }
 
 const addInvoice = () => {
@@ -148,10 +154,12 @@ const updateBilling = billingData => {
 }
 
 const showBilling = billingData => {
+  billingsStores.setStateId(state_id.value)
   router.push({ name : 'dashboard-admin-billings-id', params: { id: billingData.id } })
 }
 
 const editBilling = billingData => {
+  billingsStores.setStateId(state_id.value)
   router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: billingData.id } })
 }
 
@@ -232,6 +240,7 @@ const printInvoice = async(billing) => {
 }
 
 const duplicate = (billing) => {
+  billingsStores.setStateId(state_id.value)
   router.push({ name : 'dashboard-admin-billings-duplicate-id', params: { id: billing.id } })
 }
 
@@ -285,6 +294,7 @@ const sendReminder = billingData => {
 }
 
 const credit = (billing) => {
+  billingsStores.setStateId(state_id.value)
   router.push({ name : 'dashboard-admin-billings-credit-id', params: { id: billing.id } })
 }
 
@@ -347,24 +357,6 @@ const sendMails = async () => {
   await fetchData()
   
   return true
-}
-
-const resolveStatus = billing => {
-  if (billing.state_id === 4)
-    return {
-        text: billing.state.name,
-        color: 'warning',
-    }
-  if (billing.state_id === 7)
-    return {
-        text: billing.state.name,
-        color: 'info',
-    }
-  if (billing.state_id !== 4 && billing.state_id !== 7)
-    return {
-        text: billing.state.name,
-        color: 'error',
-    }
 }
 
 const downloadCSV = async () => {
