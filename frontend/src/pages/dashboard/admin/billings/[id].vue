@@ -177,11 +177,11 @@ const download = async() => {
         cols="12"
         md="8"
       >
-        <VCard class="p-0 d-flex justify-content-center" id="invoice-detail">
+        <VCard class="p-0" id="invoice-detail">
           <VuePdfEmbed
             :source="themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + invoice.file" 
-            style="max-width: 600px; width: 100%; transform: scale(0.8); transform-origin: top center;"
-            class="d-flex justify-content-center w-auto"/>
+            style="max-width: 600px; width: 100%; transform: scale(0.8); transform-origin: top center; margin: auto;"
+            class="d-flex justify-content-center w-auto m-auto"/>
         </VCard>
       </VCol>
       <VCol
