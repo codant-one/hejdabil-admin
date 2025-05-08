@@ -267,7 +267,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','suppliers')"
                 prepend-icon="tabler-plus"
                 :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Skapa Kund
+                  Skapa leverantör
               </v-btn>
             </div>
           </v-card-text>
