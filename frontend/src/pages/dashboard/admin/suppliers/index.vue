@@ -267,7 +267,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','suppliers')"
                 prepend-icon="tabler-plus"
                 :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Skapa leverantör
+                  Skapa Kund
               </v-btn>
             </div>
           </v-card-text>
@@ -282,7 +282,7 @@ const downloadCSV = async () => {
                 <th scope="col"> FÖRETAG </th>
                 <th scope="col"> KONTAKT </th>
                 <th scope="col"> STATUS </th>
-                <th scope="col"> # REGISTRERADE KUNDER </th>
+                <th scope="col"> # KUNDER </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
               </tr>
             </thead>
@@ -370,7 +370,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>Utsikt</VListItemTitle>
+                        <VListItemTitle>Visa</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
@@ -386,7 +386,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Radera</VListItemTitle>
+                        <VListItemTitle>Avaktivera</VListItemTitle>
                       </VListItem>
                       <VListItem
                         v-if="$can('delete','suppliers') && supplier.state_id === 1"

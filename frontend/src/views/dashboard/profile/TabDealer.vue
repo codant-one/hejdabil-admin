@@ -349,7 +349,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VFileInput 
                                     v-model="filename"
-                                    label="Logo"
+                                    label="Logotyp"
                                     class="mb-2"
                                     accept="image/png, image/jpeg, image/bmp, image/webp"
                                     prepend-icon="tabler-camera"
@@ -398,7 +398,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.link"
                                     :rules="[urlValidator]"
-                                    label="Sida"
+                                    label="Hemsida"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">

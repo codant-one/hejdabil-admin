@@ -230,7 +230,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="link"
                                                     :rules="[urlValidator]"
-                                                    label="Sida"
+                                                    label="Hemsida"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="12">

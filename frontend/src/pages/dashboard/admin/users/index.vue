@@ -392,7 +392,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>Utsikt</VListItemTitle>
+                        <VListItemTitle>Visa</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users')"

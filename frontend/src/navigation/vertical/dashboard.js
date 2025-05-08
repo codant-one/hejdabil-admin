@@ -5,7 +5,7 @@ export default [
         subject: 'dashboard'
     },
     {
-        title: 'Hem', 
+        title: 'Översikt', 
         icon: { icon: 'tabler-home' },
         to: 'dashboard-panel', 
         action: 'view' , 

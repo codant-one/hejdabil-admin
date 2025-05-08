@@ -592,7 +592,7 @@ const editNote = data => {
                 <table class="w-100">
                     <tbody>
                         <tr>
-                            <td class="pe-16">Total: </td>
+                            <td class="pe-16">Summa: </td>
                             <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
                                 <h6 class="text-sm">
                                     {{ formatNumber(total) }} kr

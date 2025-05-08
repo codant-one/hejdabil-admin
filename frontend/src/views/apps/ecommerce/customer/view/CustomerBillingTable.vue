@@ -255,11 +255,11 @@ const sendMails = async () => {
                 <tr>
                   <th scope="col"> # FAKTURA </th>
                   <th scope="col"> KUND </th>
-                  <th scope="col"> TOTAL </th>
+                  <th scope="col"> Summa </th>
                   <th scope="col"> FAKTURADATUM </th>
-                  <th scope="col"> UTGÅNGSDAG </th>
-                  <th class="text-center" scope="col"> BETALAD </th>
-                  <th class="text-center" scope="col"> FAKTURA SKICKAD </th>                
+                  <th scope="col"> FÖRFALLER </th>
+                  <th class="text-center" scope="col"> BETALD </th>
+                  <th class="text-center" scope="col"> SKICKAD </th>                
                   <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
                 </tr>
             </thead>
@@ -367,7 +367,7 @@ const sendMails = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Kredit</VListItemTitle>
+                        <VListItemTitle>Kreditera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>

@@ -99,7 +99,7 @@ const copy = (account) => {
                   </VListItemTitle>
                   <VListItemTitle>
                     <h6 class="text-base font-weight-semibold">
-                      Sida:
+                      Hemsida:
                       <span class="text-body-2">
                           {{ props.customerData.link }}
                       </span>

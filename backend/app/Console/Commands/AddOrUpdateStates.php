@@ -38,7 +38,7 @@ class AddOrUpdateStates extends Command
      */
     public function handle()
     {
-        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Väntande', 'Borttagen', 'Avvisad', 'Betalad', 'Utgått', 'Kredit'];
+        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Väntande', 'Borttagen', 'Avvisad', 'Betalad', 'Förfallna', 'Kredit'];
 
         foreach($states as $state){
             State::updateOrCreate([

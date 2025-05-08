@@ -41,7 +41,7 @@ const userData = ref(null)
 const role = ref(null)
 
 const getTitle = computed(() => {
-  return isEdit.value ? 'Uppdatera klient': 'Lägg till klient'
+  return isEdit.value ? 'Uppdatera klient': 'Lägg till kund'
 })
 
 watchEffect(async() => {

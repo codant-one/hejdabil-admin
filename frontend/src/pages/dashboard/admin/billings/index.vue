@@ -59,7 +59,7 @@ const paginationData = computed(() => {
   const firstIndex = billings.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = billings.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBillings.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBillings.value } fakturor`
 })
 
 // 👉 watching current page
@@ -381,8 +381,8 @@ const downloadCSV = async () => {
       LEVERANTÖR: element.supplier ? (element.supplier.user.name + ' '+ element.supplier.user.last_name) : '',
       LEVERANTÖRENS_E_POST: element.supplier ? element.supplier.user.email : '',
       FAKTURADATUM: element.invoice_date,
-      UTGÅNGSDAG: element.due_date,
-      TOTAL: element.total + ' kr'
+      FÖRFALLER: element.due_date,
+      Summa: element.total + ' kr'
     }
           
     dataArray.push(data)
@@ -430,7 +430,7 @@ const downloadCSV = async () => {
                       { title: 'Alla', stateId: null, tax: formatNumberInteger(tax ?? '0,00') + ' kr', value: formatNumberInteger(sum ?? '0,00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
                       { title: 'Obetalda', stateId: 4, tax: formatNumberInteger(pendingTax ?? '0,00') + ' kr', value: formatNumberInteger(totalPending ?? '0,00') + ' kr', icon: 'mdi-invoice-text-clock', color: 'warning' },
                       { title: 'Betalda', stateId: 7, tax: formatNumberInteger(paidTax ?? '0,00') + ' kr', value: formatNumberInteger(totalPaid ?? '0,00') + ' kr', icon: 'mdi-invoice-text-check', color: 'info' },
-                      { title: 'Utgått', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0,00') + ' kr', value: formatNumberInteger(totalExpired ?? '0,00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
+                      { title: 'Förfallna', stateId: 8, tax: formatNumberInteger(expiredTax ?? '0,00') + ' kr', value: formatNumberInteger(totalExpired ?? '0,00') + ' kr', icon: 'mdi-invoice-text-remove', color: 'error' },
                     ]"
                     :key="title"
                   >
@@ -545,7 +545,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','billing') && clients.length > 0"
                 prepend-icon="tabler-plus"
                 @click="addInvoice">
-                  Lägg till faktura
+                  Ny faktura
               </VBtn>
             </div>
           </VCardText>
@@ -559,11 +559,11 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
                 <th scope="col"> <span :class="textColor"> KUND </span> </th>
                 <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> TOTAL </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> Summa </span> </th>
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
-                <th scope="col"> <span :class="textColor"> UTGÅNGSDAG </span> </th>
-                <th class="text-center" scope="col"> <span :class="textColor"> BETALAD </span> </th>
-                <th class="text-center" scope="col"> <span :class="textColor"> FAKTURA SKICKAD </span> </th>                
+                <th scope="col"> <span :class="textColor"> FÖRFALLER </span> </th>
+                <th class="text-center" scope="col"> <span :class="textColor"> BETALD </span> </th>
+                <th class="text-center" scope="col"> <span :class="textColor"> SKICKAD </span> </th>                
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
             </thead>
@@ -682,7 +682,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Kredit</VListItemTitle>
+                        <VListItemTitle>Kreditera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -711,7 +711,7 @@ const downloadCSV = async () => {
             <span class="text-sm text-disabled">
               <strong class="me-5">NETTO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
               <strong class="me-5">MOMS: {{ formatNumber(totalTax ?? 0) }} kr</strong>
-              <strong>TOTAL: {{ formatNumber(totalSum ?? 0) }} kr</strong>
+              <strong>Summa: {{ formatNumber(totalSum ?? 0) }} kr</strong>
             </span>
 
             <VPagination

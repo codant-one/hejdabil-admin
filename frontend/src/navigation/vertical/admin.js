@@ -1,6 +1,6 @@
 export default [
   { 
-    title: 'FÖRVALTNING',
+    title: 'ADMINISTRATION',
     icon: { icon:'tabler-home-cog' },
     children:[
       { 

@@ -167,7 +167,7 @@ const downloadCSV = async () => {
               class="d-flex align-center"
               style="width: 135px;"
             >
-              <span class="text-no-wrap me-3">Utsikt:</span>
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -267,7 +267,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
-                        <VListItemTitle>Utsikt</VListItemTitle>
+                        <VListItemTitle>Visa</VListItemTitle>
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'roles')"

@@ -323,7 +323,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','clients')"
                 prepend-icon="tabler-plus"
                 @click="isAddNewClientDrawerVisible = true">
-                  Skapa kund
+                  Ny kund
               </v-btn>
             </div>
           </v-card-text>

@@ -230,7 +230,7 @@ const onSubmit = () => {
             </VForm>
           </VCardText>
         </VCard>
-        <VCard title="Enable" class="mt-5">
+        <VCard title="Authenticator" class="mt-5">
           <VCardText>
             <VTable class="text-no-wrap rounded border">
               <thead>

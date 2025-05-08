@@ -207,7 +207,7 @@ const download = async() => {
               class="mb-2"
               @click="download"
             >
-              Nedladdningar
+              Ladda ner som PDF
             </VBtn>
 
             <VBtn
