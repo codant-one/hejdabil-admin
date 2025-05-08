@@ -93,7 +93,6 @@ onMounted(async () => {
 watchEffect(fetchData)
 
 async function fetchData(cleanFilters = false) {
-
   if(cleanFilters === true) {
     searchQuery.value = ''
     rowPerPage.value = 10
@@ -114,7 +113,7 @@ async function fetchData(cleanFilters = false) {
     page: currentPage.value,
     supplier_id: supplier_id.value,
     client_id: client_id.value,
-    state_id: state_id.value
+    state_id: billingsStores.getStateId ?? state_id.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
