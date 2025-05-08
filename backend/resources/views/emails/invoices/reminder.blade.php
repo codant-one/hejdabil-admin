@@ -24,7 +24,7 @@
                             <strong>Fakturadatum:</strong> {!! $billing->invoice_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Förfallodag:</strong> {!! $billing->due_date !!}
+                            <strong>Förfallodatum:</strong> {!! $billing->due_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
                             <strong>Summa att betala:</strong> {!! formatCurrency($billing->total) !!} kr
@@ -34,7 +34,7 @@
                         </p>
                         <br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Företagets namn:</strong> {!! $billing->supplier->company !!}
+                            <strong>Företagsnamn:</strong> {!! $billing->supplier->company !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
                             <strong>Org.nr.</strong> {!! $billing->supplier->organization_number !!}

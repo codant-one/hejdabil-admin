@@ -212,7 +212,7 @@
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td width="30%">Förfallodag:</td>
+                                            <td width="30%">Förfallodatum:</td>
                                             <td>
                                                 <span>{{ \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') }}</span>
                                             </td>

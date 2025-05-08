@@ -67,7 +67,7 @@ const dialogModelValueUpdate = val => {
             >
               <VTextField
                 v-model="billingAddress.companyName"
-                label="Företagets namn"
+                label="Företagsnamn"
               />
             </VCol>
 

@@ -396,7 +396,7 @@ const editNote = data => {
                 <!-- 👉 Due Date -->
                 <div class="d-flex align-center justify-sm-start mb-0">
                     <span class="me-2 text-start w-40">
-                        Förfallodag:
+                        Förfallodatum:
                     </span>
 
                     <span style="min-inline-size: 10.5rem;">
@@ -536,7 +536,7 @@ const editNote = data => {
             </draggable>
             <div class="mt-4">
                 <VBtn @click="addItem">
-                    Lägg till objekt
+                    Ny produktrad
                 </VBtn>
             </div>
         </VCardText>

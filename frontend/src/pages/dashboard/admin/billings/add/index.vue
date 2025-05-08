@@ -264,7 +264,7 @@ const onSubmit = () => {
               class="mb-2"
               type="submit"
             >
-              Generera
+              Skapa faktura
             </VBtn>
 
             <!-- 👉 Preview -->

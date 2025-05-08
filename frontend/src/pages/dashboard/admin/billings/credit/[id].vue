@@ -147,7 +147,7 @@ const credit = async () => {
 
               <!-- 👉 Due Date -->
               <p class="d-flex align-center justify-sm-start mb-0 text-right">
-                <span class="me-2 text-start w-50">Förfallodag: </span>
+                <span class="me-2 text-start w-50">Förfallodatum: </span>
                 <span>{{ new Date().toLocaleDateString('en-GB') }}</span>
               </p>
 
@@ -329,7 +329,7 @@ const credit = async () => {
               class="mb-2"
               @click="credit"
             >
-              Generera
+              Skapa faktura
             </VBtn>
 
             <VBtn

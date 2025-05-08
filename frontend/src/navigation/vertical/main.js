@@ -17,7 +17,7 @@ export default [
       subject: 'clients'
     },
     { 
-      title: 'Fakturering', 
+      title: 'Fakturor', 
       icon: { icon: 'tabler-clipboard-list' },
       to: 'dashboard-admin-billings', 
       action: 'view', 

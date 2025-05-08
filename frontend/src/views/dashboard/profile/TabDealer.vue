@@ -342,7 +342,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="form.company"
-                                    label="Företagets namn"
+                                    label="Företagsnamn"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>

@@ -190,7 +190,7 @@ const removeProduct = () => {
             <tr>
               <td :colspan="props.invoices.length" class="pt-1">
                 <VBtn @click="addNote">
-                    Lägg till anmärkning
+                    Ny textrad
                 </VBtn>
               </td>
             </tr>
