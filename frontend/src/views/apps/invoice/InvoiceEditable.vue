@@ -48,10 +48,6 @@ const props = defineProps({
         type: Object,
         required: false
     },
-    notes: {
-        type: Object,
-        required: false
-    },
     isCreated: {
         type: Boolean,
         required: true
@@ -68,9 +64,7 @@ const emit = defineEmits([
     'delete',
     'setting',
     'data',
-    'edit',
-    'editNote',
-    'orderNote'
+    'edit'
 ])
 
 const route = useRoute()
@@ -84,7 +78,6 @@ const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref(0);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
-const notes = ref(props.notes ?? [])
 
 const invoice = ref({
     id: 1,
@@ -97,8 +90,7 @@ const invoice = ref({
     tax: 0,
     total: 0,
     reference: null,
-    details: props.data,
-    notes: []
+    details: structuredClone(toRaw(props.data))
 })
 
 const extractDaysFromNetTermSplit = term => {
@@ -112,7 +104,7 @@ watch(() => props.supplier, (val) => {
 })
 
 watch(props.data, val => {
-  invoice.value.details = val
+  invoice.value.details = { ...val }
 })
 
 watch(() => props.total, (val) => {
@@ -141,7 +133,9 @@ watch(() => invoice.value.invoice_date, () => {
     calculateDueDate()
 })
 
-watchEffect(fetchData)
+onMounted(() => {
+  fetchData()
+})
 
 async function fetchData() {
 
@@ -276,24 +270,29 @@ const addItem = () => {
     emit('push', item)
 }
 
+const addNote = () => {
+    emit('push', {note: ''})
+}
+
+const editNote = () => {
+    emit('edit')
+}
+
+const editx = () => {
+    emit('data', invoice.value)
+    emit('edit')
+}
+
+const removeNote = (id) => {
+  emit('delete', id)
+}
 
 const onStart = async (e) => {
   // console.log('oldIndex',e.oldIndex)
 }
 
 const onEnd = async (e) => {
-    const newNotes = notes.value.flatMap(group => 
-        group.filter(item => item.id === e.newIndex)
-    ).map(element => ({ ...element, id: e.oldIndex }));
-
-    const oldNotes = notes.value.flatMap(group => 
-        group.filter(item => item.id === e.oldIndex)
-    ).map(element => ({ ...element, id: e.newIndex }));
-
-    notes.value[e.oldIndex] = newNotes
-    notes.value[e.newIndex] = oldNotes
-
-    emit('orderNote', notes.value)
+    emit('data', invoice.value)
 }
 
 const removeProduct = id => {
@@ -306,11 +305,6 @@ const deleteProduct = id => {
 
 const inputData = () => {
     emit('data', invoice.value)
-}
-
-const editNote = data => {
-    notes.value[data.id] = data.notes
-    emit('editNote', data)
 }
 </script>
 
@@ -510,7 +504,6 @@ const editNote = data => {
 
         <!-- 👉 Add purchased products -->
         <VCardText class="add-products-form pt-0 px-0">
-
             <draggable
                 class="my-4"
                 v-model="invoice.details" 
@@ -520,23 +513,119 @@ const editNote = data => {
                 @end="onEnd">
                 <template #item="{ element, index }">
                     <div class="draggable-item py-2 px-2">
-                        <InvoiceProductEdit
+                        <div class="d-flex" v-if="element?.note !== undefined">
+                            <VTextarea 
+                                v-model="element.note" 
+                                label="Notera" 
+                                placeholder="Notera" 
+                                rows="2" 
+                                class="mt-1"
+                                @input="editNote"/>
+                            <VBtn
+                                icon="tabler-x"
+                                variant="text"
+                                @click="removeNote(index)">
+                            </VBtn>
+                        </div>
+                        <!-- <InvoiceProductEdit
+                            v-else
                             :id="index"
                             :data="element"
                             :invoices="invoices"
-                            :notes="(notes && notes[index]) ? notes[index] : []"
                             :isCreated="props.isCreated"
                             @remove-product="removeProduct"
                             @delete-product="deleteProduct"
-                            @edit-product="$emit('edit')"
-                            @edit-note="editNote"
-                        />
-                    </div>
+                            @edit-product="editx"
+                        /> -->
+                        <template v-else>
+                            <div class="add-products-header d-none d-md-flex px-5">
+                                <table class="w-100">
+                                    <thead>
+                                        <tr>
+                                            <template v-for="(invoice, index) in invoices" :key="invoice.id">
+                                                <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(invoices.length - 1)) }%;`">
+                                                    <span class="text-base font-weight-bold">
+                                                    {{ invoice.name }}
+                                                    </span>
+                                                </td>
+                                            </template>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+
+                            <VCard
+                                flat
+                                border
+                                class="d-flex flex-row"
+                                style="box-shadow: none !important; border-radius: 12px !important;"
+                            >
+                                <!-- 👉 Left Form -->
+                                <div class="pa-5 flex-grow-1">
+                                    <table class="w-100">
+                                        <thead>
+                                            <tr>
+                                            <template v-for="(invoice, index) in invoices" :key="invoice.id">
+                                                <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(invoices.length - 1)) }%;`" class="pe-2" style="vertical-align: top;">
+                                                <VTextarea
+                                                    v-if="invoice.type_id === 1"
+                                                    v-model="element[invoice.id]"
+                                                    :label="invoice.description"
+                                                    :placeholder="invoice.description"
+                                                    rows="3"
+                                                    :readonly="element.disabled"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                                <VTextField
+                                                    v-if="invoice.type_id === 2"
+                                                    v-model="element[invoice.id]"
+                                                    type="number"
+                                                    :label="invoice.name"
+                                                    :placeholder="invoice.name"
+                                                    :min="1"
+                                                    :readonly="element.disabled"
+                                                    :rules="[requiredValidator]"
+                                                    @input="$emit('edit')"
+                                                />
+                                                <VTextField
+                                                    v-if="invoice.type_id === 3"
+                                                    v-model="element[invoice.id]"
+                                                    type="number"
+                                                    :label="invoice.name"
+                                                    :placeholder="invoice.name"
+                                                    :min="0"
+                                                    :step="0.01"
+                                                    :readonly="element.disabled"
+                                                    @input="$emit('edit')"
+                                                    :rules="[requiredValidator]"
+                                                    :disabled="invoice.name === 'Belopp'"
+                                                />
+                                                </td>
+                                            </template>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                                <!-- 👉 Item Actions -->
+                                <div class="d-flex flex-column justify-space-between border-s pa-0">
+                                    <VBtn 
+                                        v-if="index > 0"
+                                        icon="tabler-x"
+                                        variant="text"
+                                        @click="deleteProduct">
+                                    </VBtn>
+                                </div>
+                            </VCard>
+                        </template>
+                    </div>                    
                 </template>
             </draggable>
             <div class="mt-4">
-                <VBtn @click="addItem">
+                <VBtn @click="addItem" class="me-3">
                     Ny produktrad
+                </VBtn>
+                <VBtn @click="addNote">
+                    Ny textrad
                 </VBtn>
             </div>
         </VCardText>

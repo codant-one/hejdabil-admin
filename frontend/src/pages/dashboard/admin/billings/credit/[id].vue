@@ -13,7 +13,6 @@ const emitter = inject("emitter")
 
 const types = ref([])
 const invoices = ref([])
-const notes = ref([])
 const invoice = ref(null)
 const isRequestOngoing = ref(true)
 const file = ref(false)
@@ -41,12 +40,6 @@ async function fetchData() {
     JSON.parse(invoice.value.detail).forEach(row => {
         invoices.value?.push(row)   
     });
-
-    if(invoice.value.notes) {
-      JSON.parse(invoice.value.notes).forEach(row => {
-          notes.value?.push(row)   
-      });
-    }
 
     isRequestOngoing.value = false
   }
@@ -197,17 +190,13 @@ const credit = async () => {
 
             <tbody>
               <tr v-for="(row, rowIndex) in invoices" :key="'row-' + rowIndex">
-                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2" :class="notes.lenght > 0 ? 'vertical-top' : ''">
+                <td v-for="(column, colIndex) in row" :key="'col-' + colIndex" class="py-2">
                     <span :class="column.id === 1 ? 'font-weight-bold': 'vertical-top'">
                         <span v-if="column.id === 3 || column.id === 4">-</span>
                         {{ column.value }}
-                    </span>                
-                    <span v-if="column.id === 1"> 
-                        <span v-for="(value, index) in notes[rowIndex]" :key="index">
-                        <span class="d-flex flex-column"> 
-                            {{value}}
-                        </span>
-                        </span>
+                    </span>
+                    <span class="font-weight-bold" v-if="column.note"> 
+                        {{column.note}}
                     </span>         
                 </td>
               </tr>

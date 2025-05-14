@@ -56,8 +56,7 @@ class Billing extends Model
                   });
             })
             ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
-            ->orWhere('detail', 'LIKE', '%' . $search . '%')
-            ->orWhere('notes', 'LIKE', '%' . $search . '%');
+            ->orWhere('detail', 'LIKE', '%' . $search . '%');
         });
     }
 
@@ -107,35 +106,20 @@ class Billing extends Model
     /**** Public methods ****/
     public static function createBilling($request) {
 
-        $details = [];
-        $groupedNotes = [];
-
-        foreach($request->details as $item) {
-            $array = [];
-            foreach(json_decode($item, true) as $key => $value) {
-                $aux = [];
-                $aux['id'] = $key;
-                $aux['value'] = $key === 3 || $key === 4 ? number_format($value, 2, '.', '') : $value;
-
-                array_push($array, $aux);
-            }
-            array_push($details, $array);
-        }        
-
-        if(isset($request->notes)) {
-            foreach ($request->notes as $item) {
-                $decodedItem = json_decode($item, true);
-                
-                $id = $decodedItem['id'];
-                $note = $decodedItem['note'];
+        $details = array_map(function($item) {
+            $decoded = json_decode($item, true);
             
-                if (!isset($groupedNotes[$id])) {
-                    $groupedNotes[$id] = [];
-                }
-
-                $groupedNotes[$id][] = $note;
+            if (isset($decoded['note'])) {
+                return [$decoded]; // Devuelve el objeto de nota directamente
             }
-        }
+
+            return array_map(function($value, $key) {
+                return [
+                    'id' => $key,
+                    'value' => in_array($key, [3, 4]) ? number_format($value, 2, '.', '') : $value
+                ];
+            }, $decoded, array_keys($decoded));
+        }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
 
@@ -151,13 +135,11 @@ class Billing extends Model
             'tax' =>  $request->tax,
             'total' =>  $request->total,
             'detail' => json_encode($details, true),
-            'notes' => isset($request->notes) ? json_encode(array_values($groupedNotes)) : null
         ]);
 
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -166,7 +148,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
@@ -176,35 +158,20 @@ class Billing extends Model
 
     public static function updateBilling($request, $billing) {
 
-        $details = [];
-        $groupedNotes = [];
-
-        foreach($request->details as $item) {
-            $array = [];
-            foreach(json_decode($item, true) as $key => $value) {
-                $aux = [];
-                $aux['id'] = $key;
-                $aux['value'] = $key === 3 || $key === 4 ? number_format($value, 2, '.', '') : $value;
-
-                array_push($array, $aux);
-            }
-            array_push($details, $array);
-        }
-
-        if(isset($request->notes)) {
-            foreach ($request->notes as $item) {
-                $decodedItem = json_decode($item, true);
-                
-                $id = $decodedItem['id'];
-                $note = $decodedItem['note'];
+        $details = array_map(function($item) {
+            $decoded = json_decode($item, true);
             
-                if (!isset($groupedNotes[$id])) {
-                    $groupedNotes[$id] = [];
-                }
-
-                $groupedNotes[$id][] = $note;
+            if (isset($decoded['note'])) {
+                return [$decoded]; // Devuelve el objeto de nota directamente
             }
-        }
+
+            return array_map(function($value, $key) {
+                return [
+                    'id' => $key,
+                    'value' => in_array($key, [3, 4]) ? number_format($value, 2, '.', '') : $value
+                ];
+            }, $decoded, array_keys($decoded));
+        }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
 
@@ -220,14 +187,12 @@ class Billing extends Model
             'tax' =>  $request->tax,
             'total' =>  $request->total,
             'detail' => json_encode($details, true),
-            'notes' => isset($request->notes) ? json_encode(array_values($groupedNotes)) : null
         ]);
 
         $billing = self::find($billing->id);
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -236,7 +201,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
@@ -278,14 +243,12 @@ class Billing extends Model
             'subtotal' => '-' . $billing->subtotal,
             'tax' =>  '-' . $billing->tax,
             'total' =>  '-' . $billing->total,
-            'detail' => json_encode($array, true),
-            'notes' => $billing->notes
+            'detail' => json_encode($array, true)
         ]);
 
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -294,7 +257,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();
@@ -308,7 +271,6 @@ class Billing extends Model
         $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $notes = json_decode($billing->notes, true);
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -317,7 +279,7 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices', 'notes'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
 
         $billing->reminder = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
         $billing->update();

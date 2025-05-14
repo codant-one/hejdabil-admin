@@ -30,7 +30,6 @@ const invoices = ref([])
 const suppliers = ref([])
 const clients = ref([])
 const invoice_id = ref(0)
-const notes = ref(null)
 
 const userData = ref(null)
 const role = ref(null)
@@ -73,20 +72,6 @@ async function fetchData() {
             return detailObject;
         });
 
-        if(billing.value.notes) {
-          notes.value = JSON.parse(billing.value.notes).map((element, index) => {
-              const detailObject = [];
-              element.forEach((item, order) => {
-                  detailObject.push({ 
-                    id: index, 
-                    order_id: order + 1, 
-                    note: item
-                  });
-              });
-              return detailObject;
-          });
-        }
-
         let response = await billingsStores.all()
         
         clients.value = response.data.data.clients
@@ -115,17 +100,20 @@ async function fetchData() {
             var item = {}
 
             details.forEach(detail => {
-                invoices.value.forEach(element => {
-                    if(detail.id === element.id) {
-                        item[parseInt(element.id)] = 
-                            element.type_id === 2 ? 
-                            parseInt(detail.value) : 
-                            detail.value
+                if(detail.note)
+                  item['note'] = detail.note
+                else 
+                  invoices.value.forEach(element => {
+                      if(detail.id === element.id) {
+                          item[parseInt(element.id)] = 
+                              element.type_id === 2 ? 
+                              parseInt(detail.value) : 
+                              detail.value
 
-                            if(element.id === 4)
-                                total.value += Number(detail.value)
-                    }
-                });
+                              if(element.id === 4)
+                                  total.value += Number(detail.value)
+                      }
+                  });
             });
 
             invoiceData.value?.push(item)
@@ -165,24 +153,14 @@ const deleteProduct = id => {
 
 const editProduct = () => {
   total.value = 0
+
   invoiceData.value.forEach(element => {
-
-    let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
-    total.value += parseFloat(result);
-    element[4] = result; 
+    if(element?.note === undefined) {
+      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+      total.value += parseFloat(result);
+      element[4] = result; 
+    }
   });
-}
-
-const orderNote = data => {
-  notes.value = data
-}
-
-const editNote = data => {
-  
-  if(notes.value === null)
-    notes.value = []
-
-  notes.value[data.id] = data.notes
 }
 
 const onSubmit = () => {
@@ -207,14 +185,6 @@ const onSubmit = () => {
         formData.append('payment_terms', invoice.value.days)
 
         invoice.value.details.forEach((element, index) => {
-          if(notes.value !== null && notes.value.length > 0) {
-            if(notes.value[index].length > 0) {
-              notes.value[index].forEach((element) => {
-                if(element.note !== '')
-                  formData.append(`notes[]`, JSON.stringify(element));
-              });
-            }
-          }
           formData.append(`details[]`, JSON.stringify(element));
         });
 
@@ -298,15 +268,12 @@ const onSubmit = () => {
             :supplier="supplier"
             :total="total"
             :billing="billing"
-            :notes="notes"
             :isCreated="false"
             :isCredit="false"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
             @edit="editProduct"
-            @edit-note="editNote"
-            @order-note="orderNote"
             @data="data"
         />
         

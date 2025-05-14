@@ -24,9 +24,10 @@ const handleClick = (item) => {
   const targetRoute = item.to;
    
   if (currentRoute === targetRoute) {
-    billingsStores.cleanData()
     emitter.emit('cleanFilters', true)
   }
+
+  billingsStores.cleanData()
 }
 
 const { width: windowWidth } = useWindowSize()

@@ -165,6 +165,7 @@ const editBilling = billingData => {
 }
 
 const updateStateId = newStateId => {
+  billingsStores.setStateId(newStateId)
   state_id.value = newStateId
 
   switch(newStateId) {

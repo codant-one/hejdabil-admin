@@ -270,9 +270,9 @@
                             @foreach($invoices as $rowIndex => $row)
                                 <tr style="height: 40px !important;">
                                     @foreach($row as $colIndex => $column)
+                                        @isset($column['id'])
                                         <td 
                                             style="
-                                            {{ !is_null($notes) ? 'vertical-align: top;' : ''}}
                                             padding-left: 10px !important; 
                                             text-align: start !important; 
                                             height: 40px !important; 
@@ -283,15 +283,20 @@
                                                 : $column['value'] 
                                             }}
                                             </span>
-
-                                            @if($column['id'] === 1 && !is_null($notes))
-                                                @if(isset($notes[$rowIndex]))
-                                                    @foreach ($notes[$rowIndex] as $note)
-                                                        <p class="m-0">{{ $note }}</p>
-                                                    @endforeach
-                                                @endif
-                                            @endif
                                         </td>
+                                        @else
+                                        <td 
+                                            colspan="4"
+                                            style="
+                                            padding-left: 10px !important; 
+                                            text-align: start !important; 
+                                            height: 40px !important; 
+                                            border-top: 1px solid #D9D9D9;">
+                                            <span style="font-weight: 700;">
+                                            {{ $column['note'] }}
+                                            </span>
+                                        </td>
+                                        @endisset
                                     @endforeach
                                 </tr>
                             @endforeach

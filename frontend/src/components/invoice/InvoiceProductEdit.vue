@@ -2,7 +2,7 @@
 <script setup>
 
 import { requiredValidator } from '@validators'
-import draggable from 'vuedraggable'
+import { toRaw } from 'vue'
 
 const props = defineProps({
   id: {
@@ -17,10 +17,6 @@ const props = defineProps({
       type: Object,
       required: true,
   },
-  notes: {
-      type: Object,
-      required: false
-  },
   isCreated: {
       type: Boolean,
       required: true
@@ -30,57 +26,15 @@ const props = defineProps({
 const emit = defineEmits([
   'removeProduct',
   'deleteProduct',
-  'editProduct',
-  'editNote'
+  'editProduct'
 ])
 
-const localProductData = ref(props.data)
-const notes = ref(props.isCreated ? [] : props.notes);
+const localProductData = ref(structuredClone(toRaw(props.data)))
 
-const fetchData =() => {
-  localProductData.value = props.data
-}
-
-watch(() => props.notes, (val) => {
-  notes.value = val
-})
-
-watchEffect(fetchData)
-
-const addNote = () => {
-  const lastOrderId = (notes.value && notes.value.length > 0) ? notes.value[notes.value.length - 1].order_id : 0;
-
-  notes.value.push({ 
-    id: props.id, 
-    order_id: lastOrderId + 1, 
-    note: '' 
-  });
-
-  emit('editNote', {id: props.id, notes: notes.value})
-};
-
-const onStart = async (e) => {
-  // console.log('oldIndex',e.oldIndex)
-}
-
-const onEnd = async (e) => {
-  notes.value.forEach((element, index)  => {
-      element.order_id = index + 1
-  });
-
-  emit('editNote', {id: props.id, notes: notes.value})
-}
-
-const removeNote = (id) => {
-  notes.value?.splice(id, 1)
-
-  notes.value.forEach((element, index)  => {
-      element.order_id = index + 1
-  });
-
-  emit('editNote', {id: props.id, notes: notes.value})
-
-}
+watch(props.data, val => {
+  console.log('val', val)
+  localProductData.value = { ...val } // Copia profunda
+});
 
 const removeProduct = () => {
   if(localProductData.value.disabled)
@@ -158,42 +112,6 @@ const removeProduct = () => {
                 </td>
               </template>
             </tr>
-            <tr>
-              <td :colspan="props.invoices.length" class="pt-1">
-                <draggable 
-                  v-model="notes" 
-                  tag="div" 
-                  item-key="order_id" 
-                  @start="onStart" 
-                  @end="onEnd" 
-                  handle=".drag-handle">
-                  <template #item="{ element }">
-                    <div class="draggable-item py-2 px-2 d-flex">
-                      <span class="drag-handle px-3 d-flex align-center">☰</span>
-                      <VTextarea 
-                        v-model="element.note" 
-                        label="Notera" 
-                        placeholder="Notera" 
-                        rows="2" 
-                        class="mt-1"
-                        @input="$emit('editNote', {id: props.id, notes: notes})"/>
-                        <VBtn
-                          icon="tabler-x"
-                          variant="text"
-                          @click="removeNote(element.order_id - 1)">
-                        </VBtn>
-                    </div>
-                  </template>
-                </draggable>
-              </td>
-            </tr>
-            <tr>
-              <td :colspan="props.invoices.length" class="pt-1">
-                <VBtn @click="addNote">
-                    Ny textrad
-                </VBtn>
-              </td>
-            </tr>
         </thead>
       </table>
     </div>
@@ -209,11 +127,3 @@ const removeProduct = () => {
     </div>
   </VCard>
 </template>
-
-<style scope>
-  .draggable-item:hover {
-    background-color: #e9ecef;
-    cursor: move;
-    border-radius: 8px;
-  }
-</style>

@@ -103,7 +103,6 @@ const removeProduct = id => {
 const deleteProduct = id => {
   if(id > 0) {
     invoiceData.value?.splice(id, 1)
-    invoice.value.notes.splice(id, 1);
 
     total.value = 0
     invoiceData.value.forEach(element => {
@@ -116,20 +115,14 @@ const deleteProduct = id => {
 
 const editProduct = () => {
   total.value = 0
+
   invoiceData.value.forEach(element => {
-
-    let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
-    total.value += parseFloat(result);
-    element[4] = result; 
+    if(element?.note === undefined) {
+      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+      total.value += parseFloat(result);
+      element[4] = result; 
+    }
   });
-}
-
-const orderNote = data => {
-  invoice.value.notes = data
-}
-
-const editNote = data => {
-  invoice.value.notes[data.id] = data.notes
 }
 
 const onSubmit = () => {
@@ -152,14 +145,6 @@ const onSubmit = () => {
       formData.append('payment_terms', invoice.value.days)
 
       invoice.value.details.forEach((element, index) => {
-        if(invoice.value.notes.length > 0) {
-          if(invoice.value.notes[index].length > 0) {
-            invoice.value.notes[index].forEach((element) => {
-              if(element.note !== '')
-                formData.append(`notes[]`, JSON.stringify(element));
-            });
-          }
-        }
         formData.append(`details[]`, JSON.stringify(element));
       });
 
@@ -243,8 +228,6 @@ const onSubmit = () => {
             @remove="removeProduct"
             @delete="deleteProduct"
             @edit="editProduct"
-            @edit-note="editNote"
-            @order-note="orderNote"
             @data="data"
         />
         

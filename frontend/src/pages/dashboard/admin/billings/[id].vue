@@ -11,7 +11,6 @@ const route = useRoute()
 
 const types = ref([])
 const invoices = ref([])
-const notes = ref([])
 const invoice = ref(null)
 const isRequestOngoing = ref(true)
 const isConfirmSendMailVisible = ref(false)
@@ -44,12 +43,6 @@ async function fetchData() {
     JSON.parse(invoice.value.detail).forEach(row => {
         invoices.value?.push(row)   
     });
-
-    if(invoice.value.notes) {
-      JSON.parse(invoice.value.notes).forEach(row => {
-          notes.value?.push(row)   
-      });
-    }
 
     isRequestOngoing.value = false
   }
@@ -180,7 +173,6 @@ const download = async() => {
         <VCard class="p-0" id="invoice-detail">
           <VuePdfEmbed
             :source="themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + invoice.file" 
-
             class="d-flex justify-content-center w-auto m-auto"/>
         </VCard>
       </VCol>
