@@ -368,7 +368,7 @@ class BillingController extends Controller
                             $pathToFile = storage_path('app/public/' . $billing->file);
                             if (file_exists($pathToFile)) {
                                 $message->attach($pathToFile, [
-                                    'as' => 'faktura.pdf',
+                                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
                                     'mime' => 'application/pdf',
                                 ]);
                             }
@@ -394,7 +394,7 @@ class BillingController extends Controller
                             $pathToFile = storage_path('app/public/' . $billing->file);
                             if (file_exists($pathToFile)) {
                                 $message->attach($pathToFile, [
-                                    'as' => 'faktura.pdf',
+                                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
                                     'mime' => 'application/pdf',
                                 ]);
                             }
