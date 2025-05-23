@@ -137,6 +137,7 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
+        $billing = self::with(['client'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -147,9 +148,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -188,7 +189,7 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $billing = self::find($billing->id);
+        $billing = self::with(['client'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -199,9 +200,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -244,6 +245,7 @@ class Billing extends Model
             'detail' => json_encode($array, true)
         ]);
 
+        $billing = self::with(['client'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -254,9 +256,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -264,7 +266,7 @@ class Billing extends Model
 
     public static function createReminder($billing) {
 
-        $billing = self::find($billing->id);
+        $billing = self::with(['client'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -275,9 +277,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->reminder = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->reminder = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         self::sendMail($billing);
