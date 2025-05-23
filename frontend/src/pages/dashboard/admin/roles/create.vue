@@ -123,6 +123,7 @@ const onSubmitCreate = () =>{
               v-if="$can('create','roles')"
               v-bind="props"
               prepend-icon="tabler-plus"
+              block
             >
             Skapa roll
             </VBtn>

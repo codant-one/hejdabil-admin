@@ -361,9 +361,17 @@ class BillingController extends Controller
                     \Mail::send(
                         'emails.invoices.notifications'
                         , $data
-                        , function ($message) use ($clientEmail, $subject) {
+                        , function ($message) use ($clientEmail, $subject, $billing) {
                             $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                             $message->to($clientEmail)->subject($subject);
+
+                            $pathToFile = storage_path('app/public/' . $billing->file);
+                            if (file_exists($pathToFile)) {
+                                $message->attach($pathToFile, [
+                                    'as' => 'faktura.pdf',
+                                    'mime' => 'application/pdf',
+                                ]);
+                            }
                     });
 
                 } catch (\Exception $e){

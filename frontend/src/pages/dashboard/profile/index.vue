@@ -198,7 +198,8 @@ const onImageSelected = event => {
 
         <VWindow
           v-model="userTab"
-          class="mt-3 disable-tab-transition"
+          :class="role === 'Supplier' ? 'mt-3' : ''"
+          class="disable-tab-transition"
           :touch="false"
         >
           <VWindowItem>
@@ -225,7 +226,7 @@ const onImageSelected = event => {
       <VCard title="Avsluta utan att spara">
         <VDivider class="mt-4"/>
         <VCardText>
-          <strong>Är du säker på att du vill gå ut?</strong> Det finns ändringar i ditt formulär som inte har sparats ännu.
+          <strong>Du har osparade ändringar.</strong> Är du säker på att du vill lämna sidan?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -236,7 +237,7 @@ const onImageSelected = event => {
               Avbryt
           </VBtn>
           <VBtn @click="confirmLeave">
-              Acceptera
+              Ja, fortsätt
           </VBtn>
         </VCardText>
       </VCard>

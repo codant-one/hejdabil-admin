@@ -254,7 +254,7 @@ const onSubmit = () => {
       <!-- 👉 InvoiceEditable -->
       <VCol
         cols="12"
-        md="10"
+        md="9"
       >
         <InvoiceEditable
             v-if="clients.length > 0"
@@ -282,7 +282,7 @@ const onSubmit = () => {
       <!-- 👉 Right Column: Invoice Action -->
       <VCol
         cols="12"
-        md="2"
+        md="3"
       >
         <VCard class="mb-8">
           <VCardText>

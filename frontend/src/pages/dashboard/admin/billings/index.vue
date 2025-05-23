@@ -422,7 +422,7 @@ const downloadCSV = async () => {
         <VCard title="Filter">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="9" class="border-e d-flex justify-content-between align-center">
+              <VCol cols="12" md="10" class="border-e d-flex justify-content-between align-center">
 
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
                   <div
@@ -470,7 +470,7 @@ const downloadCSV = async () => {
                   </div>
                 </div>
               </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
+              <VCol cols="12" md="2" class="d-flex flex-column">
                 <VSelect
                   v-model="client_id"
                   :items="clients"

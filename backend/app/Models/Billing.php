@@ -137,7 +137,6 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -148,9 +147,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -190,7 +189,6 @@ class Billing extends Model
         ]);
 
         $billing = self::find($billing->id);
-        $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -201,9 +199,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -246,7 +244,6 @@ class Billing extends Model
             'detail' => json_encode($array, true)
         ]);
 
-        $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -257,9 +254,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($billing->client_id).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -268,7 +265,6 @@ class Billing extends Model
     public static function createReminder($billing) {
 
         $billing = self::find($billing->id);
-        $date = Carbon::now()->timestamp;
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -279,9 +275,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-'.$date.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->reminder = 'pdfs/'.Str::slug($billing->client_id).'-'.$date.'.pdf';
+        $billing->reminder = 'pdfs/'.Str::slug($billing->client_id).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         self::sendMail($billing);
@@ -320,9 +316,17 @@ class Billing extends Model
             \Mail::send(
                 'emails.invoices.reminder'
                 , $data
-                , function ($message) use ($clientEmail, $subject) {
+                , function ($message) use ($clientEmail, $subject, $billing) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                     $message->to($clientEmail)->subject($subject);
+
+                    $pathToFile = storage_path('app/public/' . $billing->reminder);
+                    if (file_exists($pathToFile)) {
+                        $message->attach($pathToFile, [
+                            'as' => 'faktura.pdf',
+                            'mime' => 'application/pdf',
+                        ]);
+                    }
             });
 
             return true;

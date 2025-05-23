@@ -253,6 +253,7 @@ const credit = async () => {
                     <span class="text-footer">{{ invoice.supplier.address }}</span>
                     <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
                     <span class="text-footer">{{ invoice.supplier.street }}</span>
+                    <span class="text-footer">{{ invoice.supplier.phone }}</span>
                   </span>
                   <span class="me-2 text-h6 mt-2">
                       Bolagets säte
@@ -270,10 +271,21 @@ const credit = async () => {
                   <span class="text-footer" v-if="!invoice.supplier"> 559374-0268 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.organization_number }} </span>
                   <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.vat">
-                      Momsreg.nr.
+                      Vat
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> SE559374026801 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.vat }} </span>
+
+                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.bic">
+                      BIC
+                  </span>
+                  <span class="text-footer" v-if="invoice.supplier?.bic"> {{ invoice.supplier.bic }} </span>
+
+                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.plus_spin">
+                      Plusgiro
+                  </span>
+                  <span class="text-footer" v-if="invoice.supplier?.plus_spin"> {{ invoice.supplier.plus_spin }} </span>
+                  
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
                   <span class="me-2 text-h6">
@@ -288,16 +300,28 @@ const credit = async () => {
                   <span class="text-footer" v-else> {{ invoice.supplier.user.email }} </span>
               </VCol>
               <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6" v-if="!invoice.supplier || invoice.supplier?.account_number">
-                      Kontonummer
+                  <span class="me-2 text-h6" v-if="invoice.supplier?.bank">
+                      Bank
                   </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>
+                  <span class="text-footer" v-if="invoice.supplier?.bank"> {{ invoice.supplier.bank }} </span>
+
                   <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.iban">
                       Bankgiro
                   </span>
                   <span class="text-footer" v-if="!invoice.supplier"> 5886-4976 </span>
                   <span class="text-footer" v-else> {{ invoice.supplier.iban }} </span>
+
+                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.account_number">
+                      Kontonummer
+                  </span>
+                  <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
+                  <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>
+                  
+                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.iban_number">
+                      Iban nummer
+                  </span>
+                  <span class="text-footer" v-if="invoice.supplier?.iban_number"> {{ invoice.supplier.iban_number }} </span>
+
               </VCol>
             </VRow>
           </div>

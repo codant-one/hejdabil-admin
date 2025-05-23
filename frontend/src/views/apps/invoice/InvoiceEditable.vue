@@ -311,7 +311,7 @@ const inputData = () => {
 <template>
     <VCard class="pa-10">
         <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
-            <div class="mt-4 mx-4">
+            <div class="mt-4 px-4 w-50">
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
                     <VNodeRenderer
@@ -429,7 +429,7 @@ const inputData = () => {
                 </div>   
                 <p class="mt-5 mb-0 text-sm" v-if="client">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
             </div>
-            <div class="mt-4 ma-sm-4 text-right d-flex flex-column">
+            <div class="pa-sm-4 text-right d-flex flex-column w-50">
                 <h1 class="mb-0 text-center faktura">
                     {{ 
                         invoice.state_id === 9 ? 
@@ -710,6 +710,7 @@ const inputData = () => {
                         <span class="text-footer">{{ supplier.address }}</span>
                         <span class="text-footer">{{ supplier.postal_code }}</span>
                         <span class="text-footer">{{ supplier.street }}</span>
+                        <span class="text-footer">{{ supplier.phone }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Bolagets säte
@@ -727,10 +728,19 @@ const inputData = () => {
                     <span class="text-footer" v-if="supplier.length === 0"> 559374-0268 </span>
                     <span class="text-footer" v-else> {{ supplier.organization_number }} </span>
                     <span class="me-2 text-h6 mt-2" v-if="supplier.vat || supplier.length === 0">
-                        Momsreg.nr.
+                        Vat
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> SE559374026801 </span>
                     <span class="text-footer" v-else> {{ supplier.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier?.bic">
+                        BIC
+                    </span>
+                    <span class="text-footer" v-if="supplier?.bic"> {{ supplier.bic }} </span>
+
+                    <span class="me-2 text-h6 mt-2" v-if="supplier?.plus_spin">
+                        Plusgiro
+                    </span>
+                    <span class="text-footer" v-if="supplier?.plus_spin"> {{ supplier.plus_spin }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
@@ -745,16 +755,28 @@ const inputData = () => {
                     <span class="text-footer" v-else> {{ supplier.user.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6" v-if="supplier.account_number || supplier.length === 0">
-                        Kontonummer
+                    <span class="me-2 text-h6" v-if="supplier?.bank">
+                      Bank
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
-                    <span class="text-footer" v-else> {{ supplier.account_number }} </span>
+                    <span class="text-footer" v-if="supplier?.bank"> {{ supplier.bank }} </span>
+
                     <span class="me-2 text-h6 mt-2" v-if="supplier.iban || supplier.length === 0">
                         Bankgiro
                     </span>
                     <span class="text-footer" v-if="supplier.length === 0"> 5886-4976 </span>
                     <span class="text-footer" v-else> {{ supplier.iban }} </span>
+
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.account_number || supplier.length === 0">
+                        Kontonummer
+                    </span>
+                    <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
+                    <span class="text-footer" v-else> {{ supplier.account_number }} </span>
+                    
+                    <span class="me-2 text-h6 mt-2" v-if="supplier?.iban_number">
+                      Iban nummer
+                    </span>
+                    <span class="text-footer" v-if="supplier?.iban_number"> {{ supplier.iban_number }} </span>
+
                 </VCol>
             </VRow>
         </VCardText>

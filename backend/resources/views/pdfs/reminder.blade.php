@@ -340,6 +340,7 @@
                                     <p class="m-0">{{ $billing->supplier->address }}</p>
                                     <p class="m-0">{{ $billing->supplier->postal_code }}</p>
                                     <p class="m-0">{{ $billing->supplier->street }}</p>
+                                    <p class="m-0">{{ $billing->supplier->phone }}</p>
                                 </span>
                             @endif
                         </p>
@@ -380,7 +381,7 @@
                         @if(($billing->supplier && !is_null($billing->supplier->vat)) || !$billing->supplier)
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
-                                Momsreg.nr.
+                                Vat
                             </h4>
                             @if(!$billing->supplier)
                                 <span class="info-supplier">
@@ -391,6 +392,26 @@
                                     <span>{{ $billing->supplier->vat }}</span>
                                 </span>
                             @endif
+                        </p>
+                        @endif
+                        @if(($billing->supplier && !is_null($billing->supplier->bic)))
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                BIC
+                            </h4>
+                            <span class="info-supplier">
+                                <span>{{ $billing->supplier->bic }}</span>
+                            </span>
+                        </p>
+                        @endif
+                        @if(($billing->supplier && !is_null($billing->supplier->plus_spin)))
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Plusgiro
+                            </h4>
+                            <span class="info-supplier">
+                                <span>{{ $billing->supplier->plus_spin }}</span>
+                            </span>
                         </p>
                         @endif
                     </td>
@@ -425,6 +446,32 @@
                         </p>
                     </td>
                     <td width="25%">
+                        @if(($billing->supplier && !is_null($billing->supplier->bank)))
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Bank
+                            </h4>
+                            <span class="info-supplier">
+                                <span>{{ $billing->supplier->bank }}</span>
+                            </span>
+                        </p>
+                        @endif
+                         @if(($billing->supplier && !is_null($billing->supplier->iban)) || !$billing->supplier)
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Bankgiro
+                            </h4>
+                            @if(!$billing->supplier)
+                                <span class="info-supplier">
+                                    <span>5886-4976</span>
+                                </span>
+                            @else
+                                <span class="info-supplier">
+                                    <span>{{ $billing->supplier->iban }}</span>
+                                </span>
+                            @endif
+                        </p>
+                        @endif
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Kontonummer
@@ -439,20 +486,14 @@
                                 </span>
                             @endif
                         </p>
-                        @if(($billing->supplier && !is_null($billing->supplier->iban)) || !$billing->supplier)
+                        @if(($billing->supplier && !is_null($billing->supplier->iban_number)))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
-                                Bankgiro
+                                Iban nummer
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>5886-4976</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->iban }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $billing->supplier->iban_number }}</span>
+                            </span>
                         </p>
                         @endif
                     </td>
