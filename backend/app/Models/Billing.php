@@ -323,7 +323,7 @@ class Billing extends Model
                     $pathToFile = storage_path('app/public/' . $billing->reminder);
                     if (file_exists($pathToFile)) {
                         $message->attach($pathToFile, [
-                            'as' => Str::replaceFirst('pdfs/', '', $billing->file),
+                            'as' => Str::replaceFirst('pdfs/', '', $billing->reminder),
                             'mime' => 'application/pdf',
                         ]);
                     }
