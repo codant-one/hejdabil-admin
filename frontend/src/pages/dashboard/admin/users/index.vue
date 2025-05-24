@@ -217,7 +217,7 @@ const downloadCSV = async () => {
 
 <template>
   <section>
-    <v-row>
+    <VRow>
       <VDialog
         v-model="isRequestOngoing"
         width="auto"
@@ -228,21 +228,19 @@ const downloadCSV = async () => {
           class="mb-0"/>
       </VDialog>
 
-      <v-col cols="12">
-        <v-alert
+      <VCol cols="12">
+        <VAlert
           v-if="advisor.show"
           :type="advisor.type"
           class="mb-6">
             {{ advisor.message }}
-        </v-alert>
+        </VAlert>
 
         <VCard v-if="users" id="rol-list" >
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <!-- 👉 Rows per page -->
-            <div
-              class="d-flex align-center"
-              style="width: 135px;"
-            >
+             <div class="d-flex align-center w-100 w-md-auto">
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -250,31 +248,26 @@ const downloadCSV = async () => {
               />
             </div>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV">
-                  Exportera
-              </VBtn>
-            </div>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-file-export"
+              class="w-100 w-md-auto"
+              @click="downloadCSV">
+                Exportera
+            </VBtn>
 
-            <div class="me-3">
-              <create
-                :rolesList="rolesList"
-                @close="roleUsers = []"
-                @data="fetchData"
-                @alert="showAlert"/>
-            </div>
+            <create
+              :rolesList="rolesList"
+              @close="roleUsers = []"
+              @data="fetchData"
+              @alert="showAlert"/>
 
-            <VSpacer />
+            <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
               <!-- 👉 Select status -->
-              <div class="invoice-list-filter"
-                style="width: 20rem;"
-              >
+              <div class="user-list-filter">
                 <VSelect
                   v-model="searchQuery"
                   label="Filtrera efter roll"
@@ -282,6 +275,7 @@ const downloadCSV = async () => {
                   clear-icon="tabler-x"
                   single-line
                   :items="rolesList"
+                  class="w-100 w-md-auto"
                 />
               </div>
               
@@ -441,13 +435,13 @@ const downloadCSV = async () => {
           <VDivider />
 
           <!-- SECTION Pagination -->
-          <VCardText class="d-flex align-center flex-wrap gap-4 py-3">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <!-- 👉 Pagination meta -->
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
 
-            <VSpacer />
+            <VSpacer class="d-none d-md-block"/>
 
             <!-- 👉 Pagination -->
             <VPagination
@@ -487,22 +481,12 @@ const downloadCSV = async () => {
             @alert="showAlert"/>
 
         </VCard>
-      </v-col>
-    </v-row>
+      </VCol>
+    </VRow>
   </section>
 </template>
 
 <style lang="scss">
-  #rol-list {
-    .rol-list-actions {
-      inline-size: 8rem;
-    }
-
-    .rol-list-filter {
-      inline-size: 12rem;
-    }
-  }
-
   .v-dialog {
     z-index: 1999 !important;
   }
@@ -511,11 +495,20 @@ const downloadCSV = async () => {
     width: 100%;
   }
 
+  .user-list-filter {
+    width: 100%;
+  }
+
   @media(min-width: 991px){
     .search {
       width: 30rem;
     }
+
+    .user-list-filter {
+      inline-size: 12rem;
+    }
   }
+
 </style>
 
 <route lang="yaml">

@@ -118,12 +118,12 @@ const onSubmit = () => {
     <!-- SECTION Customer Details -->
     <VCol cols="12">
       <VCard v-if="props.customerData">
-        <VCardText class="text-center pt-15">
+        <VCardText class="text-center pt-10 pt-md-15">
           <!-- 👉 Avatar -->
           <VAvatar
             v-if="props.isSupplier"
             rounded
-            :size="100"
+            :size="150"
             :color="!props.customerData.customer ? 'primary' : undefined"
             :variant="!props.customerData.user.avatar ? 'tonal' : undefined"
           >
@@ -142,7 +142,7 @@ const onSubmit = () => {
           <VAvatar
             v-else
             rounded
-            :size="100"
+            :size="150"
             color="primary"
             variant="tonal"
           >
@@ -282,7 +282,7 @@ const onSubmit = () => {
         <VCardText class="d-flex justify-center" v-if="route.name.includes('clients')">
           <VBtn
             variant="elevated"
-            class="me-3"
+            class="me-3 w-100 w-md-auto"
             @click="showUserEditDialog()"
           >
           Redigera

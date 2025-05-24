@@ -98,6 +98,7 @@ const credit = async () => {
       <VCol
         cols="12"
         md="9"
+        class="order-2 order-md-1"
       >
         <VCard class="pa-10" id="invoice-detail">
           <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
@@ -332,7 +333,7 @@ const credit = async () => {
       <VCol
         cols="12"
         md="3"
-        class="d-print-none"
+        class="order-1 order-md-2 d-print-none"
       >
         <VCard>
           <VCardText>

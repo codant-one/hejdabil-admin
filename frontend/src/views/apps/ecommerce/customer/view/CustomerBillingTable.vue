@@ -220,21 +220,20 @@ const sendMails = async () => {
 <template>
     <section>
       <VCard title="Billings">
-          <VCardText class="d-flex flex-wrap py-4 gap-4">
-          <div
-              class="me-3"
-              style="width: 80px;">
-                  
+          <VCardText class="d-flex align-center flex-wrap gap-4">
+          <div class="d-flex align-center w-100 w-md-auto">
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
-              v-model="rowPerPage"
-              density="compact"
-              variant="outlined"
-              :items="[10, 20, 30, 50]"/>
+                v-model="rowPerPage"
+                density="compact"
+                variant="outlined"
+                class="w-100"
+                :items="[10, 20, 30, 50]"/>
           </div>
 
-          <VSpacer />
+          <VSpacer class="d-none d-md-block"/>
 
-          <div class="d-flex align-center flex-wrap gap-4">
+          <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
               <!-- 👉 Search  -->
               <div style="width: 20rem;">
                 <VTextField
@@ -388,12 +387,14 @@ const sendMails = async () => {
               
           <VDivider />
 
-          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
-          <span class="text-sm text-disabled">
-              {{ paginationData }}
-          </span>
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
+            <span class="text-sm text-disabled">
+                {{ paginationData }}
+            </span>
 
-          <VPagination
+            <VSpacer class="d-none d-md-block"/>
+            
+            <VPagination
               v-model="currentPage"
               size="small"
               :total-visible="5"

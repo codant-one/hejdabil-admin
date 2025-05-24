@@ -45,11 +45,11 @@ const closeModal = function(){
 
         <VCard title="Behörigheter">
             <VDivider class="mt-4"/>
-            <VCardText>
+            <VCardText class="py-0">
                 <VCardTitle>
                     Verkställande direktör  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Administratör
@@ -66,7 +66,7 @@ const closeModal = function(){
                 <VCardTitle>
                     Allmänt  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Kontrollpanelen
@@ -83,7 +83,7 @@ const closeModal = function(){
                 <VCardTitle>
                     Profil  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Roller
@@ -140,7 +140,7 @@ const closeModal = function(){
                 <VCardTitle>
                     Moduler  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Leverantörer
@@ -252,9 +252,9 @@ const closeModal = function(){
                     </div>
                 </VCardText>
             </VCardText>
-            <VCardText class="d-flex flex-wrap gap-3">
+            <VCardText class="d-flex flex-wrap gap-2">
                 <VSpacer />
-                <VBtn @click="closeModal">
+                <VBtn class="w-100 w-md-auto" @click="closeModal">
                     Acceptera
                 </VBtn>
             </VCardText>

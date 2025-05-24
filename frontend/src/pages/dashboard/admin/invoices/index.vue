@@ -223,7 +223,7 @@ const downloadCSV = async () => {
 
 <template>
   <section>
-    <v-row>
+    <VRow>
       <VDialog
         v-model="isRequestOngoing"
         width="auto"
@@ -234,41 +234,39 @@ const downloadCSV = async () => {
           class="mb-0"/>
       </VDialog>
 
-      <v-col cols="12">
-        <v-alert
+      <VCol cols="12">
+        <VAlert
           v-if="advisor.show"
           :type="advisor.type"
           class="mb-6">
             
           {{ advisor.message }}
-        </v-alert>
+        </VAlert>
 
-        <v-card title="">
-          <v-card-text class="d-flex flex-wrap py-4 gap-4">
-            <div
-              class="me-3"
-              style="width: 80px;">
-              
+        <VCard title="">
+          <VCardText class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center w-100 w-md-auto">
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
                 variant="outlined"
+                class="w-100"
                 :items="[10, 20, 30, 50]"/>
             </div>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV">
-                Exportera
-              </VBtn>
-            </div>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-file-export"
+              class="w-100 w-md-auto"
+              @click="downloadCSV">
+              Exportera
+            </VBtn>
 
-            <v-spacer />
+            <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
 
               <!-- 👉 Search  -->
               <div class="search">
@@ -284,11 +282,12 @@ const downloadCSV = async () => {
               <v-btn
                 v-if="$can('create','invoices')"
                 prepend-icon="tabler-plus"
+                 class="w-100 w-md-auto"
                 @click="isAddNewInvoiceDrawerVisible = true">
                   Lägg till fakturaattribut
               </v-btn>
             </div>
-          </v-card-text>
+          </VCardText>
 
           <v-divider />
 
@@ -363,11 +362,13 @@ const downloadCSV = async () => {
         
           <v-divider />
 
-          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
 
+            <VSpacer class="d-none d-md-block"/>
+            
             <VPagination
               v-model="currentPage"
               size="small"
@@ -375,9 +376,9 @@ const downloadCSV = async () => {
               :length="totalPages"/>
           
           </VCardText>
-        </v-card>
-      </v-col>
-    </v-row>
+        </VCard>
+      </VCol>
+    </VRow>
     <!-- 👉 Add New Invoice -->
     <AddNewInvoiceDrawer
       v-model:isDrawerOpen="isAddNewInvoiceDrawerVisible"

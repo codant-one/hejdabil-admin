@@ -137,9 +137,10 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $billing = self::with(['client'])->find($billing->id);
+        $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -148,9 +149,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -189,9 +190,10 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $billing = self::with(['client'])->find($billing->id);
+        $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -200,9 +202,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -245,9 +247,10 @@ class Billing extends Model
             'detail' => json_encode($array, true)
         ]);
 
-        $billing = self::with(['client'])->find($billing->id);
+        $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -256,9 +259,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($billing->client->fullname).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($name).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -266,9 +269,10 @@ class Billing extends Model
 
     public static function createReminder($billing) {
 
-        $billing = self::with(['client'])->find($billing->id);
+        $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
+        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -277,9 +281,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->reminder = 'pdfs/'.Str::slug($billing->client->fullname).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->reminder = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         self::sendMail($billing);

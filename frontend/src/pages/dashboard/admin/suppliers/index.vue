@@ -193,7 +193,7 @@ const downloadCSV = async () => {
 
 <template>
   <section>
-    <v-row>
+    <VRow>
       <VDialog
         v-model="isRequestOngoing"
         width="auto"
@@ -204,42 +204,41 @@ const downloadCSV = async () => {
           class="mb-0"/>
       </VDialog>
 
-      <v-col cols="12">
-        <v-alert
+      <VCol cols="12">
+        <VAlert
           v-if="advisor.show"
           :type="advisor.type"
           class="mb-6">
             
           {{ advisor.message }}
-        </v-alert>
+        </VAlert>
 
         <Toaster />
 
-        <v-card title="">
-          <v-card-text class="d-flex flex-wrap py-4 gap-4">
-            <div
-              class="me-3"
-              style="width: 80px;">
-              
+        <VCard title="">
+          <VCardText class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center w-100 w-md-auto">
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
                 variant="outlined"
+                class="w-100"
                 :items="[10, 20, 30, 50]"/>
             </div>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV">
-                Exportera
-              </VBtn>
-            </div>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-file-export"
+              class="w-100 w-md-auto"
+              @click="downloadCSV">
+              Exportera
+            </VBtn>
 
-            <v-spacer />
-            <div class="d-flex align-center" style="width: 200px;">
+            <VSpacer class="d-none d-md-block"/>
+
+            <div class="d-flex align-center w-100 w-md-10">
               <VSelect
                   v-model="state_id"
                   placeholder="Status"
@@ -251,7 +250,7 @@ const downloadCSV = async () => {
                   clear-icon="tabler-x"/>
             </div>
 
-            <div class="d-flex align-center flex-wrap gap-4">              
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
               <!-- 👉 Search  -->
               <div class="search">
                 <VTextField
@@ -263,18 +262,19 @@ const downloadCSV = async () => {
               </div>
 
               <!-- 👉 Add user button -->
-              <v-btn
+              <VBtn
                 v-if="$can('create','suppliers')"
+                class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
                 :to="{ name: 'dashboard-admin-suppliers-add' }">
                   Skapa leverantör
-              </v-btn>
+              </VBtn>
             </div>
-          </v-card-text>
+          </VCardText>
 
-          <v-divider />
+          <VDivider />
 
-          <v-table class="text-no-wrap">
+          <VTable class="text-no-wrap">
             <!-- 👉 table head -->
             <thead>
               <tr>
@@ -411,15 +411,17 @@ const downloadCSV = async () => {
                 </td>
               </tr>
             </tfoot>
-          </v-table>
+          </VTable>
         
-          <v-divider />
+          <VDivider />
 
-          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
 
+            <VSpacer class="d-none d-md-block"/>
+            
             <VPagination
               v-model="currentPage"
               size="small"
@@ -427,9 +429,9 @@ const downloadCSV = async () => {
               :length="totalPages"/>
           
           </VCardText>
-        </v-card>
-      </v-col>
-    </v-row>
+        </VCard>
+      </VCol>
+    </VRow>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
@@ -500,7 +502,7 @@ const downloadCSV = async () => {
 
     @media(min-width: 991px){
         .search {
-            width: 30rem;
+            width: 20rem;
         }
     }
 </style>

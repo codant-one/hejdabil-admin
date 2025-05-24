@@ -37,11 +37,11 @@ watchEffect(() => {
 
 <template>
   <section>
-    <v-alert
+    <VAlert
         v-if="toast.show"
         :type="toast.type"
         class="mb-6">
         {{ toast.message }}
-    </v-alert>
+    </VAlert>
   </section>
 </template>

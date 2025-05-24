@@ -59,15 +59,15 @@ const handleOtp = (value) => {
     <!-- Dialog close btn -->
     <DialogCloseBtn @click="resetAuthCode" />
 
-    <VCard class="pa-5 pa-sm-8">
+    <VCard class="pa-4 pa-sm-8">
       <VCardItem>
         <VCardTitle class="text-h5 font-weight-medium text-center">
           Lägg till autentiseringsapp
         </VCardTitle>
       </VCardItem>
 
-      <VCardText class="pt-3">
-        <h6 class="text-lg font-weight-medium mb-2">
+      <VCardText class="pt-3 px-3">
+        <h6 class="text-lg font-weight-medium mb-2 text-center text-md-start">
           Appar för autentisering
         </h6>
 
@@ -77,7 +77,7 @@ const handleOtp = (value) => {
 
         <div class="mb-4">
           <VImg
-            width="200"
+            width="auto"
             :src="props.qr"
             class="mx-auto"
           />

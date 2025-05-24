@@ -175,7 +175,7 @@ const onSubmitEdit = () =>{
                             cols="12"
                             class="text-center"
                         >
-                            <VBtn @click="isRolSelectedDialog = true">
+                            <VBtn class="w-100 w-md-auto" @click="isRolSelectedDialog = true">
                                 Redigera roll permissions
                             </VBtn>
                         </VCol>

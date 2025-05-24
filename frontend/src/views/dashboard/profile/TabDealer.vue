@@ -453,7 +453,7 @@ const onSubmit = () => {
                                 />
                             </VCol>
                             <VCol cols="12">
-                                <VBtn type="submit">
+                                <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
                                 </VBtn>
                             </VCol>

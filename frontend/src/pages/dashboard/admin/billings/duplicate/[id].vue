@@ -100,17 +100,20 @@ async function fetchData() {
             var item = {}
 
             details.forEach(detail => {
-                invoices.value.forEach(element => {
-                    if(detail.id === element.id) {
-                        item[parseInt(element.id)] = 
-                            element.type_id === 2 ? 
-                            parseInt(detail.value) : 
-                            detail.value
+                if(detail.note)
+                  item['note'] = detail.note
+                else 
+                  invoices.value.forEach(element => {
+                      if(detail.id === element.id) {
+                          item[parseInt(element.id)] = 
+                              element.type_id === 2 ? 
+                              parseInt(detail.value) : 
+                              detail.value
 
-                            if(element.id === 4)
-                                total.value += Number(detail.value)
-                    }
-                });
+                              if(element.id === 4)
+                                  total.value += Number(detail.value)
+                      }
+                  });
             });
 
             invoiceData.value?.push(item)
@@ -244,6 +247,7 @@ const onSubmit = () => {
       <VCol
         cols="12"
         md="9"
+        class="order-2 order-md-1"
       >
         <InvoiceEditable
             v-if="clients.length > 0"
@@ -272,6 +276,7 @@ const onSubmit = () => {
       <VCol
         cols="12"
         md="3"
+        class="order-1 order-md-2"
       >
         <VCard class="mb-8">
           <VCardText>

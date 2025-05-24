@@ -138,7 +138,7 @@ const downloadCSV = async () => {
 
 <template>
   <section>
-    <v-row>
+    <VRow>
       <VDialog
         v-model="isRequestOngoing"
         width="auto"
@@ -149,13 +149,13 @@ const downloadCSV = async () => {
           class="mb-0"/>
       </VDialog>
 
-      <v-col cols="12">
-        <v-alert
+      <VCol cols="12">
+        <VAlert
           v-if="advisor.show"
           :type="advisor.type"
           class="mb-6">
             {{ advisor.message }}
-        </v-alert>
+        </VAlert>
 
         <VCard
           v-if="roles"
@@ -163,48 +163,40 @@ const downloadCSV = async () => {
         >
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <!-- 👉 Rows per page -->
-            <div
-              class="d-flex align-center"
-              style="width: 135px;"
-            >
+            <div class="d-flex align-center w-100 w-md-auto">
               <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
+                class="w-100"
                 :items="[10, 20, 30, 50]"
               />
             </div>
 
-            <div class="me-3">
-              <create
-                @data="fetchData"
-                @alert="showAlert"/>
-            </div>
+            <create @data="fetchData" @alert="showAlert"/>
 
-            <div class="me-3">
-              <tree />
-            </div>
+            <tree />
 
-            <VSpacer />
+            <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV"
-              >
-                Exportera
-              </VBtn>
-            </div>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-file-export"
+              class="w-100 w-md-auto"
+              @click="downloadCSV"
+            >
+              Exportera
+            </VBtn>
 
-            <div class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
               <!-- 👉 Search  -->
               <div class="search rol-list-filter">
                 <VTextField
                   v-model="searchQuery"
                   placeholder="Sök roll"
                   density="compact"
+                  class="w-100 w-md-auto"
                   clearable
                 />
               </div>
@@ -308,13 +300,13 @@ const downloadCSV = async () => {
           <VDivider />
 
           <!-- SECTION Pagination -->
-          <VCardText class="d-flex align-center flex-wrap gap-4 py-3">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <!-- 👉 Pagination meta -->
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
 
-            <VSpacer />
+            <VSpacer class="d-none d-md-block"/>
 
             <!-- 👉 Pagination -->
             <VPagination
@@ -348,22 +340,12 @@ const downloadCSV = async () => {
             @data="fetchData"
             @alert="showAlert"/>
         </VCard>
-      </v-col>
-    </v-row>
+      </VCol>
+    </VRow>
   </section>
 </template>
 
 <style lang="scss">
-  #rol-list {
-    .rol-list-actions {
-      inline-size: 8rem;
-    }
-
-    .rol-list-filter {
-      inline-size: 12rem;
-    }
-  }
-
   .v-label {
     text-overflow: clip;
   }
@@ -388,13 +370,23 @@ const downloadCSV = async () => {
   }
 
   .search {
-    width: 14rem;
+    width: 100%;
   }
 
   @media(min-width: 991px){
     .search {
       width: 30rem;
     }
+
+    #rol-list {
+    .rol-list-actions {
+      inline-size: 8rem;
+    }
+
+    .rol-list-filter {
+      inline-size: 12rem;
+    }
+  }
   }
 </style>
 

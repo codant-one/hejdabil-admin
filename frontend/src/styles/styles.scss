@@ -34,6 +34,14 @@ div.v-avatar {
   background-color: #2E0684 !important;
 }
 
+.w-0 {
+  width: 0%;
+}
+
+.w-5 {
+  width: 5%;
+}
+
 .w-15 {
   width: 15%;
 }
@@ -108,4 +116,26 @@ body {
 
 .v-table > .v-table__wrapper > table > thead > tr > th {
   font-weight: 700;
+}
+
+.v-table > .v-table__wrapper > table > tbody > tr > td { 
+  font-size: 12px;
+}
+
+@media(min-width: 991px){
+  .w-md-auto {
+    width: auto !important;
+  }
+
+  .w-md-10 {
+    width: 10%!important;
+  }
+
+  .w-md-50 {
+    width: 50%!important;
+  }
+
+  .v-table > .v-table__wrapper > table > tbody > tr > td { 
+    font-size: 14px;
+  }
 }

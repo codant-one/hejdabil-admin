@@ -140,7 +140,7 @@ const onSubmit = (address, method) => {
   <!-- eslint-disable vue/no-v-html -->
 
   <!-- 👉 Address Book -->
-  <VCard class="mb-6" v-if="!props.isSupplier">
+  <VCard class="mb-6 facturing" v-if="!props.isSupplier">
     <VCardText>
       <div class="d-flex justify-space-between mb-6 flex-wrap align-center gap-y-4 gap-x-6">
         <h5 class="text-h5">
@@ -249,7 +249,7 @@ const onSubmit = (address, method) => {
   <!-- 👉 Payment Methods -->
   <VRow>
     <VCol cols="12" v-if="props.isSupplier">
-      <VCard title="title">
+      <VCard class="facturing" title="title">
         <VCardText class="d-flex flex-column gap-y-4">
           ???
         </VCardText>
@@ -267,5 +267,8 @@ const onSubmit = (address, method) => {
   .iconsButton .v-btn--icon.v-btn--density-default {
     width: calc(var(--v-btn-height) + 0px) !important;
     height: 25px !important;
+  }
+  .facturing.v-card--variant-elevated {
+      box-shadow: none !important;
   }
 </style>

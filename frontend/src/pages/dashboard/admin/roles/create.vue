@@ -123,7 +123,7 @@ const onSubmitCreate = () =>{
               v-if="$can('create','roles')"
               v-bind="props"
               prepend-icon="tabler-plus"
-              block
+              class="w-100 w-md-auto"
             >
             Skapa roll
             </VBtn>
@@ -153,7 +153,8 @@ const onSubmitCreate = () =>{
                             class="text-center"
                         >
                             <VBtn
-                            @click="isRolSelectedDialog = true"
+                                class="w-100 w-md-auto"
+                                @click="isRolSelectedDialog = true"
                             >
                                 Behörighet för roll
                             </VBtn>

@@ -75,7 +75,7 @@ const copy = (account) => {
   <!-- 👉 Payment Methods -->
   <VRow>
     <VCol cols="12" v-if="props.isSupplier">
-      <VCard title="Allmän information">
+      <VCard class="company" title="Allmän information">
         <VCardText class="d-flex flex-column gap-y-4">
           <VRow>
             <VCol cols="12" md="6">
@@ -227,4 +227,9 @@ const copy = (account) => {
     width: calc(var(--v-btn-height) + 0px) !important;
     height: calc(var(--v-btn-height) + 0px) !important;
   }
+
+  .company.v-card--variant-elevated {
+      box-shadow: none !important;
+  }
+
 </style>

@@ -310,8 +310,8 @@ const inputData = () => {
 
 <template>
     <VCard class="pa-10">
-        <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
-            <div class="mt-4 px-4 w-50">
+        <VCardText class="d-block d-md-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
+            <div class="mt-4 px-4 w-100 w-md-50">
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
                     <VNodeRenderer
@@ -333,7 +333,7 @@ const inputData = () => {
                     </div>
                 </div>
                 <!-- 👉 Invoice Id -->
-                <h6 class="d-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
+                <h6 class="d-block d-md-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
                     <span class="me-2 text-start w-40 text-h6">
                          Faktura nr:
                     </span>
@@ -347,7 +347,7 @@ const inputData = () => {
                         />
                     </span>
                 </h6>
-                <div class="d-flex align-center justify-sm-start mb-1 text-right" v-if="client">
+                <div class="d-block d-md-flex align-center justify-sm-start mb-1 text-right" v-if="client">
                     <span class="me-2 text-start w-40">Kund nr:</span>
                     <span>
                         <VTextField
@@ -360,7 +360,7 @@ const inputData = () => {
                     </span>
                 </div>
                 <!-- 👉 Issue Date -->
-                <div class="d-flex align-center justify-sm-start mb-1 text-right">
+                <div class="d-block d-md-flex align-center justify-sm-start mb-1 md:text-right">
                     <span class="me-2 text-start w-40">
                         Fakturadatum:
                     </span>
@@ -388,7 +388,7 @@ const inputData = () => {
                 </div>
 
                 <!-- 👉 Due Date -->
-                <div class="d-flex align-center justify-sm-start mb-0">
+                <div class="d-block d-md-flex  align-center justify-sm-start mb-0">
                     <span class="me-2 text-start w-40">
                         Förfallodatum:
                     </span>
@@ -412,7 +412,7 @@ const inputData = () => {
                 </div>
 
                 <!-- 👉 Days -->
-                <div class="d-flex align-center justify-sm-start mb-0 mt-2">
+                <div class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2">
                     <span class="me-2 text-start w-40">
                         Betalningsvillkor:
                     </span>
@@ -429,8 +429,8 @@ const inputData = () => {
                 </div>   
                 <p class="mt-5 mb-0 text-sm" v-if="client">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
             </div>
-            <div class="pa-sm-4 text-right d-flex flex-column w-50">
-                <h1 class="mb-0 text-center faktura">
+            <div class="pa-sm-4 text-right d-flex flex-column w-100 w-md-50">
+                <h1 class="mb-0 text-center faktura mt-5 mt-md-0">
                     {{ 
                         invoice.state_id === 9 ? 
                         'KREDIT FAKTURA' : 
@@ -465,8 +465,8 @@ const inputData = () => {
             </div>
         </VCardText>
 
-        <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 p-0">
-            <div class="my-sm-4">
+        <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 p-0 w-100 w-md-auto">
+            <div class="my-sm-4 w-100">
                 <h6 class="text-h6 font-weight-medium" v-if="props.role !== 'Supplier'">
                     Leverantörer
                 </h6>
@@ -478,8 +478,7 @@ const inputData = () => {
                     :item-value="item => item.id"
                     :disabled="props.isCredit"
                     placeholder="Leverantörer"
-                    class="mb-3"
-                    style="width: 400px"
+                    class="mb-3 w-100 w-md-50"
                     @update:modelValue="selectSupplier"
                     clearable
                 />
@@ -491,8 +490,7 @@ const inputData = () => {
                     :item-value="item => item.id"
                     :disabled="props.isCredit"
                     placeholder="Kunder"
-                    class="mb-3"
-                    style="width: 400px"
+                    class="mb-3 w-100 w-md-50"
                     :rules="[requiredValidator]"
                     @update:modelValue="selectClient"
                     clearable
@@ -612,7 +610,7 @@ const inputData = () => {
                                         v-if="index > 0"
                                         icon="tabler-x"
                                         variant="text"
-                                        @click="deleteProduct">
+                                        @click="deleteProduct(index)">
                                     </VBtn>
                                 </div>
                             </VCard>

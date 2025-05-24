@@ -82,6 +82,7 @@ const closeRoleDetailDialog = function(){
                         class="text-center"
                     >
                         <VBtn
+                            class="w-100 w-md-auto"
                             @click="isSelectRolesDialog = true"
                         >
                             Visa rollbehörigheter
@@ -102,11 +103,11 @@ const closeRoleDetailDialog = function(){
 
         <VCard title="Behörigheter">
             <VDivider class="mt-4"/>
-            <VCardText>
+            <VCardText class="py-0">
                 <VCardTitle>
                     Verkställande direktör
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Administratör
@@ -124,7 +125,7 @@ const closeRoleDetailDialog = function(){
                 <VCardTitle>
                     Allmänt  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Kontrollpanelen
@@ -142,7 +143,7 @@ const closeRoleDetailDialog = function(){
                 <VCardTitle>
                     Profil  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Roller
@@ -207,7 +208,7 @@ const closeRoleDetailDialog = function(){
                 <VCardTitle>
                     Moduler  
                 </VCardTitle>
-                <VCardText>
+                <VCardText class="py-0">
                     <div class="ml-5">
                         <VLabel style="font-weight: bold;">
                             Leverantörer
@@ -335,9 +336,9 @@ const closeRoleDetailDialog = function(){
                     </div>
                 </VCardText>
             </VCardText>
-            <VCardText class="d-flex flex-wrap gap-3">
+            <VCardText class="d-flex flex-wrap gap-2">
                 <VSpacer />
-                <VBtn @click="isSelectRolesDialog = false">
+                <VBtn class="w-100 w-md-auto" @click="isSelectRolesDialog = false">
                     Acceptera
                 </VBtn>
             </VCardText>

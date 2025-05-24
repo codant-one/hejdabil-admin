@@ -170,11 +170,11 @@ const onSubmit = () => {
                         <span>Ladda upp ditt företag med leverantörer 🎉</span>
                     </div>
                     <VSpacer />
-                    <div class="d-flex gap-4">
+                    <div class="d-flex gap-4 w-100 w-md-auto">
                         <VBtn
                             variant="tonal"
                             color="secondary"
-                            class="mb-2"
+                            class="mb-2 w-100 w-md-auto"
                             :to="{ name: 'dashboard-admin-suppliers' }"
                             >
                             Tillbaka
@@ -329,12 +329,12 @@ const onSubmit = () => {
                                     v-if="currentTab > 0"
                                     variant="tonal"
                                     color="secondary"
-                                    class="me-3"
+                                    class="mb-3 mb-md-0 me-md-3 w-100 w-md-auto"
                                     @click="currentTab--"
                                     >
                                     Tillbaka
                                 </VBtn>
-                                <VBtn type="submit">
+                                <VBtn type="submit" class="w-100 w-md-auto">
                                     {{ (currentTab === 2) ? 'Uppdatering' : 'Nästa' }}
                                 </VBtn>
                             </div>

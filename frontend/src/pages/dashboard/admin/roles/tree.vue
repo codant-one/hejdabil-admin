@@ -21,6 +21,7 @@ const closeTreeDialog  = function(){
                 v-if="$can('Skapa ','roles')"
                 v-bind="props"
                 prepend-icon="tabler-sitemap"
+                class="w-100 w-md-auto"
                 >
                 Karta över tillstånd
             </VBtn>

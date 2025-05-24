@@ -222,7 +222,7 @@ const onSubmit = () => {
                 </VCol>
 
                 <VCol cols="12">
-                  <VBtn type="submit">
+                  <VBtn type="submit" class="w-100 w-md-auto">
                     Ändra lösenord
                   </VBtn>
                 </VCol>
@@ -235,22 +235,17 @@ const onSubmit = () => {
             <VTable class="text-no-wrap rounded border">
               <thead>
                 <tr>
-                  <th scope="col">
-                    TYP
-                  </th>
-                  <th scope="col"></th>
-                  <th scope="col"></th>
-                  <th scope="col">AKTIVERA</th>
+                  <th scope="col"> TYP </th>
+                  <th scope="col" class="w-5 text-end">AKTIVERA</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td> Tvåfaktorsautentisering (2FA)  </td>
-                  <td> </td>
-                  <td> </td>
                   <td>
                     <VCheckbox 
                       v-model="is_2fa"
+                      class="two_class"
                       @update:model-value="enabled2fa" />
                   </td>
                 </tr>
@@ -271,3 +266,9 @@ const onSubmit = () => {
     />
   </section>
 </template>
+
+<style lang="scss">
+  .two_class {
+    grid-template-areas: none;
+  }
+</style>

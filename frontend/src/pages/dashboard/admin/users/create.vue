@@ -140,6 +140,7 @@ const onSubmitCreate = () => {
         v-if="$can('create', 'users')"
         v-bind="props"
         prepend-icon="tabler-plus"
+        class="w-100 w-md-auto"
         >
         Skapa användare
       </VBtn>

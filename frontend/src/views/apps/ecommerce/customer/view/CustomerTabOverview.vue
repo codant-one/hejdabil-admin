@@ -39,7 +39,7 @@ async function fetchData() {
         cols="12"
         md="6"
       >
-        <VCard>
+        <VCard class="overview">
           <VCardText class="d-flex gap-y-2 flex-column">
             <VAvatar
               variant="tonal"
@@ -66,7 +66,7 @@ async function fetchData() {
         cols="12"
         md="6"
       >
-        <VCard>
+        <VCard class="overview">
           <VCardText class="d-flex gap-y-2 flex-column">
             <VAvatar
               variant="tonal"
@@ -98,7 +98,7 @@ async function fetchData() {
         cols="12"
         md="6"
       >
-        <VCard>
+        <VCard class="overview">
           <VCardText class="d-flex gap-y-2 flex-column">
             <VAvatar
               variant="tonal"
@@ -121,7 +121,7 @@ async function fetchData() {
         cols="12"
         md="6"
       >
-        <VCard>
+        <VCard class="overview">
           <VCardText class="d-flex gap-y-1 flex-column">
             <VAvatar
               variant="tonal"
@@ -152,3 +152,9 @@ async function fetchData() {
     </VRow>
   </Suspense>
 </template>
+
+<style scope>
+    .overview.v-card--variant-elevated {
+        box-shadow: none !important;
+    }
+</style>

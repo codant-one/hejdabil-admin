@@ -250,7 +250,7 @@ const closeUserEditDialog = ()=>{
           <VCardText class="d-flex justify-center">
             <VBtn
               variant="elevated"
-              class="me-3"
+              class="w-100 w-md-auto"
               @click="showUserEditDialog()"
             >
               Redigera
@@ -286,29 +286,30 @@ const closeUserEditDialog = ()=>{
             ref="refVForm"
             @submit.prevent="onSubmit"
           >
-            <VCardText class="d-flex">
-              <VAvatar
-                rounded
-                size="100"
-                class="me-6"
-                :color="avatar ? 'default' : 'primary'"
-                variant="tonal"
-              >
-                <VImg
-                  v-if="avatar"
-                  style="border-radius: 6px;"
-                  :src="avatar"
-                />
-                <span
-                  v-else
-                  class="text-5xl font-weight-semibold"
+            <VCardText class="d-block d-md-flex">
+              <span class="d-block d-md-flex text-center">
+                <VAvatar
+                  rounded
+                  :size="150"
+                  class="me-md-6 mb-2"
+                  :color="avatar ? 'default' : 'primary'"
+                  variant="tonal"
                 >
-                  {{ avatarText(name) }}
-                </span>
-              </VAvatar>
-
+                  <VImg
+                    v-if="avatar"
+                    style="border-radius: 6px;"
+                    :src="avatar"
+                  />
+                  <span
+                    v-else
+                    class="text-5xl font-weight-semibold"
+                  >
+                    {{ avatarText(name) }}
+                  </span>
+                </VAvatar>
+              </span>
               <!-- 👉 Upload Photo -->
-              <div class="d-flex flex-column justify-center gap-4">
+              <div class="d-flex flex-column justify-center gap-2 my-2 my-md-0">
                 <div class="d-flex flex-wrap gap-2">
                   <VFileInput                          
                     label="Avatar"
@@ -321,15 +322,27 @@ const closeUserEditDialog = ()=>{
                 </div>
                 <p class="text-body-1 mb-0">
                   Tillåtna format JPG, GIF, PNG.
-                </p>
+                </p>  
                 <VBtn 
                   color="secondary"
                   variant="tonal"
+                  class="d-none d-md-block"
                   @click="deleteAvatar"
                 >
                   Ta bort avatar
-                </VBtn>
+                </VBtn>             
               </div>
+            
+              <VSpacer class="d-none d-md-block"/>
+
+              <VBtn 
+                color="secondary"
+                variant="tonal"
+                class="w-100 d-block d-md-none"
+                @click="deleteAvatar"
+              >
+                Ta bort avatar
+              </VBtn>
             </VCardText>
 
             <VDivider />

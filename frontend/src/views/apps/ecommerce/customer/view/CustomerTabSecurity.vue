@@ -138,7 +138,7 @@ const onSubmit = () => {
   <VRow>
     <VCol cols="12">
       <!-- 👉 Change password -->
-      <VCard title="Ändra lösenord">
+      <VCard class="security" title="Ändra lösenord">
         <VCardText>
           <VAlert
             variant="tonal"
@@ -183,7 +183,7 @@ const onSubmit = () => {
               </VCol>
 
               <VCol cols="12">
-                <VBtn type="submit">
+                <VBtn type="submit" class="w-100 w-md-auto">
                   Ändra lösenord
                 </VBtn>
               </VCol>
@@ -195,7 +195,7 @@ const onSubmit = () => {
 
     <VCol cols="12" v-if="false">
       <!-- 👉 Two step verification -->
-      <VCard>
+      <VCard class="security">
         <VCardItem>
           <VCardTitle class="mb-2">
             Two-steps verification
@@ -277,3 +277,9 @@ const onSubmit = () => {
     :sms-code="smsVerificationNumber"
   /> -->
 </template>
+
+<style scope>
+    .security.v-card--variant-elevated {
+        box-shadow: none !important;
+    }
+</style>

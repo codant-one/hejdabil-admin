@@ -169,6 +169,7 @@ const download = async() => {
       <VCol
         cols="12"
         md="8"
+        class="order-2 order-md-1"
       >
         <VCard class="p-0" id="invoice-detail">
           <VuePdfEmbed
@@ -179,7 +180,7 @@ const download = async() => {
       <VCol
         cols="12"
         md="4"
-        class="d-print-none"
+        class="order-1 order-md-2 d-print-none"
       >
         <VCard>
           <VCardText>

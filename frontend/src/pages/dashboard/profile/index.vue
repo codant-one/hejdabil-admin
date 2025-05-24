@@ -28,7 +28,7 @@ const tabs = [
     title: 'Säkerhet',
   },
   {
-    icon: 'tabler-lock',
+    icon: 'tabler-building-store',
     title: 'Företag',
   },
 ]

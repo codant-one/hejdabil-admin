@@ -17,7 +17,7 @@ const route = useRoute()
 const suppliersStores = useSuppliersStores()
 const cp = useClipboard()
 
-const userTab = ref(null)
+const userTab = ref(0)
 
 const supplier = ref(null)
 const online = ref(null)
@@ -25,11 +25,12 @@ const online = ref(null)
 const isRequestOngoing = ref(true)
 
 const tabs = [
-    { title: 'Översikt' },
-    { title: 'Säkerhet' },
-    { title: 'Fakturering' },
-    { title: 'Företag' }
+    { icon: 'mdi-cog', title: 'Översikt' },
+    { icon: 'tabler-lock', title: 'Säkerhet' },
+    { icon: 'mdi-invoice-list', title: 'Fakturering' },
+    { icon: 'tabler-building-store', title: 'Företag' }
 ]
+const isMobile = ref(false)
 
 const advisor = ref({
   type: '',
@@ -41,6 +42,17 @@ const showAlert = function(alert) {
   advisor.value.show = alert.value.show
   advisor.value.type = alert.value.type
   advisor.value.message = alert.value.message
+}
+
+onMounted(async () => {
+
+    checkIfMobile()
+   
+    window.addEventListener('resize', checkIfMobile);
+})
+
+const checkIfMobile = () => {
+    isMobile.value = window.innerWidth < 768;
 }
 
 watchEffect(fetchData)
@@ -130,7 +142,7 @@ const handleCopy = (data) => {
 
 <template>
   <div>
-    <v-row>
+    <VRow>
         <VDialog
             v-model="isRequestOngoing"
             width="auto"
@@ -141,19 +153,19 @@ const handleCopy = (data) => {
             class="mb-0"/>
         </VDialog>
 
-        <v-col cols="12">
-            <v-alert
+        <VCol cols="12">
+            <VAlert
             v-if="advisor.show"
             :type="advisor.type"
             class="mb-6">
                 {{ advisor.message }}
-            </v-alert>
+            </VAlert>
             <Toaster />
-        </v-col>
-    </v-row>
+        </VCol>
+    </VRow>
     
     <!-- 👉 Header  -->
-    <div v-if="supplier" class="d-flex justify-space-between align-center flex-wrap gap-y-4 mb-6">
+    <div v-if="supplier" class="d-block d-md-flex justify-space-between align-center flex-wrap gap-y-4 mb-6">
         <div>
             <div class="d-flex gap-2 align-center mb-2 flex-wrap">
             <h4 class="text-h4 font-weight-medium">
@@ -173,7 +185,7 @@ const handleCopy = (data) => {
             <VBtn
                 variant="tonal"
                 color="secondary"
-                class="mb-2"
+                class="mb-2 w-100 w-md-auto"
                 :to="{ name: 'dashboard-admin-suppliers' }"
                 >
                 Tillbaka
@@ -195,31 +207,30 @@ const handleCopy = (data) => {
             cols="12"
             md="7"
             lg="8">
-            <VTabs
-                v-model="userTab"
-                class="v-tabs-pill mb-3 disable-tab-transition">
+            <VTabs v-model="userTab" grow stacked class="mb-5">
                 <VTab
                     v-for="tab in tabs"
                     :key="tab.title">
-                    <span>{{ tab.title }}</span>
+                    <VIcon
+                        :size="18"
+                        :icon="tab.icon"
+                        />
+                    <span v-if="!isMobile">{{ tab.title }}</span>
                 </VTab>
             </VTabs>
-            <VWindow
-                v-model="userTab"
-                class="disable-tab-transition"
-                :touch="false"
-            >
-                <VWindowItem>
+    
+            <VWindow v-model="userTab">
+                <VWindowItem :value="0">
                     <CustomerTabOverview
                         :customer-data="supplier"
                         :is-supplier="true"/>
                 </VWindowItem>
-                <VWindowItem>
+                <VWindowItem :value="1">
                     <CustomerTabSecurity 
                         :user_id="supplier.user_id"
                         @alert="showAlert" />
                 </VWindowItem>
-                <VWindowItem>
+                <VWindowItem :value="2">
                     <CustomerTabAddressAndBilling 
                         :customer-data="supplier"
                         :is-supplier="true"
@@ -228,7 +239,7 @@ const handleCopy = (data) => {
                         @alert="showAlert"
                         @updateBalance="fetchData"/>
                 </VWindowItem>
-                <VWindowItem>
+                <VWindowItem :value="3">
                     <CustomerTabCompany
                         :customer-data="supplier"
                         :is-supplier="true"

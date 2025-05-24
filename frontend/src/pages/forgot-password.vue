@@ -91,13 +91,13 @@ const onSubmit = () => {
         class="auth-v1-bottom-shape d-none d-sm-block"
       />
 
-      <v-alert
+      <VAlert
         v-if="advisor.show"
         :type="advisor.type"
         class="mb-6"
       >
         {{ advisor.message }}
-      </v-alert>
+      </VAlert>
 
       <div class="d-block">
         <!-- 👉 Auth card -->

@@ -422,9 +422,8 @@ const downloadCSV = async () => {
         <VCard title="Filter">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="10" class="border-e d-flex justify-content-between align-center">
-
-                <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row">
+              <VCol cols="12" md="10" class="d-flex justify-content-between align-center" :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'">
+                <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row gap-3">
                   <div
                     v-for="{ title, stateId, tax, value, icon, color } in [
                       { title: 'Alla', stateId: null, tax: formatNumberInteger(tax ?? '0,00') + ' kr', value: formatNumberInteger(sum ?? '0,00') + ' kr', icon: 'mdi-invoice-list-outline', color: 'secondary' },
@@ -504,31 +503,29 @@ const downloadCSV = async () => {
             </VRow>
           </VCardText>
           <VDivider />
-          <VCardText class="d-flex flex-wrap py-4 gap-4">
-            <div
-              class="me-3"
-              style="width: 80px;">
-              
+          <VCardText class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center w-100 w-md-auto">
+              <span class="text-no-wrap me-3">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
                 variant="outlined"
+                 class="w-100"
                 :items="[10, 20, 30, 50]"/>
             </div>
 
-            <div class="d-flex align-center">
-              <VBtn
-                variant="tonal"
-                color="secondary"
-                prepend-icon="tabler-file-export"
-                @click="downloadCSV">
-                Exportera
-              </VBtn>
-            </div>
+            <VBtn
+              variant="tonal"
+              color="secondary"
+              prepend-icon="tabler-file-export"
+              class="w-100 w-md-auto"
+              @click="downloadCSV">
+              Exportera
+            </VBtn>
 
-            <VSpacer />
+            <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center flex-wrap gap-4">
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
 
               <!-- 👉 Search  -->
               <div class="search" v-if="role !== 'Supplier'">
@@ -544,6 +541,7 @@ const downloadCSV = async () => {
               <VBtn
                 v-if="$can('create','billing') && clients.length > 0"
                 prepend-icon="tabler-plus"
+                class="w-100 w-md-auto"
                 @click="addInvoice">
                   Ny faktura
               </VBtn>
@@ -703,16 +701,20 @@ const downloadCSV = async () => {
         
           <VDivider />
 
-          <VCardText class="d-flex align-center flex-wrap justify-space-between gap-4 py-3 px-5">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
 
-            <span class="text-sm text-disabled">
-              <strong class="me-5">NETTO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
-              <strong class="me-5">MOMS: {{ formatNumber(totalTax ?? 0) }} kr</strong>
-              <strong>Summa: {{ formatNumber(totalSum ?? 0) }} kr</strong>
+            <VSpacer class="d-none d-md-block"/>
+
+            <span class="d-block d-md-flex text-sm text-disabled">
+              <strong class="d-block me-md-5">NETTO: {{ formatNumber(totalNeto ?? 0) }} kr</strong>
+              <strong class="d-block me-md-5">MOMS: {{ formatNumber(totalTax ?? 0) }} kr</strong>
+              <strong class="d-block">Summa: {{ formatNumber(totalSum ?? 0) }} kr</strong>
             </span>
+
+            <VSpacer class="d-none d-md-block"/>
 
             <VPagination
               v-model="currentPage"
@@ -840,22 +842,22 @@ const downloadCSV = async () => {
 
   .border-bottom-secondary {
     border-bottom: 2px solid #2E0684;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
   }
 
   .border-bottom-warning {
     border-bottom: 2px solid #FFC549;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
   }
 
   .border-bottom-info {
     border-bottom: 2px solid #28C76F;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
   }
 
   .border-bottom-error {
     border-bottom: 2px solid #EA5455;
-    padding-bottom: 10px;
+    padding-bottom: 5px;
   }
 
   .v-input--disabled svg rect {

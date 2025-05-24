@@ -86,7 +86,7 @@ const update = clientData => {
 
 <template>
   <div>
-    <v-row>
+    <VRow>
         <VDialog
             v-model="isRequestOngoing"
             width="auto"
@@ -97,19 +97,19 @@ const update = clientData => {
                 class="mb-0"/>
         </VDialog>
 
-        <v-col cols="12">
-            <v-alert
+        <VCol cols="12">
+            <VAlert
             v-if="advisor.show"
             :type="advisor.type"
             class="mb-6">
                 {{ advisor.message }}
-            </v-alert>
+            </VAlert>
             <Toaster />
-        </v-col>
-    </v-row>
+        </VCol>
+    </VRow>
     
     <!-- 👉 Header  -->
-    <div v-if="client" class="d-flex justify-space-between align-center flex-wrap gap-y-4 mb-6">
+    <div v-if="client" class="-block d-md-flex justify-space-between align-center flex-wrap gap-y-4 mb-6">
         <div>
             <div class="d-flex gap-2 align-center mb-2 flex-wrap">
             <h4 class="text-h4 font-weight-medium">
@@ -129,7 +129,7 @@ const update = clientData => {
             <VBtn
                 variant="tonal"
                 color="secondary"
-                class="mb-2"
+                class="mb-2 w-100 w-md-auto"
                 :to="{ name: 'dashboard-admin-clients' }"
                 >
                 Tillbaka
