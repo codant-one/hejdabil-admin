@@ -140,7 +140,7 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
+        $name = $billing->supplier->company;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -193,7 +193,7 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
+        $name = $billing->supplier->company;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -250,7 +250,7 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
+        $name = $billing->supplier->company;
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -272,7 +272,7 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->user->name . ' ' . $billing->supplier->user->last_name;
+        $name = $billing->supplier->company;
 
         foreach($details as $row)
             $invoices[] = $row;

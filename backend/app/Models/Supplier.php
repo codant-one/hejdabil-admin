@@ -188,7 +188,7 @@ class Supplier extends Model
     public function getFullNameAttribute()
     {
         if ($this->user)
-            return "{$this->user->name} {$this->user->last_name}";
+            return "{$this->user->name} {$this->user->last_name} - {$this->company}";
         else
             return "";
     }
