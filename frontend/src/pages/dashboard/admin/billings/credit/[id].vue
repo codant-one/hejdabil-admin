@@ -1,9 +1,9 @@
 <script setup>
 
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { useBillingsStores } from '@/stores/useBillings'
 import { formatNumber } from '@/@core/utils/formatters'
+import logoBlack from '@images/logo_black.png'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -104,9 +104,9 @@ const credit = async () => {
           <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
             <div class="ma-sm-4 d-flex flex-column">
               <div class="d-flex align-center mb-6">
-                <VNodeRenderer
+                <VImg
                     v-if="!invoice.supplier"
-                    :nodes="themeConfig.app.logoBlack"
+                    :src="logoBlack"
                     class="me-3"
                 />
                 <div v-else>
@@ -115,9 +115,9 @@ const credit = async () => {
                         width="150"
                         :src="themeConfig.settings.urlStorage + invoice.supplier.logo"
                     />
-                    <VNodeRenderer
+                    <VImg
                         v-else
-                        :nodes="themeConfig.app.logoBlack"
+                        :src="logoBlack"
                         class="me-3"
                     />
                 </div>

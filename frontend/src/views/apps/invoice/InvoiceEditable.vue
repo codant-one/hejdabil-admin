@@ -2,10 +2,10 @@
 
 import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue"
 import draggable from 'vuedraggable'
-import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { requiredValidator } from '@validators'
+import logoBlack from '@images/logo_black.png'
 
 const props = defineProps({
     data: {
@@ -78,6 +78,7 @@ const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref(0);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
+const isMobile = ref(false)
 
 const invoice = ref({
     id: 1,
@@ -101,6 +102,11 @@ const extractDaysFromNetTermSplit = term => {
 
 watch(() => props.supplier, (val) => {
     supplier.value = val
+
+    if(props.role === 'Supplier' && supplier.value.billings) {
+        invoice.value.id = supplier.value.billings.length + 1
+    } else
+        invoice.value.id = props.invoice_id + 1
 })
 
 watch(props.data, val => {
@@ -134,8 +140,16 @@ watch(() => invoice.value.invoice_date, () => {
 })
 
 onMounted(() => {
-  fetchData()
+    checkIfMobile()
+   
+    window.addEventListener('resize', checkIfMobile);
+
+    fetchData()
 })
+
+const checkIfMobile = () => {
+    isMobile.value = window.innerWidth < 768;
+}
 
 async function fetchData() {
 
@@ -309,25 +323,27 @@ const inputData = () => {
 </script>
 
 <template>
-    <VCard class="pa-10">
+    <VCard class="pa-5 pa-md-10">
         <VCardText class="d-block d-md-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
             <div class="mt-4 px-4 w-100 w-md-50">
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
-                    <VNodeRenderer
+                    <VImg
                         v-if="supplier.length === 0"
-                        :nodes="themeConfig.app.logoBlack"
+                        :width="isMobile ? '150' : '200'"
+                        :src="logoBlack"
                         class="me-3"
-                    />
+                        />
                     <div v-else>
                         <VImg
                             v-if="supplier.logo" 
-                            width="150"
+                            :width="isMobile ? '150' : '200'"
                             :src="themeConfig.settings.urlStorage + supplier.logo"
                         />
-                        <VNodeRenderer
+                        <VImg
                             v-else
-                            :nodes="themeConfig.app.logoBlack"
+                            :width="isMobile ? '150' : '200'"
+                            :src="logoBlack"
                             class="me-3"
                         />
                     </div>
@@ -510,7 +526,7 @@ const inputData = () => {
                 @start="onStart" 
                 @end="onEnd">
                 <template #item="{ element, index }">
-                    <div class="draggable-item py-2 px-2">
+                    <div class="draggable-item py-2 px-0 px-md-2">
                         <div class="d-flex" v-if="element?.note !== undefined">
                             <VTextarea 
                                 v-model="element.note" 
@@ -559,7 +575,7 @@ const inputData = () => {
                                 style="box-shadow: none !important; border-radius: 12px !important;"
                             >
                                 <!-- 👉 Left Form -->
-                                <div class="pa-5 flex-grow-1">
+                                <div class="pa-2 pa-md-5 flex-grow-1">
                                     <table class="w-100">
                                         <thead>
                                             <tr>
@@ -801,5 +817,11 @@ const inputData = () => {
 
     .text-footer {
         font-size: 0.75rem !important;
+    }
+
+    @media (max-width: 767px) {
+        .faktura {
+            font-size: 16px;
+        }
     }
 </style>
