@@ -64,7 +64,8 @@ const emit = defineEmits([
     'delete',
     'setting',
     'data',
-    'edit'
+    'edit',
+    'discount'
 ])
 
 const route = useRoute()
@@ -77,8 +78,12 @@ const subtotal = ref(props.total)
 const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref(0);
+const selectedDiscount = ref(0)
+const discountOptions = ref([0, 12, 20, 25]);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 const isMobile = ref(false)
+
+const isConfirmDiscountVisible = ref(false)
 
 const invoice = ref({
     id: 1,
@@ -103,7 +108,9 @@ const extractDaysFromNetTermSplit = term => {
 watch(() => props.supplier, (val) => {
     supplier.value = val
 
-    if(props.role === 'Supplier' && supplier.value.billings) {
+    if(props.billing) {
+        invoice.value.id = route.path.includes('/duplicate/') ? (supplier.value.billings.length + 1) : props.billing.invoice_id
+    } else if(props.role === 'Supplier' && supplier.value.billings) {
         invoice.value.id = supplier.value.billings.length + 1
     } else
         invoice.value.id = props.invoice_id + 1
@@ -154,7 +161,7 @@ const checkIfMobile = () => {
 async function fetchData() {
 
     if(props.billing) {
-        invoice.value.id = props.billing.invoice_id + (route.path.includes('/duplicate/') ? 1 : 0)
+        invoice.value.id = route.path.includes('/duplicate/') ? (supplier.value?.billings?.length + 1) : props.billing.invoice_id
         invoice.value.reference = props.billing.reference
         invoice.value.invoice_date = props.billing.invoice_date
         invoice.value.due_date = props.billing.due_date
@@ -165,6 +172,8 @@ async function fetchData() {
 
         selectedTax.value = taxOptions.value.includes(props.billing.tax) ? props.billing.tax : "Custom";
         client.value = props.billing.client
+
+        selectedDiscount.value = props.billing.discount
         
     } else {
 
@@ -281,6 +290,8 @@ const addItem = () => {
         item[parseInt(element.id)] = value
     });
 
+    item[5] = false
+
     emit('push', item)
 }
 
@@ -289,11 +300,6 @@ const addNote = () => {
 }
 
 const editNote = () => {
-    emit('edit')
-}
-
-const editx = () => {
-    emit('data', invoice.value)
     emit('edit')
 }
 
@@ -320,6 +326,20 @@ const deleteProduct = id => {
 const inputData = () => {
     emit('data', invoice.value)
 }
+
+const discount = () => {
+    isConfirmDiscountVisible.value = true
+}
+
+const cancelDiscount = () => {
+    isConfirmDiscountVisible.value = false
+    selectedDiscount.value = 0
+}
+
+const saveDiscount = () => {
+    isConfirmDiscountVisible.value = false
+    emit('discount', selectedDiscount.value)
+}
 </script>
 
 <template>
@@ -328,21 +348,21 @@ const inputData = () => {
             <div class="mt-4 px-4 w-100 w-md-50">
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
-                    <VImg
+                    <img
                         v-if="supplier.length === 0"
-                        :width="isMobile ? '150' : '200'"
+                        :width="isMobile ? '200' : '250'"
                         :src="logoBlack"
                         class="me-3"
                         />
                     <div v-else>
-                        <VImg
+                        <img
                             v-if="supplier.logo" 
-                            :width="isMobile ? '150' : '200'"
+                            :width="isMobile ? '200' : '200'"
                             :src="themeConfig.settings.urlStorage + supplier.logo"
                         />
-                        <VImg
+                        <img
                             v-else
-                            :width="isMobile ? '150' : '200'"
+                            :width="isMobile ? '200' : '200'"
                             :src="logoBlack"
                             class="me-3"
                         />
@@ -516,6 +536,19 @@ const inputData = () => {
 
         <VDivider />
 
+        <!-- <InvoiceProductEdit
+            v-else
+            :id="index"
+            :data="element"
+            :invoices="invoices"
+            :isCreated="props.isCreated"
+            @remove-product="removeProduct"
+            @delete-product="deleteProduct"
+            @edit-product="editx"
+
+            componente dentro del draggable
+        /> -->
+
         <!-- 👉 Add purchased products -->
         <VCardText class="add-products-form pt-0 px-0">
             <draggable
@@ -526,8 +559,8 @@ const inputData = () => {
                 @start="onStart" 
                 @end="onEnd">
                 <template #item="{ element, index }">
-                    <div class="draggable-item py-2 px-0 px-md-2">
-                        <div class="d-flex" v-if="element?.note !== undefined">
+                    <div class="draggable-item py-2 px-0 px-md-2 d-flex">
+                        <div class="d-flex w-100" v-if="element?.note !== undefined">
                             <VTextarea 
                                 v-model="element.note" 
                                 label="Notera" 
@@ -536,100 +569,106 @@ const inputData = () => {
                                 class="mt-1"
                                 @input="editNote"/>
                             <VBtn
+                                size="x-small"
                                 icon="tabler-x"
                                 variant="text"
                                 @click="removeNote(index)">
                             </VBtn>
                         </div>
-                        <!-- <InvoiceProductEdit
-                            v-else
-                            :id="index"
-                            :data="element"
-                            :invoices="invoices"
-                            :isCreated="props.isCreated"
-                            @remove-product="removeProduct"
-                            @delete-product="deleteProduct"
-                            @edit-product="editx"
-                        /> -->
-                        <template v-else>
-                            <div class="add-products-header d-none d-md-flex px-5">
-                                <table class="w-100">
-                                    <thead>
-                                        <tr>
-                                            <template v-for="(invoice, index) in invoices" :key="invoice.id">
-                                                <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(invoices.length - 1)) }%;`">
-                                                    <span class="text-base font-weight-bold">
-                                                    {{ invoice.name }}
-                                                    </span>
-                                                </td>
-                                            </template>
-                                        </tr>
-                                    </thead>
-                                </table>
-                            </div>
-
-                            <VCard
-                                flat
-                                border
-                                class="d-flex flex-row"
-                                style="box-shadow: none !important; border-radius: 12px !important;"
-                            >
-                                <!-- 👉 Left Form -->
-                                <div class="pa-2 pa-md-5 flex-grow-1">
+                        <template v-else >
+                            <div>
+                                <div class="add-products-header d-none d-md-flex px-5">
                                     <table class="w-100">
                                         <thead>
                                             <tr>
-                                            <template v-for="(invoice, index) in invoices" :key="invoice.id">
-                                                <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(invoices.length - 1)) }%;`" class="pe-2" style="vertical-align: top;">
-                                                <VTextarea
-                                                    v-if="invoice.type_id === 1"
-                                                    v-model="element[invoice.id]"
-                                                    :label="invoice.description"
-                                                    :placeholder="invoice.description"
-                                                    rows="3"
-                                                    :readonly="element.disabled"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                                <VTextField
-                                                    v-if="invoice.type_id === 2"
-                                                    v-model="element[invoice.id]"
-                                                    type="number"
-                                                    :label="invoice.name"
-                                                    :placeholder="invoice.name"
-                                                    :min="1"
-                                                    :readonly="element.disabled"
-                                                    :rules="[requiredValidator]"
-                                                    @input="$emit('edit')"
-                                                />
-                                                <VTextField
-                                                    v-if="invoice.type_id === 3"
-                                                    v-model="element[invoice.id]"
-                                                    type="number"
-                                                    :label="invoice.name"
-                                                    :placeholder="invoice.name"
-                                                    :min="0"
-                                                    :step="0.01"
-                                                    :readonly="element.disabled"
-                                                    @input="$emit('edit')"
-                                                    :rules="[requiredValidator]"
-                                                    :disabled="invoice.name === 'Belopp'"
-                                                />
+                                                <template v-for="(invoice, index) in invoices" :key="invoice.id">
+                                                    <td :style="`width: ${invoice.type_id === 1 ? '40' : ((selectedDiscount > 0 ? 70 : 60)/(invoices.length - (selectedDiscount > 0 ? 0 : 1))) }%;`">
+                                                        <span class="text-base font-weight-bold">
+                                                        {{ invoice.name }}
+                                                        </span>
+                                                    </td>
+                                                </template>
+                                                <td v-if="selectedDiscount > 0" class="d-flex justify-end">
+                                                    <span class="text-base font-weight-bold">
+                                                        ({{selectedDiscount}}%)
+                                                    </span>
                                                 </td>
-                                            </template>
                                             </tr>
                                         </thead>
                                     </table>
-                                </div>
-                                <!-- 👉 Item Actions -->
-                                <div class="d-flex flex-column justify-space-between border-s pa-0">
-                                    <VBtn 
-                                        v-if="index > 0"
-                                        icon="tabler-x"
-                                        variant="text"
-                                        @click="deleteProduct(index)">
-                                    </VBtn>
-                                </div>
-                            </VCard>
+                                </div>                            
+                                <VCard
+                                    flat
+                                    border
+                                    class="d-flex flex-row"
+                                    style="box-shadow: none !important; border-radius: 12px !important;"
+                                >
+                                    <!-- 👉 Left Form -->
+                                    <div class="pa-2 pa-md-5 flex-grow-1">
+                                        <table class="w-100">
+                                            <thead>
+                                                <tr>
+                                                    <template v-for="(invoice, index) in invoices" :key="invoice.id">
+                                                        <td :style="`width: ${invoice.type_id === 1 ? '40' : ((selectedDiscount > 0 ? 70 : 60)/(invoices.length - (selectedDiscount > 0 ? 0 : 1))) }%;`" class="pe-2" style="vertical-align: top;">
+                                                            <VTextarea
+                                                                v-if="invoice.type_id === 1"
+                                                                v-model="element[invoice.id]"
+                                                                :label="invoice.description"
+                                                                :placeholder="invoice.description"
+                                                                rows="3"
+                                                                :readonly="element.disabled"
+                                                                :rules="[requiredValidator]"
+                                                            />
+                                                            <VTextField
+                                                                v-if="invoice.type_id === 2"
+                                                                v-model="element[invoice.id]"
+                                                                type="number"
+                                                                :label="invoice.name"
+                                                                :placeholder="invoice.name"
+                                                                :min="1"
+                                                                :readonly="element.disabled"
+                                                                :rules="[requiredValidator]"
+                                                                @input="$emit('edit')"
+                                                            />
+                                                            <VTextField
+                                                                v-if="invoice.type_id === 3"
+                                                                v-model="element[invoice.id]"
+                                                                type="number"
+                                                                :label="invoice.name"
+                                                                :placeholder="invoice.name"
+                                                                :min="0"
+                                                                :step="0.01"
+                                                                :readonly="element.disabled"
+                                                                @input="$emit('edit')"
+                                                                :rules="[requiredValidator]"
+                                                                :disabled="invoice.name === 'Belopp'"
+                                                            />
+                                                        </td>
+                                                    </template>
+                                                    <td v-if="selectedDiscount > 0" class="pe-2 d-flex justify-end" style="vertical-align: top;">
+                                                        <VCheckbox
+                                                            v-model="element[5]"
+                                                            color="primary"
+                                                            @update:modelValue="$emit('edit')"
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            </thead>
+                                        </table>
+                                    </div>
+                                    <!-- 👉 Item Actions -->
+                                    
+                                </VCard>
+                            </div>
+                            <div class="d-flex flex-column justify-space-between p-0">
+                                <VBtn 
+                                    :disabled="index === 0 ? true : false"
+                                    size="x-small"
+                                    icon="tabler-x"
+                                    variant="text"
+                                    @click="deleteProduct(index)">
+                                </VBtn>
+                            </div>
                         </template>
                     </div>                    
                 </template>
@@ -638,8 +677,11 @@ const inputData = () => {
                 <VBtn @click="addItem" class="me-3">
                     Ny produktrad
                 </VBtn>
-                <VBtn @click="addNote">
+                <VBtn @click="addNote" class="me-3">
                     Ny textrad
+                </VBtn>
+                <VBtn @click="discount">
+                    Discount
                 </VBtn>
             </div>
         </VCardText>
@@ -795,6 +837,49 @@ const inputData = () => {
             </VRow>
         </VCardText>
     </VCard>
+
+      <!-- 👉 Confirm send -->
+    <VDialog
+      v-model="isConfirmDiscountVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="cancelDiscount" />
+
+      <!-- Dialog Content -->
+      <VCard title="Apply discount">
+        <VDivider class="mt-4"/>
+        <VCardText class="d-flex justify-content-between">
+            Select the discount percentage you want to apply
+        
+            <VSpacer />
+
+            <VSelect
+                v-model="selectedDiscount"
+                :items="discountOptions"
+                label="Discounts"
+                append-icon="tabler-percentage"
+                style="width: 150px;"
+            />
+
+        </VCardText>
+     
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="cancelDiscount">
+              Cancel
+          </VBtn>
+          <VBtn @click="saveDiscount">
+              Save
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
 </template>
 
 <style scoped>

@@ -112,13 +112,19 @@ class BillingController extends Controller
         try {
 
             $billing = 
-                Billing::with(['supplier' => function($query) {
-                    $query->withTrashed()->with(['user' => function($query) {
+                Billing::with([
+                    'supplier' => function($query) {
+                        $query->withTrashed()
+                            ->with('billings')
+                            ->with(['user' => function($query) {
+                                $query->withTrashed();
+                            }]);
+                    },
+                    'client' => function($query) {
                         $query->withTrashed();
-                    }]);
-                }, 'client' => function($query) {
-                    $query->withTrashed();
-                }, 'state'])->find($id);
+                    }, 
+                    'state'
+                ])->find($id);
 
             if (!$billing)
                 return response()->json([

@@ -72,19 +72,8 @@ onMounted(async () => {
   state_id.value = billingsStores.getStateId ?? state_id.value
   updateStateId(state_id.value)
 
-  await billingsStores.info()
-
-  sum.value = billingsStores.sum
-  tax.value = billingsStores.tax
-  totalPending.value = billingsStores.totalPending
-  totalPaid.value = billingsStores.totalPaid
-  totalExpired.value = billingsStores.totalExpired
-  pendingTax.value = billingsStores.pendingTax
-  paidTax.value = billingsStores.paidTax
-  expiredTax.value = billingsStores.expiredTax
-
-  clients.value = billingsStores.clients
-
+  await loadData()
+  
   if(role.value !== 'Supplier') {
     suppliers.value = billingsStores.suppliers
   }
@@ -143,6 +132,21 @@ watchEffect(registerEvents)
 
 function registerEvents() {
   emitter.on('cleanFilters', fetchData)
+}
+
+const loadData = async () => {
+  await billingsStores.info()
+
+  sum.value = billingsStores.sum
+  tax.value = billingsStores.tax
+  totalPending.value = billingsStores.totalPending
+  totalPaid.value = billingsStores.totalPaid
+  totalExpired.value = billingsStores.totalExpired
+  pendingTax.value = billingsStores.pendingTax
+  paidTax.value = billingsStores.paidTax
+  expiredTax.value = billingsStores.expiredTax
+
+  clients.value = billingsStores.clients
 }
 
 const addInvoice = () => {
@@ -211,6 +215,7 @@ const updateState = async () => {
     }
   }, 3000)
 
+  await loadData()
   await fetchData()
 
   return true

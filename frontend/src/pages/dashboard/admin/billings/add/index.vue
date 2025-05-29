@@ -33,6 +33,8 @@ const userData = ref(null)
 const role = ref(null)
 const supplier = ref([])
 
+const discount = ref(0)
+
 const seeDialogRemove = ref(false)
 const selectedInvoice = ref({})
 
@@ -81,6 +83,8 @@ async function fetchData() {
         item[parseInt(element.id)] = value
     });
 
+    item[5] = false
+
     invoiceData.value?.push(item)
 
     isRequestOngoing.value = false
@@ -113,14 +117,28 @@ const deleteProduct = id => {
   }
 }
 
+const applyDiscount = (value) => {
+  discount.value = value
+
+  if(value === 0 ) {
+    invoiceData.value.forEach(element => {
+      if(element?.note === undefined) {
+        element[5] = false;
+      }
+    });
+  }
+}
+
 const editProduct = () => {
   total.value = 0
 
   invoiceData.value.forEach(element => {
     if(element?.note === undefined) {
-      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+      let lineDiscount  = element[5] ? (parseFloat(element[3]) * discount.value / 100) : 0
+      let price = parseFloat(element[3]) - lineDiscount 
+      let result = (Number(element[2]) * price).toFixed(2); 
       total.value += parseFloat(result);
-      element[4] = result; 
+      element[4] = result;
     }
   });
 }
@@ -141,6 +159,7 @@ const onSubmit = () => {
       formData.append('supplier_id', invoice.value.supplier_id)
       formData.append('tax', invoice.value.tax)
       formData.append('total', invoice.value.total)
+      formData.append('discount', discount.value)
       formData.append('reference', invoice.value.reference)
       formData.append('payment_terms', invoice.value.days)
 
@@ -230,6 +249,7 @@ const onSubmit = () => {
             @delete="deleteProduct"
             @edit="editProduct"
             @data="data"
+            @discount="applyDiscount"
         />
         
       </VCol>

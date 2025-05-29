@@ -35,6 +35,8 @@ const userData = ref(null)
 const role = ref(null)
 const supplier = ref([])
 
+const discount = ref(0)
+
 const seeDialogRemove = ref(false)
 const selectedInvoice = ref({})
 
@@ -63,6 +65,7 @@ async function fetchData() {
         invoice.value.subtotal = billing.value.subtotal 
         invoice.value.total = billing.value.total
         invoice.value.tax = billing.value.tax
+        discount.value = billing.value.discount
         
         invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
             const detailObject = {};
@@ -106,12 +109,14 @@ async function fetchData() {
                   invoices.value.forEach(element => {
                       if(detail.id === element.id) {
                           item[parseInt(element.id)] = 
-                              element.type_id === 2 ? 
+                              element.type_id === 2 || element.type_id === 3 ? 
                               parseInt(detail.value) : 
                               detail.value
 
                               if(element.id === 4)
                                   total.value += Number(detail.value)
+                      } else if(detail.id === 5) {
+                        item[5] = detail.value
                       }
                   });
             });
@@ -151,13 +156,28 @@ const deleteProduct = id => {
   }
 }
 
+const applyDiscount = (value) => {
+  discount.value = value
+
+  if(value === 0 ) {
+    invoiceData.value.forEach(element => {
+      if(element?.note === undefined) {
+        element[5] = false;
+      }
+    });
+  }
+}
+
 const editProduct = () => {
   total.value = 0
+
   invoiceData.value.forEach(element => {
     if(element?.note === undefined) {
-      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
+      let lineDiscount  = element[5] ? (parseFloat(element[3]) * discount.value / 100) : 0
+      let price = parseFloat(element[3]) - lineDiscount 
+      let result = (Number(element[2]) * price).toFixed(2); 
       total.value += parseFloat(result);
-      element[4] = result; 
+      element[4] = result;
     }
   });
 }
@@ -178,6 +198,7 @@ const onSubmit = () => {
         formData.append('supplier_id', invoice.value.supplier_id)
         formData.append('tax', invoice.value.tax)
         formData.append('total', invoice.value.total)
+        formData.append('discount', discount.value)
         formData.append('reference', invoice.value.reference)
         formData.append('payment_terms', invoice.value.days)
 
@@ -268,6 +289,7 @@ const onSubmit = () => {
             @delete="deleteProduct"
             @edit="editProduct"
             @data="data"
+            @discount="applyDiscount"
         />
         
       </VCol>

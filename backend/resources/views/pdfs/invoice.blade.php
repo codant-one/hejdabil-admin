@@ -150,6 +150,10 @@
         }
     </style> 
     <body>
+        @php 
+            $width = ($billing->discount > 0) ? 70 : 60;
+            $length = ($billing->discount > 0) ? 0 : 1;
+        @endphp
         <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
             <tbody>
                 <tr>
@@ -258,32 +262,58 @@
                                     @foreach($types as $type)
                                     <td 
                                         style="
-                                            width: {{$type->type_id === 1 ? '40' : (60/(count($types) - 1)) }}%; 
+                                            width: {{$type->type_id === 1 ? '40' : ($width/(count($types) - $length)) }}%; 
                                             padding-left: 10px !important;
                                             text-align: start !important;
                                             height: 40px !important;"> 
                                             {{ $type->name }}
                                         </td>
                                     @endforeach
+                                    @if($billing->discount > 0)
+                                    <td 
+                                        style="
+                                            display: flex;
+                                            justify-content: end;
+                                            padding-right: 10px !important;
+                                            text-align: start !important;
+                                            align-items: center;
+                                            height: 40px !important;"> 
+                                            ({{ $billing->discount }})%
+                                        </td>
+                                    @endif
                                 </tr>
                             </thead>
                             @foreach($invoices as $rowIndex => $row)
                                 <tr style="height: 40px !important;">
                                     @foreach($row as $colIndex => $column)
                                         @isset($column['id'])
-                                        <td 
-                                            style="
-                                            padding-left: 10px !important; 
-                                            text-align: start !important; 
-                                            height: 40px !important; 
-                                            border-top: 1px solid #D9D9D9;">
-                                            <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
-                                            {{ ($column['id'] === 2 || $column['id'] === 3)
-                                                ? formatCurrency($column['value'])
-                                                : $column['value'] 
-                                            }}
-                                            </span>
-                                        </td>
+                                            @if($column['id'] === 5 && $billing->discount > 0)
+                                                <td 
+                                                    style="
+                                                        {{ $column['id'] === 5 ? 'display: flex; justify-content: end; padding-right: 10px !important; align-items: center;' : '' }}
+                                                        padding-left: 10px !important; 
+                                                        text-align: start !important; 
+                                                        height: 40px !important; 
+                                                        border-top: 1px solid #D9D9D9;">
+                                                    <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
+                                                        <input type="checkbox" {{$column['value'] ? 'checked' : ''}} />
+                                                    </span>
+                                                </td>
+                                            @elseif($column['id'] !== 5)
+                                                <td 
+                                                    style="
+                                                        padding-left: 10px !important; 
+                                                        text-align: start !important; 
+                                                        height: 40px !important; 
+                                                        border-top: 1px solid #D9D9D9;">
+                                                    <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
+                                                    {{ ($column['id'] === 2 || $column['id'] === 3)
+                                                        ? formatCurrency($column['value'])
+                                                        : $column['value'] 
+                                                    }}
+                                                    </span>
+                                                </td>
+                                            @endif
                                         @else
                                         <td 
                                             colspan="4"

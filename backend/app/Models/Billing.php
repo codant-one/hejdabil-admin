@@ -134,6 +134,7 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
+            'discount' =>  $request->discount,
             'detail' => json_encode($details, true),
         ]);
 
@@ -187,6 +188,7 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
+            'discount' =>  $request->discount,
             'detail' => json_encode($details, true),
         ]);
 
@@ -281,9 +283,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->reminder = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->reminder = 'pdfs/'.Str::slug($name).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         self::sendMail($billing);
