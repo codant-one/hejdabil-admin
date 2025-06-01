@@ -44,6 +44,10 @@ const props = defineProps({
         type: Number,
         required: true,
     },
+    amount_discount: {
+        type: Number,
+        required: true,
+    },
     billing: {
         type: Object,
         required: false
@@ -79,11 +83,15 @@ const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref(0);
 const selectedDiscount = ref(0)
-const discountOptions = ref([0, 12, 20, 25]);
+const selectedDiscountTemp = ref(0)
+const discountOptions = ref([0, 20, 30, 50]);
+const discountApplied = ref(false)
+const amountDiscount = ref(props.amount_discount)
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 const isMobile = ref(false)
 
 const isConfirmDiscountVisible = ref(false)
+const isAlertDiscountVisible = ref(false)
 
 const invoice = ref({
     id: 1,
@@ -120,22 +128,31 @@ watch(props.data, val => {
   invoice.value.details = { ...val }
 })
 
+watch(() => props.amount_discount, (val) => {
+    amountDiscount.value = val
+
+    var tax = invoice.value.tax / 100
+
+    total.value = ((subtotal.value * tax) + subtotal.value - amountDiscount.value).toFixed(2)
+    invoice.value.total = ((subtotal.value * tax) + subtotal.value - amountDiscount.value).toFixed(2)
+})
+
 watch(() => props.total, (val) => {
     subtotal.value = val
 
     var tax = invoice.value.tax / 100
-    total.value = (val * tax) + val
+    total.value = ((val * tax) + val - amountDiscount.value).toFixed(2)
 
-    invoice.value.total = (val * tax) + val
+    invoice.value.total = ((val * tax) + val - amountDiscount.value).toFixed(2)
     invoice.value.subtotal = val
 })
 
 watch(() => invoice.value.tax, (val) => {
     var tax = val/ 100
 
-    total.value = (subtotal.value * tax) + subtotal.value
-    invoice.value.total = (subtotal.value * tax) + subtotal.value
-    invoice.value.subtotal = subtotal.value
+    total.value = ((subtotal.value * tax) + subtotal.value - amountDiscount.value).toFixed(2)
+    invoice.value.total = ((subtotal.value * tax) + subtotal.value - amountDiscount.value).toFixed(2)
+    invoice.value.subtotal = (subtotal.value).toFixed(2)
 })
 
 watch(() => invoice.value.days, () => {
@@ -174,6 +191,7 @@ async function fetchData() {
         client.value = props.billing.client
 
         selectedDiscount.value = props.billing.discount
+        selectedDiscountTemp.value = props.billing.discount
         
     } else {
 
@@ -290,7 +308,8 @@ const addItem = () => {
         item[parseInt(element.id)] = value
     });
 
-    item[5] = false
+    item[5] = 0
+    item[6] = false
 
     emit('push', item)
 }
@@ -333,13 +352,44 @@ const discount = () => {
 
 const cancelDiscount = () => {
     isConfirmDiscountVisible.value = false
-    selectedDiscount.value = 0
 }
 
 const saveDiscount = () => {
+    discountApplied.value = false;
+
+    invoice.value.details.forEach(element => {
+        if(element?.note === undefined) {
+            if(element[5] > 0)
+                discountApplied.value = true
+        }
+    });
+
+    if(discountApplied.value) {
+        isAlertDiscountVisible.value = true
+        selectedDiscountTemp.value = 0
+    } else {
+        selectedDiscount.value =  selectedDiscountTemp.value
+        emit('discount', selectedDiscount.value)
+    }
+
     isConfirmDiscountVisible.value = false
-    emit('discount', selectedDiscount.value)
 }
+
+const handleBlur = (element) => {
+    const defaults = {
+        2: 1,
+        3: '0.00',
+        5: 0
+    };
+
+    Object.entries(defaults).forEach(([index, defaultValue]) => {
+        const i = parseInt(index);
+        if (element[i] === '' || element[i] === null || isNaN(Number(element[i]))) {
+        element[i] = defaultValue;
+        }
+    });
+};
+
 </script>
 
 <template>
@@ -576,21 +626,30 @@ const saveDiscount = () => {
                             </VBtn>
                         </div>
                         <template v-else >
+                            <div class="d-flex flex-column justify-space-between p-0" v-if="selectedDiscount > 0">
+                                 <VCheckbox
+                                    v-if="selectedDiscount > 0"
+                                    class="pe-2"
+                                    v-model="element[6]"
+                                    color="primary"
+                                    @update:modelValue="$emit('edit')"
+                                />
+                            </div>
                             <div>
                                 <div class="add-products-header d-none d-md-flex px-5">
                                     <table class="w-100">
                                         <thead>
                                             <tr>
                                                 <template v-for="(invoice, index) in invoices" :key="invoice.id">
-                                                    <td :style="`width: ${invoice.type_id === 1 ? '40' : ((selectedDiscount > 0 ? 70 : 60)/(invoices.length - (selectedDiscount > 0 ? 0 : 1))) }%;`">
+                                                    <td :style="`width: ${invoice.type_id === 1 ? '40' : '15' }%;`">
                                                         <span class="text-base font-weight-bold">
                                                         {{ invoice.name }}
                                                         </span>
                                                     </td>
                                                 </template>
-                                                <td v-if="selectedDiscount > 0" class="d-flex justify-end">
+                                                <td style="width: 15%">
                                                     <span class="text-base font-weight-bold">
-                                                        ({{selectedDiscount}}%)
+                                                        Rabbat
                                                     </span>
                                                 </td>
                                             </tr>
@@ -609,7 +668,7 @@ const saveDiscount = () => {
                                             <thead>
                                                 <tr>
                                                     <template v-for="(invoice, index) in invoices" :key="invoice.id">
-                                                        <td :style="`width: ${invoice.type_id === 1 ? '40' : ((selectedDiscount > 0 ? 70 : 60)/(invoices.length - (selectedDiscount > 0 ? 0 : 1))) }%;`" class="pe-2" style="vertical-align: top;">
+                                                        <td :style="`width: ${invoice.type_id === 1 ? '40' : '15' }%;`" class="pe-2" style="vertical-align: top;">
                                                             <VTextarea
                                                                 v-if="invoice.type_id === 1"
                                                                 v-model="element[invoice.id]"
@@ -629,6 +688,7 @@ const saveDiscount = () => {
                                                                 :readonly="element.disabled"
                                                                 :rules="[requiredValidator]"
                                                                 @input="$emit('edit')"
+                                                                @blur="() => handleBlur(element)"
                                                             />
                                                             <VTextField
                                                                 v-if="invoice.type_id === 3"
@@ -642,14 +702,22 @@ const saveDiscount = () => {
                                                                 @input="$emit('edit')"
                                                                 :rules="[requiredValidator]"
                                                                 :disabled="invoice.name === 'Belopp'"
+                                                                @blur="() => handleBlur(element)"
                                                             />
                                                         </td>
                                                     </template>
-                                                    <td v-if="selectedDiscount > 0" class="pe-2 d-flex justify-end" style="vertical-align: top;">
-                                                        <VCheckbox
+                                                     <td style="width: 15%; vertical-align: top;" class="pe-2">
+                                                        <VTextField
+                                                            :disabled="selectedDiscount > 0"
                                                             v-model="element[5]"
-                                                            color="primary"
-                                                            @update:modelValue="$emit('edit')"
+                                                            append-icon="tabler-percentage"
+                                                            type="number"
+                                                            :label="invoice.name"
+                                                            :placeholder="invoice.name"
+                                                            :min="0"
+                                                            :readonly="element.disabled"
+                                                            @input="$emit('edit')"
+                                                            @blur="() => handleBlur(element)"
                                                         />
                                                     </td>
                                                 </tr>
@@ -674,15 +742,33 @@ const saveDiscount = () => {
                 </template>
             </draggable>
             <div class="mt-4">
-                <VBtn @click="addItem" class="me-3">
-                    Ny produktrad
-                </VBtn>
-                <VBtn @click="addNote" class="me-3">
-                    Ny textrad
-                </VBtn>
-                <VBtn @click="discount">
-                    Discount
-                </VBtn>
+                    <VMenu>
+                    <template #activator="{ props }">
+                        <VBtn v-bind="props" class="me-3">
+                            Lägg till
+                        </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem @click="addItem">
+                        <template #prepend>
+                          <VIcon icon="mdi-plus" />
+                        </template>
+                        <VListItemTitle>Ny produktrad</VListItemTitle>
+                      </VListItem>
+                      <VListItem @click="addNote">
+                        <template #prepend>
+                          <VIcon icon="mdi-plus" />
+                        </template>
+                        <VListItemTitle>Ny textrad</VListItemTitle>
+                      </VListItem>
+                      <VListItem @click="discount">
+                        <template #prepend>
+                          <VIcon icon="mdi-plus" />
+                        </template>
+                        <VListItemTitle>Skatteavdrag för ROT / RUT</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
             </div>
         </VCardText>
 
@@ -726,6 +812,16 @@ const saveDiscount = () => {
                                         suffix="%"
                                         style="width: 150px;"
                                     />
+                                </h6>
+                            </td>
+                        </tr>
+                        <tr v-if="selectedDiscount > 0">
+                            <td class="pe-16">
+                                Preliminär skattereduktion {{ selectedDiscount }}% av {{ formatNumber(subtotal) }} kr:
+                            </td>
+                            <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
+                                <h6 class="text-sm">
+                                    - {{ formatNumber(amountDiscount) }} kr
                                 </h6>
                             </td>
                         </tr>
@@ -838,7 +934,7 @@ const saveDiscount = () => {
         </VCardText>
     </VCard>
 
-      <!-- 👉 Confirm send -->
+    <!-- 👉 Confirm send -->
     <VDialog
       v-model="isConfirmDiscountVisible"
       persistent
@@ -856,7 +952,7 @@ const saveDiscount = () => {
             <VSpacer />
 
             <VSelect
-                v-model="selectedDiscount"
+                v-model="selectedDiscountTemp"
                 :items="discountOptions"
                 label="Discounts"
                 append-icon="tabler-percentage"
@@ -876,6 +972,29 @@ const saveDiscount = () => {
           <VBtn @click="saveDiscount">
               Save
           </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm discount -->
+    <VDialog
+      v-model="isAlertDiscountVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isAlertDiscountVisible = false" />
+
+      <!-- Dialog Content -->
+      <VCard title="Apply discount">
+        <VDivider class="mt-4"/>
+        <VCardText class="d-flex justify-content-between">
+            You cannot apply two discounts to one invoice.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+            <VBtn @click="isAlertDiscountVisible = false">
+                OK
+            </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

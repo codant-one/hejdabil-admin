@@ -36,6 +36,8 @@ const role = ref(null)
 const supplier = ref([])
 
 const discount = ref(0)
+const rabattApplied = ref(false)
+const amount_discount = ref(0)
 
 const seeDialogRemove = ref(false)
 const selectedInvoice = ref({})
@@ -66,6 +68,8 @@ async function fetchData() {
         invoice.value.total = billing.value.total
         invoice.value.tax = billing.value.tax
         discount.value = billing.value.discount
+        rabattApplied.value = billing.value.rabatt
+        amount_discount.value = billing.value.amount_discoun
 
         invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
             const detailObject = {};
@@ -115,8 +119,8 @@ async function fetchData() {
 
                               if(element.id === 4)
                                   total.value += Number(detail.value)
-                      } else if(detail.id === 5) {
-                        item[5] = detail.value
+                      } else {                         
+                        item[detail.id] = detail.value
                       }
                   });
             });
@@ -147,12 +151,7 @@ const deleteProduct = id => {
   if(id > 0) {
     invoiceData.value?.splice(id, 1)
 
-    total.value = 0
-    invoiceData.value.forEach(element => {
-      let result = (Number(element[2]) * parseFloat(element[3])).toFixed(2); 
-      total.value += parseFloat(result);
-      element[4] = result; 
-    });
+    editProduct()
   }
 }
 
@@ -162,22 +161,29 @@ const applyDiscount = (value) => {
   if(value === 0 ) {
     invoiceData.value.forEach(element => {
       if(element?.note === undefined) {
-        element[5] = false;
+        element[6] = false;
       }
     });
   }
+
+  editProduct()
 }
 
 const editProduct = () => {
   total.value = 0
+  amount_discount.value = 0
 
   invoiceData.value.forEach(element => {
     if(element?.note === undefined) {
-      let lineDiscount  = element[5] ? (parseFloat(element[3]) * discount.value / 100) : 0
-      let price = parseFloat(element[3]) - lineDiscount 
+      let amount = element[3] === '' ? '0.00' : element[3]
+      let rabatt  = parseFloat(amount) * element[5] / 100
+      let price = parseFloat(amount) - rabatt
       let result = (Number(element[2]) * price).toFixed(2); 
       total.value += parseFloat(result);
       element[4] = result;
+
+      let lineDiscount  = element[6] ? (parseFloat(result) * discount.value / 100) : 0
+      amount_discount.value += parseFloat(lineDiscount);
     }
   });
 }
@@ -190,6 +196,10 @@ const onSubmit = () => {
         
         let formData = new FormData()
 
+        rabattApplied.value = invoiceData.value.some(
+          element => element?.note === undefined && element[5] > 0
+        );
+
         formData.append('id', Number(route.params.id))
         formData.append('_method', 'PUT')
         formData.append('client_id', invoice.value.client_id)
@@ -200,7 +210,9 @@ const onSubmit = () => {
         formData.append('supplier_id', invoice.value.supplier_id)
         formData.append('tax', invoice.value.tax)
         formData.append('total', invoice.value.total)
+        formData.append('rabatt', rabattApplied.value === true ? 1 : 0)
         formData.append('discount', discount.value)
+        formData.append('amount_discount', amount_discount.value)
         formData.append('reference', invoice.value.reference)
         formData.append('payment_terms', invoice.value.days)
 
@@ -288,6 +300,7 @@ const onSubmit = () => {
             :role="role"
             :supplier="supplier"
             :total="total"
+            :amount_discount="amount_discount"
             :billing="billing"
             :isCreated="false"
             :isCredit="false"

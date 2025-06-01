@@ -150,10 +150,6 @@
         }
     </style> 
     <body>
-        @php 
-            $width = ($billing->discount > 0) ? 70 : 60;
-            $length = ($billing->discount > 0) ? 0 : 1;
-        @endphp
         <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
             <tbody>
                 <tr>
@@ -259,27 +255,25 @@
                         <table width="100%" class="table-items">
                             <thead class="invoice-background">
                                 <tr>
-                                    @foreach($types as $type)
+                                    @foreach($types as $key => $type)
                                     <td 
                                         style="
-                                            width: {{$type->type_id === 1 ? '40' : ($width/(count($types) - $length)) }}%; 
-                                            padding-left: 10px !important;
-                                            text-align: start !important;
+                                            text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
+                                            width: {{$type->type_id === 1 ? '40' : '15' }}%; 
+                                            {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 10px !important;
                                             height: 40px !important;"> 
-                                            {{ $type->name }}
-                                        </td>
+                                        {{ $type->name }}
+                                    </td>
                                     @endforeach
-                                    @if($billing->discount > 0)
+                                    @if($billing->rabatt)
                                     <td 
                                         style="
-                                            display: flex;
-                                            justify-content: end;
+                                            text-align: right!important;
+                                            width: 15%; 
                                             padding-right: 10px !important;
-                                            text-align: start !important;
-                                            align-items: center;
                                             height: 40px !important;"> 
-                                            ({{ $billing->discount }})%
-                                        </td>
+                                        Rabbat
+                                    </td>
                                     @endif
                                 </tr>
                             </thead>
@@ -287,36 +281,35 @@
                                 <tr style="height: 40px !important;">
                                     @foreach($row as $colIndex => $column)
                                         @isset($column['id'])
-                                            @if($column['id'] === 5 && $billing->discount > 0)
-                                                <td 
-                                                    style="
-                                                        {{ $column['id'] === 5 ? 'display: flex; justify-content: end; padding-right: 10px !important; align-items: center;' : '' }}
-                                                        padding-left: 10px !important; 
-                                                        text-align: start !important; 
-                                                        height: 40px !important; 
-                                                        border-top: 1px solid #D9D9D9;">
-                                                    <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
-                                                        <input type="checkbox" {{$column['value'] ? 'checked' : ''}} />
-                                                    </span>
-                                                </td>
-                                            @elseif($column['id'] !== 5)
-                                                <td 
-                                                    style="
-                                                        padding-left: 10px !important; 
-                                                        text-align: start !important; 
-                                                        height: 40px !important; 
-                                                        border-top: 1px solid #D9D9D9;">
-                                                    <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
-                                                    {{ ($column['id'] === 2 || $column['id'] === 3)
-                                                        ? formatCurrency($column['value'])
-                                                        : $column['value'] 
-                                                    }}
-                                                    </span>
-                                                </td>
+                                            @if($column['id'] < 5)
+                                            <td 
+                                                style="
+                                                text-align: {{ $column['id'] === 1 ? ' start' : 'right' }}!important;
+                                                {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 10px !important;
+                                                height: 40px !important; 
+                                                border-top: 1px solid #D9D9D9;">
+                                                <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
+                                                {{ ($column['id'] === 2 || $column['id'] === 3)
+                                                    ? formatCurrency($column['value'])
+                                                    : $column['value'] 
+                                                }}
+                                                </span>
+                                            </td>
+                                            @elseif($column['id'] === 5 && $billing->rabatt)
+                                            <td 
+                                                style="
+                                                text-align: right!important;
+                                                padding-right: 10px!important;
+                                                height: 40px !important; 
+                                                border-top: 1px solid #D9D9D9;">
+                                                <span style="font-weight: 400;">
+                                                {{ formatCurrency($column['value'])}} %
+                                                </span>
+                                            </td>
                                             @endif
                                         @else
                                         <td 
-                                            colspan="4"
+                                            colspan="{{ $billing->rabatt ? 5 : 4 }}"
                                             style="
                                             padding-left: 10px !important; 
                                             text-align: start !important; 
@@ -336,25 +329,47 @@
             </tbody>
         </table>
         <!------------------------- BILL TO---------------------------------->
-        <div style="position: fixed; bottom: 0; width: 100%; padding-bottom: 20px;">
+        <div style="position: fixed; bottom: 0; width: 100%;">
             <table width="100%" class="table-supplier">
                 <tr>
-                    <td width="25%"></td>
-                    <td width="25%"></td>
-                    <td width="25%"></td>
-                    <td width="25%" class="info-total">
+                    <td width="15%"></td>
+                    <td width="15%"></td>
+                    <td width="15%"></td>
+                    <td width="55%" class="info-total">
                         <table width="100%">
                             <tr>
-                                <td class="text">Netto:</td>
-                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->subtotal) }} kr</span></td>
+                                <td style="text-align: right;">
+                                    Netto:
+                                </td>
+                                <td class="numbers" style="text-align: right;">
+                                    <span>{{ formatCurrency($billing->subtotal) }} kr</span>
+                                </td>
                             </tr>
                             <tr>
-                                <td class="text">Moms:</td>
-                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->tax) }}%</span></td>
+                                <td style="text-align: right;">
+                                    Moms {{$billing->tax}}% (beräknad på {{ formatCurrency($billing->subtotal) }} kr):
+                                </td>
+                                <td class="numbers" style="text-align: right;">
+                                    <span>{{ formatCurrency($billing->amount_tax) }} kr</span>
+                                </td>
                             </tr>
+                            @if($billing->discount > 0)
                             <tr>
-                                <td class="text">Summa att betala:</td>
-                                <td class="numbers" style="text-align: right;"><span>{{ formatCurrency($billing->total) }} kr</span></td>
+                                <td style="text-align: right;">
+                                    Preliminär skattereduktion {{$billing->discount}}% av {{ formatCurrency($billing->subtotal) }} kr:
+                                </td>
+                                <td class="numbers" style="text-align: right;">
+                                    <span>- {{ formatCurrency($billing->amount_discount) }} kr</span>
+                                </td>
+                            </tr>
+                            @endif
+                            <tr>
+                                <td style="text-align: right;">
+                                    <strong>Summa att betala:</strong>
+                                </td>
+                                <td class="numbers" style="text-align: right;">
+                                    <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>
+                                </td>
                             </tr>
                         </table>
                     </td>

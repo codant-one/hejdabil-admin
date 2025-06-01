@@ -141,7 +141,7 @@ const shippingAddress = ref('Optional')
 
 <style lang="scss">
 .customer-info-card{
-  .v-radio-group{
+  .v-radio-group {
     .v-input__control{
       .v-label{
         margin-inline-start: 0;

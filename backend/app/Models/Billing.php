@@ -122,9 +122,11 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $dueDate = Carbon::parse($request->due_date);
 
         $billing = self::create([
             'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
             'invoice_date' =>  $request->invoice_date,
@@ -134,7 +136,10 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
+            'rabatt' =>  $request->rabatt,
             'discount' =>  $request->discount,
+            'amount_discount' =>  $request->amount_discount,
+            'amount_tax' => ($request->tax * $request->subtotal) / 100,
             'detail' => json_encode($details, true),
         ]);
 
@@ -176,9 +181,11 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
             'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
             'invoice_date' =>  $request->invoice_date,
@@ -188,7 +195,10 @@ class Billing extends Model
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
             'total' =>  $request->total,
+            'rabatt' =>  $request->rabatt,
             'discount' =>  $request->discount,
+            'amount_discount' =>  $request->amount_discount,
+            'amount_tax' => ($request->tax * $request->subtotal) / 100,
             'detail' => json_encode($details, true),
         ]);
 
