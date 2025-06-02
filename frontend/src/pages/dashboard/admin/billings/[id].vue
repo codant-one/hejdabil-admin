@@ -53,14 +53,7 @@ const addTag = (event) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (newTag && emailRegex.test(newTag)) {
-    if (!selectedTags.value.includes(newTag)) {
-      selectedTags.value.push(newTag);
-
-      if (!existingTags.value.includes(newTag)) {
-        existingTags.value.push(newTag);
-      }
-
-    }
+    // no hago nada, sino invalido
   } else {
     isValid.value = true
     selectedTags.value.pop();
@@ -68,38 +61,41 @@ const addTag = (event) => {
 };
 
 const sendMails = async () => {
-  isConfirmSendMailVisible.value = false
-  isRequestOngoing.value = true
 
-  let data = {
-    id: invoice.value.id,
-    emailDefault: emailDefault.value,
-    emails: selectedTags.value
-  }
+  if(!isValid.value) {
+    isConfirmSendMailVisible.value = false
+    isRequestOngoing.value = true
 
-  let res = await billingsStores.sendMails(data)
+    let data = {
+      id: invoice.value.id,
+      emailDefault: emailDefault.value,
+      emails: selectedTags.value
+    }
 
-  isRequestOngoing.value = false
+    let res = await billingsStores.sendMails(data)
 
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
-    show: true
-  }
-
-  setTimeout(() => {
-    selectedTags.value = []
-    existingTags.value = []
-    emailDefault.value = true 
+    isRequestOngoing.value = false
 
     advisor.value = {
-      type: '',
-      message: '',
-      show: false
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
+      show: true
     }
-  }, 3000)
 
-  return true
+    setTimeout(() => {
+      selectedTags.value = []
+      existingTags.value = []
+      emailDefault.value = true 
+
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
+
+    return true
+  }
 }
 
 const printInvoice = async() => {

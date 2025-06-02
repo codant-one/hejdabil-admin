@@ -208,13 +208,13 @@
                                         <tr>
                                             <td width="30%">Fakturadatum:</td>
                                             <td>
-                                                <span>{{ \Carbon\Carbon::parse($billing->invoice_date)->format('d/m/Y') }}</span>
+                                                <span>{{ $billing->invoice_date }}</span>
                                             </td>
                                         </tr>
                                         <tr>
                                             <td width="30%">Förfallodatum:</td>
                                             <td>
-                                                <span>{{ \Carbon\Carbon::parse($billing->due_date)->format('d/m/Y') }}</span>
+                                                <span>{{ $billing->due_date }}</span>
                                             </td>
                                         </tr>
                                         <tr>

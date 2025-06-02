@@ -315,14 +315,7 @@ const addTag = (event) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   if (newTag && emailRegex.test(newTag)) {
-    if (!selectedTags.value.includes(newTag)) {
-      selectedTags.value.push(newTag);
-
-      if (!existingTags.value.includes(newTag)) {
-        existingTags.value.push(newTag);
-      }
-
-    }
+    // no hago nada, sino invalido
   } else {
     isValid.value = true
     selectedTags.value.pop();
@@ -330,40 +323,41 @@ const addTag = (event) => {
 };
 
 const sendMails = async () => {
-  isConfirmSendMailVisible.value = false
-  isRequestOngoing.value = true
 
-  let data = {
-    id: selectedBilling.value.id,
-    emailDefault: emailDefault.value,
-    emails: selectedTags.value
-  }
+  if(!isValid.value) {
+    isConfirmSendMailVisible.value = false
+    isRequestOngoing.value = true
 
-  let res = await billingsStores.sendMails(data)
+    let data = {
+      id: selectedBilling.value.id,
+      emailDefault: emailDefault.value,
+      emails: selectedTags.value
+    }
 
-  isRequestOngoing.value = false
+    let res = await billingsStores.sendMails(data)
 
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
-    show: true
-  }
-
-  setTimeout(() => {
-    selectedTags.value = []
-    existingTags.value = []
-    emailDefault.value = true 
+    isRequestOngoing.value = false
 
     advisor.value = {
-      type: '',
-      message: '',
-      show: false
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.success ? 'Fakturan är skickad!' : res.data.message,
+      show: true
     }
-  }, 3000)
 
-  await fetchData()
-  
-  return true
+    setTimeout(() => {
+      selectedTags.value = []
+      existingTags.value = []
+      emailDefault.value = true 
+
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
+
+    return true
+  }
 }
 
 const downloadCSV = async () => {
@@ -427,7 +421,7 @@ const downloadCSV = async () => {
         <VCard title="Filter">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="10" class="d-flex justify-content-between align-center" :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'">
+              <VCol cols="12" md="8" class="d-flex justify-content-between align-center" :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'">
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row gap-3">
                   <div
                     v-for="{ title, stateId, tax, value, icon, color } in [
@@ -443,12 +437,12 @@ const downloadCSV = async () => {
                         variant="tonal"
                         :color="color"
                         rounded
-                        size="65"
+                        size="45"
                         class="me-2"
                       >
                         <VIcon
                           :icon="icon"
-                          size="45"
+                          size="35"
                         />
                       </VAvatar>
                       <div>
@@ -464,17 +458,12 @@ const downloadCSV = async () => {
                         >
                           {{ value }}
                         </h6>
-                        <span 
-                          class="text-sm"
-                          :class="`text-${color}`">
-                          varav moms {{ tax }}
-                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </VCol>
-              <VCol cols="12" md="2" class="d-flex flex-column">
+              <VCol cols="12" md="4" class="d-flex flex-column">
                 <VSelect
                   v-model="client_id"
                   :items="clients"

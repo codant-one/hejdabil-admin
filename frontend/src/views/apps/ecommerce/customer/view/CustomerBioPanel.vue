@@ -71,7 +71,7 @@ async function fetchData() {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
 
-  if(role.value !== 'Supplier' && route.name.includes('clients')) {
+  if(role.value !== 'Supplier' && route.name.includes('clients-id')) {
     await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
 
