@@ -421,7 +421,7 @@ const downloadCSV = async () => {
         <VCard title="Filter">
           <VCardText>
             <VRow>
-              <VCol cols="12" md="8" class="d-flex justify-content-between align-center" :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'">
+              <VCol cols="12" md="10" class="d-flex justify-content-between align-center" :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'">
                 <div class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row gap-3">
                   <div
                     v-for="{ title, stateId, tax, value, icon, color } in [
@@ -437,12 +437,12 @@ const downloadCSV = async () => {
                         variant="tonal"
                         :color="color"
                         rounded
-                        size="45"
+                        size="65"
                         class="me-2"
                       >
                         <VIcon
                           :icon="icon"
-                          size="35"
+                          size="45"
                         />
                       </VAvatar>
                       <div>
@@ -458,12 +458,17 @@ const downloadCSV = async () => {
                         >
                           {{ value }}
                         </h6>
+                        <span 
+                          class="text-sm"
+                          :class="`text-${color}`">
+                          varav moms {{ tax }}
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </VCol>
-              <VCol cols="12" md="4" class="d-flex flex-column">
+              <VCol cols="12" md="2" class="d-flex flex-column">
                 <VSelect
                   v-model="client_id"
                   :items="clients"
@@ -551,7 +556,11 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
                 <th scope="col"> <span :class="textColor"> KUND </span> </th>
                 <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> Summa </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> NETTO </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> MOMS </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> SUMMA </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> SUMMA (KUND) </span> </th>
+                <th class="text-end" scope="col"> <span :class="textColor"> SKATTEAVDRAG </span> </th>
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> FÖRFALLER </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> BETALD </span> </th>
@@ -577,7 +586,11 @@ const downloadCSV = async () => {
                     {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
+                <td class="text-end"> {{ formatNumber(billing.subtotal) ?? '0,00' }} kr</td>
+                <td class="text-end"> {{ formatNumber(billing.amount_tax) ?? '0,00' }} kr</td>
+                <td class="text-end"> {{ formatNumber((billing.total + billing.amount_discount )) ?? '0,00' }} kr</td>
                 <td class="text-end"> {{ formatNumber(billing.total) ?? '0,00' }} kr</td>
+                <td class="text-end"> {{ formatNumber(billing.amount_discount) ?? '0,00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
                 <td class="text-center">    
@@ -685,7 +698,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!billings.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 8 : 9"
+                  :colspan="role === 'Supplier' ? 11 : 12"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

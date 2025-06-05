@@ -393,7 +393,7 @@ const handleBlur = (element) => {
 </script>
 
 <template>
-    <VCard class="pa-5 pa-md-10">
+    <VCard class="pa-5 pa-md-10" v-if="invoice.details.length > 0">
         <VCardText class="d-block d-md-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded" style="background-color:  #F2EFFF;">
             <div class="mt-4 px-4 w-100 w-md-50">
                 <div class="d-flex align-center mb-6">
@@ -944,19 +944,18 @@ const handleBlur = (element) => {
       <DialogCloseBtn @click="cancelDiscount" />
 
       <!-- Dialog Content -->
-      <VCard title="Apply discount">
+      <VCard title="Tillämpa skatteavdrag">
         <VDivider class="mt-4"/>
         <VCardText class="d-flex justify-content-between">
-            Select the discount percentage you want to apply
+            Välj preliminär skatteavdrag
         
             <VSpacer />
 
             <VSelect
                 v-model="selectedDiscountTemp"
                 :items="discountOptions"
-                label="Discounts"
+                label="Skattereduktion"
                 append-icon="tabler-percentage"
-                style="width: 150px;"
             />
 
         </VCardText>
@@ -967,10 +966,10 @@ const handleBlur = (element) => {
             color="secondary"
             variant="tonal"
             @click="cancelDiscount">
-              Cancel
+              Avbryt
           </VBtn>
           <VBtn @click="saveDiscount">
-              Save
+              Spara
           </VBtn>
         </VCardText>
       </VCard>

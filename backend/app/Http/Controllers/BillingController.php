@@ -55,8 +55,8 @@ class BillingController extends Controller
                             );
 
             $count = $query->count();
-            $totalSum = number_format($query->sum('total'), 2);
-            $totalTax = number_format($query->sum(DB::raw('total - subtotal')), 2);
+            $totalSum =  number_format($query->sum(DB::raw('total + amount_discount')), 2);
+            $totalTax =  number_format($query->sum('amount_tax'), 2);
             $totalNeto = number_format($query->sum('subtotal'), 2);
              
             $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
@@ -438,14 +438,14 @@ class BillingController extends Controller
                 }
             )->withTrashed()->get();
 
-            $sum = number_format(Billing::whereNotNull('id')->applyFilters([])->sum('total'), 2);
-            $tax = number_format(Billing::whereNotNull('id')->applyFilters([])->sum(DB::raw('total - subtotal')), 2);
-            $totalPending = number_format(Billing::where('state_id', 4)->applyFilters([])->sum('total'), 2);
-            $totalPaid = number_format(Billing::whereIn('state_id', [7, 9])->applyFilters([])->sum('total'), 2);
-            $totalExpired = number_format(Billing::where('state_id', 8)->applyFilters([])->sum('total'), 2);
-            $pendingTax = number_format(Billing::where('state_id', 4)->applyFilters([])->sum(DB::raw('total - subtotal')), 2);
-            $paidTax = number_format(Billing::whereIn('state_id', [7, 9])->applyFilters([])->sum(DB::raw('total - subtotal')), 2);
-            $expiredTax = number_format(Billing::where('state_id', 8)->applyFilters([])->sum(DB::raw('total - subtotal')), 2);
+            $sum = number_format(Billing::whereNotNull('id')->applyFilters([])->sum(DB::raw('total + amount_discount')), 2);
+            $tax = number_format(Billing::whereNotNull('id')->applyFilters([])->sum('amount_tax'), 2);
+            $totalPending = number_format(Billing::where('state_id', 4)->applyFilters([])->sum(DB::raw('total + amount_discount')), 2);
+            $totalPaid = number_format(Billing::whereIn('state_id', [7, 9])->applyFilters([])->sum(DB::raw('total + amount_discount')), 2);
+            $totalExpired = number_format(Billing::where('state_id', 8)->applyFilters([])->sum(DB::raw('total + amount_discount')), 2);
+            $pendingTax = number_format(Billing::where('state_id', 4)->applyFilters([])->sum('amount_tax'), 2);
+            $paidTax = number_format(Billing::whereIn('state_id', [7, 9])->applyFilters([])->sum('amount_tax'), 2);
+            $expiredTax = number_format(Billing::where('state_id', 8)->applyFilters([])->sum('amount_tax'), 2);
 
             return response()->json([
                 'success' => true,
