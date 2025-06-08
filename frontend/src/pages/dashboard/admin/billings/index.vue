@@ -556,11 +556,7 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
                 <th scope="col"> <span :class="textColor"> KUND </span> </th>
                 <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> NETTO </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> MOMS </span> </th>
                 <th class="text-end" scope="col"> <span :class="textColor"> SUMMA </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> SUMMA (KUND) </span> </th>
-                <th class="text-end" scope="col"> <span :class="textColor"> SKATTEAVDRAG </span> </th>
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> FÖRFALLER </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> BETALD </span> </th>
@@ -586,11 +582,7 @@ const downloadCSV = async () => {
                     {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
-                <td class="text-end"> {{ formatNumber(billing.subtotal) ?? '0,00' }} kr</td>
-                <td class="text-end"> {{ formatNumber(billing.amount_tax) ?? '0,00' }} kr</td>
                 <td class="text-end"> {{ formatNumber((billing.total + billing.amount_discount )) ?? '0,00' }} kr</td>
-                <td class="text-end"> {{ formatNumber(billing.total) ?? '0,00' }} kr</td>
-                <td class="text-end"> {{ formatNumber(billing.amount_discount) ?? '0,00' }} kr</td>
                 <td> {{ billing.invoice_date }} </td>
                 <td> {{ billing.due_date }} </td>
                 <td class="text-center">    

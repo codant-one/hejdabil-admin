@@ -7,6 +7,8 @@ import { useAuthStores } from '@/stores/useAuth'
 import { themeConfig } from '@themeConfig'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
+import { Cropper, CircleStencil } from 'vue-advanced-cropper'
+import 'vue-advanced-cropper/dist/style.css'
 
 const authStores = useAuthStores()
 const profileStores = useProfileStores()
@@ -15,9 +17,13 @@ const suppliersStores = useSuppliersStores()
 const refVForm = ref()
 const isRequestOngoing = ref(true)
 
+const isConfirmChangeLogoVisible = ref(false)
+const cropper = ref()
+
 const data = ref(null)
 const userData = ref(null)
 const logo = ref(null)
+const logoCropped = ref(null)
 const logoOld = ref(null)
 const filename = ref([])
 
@@ -85,8 +91,9 @@ async function fetchData() {
     form.value.swish = supplier.value.swish
     form.value.vat = supplier.value.vat
 
-    logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : null 
-
+    logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
+    logoCropped.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
+    
     setTimeout(() => {
         emit('window', false)
     }, 500)
@@ -95,7 +102,7 @@ async function fetchData() {
 }
 
 const resetAvatar = () => {
-  logo.value = null
+  logoCropped.value = null
   logoOld.value = null
 }
 
@@ -161,27 +168,56 @@ const onImageSelected = event => {
 
   resizeImage(file, 1200, 1200, 1)
     .then(async blob => {
-        logoOld.value = blob
-        
+        let r = await blobToBase64(blob)
+        logoCropped.value = 'data:image/jpeg;base64,' + r
+    })
+}
+
+const dataURLtoBlob = (dataURL) => {
+  const [header, base64] = dataURL.split(',');
+  const mimeMatch = header.match(/:(.*?);/);
+  const mime = mimeMatch ? mimeMatch[1] : 'image/png'; 
+  const binary = atob(base64);
+  const len = binary.length;
+  const u8arr = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    u8arr[i] = binary.charCodeAt(i);
+  }
+  return new Blob([u8arr], { type: mime });
+}
+
+const cropImage = async () => {
+    if (cropper.value) {
+        const result = cropper.value.getResult({
+            mime: 'image/png',
+            quality: 1,
+            fillColor: 'transparent'
+        });
+        const blob = dataURLtoBlob(result.canvas.toDataURL("image/png"));
+
+        logoOld.value = blob 
+
         let formData = new FormData()
 
         formData.append('logo', logoOld.value)
         
+        isConfirmChangeLogoVisible.value = false
         isRequestOngoing.value = true
 
         profileStores.updateLogo(formData)
-            .then(response => {    
+            .then(async response => {    
 
                 window.scrollTo(0, 0)
                 
                 isRequestOngoing.value = false
-                
-                localStorage.setItem('user_data', JSON.stringify(response.user_data))
-                
+                localStorage.setItem('user_data', JSON.stringify(response.user_data))     
+
+                let r = await blobToBase64(blob)
+                logo.value = 'data:image/jpeg;base64,' + r
 
             }).catch(error => {
                 isRequestOngoing.value = false
-
+                console.log('error', error)
                 advisor.value.type = 'error'
                 advisor.value.show = true
                 advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
@@ -192,12 +228,13 @@ const onImageSelected = event => {
                     advisor.value.message = ''
                     emit('alert', advisor)
                 }, 5000) 
-            })
-        
+            })           
 
-        let r = await blobToBase64(blob)
-        logo.value = 'data:image/jpeg;base64,' + r
-    })
+    }
+}
+
+const onCropChange = (coordinates) => {
+    // console.log('coordinates', coordinates)
 }
 
 const onSubmit = () => {
@@ -291,7 +328,17 @@ const onSubmit = () => {
                 <VCardText class="tw-bg-tertiary p-0">
                     <VRow no-gutters>
                         <VCol cols="12" md="12" class="d-flex col-logo">
-                            <VImg :src="logo ?? logo_" class="logo-store" contain/>
+                            <div class="logo-store">
+                             <VBadge 
+                                @click="isConfirmChangeLogoVisible = true"
+                                class="cursor-pointer"
+                                color="success">
+                                <template #badge>
+                                    <VIcon icon="tabler-pencil" />
+                                </template>
+                                    <VImg :src="logo" class="logo-store-img" contain/>
+                            </VBadge>
+                            </div>
                         </VCol>
                         <VCol cols="12" md="12" class="py-0 info-logo-store">
                             <VCardItem class="info-store">
@@ -314,50 +361,20 @@ const onSubmit = () => {
             <VCard>
                 <VCardTitle class="px-6 py-5 d-flex justify-content-center align-center">
                     <span>Redigera företagsinformation</span>
-                    <VBtn
-                        icon
-                        variant="text"
-                        color="primary"
-                        class="ms-1"
-                        size="small"
-                        @click="resetAvatar"
-                        >
-                            <VTooltip
-                                open-on-focus
-                                location="top"
-                                activator="parent">
-                                Ta bort logotyp
-                            </VTooltip>
-                            <VIcon
-                                icon="tabler-camera-x"
-                                size="24"
-                            />
-                        </VBtn>
                 </VCardTitle>
                 <VCardText>
                     <VForm
                         ref="refVForm"
                         @submit.prevent="onSubmit">
                         <VRow>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="9">
                                 <VTextField
                                     v-model="form.company"
                                     label="Företagsnamn"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
-                                <VFileInput 
-                                    v-model="filename"
-                                    label="Logotyp"
-                                    class="mb-2"
-                                    accept="image/png, image/jpeg, image/bmp, image/webp"
-                                    prepend-icon="tabler-camera"
-                                    @change="onImageSelected"
-                                    @click:clear="resetAvatar"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="3">
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
@@ -463,9 +480,98 @@ const onSubmit = () => {
             </VCard>
         </VCol>
     </VRow>
+
+     <!-- 👉 Confirm change logo -->
+    <VDialog
+      v-model="isConfirmChangeLogoVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmChangeLogoVisible = !isConfirmChangeLogoVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Change logo">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          The logo you select will be displayed on your billing.
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+             <VRow>
+                <VCol cols="12" md="12">
+                    <Cropper
+                        v-if="logoCropped"
+                        ref="cropper"
+                        class="cropper-container"
+                        preview-class="cropper-preview"
+                        background-class="cropper-background"
+                        :src="logoCropped"
+                        :stencil-props="{
+                            previewClass: 'cropper-preview-circle'
+                        }"
+                        @change="onCropChange"
+                    />
+
+                </VCol>
+                <VCol cols="12" md="12">
+                     <VFileInput 
+                        v-model="filename"
+                        label="Logotyp"
+                        class="mb-2"
+                        accept="image/png, image/jpeg, image/bmp, image/webp"
+                        prepend-icon="tabler-camera"
+                        @change="onImageSelected"
+                        @click:clear="resetAvatar"
+                    />
+                </VCol>
+            </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmChangeLogoVisible = false">
+              Cancel
+          </VBtn>
+          <VBtn @click="cropImage"> 
+              Save
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
   </section>
 </template>
 <style scoped>
+
+    ::v-deep .vue-simple-handler {
+        background: #9966FF !important;
+    }
+    ::v-deep .cropper-preview-circle {
+        border: dashed 1px #9966FF
+    }
+    ::v-deep .cropper-background,
+    ::v-deep .vue-advanced-cropper__foreground {
+        background-color: transparent !important;
+    }
+
+    .cropper-container {
+        width: 100%;
+        height: 400px;
+        background-color: #f5f5f5;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .cropper-preview {
+        width: 150px;
+        height: 150px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+
     .banner-img {
         width: 100%;
         height: 170px;
@@ -484,16 +590,18 @@ const onSubmit = () => {
     }
 
     .logo-store {
+        top: 10%;
+        left: 3%;
+        z-index: 9999;
+        position: absolute;
+    }
+    
+    .logo-store-img {
         width: 173.96px;
         height: 173.96px;
         max-width: 173.96px;
         border-radius: 16px;
-        border: 1px solid #E1E1E1;
-        top: 10%;
-        left: 3%;
-        z-index: 9999;
         background-color: #F5F5F5;
-        position: absolute;
     }
 
     .tw-bg-tertiary {
@@ -519,6 +627,10 @@ const onSubmit = () => {
     }
 
     @media (max-width: 776px) {
+
+        .cropper-container {
+            height: 250px;
+        }
 
         .info-logo-store {
             margin-top: 8%;
