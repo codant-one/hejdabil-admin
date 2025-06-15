@@ -1,15 +1,12 @@
 <script setup>
 
-import { useTypesStores } from '@/stores/useTypes'
 import { useBrandsStores } from '@/stores/useBrands'
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewBrandDrawer from './AddNewBrandDrawer.vue' 
 
 const brandsStores = useBrandsStores()
-const typesStores = useTypesStores()
 const emitter = inject("emitter")
 
-const types = ref([])
 const brands = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
@@ -32,7 +29,7 @@ const paginationData = computed(() => {
   const firstIndex = brands.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
   const lastIndex = brands.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBrands.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalBrands.value } märke`
 })
 
 // 👉 watching current page
@@ -65,8 +62,6 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   await brandsStores.fetchBrands(data)
-  await typesStores.fetchTypes()
-  types.value = typesStores.getTypes
 
   brands.value = brandsStores.getBrands
   totalPages.value = brandsStores.last_page
@@ -98,7 +93,7 @@ const removeBrand = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Fakturans attribut raderat!' : res.data.message,
+    message: res.data.success ? 'Märke raderat!' : res.data.message,
     show: true
   }
 
@@ -127,7 +122,6 @@ const submitForm = async (brand, method) => {
   submitCreate(brand.data)
 }
 
-
 const submitCreate = brandData => {
 
     brandsStores.addBrand(brandData)
@@ -135,7 +129,7 @@ const submitCreate = brandData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Fakturaattribut skapat! ',
+                    message: 'Märke skapat!',
                     show: true
                 }
                 fetchData()
@@ -167,7 +161,7 @@ const submitUpdate = brandData => {
             if (res.data.success) {
                     advisor.value = {
                     type: 'success',
-                    message: 'Fakturans attribut uppdaterat!',
+                    message: 'Märke uppdaterat!',
                     show: true
                 }
                 fetchData()
@@ -378,7 +372,6 @@ const downloadCSV = async () => {
     <AddNewBrandDrawer
       v-model:isDrawerOpen="isAddNewBrandDrawerVisible"
       :brand="selectedBrand"
-      :types="types"
       @brand-data="submitForm"/>
 
     <!-- 👉 Confirm Delete -->
@@ -391,10 +384,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort faktura">
+      <VCard title="Ta bort märke">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort fakturan <strong>{{ selectBrand.name }}</strong>?
+          Är du säker att du vill ta bort märke <strong>{{ selectedBrand.name }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">

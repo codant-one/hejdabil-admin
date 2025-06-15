@@ -1,30 +1,30 @@
 import { defineStore } from 'pinia'
-import Brands from '@/api/brands'
+import Models from '@/api/models'
 
-export const useBrandsStores = defineStore('brands', {
+export const useModelsStores = defineStore('models', {
     state: () => ({
-        brands: {},
+        models: {},
         loading: false,
         last_page: 1,
-        brandsTotalCount: 6
+        modelsTotalCount: 6
     }),
     getters:{
-        getBrands(){
-            return this.brands
+        getModels(){
+            return this.models
         }
     },
     actions: {
         setLoading(payload){
             this.loading = payload
         },
-        fetchBrands(params) {
+        fetchModels(params) {
             this.setLoading(true)
             
-            return Brands.get(params)
+            return Models.get(params)
                 .then((response) => {
-                    this.brands = response.data.data.invoices.data
+                    this.models = response.data.data.invoices.data
                     this.last_page = response.data.data.invoices.last_page
-                    this.brandsTotalCount = response.data.data.invoicesTotalCount
+                    this.modelsTotalCount = response.data.data.invoicesTotalCount
                 })
                 .catch(error => console.log(error))
                 .finally(() => {
@@ -32,12 +32,12 @@ export const useBrandsStores = defineStore('brands', {
                 })
             
         },
-        addBrand(data) {
+        addModel(data) {
             this.setLoading(true)
 
-            return Brands.create(data)
+            return Models.create(data)
                 .then((response) => {
-                    this.brands.push(response.data.data.brand)
+                    this.models.push(response.data.data.model)
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -46,13 +46,13 @@ export const useBrandsStores = defineStore('brands', {
                 })
             
         },
-        showBrand(id) {
+        showModel(id) {
             this.setLoading(true)
 
-            return Brands.show(id)
+            return Models.show(id)
                 .then((response) => {
                     if(response.data.success)
-                        return Promise.resolve(response.data.data.brand)
+                        return Promise.resolve(response.data.data.model)
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {
@@ -60,13 +60,13 @@ export const useBrandsStores = defineStore('brands', {
                 })
             
         },
-        updateBrand(data) {
+        updateModel(data) {
             this.setLoading(true)
             
-            return Brands.update(data)
+            return Models.update(data)
                 .then((response) => {
-                    let pos = this.brands.findIndex((item) => item.id === response.data.data.brand.id)
-                    this.brands[pos] = response.data.data.brand
+                    let pos = this.models.findIndex((item) => item.id === response.data.data.model.id)
+                    this.models[pos] = response.data.data.model
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -75,13 +75,13 @@ export const useBrandsStores = defineStore('brands', {
                 })
          
         },
-        deleteBrand(id) {
+        deleteModel(id) {
             this.setLoading(true)
 
-            return Brands.delete(id)
+            return Models.delete(id)
                 .then((response) => {
-                    let index = this.brands.findIndex((item) => item.id === id)
-                    this.brands.splice(index, 1)
+                    let index = this.models.findIndex((item) => item.id === id)
+                    this.models.splice(index, 1)
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

@@ -11,10 +11,6 @@ const props = defineProps({
   brand: {
     type: Object,
     required: false
-  },
-  types: {
-    type: Object,
-    required: false
   }
 })
 
@@ -27,13 +23,12 @@ const isFormValid = ref(false)
 const refForm = ref()
 
 const id = ref(0)
-const type_id = ref(null)
 const name = ref('')
 const description = ref('')
 const isEdit = ref(false)
 
 const getTitle = computed(() => {
-  return isEdit.value ? 'Uppdatera fakturaattribut': 'Lägg till fakturaattribut'
+  return isEdit.value ? 'Uppdatera märke': 'Lägg till märke'
 })
 
 watchEffect(async() => {
@@ -129,29 +124,10 @@ const handleDrawerModelValueUpdate = val => {
           >
           <VRow>
             <VCol cols="12" md="12">
-              <VSelect
-                  v-model="type_id"
-                  placeholder="Typer"
-                  :items="types"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"
-                  :menu-props="{ maxHeight: '300px' }"
-                  :rules="[requiredValidator]"/>
-            </VCol>
-            <VCol cols="12" md="12">
                 <VTextField
                     v-model="name"
                     label="Namn"
                     :rules="[requiredValidator]"
-                />
-            </VCol>
-            <VCol cols="12" md="12">
-                <VTextarea
-                    v-model="description"
-                    label="Beskrivning"
                 />
             </VCol>
               <!-- 👉 Submit and Cancel -->
@@ -192,7 +168,7 @@ const handleDrawerModelValueUpdate = val => {
       border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
       border-radius: 6px;
   }
-  
+
   .border-img .v-img__img--contain {
       padding: 10px;
   }

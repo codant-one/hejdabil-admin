@@ -38,7 +38,7 @@ export default [
     { 
       title: 'Avtal', 
       icon: { icon: 'mdi-file-sign' },
-      to: 'dashboard-admin-billings', 
+      to: 'dashboard-admin-sales', 
       action: 'view', 
       subject: 'billing'
     }
