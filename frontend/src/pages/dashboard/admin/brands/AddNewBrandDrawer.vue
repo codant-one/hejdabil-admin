@@ -24,7 +24,6 @@ const refForm = ref()
 
 const id = ref(0)
 const name = ref('')
-const description = ref('')
 const isEdit = ref(false)
 
 const getTitle = computed(() => {
@@ -51,7 +50,6 @@ const closeNavigationDrawer = () => {
     refForm.value?.resetValidation()
 
     name.value = null
-    description.value = null
     
     isEdit.value = false 
     id.value = 0

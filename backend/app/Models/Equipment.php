@@ -5,12 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class EquipmentsList extends Model
+class Equipment extends Model
 {
     use HasFactory;
 
-    protected $table = 'equipments_list';
-
+    protected $table = 'equipments';
     protected $guarded = [];
     
     /**** Relationship ****/

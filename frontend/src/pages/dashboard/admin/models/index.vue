@@ -1,25 +1,26 @@
 <script setup>
 
-import { useTypesStores } from '@/stores/useTypes'
-import { useInvoicesStores } from '@/stores/useInvoices'
+import { useBrandsStores } from '@/stores/useBrands'
+import { useModelsStores } from '@/stores/useModels'
 import { excelParser } from '@/plugins/csv/excelParser'
-import AddNewInvoiceDrawer from './AddNewInvoiceDrawer.vue' 
+import AddNewModelDrawer from './AddNewModelDrawer.vue' 
 
-const invoicesStores = useInvoicesStores()
-const typesStores = useTypesStores()
+const modelsStores = useModelsStores()
+const brandsStores = useBrandsStores()
 const emitter = inject("emitter")
 
-const types = ref([])
-const invoices = ref([])
+const brands = ref([])
+const models = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalInvoices = ref(0)
+const totalModels = ref(0)
 const isRequestOngoing = ref(true)
-const isAddNewInvoiceDrawerVisible = ref(false)
+const isAddNewModelDrawerVisible = ref(false)
 const isConfirmDeleteDialogVisible = ref(false)
-const selectedInvoice = ref({})
+const selectedModel = ref({})
+const brand_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -29,10 +30,10 @@ const advisor = ref({
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = invoices.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = invoices.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = models.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = models.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalInvoices.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalModels.value } modell`
 })
 
 // 👉 watching current page
@@ -40,8 +41,8 @@ watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value
 
-    if (!isAddNewInvoiceDrawerVisible.value)
-        selectedInvoice.value = {}
+    if (!isAddNewModelDrawerVisible.value)
+        selectedModel.value = {}
 })
 
 watchEffect(fetchData)
@@ -64,13 +65,13 @@ async function fetchData(cleanFilters = false) {
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
-  await invoicesStores.fetchInvoices(data)
-  await typesStores.fetchTypes()
-  types.value = typesStores.getTypes
+  await modelsStores.fetchModels(data)
+  await brandsStores.fetchBrands()
+  brands.value = brandsStores.getBrands
 
-  invoices.value = invoicesStores.getInvoices
-  totalPages.value = invoicesStores.last_page
-  totalInvoices.value = invoicesStores.invoicesTotalCount
+  models.value = modelsStores.getModels
+  totalPages.value = modelsStores.last_page
+  totalModels.value = modelsStores.modelsTotalCount
 
   isRequestOngoing.value = false
 }
@@ -81,24 +82,24 @@ function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
 
-const editInvoice = invoiceData => {
-    isAddNewInvoiceDrawerVisible.value = true
-    selectedInvoice.value = { ...invoiceData }
+const editModel = modelData => {
+    isAddNewModelDrawerVisible.value = true
+    selectedModel.value = { ...modelData }
 }
 
-const showDeleteDialog = invoiceData => {
+const showDeleteDialog = modelData => {
   isConfirmDeleteDialogVisible.value = true
-  selectedInvoice.value = { ...invoiceData }
+  selectedModel.value = { ...modelData }
 }
 
-const removeInvoice = async () => {
+const removeModel = async () => {
   isConfirmDeleteDialogVisible.value = false
-  let res = await invoicesStores.deleteInvoice(selectedInvoice.value.id)
-  selectedInvoice.value = {}
+  let res = await modelsStores.deleteModel(selectedModel.value.id)
+  selectedModel.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Fakturans attribut raderat!' : res.data.message,
+    message: res.data.success ? 'Modell raderat!' : res.data.message,
     show: true
   }
 
@@ -115,27 +116,27 @@ const removeInvoice = async () => {
   return true
 }
 
-const submitForm = async (invoice, method) => {
+const submitForm = async (model, method) => {
   isRequestOngoing.value = true
 
   if (method === 'update') {
-    invoice.data.append('_method', 'PUT')
-    submitUpdate(invoice)
+    model.data.append('_method', 'PUT')
+    submitUpdate(model)
     return
   }
 
-  submitCreate(invoice.data)
+  submitCreate(model.data)
 }
 
 
-const submitCreate = invoiceData => {
+const submitCreate = modelData => {
 
-    invoicesStores.addInvoice(invoiceData)
+    modelsStores.addModel(modelData)
         .then((res) => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Fakturaattribut skapat! ',
+                    message: 'Modell skapat! ',
                     show: true
                 }
                 fetchData()
@@ -160,14 +161,14 @@ const submitCreate = invoiceData => {
     }, 3000)
 }
 
-const submitUpdate = invoiceData => {
+const submitUpdate = modelData => {
 
-    invoicesStores.updateInvoice(invoiceData)
+    modelsStores.updateModel(modelData)
         .then((res) => {
             if (res.data.success) {
                     advisor.value = {
                     type: 'success',
-                    message: 'Fakturans attribut uppdaterat!',
+                    message: 'Modell uppdaterat!',
                     show: true
                 }
                 fetchData()
@@ -198,23 +199,23 @@ const downloadCSV = async () => {
 
   let data = { limit: -1 }
 
-  await invoicesStores.fetchInvoices(data)
+  await modelsStores.fetchModels(data)
 
   let dataArray = [];
       
-  invoicesStores.getInvoices.forEach(element => {
+  modelsStores.getModels.forEach(element => {
 
     let data = {
       ID: element.id,
       NAMN: element.name,
-      BESKRIVNING: element.description ?? ''
+      MÄRKE: element.description ?? ''
     }
           
     dataArray.push(data)
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "invoices", "csv");
+    .exportDataFromJSON(dataArray, "models", "csv");
 
   isRequestOngoing.value = false
 
@@ -266,6 +267,18 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
+            <div class="d-flex align-center w-100 w-md-10">
+              <VSelect
+                  v-model="brand_id"
+                  placeholder="Märke"
+                  :items="brands"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"/>
+            </div>
+
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
 
               <!-- 👉 Search  -->
@@ -280,11 +293,11 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <v-btn
-                v-if="$can('create','invoices')"
+                v-if="$can('create','models')"
                 prepend-icon="tabler-plus"
                  class="w-100 w-md-auto"
-                @click="isAddNewInvoiceDrawerVisible = true">
-                  Lägg till fakturaattribut
+                @click="isAddNewModelDrawerVisible = true">
+                  Lägg till modell
               </v-btn>
             </div>
           </VCardText>
@@ -297,24 +310,22 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
-                <th scope="col"> BESKRIVNING </th>
-                <th scope="col"> TYP </th>
-                <th scope="col" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')"></th>
+                <th scope="col"> MÄRKE </th>
+                <th scope="col" v-if="$can('edit', 'models') || $can('delete', 'models')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
               <tr 
-                v-for="invoice in invoices"
-                :key="invoice.id"
+                v-for="model in models"
+                :key="model.id"
                 style="height: 3rem;">
 
-                <td> {{ invoice.id }} </td>
-                <td class="text-wrap"> {{ invoice.name }} </td>
-                <td class="text-wrap"> {{ invoice.description }}</td>
-                <td class="text-wrap"> {{ invoice.type.name }}</td>
+                <td> {{ model.id }} </td>
+                <td class="text-wrap"> {{ model.name }} </td>
+                <td class="text-wrap"> {{ model.type.name }}</td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'models') || $can('delete', 'models')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -328,16 +339,16 @@ const downloadCSV = async () => {
                     </template>
                     <VList>
                       <VListItem
-                         v-if="$can('edit', 'invoices')"
-                         @click="editInvoice(invoice)">
+                         v-if="$can('edit', 'models')"
+                         @click="editModel(model)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('delete','invoices')"
-                        @click="showDeleteDialog(invoice)">
+                        v-if="$can('delete','models')"
+                        @click="showDeleteDialog(model)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
@@ -349,7 +360,7 @@ const downloadCSV = async () => {
               </tr>
             </tbody>
             <!-- 👉 table footer  -->
-            <tfoot v-show="!invoices.length">
+            <tfoot v-show="!models.length">
               <tr>
                 <td
                   colspan="4"
@@ -379,12 +390,12 @@ const downloadCSV = async () => {
         </VCard>
       </VCol>
     </VRow>
-    <!-- 👉 Add New Invoice -->
-    <AddNewInvoiceDrawer
-      v-model:isDrawerOpen="isAddNewInvoiceDrawerVisible"
-      :invoice="selectedInvoice"
-      :types="types"
-      @invoice-data="submitForm"/>
+    <!-- 👉 Add New Model -->
+    <AddNewModelDrawer
+      v-model:isDrawerOpen="isAddNewModelDrawerVisible"
+      :model="selectedModel"
+      :brands="brands"
+      @model-data="submitForm"/>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
@@ -399,7 +410,7 @@ const downloadCSV = async () => {
       <VCard title="Ta bort faktura">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort fakturan <strong>{{ selectedInvoice.name }}</strong>?
+          Är du säker att du vill ta bort fakturan <strong>{{ selectedModel.name }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -409,7 +420,7 @@ const downloadCSV = async () => {
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeInvoice">
+          <VBtn @click="removeModel">
               Acceptera
           </VBtn>
         </VCardText>
@@ -432,5 +443,5 @@ const downloadCSV = async () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: invoices
+    subject: models
 </route>

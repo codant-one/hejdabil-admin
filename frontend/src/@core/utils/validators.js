@@ -156,3 +156,16 @@ export const fileMineValidator = value => {
   
   return true
 }
+
+export const yearValidator = value => {
+  if (!value) return true
+
+  const currentYear = new Date().getFullYear()
+  const year = Number(value)
+
+  const isValid = Number.isInteger(year) &&
+    value.toString().length === 4 &&
+    year >= 1900 && year <= currentYear + 5
+
+  return isValid || 'Året måste vara ett giltigt årtal'
+}

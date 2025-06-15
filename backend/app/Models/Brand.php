@@ -9,11 +9,11 @@ class Brand extends Model
 {
     use HasFactory;
 
-     protected $guarded = [];
+    protected $guarded = [];
     
     /**** Relationship ****/
     public function models(){
-        return $this->hasMany(ModelCar::class, 'brand_id', 'id');
+        return $this->hasMany(CarModel::class, 'brand_id', 'id');
     }
 
     /**** Scopes ****/

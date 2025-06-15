@@ -5,21 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ModelCar extends Model
+class CarBody extends Model
 {
     use HasFactory;
 
-    protected $table = 'models';
-
-     protected $guarded = [];
+    protected $guarded = [];
     
     /**** Relationship ****/
-    public function brand(){
-        return $this->belongsTo(Brand::class, 'brand_id', 'id');
-    } 
-
     public function vehicles(){
-        return $this->hasMany(Vehicle::class, 'model_id', 'id');
+        return $this->hasMany(Vehicle::class, 'car_body_id', 'id');
     }
 
     /**** Scopes ****/
@@ -57,8 +51,7 @@ class ModelCar extends Model
     public static function createObject($request) {
 
         $object = self::create([
-            'name' => $request->name,
-            'brand_id' => $request->brand_id
+            'name' => $request->name
         ]);
         
         return $object;
@@ -67,8 +60,7 @@ class ModelCar extends Model
     public static function updateObject($request, $object) {
 
         $object->update([
-            'name' => $request->name,
-            'brand_id' => $request->brand_id
+            'name' => $request->name
         ]);
 
         return $object;

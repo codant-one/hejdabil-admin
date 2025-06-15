@@ -13,11 +13,11 @@ class Vehicle extends Model
     
     /**** Relationship ****/
     public function bodyscar(){
-        return $this->belongsTo(BodysCar::class, 'bodys_car_id', 'id');
+        return $this->belongsTo(CarBody::class, 'car_body_id', 'id');
     }  
 
     public function model(){
-        return $this->belongsTo(ModelCar::class, 'model_id', 'id');
+        return $this->belongsTo(CarModel::class, 'model_id', 'id');
     }
 
     public function vehicleEquipmentsList(){

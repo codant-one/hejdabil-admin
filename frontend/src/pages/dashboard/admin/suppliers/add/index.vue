@@ -168,8 +168,8 @@ const onSubmit = () => {
                             <VCardText class="px-2 px-md-12">
                                 <VWindow v-model="currentTab" class="pt-3">
                                     <!-- company -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
                                             <VCol cols="12" md="12">
                                                 <VTextField
                                                     v-model="company"
@@ -230,8 +230,8 @@ const onSubmit = () => {
                                         </VRow>
                                     </VWindowItem>
                                     <!-- bank -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="bank"
@@ -249,8 +249,8 @@ const onSubmit = () => {
                                         </VRow>
                                     </VWindowItem>
                                     <!-- contact -->
-                                    <VWindowItem class="px-md-14">
-                                        <VRow class="px-md-14">
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="name"

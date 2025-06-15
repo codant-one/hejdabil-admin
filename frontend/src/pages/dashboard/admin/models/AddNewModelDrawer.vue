@@ -8,11 +8,11 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  invoice: {
+  model: {
     type: Object,
     required: false
   },
-  types: {
+  brands: {
     type: Object,
     required: false
   }
@@ -20,7 +20,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'update:isDrawerOpen',
-  'invoiceData',
+  'modelData',
 ])
 
 const isFormValid = ref(false)
@@ -29,23 +29,21 @@ const refForm = ref()
 const id = ref(0)
 const type_id = ref(null)
 const name = ref('')
-const description = ref('')
 const isEdit = ref(false)
 
 const getTitle = computed(() => {
-  return isEdit.value ? 'Uppdatera fakturaattribut': 'Lägg till fakturaattribut'
+  return isEdit.value ? 'Uppdatera modell': 'Lägg till modell'
 })
 
 watchEffect(async() => {
   if (props.isDrawerOpen) {
 
-    if (!(Object.entries(props.invoice).length === 0) && props.invoice.constructor === Object) {
+    if (!(Object.entries(props.model).length === 0) && props.model.constructor === Object) {
 
       isEdit.value = true
-      id.value = props.invoice.id
-      type_id.value = props.invoice.type_id
-      name.value = props.invoice.name
-      description.value = props.invoice.description
+      id.value = props.model.id
+      type_id.value = props.model.type_id
+      name.value = props.model.name
     }
   }
 })
@@ -58,7 +56,6 @@ const closeNavigationDrawer = () => {
     refForm.value?.resetValidation()
 
     name.value = null
-    description.value = null
     
     isEdit.value = false 
     id.value = 0
@@ -72,9 +69,8 @@ const onSubmit = () => {
 
       formData.append('type_id', type_id.value)
       formData.append('name', name.value)
-      formData.append('description', description.value)
 
-      emit('invoiceData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
+      emit('modelData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
       closeNavigationDrawer()
     }
@@ -110,7 +106,7 @@ const handleDrawerModelValueUpdate = val => {
         color="default"
         icon
         size="32"
-        class="rounded btn-close-invoice"
+        class="rounded btn-close-model"
         @click="closeNavigationDrawer"
       >
         <VIcon
@@ -123,7 +119,7 @@ const handleDrawerModelValueUpdate = val => {
     <VDivider class="mt-4"/>
 
     <PerfectScrollbar :options="{ wheelPropagation: false }">
-      <VCard flat class="card-invoice">
+      <VCard flat class="card-model">
         <VCardText>
           <!-- 👉 Form -->
           <VForm
@@ -135,8 +131,8 @@ const handleDrawerModelValueUpdate = val => {
             <VCol cols="12" md="12">
               <VSelect
                   v-model="type_id"
-                  placeholder="Typer"
-                  :items="types"
+                  placeholder="Märke"
+                  :items="brands"
                   :item-title="item => item.name"
                   :item-value="item => item.id"
                   autocomplete="off"
@@ -150,12 +146,6 @@ const handleDrawerModelValueUpdate = val => {
                     v-model="name"
                     label="Namn"
                     :rules="[requiredValidator]"
-                />
-            </VCol>
-            <VCol cols="12" md="12">
-                <VTextarea
-                    v-model="description"
-                    label="Beskrivning"
                 />
             </VCol>
               <!-- 👉 Submit and Cancel -->
@@ -184,12 +174,14 @@ const handleDrawerModelValueUpdate = val => {
 </template>
 
 <style scoped>
-  .btn-close-invoice {
+  .btn-close-model {
     height: 32px !important;
   }
-  .card-invoice {
+
+  .card-model {
     border-radius: 0 !important;
   }
+
   .border-img {
       border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
       border-radius: 6px;

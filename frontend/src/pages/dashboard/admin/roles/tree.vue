@@ -93,7 +93,7 @@ const closeTreeDialog  = function(){
                             </li>
                         </ul>
                         <li class="tab n2">
-                            <strong>Kunder</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till klientmodulen</code>
+                            <strong>Kunderegister</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till klientmodulen</code>
                         </li>
                         <ul class="tab">
                             <li class="tab n3">
@@ -107,7 +107,7 @@ const closeTreeDialog  = function(){
                             </li>
                         </ul>
                         <li class="tab n2">
-                            <strong>Fakturering</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till faktureringsmodulen</code>
+                            <strong>Fakturor</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till faktureringsmodulen</code>
                         </li>
                         <ul class="tab">
                             <li class="tab n3">
@@ -121,7 +121,108 @@ const closeTreeDialog  = function(){
                             </li>
                         </ul>
                         <li class="tab n2">
-                            <strong>Förvaltning</strong>
+                            <strong>Mina fordon</strong>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Märke</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till märkemodulen</code>
+                            </li>
+                            <ul class="tab">
+                                <ul>
+                                    <li class="tab n3">
+                                        <strong>Skapa märke</strong>&emsp;/&emsp;<code>Tillåter skapande av märke</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Redigera märke</strong>&emsp;/&emsp;<code>Tillåter redigering av märke</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Radera märke</strong>&emsp;/&emsp;<code>Tillåter borttagning av märke</code>
+                                    </li>
+                                </ul>
+                            </ul>
+                        </ul>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Modell</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till modellmodulen</code>
+                            </li>
+                            <ul class="tab">
+                                <ul>
+                                    <li class="tab n3">
+                                        <strong>Skapa modell</strong>&emsp;/&emsp;<code>Tillåter skapande av modell</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Redigera modell</strong>&emsp;/&emsp;<code>Tillåter redigering av modell</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Radera modell</strong>&emsp;/&emsp;<code>Tillåter borttagning av modell</code>
+                                    </li>
+                                </ul>
+                            </ul>
+                        </ul>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Lagerfordon</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till lagerfordonmodulen</code>
+                            </li>
+                            <ul class="tab">
+                                <ul>
+                                    <li class="tab n3">
+                                        <strong>Skapa lagerfordon</strong>&emsp;/&emsp;<code>Tillåter skapande av lagerfordon</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Redigera lagerfordon</strong>&emsp;/&emsp;<code>Tillåter redigering av lagerfordon</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Radera lagerfordon</strong>&emsp;/&emsp;<code>Tillåter borttagning av lagerfordon</code>
+                                    </li>
+                                </ul>
+                            </ul>
+                        </ul>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Sålda</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till såldamodulen</code>
+                            </li>
+                            <ul class="tab">
+                                <ul>
+                                    <li class="tab n3">
+                                        <strong>Radera sålda</strong>&emsp;/&emsp;<code>Tillåter borttagning av sålda</code>
+                                    </li>
+                                </ul>
+                            </ul>
+                        </ul>
+                         <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Egen värdering</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till lagerfordonmodulen</code>
+                            </li>
+                            <ul class="tab">
+                                <ul>
+                                    <li class="tab n3">
+                                        <strong>Skapa egen värdering</strong>&emsp;/&emsp;<code>Tillåter skapande av egen värdering</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Redigera egen värdering</strong>&emsp;/&emsp;<code>Tillåter redigering av egen värdering</code>
+                                    </li>
+                                    <li class="tab n3">
+                                        <strong>Radera egen värdering</strong>&emsp;/&emsp;<code>Tillåter borttagning av egen värdering</code>
+                                    </li>
+                                </ul>
+                            </ul>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Avtal</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till avtalmodulen</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Skapa avtal</strong>&emsp;/&emsp;<code>Möjliggör skapande av avtal</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Redigera avtal</strong>&emsp;/&emsp;<code>Möjliggör redigering av avtal</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Radera avtal</strong>&emsp;/&emsp;<code>Möjliggör borttagning av avtal</code>
+                            </li>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Administration</strong>
                         </li>
                         <ul class="tab">
                             <li class="tab n2">

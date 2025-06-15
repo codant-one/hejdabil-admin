@@ -12,6 +12,7 @@ import {
 
 import { filterInputAttrs } from 'vuetify/lib/util/helpers'
 import { useThemeConfig } from '@core/composable/useThemeConfig'
+import svLocale  from 'flatpickr/dist/l10n/sv';
 
 const props = defineProps({
   ...makeVInputProps({
@@ -45,6 +46,11 @@ const { focused } = useFocus(refFlatPicker)
 const isCalendarOpen = ref(false)
 const isInlinePicker = ref(false)
 
+// locale
+if (compAttrs.config) {
+  svLocale.sv.time_24hr = false
+  compAttrs.config.locale = svLocale.sv
+}
 
 // flat picker prop manipulation
 if (compAttrs.config && compAttrs.config.inline) {
@@ -104,6 +110,10 @@ const emitModelValue = val => {
         :error="isValid.value === false"
         @click:clear="onClear"
       >
+      <template v-if="fieldProps.label" #label>
+        {{ fieldProps.label }}
+      </template>
+
         <template #default="{ props: vFieldProps }">
           <div v-bind="vFieldProps">
             <!-- flat-picker  -->

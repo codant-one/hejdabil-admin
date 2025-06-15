@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
-use App\Models\ModelCar;
+use App\Models\CarModel;
 
 use Str;
 
@@ -19,10 +19,10 @@ class ModelSeeder extends Seeder
     public function run()
     {
         $json_info = Storage::disk('local')->get('/json/models.json');
-        $modelCar = json_decode($json_info, true);
+        $models = json_decode($json_info, true);
 
-        foreach($modelCar as $model){
-            ModelCar::query()->updateOrCreate([
+        foreach($models as $model){
+            CarModel::query()->updateOrCreate([
                 'id' => $model['id'],
                 'name' => $model['name'],
                 'brand_id' => $model['brand_id']

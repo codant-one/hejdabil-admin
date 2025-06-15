@@ -13,13 +13,18 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
-            $table->string("reg_num")->comment("Register number ");
-            $table->string("mileage")->nullable()->comment("Kilometers traveled ");
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger("model_id")->nullable()->comment("Model a car, example Corolla");
+            $table->unsignedBigInteger("car_body_id")->nullable();
+            $table->unsignedBigInteger('gearbox_id')->nullable();
+            $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
+            $table->unsignedBigInteger('state_id')->default(4);
+            
+            $table->string("reg_num")->comment("Register number");
+            $table->string("mileage")->nullable()->comment("Kilometers traveled");
             $table->string("generation")->nullable()->comment("Generation car");
             $table->string("year")->nullable()->comment("Year of car (YYYY), example 2025");
             $table->date("first_insc")->nullable()->comment("First inscription (YYYY-MM-DD), example 2025-01-01");
-            // $table->string("body")->nullable()->comment("Body car, example, Sedan");
-            // $table->string("gearbox")->nullable()->comment("Gearbox, example Manual (Manuell)");
             $table->decimal("purchase_price", 10, 2)->nullable()->comment("Purchase price");
             $table->date("purchase_date")->nullable()->comment("Purchase date");
             $table->decimal("sale_price", 10, 2)->nullable()->comment("Bellow Sale price");
@@ -32,20 +37,11 @@ return new class extends Migration
             $table->tinyInteger('dist_belt')->nullable()->comment("Replace distribution belt? (0: No, 1: Yes, 2: No Available)");
             $table->string("last_dist_belt")->nullable()->comment("Miles or Date (DD-MM-YYYY) of last service distribution belt replace");
             $table->string("comments")->nullable();
-
-            $table->unsignedBigInteger("model_id")->nullable()->comment("Model a Car, example Corolla");
-            $table->unsignedBigInteger("bodys_car_id")->nullable();
-            $table->unsignedBigInteger('gearbox_id')->nullable();
-            $table->unsignedBigInteger('equipment_id')->nullable();
-            $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
-            $table->unsignedBigInteger('state_id')->default(4);
-            $table->unsignedBigInteger('user_id');
             $table->timestamps();
 
             $table->foreign('model_id')->references('id')->on('models')->onDelete('cascade');
-            $table->foreign('bodys_car_id')->references('id')->on('bodys_car')->onDelete('cascade');
+            $table->foreign('car_body_id')->references('id')->on('car_bodies')->onDelete('cascade');
             $table->foreign('gearbox_id')->references('id')->on('gearboxes')->onDelete('cascade');
-            $table->foreign('equipment_id')->references('id')->on('vehicle_equipments_list')->onDelete('cascade');
             $table->foreign('iva_id')->references('id')->on('ivas')->onDelete('cascade');
             $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

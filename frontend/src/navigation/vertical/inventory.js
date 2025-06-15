@@ -7,31 +7,31 @@ export default [
                 title: 'Märke', 
                 to: 'dashboard-admin-brands', 
                 action: 'view', 
-                subject: 'invoices', 
+                subject: 'brands', 
             },
             { 
                 title: 'Modell', 
                 to: 'dashboard-admin-models', 
                 action: 'view', 
-                subject: 'invoices', 
+                subject: 'models', 
             },
             { 
                 title: 'Lagerfordon', 
                 to: 'dashboard-admin-stock', 
                 action: 'view', 
-                subject: 'invoices', 
+                subject: 'stock', 
             },
                 { 
                 title: 'Sålda', 
                 to: 'dashboard-admin-sold', 
                 action: 'view', 
-                subject: 'invoices', 
+                subject: 'sold', 
             },
                 { 
                 title: 'Egen värdering', 
                 to: 'dashboard-admin-notes', 
                 action: 'view', 
-                subject: 'invoices', 
+                subject: 'notes', 
             }
         ]
     },
@@ -40,6 +40,6 @@ export default [
       icon: { icon: 'mdi-file-sign' },
       to: 'dashboard-admin-sales', 
       action: 'view', 
-      subject: 'billing'
+      subject: 'agreements'
     }
 ]

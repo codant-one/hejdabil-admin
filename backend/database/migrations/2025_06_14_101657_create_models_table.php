@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('models', function (Blueprint $table) {
             $table->id();
-            $table->string("name")->comment("Model a Car, example Corolla");
             $table->unsignedBigInteger("brand_id");
+            $table->string("name")->comment("Model a car, example Corolla");
             $table->timestamps();
 
             $table->foreign('brand_id')->references('id')->on('brands')->onDelete('cascade');

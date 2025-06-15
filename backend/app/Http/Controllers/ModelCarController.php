@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\ModelCarRequest;
+use App\Http\Requests\CarModelRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
-use App\Models\ModelCar;
+use App\Models\CarModel;
 
-class ModelCarController extends Controller
+class CarModelController extends Controller
 {
     public function __construct()
     {
@@ -31,7 +31,7 @@ class ModelCarController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = ModelCar::with(['brand'])
+            $query = CarModel::with(['brand'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -64,16 +64,16 @@ class ModelCarController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ModelCarRequest $request)
+    public function store(CarModelRequest $request)
     {
         try {
 
-            $modelcar = ModelCar::createObject($request);
+            $CarModel = CarModel::createObject($request);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'modelcar' => ModelCar::with(['brand'])->find($modelcar->id)
+                    'CarModel' => CarModel::with(['brand'])->find($CarModel->id)
                 ]
             ]);
 
@@ -93,9 +93,9 @@ class ModelCarController extends Controller
     {
         try {
 
-            $modelcar = ModelCar::with(['brand'])->find($id);
+            $CarModel = CarModel::with(['brand'])->find($id);
 
-            if (!$modelcar)
+            if (!$CarModel)
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
@@ -105,7 +105,7 @@ class ModelCarController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'modelcar' => $modelcar
+                    'CarModel' => $CarModel
                 ]
             ]);
 
@@ -121,24 +121,24 @@ class ModelCarController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ModelCarRequest $request, $id): JsonResponse
+    public function update(CarModelRequest $request, $id): JsonResponse
     {
         try {
-            $modelcar = ModelCar::with(['brand'])->find($id);
+            $CarModel = CarModel::with(['brand'])->find($id);
         
-            if (!$modelcar)
+            if (!$CarModel)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Modell hittades inte'
                 ], 404);
 
-            $modelcar->updateObject($request, $modelcar); 
+            $CarModel->updateObject($request, $CarModel); 
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'modelcar' => $modelcar
+                    'CarModel' => $CarModel
                 ]
             ], 200);
 
@@ -158,21 +158,21 @@ class ModelCarController extends Controller
     {
         try {
 
-            $modelcar = ModelCar::find($id);
+            $CarModel = CarModel::find($id);
         
-            if (!$modelcar)
+            if (!$CarModel)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Modell hittades inte'
                 ], 404);
             
-            $modelcar->deleteObject($id);
+            $CarModel->deleteObject($id);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'modelcar' => $modelcar
+                    'CarModel' => $CarModel
                 ]
             ], 200);
 

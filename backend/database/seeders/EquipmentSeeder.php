@@ -5,11 +5,11 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
-use App\Models\EquipmentsList;
+use App\Models\Equipment;
 
 use Str;
 
-class EquipmentsListSeeder extends Seeder
+class EquipmentSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -18,11 +18,11 @@ class EquipmentsListSeeder extends Seeder
      */
     public function run()
     {
-        $json_info = Storage::disk('local')->get('/json/equipmentslist.json');
-        $equipmentsList = json_decode($json_info, true);
+        $json_info = Storage::disk('local')->get('/json/equipments.json');
+        $equipments = json_decode($json_info, true);
 
-        foreach($equipmentsList as $equipment){
-            EquipmentsList::query()->updateOrCreate([
+        foreach($equipments as $equipment){
+            Equipment::query()->updateOrCreate([
                 'id' => $equipment['id'],
                 'name' => $equipment['name']
             ]);

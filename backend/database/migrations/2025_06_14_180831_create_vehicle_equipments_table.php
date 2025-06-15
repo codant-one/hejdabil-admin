@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vehicle_equipments_list', function (Blueprint $table) {
+        Schema::create('vehicle_equipments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('vehicle_id')->default(4);
-            $table->unsignedBigInteger('equipment_id')->default(4);
+            $table->unsignedBigInteger('vehicle_id');
+            $table->unsignedBigInteger('equipment_id');
+            $table->string('value');
             $table->timestamps();
 
             $table->foreign('vehicle_id')->references('id')->on('vehicles')->onDelete('cascade');
-            $table->foreign('equipment_id')->references('id')->on('equipments_list')->onDelete('cascade');
+            $table->foreign('equipment_id')->references('id')->on('equipments')->onDelete('cascade');
         });
     }
 
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vehicle_equipments_list');
+        Schema::dropIfExists('vehicle_equipments');
     }
 };

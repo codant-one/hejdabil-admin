@@ -14,9 +14,7 @@ return new class extends Migration
         Schema::create('ivas', function (Blueprint $table) {
             $table->id();
             $table->string("name")->comment("Name of IVA type. Example TINA");
-            $table->decimal("value", 10, 2)->nullable()->comment("IVA value");
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

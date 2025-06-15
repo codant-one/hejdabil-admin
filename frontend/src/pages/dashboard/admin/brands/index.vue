@@ -290,6 +290,7 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
+                <th scope="col"> LOGOTYP </th>
                 <th scope="col" v-if="$can('edit', 'brands') || $can('delete', 'brands')"></th>
               </tr>
             </thead>
@@ -302,6 +303,7 @@ const downloadCSV = async () => {
 
                 <td> {{ brand.id }} </td>
                 <td class="w-100"> {{ brand.name }} </td>
+                <td> {{ brand.id }} </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'brands') || $can('delete', 'brands')">      
                   <VMenu>
@@ -341,7 +343,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!brands.length">
               <tr>
                 <td
-                  colspan="4"
+                  colspan="3"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

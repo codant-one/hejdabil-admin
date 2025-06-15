@@ -5,11 +5,11 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 
-use App\Models\GearBox;
+use App\Models\Gearbox;
 
 use Str;
 
-class GearBoxSeeder extends Seeder
+class GearboxSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -22,7 +22,7 @@ class GearBoxSeeder extends Seeder
         $gearboxes = json_decode($json_info, true);
 
         foreach($gearboxes as $gearbox){
-            GearBox::query()->updateOrCreate([
+            Gearbox::query()->updateOrCreate([
                 'id' => $gearbox['id'],
                 'name' => $gearbox['name']
             ]);

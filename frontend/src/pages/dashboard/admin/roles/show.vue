@@ -269,7 +269,7 @@ const closeRoleDetailDialog = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Fakturering
+                            Fakturor
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox
@@ -298,7 +298,176 @@ const closeRoleDetailDialog = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Förvaltning
+                            Mina fordon
+                        </VLabel>
+                        <VCardText class="pt-2 pb-0">
+                            <div class="ml-5">
+                                <VLabel style="font-weight: bold;">
+                                    Märke
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view brands"
+                                        value="view brands"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create brands"
+                                        value="create brands"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit brands"
+                                        value="edit brands"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete brands"
+                                        value="delete brands"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                                <VLabel style="font-weight: bold;">
+                                    Modell
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view models"
+                                        value="view models"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create models"
+                                        value="create models"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit models"
+                                        value="edit models"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete models"
+                                        value="delete models"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                                <VLabel style="font-weight: bold;">
+                                    Lagerfordon
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view stock"
+                                        value="view stock"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create stock"
+                                        value="create stock"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit stock"
+                                        value="edit stock"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete stock"
+                                        value="delete stock"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                                <VLabel style="font-weight: bold;">
+                                    Sålda
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view sold"
+                                        value="view sold"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete sold"
+                                        value="delete sold"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                                <VLabel style="font-weight: bold;">
+                                    Egen värdering
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view notes"
+                                        value="view notes"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create notes"
+                                        value="create notes"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit notes"
+                                        value="edit notes"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete notes"
+                                        value="delete notes"
+                                        :readonly="readonly"
+                                    />
+                                </div>
+                            </div>
+                        </VCardText>
+                        <VLabel style="font-weight: bold;">
+                            Avtal
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view agreements"
+                                value="view agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create agreements"
+                                value="create agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit agreements"
+                                value="edit agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete agreements"
+                                value="delete agreements"
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
+                            Administration
                         </VLabel>
                         <VCardText class="pt-2 pb-0">
                             <div class="ml-5">

@@ -4,6 +4,7 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
+import { requiredValidator } from '@/@core/utils/validators'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -18,9 +19,13 @@ const totalPages = ref(1)
 const totalSuppliers = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmCreateDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const selectedSupplier = ref({})
 const state_id = ref(null)
+
+const plate = ref(null)
+const refForm = ref()
 
 const states = ref ([
   { id: 2, name: "Aktiv" },
@@ -157,6 +162,14 @@ const activateSupplier = async () => {
 
   return true
 }
+const onSubmit = () => {
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      console.log('asd', plate.value)
+      router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: 1 } })
+    }
+  })
+}
 
 const downloadCSV = async () => {
 
@@ -266,8 +279,8 @@ const downloadCSV = async () => {
                 v-if="$can('create','suppliers')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
-                :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Skapa leverantör
+                @click="isConfirmCreateDialogVisible = true">
+                  Lägg till en bil
               </VBtn>
             </div>
           </VCardText>
@@ -433,6 +446,48 @@ const downloadCSV = async () => {
       </VCol>
     </VRow>
 
+  <!-- 👉 Confirm create -->
+  <VDialog
+      v-model="isConfirmCreateDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmCreateDialogVisible = !isConfirmCreateDialogVisible" />
+
+      <!-- Dialog Content -->
+       <VForm
+        ref="refForm"
+        @submit.prevent="onSubmit">
+        <VCard title="Lägg till en bil">
+          <VDivider />
+          <VCardText>
+            <VLabel
+                class="mb-1 text-body-2 text-high-emphasis"
+                text="Reg. nummer"
+              />
+            <VTextField
+                v-model="plate"
+                :rules="[requiredValidator]"
+                placeholder="ABC12X"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              @click="isConfirmCreateDialogVisible = false">
+                Avbryt
+            </VBtn>
+            <VBtn type="submit">
+                Fortsätt
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
+    </VDialog>
+
     <!-- 👉 Confirm Delete -->
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
@@ -463,7 +518,7 @@ const downloadCSV = async () => {
       </VCard>
     </VDialog>
 
-    <!-- 👉 Confirm Delete -->
+    <!-- 👉 Confirm Active -->
     <VDialog
       v-model="isConfirmActiveDialogVisible"
       persistent

@@ -7,9 +7,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-use App\Models\ModelCar;
+use App\Models\CarModel;
 
-class ModelCarRequest extends FormRequest
+class CarModelRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
