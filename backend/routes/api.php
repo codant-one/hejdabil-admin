@@ -21,7 +21,14 @@ use App\Http\Controllers\{
     ClientController,
     TypeController,
     InvoiceController,
-    BillingController
+    BillingController,
+    BodysCarController,
+    BrandController,
+    EquipmentsListController,
+    GearboxController,
+    IvaController,
+    ModelCarController
+
 };
 
 /*
@@ -69,6 +76,12 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('types', TypeController::class);
     Route::apiResource('invoices', InvoiceController::class);
     Route::apiResource('billings', BillingController::class);
+    Route::apiResource('bodiescar', BodysCarController::class);
+    Route::apiResource('brands', BrandController::class);
+    Route::apiResource('equipments', EquipmentsListController::class);
+    Route::apiResource('gearboxes', GearboxController::class);
+    Route::apiResource('iva', IvaController::class);
+    Route::apiResource('modelscar', ModelCarController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');

@@ -23,7 +23,14 @@ class DatabaseSeeder extends Seeder
             ClientSeeder::class,
 
             TypeSeeder::class,
-            InvoiceSeeder::class
+            InvoiceSeeder::class,
+
+            BodysCarSeeder::class,
+            BrandSeeder::class,
+            ModelSeeder::class,
+            EquipmentsListSeeder::class,
+            GearBoxSeeder::class,
+            IvaSeeder::class
         ]);
 
     }

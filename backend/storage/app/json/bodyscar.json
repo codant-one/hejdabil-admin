@@ -1,0 +1,9 @@
+[
+  { "id": 1, "name": "Sedan" },
+  { "id": 2, "name": "Kombi" },
+  { "id": 3, "name": "Halvkombi" },
+  { "id": 4, "name": "Sportkupé" },
+  { "id": 5, "name": "SUV" },
+  { "id": 6, "name": "Cab" },
+  { "id": 7, "name": "Minibuss" }
+]

@@ -1,0 +1,57 @@
+ [
+  { "id": 1, "brand_id": 1, "name": "V70" },
+  { "id": 2, "brand_id": 1, "name": "V60" },
+  { "id": 3, "brand_id": 1, "name": "XC60" },
+  { "id": 4, "brand_id": 1, "name": "XC40" },
+  { "id": 5, "brand_id": 1, "name": "S90" },
+  { "id": 6, "brand_id": 1, "name": "V90" },
+
+  { "id": 7, "brand_id": 2, "name": "Golf" },
+  { "id": 8, "brand_id": 2, "name": "Passat" },
+  { "id": 9, "brand_id": 2, "name": "Tiguan" },
+  { "id": 10, "brand_id": 2, "name": "Polo" },
+  { "id": 11, "brand_id": 2, "name": "ID.4" },
+
+  { "id": 12, "brand_id": 3, "name": "Model Y" },
+  { "id": 13, "brand_id": 3, "name": "Model 3" },
+
+  { "id": 14, "brand_id": 4, "name": "Niro" },
+  { "id": 15, "brand_id": 4, "name": "Ceed" },
+  { "id": 16, "brand_id": 4, "name": "Sportage" },
+  { "id": 17, "brand_id": 4, "name": "EV6" },
+  { "id": 18, "brand_id": 4, "name": "EV9" },
+
+  { "id": 19, "brand_id": 5, "name": "RAV4" },
+  { "id": 20, "brand_id": 5, "name": "Corolla" },
+  { "id": 21, "brand_id": 5, "name": "Auris" },
+  { "id": 22, "brand_id": 5, "name": "C-HR" },
+
+  { "id": 23, "brand_id": 6, "name": "Octavia" },
+  { "id": 24, "brand_id": 6, "name": "Fabia" },
+  { "id": 25, "brand_id": 6, "name": "Superb" },
+  { "id": 26, "brand_id": 6, "name": "Enyaq iV" },
+
+  { "id": 27, "brand_id": 7, "name": "A3" },
+  { "id": 28, "brand_id": 7, "name": "A4" },
+  { "id": 29, "brand_id": 7, "name": "A6" },
+  { "id": 30, "brand_id": 7, "name": "Q4 e-tron" },
+
+  { "id": 31, "brand_id": 8, "name": "3 Series" },
+  { "id": 32, "brand_id": 8, "name": "5 Series" },
+  { "id": 33, "brand_id": 8, "name": "M5" },
+
+  { "id": 34, "brand_id": 9, "name": "C-Klass" },
+  { "id": 35, "brand_id": 9, "name": "E-Klass" },
+  { "id": 36, "brand_id": 9, "name": "GLC" },
+
+  { "id": 37, "brand_id": 10, "name": "Qashqai" },
+  { "id": 38, "brand_id": 10, "name": "Leaf" },
+
+  { "id": 39, "brand_id": 11, "name": "Polestar 2" },
+
+  { "id": 40, "brand_id": 12, "name": "Tang" },
+  { "id": 41, "brand_id": 12, "name": "Atto 3" },
+
+  { "id": 42, "brand_id": 13, "name": "Agera" },
+  { "id": 43, "brand_id": 13, "name": "Jesko" }
+]
