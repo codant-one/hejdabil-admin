@@ -299,7 +299,7 @@ const addAgreements = () => {
 
           <VDivider />
 
-          <VTable class="text-no-wrap">
+          <VTable class="text-no-wrap d-none">
             <!-- 👉 table head -->
             <thead>
               <tr>
@@ -329,7 +329,7 @@ const addAgreements = () => {
         
           <VDivider />
 
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
+          <VCardText class="d-none  text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
