@@ -29,10 +29,6 @@ class IvaRequest extends FormRequest
         $rules = [
             'name' => [
                 'required'
-            ],
-            'value' => [
-                'decimal:2',
-                'required'
             ]
         ];
 
@@ -43,9 +39,7 @@ class IvaRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'namnet är obligatoriskt',
-            'value.required' => 'Värde är obligatorisk.',
-            'value.decimal' => 'Värde Formatet måste vara decimalform med 2 decimaler.',
+            'name.required' => 'Namnet är obligatoriskt'
         ];
     }
 

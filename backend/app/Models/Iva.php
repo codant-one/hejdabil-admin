@@ -48,34 +48,32 @@ class Iva extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createIva($request) {
 
-        $object = self::create([
-            'name' => $request->name,
-            'value' => $request->value
+        $iva = self::create([
+            'name' => $request->name
         ]);
         
-        return $object;
+        return $iva;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateIva($request, $iva) {
 
-        $object->update([
-            'name' => $request->name,
-            'value' => $request->value
+        $iva->update([
+            'name' => $request->name
         ]);
 
-        return $object;
+        return $iva;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteIva($id) {
+        self::deleteIvas(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteIvas($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $iva = self::find($id);
+            $iva->delete();
         }
     }
 }

@@ -14,13 +14,6 @@ use App\Models\Iva;
 
 class IvaController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(PermissionMiddleware::class . ':view ivas|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create ivas|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit ivas|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete ivas|administrator')->only(['destroy']);
-    }
 
     /**
      * Display a listing of the resource.
@@ -41,13 +34,13 @@ class IvaController extends Controller
 
             $count = $query->count();
 
-            $iva = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $ivas = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'iva' => $iva,
-                    'ivaTotalCount' => $count
+                    'ivas' => $iva,
+                    'ivasTotalCount' => $count
                 ]
             ]);
 
@@ -67,7 +60,7 @@ class IvaController extends Controller
     {
         try {
 
-            $iva = Iva::createObject($request);
+            $iva = Iva::createIva($request);
 
             return response()->json([
                 'success' => true,
@@ -132,7 +125,7 @@ class IvaController extends Controller
                     'message' => 'Moms hittades inte'
                 ], 404);
 
-            $iva->updateObject($request, $iva); 
+            $iva->updateIva($request, $iva); 
 
             return response()->json([
                 'success' => true,
@@ -166,7 +159,7 @@ class IvaController extends Controller
                     'message' => 'Moms hittades inte'
                 ], 404);
             
-            $iva->deleteObject($id);
+            $iva->deleteIva($id);
 
             return response()->json([
                 'success' => true,
