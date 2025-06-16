@@ -11,11 +11,6 @@ class Equipment extends Model
 
     protected $table = 'equipments';
     protected $guarded = [];
-    
-    /**** Relationship ****/
-    public function vehicleEquipmentsList(){
-        return $this->hasMany(VehicleEquipmentsList::class, 'equipment_id', 'id');
-    }
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {

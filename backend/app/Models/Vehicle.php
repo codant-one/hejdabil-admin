@@ -20,10 +20,6 @@ class Vehicle extends Model
         return $this->belongsTo(CarModel::class, 'model_id', 'id');
     }
 
-    public function vehicleEquipmentsList(){
-        return $this->belongsTo(VehicleEquipmentsList::class, 'equipment_id', 'id');
-    }
-
     public function gearbox(){
         return $this->belongsTo(Gearbox::class, 'gearbox_id', 'id');
     }

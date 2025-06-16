@@ -16,7 +16,7 @@ class VehicleEquipment extends Model
         return $this->belongsTo(Equipment::class, 'equipment_id', 'id');
     }
 
-    public function vehicles(){
-        return $this->hasMany(Vehicle::class, 'equipment_id', 'id');
+    public function vehicle(){
+        return $this->belongsTo(Vehicle::class, 'equipment_id', 'id');
     }
 }
