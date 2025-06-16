@@ -7,9 +7,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-use App\Models\BodysCar;
+use App\Models\CarBody;
 
-class BodyCarRequest extends FormRequest
+class CarBodyRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -39,7 +39,7 @@ class BodyCarRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'namnet är obligatoriskt'
+            'name.required' => 'Namnet är obligatoriskt'
         ];
     }
 

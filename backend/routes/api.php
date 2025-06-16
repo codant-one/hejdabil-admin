@@ -22,7 +22,7 @@ use App\Http\Controllers\{
     TypeController,
     InvoiceController,
     BillingController,
-    BodysCarController,
+    CarBodyController,
     BrandController,
     EquipmentsListController,
     GearboxController,
@@ -79,7 +79,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('brands', BrandController::class);
     Route::apiResource('models', ModelController::class);
     Route::apiResource('ivas', IvaController::class);
-    Route::apiResource('bodiescar', BodysCarController::class);
+    Route::apiResource('car-bodies', CarBodyController::class);
     Route::apiResource('equipments', EquipmentsListController::class);
     Route::apiResource('gearboxes', GearboxController::class);
     

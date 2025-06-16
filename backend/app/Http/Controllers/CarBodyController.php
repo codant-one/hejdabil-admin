@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\BodyCarRequest;
+use App\Http\Requests\CarBodyRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -10,18 +10,10 @@ use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
-use App\Models\BodysCar;
+use App\Models\CarBody;
 
-class BodysCarController extends Controller
+class CarBodyController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(PermissionMiddleware::class . ':view bodyscar|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create bodyscar|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit bodyscar|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete bodyscar|administrator')->only(['destroy']);
-    }
-
     /**
      * Display a listing of the resource.
      */
@@ -31,7 +23,7 @@ class BodysCarController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = BodysCar::applyFilters(
+            $query = CarBody::applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
@@ -41,13 +33,13 @@ class BodysCarController extends Controller
 
             $count = $query->count();
 
-            $bodyscar = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $carbodies = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'bodyscar' => $bodyscar,
-                    'bodyscarTotalCount' => $count
+                    'carbodies' => $carbodies,
+                    'carbodiesTotalCount' => $count
                 ]
             ]);
 
@@ -63,16 +55,16 @@ class BodysCarController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(BodyCarRequest $request)
+    public function store(CarBodyRequest $request)
     {
         try {
 
-            $bodyscar = BodysCar::createObject($request);
+            $carbody = CarBody::createCarBody($request);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'bodycar' => BodysCar::find($bodyscar->id)
+                    'carbody' => CarBody::find($carbody->id)
                 ]
             ]);
 
@@ -92,9 +84,9 @@ class BodysCarController extends Controller
     {
         try {
 
-            $bodycar = BodysCar::find($id);
+            $carbody = CarBody::find($id);
 
-            if (!$bodycar)
+            if (!$carbody)
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
@@ -104,7 +96,7 @@ class BodysCarController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'bodycar' => $bodycar
+                    'carbody' => $carbody
                 ]
             ]);
 
@@ -120,24 +112,24 @@ class BodysCarController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(BodyCarRequest $request, $id): JsonResponse
+    public function update(CarBodyRequest $request, $id): JsonResponse
     {
         try {
-            $bodycar = BodysCar::find($id);
+            $carbody = CarBody::find($id);
         
-            if (!$bodycar)
+            if (!$carbody)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Kaross hittades inte'
                 ], 404);
 
-            $bodycar->updateObject($request, $bodycar); 
+            $carbody->updateCarbody($request, $carbody); 
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'bodycar' => $bodycar
+                    'carbody' => $carbody
                 ]
             ], 200);
 
@@ -157,21 +149,21 @@ class BodysCarController extends Controller
     {
         try {
 
-            $bodycar = BodysCar::find($id);
+            $carbody = CarBody::find($id);
         
-            if (!$bodycar)
+            if (!$carbody)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Kaross hittades inte'
                 ], 404);
             
-            $bodycar->deleteObject($id);
+            $carbody->deleteObject($id);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'bodycar' => $bodycar
+                    'carbody' => $carbody
                 ]
             ], 200);
 

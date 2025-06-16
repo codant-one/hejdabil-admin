@@ -48,32 +48,32 @@ class CarBody extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createCarBody($request) {
 
-        $object = self::create([
+        $carbody = self::create([
             'name' => $request->name
         ]);
         
-        return $object;
+        return $carbody;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateCarbody($request, $carbody) {
 
-        $object->update([
+        $carbody->update([
             'name' => $request->name
         ]);
 
-        return $object;
+        return $carbody;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteCarbody($id) {
+        self::deleteCarbodys(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteCarbodys($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $carbody = self::find($id);
+            $carbody->delete();
         }
     }
 }

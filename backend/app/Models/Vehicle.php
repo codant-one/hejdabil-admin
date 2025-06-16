@@ -12,7 +12,7 @@ class Vehicle extends Model
     protected $guarded = [];
     
     /**** Relationship ****/
-    public function bodyscar(){
+    public function carbodies(){
         return $this->belongsTo(CarBody::class, 'car_body_id', 'id');
     }  
 
