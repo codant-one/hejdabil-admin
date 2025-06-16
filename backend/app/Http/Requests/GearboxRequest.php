@@ -39,7 +39,7 @@ class GearboxRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'namnet är obligatoriskt'
+            'name.required' => 'Namnet är obligatoriskt'
         ];
     }
 

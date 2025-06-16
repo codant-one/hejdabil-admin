@@ -14,14 +14,6 @@ use App\Models\Gearbox;
 
 class GearboxController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(PermissionMiddleware::class . ':view gearboxes|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create gearboxes|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit gearboxes|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete gearboxes|administrator')->only(['destroy']);
-    }
-
     /**
      * Display a listing of the resource.
      */
@@ -41,13 +33,13 @@ class GearboxController extends Controller
 
             $count = $query->count();
 
-            $gearbox = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $gearboxes = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'gearbox' => $gearbox,
-                    'gearboxTotalCount' => $count
+                    'gearboxes' => $gearbox,
+                    'gearboxesTotalCount' => $count
                 ]
             ]);
 
@@ -67,7 +59,7 @@ class GearboxController extends Controller
     {
         try {
 
-            $gearbox = Gearbox::createObject($request);
+            $gearbox = Gearbox::createGearbox($request);
 
             return response()->json([
                 'success' => true,
@@ -132,7 +124,7 @@ class GearboxController extends Controller
                     'message' => 'Växellåda hittades inte'
                 ], 404);
 
-            $gearbox->updateObject($request, $gearbox); 
+            $gearbox->updateGearbox($request, $gearbox); 
 
             return response()->json([
                 'success' => true,
@@ -166,7 +158,7 @@ class GearboxController extends Controller
                     'message' => 'Växellåda hittades inte'
                 ], 404);
             
-            $gearbox->deleteObject($id);
+            $gearbox->deleteGearbox($id);
 
             return response()->json([
                 'success' => true,

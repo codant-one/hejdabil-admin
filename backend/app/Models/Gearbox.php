@@ -48,32 +48,32 @@ class Gearbox extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createGearbox($request) {
 
-        $object = self::create([
+        $gearbox = self::create([
             'name' => $request->name
         ]);
         
-        return $object;
+        return $gearbox;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateGearbox($request, $gearbox) {
 
-        $object->update([
+        $gearbox->update([
             'name' => $request->name
         ]);
 
-        return $object;
+        return $gearbox;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteGearbox($id) {
+        self::deleteGearboxes(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteGearboxes($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $gearbox = self::find($id);
+            $gearbox->delete();
         }
     }
 }

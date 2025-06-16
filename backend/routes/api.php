@@ -80,8 +80,8 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('models', ModelController::class);
     Route::apiResource('ivas', IvaController::class);
     Route::apiResource('car-bodies', CarBodyController::class);
-    Route::apiResource('equipments', EquipmentsListController::class);
     Route::apiResource('gearboxes', GearboxController::class);
+    Route::apiResource('equipments', EquipmentsListController::class);
     
 
     /* DASHBOARD */
