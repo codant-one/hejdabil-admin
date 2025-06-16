@@ -30,7 +30,8 @@ class DatabaseSeeder extends Seeder
             GearboxSeeder::class,
             BrandSeeder::class,
             ModelSeeder::class,
-            EquipmentSeeder::class   
+            EquipmentSeeder::class,
+            InventoryPermissionSeeder::class   
         ]);
 
     }

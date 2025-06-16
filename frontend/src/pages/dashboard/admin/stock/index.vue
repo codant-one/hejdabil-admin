@@ -294,11 +294,11 @@ const downloadCSV = async () => {
                 :key="vehicle.id"
                 style="height: 3rem;">
 
-                <td> {{ vehicle.id }} </td>
-                <td> {{ vehicle.id }} </td>
-                <td> {{ vehicle.id }} </td>
-                <td> {{ vehicle.id }} </td>
-                <td> {{ vehicle.id }} </td>
+                <td> {{ vehicle.reg_num }} </td>
+                <td> {{ vehicle.reg_num }} </td>
+                <td> {{ vehicle.reg_num }} </td>
+                <td> {{ vehicle.reg_num }} </td>
+                <td> {{ vehicle.reg_num }} </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
