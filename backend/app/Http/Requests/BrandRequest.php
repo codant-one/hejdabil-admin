@@ -29,6 +29,12 @@ class BrandRequest extends FormRequest
         $rules = [
             'name' => [
                 'required'
+            ],
+            'url' => [
+                'required'
+            ],
+            'logo' => [
+                'required'
             ]
         ];
 
@@ -39,7 +45,9 @@ class BrandRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'namnet är obligatoriskt'
+            'name.required' => 'Namnet är obligatoriskt.',
+            'url.required' => 'Hemsida är obligatoriskt.',
+            'logo.required' => 'Logotyp är obligatoriskt.'
         ];
     }
 

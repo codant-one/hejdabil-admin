@@ -48,32 +48,37 @@ class Brand extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createBrand($request) {
 
-        $object = self::create([
-            'name' => $request->name
+        $brand = self::create([
+            'name' => $request->name,
+            'url' => $request->url
         ]);
         
-        return $object;
+        return $brand;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateBrand($request, $brand) {
 
-        $object->update([
-            'name' => $request->name
+        $brand->update([
+            'name' => $request->name,
+            'url' => $request->url
         ]);
 
-        return $object;
+        return $brand;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteBrand($id) {
+        self::deleteBrands(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteBrands($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $brand = self::find($id);
+            $brand->delete();
+
+            if($brand->logo)
+                deleteFile($brand->logo);
         }
     }
 }

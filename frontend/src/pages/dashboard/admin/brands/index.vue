@@ -1,5 +1,6 @@
 <script setup>
 
+import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewBrandDrawer from './AddNewBrandDrawer.vue' 
@@ -186,6 +187,10 @@ const submitUpdate = brandData => {
     }, 3000)
 }
 
+const seeUrl = (brand) => {
+  window.open(brand.url, '_blank');
+}
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
@@ -290,7 +295,6 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
-                <th scope="col"> LOGOTYP </th>
                 <th scope="col" v-if="$can('edit', 'brands') || $can('delete', 'brands')"></th>
               </tr>
             </thead>
@@ -302,8 +306,21 @@ const downloadCSV = async () => {
                 style="height: 3rem;">
 
                 <td> {{ brand.id }} </td>
-                <td class="w-100"> {{ brand.name }} </td>
-                <td> {{ brand.id }} </td>
+                <td class="w-100">
+                  <div class="d-flex align-center gap-x-4">
+                    <VAvatar
+                      v-if="brand.logo"
+                      size="38"
+                      variant="tonal"
+                      rounded
+                      :image="themeConfig.settings.urlStorage + brand.logo"
+                    />
+                    <div class="d-flex flex-column">
+                      <span class="text-body-1 font-weight-medium text-high-emphasis">{{ brand.name }}</span>
+                      <span class="text-body-2 cursor-pointer" @click="seeUrl(brand)">{{ brand.url }}</span>
+                    </div>
+                  </div>
+                </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'brands') || $can('delete', 'brands')">      
                   <VMenu>

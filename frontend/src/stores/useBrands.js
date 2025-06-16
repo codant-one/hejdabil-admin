@@ -22,9 +22,9 @@ export const useBrandsStores = defineStore('brands', {
             
             return Brands.get(params)
                 .then((response) => {
-                    this.brands = response.data.data.invoices.data
-                    this.last_page = response.data.data.invoices.last_page
-                    this.brandsTotalCount = response.data.data.invoicesTotalCount
+                    this.brands = response.data.data.brands.data
+                    this.last_page = response.data.data.brands.last_page
+                    this.brandsTotalCount = response.data.data.brandsTotalCount
                 })
                 .catch(error => console.log(error))
                 .finally(() => {

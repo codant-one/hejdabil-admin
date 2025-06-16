@@ -67,7 +67,18 @@ class BrandController extends Controller
     {
         try {
 
-            $brand = Brand::createObject($request);
+            $brand = Brand::createBrand($request);
+
+            if ($request->hasFile('logo')) {
+                $image = $request->file('logo');
+
+                $path = 'brands/';
+
+                $file_data = uploadFile($image, $path);
+
+                $brand->logo = $file_data['filePath'];
+                $brand->update();
+            } 
 
             return response()->json([
                 'success' => true,
@@ -132,8 +143,18 @@ class BrandController extends Controller
                     'message' => 'Märke hittades inte'
                 ], 404);
 
-            $brand->updateObject($request, $brand); 
+            $brand->updateBrand($request, $brand); 
 
+            if ($request->hasFile('logo')) {
+                $image = $request->file('logo');
+
+                $path = 'brands/';
+
+                $file_data = uploadFile($image, $path, $brand->logo);
+
+                $brand->logo = $file_data['filePath'];
+                $brand->update();
+            } 
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -166,7 +187,7 @@ class BrandController extends Controller
                     'message' => 'Märke hittades inte'
                 ], 404);
             
-            $brand->deleteObject($id);
+            $brand->deleteBrand($id);
 
             return response()->json([
                 'success' => true,

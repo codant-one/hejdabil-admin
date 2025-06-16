@@ -33,6 +33,7 @@ class BrandSeeder extends Seeder
             Brand::query()->updateOrCreate([
                 'id' => $brand['id'],
                 'name' => $brand['name'],
+                'url' => $brand['url'],
                 'logo' => ($brand['logo'] === 'null') ? null : $brand['logo']
             ]);
 

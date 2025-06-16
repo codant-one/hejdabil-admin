@@ -1,15 +1,80 @@
 [
-  { "id": 1, "name": "Volvo", "logo": "brands/volvo.svg" },
-  { "id": 2, "name": "Volkswagen", "logo": "brands/volkswagen.svg" },
-  { "id": 3, "name": "Tesla", "logo": "brands/tesla.svg" },
-  { "id": 4, "name": "Kia", "logo": "brands/kia.svg" },
-  { "id": 5, "name": "Toyota", "logo": "brands/toyota.svg" },
-  { "id": 6, "name": "Škoda", "logo": "brands/skoda.svg" },
-  { "id": 7, "name": "Audi", "logo": "brands/audi.svg" },
-  { "id": 8, "name": "BMW", "logo": "brands/bmw.svg" },
-  { "id": 9, "name": "Mercedes-Benz", "logo": "brands/mercedes-benz.svg" },
-  { "id": 10, "name": "Nissan", "logo": "brands/nissan.svg" },
-  { "id": 11, "name": "Polestar", "logo": "brands/polestar.svg" },
-  { "id": 12, "name": "BYD", "logo": "brands/byd.svg" },
-  { "id": 13, "name": "Koenigsegg", "logo": "brands/koenigsegg.svg" }
+  { 
+    "id": 1, 
+    "name": "Volvo", 
+    "url": "https://www.volvo.com/en",
+    "logo": "brands/volvo.svg" 
+  },
+  { 
+    "id": 2, 
+    "name": "Volkswagen", 
+    "url": "https://www.volkswagen.se/sv.html",
+    "logo": "brands/volkswagen.svg" 
+  },
+  { 
+    "id": 3, 
+    "name": "Tesla", 
+    "url": "https://www.tesla.com",
+    "logo": "brands/tesla.svg" 
+  },
+  { 
+    "id": 4, 
+    "name": "Kia",
+    "url": "https://www.kia.com/se",
+    "logo": "brands/kia.svg" 
+  },
+  { 
+    "id": 5, 
+    "name": "Toyota", 
+    "url": "https://www.toyota.se",
+    "logo": "brands/toyota.svg" 
+  },
+  { 
+    "id": 6, 
+    "name": "Škoda", 
+    "url": "https://www.skoda.se",
+    "logo": "brands/skoda.svg" 
+  },
+  { 
+    "id": 7, 
+    "name": "Audi", 
+    "url": "https://www.audi.se/sv",
+    "logo": "brands/audi.svg" 
+  },
+  { 
+    "id": 8, 
+    "name": "BMW", 
+    "url": "https://www.bmw.se/sv/index.html",
+    "logo": "brands/bmw.svg" 
+  },
+  { 
+    "id": 9, 
+    "name": "Mercedes-Benz", 
+    "url": "https://www.mercedes-benz.se",
+    "logo": "brands/mercedes-benz.svg" 
+  },
+  { 
+    "id": 10, 
+    "name": "Nissan", 
+    "url": "https://www.nissan.se",
+    "logo": "brands/nissan.svg" 
+  },
+  { 
+    "id": 11, 
+    "name": "Polestar", 
+    "url": "https://www.polestar.com/se",
+    "logo": "brands/polestar.svg" 
+  },
+  { 
+    "id": 12, 
+    "name": "BYD",
+    "url": "https://www.byd.com/se",
+    "logo": "brands/byd.svg" 
+  },
+  { 
+    "id": 13, 
+    "name": "Koenigsegg", 
+    "url": "https://www.koenigsegg.com",
+    "logo": "brands/koenigsegg.svg" 
+  }
 ]
