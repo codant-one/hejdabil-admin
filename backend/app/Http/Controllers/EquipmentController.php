@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\EquipmentsListRequest;
+use App\Http\Requests\EquipmentRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -10,18 +10,10 @@ use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
-use App\Models\EquipmentsList;
+use App\Models\Equipment;
 
-class EquipmentsListController extends Controller
+class EquipmentController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(PermissionMiddleware::class . ':view equipmentslist|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create equipmentslist|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit equipmentslist|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete equipmentslist|administrator')->only(['destroy']);
-    }
-
     /**
      * Display a listing of the resource.
      */
@@ -31,7 +23,7 @@ class EquipmentsListController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = EquipmentsList::applyFilters(
+            $query = Equipment::applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
@@ -41,13 +33,13 @@ class EquipmentsListController extends Controller
 
             $count = $query->count();
 
-            $equipmentsList = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $equipments = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'equipmentsList' => $equipmentsList,
-                    'equipmentsListTotalCount' => $count
+                    'equipments' => $equipments,
+                    'equipmentsTotalCount' => $count
                 ]
             ]);
 
@@ -63,16 +55,16 @@ class EquipmentsListController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(EquipmentsListRequest $request)
+    public function store(EquipmentRequest $request)
     {
         try {
 
-            $equipment = EquipmentsList::createObject($request);
+            $equipment = Equipment::createEquipment($request);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'equipment' => EquipmentsList::find($equipment->id)
+                    'equipment' => Equipment::find($equipment->id)
                 ]
             ]);
 
@@ -92,7 +84,7 @@ class EquipmentsListController extends Controller
     {
         try {
 
-            $equipment = EquipmentsList::find($id);
+            $equipment = Equipment::find($id);
 
             if (!$equipment)
                 return response()->json([
@@ -120,10 +112,10 @@ class EquipmentsListController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(EquipmentsListRequest $request, $id): JsonResponse
+    public function update(EquipmentRequest $request, $id): JsonResponse
     {
         try {
-            $equipment = EquipmentsList::find($id);
+            $equipment = Equipment::find($id);
         
             if (!$equipment)
                 return response()->json([
@@ -132,7 +124,7 @@ class EquipmentsListController extends Controller
                     'message' => 'Utrustning hittades inte'
                 ], 404);
 
-            $equipment->updateObject($request, $equipment); 
+            $equipment->updateEquipment($request, $equipment); 
 
             return response()->json([
                 'success' => true,
@@ -157,7 +149,7 @@ class EquipmentsListController extends Controller
     {
         try {
 
-            $equipment = EquipmentsList::find($id);
+            $equipment = Equipment::find($id);
         
             if (!$equipment)
                 return response()->json([
@@ -166,7 +158,7 @@ class EquipmentsListController extends Controller
                     'message' => 'Utrustning hittades inte'
                 ], 404);
             
-            $equipment->deleteObject($id);
+            $equipment->deleteEquipments($id);
 
             return response()->json([
                 'success' => true,

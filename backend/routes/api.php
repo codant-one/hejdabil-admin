@@ -24,11 +24,10 @@ use App\Http\Controllers\{
     BillingController,
     CarBodyController,
     BrandController,
-    EquipmentsListController,
+    EquipmentController,
     GearboxController,
     IvaController,
     ModelController
-
 };
 
 /*
@@ -81,7 +80,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('ivas', IvaController::class);
     Route::apiResource('car-bodies', CarBodyController::class);
     Route::apiResource('gearboxes', GearboxController::class);
-    Route::apiResource('equipments', EquipmentsListController::class);
+    Route::apiResource('equipments', EquipmentController::class);
     
 
     /* DASHBOARD */

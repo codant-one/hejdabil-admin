@@ -7,9 +7,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-use App\Models\EquipmentsList;
+use App\Models\Equipment;
 
-class EquipmentsListRequest extends FormRequest
+class EquipmentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -39,7 +39,7 @@ class EquipmentsListRequest extends FormRequest
     public function messages()
     {
         return [
-            'name.required' => 'namnet är obligatoriskt'
+            'name.required' => 'Namnet är obligatoriskt'
         ];
     }
 

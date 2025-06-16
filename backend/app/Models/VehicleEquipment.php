@@ -12,8 +12,8 @@ class VehicleEquipment extends Model
     protected $guarded = [];
     
     /**** Relationship ****/
-    public function equipmentsList(){
-        return $this->belongsTo(EquipmentsList::class, 'equipment_id', 'id');
+    public function equipment(){
+        return $this->belongsTo(Equipment::class, 'equipment_id', 'id');
     }
 
     public function vehicles(){

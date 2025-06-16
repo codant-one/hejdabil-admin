@@ -49,32 +49,32 @@ class Equipment extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createEquipment($request) {
 
-        $object = self::create([
+        $equipment = self::create([
             'name' => $request->name
         ]);
         
-        return $object;
+        return $equipment;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateEquipment($request, $equipment) {
 
-        $object->update([
+        $equipment->update([
             'name' => $request->name
         ]);
 
-        return $object;
+        return $equipment;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteEquipment($id) {
+        self::deleteEquipments(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteEquipments($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $equipment = self::find($id);
+            $equipment->delete();
         }
     }
 }
