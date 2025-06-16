@@ -24,7 +24,12 @@ class CarModel extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('name', 'LIKE', '%' . $search . '%');
+        $query->whereHas('brand', function ($q) use ($search) {
+            $q->where(function ($query) use ($search) {
+                $query->where('name', 'LIKE', '%' . $search . '%')
+                      ->orWhere('url', 'LIKE', '%' . $search . '%');
+            });
+        })->orWhere('name', 'LIKE', '%' . $search . '%');
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -36,6 +41,10 @@ class CarModel extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('brand_id') !== null) {
+            $query->where('brand_id', $filters->get('brand_id'));
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -54,34 +63,34 @@ class CarModel extends Model
     }
 
     /**** Public methods ****/
-    public static function createObject($request) {
+    public static function createModel($request) {
 
-        $object = self::create([
+        $model = self::create([
             'name' => $request->name,
             'brand_id' => $request->brand_id
         ]);
         
-        return $object;
+        return $model;
     }
 
-    public static function updateObject($request, $object) {
+    public static function updateModel($request, $model) {
 
-        $object->update([
+        $model->update([
             'name' => $request->name,
             'brand_id' => $request->brand_id
         ]);
 
-        return $object;
+        return $model;
     }
 
-    public static function deleteObject($id) {
-        self::deleteObjects(array($id));
+    public static function deleteModel($id) {
+        self::deleteModels(array($id));
     }
 
-    public static function deleteObjects($ids) {
+    public static function deleteModels($ids) {
         foreach ($ids as $id) {
-            $object = self::find($id);
-            $object->delete();
+            $model = self::find($id);
+            $model->delete();
         }
     }
 }

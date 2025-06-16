@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CarModelRequest;
+use App\Http\Requests\ModelRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +12,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\CarModel;
 
-class CarModelController extends Controller
+class ModelController extends Controller
 {
     public function __construct()
     {
@@ -36,19 +36,20 @@ class CarModelController extends Controller
                                 $request->only([
                                     'search',
                                     'orderByField',
-                                    'orderBy'
+                                    'orderBy',
+                                    'brand_id'
                                 ])
                             );
 
             $count = $query->count();
 
-            $modelscar = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            $models = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'modelscar' => $modelscar,
-                    'modelscarTotalCount' => $count
+                    'models' => $models,
+                    'modelsTotalCount' => $count
                 ]
             ]);
 
@@ -64,16 +65,16 @@ class CarModelController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(CarModelRequest $request)
+    public function store(ModelRequest $request)
     {
         try {
 
-            $CarModel = CarModel::createObject($request);
+            $model = CarModel::createModel($request);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'CarModel' => CarModel::with(['brand'])->find($CarModel->id)
+                    'model' => CarModel::with(['brand'])->find($model->id)
                 ]
             ]);
 
@@ -93,9 +94,9 @@ class CarModelController extends Controller
     {
         try {
 
-            $CarModel = CarModel::with(['brand'])->find($id);
+            $model = CarModel::with(['brand'])->find($id);
 
-            if (!$CarModel)
+            if (!$model)
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
@@ -105,7 +106,7 @@ class CarModelController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'CarModel' => $CarModel
+                    'model' => $model
                 ]
             ]);
 
@@ -121,24 +122,24 @@ class CarModelController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(CarModelRequest $request, $id): JsonResponse
+    public function update(ModelRequest $request, $id): JsonResponse
     {
         try {
-            $CarModel = CarModel::with(['brand'])->find($id);
+            $model = CarModel::with(['brand'])->find($id);
         
-            if (!$CarModel)
+            if (!$model)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Modell hittades inte'
                 ], 404);
 
-            $CarModel->updateObject($request, $CarModel); 
+            $model->updateModel($request, $model); 
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'CarModel' => $CarModel
+                    'model' => $model
                 ]
             ], 200);
 
@@ -158,21 +159,21 @@ class CarModelController extends Controller
     {
         try {
 
-            $CarModel = CarModel::find($id);
+            $model = CarModel::find($id);
         
-            if (!$CarModel)
+            if (!$model)
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
                     'message' => 'Modell hittades inte'
                 ], 404);
             
-            $CarModel->deleteObject($id);
+            $model->deleteModel($id);
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'CarModel' => $CarModel
+                    'model' => $model
                 ]
             ], 200);
 

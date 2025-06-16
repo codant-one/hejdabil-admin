@@ -18,7 +18,8 @@ class Brand extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('name', 'LIKE', '%' . $search . '%');
+        $query->where('name', 'LIKE', '%' . $search . '%')
+              ->orWhere('url', 'LIKE', '%' . $search . '%');
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {

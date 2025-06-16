@@ -3,23 +3,23 @@ import axios from '@axios'
 class Models {
 
     get(params) {
-        return axios.get('invoices', {params})
+        return axios.get('models', {params})
     }
 
     create(data) {
-        return axios.post('/invoices', data)
+        return axios.post('/models', data)
     }
 
     show(id) {
-        return axios.get(`/invoices/${id}`)
+        return axios.get(`/models/${id}`)
     }
 
     update(data) {
-        return axios.post(`/invoices/${data.id}`, data.data)
+        return axios.post(`/models/${data.id}`, data.data)
     }
 
     delete(id){
-        return axios.delete(`/invoices/${id}`)
+        return axios.delete(`/models/${id}`)
     }
     
 }

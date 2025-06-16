@@ -205,7 +205,8 @@ const downloadCSV = async () => {
 
     let data = {
       ID: element.id,
-      NAMN: element.name
+      NAMN: element.name,
+      HEMSIDA: element.url
     }
           
     dataArray.push(data)

@@ -27,7 +27,7 @@ const isFormValid = ref(false)
 const refForm = ref()
 
 const id = ref(0)
-const type_id = ref(null)
+const brand_id = ref(null)
 const name = ref('')
 const isEdit = ref(false)
 
@@ -42,7 +42,7 @@ watchEffect(async() => {
 
       isEdit.value = true
       id.value = props.model.id
-      type_id.value = props.model.type_id
+      brand_id.value = props.model.brand_id
       name.value = props.model.name
     }
   }
@@ -67,7 +67,7 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData()
 
-      formData.append('type_id', type_id.value)
+      formData.append('brand_id', brand_id.value)
       formData.append('name', name.value)
 
       emit('modelData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
@@ -130,7 +130,7 @@ const handleDrawerModelValueUpdate = val => {
           <VRow>
             <VCol cols="12" md="12">
               <VSelect
-                  v-model="type_id"
+                  v-model="brand_id"
                   placeholder="Märke"
                   :items="brands"
                   :item-title="item => item.name"

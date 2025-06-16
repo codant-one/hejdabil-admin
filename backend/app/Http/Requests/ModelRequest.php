@@ -9,7 +9,7 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 use App\Models\CarModel;
 
-class CarModelRequest extends FormRequest
+class ModelRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -47,7 +47,7 @@ class CarModelRequest extends FormRequest
             'brand_id.required' => 'Märke är obligatorisk.',
             'brand_id.integer' => 'Märke formatet måste vara integer.',
             'brand_id.exists' => 'Den angivna Märket finns inte.',
-            'name.required' => 'namnet är obligatoriskt'
+            'name.required' => 'Namnet är obligatoriskt'
         ];
     }
 

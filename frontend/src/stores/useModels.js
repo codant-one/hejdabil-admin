@@ -22,9 +22,9 @@ export const useModelsStores = defineStore('models', {
             
             return Models.get(params)
                 .then((response) => {
-                    this.models = response.data.data.invoices.data
-                    this.last_page = response.data.data.invoices.last_page
-                    this.modelsTotalCount = response.data.data.invoicesTotalCount
+                    this.models = response.data.data.models.data
+                    this.last_page = response.data.data.models.last_page
+                    this.modelsTotalCount = response.data.data.modelsTotalCount
                 })
                 .catch(error => console.log(error))
                 .finally(() => {

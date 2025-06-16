@@ -1,5 +1,6 @@
 <script setup>
 
+import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { useModelsStores } from '@/stores/useModels'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -60,7 +61,8 @@ async function fetchData(cleanFilters = false) {
     orderByField: 'id',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    brand_id: brand_id.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -193,6 +195,10 @@ const submitUpdate = modelData => {
     }, 3000)
 }
 
+const seeUrl = (brand) => {
+  window.open(brand.url, '_blank');
+}
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
@@ -208,7 +214,7 @@ const downloadCSV = async () => {
     let data = {
       ID: element.id,
       NAMN: element.name,
-      MÄRKE: element.description ?? ''
+      MÄRKE: element.brand.name ?? ''
     }
           
     dataArray.push(data)
@@ -323,7 +329,21 @@ const downloadCSV = async () => {
 
                 <td> {{ model.id }} </td>
                 <td class="text-wrap"> {{ model.name }} </td>
-                <td class="text-wrap"> {{ model.type.name }}</td>
+                <td>
+                  <div class="d-flex align-center gap-x-4">
+                    <VAvatar
+                      v-if="model.brand.logo"
+                      size="38"
+                      variant="tonal"
+                      rounded
+                      :image="themeConfig.settings.urlStorage + model.brand.logo"
+                    />
+                    <div class="d-flex flex-column">
+                      <span class="text-body-1 font-weight-medium text-high-emphasis">{{ model.brand.name }}</span>
+                      <span class="text-body-2 cursor-pointer" @click="seeUrl(model.brand)">{{ model.brand.url }}</span>
+                    </div>
+                  </div>
+                </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'models') || $can('delete', 'models')">      
                   <VMenu>
