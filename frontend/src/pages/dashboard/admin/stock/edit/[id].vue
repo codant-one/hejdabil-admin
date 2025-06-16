@@ -640,6 +640,6 @@ const onSubmit = () => {
 
 <route lang="yaml">
     meta:
-    action: edit
-    subject: stock
+      action: edit
+      subject: stock
 </route>

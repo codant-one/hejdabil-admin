@@ -131,6 +131,10 @@ const removeVehicle = async () => {
   return true
 }
 
+const editVehicle = vehicleData => {
+  router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: vehicleData.id } })
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -294,7 +298,7 @@ const downloadCSV = async () => {
                 :key="vehicle.id"
                 style="height: 3rem;">
 
-                <td> {{ vehicle.reg_num }} </td>
+                <td class="cursor-pointer text-primary" @click="editVehicle(vehicle)"> {{ vehicle.reg_num }} </td>
                 <td> {{ vehicle.reg_num }} </td>
                 <td> {{ vehicle.reg_num }} </td>
                 <td> {{ vehicle.reg_num }} </td>
