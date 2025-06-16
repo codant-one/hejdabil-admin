@@ -13,18 +13,20 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger("model_id")->nullable()->comment("Model a car, example Corolla");
             $table->unsignedBigInteger("car_body_id")->nullable();
             $table->unsignedBigInteger('gearbox_id')->nullable();
             $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
-            $table->unsignedBigInteger('state_id')->default(4);
+            $table->unsignedBigInteger('state_id')->default(10);
             
             $table->string("reg_num")->comment("Register number");
             $table->string("mileage")->nullable()->comment("Kilometers traveled");
             $table->string("generation")->nullable()->comment("Generation car");
-            $table->string("year")->nullable()->comment("Year of car (YYYY), example 2025");
+            $table->year("year")->nullable()->comment("Year of car (YYYY), example 2025");
             $table->date("first_insc")->nullable()->comment("First inscription (YYYY-MM-DD), example 2025-01-01");
+            $table->date("control_inspection")->nullable()->comment("Control inspection is valid until");
+            $table->string('color')->nullable()->comment("Car color");
+            $table->string('fuel')->nullable()->comment("Fuel type");
             $table->decimal("purchase_price", 10, 2)->nullable()->comment("Purchase price");
             $table->date("purchase_date")->nullable()->comment("Purchase date");
             $table->decimal("sale_price", 10, 2)->nullable()->comment("Bellow Sale price");
@@ -44,7 +46,6 @@ return new class extends Migration
             $table->foreign('gearbox_id')->references('id')->on('gearboxes')->onDelete('cascade');
             $table->foreign('iva_id')->references('id')->on('ivas')->onDelete('cascade');
             $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

@@ -38,16 +38,17 @@ class AddOrUpdateStates extends Command
      */
     public function handle()
     {
-        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Väntande', 'Borttagen', 'Avvisad', 'Betalad', 'Förfallna', 'Kredit'];
+        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Väntande', 'Borttagen', 'Avvisad', 'Betalad', 'Förfallna', 'Kredit', 'På lager', 'På annons', 'Såld', 'Förmedlingsbil'];
+        $labels = ['Inactive', 'Active', 'Published', 'Pending', 'Removed', 'Rejected', 'Paid', 'Overdue', 'Credit', 'In stock', 'Announced', 'Sold', 'Rented'];
 
-        foreach($states as $state){
-            State::updateOrCreate([
-                'name' => $state,
-                'label' => strtolower($state)
-            ]);
+        foreach($states as $key => $state) {
+            State::updateOrCreate(
+                ['name' => $state],
+                ['label' => strtolower($labels[$key])] 
+            );
         }
 
-        $this->info("Add new states");
+        $this->info("Add or update states");
 
         return 0;
     }

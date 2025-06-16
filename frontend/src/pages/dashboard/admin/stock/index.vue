@@ -1,6 +1,6 @@
 <script setup>
 
-import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useVehiclesStores } from '@/stores/useVehicles'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
@@ -8,20 +8,20 @@ import { requiredValidator } from '@/@core/utils/validators'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
-const suppliersStores = useSuppliersStores()
+const vehiclesStores = useVehiclesStores()
 const emitter = inject("emitter")
 
-const suppliers = ref([])
+const vehicles = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalSuppliers = ref(0)
+const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCreateDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
-const selectedSupplier = ref({})
+const selectedVehicle = ref({})
 const state_id = ref(null)
 
 const plate = ref(null)
@@ -40,10 +40,10 @@ const advisor = ref({
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = vehicles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = vehicles.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
 })
 
 // 👉 watching current page
@@ -74,11 +74,11 @@ async function fetchData(cleanFilters = false) {
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
-  await suppliersStores.fetchSuppliers(data)
+  await vehiclesStores.fetchVehicles(data)
 
-  suppliers.value = suppliersStores.getSuppliers
-  totalPages.value = suppliersStores.last_page
-  totalSuppliers.value = suppliersStores.suppliersTotalCount
+  vehicles.value = vehiclesStores.getVehicles
+  totalPages.value = vehiclesStores.last_page
+  totalVehicles.value = vehiclesStores.vehiclesTotalCount
 
   isRequestOngoing.value = false
 
@@ -97,28 +97,20 @@ const resolveStatus = state_id => {
     return { color: 'error' }
 }
 
-const editSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
-}
-
-const showDeleteDialog = supplierData => {
+const showDeleteDialog = vehicleData => {
   isConfirmDeleteDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
+  selectedVehicle.value = { ...vehicleData }
 }
 
-const showActivateDialog = supplierData => {
+const showActivateDialog = vehicleData => {
   isConfirmActiveDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
+  selectedVehicle.value = { ...vehicleData }
 }
 
-const seeSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-id', params: { id: supplierData.id } })
-}
-
-const removeSupplier = async () => {
+const removeVehicle = async () => {
   isConfirmDeleteDialogVisible.value = false
-  let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
+  let res = await vehiclesStores.deleteVehicle(selectedVehiclevalue.id)
+  selectedVehicle.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
@@ -139,34 +131,30 @@ const removeSupplier = async () => {
   return true
 }
 
-const activateSupplier = async () => {
-  isConfirmActiveDialogVisible.value = false
-  let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
-
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör aktiverad!' : res.data.message,
-    show: true
-  }
-
-  await fetchData()
-
-  setTimeout(() => {
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
-
-  return true
-}
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
-      console.log('asd', plate.value)
-      router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: 1 } })
+
+      isConfirmCreateDialogVisible.value = false
+      isRequestOngoing.value = true
+
+      let formData = new FormData()
+
+      formData.append('reg_num', plate.value)
+
+      vehiclesStores.addVehicle(formData)
+        .then((res) => {
+          router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: res.data.data.vehicle.id } })  
+        })
+        .catch((err) => {
+          console.log('err', err)
+            advisor.value = {
+                type: 'error',
+                message: err.message,
+                show: true
+            }
+            isRequestOngoing.value = false
+        })
     }
   })
 }
@@ -177,11 +165,11 @@ const downloadCSV = async () => {
 
   let data = { limit: -1 }
 
-  await suppliersStores.fetchSuppliers(data)
+  await vehiclesStores.fetchVehicles(data)
 
   let dataArray = [];
       
-  suppliersStores.getSuppliers.forEach(element => {
+  vehiclesStores.getVehicles.forEach(element => {
 
     let data = {
       ID: element.id,
@@ -197,7 +185,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, "vehicles", "csv");
 
   isRequestOngoing.value = false
 
@@ -276,7 +264,7 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','suppliers')"
+                v-if="$can('create', 'stock')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
                 @click="isConfirmCreateDialogVisible = true">
@@ -292,78 +280,27 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> FÖRETAG </th>
-                <th scope="col"> KONTAKT </th>
-                <th scope="col"> STATUS </th>
-                <th scope="col"> # KUNDER </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
+                <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
               <tr 
-                v-for="supplier in suppliers"
-                :key="supplier.id"
+                v-for="vehicle in vehicles"
+                :key="vehicle.id"
                 style="height: 3rem;">
 
-                <td> {{ supplier.id }} </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.logo ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.logo"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.logo"
-                      />
-                        <span v-else>{{ avatarText(supplier.company) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
-                        {{ supplier.company }}
-                      </span>
-                      <span class="text-sm text-disabled">
-                        Organisationsnummer: {{ supplier.organization_number }}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(supplier.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td> 
-                  <VChip
-                    label
-                    :color="resolveStatus(supplier.state.id)?.color"
-                  >
-                    {{ supplier.state.name }}
-                  </VChip>
-                </td>
-                <td class="text-wrap w-15">
-                  {{ supplier.client_count }}
-                </td>
+                <td> {{ vehicle.id }} </td>
+                <td> {{ vehicle.id }} </td>
+                <td> {{ vehicle.id }} </td>
+                <td> {{ vehicle.id }} </td>
+                <td> {{ vehicle.id }} </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -377,37 +314,17 @@ const downloadCSV = async () => {
                     </template>
 
                     <VList>
-                      <VListItem 
-                        v-if="$can('view', 'suppliers')"
-                        @click="seeSupplier(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-eye" />
-                        </template>
-                        <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
-                         @click="editSupplier(supplier)">
+                      <VListItem v-if="$can('edit', 'stock')">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                        @click="showDeleteDialog(supplier)">
+                      <VListItem v-if="$can('delete','stock')" >
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
                         <VListItemTitle>Avaktivera</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                        v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                        @click="showActivateDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-rosette-discount-check" />
-                        </template>
-                        <VListItemTitle>Aktivera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -415,7 +332,7 @@ const downloadCSV = async () => {
               </tr>
             </tbody>
             <!-- 👉 table footer  -->
-            <tfoot v-show="!suppliers.length">
+            <tfoot v-show="!vehicles.length">
               <tr>
                 <td
                   colspan="6"
@@ -501,7 +418,7 @@ const downloadCSV = async () => {
       <VCard title="Ta bort leverantör">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill ta bort leverantör <strong>{{ selectedVehicle.id }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -511,7 +428,7 @@ const downloadCSV = async () => {
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeSupplier">
+          <VBtn @click="removeVehicle">
               Acceptera
           </VBtn>
         </VCardText>
@@ -531,7 +448,7 @@ const downloadCSV = async () => {
       <VCard title="Aktivera leverantör">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill aktivera leverantören <strong>{{ selectedVehicle.id }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -541,7 +458,7 @@ const downloadCSV = async () => {
             @click="isConfirmActiveDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="activateSupplier">
+          <VBtn @click="activateVehicle">
               Acceptera
           </VBtn>
         </VCardText>
@@ -564,5 +481,5 @@ const downloadCSV = async () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: suppliers
+    subject: stock
 </route>

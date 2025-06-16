@@ -1,11 +1,11 @@
 <script setup>
 
 import router from '@/router'
+import { themeConfig } from '@themeConfig'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
-import { useSuppliersStores } from '@/stores/useSuppliers'
-import logoBlack from '@images/logo_black.png'
+import { useVehiclesStores } from '@/stores/useVehicles'
 
-const suppliersStores = useSuppliersStores()
+const vehiclesStores = useVehiclesStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
@@ -18,27 +18,33 @@ const refForm = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
 
-const supplier = ref(null)
-const company = ref('AA686OW')
-const organization_number = ref('')
-const link = ref('')
-const address = ref('')
-const street = ref('')
-const postal_code = ref('')
-const phone = ref('')
-const swish = ref('')
-const bank = ref('')
-const account_number = ref('')
-const name = ref('')
-const last_name = ref('')
-const email = ref('')
+const brands = ref([])
+const models = ref([])
+const modelsByBrand = ref([])
+const carbodies = ref([])
+const gearboxes = ref([])
+const ivas = ref([])
+const states = ref([])
+const logo = ref(null)
 
+const vehicle = ref(null)
+const reg_num = ref('')
+const mileage = ref(null)
+const brand_id = ref(null)
+const model_id = ref(null)
+const generation = ref(null)
+const car_body_id = ref(null)
+const year = ref(null)
+const first_insc = ref(null)
+const control_inspection = ref(null)
+const color = ref(null)
+const fuel = ref(null)
+const gearbox_id = ref(null)
+const purchase_price = ref(null)
+const iva_id = ref(null)
 const state_id = ref(null)
+const phone = ref('')
 
-const states = ref ([
-  { id: 2, name: "Aktiv" },
-  { id: 1, name: "Inaktiv" }
-])
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -77,31 +83,57 @@ watchEffect(async() => {
     isRequestOngoing.value = true
 
 
-    if(Number(route.params.id) && route.name === 'dashboard-admin-suppliers-edit-id') {
-        supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
+    if(Number(route.params.id) && route.name === 'dashboard-admin-stock-edit-id') {
+        const data = await vehiclesStores.showVehicle(Number(route.params.id))
     
-        //company
-        company.value = supplier.value.company
-        organization_number.value = supplier.value.organization_number
-        link.value = supplier.value.link
-        address.value = supplier.value.address
-        street.value = supplier.value.street
-        postal_code.value = supplier.value.postal_code
-        phone.value = supplier.value.phone
-        swish.value = supplier.value.swish
+        vehicle.value = data.vehicle
+        brands.value = data.brands
+        models.value = data.models
+        carbodies.value = data.carbodies
+        gearboxes.value = data.gearboxes
+        ivas.value = data.ivas
+        states.value = data.states
 
-        //bank
-        bank.value = supplier.value.bank
-        account_number.value = supplier.value.account_number
+        reg_num.value = vehicle.value.reg_num
+        mileage.value = vehicle.value.mileage
 
-        // contact
-        name.value  = supplier.value.user.name
-        last_name.value = supplier.value.user.last_name 
-        email.value = supplier.value.user.email
+        model_id.value = vehicle.value.model_id
+        generation.value = vehicle.value.generation
+        car_body_id.value = vehicle.value.car_body_id
+        year.value = vehicle.value.year
+        first_insc.value = vehicle.value.first_insc
+        control_inspection.value = vehicle.value.control_inspection
+        color.value = vehicle.value.color
+        fuel.value = vehicle.value.fuel
+        gearbox_id.value = vehicle.value.gearbox_id
+        purchase_price.value = vehicle.value.purchase_price
+        iva_id.value = vehicle.value.iva_id
+        state_id.value = vehicle.value.state_id
+      
     }
 
     isRequestOngoing.value = false
 })
+
+
+const getModels = computed(() => {
+  return modelsByBrand.value.map((model) => {
+    return {
+      title: model.name,
+      value: model.id
+    }
+  })
+})
+
+const selectBrand = brand => {
+    if (brand) {
+        let _brand = brands.value.find(item => item.id === brand)
+    
+        model_id.value = ''
+        logo.value = _brand.logo
+        modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+    }
+}
 
 const refetchData = hideOverlay => {
   setTimeout(hideOverlay, 3000)
@@ -124,24 +156,7 @@ const onSubmit = () => {
             formData.append('id', Number(route.params.id))
             formData.append('_method', 'PUT')
 
-            //company
-            formData.append('company', company.value)
-            formData.append('organization_number', organization_number.value)
-            formData.append('link', link.value)
-            formData.append('address', address.value)
-            formData.append('street', street.value)
-            formData.append('postal_code', postal_code.value)
             formData.append('phone', phone.value)
-            formData.append('swish', swish.value)
-
-            //bank
-            formData.append('bank', bank.value)
-            formData.append('account_number', account_number.value)
-
-            //contact
-            formData.append('name', name.value)
-            formData.append('last_name', last_name.value)
-            formData.append('email', email.value)
 
             isRequestOngoing.value = true
 
@@ -150,7 +165,7 @@ const onSubmit = () => {
                 id: Number(route.params.id)
             }
 
-            suppliersStores.updateSupplier(data)
+            vehiclesStores.updateVehicle(data)
                 .then((res) => {
                     if (res.data.success) {
                         
@@ -159,7 +174,7 @@ const onSubmit = () => {
                             error: false
                         }
 
-                        router.push({ name : 'dashboard-admin-suppliers'})
+                        router.push({ name : 'dashboard-admin-stock'})
                         emitter.emit('toast', data)
                     }
                     isRequestOngoing.value = false
@@ -171,7 +186,7 @@ const onSubmit = () => {
                         error: true
                     }
 
-                    router.push({ name : 'dashboard-admin-suppliers'})
+                    router.push({ name : 'dashboard-admin-stock'})
                     emitter.emit('toast', data)
 
                     isRequestOngoing.value = false
@@ -183,7 +198,7 @@ const onSubmit = () => {
 </script>
 
 <template>
-    <section>
+    <section v-if="reg_num">
         <VRow>
             <VDialog
                 v-model="isRequestOngoing"
@@ -198,14 +213,25 @@ const onSubmit = () => {
             <VCol cols="12" md="12">
                 <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                     <div class="d-flex align-center">
-                        <img
-                            width="50"
-                            :src="logoBlack"
+                         <VAvatar
+                            v-if="model_id === null"
+                            size="x-large"
+                            variant="tonal"
+                            color="secondary"
+                        >
+                            <VIcon size="x-large" icon="tabler-car" />                        
+                        </VAvatar>
+                        <VAvatar
+                            v-else
+                            size="x-large"
+                            variant="tonal"
+                            color="secondary"
+                            :image="themeConfig.settings.urlStorage + logo"
                         />
                     </div>
                     <div class="d-flex flex-column justify-center">
                         <h6 class="text-md-h4 text-h6 font-weight-medium">
-                            AA686OW
+                            {{ reg_num }}
                         </h6>
                         <span class="d-flex align-center">
                             På lager 
@@ -252,7 +278,7 @@ const onSubmit = () => {
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="company"
+                                                    v-model="reg_num"
                                                     disabled
                                                     label="Reg nr"
                                                 />
@@ -260,47 +286,52 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     type="number"
-                                                    v-model="organization_number"
+                                                    v-model="mileage"
                                                     label="Miltal"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VSelect
-                                                    v-model="state_id"
+                                                    v-model="brand_id"
                                                     label="Märke"
-                                                    :items="states"
+                                                    :items="brands"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     autocomplete="off"
                                                     clearable
-                                                    clear-icon="tabler-x"/>
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectBrand"/>
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VSelect
-                                                    v-model="state_id"
+                                                    v-model="model_id"
                                                     label="Modell"
-                                                    :items="states"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
+                                                    :items="getModels"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"/>
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="postal_code"
+                                                    v-model="generation"
                                                     label="Generation"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="street"
+                                                <VSelect
+                                                    v-model="car_body_id"
                                                     label="Kaross"
+                                                    :items="carbodies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="phone"
+                                                    v-model="year"
                                                     :rules="[yearValidator]"
                                                     label="Årsmodell"
                                                 />
@@ -308,7 +339,7 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <AppDateTimePicker
                                                     :key="JSON.stringify(startDateTimePickerConfig)"
-                                                    v-model="phone"
+                                                    v-model="first_insc"
                                                     density="compact"
                                                     :config="startDateTimePickerConfig"
                                                     label="Första registreringsdatum"
@@ -318,7 +349,7 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <AppDateTimePicker
                                                     :key="JSON.stringify(startDateTimePickerConfig)"
-                                                    v-model="phone"
+                                                    v-model="control_inspection"
                                                     density="compact"
                                                     :config="startDateTimePickerConfig"
                                                     label="Kontrollbesiktning gäller tom"
@@ -327,39 +358,45 @@ const onSubmit = () => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="swish"
+                                                    v-model="color"
                                                     label="Färg"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="swish"
+                                                    v-model="fuel"
                                                     label="Drivmedel"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="swish"
+                                                <VSelect
+                                                    v-model="gearbox_id"
                                                     label="Växellåda"
+                                                    :items="gearboxes"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
                                                 />
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
-                                    <!-- bank -->
+                                    <!-- Prisinformation -->
                                     <VWindowItem class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     type="number"
-                                                    v-model="bank"
+                                                    v-model="purchase_price"
                                                     label="Inköpspris"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VSelect
-                                                    v-model="state_id"
+                                                    v-model="iva_id"
                                                     label="VMB / Moms"
-                                                    :items="states"
+                                                    :items="ivas"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     autocomplete="off"
@@ -372,21 +409,18 @@ const onSubmit = () => {
                                                     label="Status"
                                                     :items="states"
                                                     :item-title="item => item.name"
-                                                    :item-value="item => item.id"
-                                                    autocomplete="off"
-                                                    clearable
-                                                    clear-icon="tabler-x"/>
+                                                    :item-value="item => item.id"/>
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="swish"
+                                                    v-model="phone"
                                                     type="number"
                                                     label="Försäljningspris"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="swish"
+                                                    v-model="phone"
                                                     type="number"
                                                     label="Lägsta försäljningspris"
                                                 />
@@ -419,7 +453,7 @@ const onSubmit = () => {
                                         <VRow class="px-md-5" v-if="false">
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="name"
+                                                    v-model="phone"
                                                     label="Namn"
                                                 />
                                             </VCol>
@@ -429,7 +463,7 @@ const onSubmit = () => {
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="name"
+                                                    v-model="phone"
                                                     type="number"
                                                     label="Antal nycklar"
                                                 />
@@ -469,7 +503,7 @@ const onSubmit = () => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="name"
+                                                    v-model="phone"
                                                     label="Senaste service: Mil/datum"
                                                 />
                                             </VCol>
@@ -486,13 +520,13 @@ const onSubmit = () => {
                                             </VCol>
                                             <VCol cols="12" md="12">
                                                 <VTextField
-                                                    v-model="name"
+                                                    v-model="phone"
                                                     label="Kamrem bytt vid Mil/datum"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="12">
                                                 <VTextarea
-                                                    v-model="name"
+                                                    v-model="phone"
                                                     rows="5"
                                                     label="Kommenter"
                                                 />
@@ -607,5 +641,5 @@ const onSubmit = () => {
 <route lang="yaml">
     meta:
     action: edit
-    subject: suppliers
+    subject: stock
 </route>

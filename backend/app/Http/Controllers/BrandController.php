@@ -155,6 +155,7 @@ class BrandController extends Controller
                 $brand->logo = $file_data['filePath'];
                 $brand->update();
             } 
+            
             return response()->json([
                 'success' => true,
                 'data' => [ 

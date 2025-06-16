@@ -27,7 +27,8 @@ use App\Http\Controllers\{
     EquipmentController,
     GearboxController,
     IvaController,
-    ModelController
+    ModelController,
+    VehicleController
 };
 
 /*
@@ -81,6 +82,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('car-bodies', CarBodyController::class);
     Route::apiResource('gearboxes', GearboxController::class);
     Route::apiResource('equipments', EquipmentController::class);
+    Route::apiResource('vehicles', VehicleController::class);
     
 
     /* DASHBOARD */

@@ -22,6 +22,17 @@ const isConfirmActiveDialogVisible = ref(false)
 const selectedSupplier = ref({})
 const state_id = ref(null)
 
+// Modal select type contract
+const isModalVisible = ref(false)
+const selectedOption = ref(null) 
+
+const selectItems = ref([
+  { title: 'Försäljningsavtal', value: 1 },
+  { title: 'Inköpsavtal', value: 2 },
+  { title: 'Förmedlingsavtal', value: 3 },
+  { title: 'Affärsförslag', value: 4 },
+])
+
 const states = ref ([
   { id: 2, name: "Aktiv" },
   { id: 1, name: "Inaktiv" }
@@ -189,6 +200,32 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+
+// Función para manejar el guardado/confirmación del modal
+const handleConfirmSelection = () => {
+  if (selectedOption.value) {
+    console.log('Opción seleccionada:', selectedOption.value)
+    // Aquí puedes añadir la lógica para usar el valor seleccionado
+    // Por ejemplo, emitir un evento, llamar a una API, etc.
+    alert(`Has seleccionado: ${selectedOption.value}`) // Ejemplo
+  } else {
+    alert('Por favor, selecciona una opción.')
+    return; // No cerrar el modal si no se seleccionó nada (opcional)
+  }
+  isModalVisible.value = false // Cierra el modal después de confirmar
+}
+
+const handleCloseModal = () => {
+  isModalVisible.value = false
+  // Opcional: resetear la selección si se cancela
+  // selectedOption.value = null 
+}
+
+const addAgreements = () => {
+
+   if(selectedOption.value === 1)
+    router.push({ name : 'dashboard-admin-agreements-sales-agreements' })
+}
 </script>
 
 <template>
@@ -238,18 +275,6 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center w-100 w-md-10">
-              <VSelect
-                  v-model="state_id"
-                  placeholder="Status"
-                  :items="states"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-            </div>
-
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
               <!-- 👉 Search  -->
               <div class="search">
@@ -266,8 +291,8 @@ const downloadCSV = async () => {
                 v-if="$can('create','suppliers')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
-                :to="{ name: 'dashboard-admin-suppliers-add' }">
-                  Skapa leverantör
+                @click="isModalVisible = true">
+                Skapa
               </VBtn>
             </div>
           </VCardText>
@@ -279,127 +304,16 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
-                <th scope="col"> FÖRETAG </th>
-                <th scope="col"> KONTAKT </th>
-                <th scope="col"> STATUS </th>
-                <th scope="col"> # KUNDER </th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
+                <th scope="col"> xxx </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
-              <tr 
-                v-for="supplier in suppliers"
-                :key="supplier.id"
-                style="height: 3rem;">
-
-                <td> {{ supplier.id }} </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.logo ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.logo"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.logo"
-                      />
-                        <span v-else>{{ avatarText(supplier.company) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
-                        {{ supplier.company }}
-                      </span>
-                      <span class="text-sm text-disabled">
-                        Organisationsnummer: {{ supplier.organization_number }}
-                      </span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="supplier.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="supplier.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(supplier.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ supplier.user.name }} {{ supplier.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ supplier.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td> 
-                  <VChip
-                    label
-                    :color="resolveStatus(supplier.state.id)?.color"
-                  >
-                    {{ supplier.state.name }}
-                  </VChip>
-                </td>
-                <td class="text-wrap w-15">
-                  {{ supplier.client_count }}
-                </td>
-                <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
-                      </VBtn>
-                    </template>
-
-                    <VList>
-                      <VListItem 
-                        v-if="$can('view', 'suppliers')"
-                        @click="seeSupplier(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-eye" />
-                        </template>
-                        <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'suppliers') && supplier.state_id === 2"
-                         @click="editSupplier(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','suppliers') && supplier.state_id === 2"
-                        @click="showDeleteDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-trash" />
-                        </template>
-                        <VListItemTitle>Avaktivera</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                        v-if="$can('delete','suppliers') && supplier.state_id === 1"
-                        @click="showActivateDialog(supplier)">
-                        <template #prepend>
-                          <VIcon icon="tabler-rosette-discount-check" />
-                        </template>
-                        <VListItemTitle>Aktivera</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-              </tr>
+              
             </tbody>
             <!-- 👉 table footer  -->
             <tfoot v-show="!suppliers.length">
@@ -492,6 +406,65 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+    <!--Modal Select type Contract-->
+    <!-- 👉 El Modal (Dialog) -->
+    <VDialog
+      v-model="isModalVisible"
+      max-width="500"
+    >
+
+      <VBtn
+        icon
+        variant="text"
+        color="default"
+        size="small"
+        @click="handleCloseModal"
+        style="position: absolute; top: 10px; right: 10px; z-index: 1;"
+      >
+        <VIcon icon="tabler-x" />
+      </VBtn>
+
+
+      <!-- Dialog Content -->
+      <VCard title="Skapa">
+        <VCardText>
+          <VRow>
+            <VCol cols="12">
+              <VSelect
+                v-model="selectedOption"
+                :items="selectItems"
+                item-title="title"      
+                item-value="value"
+                label="Välj typ"
+                placeholder="Välj typ"
+                clearable
+                outlined
+              />
+              <!-- Si selectItems fuera un array de strings: ['Alfa', 'Beta', 'Gamma'] -->
+              <!-- No necesitarías item-title ni item-value -->
+            </VCol>
+          </VRow>
+        </VCardText>
+
+        <VCardActions>
+          <VSpacer />
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="handleCloseModal"
+          >
+            Avbryt
+          </VBtn>
+          <VBtn
+            @click="addAgreements"
+          >
+            Bekräfta
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+    <!--End Modal Select type Contract-->  
+
   </section>
 </template>
 

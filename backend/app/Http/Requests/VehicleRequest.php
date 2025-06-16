@@ -7,9 +7,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-use App\Models\CarModel;
+use App\Models\Vehicle;
 
-class ModelRequest extends FormRequest
+class VehicleRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,12 +27,7 @@ class ModelRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'brand_id' => [
-                'integer',
-                'required',
-                'exists:App\Models\Brand,id'
-            ],
-            'name' => [
+            'reg_num' => [
                 'required'
             ]
         ];
@@ -44,10 +39,7 @@ class ModelRequest extends FormRequest
     public function messages()
     {
         return [
-            'brand_id.required' => 'Märke är obligatorisk.',
-            'brand_id.integer' => 'Märke formatet måste vara integer.',
-            'brand_id.exists' => 'Den angivna märket finns inte.',
-            'name.required' => 'Namnet är obligatoriskt'
+            'reg_num.required' => 'Reg nr är obligatoriskt'
         ];
     }
 
