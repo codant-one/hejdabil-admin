@@ -251,7 +251,7 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','suppliers')"
+                v-if="$can('create','notes')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus">
                   Ny värdering
@@ -270,7 +270,7 @@ const downloadCSV = async () => {
                 <th scope="col"> xxx </th>
                 <th scope="col"> xxx </th>
                 <th scope="col"> xxxx </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
+                <th scope="col" v-if="$can('edit', 'notes') || $can('delete', 'notes')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -385,5 +385,5 @@ const downloadCSV = async () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: suppliers
+    subject: notes
 </route>

@@ -165,7 +165,7 @@ export const yearValidator = value => {
 
   const isValid = Number.isInteger(year) &&
     value.toString().length === 4 &&
-    year >= 1900 && year <= currentYear + 5
+    year >= 1900 && year <= currentYear + 1
 
   return isValid || 'Året måste vara ett giltigt årtal'
 }

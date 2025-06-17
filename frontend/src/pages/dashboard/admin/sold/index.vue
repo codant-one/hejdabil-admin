@@ -377,5 +377,5 @@ const downloadCSV = async () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: suppliers
+    subject: sold
 </route>

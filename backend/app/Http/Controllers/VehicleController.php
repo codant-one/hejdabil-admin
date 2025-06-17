@@ -112,7 +112,7 @@ class VehicleController extends Controller
                 'data' => [ 
                     'vehicle' => $vehicle,
                     'brands' => Brand::all(),
-                    'models' => CarModel::all(),
+                    'models' => CarModel::with(['brand'])->get(),
                     'carbodies' => CarBody::all(),
                     'gearboxes' => Gearbox::all(),
                     'ivas' => Iva::all(),

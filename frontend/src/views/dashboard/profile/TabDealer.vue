@@ -5,9 +5,9 @@ import { useProfileStores } from '@/stores/useProfile'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useAuthStores } from '@/stores/useAuth'
 import { themeConfig } from '@themeConfig'
+import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
-import { Cropper, CircleStencil } from 'vue-advanced-cropper'
 import 'vue-advanced-cropper/dist/style.css'
 
 const authStores = useAuthStores()
