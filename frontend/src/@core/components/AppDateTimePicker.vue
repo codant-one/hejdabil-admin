@@ -304,7 +304,7 @@ input[altinputclass="inlinePicker"] {
   }
 
   &.open {
-    z-index: 1051;
+    z-index: 9999;
   }
 
   &.hasTime.open {

@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
-class Task extends Model
+class TaskComment extends Model
 {
     use HasFactory;
 
     protected $guarded = [];
-    
+
     /**** Relationship ****/
-    public function vehicle(){
-        return $this->belongsTo(Vehicle::class, 'vehicle_id', 'id');
+    public function task(){
+        return $this->belongsTo(VehicleTask::class, 'vehicle_task_id', 'id');
     }
 
     public function user(){

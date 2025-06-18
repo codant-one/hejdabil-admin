@@ -2,19 +2,35 @@
 
 import router from '@/router'
 import { themeConfig } from '@themeConfig'
+import { avatarText } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { useTasksStores } from '@/stores/useTasks'
 
 const vehiclesStores = useVehiclesStores()
+const tasksStores = useTasksStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
 
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
+
 const isRequestOngoing = ref(true)
 const isConfirmStatusDialogVisible = ref(false)
+const isConfirmTaskDialogVisible = ref(false)
+const isConfirmUpdateTaskDialogVisible = ref(false)
+
+const selectedTask = ref({})
+const comment = ref(null)
 
 const isFormValid = ref(false)
 const refForm = ref()
+const refTask = ref()
+const refUpdate = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
 
@@ -28,6 +44,7 @@ const states = ref([])
 const logo = ref(null)
 
 const vehicle = ref(null)
+const vehicle_id = ref(null)
 const reg_num = ref('')
 const mileage = ref(null)
 const brand_id = ref(null)
@@ -56,6 +73,12 @@ const last_service = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
+
+const tasks = ref([])
+const measure = ref(null)
+const cost = ref(null)
+const start_date = ref(null)
+const end_date = ref(null)
 
 const optionsRadio = ['Ja', 'Nej', 'Finns ej']
 
@@ -111,7 +134,9 @@ const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
 }
 
-watchEffect(async() => {
+watchEffect(fetchData)
+
+async function fetchData(cleanFilters = false) {
 
     isRequestOngoing.value = true
 
@@ -127,9 +152,11 @@ watchEffect(async() => {
         ivas.value = data.ivas
         states.value = data.states
 
+        vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
-        mileage.value = vehicle.value.mileage
+        tasks.value = vehicle.value.tasks
 
+        mileage.value = vehicle.value.mileage
         generation.value = vehicle.value.generation
         car_body_id.value = vehicle.value.car_body_id
         year.value = vehicle.value.year
@@ -162,10 +189,14 @@ watchEffect(async() => {
             brand_id.value = brandId
             model_id.value = vehicle.value.model_id
         }
+
+        if(Object.keys(selectedTask.value).length > 0) {
+            selectedTask.value = tasks.value.filter(item => item.id === selectedTask.value.id)[0]
+        }
     }
 
     isRequestOngoing.value = false
-})
+}
 
 
 const getModels = computed(() => {
@@ -187,8 +218,169 @@ const selectBrand = brand => {
     }
 }
 
-const refetchData = hideOverlay => {
-  setTimeout(hideOverlay, 3000)
+const createTask = async () => {
+
+    refTask.value?.validate().then(async({ valid }) => {
+            if (valid) {
+                let formData = new FormData()
+
+                formData.append('vehicle_id', vehicle_id.value)
+                formData.append('measure', measure.value)
+                formData.append('cost', cost.value)
+                formData.append('start_date', start_date.value)
+                formData.append('end_date', end_date.value)
+
+                isRequestOngoing.value = true
+
+                tasksStores.addTask(formData)
+                    .then((res) => {
+                        if (res.data.success) {
+                            advisor.value = {
+                                type: 'success',
+                                message: 'Uppgift skapad!',
+                                show: true
+                            }
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((err) => {
+                        
+                        advisor.value = {
+                            type: 'error',
+                            message: err.message,
+                            show: true
+                        }
+
+                        let data = {
+                            message: err.message,
+                            error: true
+                        }
+
+                        isRequestOngoing.value = false
+                    })
+                
+                    isConfirmTaskDialogVisible.value = false
+
+                await fetchData()
+
+                setTimeout(() => {
+                    advisor.value = {
+                        type: '',
+                        message: '',
+                        show: false
+                    }
+                }, 3000)
+            }
+    })
+}
+
+const updateTask = async () => {
+
+    refUpdate.value?.validate().then(async({ valid }) => {
+            if (valid) {
+                let formData = new FormData()
+
+                formData.append('id', selectedTask.value.id)
+                formData.append('_method', 'PUT')
+                formData.append('vehicle_id', selectedTask.value.vehicle_id)
+                formData.append('measure', selectedTask.value.measure)
+                formData.append('cost', selectedTask.value.cost)
+                formData.append('start_date', selectedTask.value.start_date)
+                formData.append('end_date', selectedTask.value.end_date)
+
+                isRequestOngoing.value = true
+
+                
+                let data = {
+                    data: formData, 
+                    id: selectedTask.value.id
+                }
+
+                tasksStores.updateTask(data)
+                    .then((res) => {
+                        if (res.data.success) {
+                            advisor.value = {
+                                type: 'success',
+                                message: 'Uppgift skapad!',
+                                show: true
+                            }
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((err) => {
+                        
+                        advisor.value = {
+                            type: 'error',
+                            message: err.message,
+                            show: true
+                        }
+
+                        let data = {
+                            message: err.message,
+                            error: true
+                        }
+
+                        isRequestOngoing.value = false
+                    })
+                
+                    isConfirmUpdateTaskDialogVisible.value = false
+
+                await fetchData()
+
+                setTimeout(() => {
+                    advisor.value = {
+                        type: '',
+                        message: '',
+                        show: false
+                    }
+                }, 3000)
+            }
+    })
+}
+
+const showTask = taskData => {
+  isConfirmUpdateTaskDialogVisible.value = true
+  selectedTask.value = { ...taskData }
+}
+
+const removeTask = async (task) => {
+
+  let res = await tasksStores.deleteTask(task.id)
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Uppgift borttagen!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
+
+const sendComment = async () => {
+
+    if(comment.value !== null) {
+        isRequestOngoing.value = true
+        
+        await tasksStores.sendComment({ id: selectedTask.value.id, comment: comment.value})
+        
+        isRequestOngoing.value = false
+        
+        await fetchData()
+
+        comment.value = null
+
+        return true
+    }
 }
 
 const onSubmit = () => {
@@ -269,15 +461,27 @@ const onSubmit = () => {
 
 <template>
     <section v-if="reg_num">
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+        <VRow>
+            <VDialog
+                v-model="isRequestOngoing"
+                width="auto"
+                persistent>
+                <VProgressCircular
+                indeterminate
+                color="primary"
+                class="mb-0"/>
+            </VDialog>
+
+            <VCol cols="12">
+                <VAlert
+                v-if="advisor.show"
+                :type="advisor.type"
+                class="mb-6">
+                    
+                {{ advisor.message }}
+                </VAlert>
+            </VCol>
+        </VRow>
 
         <VForm
             ref="refForm"
@@ -285,7 +489,7 @@ const onSubmit = () => {
             @submit.prevent="onSubmit">
             <VRow>
                 <VCol cols="12" md="12">
-                    <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
+                    <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                         <div class="d-flex align-center">
                             <VAvatar
                                 v-if="model_id === null"
@@ -313,7 +517,7 @@ const onSubmit = () => {
                             </span>
                         </div>
                         <VSpacer />
-                        <div class="d-flex gap-4 w-100 w-md-auto">
+                        <div class="d-flex flex-column flex-md-row gap-1 gap-md-4 w-100 w-md-auto">
                             <VBtn
                                 variant="tonal"
                                 color="secondary"
@@ -342,7 +546,7 @@ const onSubmit = () => {
                                     <VTab>Kostnader</VTab>
                                     <VTab>Dokument</VTab>
                                 </VTabs>
-                                <VCardText class="px-2 px-md-12">
+                                <VCardText class="px-2">
                                     <VWindow v-model="currentTab" class="pt-3">
                                         <!-- Fordon -->
                                         <VWindowItem class="px-md-5">
@@ -543,7 +747,7 @@ const onSubmit = () => {
                                                 <VCol cols="12" md="2">
                                                     <div class="d-flex flex-column">
                                                         <label class="v-label text-body-2 text-wrap"> Servicebok finns?</label>
-                                                        <VRadioGroup v-model="service_book" inline>
+                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -556,7 +760,7 @@ const onSubmit = () => {
                                                 <VCol cols="12" md="2">                                                
                                                     <div class="d-flex flex-column">
                                                         <label class="v-label text-body-2 text-wrap">Sommardäck finns?</label>
-                                                        <VRadioGroup v-model="summer_tire" inline>
+                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -569,7 +773,7 @@ const onSubmit = () => {
                                                 <VCol cols="12" md="2">                                                
                                                     <div class="d-flex flex-column">
                                                         <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
-                                                        <VRadioGroup v-model="winter_tire" inline>
+                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -588,18 +792,13 @@ const onSubmit = () => {
                                                 <VCol cols="12" md="6">
                                                     <div class="d-flex flex-column">
                                                         <label class="v-label text-body-2 text-wrap">Kamrem bytt?</label>
-                                                        <VRadioGroup
-                                                            v-model="dist_belt"
-                                                            inline
-                                                        >
-                                                            <div>
+                                                        <VRadioGroup v-model="dist_belt" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio"
                                                                 :key="index"
                                                                 :label="radio"
                                                                 :value="index"
                                                             />
-                                                            </div>
                                                         </VRadioGroup>
                                                     </div>
                                                 </VCol>
@@ -620,67 +819,89 @@ const onSubmit = () => {
                                         </VWindowItem>
                                         <!-- Fordonsplanering -->
                                         <VWindowItem class="px-md-5">
-                                            <div class="d-flex align-end justify-sm-space-between gap-x-6 border-bottom-secondary">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                            <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
+                                                <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
                                                     Övrigt
                                                 </h6>
-                                                <VBtn class="w-100 w-md-auto">
+                                                <VBtn class="w-100 w-md-auto" @click="isConfirmTaskDialogVisible = true">
                                                     Lägg till en uppgift
                                                 </VBtn>
                                             </div>
 
-                                            <VCard
-                                                flat
-                                                color="success"
-                                                style="box-shadow: none !important; border-radius: 12px !important;"
-                                            >
-                                                <VCardItem>
-                                                <template #prepend>
-                                                    icon
-                                                    <!-- <VIcon
-                                                    size="1.9rem"
-                                                    color="white"
-                                                    :icon="data.icon"
-                                                    /> -->
-                                                </template>
-                                                <VCardTitle class="text-white">
-                                                aaaa
-                                                </VCardTitle>
-                                                </VCardItem>
+                                            <div v-if="tasks.length === 0" class="mt-10 text-center">Ingen post hittades</div>
 
-                                                <VCardText>
-                                                <p class="clamp-text text-white mb-0">
-                                                    aaaaaaaa
-                                                </p>
-                                                </VCardText>
+                                            <VRow v-else class="mt-5">
+                                                <VCol
+                                                    v-for="(task, index) in tasks"
+                                                    :key="index"
+                                                    cols="12" md="4"
+                                                >
+                                                    <VCard
+                                                        flat
+                                                        color="#007BB6"
+                                                        style="box-shadow: none !important; border-radius: 12px !important;"
+                                                    >
+                                                        <VCardItem>
+                                                            <template #prepend>
+                                                                <VIcon
+                                                                size="1.9rem"
+                                                                color="white"
+                                                                icon="mdi-note-outline"
+                                                                />
+                                                            </template>
+                                                        <VCardTitle class="text-white"> {{ index + 1 }}</VCardTitle>
+                                                        </VCardItem>
 
-                                                <VCardText class="d-flex justify-space-between align-center flex-wrap">
-                                                <div class="text-no-wrap">
-                                                    image
-                                                    <!-- <VAvatar
-                                                    size="34"
-                                                    :image="data.avatarImg"
-                                                    /> -->
-                                                    <span class="text-white ms-2">aaa</span>
-                                                </div>
+                                                        <VCardText>
+                                                            <p class="clamp-text text-white mb-0">
+                                                                <strong>Åtgärd:</strong> {{ task.measure }}
+                                                            </p>
+                                                            <p class="clamp-text text-white mb-0">
+                                                                <strong>Kostnader:</strong> {{ task.cost }}
+                                                            </p>
+                                                            <p class="clamp-text text-white mb-0">
+                                                                <strong>Startdatum:</strong> {{ task.start_date }}
+                                                            </p>
+                                                            <p class="clamp-text text-white mb-0">
+                                                                <strong>Slutdatum:</strong> {{ task.end_date }}
+                                                            </p>
+                                                        </VCardText>
 
-                                                <div class="d-flex align-center">
-                                                    <VIcon
-                                                    icon="tabler-heart"
-                                                    color="white"
-                                                    class="me-1"
-                                                    />
-                                                    <span class="text-subtitle-2 text-white me-4">aaa</span>
+                                                        <VCardText class="d-flex justify-space-between align-center flex-wrap">
+                                                        <div class="text-no-wrap">
+                                                            <VAvatar
+                                                                color="success"
+                                                                :variant="task.user.avatar ? 'outlined' : 'tonal'"
+                                                                size="34"
+                                                            >
+                                                                <VImg
+                                                                    v-if="task.user.avatar"
+                                                                    style="border-radius: 50%;"
+                                                                    :src="themeConfig.settings.urlStorage + task.user.avatar"
+                                                                />
+                                                                <span v-else>{{ avatarText(task.user.name) }}</span>
+                                                            </VAvatar>
+                                                            <span class="text-white ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
+                                                        </div>
 
-                                                    <VIcon
-                                                    icon="tabler-share"
-                                                    color="white"
-                                                    class="me-1"
-                                                    />
-                                                    <span class="text-subtitle-2 text-white mt-1">aaa</span>
-                                                </div>
-                                                </VCardText>
-                                            </VCard>
+                                                        <div class="d-flex align-center">
+                                                            <VIcon
+                                                                icon="tabler-edit"
+                                                                color="white"
+                                                                class="me-1 cursor-pointer"
+                                                                @click="showTask(task)"
+                                                            />
+                                                            <VIcon
+                                                                icon="tabler-trash"
+                                                                color="white"
+                                                                class="cursor-pointer"
+                                                                @click="removeTask(task)"
+                                                            />
+                                                        </div>
+                                                        </VCardText>
+                                                    </VCard>
+                                                </VCol>
+                                            </VRow>
                                         </VWindowItem>
                                         <VWindowItem class="px-md-5">
                                             agregar tablas
@@ -697,7 +918,7 @@ const onSubmit = () => {
             </VRow>
         </VForm>
 
-        <!-- 👉 Confirm create -->
+        <!-- 👉 Confirm update state -->
         <VDialog
             v-model="isConfirmStatusDialogVisible"
             persistent
@@ -737,20 +958,237 @@ const onSubmit = () => {
                 </VCard>
             </VForm>
         </VDialog>
+
+        <!-- 👉 Create task -->
+        <VDialog
+            v-model="isConfirmTaskDialogVisible"
+            persistent
+            class="v-dialog-sm" >
+            <!-- Dialog close btn -->
+                
+            <DialogCloseBtn @click="isConfirmTaskDialogVisible = !isConfirmTaskDialogVisible" />
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refTask"
+                @submit.prevent="createTask">
+                <VCard title="Lägg till nytt kort">
+                    <VDivider />
+                    <VCardText>
+                        <VRow>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="measure"
+                                    label="Åtgärd"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="cost"
+                                    type="number"
+                                    label="Kostnader"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="start_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    :rules="[requiredValidator]"
+                                    label="Startdatum"
+                                    clearable
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="end_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    label="Slutdatum"
+                                    clearable
+                                />
+                            </VCol>
+                        </VRow>
+                        
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                        <VBtn
+                            color="secondary"
+                            variant="tonal"
+                            @click="isConfirmTaskDialogVisible = false">
+                            Avbryt
+                        </VBtn>
+                        <VBtn type="submit">
+                            Spara
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
+
+        <!-- 👉 Update task -->
+        <VDialog
+            v-model="isConfirmUpdateTaskDialogVisible"
+            scrollable
+            persistent
+            class="v-dialog-sm">
+            <!-- Dialog close btn -->
+                
+            <DialogCloseBtn @click="isConfirmUpdateTaskDialogVisible = !isConfirmUpdateTaskDialogVisible" />
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refUpdate"
+                @submit.prevent="updateTask">
+                <VCard title="Se eller redigera kort">
+                    <VDivider />
+                    <VCardText style="max-height: 450px;">
+                        <VRow>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="selectedTask.measure"
+                                    label="Åtgärd"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="selectedTask.cost"
+                                    type="number"
+                                    label="Kostnader"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="selectedTask.start_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    :rules="[requiredValidator]"
+                                    label="Startdatum"
+                                    clearable
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="selectedTask.end_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    label="Slutdatum"
+                                    clearable
+                                />
+                            </VCol>
+                        </VRow>
+                        
+                        <VAlert
+                            color="primary"
+                            icon="mdi-information-outline"
+                            variant="tonal"
+                            class="my-5"
+                            >
+                            Du kan stänga dialogrutan. Dina ändringar har sparats automatiskt.
+                        </VAlert>
+                
+                        <VExpansionPanels variant="inset">
+                            <VExpansionPanel>
+                                <VExpansionPanelTitle>Aktiviteter</VExpansionPanelTitle>
+                                <VExpansionPanelText>
+                                    <div 
+                                        v-for="(history, index) in selectedTask.histories" 
+                                        :key="index" 
+                                        :class="index > 0 ? 'py-2 border-bottom-secondary' : 'pt-2'"
+                                        class="d-flex flex-column">
+                                        <span v-if="history.is_updated"><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
+                                        <span v-else><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> uppdaterade kortet.</span>
+                                        <span>  
+                                            {{ new Date(selectedTask.created_at).toLocaleString('sv-SE', { 
+                                                year: 'numeric', 
+                                                month: '2-digit', 
+                                                day: '2-digit', 
+                                                hour: '2-digit', 
+                                                minute: '2-digit',
+                                                hour12: false
+                                            }) }}
+                                        </span>                                        
+                                    </div>                                  
+                                </VExpansionPanelText>
+                            </VExpansionPanel>
+                        </VExpansionPanels>
+
+                        <div class="py-5">
+                            <h6 class="text-md-h5 text-h6 font-weight-medium mb-3">
+                                kommentarer
+                            </h6>
+                            <div class="d-flex">
+                                <VTextField
+                                    v-model="comment"
+                                    placeholder="Skriv en kommentar"
+                                    label="kommentar"
+                                />
+                                <VBtn class="ms-2" @click="sendComment">
+                                    Skicka
+                                </VBtn>
+                            </div>
+                        </div>
+
+                        <VAlert 
+                            v-for="(comment, index) in selectedTask.comments" 
+                            :key="index"
+                            variant="outlined" 
+                            color="secondary"
+                            class="my-1">
+                            <div class="d-flex flex-column">
+                                {{ comment.comment }}
+                                <span class="text-xs">  
+                                    {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
+                                        year: 'numeric', 
+                                        month: '2-digit', 
+                                        day: '2-digit', 
+                                        hour: '2-digit', 
+                                        minute: '2-digit',
+                                        hour12: false
+                                    }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
+                                </span>                                        
+                            </div>            
+                        </VAlert>
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
+                        <VBtn
+                            class="mt-4"
+                            color="secondary"
+                            variant="tonal"
+                            @click="isConfirmUpdateTaskDialogVisible = false">
+                            Avbryt
+                        </VBtn>
+                        <VBtn class="mt-4" type="submit">
+                            Uppdatering
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
     </section>
 </template>
 
 <style scoped>
 
-    ::v-deep .v-input--density-comfortable, ::v-deep  .v-radio {
+    ::v-deep .radio-form .v-input--density-comfortable, ::v-deep  .v-radio {
         --v-input-control-height: 0 !important;
     }
 
-    ::v-deep .v-selection-control__wrapper {
+    ::v-deep .radio-form .v-selection-control__wrapper {
         height: 20px !important;
     }
 
-    ::v-deep .v-icon--size-default {
+    ::v-deep .radio-form .v-icon--size-default {
         font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
     }
 
@@ -760,7 +1198,7 @@ const onSubmit = () => {
 
     .border-bottom-secondary {
         border-bottom: 1px solid #d9d9d9;
-        padding-bottom: 5px;
+        padding-bottom: 10px;
     }
 
     .justify-content-center {

@@ -98,7 +98,7 @@ class VehicleController extends Controller
     {
         try {
 
-            $vehicle = Vehicle::find($id);
+            $vehicle = Vehicle::with(['tasks.user', 'tasks.comments.user', 'tasks.histories'])->find($id);
 
             if (!$vehicle)
                 return response()->json([

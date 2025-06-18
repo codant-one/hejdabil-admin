@@ -37,7 +37,7 @@ class Vehicle extends Model
     }
 
     public function tasks(){
-        return $this->hasMany(Task::class, 'vehicle_id', 'id');
+        return $this->hasMany(VehicleTask::class, 'vehicle_id', 'id');
     }
 
     /**** Scopes ****/

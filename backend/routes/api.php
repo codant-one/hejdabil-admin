@@ -28,7 +28,8 @@ use App\Http\Controllers\{
     GearboxController,
     IvaController,
     ModelController,
-    VehicleController
+    VehicleController,
+    VehicleTaskController
 };
 
 /*
@@ -83,6 +84,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('gearboxes', GearboxController::class);
     Route::apiResource('equipments', EquipmentController::class);
     Route::apiResource('vehicles', VehicleController::class);
+    Route::apiResource('tasks', VehicleTaskController::class);
     
 
     /* DASHBOARD */
@@ -129,6 +131,11 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     //Suppliers
     Route::group(['prefix' => 'suppliers'], function () {
         Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+    });
+
+    //Tasks
+    Route::group(['prefix' => 'tasks'], function () {
+        Route::post('comment', [VehicleTaskController::class, 'comment']);
     });
 
 });
