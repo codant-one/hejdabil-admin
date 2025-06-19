@@ -3,7 +3,7 @@
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
+import { formatNumber } from '@/@core/utils/formatters'
 import { requiredValidator } from '@/@core/utils/validators'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
@@ -283,11 +283,14 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> #ID </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
+                <th scope="col"> Information om bilen </th>
+                <th scope="col"> Försäljningspris </th>
+                <th scope="col"> Miltal </th>
+                <th scope="col"> Status </th>
+                <th scope="col"> Lagerdagar </th>
+                <th scope="col"> VAT </th>
+                <th scope="col"> Besiktigas </th>
+                <th scope="col"> Annons </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -297,12 +300,41 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
-
-                <td class="cursor-pointer text-primary" @click="editVehicle(vehicle)"> {{ vehicle.reg_num }} </td>
-                <td> {{ vehicle.reg_num }} </td>
-                <td> {{ vehicle.reg_num }} </td>
-                <td> {{ vehicle.reg_num }} </td>
-                <td> {{ vehicle.reg_num }} </td>
+                <td class="text-wrap cursor-pointer"  @click="editVehicle(vehicle)">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      v-if="vehicle.model_id"
+                      size="38"
+                      variant="tonal"
+                      rounded
+                      :image="themeConfig.settings.urlStorage + vehicle.model.brand.logo"
+                    />
+                    <VAvatar
+                        v-else
+                        size="38"
+                        variant="tonal"
+                        rounded
+                        color="secondary"
+                    >
+                        <VIcon size="x-large" icon="tabler-car" />                        
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">
+                        {{ vehicle.model.brand.name }} {{ vehicle.model.name }}, {{ vehicle.year }}
+                      </span>
+                      <span class="text-sm text-disabled">
+                        {{ vehicle.reg_num }}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+                <td> {{ vehicle.sale_price }} </td>
+                <td> {{  formatNumber(vehicle.mileage ?? 0) }} kr</td>
+                <td> {{ vehicle.state.name }} </td>
+                <td> ??? </td>
+                <td> {{ vehicle.iva?.name }} </td>
+                <td> ??? </td>
+                <td> ??? </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -317,7 +349,7 @@ const downloadCSV = async () => {
                       </VBtn>
                     </template>
 
-                    <VList>
+                    <VList class="d-none">
                       <VListItem v-if="$can('edit', 'stock')">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
