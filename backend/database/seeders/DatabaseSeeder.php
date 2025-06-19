@@ -31,7 +31,8 @@ class DatabaseSeeder extends Seeder
             BrandSeeder::class,
             ModelSeeder::class,
             EquipmentSeeder::class,
-            InventoryPermissionSeeder::class   
+            InventoryPermissionSeeder::class,
+            DocumentTypeSeeder::class  
         ]);
 
     }

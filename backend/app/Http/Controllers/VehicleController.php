@@ -6,6 +6,7 @@ use App\Http\Requests\VehicleRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -17,6 +18,7 @@ use App\Models\CarBody;
 use App\Models\Gearbox;
 use App\Models\Iva;
 use App\Models\State;
+use App\Models\Client;
 
 class VehicleController extends Controller
 {
@@ -102,7 +104,9 @@ class VehicleController extends Controller
                 'tasks.user', 
                 'tasks.comments.user', 
                 'tasks.histories',
-                'costs'
+                'costs',
+                'documents.user',
+                'documents.type'
             ])->find($id);
 
             if (!$vehicle)
@@ -111,6 +115,12 @@ class VehicleController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Fordon hittades inte'
                 ], 404);
+
+            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
+            } else {
+                $clients = Client::all();
+            }
 
             return response()->json([
                 'success' => true,
@@ -121,7 +131,8 @@ class VehicleController extends Controller
                     'carbodies' => CarBody::all(),
                     'gearboxes' => Gearbox::all(),
                     'ivas' => Iva::all(),
-                    'states' => State::whereIn('id', [10, 11, 12, 13])->get()
+                    'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
+                    'clients' => $clients
                 ]
             ]);
 

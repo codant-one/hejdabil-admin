@@ -30,7 +30,8 @@ use App\Http\Controllers\{
     ModelController,
     VehicleController,
     VehicleTaskController,
-    VehicleCostController
+    VehicleCostController,
+    VehicleDocumentController
 };
 
 /*
@@ -87,7 +88,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('vehicles', VehicleController::class);
     Route::apiResource('tasks', VehicleTaskController::class);
     Route::apiResource('costs', VehicleCostController::class);
-    
+    Route::apiResource('documents', VehicleDocumentController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -140,12 +141,18 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::post('comment', [VehicleTaskController::class, 'comment']);
     });
 
+    //Documents
+    Route::group(['prefix' => 'documents'], function () {
+        Route::post('send', [VehicleDocumentController::class, 'send']);
+    });
+
 });
 
 //Public Endpoints
 Route::get('reminder', [TestingController::class , 'reminder'])->name('reminder');
 Route::get('emails', [TestingController::class , 'emails'])->name('emails');
 Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
+Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);

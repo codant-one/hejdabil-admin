@@ -8,10 +8,12 @@ import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
+import { useDocumentsStores } from '@/stores/useDocuments'
 
 const vehiclesStores = useVehiclesStores()
 const tasksStores = useTasksStores()
 const costsStores = useCostsStores()
+const documentsStores = useDocumentsStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
@@ -27,6 +29,7 @@ const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
 const isConfirmUpdateTaskDialogVisible = ref(false)
 const isConfirmCreateCostDialogVisible = ref(false)
+const isConfirmSendDocumentDialogVisible = ref(false)
 
 const selectedTask = ref({})
 const comment = ref(null)
@@ -36,6 +39,7 @@ const refForm = ref()
 const refTask = ref()
 const refUpdate = ref()
 const refCost = ref()
+const refSend = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
 
@@ -83,6 +87,14 @@ const costs = ref([])
 const description = ref([])
 const value = ref([])
 const selectedCost = ref([])
+
+const documents = ref([])
+const fileInput = ref()
+const selectedIds = ref([])
+
+const clients = ref([])
+const client_id = ref(null)
+const email = ref(null)
 
 const isCreateCost = ref(true)
 const tasks = ref([])
@@ -141,6 +153,13 @@ onMounted(async () => {
     window.addEventListener('resize', checkIfMobile);
 })
 
+const allSelected = computed({
+  get: () => documents.value.length > 0 && selectedIds.value.length === documents.value.length,
+  set: (value) => {
+    selectedIds.value = value ? documents.value.map(doc => doc.id) : []
+  }
+})
+
 const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
 }
@@ -162,11 +181,13 @@ async function fetchData(cleanFilters = false) {
         gearboxes.value = data.gearboxes
         ivas.value = data.ivas
         states.value = data.states
+        clients.value = data.clients
 
         vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
         tasks.value = vehicle.value.tasks
         costs.value = vehicle.value.costs
+        documents.value = vehicle.value.documents
 
         mileage.value = vehicle.value.mileage
         generation.value = vehicle.value.generation
@@ -518,6 +539,161 @@ const removeCost = async (cost) => {
     return true
 }
 
+const handleFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    let formData = new FormData()
+
+    formData.append('vehicle_id', vehicle_id.value)
+    formData.append('document_type_id', 1)
+    formData.append('file', file)
+
+    isRequestOngoing.value = true
+
+    documentsStores.addDocument(formData)
+        .then((res) => {
+            if (res.data.success) {
+                advisor.value = {
+                    type: 'success',
+                    message: 'Dokument skapad!',
+                    show: true
+                }
+            }
+            isRequestOngoing.value = false
+        })
+        .catch((err) => {
+            
+            advisor.value = {
+                type: 'error',
+                message: err.message,
+                show: true
+            }
+
+            let data = {
+                message: err.message,
+                error: true
+            }
+
+            isRequestOngoing.value = false
+        })
+    
+    await fetchData()
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+}
+
+const download = async(doc) => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + doc.file);
+    const blob = await response.blob();
+    
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = doc.file.replace('vehicles/', ''); 
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+const removeDocument = async (document) => {
+
+    let res = await documentsStores.deleteDocument(document.id)
+
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? 'Dokument borttagen!' : res.data.message,
+        show: true
+    }
+
+    await fetchData()
+
+    setTimeout(() => {
+        advisor.value = {
+        type: '',
+        message: '',
+        show: false
+        }
+    }, 3000)
+
+    return true
+}
+
+const selectClient = client => {
+    if (client) {
+        let _client = clients.value.find(item => item.id === client)
+    
+        email.value = _client.email
+    }
+}
+
+const handleSendMail = () => {
+    if (!selectedIds.value.length) return
+
+    refSend.value?.validate().then(({ valid }) => {
+        if (valid) {
+            let formData = new FormData()
+
+            formData.append('ids', selectedIds.value)
+            formData.append('email', email.value)
+
+            isConfirmSendDocumentDialogVisible.value = false
+            isRequestOngoing.value = true
+
+            documentsStores.sendDocument(formData)
+                .then((res) => {
+                    if (res.data.success) {
+                        advisor.value = {
+                            type: 'success',
+                            message: 'Skickades framgångsfullt!',
+                            show: true
+                        }
+                    }
+                    isRequestOngoing.value = false
+                })
+                .catch((err) => {
+                    
+                    advisor.value = {
+                        type: 'error',
+                        message: err.message,
+                        show: true
+                    }
+
+                    let data = {
+                        message: err.message,
+                        error: true
+                    }
+
+                    isRequestOngoing.value = false
+                })
+
+            setTimeout(() => {
+                selectedIds.value = []
+                email.value = null
+                client_id.value = null
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+        }
+    })
+}
+
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
         if (valid) {
@@ -671,7 +847,7 @@ const onSubmit = () => {
                 <VCol cols="12" md="12">
                     
                         <VCard flat class="px-2 px-md-12">
-                            <VCardText class="px-2 pt-0 px-md-12 pt-md-5">                
+                            <VCardText class="px-2 pt-0 pt-md-5">                
                                 <VTabs v-model="currentTab" fixed-tabs>
                                     <VTab>Fordon</VTab>
                                     <VTab>Prisinformation</VTab>
@@ -1119,14 +1295,129 @@ const onSubmit = () => {
                                                 </span>
                                             </VCardText>
                                         </VWindowItem>
+                                        <!-- Dokument -->
                                         <VWindowItem class="px-md-5">
-                                            agregar documentso
+                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto">           
+                                                <VSpacer class="d-none d-md-block"/> 
+                                                <VBtn
+                                                    v-if="selectedIds.length > 0"
+                                                    color="secondary"
+                                                    variant="tonal"
+                                                    class="me-2"
+                                                    @click="isConfirmSendDocumentDialogVisible = true">
+                                                    Sänd PDF
+                                                </VBtn>  
+                                                <VBtn
+                                                    v-if="$can('edit', 'stock')"
+                                                    class="w-100 w-md-auto"
+                                                    prepend-icon="mdi-cloud-upload-outline"
+                                                    @click="() => fileInput.click()">
+                                                    Ladda upp
+                                                </VBtn>
+
+                                                <input
+                                                    type="file"
+                                                    ref="fileInput"
+                                                    @change="handleFileUpload"
+                                                    style="display: none"
+                                                />
+                                            </div>
+                                            <VTable class="text-no-wrap">
+                                                <!-- 👉 table head -->
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">
+                                                            <VCheckbox
+                                                                :model-value="allSelected"
+                                                                @update:model-value="allSelected = $event"
+                                                                density="compact"
+                                                                hide-details
+                                                            />
+                                                        </th>
+                                                        <th scope="col">#ID</th>
+                                                        <th scope="col">Namn</th>
+                                                        <th scope="col">Skapad av</th>
+                                                        <th scope="col">Skapad</th>
+                                                        <th scope="col">Typ</th>
+                                                        <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+                                                    </tr>
+                                                </thead>
+                                                <!-- 👉 table body -->
+                                                <tbody>
+                                                    <tr 
+                                                        v-for="(document, index) in documents"
+                                                        :key="index"
+                                                        style="height: 3rem;">
+                                                        <td>
+                                                            <VCheckbox
+                                                                :value="document.id"
+                                                                v-model="selectedIds"
+                                                                density="compact"
+                                                                hide-details
+                                                            />
+                                                        </td>
+                                                        <td> {{ index + 1 }} </td>
+                                                        <td class="text-wrap">{{ document.file.replace('vehicles/', '') }} </td>
+                                                        <td> {{ document.user.name }} {{ document.user.last_name }}</td>
+                                                        <td>  
+                                                            {{ new Date(document.created_at).toLocaleString('sv-SE', { 
+                                                                year: 'numeric', 
+                                                                month: '2-digit', 
+                                                                day: '2-digit', 
+                                                                hour: '2-digit', 
+                                                                minute: '2-digit',
+                                                                hour12: false
+                                                            }) }} 
+                                                        </td>
+                                                        <td> {{ document.type.name }} </td>
+                                                        <!-- 👉 Acciones -->
+                                                        <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                                                            <VMenu>
+                                                                <template #activator="{ props }">
+                                                                    <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                                                                        <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                                                                        <path d="M19 16v6"></path>
+                                                                        <path d="M22 19l-3 3l-3 -3"></path>
+                                                                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                                                                        </svg>
+                                                                    </VBtn>
+                                                                </template>
+
+                                                                <VList>
+                                                                    <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
+                                                                        <template #prepend>
+                                                                            <VIcon icon="mdi-cloud-download-outline" />
+                                                                        </template>
+                                                                        <VListItemTitle>Ladda ner</VListItemTitle>
+                                                                    </VListItem>
+                                                                    <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
+                                                                        <template #prepend>
+                                                                        <VIcon icon="tabler-trash" />
+                                                                        </template>
+                                                                        <VListItemTitle>Avaktivera</VListItemTitle>
+                                                                    </VListItem>
+                                                                </VList>
+                                                            </VMenu>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                <!-- 👉 table footer  -->
+                                                <tfoot v-show="!documents.length">
+                                                <tr>
+                                                    <td
+                                                    colspan="6"
+                                                    class="text-center">
+                                                    Uppgifter ej tillgängliga
+                                                    </td>
+                                                </tr>
+                                                </tfoot>
+                                            </VTable>
                                         </VWindowItem>
                                     </VWindow>
                                 </VCardText>
                             </VCardText>
-                        </VCard>
-                
+                        </VCard>                
                 </VCol>
             </VRow>
         </VForm>
@@ -1435,6 +1726,59 @@ const onSubmit = () => {
                         </VBtn>
                         <VBtn class="mt-4" type="submit">
                             {{ isCreateCost ? 'Spara' : 'Uppdatering'}}
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
+
+        <!-- 👉 Confirm send documents -->
+        <VDialog
+            v-model="isConfirmSendDocumentDialogVisible"
+            persistent
+            class="v-dialog-sm" >
+            <!-- Dialog close btn -->
+                
+            <DialogCloseBtn @click="isConfirmSendDocumentDialogVisible = !isConfirmSendDocumentDialogVisible" />
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refSend"
+                @submit.prevent="handleSendMail">
+                <VCard title="Skicka pdf som e-post">
+                    <VDivider />
+                    <VCardText>
+                         <VRow>
+                            <VCol cols="12" md="12">
+                                <VSelect
+                                    v-model="client_id"
+                                    label="Kunder"
+                                    :items="clients"
+                                    :item-title="item => item.fullname"
+                                    :item-value="item => item.id"
+                                    autocomplete="off"
+                                    @update:modelValue="selectClient"
+                                    :rules="[requiredValidator]"/>
+                            </VCol>
+                            <VCol cols="12" md="12">
+                                <VTextField
+                                    v-model="email"
+                                    disabled
+                                    label="E-post"
+                                />
+                            </VCol>
+                        </VRow>
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                        <VBtn
+                            color="secondary"
+                            variant="tonal"
+                            @click="isConfirmSendDocumentDialogVisible = false">
+                            Avbryt
+                        </VBtn>
+                        <VBtn type="submit">
+                            Skicka
                         </VBtn>
                     </VCardText>
                 </VCard>

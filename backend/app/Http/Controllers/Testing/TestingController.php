@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Billing;
 use App\Models\Invoice;
+use App\Models\VehicleDocument;
 
 class TestingController extends Controller
 {
@@ -62,7 +63,7 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(5);
+        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(1);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -121,6 +122,19 @@ class TestingController extends Controller
                 'text_info',
                 'user',
                 'pdfFile'
+            )
+        );
+    }
+
+    public function documents() {
+
+        $document = VehicleDocument::with(['vehicle', 'user'])->find(1);
+
+        $reg_num = $document->vehicle->reg_num;
+
+        return view('emails.documents.vehicles',
+            compact(
+                'reg_num'
             )
         );
     }

@@ -44,6 +44,10 @@ class Vehicle extends Model
         return $this->hasMany(VehicleCost::class, 'vehicle_id', 'id');
     }
 
+    public function documents(){
+        return $this->hasMany(VehicleDocument::class, 'vehicle_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('name', 'LIKE', '%' . $search . '%')
