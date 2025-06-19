@@ -47,7 +47,7 @@ export const formatDateToMonthShort = (value, toTimeForCurrentDay = true) => {
 export const prefixWithPlus = value => value > 0 ? `+${value}` : value
 
 export const formatNumber = (value) => {
-  if (!value) return value;
+  if (value === null || value === undefined) return value;
 
   const numberString = value.toString().replace(/,/g, '');
   const [integer, decimal] = numberString.split('.');
@@ -58,7 +58,7 @@ export const formatNumber = (value) => {
 }
 
 export const formatNumberInteger = (value) => {
-  if (!value) return value;
+  if (value === null || value === undefined) return value;
 
   const numberString = value.toString().replace(/,/g, '');
   const [integer] = numberString.split('.');

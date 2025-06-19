@@ -29,7 +29,8 @@ use App\Http\Controllers\{
     IvaController,
     ModelController,
     VehicleController,
-    VehicleTaskController
+    VehicleTaskController,
+    VehicleCostController
 };
 
 /*
@@ -85,6 +86,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('equipments', EquipmentController::class);
     Route::apiResource('vehicles', VehicleController::class);
     Route::apiResource('tasks', VehicleTaskController::class);
+    Route::apiResource('costs', VehicleCostController::class);
     
 
     /* DASHBOARD */

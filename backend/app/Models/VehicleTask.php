@@ -72,10 +72,10 @@ class VehicleTask extends Model
     }
 
     public static function deleteTask($id) {
-        self::deletedeleteTasks(array($id));
+        self::deleteTasks(array($id));
     }
 
-    public static function deletedeleteTasks($ids) {
+    public static function deleteTasks($ids) {
         foreach ($ids as $id) {
             $task = self::find($id);
             $task->delete();

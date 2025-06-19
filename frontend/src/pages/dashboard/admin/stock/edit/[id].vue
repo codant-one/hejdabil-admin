@@ -3,12 +3,15 @@
 import router from '@/router'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
+import { formatNumber } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useTasksStores } from '@/stores/useTasks'
+import { useCostsStores } from '@/stores/useCosts'
 
 const vehiclesStores = useVehiclesStores()
 const tasksStores = useTasksStores()
+const costsStores = useCostsStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
@@ -23,6 +26,7 @@ const isRequestOngoing = ref(true)
 const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
 const isConfirmUpdateTaskDialogVisible = ref(false)
+const isConfirmCreateCostDialogVisible = ref(false)
 
 const selectedTask = ref({})
 const comment = ref(null)
@@ -31,6 +35,7 @@ const isFormValid = ref(false)
 const refForm = ref()
 const refTask = ref()
 const refUpdate = ref()
+const refCost = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
 
@@ -74,6 +79,12 @@ const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
 
+const costs = ref([])
+const description = ref([])
+const value = ref([])
+const selectedCost = ref([])
+
+const isCreateCost = ref(true)
 const tasks = ref([])
 const measure = ref(null)
 const cost = ref(null)
@@ -155,6 +166,7 @@ async function fetchData(cleanFilters = false) {
         vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
         tasks.value = vehicle.value.tasks
+        costs.value = vehicle.value.costs
 
         mileage.value = vehicle.value.mileage
         generation.value = vehicle.value.generation
@@ -301,7 +313,7 @@ const updateTask = async () => {
                         if (res.data.success) {
                             advisor.value = {
                                 type: 'success',
-                                message: 'Uppgift skapad!',
+                                message: 'Uppgift uppdaterad!',
                                 show: true
                             }
                         }
@@ -313,11 +325,6 @@ const updateTask = async () => {
                             type: 'error',
                             message: err.message,
                             show: true
-                        }
-
-                        let data = {
-                            message: err.message,
-                            error: true
                         }
 
                         isRequestOngoing.value = false
@@ -368,7 +375,7 @@ const removeTask = async (task) => {
 
 const sendComment = async () => {
 
-    if(comment.value !== null) {
+    if(comment.value !== null && comment.value !== '') {
         isRequestOngoing.value = true
         
         await tasksStores.sendComment({ id: selectedTask.value.id, comment: comment.value})
@@ -381,6 +388,134 @@ const sendComment = async () => {
 
         return true
     }
+}
+
+const showCost = costData => {
+    isConfirmCreateCostDialogVisible.value = true
+    selectedCost.value = { ...costData }
+    description.value = costData.description
+    value.value = costData.value
+    isCreateCost.value = false
+}
+
+const handleCost = async () => {
+    refCost.value?.validate().then(async({ valid }) => {
+        if (valid) {
+            let formData = new FormData()
+
+            formData.append('vehicle_id', vehicle_id.value)
+            formData.append('description', description.value)
+            formData.append('value', value.value)
+
+            isRequestOngoing.value = true
+
+            if(isCreateCost.value) {
+                costsStores.addCost(formData)
+                    .then((res) => {
+                        if (res.data.success) {
+                            advisor.value = {
+                                type: 'success',
+                                message: 'Kostnader skapad!',
+                                show: true
+                            }
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((err) => {
+                        
+                        advisor.value = {
+                            type: 'error',
+                            message: err.message,
+                            show: true
+                        }
+
+                        let data = {
+                            message: err.message,
+                            error: true
+                        }
+
+                        isRequestOngoing.value = false
+                    })
+            } else {
+
+                formData.append('id', selectedCost.value.id)
+                formData.append('_method', 'PUT')
+                formData.append('vehicle_id', selectedCost.value.vehicle_id)
+                formData.append('description', description.value)
+                formData.append('value', value.value)
+
+                let data = {
+                    data: formData, 
+                    id: selectedCost.value.id
+                }
+
+                costsStores.updateCost(data)
+                    .then((res) => {
+                        if (res.data.success) {
+                            advisor.value = {
+                                type: 'success',
+                                message: 'Kostnader uppdaterad!',
+                                show: true
+                            }
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((err) => {
+                        
+                        advisor.value = {
+                            type: 'error',
+                            message: err.message,
+                            show: true
+                        }
+
+                        let data = {
+                            message: err.message,
+                            error: true
+                        }
+
+                        isRequestOngoing.value = false
+                    })
+            }
+            
+            isCreateCost.value = true
+            isConfirmCreateCostDialogVisible.value = false
+            description.value = null
+            value.value = null
+            
+            await fetchData()
+
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+        }
+    })
+}
+
+const removeCost = async (cost) => {
+
+    let res = await costsStores.deleteCost(cost.id)
+
+    advisor.value = {
+        type: res.data.success ? 'success' : 'error',
+        message: res.data.success ? 'Kostnader borttagen!' : res.data.message,
+        show: true
+    }
+
+    await fetchData()
+
+    setTimeout(() => {
+        advisor.value = {
+        type: '',
+        message: '',
+        show: false
+        }
+    }, 3000)
+
+    return true
 }
 
 const onSubmit = () => {
@@ -903,8 +1038,86 @@ const onSubmit = () => {
                                                 </VCol>
                                             </VRow>
                                         </VWindowItem>
+                                        <!-- Kostnader -->
                                         <VWindowItem class="px-md-5">
-                                            agregar tablas
+                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto">           
+                                                <VSpacer class="d-none d-md-block"/>   
+                                                <VBtn
+                                                    v-if="$can('edit', 'stock')"
+                                                    class="w-100 w-md-auto"
+                                                    prepend-icon="tabler-plus"
+                                                    @click="isConfirmCreateCostDialogVisible = true">
+                                                    Lägg till fler kostnader
+                                                </VBtn>
+                                            </div>
+                                            <VTable class="text-no-wrap">
+                                                <!-- 👉 table head -->
+                                                <thead>
+                                                    <tr>
+                                                        <th scope="col">#ID</th>
+                                                        <th scope="col">Åtgärd</th>
+                                                        <th scope="col">Kostnader</th>
+                                                        <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+                                                    </tr>
+                                                </thead>
+                                                <!-- 👉 table body -->
+                                                <tbody>
+                                                    <tr 
+                                                        v-for="(cost, index) in costs"
+                                                        :key="index"
+                                                        style="height: 3rem;">
+
+                                                        <td> {{ index + 1 }} </td>
+                                                        <td class="text-wrap"> {{ cost.description }} </td>
+                                                        <td> {{ formatNumber(cost.value ?? 0) }} </td>
+                                                        <!-- 👉 Acciones -->
+                                                        <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                                                        <VMenu>
+                                                            <template #activator="{ props }">
+                                                                <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                                                                    <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                                                                    <path d="M19 16v6"></path>
+                                                                    <path d="M22 19l-3 3l-3 -3"></path>
+                                                                    <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                                                                    </svg>
+                                                                </VBtn>
+                                                            </template>
+
+                                                            <VList>
+                                                                <VListItem v-if="$can('edit', 'stock')" @click="showCost(cost)">
+                                                                    <template #prepend>
+                                                                        <VIcon icon="tabler-edit" />
+                                                                    </template>
+                                                                    <VListItemTitle>Redigera</VListItemTitle>
+                                                                </VListItem>
+                                                                <VListItem v-if="$can('delete','stock')" @click="removeCost(cost)">
+                                                                    <template #prepend>
+                                                                    <VIcon icon="tabler-trash" />
+                                                                    </template>
+                                                                    <VListItemTitle>Avaktivera</VListItemTitle>
+                                                                </VListItem>
+                                                            </VList>
+                                                        </VMenu>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                                <!-- 👉 table footer  -->
+                                                <tfoot v-show="!costs.length">
+                                                <tr>
+                                                    <td
+                                                    colspan="6"
+                                                    class="text-center">
+                                                    Uppgifter ej tillgängliga
+                                                    </td>
+                                                </tr>
+                                                </tfoot>
+                                            </VTable>
+                                            <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3">
+                                                <span class="d-block d-md-flex text-sm text-disabled">
+                                                    <strong class="d-block me-md-5">Totala kostnader: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
+                                                </span>
+                                            </VCardText>
                                         </VWindowItem>
                                         <VWindowItem class="px-md-5">
                                             agregar documentso
@@ -1096,14 +1309,14 @@ const onSubmit = () => {
                             Du kan stänga dialogrutan. Dina ändringar har sparats automatiskt.
                         </VAlert>
                 
-                        <VExpansionPanels variant="inset">
+                        <VExpansionPanels>
                             <VExpansionPanel>
                                 <VExpansionPanelTitle>Aktiviteter</VExpansionPanelTitle>
                                 <VExpansionPanelText>
                                     <div 
                                         v-for="(history, index) in selectedTask.histories" 
                                         :key="index" 
-                                        :class="index > 0 ? 'py-2 border-bottom-secondary' : 'pt-2'"
+                                        :class="selectedTask.histories.length > 1 && index !== selectedTask.histories.length - 1 ? 'py-2 border-bottom-secondary' : 'pt-2'"
                                         class="d-flex flex-column">
                                         <span v-if="history.is_updated"><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
                                         <span v-else><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> uppdaterade kortet.</span>
@@ -1170,6 +1383,58 @@ const onSubmit = () => {
                         </VBtn>
                         <VBtn class="mt-4" type="submit">
                             Uppdatering
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
+
+        <!-- 👉 Create/Update cost -->
+        <VDialog
+            v-model="isConfirmCreateCostDialogVisible"
+            persistent
+            class="v-dialog-sm">
+            <!-- Dialog close btn -->
+                
+            <DialogCloseBtn @click="isConfirmCreateCostDialogVisible = !isConfirmCreateCostDialogVisible" />
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refCost"
+                @submit.prevent="handleCost">
+                <VCard :title="isCreateCost ? 'Lägg till kostnader' : 'Uppdatera kostnader'">
+                    <VDivider />
+                    <VCardText style="max-height: 450px;">
+                        <VRow>
+                            <VCol cols="12" md="12">
+                                <VTextarea
+                                    v-model="description"
+                                    rows="2"
+                                    label="Åtgärd"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="12">
+                                <VTextField
+                                    v-model="value"
+                                    type="number"
+                                    label="Kostnader"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                        </VRow>                        
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
+                        <VBtn
+                            class="mt-4"
+                            color="secondary"
+                            variant="tonal"
+                            @click="isConfirmCreateCostDialogVisible = false">
+                             Avbryt
+                        </VBtn>
+                        <VBtn class="mt-4" type="submit">
+                            {{ isCreateCost ? 'Spara' : 'Uppdatering'}}
                         </VBtn>
                     </VCardText>
                 </VCard>
