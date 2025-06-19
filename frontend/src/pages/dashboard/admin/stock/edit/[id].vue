@@ -772,34 +772,28 @@ const onSubmit = () => {
 
 <template>
     <section v-if="reg_num">
-        <VRow>
-            <VDialog
-                v-model="isRequestOngoing"
-                width="auto"
-                persistent>
-                <VProgressCircular
-                indeterminate
-                color="primary"
-                class="mb-0"/>
-            </VDialog>
-
-            <VCol cols="12">
-                <VAlert
-                v-if="advisor.show"
-                :type="advisor.type"
-                class="mb-6">
-                    
-                {{ advisor.message }}
-                </VAlert>
-            </VCol>
-        </VRow>
-
+        <VDialog
+            v-model="isRequestOngoing"
+            width="auto"
+            persistent>
+            <VProgressCircular
+            indeterminate
+            color="primary"
+            class="mb-0"/>
+        </VDialog>
+        <VAlert
+            v-if="advisor.show"
+            :type="advisor.type"
+            class="mb-6">
+                
+            {{ advisor.message }}
+        </VAlert>
         <VForm
             ref="refForm"
             v-model="isFormValid"
             @submit.prevent="onSubmit">
             <VRow>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="py-0">
                     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                         <div class="d-flex align-center">
                             <VAvatar
@@ -844,8 +838,7 @@ const onSubmit = () => {
                         </div>
                     </div>
                 </VCol>
-                <VCol cols="12" md="12">
-                    
+                <VCol cols="12" md="12">              
                         <VCard flat class="px-2 px-md-12">
                             <VCardText class="px-2 pt-0 pt-md-5">                
                                 <VTabs v-model="currentTab" fixed-tabs>
