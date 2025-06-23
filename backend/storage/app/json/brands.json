@@ -76,5 +76,11 @@
     "name": "Koenigsegg", 
     "url": "https://www.koenigsegg.com",
     "logo": "brands/koenigsegg.svg" 
+  },
+  {
+    "id": 14,
+    "name": "Ford",
+    "url": "https://ford.se/",
+    "logo": "brands/ford.svg"
   }
 ]

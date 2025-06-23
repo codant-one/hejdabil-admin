@@ -29,6 +29,7 @@ const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
 const isConfirmUpdateTaskDialogVisible = ref(false)
 const isConfirmCreateCostDialogVisible = ref(false)
+const isConfirmCreateDocumentDialogVisible = ref(false)
 const isConfirmSendDocumentDialogVisible = ref(false)
 
 const selectedTask = ref({})
@@ -39,6 +40,7 @@ const refForm = ref()
 const refTask = ref()
 const refUpdate = ref()
 const refCost = ref()
+const refDocument = ref()
 const refSend = ref()
 const currentTab = ref('tab-1')
 const isMobile = ref(false)
@@ -49,6 +51,8 @@ const modelsByBrand = ref([])
 const carbodies = ref([])
 const gearboxes = ref([])
 const ivas = ref([])
+const fuels = ref([])
+const document_types = ref([])
 const states = ref([])
 const logo = ref(null)
 
@@ -64,7 +68,7 @@ const year = ref(null)
 const first_insc = ref(null)
 const control_inspection = ref(null)
 const color = ref(null)
-const fuel = ref(null)
+const fuel_id = ref(null)
 const gearbox_id = ref(null)
 const purchase_price = ref(null)
 const iva_id = ref(null)
@@ -84,12 +88,18 @@ const last_dist_belt = ref(null)
 const comments = ref(null)
 
 const costs = ref([])
+const type = ref([])
+const dateCost = ref([])
 const description = ref([])
 const value = ref([])
 const selectedCost = ref([])
 
+const today = new Date()
+const formattedDate = ref(today.toISOString().split('T')[0])
 const documents = ref([])
-const fileInput = ref()
+const document_type_id = ref([])
+const filename = ref([])
+const reference = ref([])
 const selectedIds = ref([])
 
 const clients = ref([])
@@ -103,7 +113,7 @@ const cost = ref(null)
 const start_date = ref(null)
 const end_date = ref(null)
 
-const optionsRadio = ['Ja', 'Nej', 'Finns ej']
+const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -180,6 +190,8 @@ async function fetchData(cleanFilters = false) {
         carbodies.value = data.carbodies
         gearboxes.value = data.gearboxes
         ivas.value = data.ivas
+        fuels.value = data.fuels
+        document_types.value = data.document_types
         states.value = data.states
         clients.value = data.clients
 
@@ -196,7 +208,7 @@ async function fetchData(cleanFilters = false) {
         first_insc.value = vehicle.value.first_insc
         control_inspection.value = vehicle.value.control_inspection
         color.value = vehicle.value.color
-        fuel.value = vehicle.value.fuel
+        fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
         purchase_price.value = vehicle.value.purchase_price
         iva_id.value = vehicle.value.iva_id
@@ -225,6 +237,7 @@ async function fetchData(cleanFilters = false) {
 
         if(Object.keys(selectedTask.value).length > 0) {
             selectedTask.value = tasks.value.filter(item => item.id === selectedTask.value.id)[0]
+            selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
         }
     }
 
@@ -369,6 +382,7 @@ const updateTask = async () => {
 const showTask = taskData => {
   isConfirmUpdateTaskDialogVisible.value = true
   selectedTask.value = { ...taskData }
+  selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
 }
 
 const removeTask = async (task) => {
@@ -414,9 +428,21 @@ const sendComment = async () => {
 const showCost = costData => {
     isConfirmCreateCostDialogVisible.value = true
     selectedCost.value = { ...costData }
+    type.value = costData.type
     description.value = costData.description
-    value.value = costData.value
+    dateCost.value = costData.date
+    value.value = formatDecimal(costData.value)
     isCreateCost.value = false
+}
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
+    }
+
+    return number.toString();
 }
 
 const handleCost = async () => {
@@ -425,8 +451,10 @@ const handleCost = async () => {
             let formData = new FormData()
 
             formData.append('vehicle_id', vehicle_id.value)
+            formData.append('type', type.value)
             formData.append('description', description.value)
             formData.append('value', value.value)
+            formData.append('date', dateCost.value)
 
             isRequestOngoing.value = true
 
@@ -500,8 +528,10 @@ const handleCost = async () => {
             
             isCreateCost.value = true
             isConfirmCreateCostDialogVisible.value = false
+            type.value = null
             description.value = null
             value.value = null
+            dateCost.value = null
             
             await fetchData()
 
@@ -540,54 +570,60 @@ const removeCost = async (cost) => {
 }
 
 const handleFileUpload = async (event) => {
-    const file = event.target.files[0]
-    if (!file) return
 
-    let formData = new FormData()
+    refDocument.value?.validate().then(async({ valid }) => {
+        if (valid) {
+            const file = filename.value[0]
+            if (!file) return
 
-    formData.append('vehicle_id', vehicle_id.value)
-    formData.append('document_type_id', 1)
-    formData.append('file', file)
+            let formData = new FormData()
 
-    isRequestOngoing.value = true
+            formData.append('vehicle_id', vehicle_id.value)
+            formData.append('document_type_id', document_type_id.value)
+            formData.append('reference', reference.value)
+            formData.append('file', file)
 
-    documentsStores.addDocument(formData)
-        .then((res) => {
-            if (res.data.success) {
-                advisor.value = {
-                    type: 'success',
-                    message: 'Dokument skapad!',
-                    show: true
-                }
-            }
-            isRequestOngoing.value = false
-        })
-        .catch((err) => {
+            isRequestOngoing.value = true
+            isConfirmCreateDocumentDialogVisible.value = false 
+
+            documentsStores.addDocument(formData)
+                .then((res) => {
+                    if (res.data.success) {
+                        advisor.value = {
+                            type: 'success',
+                            message: 'Dokument skapad!',
+                            show: true
+                        }
+                    }
+                    isRequestOngoing.value = false
+                })
+                .catch((err) => {
+                    
+                    advisor.value = {
+                        type: 'error',
+                        message: err.message,
+                        show: true
+                    }
+
+                    let data = {
+                        message: err.message,
+                        error: true
+                    }
+
+                    isRequestOngoing.value = false
+                })
             
-            advisor.value = {
-                type: 'error',
-                message: err.message,
-                show: true
-            }
+            await fetchData()
 
-            let data = {
-                message: err.message,
-                error: true
-            }
-
-            isRequestOngoing.value = false
-        })
-    
-    await fetchData()
-
-    setTimeout(() => {
-        advisor.value = {
-            type: '',
-            message: '',
-            show: false
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
         }
-    }, 3000)
-
+    })
 }
 
 const download = async(doc) => {
@@ -715,7 +751,7 @@ const onSubmit = () => {
             formData.append('first_insc', first_insc.value)
             formData.append('control_inspection', control_inspection.value)
             formData.append('color', color.value)
-            formData.append('fuel', fuel.value)
+            formData.append('fuel_id', fuel_id.value)
             formData.append('purchase_price', purchase_price.value)
             formData.append('purchase_date', purchase_date.value)
             formData.append('sale_price', sale_price.value)
@@ -747,8 +783,12 @@ const onSubmit = () => {
                             error: false
                         }
 
-                        router.push({ name : 'dashboard-admin-stock'})
-                        emitter.emit('toast', data)
+                        if(state_id.value === 12)
+                            router.push({ name : 'dashboard-admin-sold'})
+                        else
+                            router.push({ name : 'dashboard-admin-stock'})
+                        
+                            emitter.emit('toast', data)
                     }
                     isRequestOngoing.value = false
                 })
@@ -827,7 +867,7 @@ const onSubmit = () => {
                                 variant="tonal"
                                 color="secondary"
                                 class="mb-2 w-100 w-md-auto"
-                                :to="{ name: 'dashboard-admin-stock' }"
+                                :to="{ name: state_id === 12 ? 'dashboard-admin-sold' :'dashboard-admin-stock' }"
                                 >
                                 Tillbaka
                             </VBtn>
@@ -846,7 +886,7 @@ const onSubmit = () => {
                                     <VTab>Prisinformation</VTab>
                                     <VTab>Utrustningslista</VTab>
                                     <VTab>Information om bilen</VTab>
-                                    <VTab>Fordonsplanering</VTab>
+                                    <VTab>Planerade åtgärder</VTab>
                                     <VTab>Kostnader</VTab>
                                     <VTab>Dokument</VTab>
                                 </VTabs>
@@ -854,6 +894,9 @@ const onSubmit = () => {
                                     <VWindow v-model="currentTab" class="pt-3">
                                         <!-- Fordon -->
                                         <VWindowItem class="px-md-5">
+                                            <h6 class="text-md-h4 text-h5 font-weight-medium mb-7">
+                                                Grund och teknisk information
+                                            </h6>
                                             <VRow class="px-md-5">
                                                 <VCol cols="12" md="6">
                                                     <VTextField
@@ -866,11 +909,12 @@ const onSubmit = () => {
                                                     <VTextField
                                                         type="number"
                                                         v-model="mileage"
+                                                        suffix="Mil"
                                                         label="Miltal"
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="brand_id"
                                                         label="Märke"
                                                         :items="brands"
@@ -882,7 +926,7 @@ const onSubmit = () => {
                                                         @update:modelValue="selectBrand"/>
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="model_id"
                                                         label="Modell"
                                                         :items="getModels"
@@ -897,7 +941,7 @@ const onSubmit = () => {
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="car_body_id"
                                                         label="Kaross"
                                                         :items="carbodies"
@@ -921,7 +965,7 @@ const onSubmit = () => {
                                                         v-model="first_insc"
                                                         density="compact"
                                                         :config="startDateTimePickerConfig"
-                                                        label="Första registreringsdatum"
+                                                        label="Inköpsdatum"
                                                         clearable
                                                     />
                                                 </VCol>
@@ -942,13 +986,18 @@ const onSubmit = () => {
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="fuel"
+                                                    <VAutocomplete
+                                                        v-model="fuel_id"
                                                         label="Drivmedel"
-                                                    />
+                                                        :items="fuels"
+                                                        :item-title="item => item.name"
+                                                        :item-value="item => item.id"
+                                                        autocomplete="off"
+                                                        clearable
+                                                        clear-icon="tabler-x"/>
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="gearbox_id"
                                                         label="Växellåda"
                                                         :items="gearboxes"
@@ -972,7 +1021,7 @@ const onSubmit = () => {
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="iva_id"
                                                         label="VMB / Moms"
                                                         :items="ivas"
@@ -983,46 +1032,12 @@ const onSubmit = () => {
                                                         clear-icon="tabler-x"/>
                                                 </VCol>
                                                 <VCol cols="12" md="6">
-                                                    <VSelect
+                                                    <VAutocomplete
                                                         v-model="state_idOld"
                                                         label="Status"
                                                         :items="states"
                                                         :item-title="item => item.name"
                                                         :item-value="item => item.id"/>
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="sale_price"
-                                                        type="number"
-                                                        label="Försäljningspris"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="min_sale_price"
-                                                        type="number"
-                                                        label="Lägsta försäljningspris"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(startDateTimePickerConfig)"
-                                                        v-model="purchase_date"
-                                                        density="compact"
-                                                        :config="startDateTimePickerConfig"
-                                                        label="Inköpsdatum"
-                                                        clearable
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(startDateTimePickerConfig)"
-                                                        v-model="sale_date"
-                                                        density="compact"
-                                                        :config="startDateTimePickerConfig"
-                                                        label="Försäljningsdag"
-                                                        clearable
-                                                    />
                                                 </VCol>
                                             </VRow>
                                         </VWindowItem>
@@ -1106,7 +1121,7 @@ const onSubmit = () => {
                                                         </VRadioGroup>
                                                     </div>
                                                 </VCol>
-                                                <VCol cols="12" md="12">
+                                                <VCol cols="12" md="12" v-if="dist_belt === 0">
                                                     <VTextField
                                                         v-model="last_dist_belt"
                                                         label="Kamrem bytt vid Mil/datum"
@@ -1116,23 +1131,23 @@ const onSubmit = () => {
                                                     <VTextarea
                                                         v-model="comments"
                                                         rows="5"
-                                                        label="Kommenter"
+                                                        label="Anteckningar"
                                                     />
                                                 </VCol>
                                             </VRow>
                                         </VWindowItem>
-                                        <!-- Fordonsplanering -->
+                                        <!-- Planerade åtgärder -->
                                         <VWindowItem class="px-md-5">
                                             <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
                                                 <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
                                                     Övrigt
                                                 </h6>
                                                 <VBtn class="w-100 w-md-auto" @click="isConfirmTaskDialogVisible = true">
-                                                    Lägg till en uppgift
+                                                    Lägg till åtgärd
                                                 </VBtn>
                                             </div>
 
-                                            <div v-if="tasks.length === 0" class="mt-10 text-center">Ingen post hittades</div>
+                                            <div v-if="tasks.length === 0" class="mt-10 text-center">Inga åtgärder hittades</div>
 
                                             <VRow v-else class="mt-5">
                                                 <VCol
@@ -1158,16 +1173,16 @@ const onSubmit = () => {
 
                                                         <VCardText>
                                                             <p class="clamp-text text-white mb-0">
-                                                                <strong>Åtgärd:</strong> {{ task.measure }}
+                                                                <strong>Vad ska göras?:</strong> {{ task.measure }}
                                                             </p>
                                                             <p class="clamp-text text-white mb-0">
-                                                                <strong>Kostnader:</strong> {{ task.cost }}
+                                                                <strong>Beräknad kostnad (kr):</strong> {{ task.cost }} kr
                                                             </p>
                                                             <p class="clamp-text text-white mb-0">
-                                                                <strong>Startdatum:</strong> {{ task.start_date }}
+                                                                <strong>Planerat startdatum:</strong> {{ task.start_date }}
                                                             </p>
                                                             <p class="clamp-text text-white mb-0">
-                                                                <strong>Slutdatum:</strong> {{ task.end_date }}
+                                                                <strong>Planerat startdatum:</strong> {{ task.end_date }}
                                                             </p>
                                                         </VCardText>
 
@@ -1209,23 +1224,25 @@ const onSubmit = () => {
                                         </VWindowItem>
                                         <!-- Kostnader -->
                                         <VWindowItem class="px-md-5">
-                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto">           
+                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
                                                 <VSpacer class="d-none d-md-block"/>   
                                                 <VBtn
                                                     v-if="$can('edit', 'stock')"
                                                     class="w-100 w-md-auto"
                                                     prepend-icon="tabler-plus"
                                                     @click="isConfirmCreateCostDialogVisible = true">
-                                                    Lägg till fler kostnader
+                                                    Lägg till kostnad
                                                 </VBtn>
                                             </div>
-                                            <VTable class="text-no-wrap">
+                                            <div v-if="costs.length === 0" class="mt-10 text-center">Ingen kostnader registrerade ännu</div>
+                                            <VTable v-else class="text-no-wrap">
                                                 <!-- 👉 table head -->
                                                 <thead>
                                                     <tr>
-                                                        <th scope="col">#ID</th>
-                                                        <th scope="col">Åtgärd</th>
-                                                        <th scope="col">Kostnader</th>
+                                                        <th scope="col">Händelse</th>
+                                                        <th scope="col">Datum</th>
+                                                        <th scope="col">Typ</th>
+                                                        <th scope="col" class="text-end">Belopp (kr)</th>
                                                         <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
                                                     </tr>
                                                 </thead>
@@ -1237,8 +1254,9 @@ const onSubmit = () => {
                                                         style="height: 3rem;">
 
                                                         <td> {{ index + 1 }} </td>
-                                                        <td class="text-wrap"> {{ cost.description }} </td>
-                                                        <td> {{ formatNumber(cost.value ?? 0) }} </td>
+                                                        <td> {{ cost.date }} </td>
+                                                        <td class="text-wrap"> {{ cost.type }} </td>
+                                                        <td class="text-end"> {{ formatNumber(cost.value ?? 0) }} kr</td>
                                                         <!-- 👉 Acciones -->
                                                         <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                         <VMenu>
@@ -1282,15 +1300,15 @@ const onSubmit = () => {
                                                 </tr>
                                                 </tfoot>
                                             </VTable>
-                                            <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3">
+                                            <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3" v-if="costs.length > 0">
                                                 <span class="d-block d-md-flex text-sm text-disabled">
-                                                    <strong class="d-block me-md-5">Totala kostnader: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
+                                                    <strong class="d-block me-md-5">Totalt: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
                                                 </span>
                                             </VCardText>
                                         </VWindowItem>
                                         <!-- Dokument -->
                                         <VWindowItem class="px-md-5">
-                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto">           
+                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="documents.length === 0 ? 'border-bottom-secondary' : ''">           
                                                 <VSpacer class="d-none d-md-block"/> 
                                                 <VBtn
                                                     v-if="selectedIds.length > 0"
@@ -1304,18 +1322,13 @@ const onSubmit = () => {
                                                     v-if="$can('edit', 'stock')"
                                                     class="w-100 w-md-auto"
                                                     prepend-icon="mdi-cloud-upload-outline"
-                                                    @click="() => fileInput.click()">
-                                                    Ladda upp
+                                                    @click="isConfirmCreateDocumentDialogVisible = true">
+                                                    Ladda upp dokument
                                                 </VBtn>
 
-                                                <input
-                                                    type="file"
-                                                    ref="fileInput"
-                                                    @change="handleFileUpload"
-                                                    style="display: none"
-                                                />
                                             </div>
-                                            <VTable class="text-no-wrap">
+                                            <div v-if="documents.length === 0" class="mt-10 text-center">Inga dokument uppladdade</div>
+                                            <VTable v-else class="text-no-wrap">
                                                 <!-- 👉 table head -->
                                                 <thead>
                                                     <tr>
@@ -1327,11 +1340,10 @@ const onSubmit = () => {
                                                                 hide-details
                                                             />
                                                         </th>
-                                                        <th scope="col">#ID</th>
                                                         <th scope="col">Namn</th>
-                                                        <th scope="col">Skapad av</th>
-                                                        <th scope="col">Skapad</th>
-                                                        <th scope="col">Typ</th>
+                                                        <th scope="col">Dokumenttyp</th>
+                                                        <th scope="col">Datum</th>
+                                                        <th scope="col">Skapad av</th>                                                        
                                                         <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
                                                     </tr>
                                                 </thead>
@@ -1349,9 +1361,8 @@ const onSubmit = () => {
                                                                 hide-details
                                                             />
                                                         </td>
-                                                        <td> {{ index + 1 }} </td>
                                                         <td class="text-wrap">{{ document.file.replace('vehicles/', '') }} </td>
-                                                        <td> {{ document.user.name }} {{ document.user.last_name }}</td>
+                                                        <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
                                                         <td>  
                                                             {{ new Date(document.created_at).toLocaleString('sv-SE', { 
                                                                 year: 'numeric', 
@@ -1362,7 +1373,7 @@ const onSubmit = () => {
                                                                 hour12: false
                                                             }) }} 
                                                         </td>
-                                                        <td> {{ document.type.name }} </td>
+                                                        <td> {{ document.user.name }} {{ document.user.last_name }}</td>
                                                         <!-- 👉 Acciones -->
                                                         <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                             <VMenu>
@@ -1431,7 +1442,7 @@ const onSubmit = () => {
                 <VCard title="Redigera status">
                     <VDivider />
                     <VCardText>
-                        <VSelect
+                        <VAutocomplete
                             v-model="state_idOld"
                             label="Status"
                             :items="states"
@@ -1469,14 +1480,14 @@ const onSubmit = () => {
             <VForm
                 ref="refTask"
                 @submit.prevent="createTask">
-                <VCard title="Lägg till nytt kort">
+                <VCard title="Lägg till åtgärd för fordonet" subtitle="Fyll i planerad åtgärd nedan">
                     <VDivider />
                     <VCardText>
                         <VRow>
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="measure"
-                                    label="Åtgärd"
+                                    label="Vad ska göras?"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -1484,7 +1495,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="cost"
                                     type="number"
-                                    label="Kostnader"
+                                    label="Beräknad kostnad (kr)"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -1495,7 +1506,7 @@ const onSubmit = () => {
                                     density="compact"
                                     :config="endDateTimePickerConfig"
                                     :rules="[requiredValidator]"
-                                    label="Startdatum"
+                                    label="Planerat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1505,7 +1516,7 @@ const onSubmit = () => {
                                     v-model="end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Slutdatum"
+                                    label="Planerat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1549,7 +1560,7 @@ const onSubmit = () => {
                             <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="selectedTask.measure"
-                                    label="Åtgärd"
+                                    label="Vad ska göras?"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -1557,7 +1568,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="selectedTask.cost"
                                     type="number"
-                                    label="Kostnader"
+                                    label="Beräknad kostnad (kr)"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -1568,7 +1579,7 @@ const onSubmit = () => {
                                     density="compact"
                                     :config="endDateTimePickerConfig"
                                     :rules="[requiredValidator]"
-                                    label="Startdatum"
+                                    label="Planerat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1578,7 +1589,7 @@ const onSubmit = () => {
                                     v-model="selectedTask.end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Slutdatum"
+                                    label="Planerat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1602,10 +1613,10 @@ const onSubmit = () => {
                                         :key="index" 
                                         :class="selectedTask.histories.length > 1 && index !== selectedTask.histories.length - 1 ? 'py-2 border-bottom-secondary' : 'pt-2'"
                                         class="d-flex flex-column">
-                                        <span v-if="history.is_updated"><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
-                                        <span v-else><strong>{{ selectedTask.user.name }} {{ selectedTask.user.last_name }}</strong> uppdaterade kortet.</span>
-                                        <span>  
-                                            {{ new Date(selectedTask.created_at).toLocaleString('sv-SE', { 
+                                        <span v-if="history.is_created"><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
+                                        <span v-else><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> uppdaterade kortet.</span>
+                                        <span>  {{}}
+                                            {{ new Date(history.created_at).toLocaleString('sv-SE', { 
                                                 year: 'numeric', 
                                                 month: '2-digit', 
                                                 day: '2-digit', 
@@ -1673,6 +1684,74 @@ const onSubmit = () => {
             </VForm>
         </VDialog>
 
+        <!-- 👉 Create document -->
+        <VDialog
+            v-model="isConfirmCreateDocumentDialogVisible"
+            persistent
+            class="v-dialog-sm">
+            <!-- Dialog close btn -->
+                
+            <DialogCloseBtn @click="isConfirmCreateDocumentDialogVisible = !isConfirmCreateDocumentDialogVisible" />
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refDocument"
+                @submit.prevent="handleFileUpload">
+                <VCard title="Ladda upp dokument">
+                    <VDivider />
+                    <VCardText style="max-height: 450px;">
+                        <VRow>
+                            <VCol cols="12" md="12">
+                                <VAutocomplete
+                                    v-model="document_type_id"
+                                    label="Dokumenttyp"
+                                    :items="document_types"
+                                    :item-title="item => item.name"
+                                    :item-value="item => item.id"
+                                    autocomplete="off"
+                                    :rules="[requiredValidator]"/>
+                            </VCol>
+                             <VCol cols="12" md="12" v-if="document_type_id === 4">
+                                <VTextField
+                                    v-model="reference"
+                                    label="Övrigt"
+                                    :rules="document_type_id === 4 ? [requiredValidator] : []"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="3">
+                                <VTextField
+                                    :model-value="formattedDate"
+                                    disabled
+                                    label="Datum"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="9">
+                                <VFileInput       
+                                    v-model="filename"                   
+                                    label="Välj fil"
+                                    placeholder="Välj fil"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                        </VRow>                        
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
+                        <VBtn
+                            class="mt-4"
+                            color="secondary"
+                            variant="tonal"
+                            @click="isConfirmCreateDocumentDialogVisible = false">
+                             Avbryt
+                        </VBtn>
+                        <VBtn class="mt-4" type="submit">
+                             Ladda upp
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
+
         <!-- 👉 Create/Update cost -->
         <VDialog
             v-model="isConfirmCreateCostDialogVisible"
@@ -1691,19 +1770,36 @@ const onSubmit = () => {
                     <VCardText style="max-height: 450px;">
                         <VRow>
                             <VCol cols="12" md="12">
-                                <VTextarea
-                                    v-model="description"
-                                    rows="2"
-                                    label="Åtgärd"
+                                <VTextField
+                                    v-model="type"
+                                    label="Vad gäller kostnaden?"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
                             <VCol cols="12" md="12">
+                                <VTextarea
+                                    v-model="description"
+                                    rows="4"
+                                    label="Beskrivning (valfritt)"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
                                 <VTextField
                                     v-model="value"
                                     type="number"
                                     label="Kostnader"
                                     :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="dateCost"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    label="Datum"
+                                    :rules="[requiredValidator]"
+                                    clearable
                                 />
                             </VCol>
                         </VRow>                        
@@ -1743,7 +1839,7 @@ const onSubmit = () => {
                     <VCardText>
                          <VRow>
                             <VCol cols="12" md="12">
-                                <VSelect
+                                <VAutocomplete
                                     v-model="client_id"
                                     label="Kunder"
                                     :items="clients"

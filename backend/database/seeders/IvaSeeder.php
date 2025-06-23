@@ -24,7 +24,8 @@ class IvaSeeder extends Seeder
         foreach($ivas as $iva){
             Iva::query()->updateOrCreate([
                 'id' => $iva['id'],
-                'name' => $iva['name']
+                'name' => $iva['name'],
+                'value' => $iva['value']
             ]);
         }
     }

@@ -4,6 +4,9 @@ import Vehicles from '@/api/vehicles'
 export const useVehiclesStores = defineStore('vehicles', {
     state: () => ({
         vehicles: {},
+        brands: {},
+        models: {},
+        gearboxes: {},
         loading: false,
         last_page: 1,
         vehiclesTotalCount: 6
@@ -11,6 +14,15 @@ export const useVehiclesStores = defineStore('vehicles', {
     getters:{
         getVehicles(){
             return this.vehicles
+        },
+        getBrands(){
+            return this.brands
+        },
+        getModels(){
+            return this.models
+        },
+        getGearboxes(){
+            return this.gearboxes
         }
     },
     actions: {
@@ -22,6 +34,9 @@ export const useVehiclesStores = defineStore('vehicles', {
             
             return Vehicles.get(params)
                 .then((response) => {
+                    this.brands = response.data.data.brands
+                    this.models = response.data.data.models
+                    this.gearboxes = response.data.data.gearboxes
                     this.vehicles = response.data.data.vehicles.data
                     this.last_page = response.data.data.vehicles.last_page
                     this.vehiclesTotalCount = response.data.data.vehiclesTotalCount
@@ -37,7 +52,6 @@ export const useVehiclesStores = defineStore('vehicles', {
 
             return Vehicles.create(data)
                 .then((response) => {
-                    this.vehicles.push(response.data.data.vehicle)
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -65,8 +79,6 @@ export const useVehiclesStores = defineStore('vehicles', {
             
             return Vehicles.update(data)
                 .then((response) => {
-                    let pos = this.vehicles.findIndex((item) => item.id === response.data.data.vehicle.id)
-                    this.vehicles[pos] = response.data.data.vehicle
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

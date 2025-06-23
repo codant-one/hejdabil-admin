@@ -153,6 +153,7 @@ Route::get('reminder', [TestingController::class , 'reminder'])->name('reminder'
 Route::get('emails', [TestingController::class , 'emails'])->name('emails');
 Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
+Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);

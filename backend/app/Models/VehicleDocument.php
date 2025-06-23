@@ -32,7 +32,8 @@ class VehicleDocument extends Model
         $document = self::create([
             'user_id' => Auth::user()->id,
             'vehicle_id' => $request->vehicle_id,
-            'document_type_id' => $request->document_type_id
+            'document_type_id' => $request->document_type_id,
+            'reference' => $request->reference
         ]);
         
         return $document;

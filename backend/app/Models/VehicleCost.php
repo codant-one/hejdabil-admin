@@ -27,8 +27,10 @@ class VehicleCost extends Model
         $cost = self::create([
             'user_id' => Auth::user()->id,
             'vehicle_id' => $request->vehicle_id,
+            'type' => $request->type,
             'description' => $request->description,
-            'value' => $request->value
+            'value' => $request->value,
+            'date' => $request->date
         ]);
         
         return $cost;
@@ -37,9 +39,10 @@ class VehicleCost extends Model
     public static function updateCost($request, $cost) {
 
         $cost->update([
-            'vehicle_id' => $request->vehicle_id,
+            'type' => $request->type,
             'description' => $request->description,
-            'value' => $request->value
+            'value' => $request->value,
+            'date' => $request->date
         ]);
 
         return $cost;

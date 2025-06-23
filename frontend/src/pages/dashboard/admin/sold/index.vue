@@ -1,31 +1,34 @@
 <script setup>
 
-import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useVehiclesStores } from '@/stores/useVehicles'
 import { excelParser } from '@/plugins/csv/excelParser'
+import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
+import { formatNumber } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
-const suppliersStores = useSuppliersStores()
+const vehiclesStores = useVehiclesStores()
 const emitter = inject("emitter")
 
-const suppliers = ref([])
+const vehicles = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalSuppliers = ref(0)
+const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
-const isConfirmActiveDialogVisible = ref(false)
-const selectedSupplier = ref({})
-const state_id = ref(null)
+const selectedVehicle = ref({})
 
-const states = ref ([
-  { id: 2, name: "Aktiv" },
-  { id: 1, name: "Inaktiv" }
-])
+const year = ref(null)
+const gearboxes = ref([])
+const gearbox_id = ref(null)
+const brands = ref([])
+const brand_id = ref(null)
+const models = ref([])
+const model_id = ref(null)
+const modelsByBrand = ref([])
 
 const advisor = ref({
   type: '',
@@ -35,10 +38,10 @@ const advisor = ref({
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = vehicles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = vehicles.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
 })
 
 // 👉 watching current page
@@ -55,7 +58,10 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
-    state_id.value = null
+    brand_id.value = null
+    model_id.value = null
+    year.value = null
+    gearbox_id.value = null
   }
 
   let data = {
@@ -64,16 +70,27 @@ async function fetchData(cleanFilters = false) {
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
-    state_id: state_id.value
+    isSold: 1,
+    state_id: 12,
+    brand_id: brand_id.value,
+    model_id: model_id.value,
+    year: year.value,
+    gearbox_id: gearbox_id.value
   }
 
-  isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isRequestOngoing.value = 
+    (searchQuery.value !== '' || year.value !== null)
+    ? false 
+    : true
 
-  await suppliersStores.fetchSuppliers(data)
+  await vehiclesStores.fetchVehicles(data)
 
-  suppliers.value = suppliersStores.getSuppliers
-  totalPages.value = suppliersStores.last_page
-  totalSuppliers.value = suppliersStores.suppliersTotalCount
+  brands.value = vehiclesStores.getBrands
+  models.value = vehiclesStores.getModels
+  gearboxes.value = vehiclesStores.getGearboxes
+  vehicles.value = vehiclesStores.getVehicles
+  totalPages.value = vehiclesStores.last_page
+  totalVehicles.value = vehiclesStores.vehiclesTotalCount
 
   isRequestOngoing.value = false
 
@@ -85,39 +102,41 @@ function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
 
-const resolveStatus = state_id => {
-  if (state_id === 2)
-    return { color: 'success' }
-  if (state_id === 1)
-    return { color: 'error' }
+const editVehicle = vehicleData => {
+  router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: vehicleData.id } })
 }
 
-const editSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
-}
-
-const showDeleteDialog = supplierData => {
+const showDeleteDialog = vehicleData => {
   isConfirmDeleteDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
+  selectedVehicle.value = { ...vehicleData }
 }
 
-const showActivateDialog = supplierData => {
-  isConfirmActiveDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
+const getModels = computed(() => {
+  return modelsByBrand.value.map((model) => {
+    return {
+      title: model.name,
+      value: model.id
+    }
+  })
+})
+
+const selectBrand = brand => {
+    if (brand) {
+        let _brand = brands.value.find(item => item.id === brand)
+    
+        model_id.value = ''
+        modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+    }
 }
 
-const seeSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-id', params: { id: supplierData.id } })
-}
-
-const removeSupplier = async () => {
+const removeVehicle = async () => {
   isConfirmDeleteDialogVisible.value = false
-  let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
+  let res = await vehiclesStores.deleteVehicle(selectedVehicle.value.id)
+  selectedVehicle.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör borttagen!' : res.data.message,
+    message: res.data.success ? 'Fordon borttagen!' : res.data.message,
     show: true
   }
 
@@ -134,29 +153,24 @@ const removeSupplier = async () => {
   return true
 }
 
-const activateSupplier = async () => {
-  isConfirmActiveDialogVisible.value = false
-  let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
+const download = async(vehicle) => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + vehicle.file);
+    const blob = await response.blob();
+    
+    const blobUrl = URL.createObjectURL(blob);
 
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör aktiverad!' : res.data.message,
-    show: true
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = vehicle.file.replace('pdfs/', '');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+  } catch (error) {
+    console.error('Error:', error);
   }
-
-  await fetchData()
-
-  setTimeout(() => {
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
-
-  return true
-}
+};
 
 const downloadCSV = async () => {
 
@@ -164,11 +178,11 @@ const downloadCSV = async () => {
 
   let data = { limit: -1 }
 
-  await suppliersStores.fetchSuppliers(data)
+  await vehiclesStores.fetchVehicles(data)
 
   let dataArray = [];
       
-  suppliersStores.getSuppliers.forEach(element => {
+  vehiclesStores.getVehicles.forEach(element => {
 
     let data = {
       ID: element.id,
@@ -184,7 +198,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, "vehicles", "csv");
 
   isRequestOngoing.value = false
 
@@ -215,7 +229,52 @@ const downloadCSV = async () => {
 
         <Toaster />
 
-        <VCard title="">
+        <VCard title="Filter">
+          <VCardText>
+            <VRow>
+              <VCol cols="12" md="3">
+                <VAutocomplete
+                  v-model="brand_id"
+                  label="Märke"
+                  :items="brands"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"
+                  @update:modelValue="selectBrand"/>
+              </VCol>
+              <VCol cols="12" md="3">
+                <VAutocomplete
+                  v-model="model_id"
+                  label="Modell"
+                  :items="getModels"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"/>
+              </VCol>
+              <VCol cols="12" md="3">
+                <VTextField
+                    v-model="year"
+                    :rules="[yearValidator]"
+                    label="Årsmodell"
+                    clearable
+                />
+              </VCol>
+              <VCol cols="12" md="3">
+                <VAutocomplete
+                  v-model="gearbox_id"
+                  label="Biltyp"
+                  :items="gearboxes"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"/>
+              </VCol>
+            </VRow>
+          </VCardText>
+          <VDivider />
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
               <span class="text-no-wrap me-3">Visa:</span>
@@ -257,20 +316,99 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> #ID </th>
-                <th scope="col"> xxxx </th>
-                <th scope="col"> xxxx </th>
-                <th scope="col"> xxxx </th>
-                <th scope="col"> xxxxxx </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
+                <th scope="col">Information om bilen </th>
+                <th scope="col" class="text-end"> Kostnader </th>
+                <th scope="col" class="text-end"> Försäljningspris </th>
+                <th scope="col" class="text-center"> Annons </th>
+                <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
-              
+              <tr 
+                v-for="vehicle in vehicles"
+                :key="vehicle.id"
+                style="height: 3rem;">
+                <td class="text-wrap cursor-pointer"  @click="editVehicle(vehicle)">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      v-if="vehicle.model_id"
+                      size="38"
+                      variant="tonal"
+                      rounded
+                      :image="themeConfig.settings.urlStorage + vehicle.model.brand.logo"
+                    />
+                    <VAvatar
+                        v-else
+                        size="38"
+                        variant="tonal"
+                        rounded
+                        color="secondary"
+                    >
+                        <VIcon size="x-large" icon="tabler-car" />                        
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">
+                        {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
+                      </span>
+                      <span class="text-sm text-disabled">
+                        {{ vehicle.reg_num }}
+                      </span>
+                    </div>
+                  </div>
+                </td>                
+                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>
+                <td class="text-end"> {{ formatNumber(vehicle.sale_price ?? 0) }} kr</td>
+                <td class="d-flex justify-content-center">
+                   <VCheckbox
+                    v-model="vehicle.checked"
+                    color="info"
+                    class="w-100 text-center d-flex justify-content-center"
+                    :disabled="(vehicle.state_id === 11) ? true : false"
+                    :readonly="(vehicle.state_id === 11) ? false : true"
+                    :value="(vehicle.state_id === 11) ? false : true"
+                  />
+                </td>
+                <!-- 👉 Acciones -->
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                          <path d="M19 16v6"></path>
+                          <path d="M22 19l-3 3l-3 -3"></path>
+                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                        </svg>
+                      </VBtn>
+                    </template>
+
+                    <VList>
+                      <VListItem v-if="$can('edit', 'stock')">
+                        <template #prepend>
+                          <VIcon icon="tabler-eye" />
+                        </template>
+                        <VListItemTitle>Visa</VListItemTitle>
+                      </VListItem>
+                      <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
+                        <template #prepend>
+                          <VIcon icon="mdi-cloud-download-outline" />
+                        </template>
+                        <VListItemTitle>Ladda ner</VListItemTitle>
+                      </VListItem>
+                      <VListItem v-if="$can('delete','stock')" @click="showDeleteDialog(vehicle)">
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Ta bort</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
+                </td>
+              </tr>              
             </tbody>
             <!-- 👉 table footer  -->
-            <tfoot v-show="!suppliers.length">
+            <tfoot v-show="!vehicles.length">
               <tr>
                 <td
                   colspan="6"
@@ -283,7 +421,7 @@ const downloadCSV = async () => {
         
           <VDivider />
 
-          <VCardText class="d-none text-center align-center flex-wrap gap-4 py-3">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
@@ -311,10 +449,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort leverantör">
+      <VCard title="Ta bort lagerfordon">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill ta bort fordon <strong>{{ selectedVehicle.reg_num }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -324,37 +462,7 @@ const downloadCSV = async () => {
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeSupplier">
-              Acceptera
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
-
-    <!-- 👉 Confirm Delete -->
-    <VDialog
-      v-model="isConfirmActiveDialogVisible"
-      persistent
-      class="v-dialog-sm" >
-      <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
-
-      <!-- Dialog Content -->
-      <VCard title="Aktivera leverantör">
-        <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
-        </VCardText>
-
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmActiveDialogVisible = false">
-              Avbryt
-          </VBtn>
-          <VBtn @click="activateSupplier">
+          <VBtn @click="removeVehicle">
               Acceptera
           </VBtn>
         </VCardText>
@@ -364,15 +472,29 @@ const downloadCSV = async () => {
 </template>
 
 <style scope>
-    .search {
-        width: 100%;
-    }
 
-    @media(min-width: 991px){
-        .search {
-            width: 20rem;
-        }
-    }
+  .justify-content-center {
+    justify-content: center !important;
+  }
+
+  .v-input--disabled svg rect {
+    fill: #28C76F !important;
+  }
+
+  .v-input--disabled {
+    pointer-events: visible !important;
+    cursor: no-drop !important;
+  }
+
+  .search {
+      width: 100%;
+  }
+
+  @media(min-width: 991px){
+      .search {
+          width: 20rem;
+      }
+  }
 </style>
 <route lang="yaml">
   meta:

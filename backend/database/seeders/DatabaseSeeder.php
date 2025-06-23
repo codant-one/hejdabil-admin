@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             GearboxSeeder::class,
             BrandSeeder::class,
             ModelSeeder::class,
+            FuelSeeder::class,
             EquipmentSeeder::class,
             InventoryPermissionSeeder::class,
             DocumentTypeSeeder::class  

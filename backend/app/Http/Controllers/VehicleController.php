@@ -17,6 +17,8 @@ use App\Models\CarModel;
 use App\Models\CarBody;
 use App\Models\Gearbox;
 use App\Models\Iva;
+use App\Models\Fuel;
+use App\Models\DocumentType;
 use App\Models\State;
 use App\Models\Client;
 
@@ -39,12 +41,18 @@ class VehicleController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Vehicle::with(['model.brand', 'state', 'iva'])
+            $query = Vehicle::with(['model.brand', 'state', 'iva', 'costs'])
                         ->applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
-                                    'orderBy'
+                                    'orderBy',
+                                    'isSold',
+                                    'state_id',
+                                    'brand_id',
+                                    'model_id',
+                                    'year',
+                                    'gearbox_id'
                                 ])
                             );
 
@@ -56,7 +64,10 @@ class VehicleController extends Controller
                 'success' => true,
                 'data' => [
                     'vehicles' => $vehicles,
-                    'vehiclesTotalCount' => $count
+                    'vehiclesTotalCount' => $count,
+                    'brands' => Brand::all(),
+                    'models' => CarModel::with(['brand'])->get(),
+                    'gearboxes' => Gearbox::all()
                 ]
             ]);
 
@@ -104,7 +115,7 @@ class VehicleController extends Controller
             $vehicle = Vehicle::with([
                 'tasks.user', 
                 'tasks.comments.user', 
-                'tasks.histories',
+                'tasks.histories.user',
                 'costs',
                 'documents.user',
                 'documents.type'
@@ -132,6 +143,8 @@ class VehicleController extends Controller
                     'carbodies' => CarBody::all(),
                     'gearboxes' => Gearbox::all(),
                     'ivas' => Iva::all(),
+                    'fuels' => Fuel::all(),
+                    'document_types' => DocumentType::all(),
                     'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
                     'clients' => $clients
                 ]
@@ -182,8 +195,35 @@ class VehicleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Vehicle $vehicle)
+    public function destroy($id)
     {
-        //
+        try {
+
+            $vehicle = Vehicle::find($id);
+        
+            if (!$vehicle)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fordon hittades inte'
+                ], 404);
+            
+
+            $vehicle->deleteVehicle($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'vehicle' => $vehicle
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 }

@@ -1,5 +1,4 @@
 [
   { "id": 1, "name": "Manuell" },
-  { "id": 2, "name": "Automat" },
-  { "id": 3, "name": "Sekventiell" }
+  { "id": 2, "name": "Automat" }
 ]

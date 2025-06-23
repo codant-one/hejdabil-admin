@@ -14,8 +14,8 @@ class DocumentTypeSeeder extends Seeder
      */
     public function run()
     {
-        $types = ['Externt dokument', 'Försäljningskvitto', 'Försäljningsavtal'];
-        $labels = ['external_document', 'sales_receipt', 'sales_agreement',];
+        $types = ['Serviceprotokoll', 'Köpeavtal', 'Besiktningsintyg', 'Övrigt'];
+        $labels = ['service_log', 'purchase_agreement', 'inspection_certificate', 'other'];
 
         foreach($types as $key => $type) {
             DocumentType::updateOrCreate(

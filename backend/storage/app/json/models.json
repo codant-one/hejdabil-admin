@@ -53,5 +53,26 @@
   { "id": 41, "brand_id": 12, "name": "Atto 3" },
 
   { "id": 42, "brand_id": 13, "name": "Agera" },
-  { "id": 43, "brand_id": 13, "name": "Jesko" }
+  { "id": 43, "brand_id": 13, "name": "Jesko" },
+
+  { "id": 44, "brand_id": 14, "name": "F-150" },
+  { "id": 45, "brand_id": 14, "name": "F-150 Lightning" },
+  { "id": 46, "brand_id": 14, "name": "F-250" },
+  { "id": 47, "brand_id": 14, "name": "F-350" },
+  { "id": 48, "brand_id": 14, "name": "Bronco" },
+  { "id": 49, "brand_id": 14, "name": "Bronco Sport" },
+  { "id": 50, "brand_id": 14, "name": "Ranger" },
+  { "id": 51, "brand_id": 14, "name": "Explorer" },
+  { "id": 52, "brand_id": 14, "name": "Expedition" },
+  { "id": 53, "brand_id": 14, "name": "Escape" },
+  { "id": 54, "brand_id": 14, "name": "Edge" },
+  { "id": 55, "brand_id": 14, "name": "Mustang" },
+  { "id": 56, "brand_id": 14, "name": "Mustang Mach-E" },
+  { "id": 57, "brand_id": 14, "name": "Transit" },
+  { "id": 58, "brand_id": 14, "name": "Transit Connect" },
+  { "id": 59, "brand_id": 14, "name": "Maverick" },
+  { "id": 60, "brand_id": 14, "name": "Super Duty F-250" },
+  { "id": 61, "brand_id": 14, "name": "Super Duty F-350" },
+  { "id": 62, "brand_id": 14, "name": "Edge ST" },
+  { "id": 63, "brand_id": 14, "name": "Escape PHEV" }
 ]

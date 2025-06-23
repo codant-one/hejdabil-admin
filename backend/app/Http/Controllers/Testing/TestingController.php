@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Billing;
 use App\Models\Invoice;
+use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 
 class TestingController extends Controller
@@ -135,6 +136,17 @@ class TestingController extends Controller
         return view('emails.documents.vehicles',
             compact(
                 'reg_num'
+            )
+        );
+    }
+
+    public function vehicle() {
+
+        $vehicle = Vehicle::with(['user', 'model.brand', 'state', 'iva', 'costs'])->find(1);
+
+        return view('pdfs.vehicle', 
+            compact(
+                'vehicle'
             )
         );
     }

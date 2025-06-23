@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('ivas', function (Blueprint $table) {
+        Schema::create('fuels', function (Blueprint $table) {
             $table->id();
-            $table->string("name")->comment("Name of IVA type. Example TINA");
-            $table->integer("value");
+            $table->string('name');
+            $table->string('label');
             $table->timestamps();
         });
     }
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('ivas');
+        Schema::dropIfExists('fuels');
     }
 };

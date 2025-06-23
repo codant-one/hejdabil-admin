@@ -47,7 +47,7 @@ class VehicleTask extends Model
         TaskHistory::create([
             'user_id' => Auth::user()->id,
             'vehicle_task_id' => $task->id,
-            'is_updated' => 1
+            'is_created' => 1
         ]);
         
         return $task;
@@ -56,7 +56,6 @@ class VehicleTask extends Model
     public static function updateTask($request, $task) {
 
         $task->update([ 
-            'vehicle_id' => $request->vehicle_id,
             'measure' => $request->measure,
             'cost' => $request->cost,
             'start_date' => $request->start_date,

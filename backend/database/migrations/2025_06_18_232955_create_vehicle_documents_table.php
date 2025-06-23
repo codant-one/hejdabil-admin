@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('vehicle_id');
-            $table->unsignedBigInteger('document_type_id');
+            $table->unsignedBigInteger('document_type_id')->nullable();
             $table->string('file')->nullable();
+            $table->string('reference')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

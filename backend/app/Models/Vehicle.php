@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+
+use Carbon\Carbon;
+use PDF;
 
 class Vehicle extends Model
 {
@@ -50,8 +55,7 @@ class Vehicle extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('name', 'LIKE', '%' . $search . '%')
-              ->orWhere('url', 'LIKE', '%' . $search . '%');
+        $query->where('reg_num', 'LIKE', '%' . $search . '%');
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -63,6 +67,32 @@ class Vehicle extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('isSold') === '0') {
+            $query->where('state_id', '<>', 12);
+        }
+
+        if ($filters->get('state_id') !== null) {
+            $query->where('state_id', $filters->get('state_id'));
+        }
+
+        if ($filters->get('brand_id') !== null) {
+            $query->whereHas('model.brand', function ($query) use ($filters) {
+                $query->where('id', $filters->get('brand_id'));
+            });
+        }
+
+        if ($filters->get('model_id') !== null) {
+            $query->where('model_id', $filters->get('model_id'));
+        }
+
+        if ($filters->get('year') !== null) {
+            $query->where('year', $filters->get('year'));
+        }
+
+        if ($filters->get('gearbox_id') !== null) {
+            $query->where('gearbox_id', $filters->get('gearbox_id'));
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -84,9 +114,22 @@ class Vehicle extends Model
     public static function createVehicle($request) {
 
         $vehicle = self::create([
+            'user_id' => Auth::user()->id,
             'reg_num' => $request->reg_num
         ]);
         
+        $vehicle = self::with(['user', 'model.brand', 'state', 'iva', 'costs'])->find($vehicle->id);
+        $name = $vehicle->reg_num;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.vehicle', compact('vehicle'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
+
+        $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
+        $vehicle->update();
+
         return $vehicle;
     }
 
@@ -97,6 +140,7 @@ class Vehicle extends Model
             'car_body_id' => $request->car_body_id === 'null' ? null : $request->car_body_id,
             'gearbox_id' => $request->gearbox_id === 'null' ? null : $request->gearbox_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
+            'fuel_id' => $request->fuel_id === 'null' ? null : $request->fuel_id,
             'state_id' => $request->state_id === 'null' ? null : $request->state_id,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'generation' => $request->generation === 'null' ? null : $request->generation,
@@ -104,7 +148,6 @@ class Vehicle extends Model
             'first_insc' => $request->first_insc === 'null' ? null : $request->first_insc,
             'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
             'color' => $request->color === 'null' ? null : $request->color,
-            'fuel' => $request->fuel === 'null' ? null : $request->fuel,
             'purchase_price' => $request->purchase_price === 'null' ? null : $request->purchase_price,
             'purchase_date' => $request->purchase_date === 'null' ? null : $request->purchase_date,
             'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
@@ -120,7 +163,30 @@ class Vehicle extends Model
             'comments' => $request->comments === 'null' ? null : $request->comments
         ]);
 
+        $vehicle = self::with(['user', 'model.brand', 'state', 'iva', 'costs'])->find($vehicle->id);
+        $name = $vehicle->reg_num;
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        PDF::loadView('pdfs.vehicle', compact('vehicle'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
+
+        $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
+        $vehicle->update();
+
         return $vehicle;
+    }
+
+    public static function deleteVehicle($id) {
+        self::deleteVehicles(array($id));
+    }
+
+    public static function deleteVehicles($ids) {
+        foreach ($ids as $id) {
+            $vehicle = self::find($id);
+            $vehicle->delete();
+        }
     }
 
 }
