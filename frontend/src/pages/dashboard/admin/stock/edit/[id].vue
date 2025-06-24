@@ -97,7 +97,7 @@ const selectedCost = ref([])
 const today = new Date()
 const formattedDate = ref(today.toISOString().split('T')[0])
 const documents = ref([])
-const document_type_id = ref([])
+const document_type_id = ref(null)
 const filename = ref([])
 const reference = ref([])
 const alertFile = ref(null)
@@ -573,6 +573,13 @@ const removeCost = async (cost) => {
     }, 3000)
 
     return true
+}
+
+const showDocument = () => {
+    isConfirmCreateDocumentDialogVisible.value = true
+    document_type_id.value = null
+    reference.value = null
+    filename.value = []
 }
 
 const handleFileUpload = async (event) => {
@@ -1193,7 +1200,7 @@ const onSubmit = () => {
                                                                 <strong>Planerat startdatum:</strong> {{ task.start_date }}
                                                             </p>
                                                             <p class="clamp-text mb-0">
-                                                                <strong>Planerat startdatum:</strong> {{ task.end_date }}
+                                                                <strong>Förväntat startdatum:</strong> {{ task.end_date }}
                                                             </p>
                                                             <p class="clamp-text mb-0 mt-2">
                                                                 <VExpansionPanels>
@@ -1360,7 +1367,7 @@ const onSubmit = () => {
                                                     v-if="$can('edit', 'stock')"
                                                     class="w-100 w-md-auto"
                                                     prepend-icon="mdi-cloud-upload-outline"
-                                                    @click="isConfirmCreateDocumentDialogVisible = true">
+                                                    @click="showDocument">
                                                     Ladda upp dokument
                                                 </VBtn>
 
@@ -1555,7 +1562,7 @@ const onSubmit = () => {
                                     v-model="end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Planerat startdatum"
+                                    label="Förväntat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1629,7 +1636,7 @@ const onSubmit = () => {
                                     v-model="selectedTask.end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Planerat startdatum"
+                                    label="Förväntat startdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1822,6 +1829,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="type"
                                     label="Vad gäller kostnaden?"
+                                    placeholder="T.ex. 'Reparation', 'Service', 'Besiktning'..."
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>

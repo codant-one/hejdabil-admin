@@ -1,6 +1,6 @@
 export default [
     { 
-        title: 'Mina fordon',
+        title: 'Mitt Fordonslager',
         icon: { icon:'mdi-car' },
         children:[
             { 
@@ -16,19 +16,19 @@ export default [
                 subject: 'models', 
             },
             { 
-                title: 'Lagerfordon', 
+                title: 'I Lager', 
                 to: 'dashboard-admin-stock', 
                 action: 'view', 
                 subject: 'stock', 
             },
                 { 
-                title: 'Sålda', 
+                title: 'Sålda Fordon', 
                 to: 'dashboard-admin-sold', 
                 action: 'view', 
                 subject: 'sold', 
             },
                 { 
-                title: 'Egen värdering', 
+                title: 'Mina Värderingar', 
                 to: 'dashboard-admin-notes', 
                 action: 'view', 
                 subject: 'notes', 

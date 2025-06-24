@@ -10,7 +10,7 @@ export default [
       subject: 'suppliers'
     },
     { 
-      title: 'Kundregister', 
+      title: 'Kunder', 
       icon: { icon: 'mdi-account-star' },
       to: 'dashboard-admin-clients', 
       action: 'view', 
