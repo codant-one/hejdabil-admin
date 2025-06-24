@@ -17,7 +17,7 @@ class Vehicle extends Model
     protected $guarded = [];
     
     /**** Relationship ****/
-    public function carbodies(){
+    public function carbody(){
         return $this->belongsTo(CarBody::class, 'car_body_id', 'id');
     }  
 
@@ -31,6 +31,10 @@ class Vehicle extends Model
 
     public function iva(){
         return $this->belongsTo(Iva::class, 'iva_id', 'id');
+    }
+
+    public function fuel(){
+        return $this->belongsTo(Fuel::class, 'fuel_id', 'id');
     }
 
     public function user(){

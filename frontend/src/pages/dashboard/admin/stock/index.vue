@@ -5,6 +5,7 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
+import show from "@/components/vehicles/show.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -20,6 +21,7 @@ const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCreateDialogVisible = ref(false)
+const isVehicleDetailDialog = ref(false)
 const selectedVehicle = ref({})
 const state_id = ref(null)
 const year = ref(null)
@@ -121,6 +123,11 @@ function registerEvents() {
 const showDeleteDialog = vehicleData => {
   isConfirmDeleteDialogVisible.value = true
   selectedVehicle.value = { ...vehicleData }
+}
+
+const showVehicle = async (id) => {
+  isVehicleDetailDialog.value = true
+  selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
 }
 
 const removeVehicle = async () => {
@@ -229,13 +236,15 @@ const downloadCSV = async () => {
   vehiclesStores.getVehicles.forEach(element => {
 
     let data = {
-      ID: element.id,
-      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      E_POST: element.user.email,
-      FÖRETAG: element.company ?? '',
-      ORGANISATIONSNUMMER: element.organization_number ?? '',
-      REGISTRERADE_KUNDER:  element.client_count,
-      STATU: element.state.name
+      INKÖPSDATUM: element.first_insc ?? '',
+      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
+      REGNR: element.reg_num,
+      INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
+      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
+      ANTECKNINGAR:  element.comments ?? '',
+      STATUS: element.state.name,
+      VAT: element.iva?.name,
+      BESIKTIGAS: element.control_inspection ?? ''
     }
 
     dataArray.push(data)
@@ -382,18 +391,15 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> Information om bilen </th>
-                <!-- <th scope="col"> Försäljningspris </th> -->
-                <th scope="col" class="text-end"> Inköpspris </th>
-                <th scope="col"> Miltal </th>
-                <th scope="col"> Status </th>
-                <!-- <th scope="col"> Lagerdagar </th> -->
-                <th scope="col"> VAT </th>
-                <th scope="col"> Färg </th>
                 <th scope="col"> Inköpsdatum </th>
+                <th scope="col"> Bilinfo</th>
+                <th scope="col"> Regnr </th>
+                <th scope="col" class="text-end"> Inköpspris </th>
+                <th scope="col" class="text-end"> Miltal </th>
+                <th scope="col"> Anteckningar </th>
+                <th scope="col"> Status </th>
+                <th scope="col"> VAT </th>
                 <th scope="col"> Besiktigas </th>
-                <th scope="col" class="text-end"> Kostnader </th>
-                <th scope="col" class="text-center"> Annons </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -403,7 +409,8 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
-                <td class="text-wrap cursor-pointer"  @click="editVehicle(vehicle)">
+                <td> {{ vehicle.first_insc }} </td>
+                <td class="cursor-pointer" @click="editVehicle(vehicle)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
                       v-if="vehicle.model_id"
@@ -426,31 +433,18 @@ const downloadCSV = async () => {
                         {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
                       </span>
                       <span class="text-sm text-disabled">
-                        {{ vehicle.reg_num }}
+                        {{ vehicle.color }}
                       </span>
                     </div>
                   </div>
-                </td>                
+                </td>   
+                <td> {{ vehicle.reg_num }} </td>             
                 <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
-                <!-- <td> {{ vehicle.sale_price }} </td> -->
-                <td> {{ vehicle.mileage === null ? '' : vehicle.mileage + 'Mil' }}</td>
+                <td class="text-end"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
+                <td> {{ vehicle.comments }} </td>
                 <td> {{ vehicle.state.name }} </td>
-                <!-- <td> ??? </td> -->
                 <td> {{ vehicle.iva?.name }} </td>
-                <td> {{ vehicle.color }} </td>
-                <td> {{ vehicle.first_insc }} </td>
                 <td> {{ vehicle.control_inspection }} </td>
-                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>
-                <td class="d-flex justify-content-center">
-                   <VCheckbox
-                    v-model="vehicle.checked"
-                    color="info"
-                    class="w-100 text-center d-flex justify-content-center"
-                    :disabled="(vehicle.state_id === 11) ? true : false"
-                    :readonly="(vehicle.state_id === 11) ? false : true"
-                    :value="(vehicle.state_id === 11) ? false : true"
-                  />
-                </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -466,11 +460,17 @@ const downloadCSV = async () => {
                     </template>
 
                     <VList>
-                      <VListItem v-if="$can('edit', 'stock')">
+                      <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id)">
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
+                      </VListItem>
+                      <VListItem v-if="$can('edit', 'stock')" @click="editVehicle(vehicle)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
                         <template #prepend>
@@ -592,6 +592,10 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <show 
+      v-model:isDrawerOpen="isVehicleDetailDialog"
+      :vehicle="selectedVehicle"/>
   </section>
 </template>
 

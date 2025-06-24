@@ -28,6 +28,31 @@ use Illuminate\Support\Str;
         }
     }   
 
+    if (!function_exists('uploadFileWithOriginalName')) {
+        function uploadFileWithOriginalName($file, $path, $image = '', $disk = 'public') {
+            if ($file) {
+
+                $oldFilePath = storage_path('app/public/' . strtolower($image));
+
+                if (File::exists($oldFilePath) && !is_dir($oldFilePath))
+                    deleteFile($image);
+
+                $originalName = $file->getClientOriginalName();
+                $fileType = $file->getClientOriginalExtension();
+                $filePath = $path . $originalName;
+
+                Storage::disk($disk)->put($filePath, File::get($file));
+
+                return [
+                    'fileName' => pathinfo($originalName, PATHINFO_FILENAME),
+                    'fileType' => $fileType,
+                    'filePath' => $filePath,
+                    'fileSize' => fileSize($file)
+                ];
+            }
+        }
+    }
+
     if (!function_exists('deleteFile')) {
         function deleteFile($image, $disk = 'public'){
             Storage::disk($disk)->delete($image);

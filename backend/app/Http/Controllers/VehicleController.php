@@ -41,20 +41,27 @@ class VehicleController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Vehicle::with(['model.brand', 'state', 'iva', 'costs'])
-                        ->applyFilters(
-                                $request->only([
-                                    'search',
-                                    'orderByField',
-                                    'orderBy',
-                                    'isSold',
-                                    'state_id',
-                                    'brand_id',
-                                    'model_id',
-                                    'year',
-                                    'gearbox_id'
-                                ])
-                            );
+            $query = Vehicle::with([
+                        'model.brand', 
+                        'state', 
+                        'iva',
+                        'costs',
+                        'carbody',
+                        'gearbox',
+                        'fuel'
+                    ])->applyFilters(
+                        $request->only([
+                            'search',
+                            'orderByField',
+                            'orderBy',
+                            'isSold',
+                            'state_id',
+                            'brand_id',
+                            'model_id',
+                            'year',
+                            'gearbox_id'
+                        ])
+                    );
 
             $count = $query->count();
 

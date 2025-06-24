@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 use App\Models\VehicleDocument;
 
@@ -25,14 +28,34 @@ class VehicleDocumentController extends Controller
     {
         try {
 
+            $user = Auth::user();
+            $name = $user->name . ' ' . $user->last_name;
+            $image = $request->file('file');
+            $originalName = $image->getClientOriginalName();
+
+            $path = 'vehicles/' . Str::slug($name) . '/';
+            $fullFilePath = $path . $originalName;
+
+            $existsInDatabase = VehicleDocument::where('file', $fullFilePath)->exists();
+            $existsInStorage = Storage::disk('public')->exists($fullFilePath);
+
+            if ($existsInDatabase || $existsInStorage) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokumentet är redan sparat i systemet för ' . $name
+                ]);
+            }
+
             $document = VehicleDocument::createDocument($request);
 
             if ($request->hasFile('file')) {
+                $document = VehicleDocument::with(['user'])->find($document->id);
+                $name = $document->user->name . ' ' . $document->user->last_name;
                 $image = $request->file('file');
 
-                $path = 'vehicles/';
+                $path = 'vehicles/' . Str::slug($name) . '/';
 
-                $file_data = uploadFile($image, $path);
+                $file_data = uploadFileWithOriginalName($image, $path);
 
                 $document->file = $file_data['filePath'];
                 $document->update();

@@ -100,6 +100,7 @@ const documents = ref([])
 const document_type_id = ref([])
 const filename = ref([])
 const reference = ref([])
+const alertFile = ref(null)
 const selectedIds = ref([])
 
 const clients = ref([])
@@ -176,10 +177,9 @@ const checkIfMobile = () => {
 
 watchEffect(fetchData)
 
-async function fetchData(cleanFilters = false) {
+async function fetchData() {
 
     isRequestOngoing.value = true
-
 
     if(Number(route.params.id) && route.name === 'dashboard-admin-stock-edit-id') {
         const data = await vehiclesStores.showVehicle(Number(route.params.id))
@@ -244,7 +244,6 @@ async function fetchData(cleanFilters = false) {
     isRequestOngoing.value = false
 }
 
-
 const getModels = computed(() => {
   return modelsByBrand.value.map((model) => {
     return {
@@ -279,7 +278,7 @@ const createTask = async () => {
                 isRequestOngoing.value = true
 
                 tasksStores.addTask(formData)
-                    .then((res) => {
+                    .then(async (res) => {
                         if (res.data.success) {
                             advisor.value = {
                                 type: 'success',
@@ -288,6 +287,13 @@ const createTask = async () => {
                             }
                         }
                         isRequestOngoing.value = false
+
+                        measure.value = null
+                        cost.value = null
+                        start_date.value = null
+                        end_date.value = null
+
+                        await fetchData()
                     })
                     .catch((err) => {
                         
@@ -305,9 +311,7 @@ const createTask = async () => {
                         isRequestOngoing.value = false
                     })
                 
-                    isConfirmTaskDialogVisible.value = false
-
-                await fetchData()
+                isConfirmTaskDialogVisible.value = false
 
                 setTimeout(() => {
                     advisor.value = {
@@ -343,7 +347,7 @@ const updateTask = async () => {
                 }
 
                 tasksStores.updateTask(data)
-                    .then((res) => {
+                    .then(async(res) => {
                         if (res.data.success) {
                             advisor.value = {
                                 type: 'success',
@@ -351,7 +355,9 @@ const updateTask = async () => {
                                 show: true
                             }
                         }
+
                         isRequestOngoing.value = false
+                        await fetchData()
                     })
                     .catch((err) => {
                         
@@ -364,9 +370,7 @@ const updateTask = async () => {
                         isRequestOngoing.value = false
                     })
                 
-                    isConfirmUpdateTaskDialogVisible.value = false
-
-                await fetchData()
+                isConfirmUpdateTaskDialogVisible.value = false
 
                 setTimeout(() => {
                     advisor.value = {
@@ -460,7 +464,7 @@ const handleCost = async () => {
 
             if(isCreateCost.value) {
                 costsStores.addCost(formData)
-                    .then((res) => {
+                    .then(async(res) => {
                         if (res.data.success) {
                             advisor.value = {
                                 type: 'success',
@@ -468,7 +472,9 @@ const handleCost = async () => {
                                 show: true
                             }
                         }
+                        
                         isRequestOngoing.value = false
+                        await fetchData()
                     })
                     .catch((err) => {
                         
@@ -499,7 +505,7 @@ const handleCost = async () => {
                 }
 
                 costsStores.updateCost(data)
-                    .then((res) => {
+                    .then(async(res) => {
                         if (res.data.success) {
                             advisor.value = {
                                 type: 'success',
@@ -507,7 +513,9 @@ const handleCost = async () => {
                                 show: true
                             }
                         }
+
                         isRequestOngoing.value = false
+                        await fetchData()
                     })
                     .catch((err) => {
                         
@@ -532,8 +540,6 @@ const handleCost = async () => {
             description.value = null
             value.value = null
             dateCost.value = null
-            
-            await fetchData()
 
             setTimeout(() => {
                 advisor.value = {
@@ -584,17 +590,25 @@ const handleFileUpload = async (event) => {
             formData.append('file', file)
 
             isRequestOngoing.value = true
-            isConfirmCreateDocumentDialogVisible.value = false 
 
             documentsStores.addDocument(formData)
-                .then((res) => {
+                .then(async(res) => {
                     if (res.data.success) {
                         advisor.value = {
                             type: 'success',
                             message: 'Dokument skapad!',
                             show: true
                         }
+
+                        isConfirmCreateDocumentDialogVisible.value = false
+                        await fetchData()
+                    } else {
+                        alertFile.value = res.data.message
+                        setTimeout(() => {
+                            alertFile.value = null
+                        }, 5000)
                     }
+                     
                     isRequestOngoing.value = false
                 })
                 .catch((err) => {
@@ -605,15 +619,9 @@ const handleFileUpload = async (event) => {
                         show: true
                     }
 
-                    let data = {
-                        message: err.message,
-                        error: true
-                    }
-
                     isRequestOngoing.value = false
                 })
             
-            await fetchData()
 
             setTimeout(() => {
                 advisor.value = {
@@ -911,6 +919,7 @@ const onSubmit = () => {
                                                         v-model="mileage"
                                                         suffix="Mil"
                                                         label="Miltal"
+                                                        min="0"
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
@@ -1018,6 +1027,7 @@ const onSubmit = () => {
                                                         type="number"
                                                         v-model="purchase_price"
                                                         label="Inköpspris"
+                                                        min="0"
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
@@ -1061,6 +1071,7 @@ const onSubmit = () => {
                                                         v-model="number_keys"
                                                         type="number"
                                                         label="Antal nycklar"
+                                                        min="1"
                                                     />
                                                 </VCol>
                                                 <VCol cols="12" md="2">
@@ -1149,7 +1160,7 @@ const onSubmit = () => {
 
                                             <div v-if="tasks.length === 0" class="mt-10 text-center">Inga åtgärder hittades</div>
 
-                                            <VRow v-else class="mt-5">
+                                            <VRow no-gutters v-else class="mt-5">
                                                 <VCol
                                                     v-for="(task, index) in tasks"
                                                     :key="index"
@@ -1157,39 +1168,68 @@ const onSubmit = () => {
                                                 >
                                                     <VCard
                                                         flat
-                                                        color="#007BB6"
+                                                        color="#E3DEEB"
+                                                        class="mx-1"
                                                         style="box-shadow: none !important; border-radius: 12px !important;"
                                                     >
                                                         <VCardItem>
                                                             <template #prepend>
                                                                 <VIcon
                                                                 size="1.9rem"
-                                                                color="white"
                                                                 icon="mdi-note-outline"
                                                                 />
                                                             </template>
-                                                        <VCardTitle class="text-white"> {{ index + 1 }}</VCardTitle>
+                                                        <VCardTitle> {{ index + 1 }}</VCardTitle>
                                                         </VCardItem>
 
                                                         <VCardText>
-                                                            <p class="clamp-text text-white mb-0">
+                                                            <p class="clamp-text mb-0">
                                                                 <strong>Vad ska göras?:</strong> {{ task.measure }}
                                                             </p>
-                                                            <p class="clamp-text text-white mb-0">
+                                                            <p class="clamp-text mb-0">
                                                                 <strong>Beräknad kostnad (kr):</strong> {{ task.cost }} kr
                                                             </p>
-                                                            <p class="clamp-text text-white mb-0">
+                                                            <p class="clamp-text mb-0">
                                                                 <strong>Planerat startdatum:</strong> {{ task.start_date }}
                                                             </p>
-                                                            <p class="clamp-text text-white mb-0">
+                                                            <p class="clamp-text mb-0">
                                                                 <strong>Planerat startdatum:</strong> {{ task.end_date }}
+                                                            </p>
+                                                            <p class="clamp-text mb-0 mt-2">
+                                                                <VExpansionPanels>
+                                                                    <VExpansionPanel>
+                                                                        <VExpansionPanelTitle>kommentarer</VExpansionPanelTitle>
+                                                                        <VExpansionPanelText>
+                                                                            <VAlert 
+                                                                                v-for="(comment, index) in task.comments" 
+                                                                                :key="index"
+                                                                                variant="outlined" 
+                                                                                color="secondary"
+                                                                                class="my-1">
+                                                                                <div class="d-flex flex-column">
+                                                                                    {{ comment.comment }}
+                                                                                    <span class="text-xs">  
+                                                                                        {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
+                                                                                            year: 'numeric', 
+                                                                                            month: '2-digit', 
+                                                                                            day: '2-digit', 
+                                                                                            hour: '2-digit', 
+                                                                                            minute: '2-digit',
+                                                                                            hour12: false
+                                                                                        }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
+                                                                                    </span>                                        
+                                                                                </div>            
+                                                                            </VAlert>                                
+                                                                        </VExpansionPanelText>
+                                                                    </VExpansionPanel>
+                                                                </VExpansionPanels>
                                                             </p>
                                                         </VCardText>
 
                                                         <VCardText class="d-flex justify-space-between align-center flex-wrap">
                                                         <div class="text-no-wrap">
                                                             <VAvatar
-                                                                color="success"
+                                                                color="#E3DEEB"
                                                                 :variant="task.user.avatar ? 'outlined' : 'tonal'"
                                                                 size="34"
                                                             >
@@ -1200,19 +1240,17 @@ const onSubmit = () => {
                                                                 />
                                                                 <span v-else>{{ avatarText(task.user.name) }}</span>
                                                             </VAvatar>
-                                                            <span class="text-white ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
+                                                            <span class="ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
                                                         </div>
 
                                                         <div class="d-flex align-center">
                                                             <VIcon
                                                                 icon="tabler-edit"
-                                                                color="white"
                                                                 class="me-1 cursor-pointer"
                                                                 @click="showTask(task)"
                                                             />
                                                             <VIcon
                                                                 icon="tabler-trash"
-                                                                color="white"
                                                                 class="cursor-pointer"
                                                                 @click="removeTask(task)"
                                                             />
@@ -1361,7 +1399,7 @@ const onSubmit = () => {
                                                                 hide-details
                                                             />
                                                         </td>
-                                                        <td class="text-wrap">{{ document.file.replace('vehicles/', '') }} </td>
+                                                        <td class="text-wrap">{{ document.file.split('/').pop() }} </td>
                                                         <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
                                                         <td>  
                                                             {{ new Date(document.created_at).toLocaleString('sv-SE', { 
@@ -1495,6 +1533,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="cost"
                                     type="number"
+                                    min="0"
                                     label="Beräknad kostnad (kr)"
                                     :rules="[requiredValidator]"
                                 />
@@ -1568,6 +1607,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="selectedTask.cost"
                                     type="number"
+                                    min="0"
                                     label="Beräknad kostnad (kr)"
                                     :rules="[requiredValidator]"
                                 />
@@ -1700,6 +1740,15 @@ const onSubmit = () => {
                 <VCard title="Ladda upp dokument">
                     <VDivider />
                     <VCardText style="max-height: 450px;">
+                        <VAlert
+                            v-if="alertFile"
+                            color="error"
+                            icon="mdi-alert-octagon-outline"
+                            variant="tonal"
+                            class="mb-5"
+                            >
+                            {{alertFile}}
+                        </VAlert>
                         <VRow>
                             <VCol cols="12" md="12">
                                 <VAutocomplete
@@ -1788,6 +1837,7 @@ const onSubmit = () => {
                                     v-model="value"
                                     type="number"
                                     label="Kostnader"
+                                    min="0"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -1852,7 +1902,6 @@ const onSubmit = () => {
                             <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="email"
-                                    disabled
                                     label="E-post"
                                 />
                             </VCol>

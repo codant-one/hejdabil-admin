@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
@@ -81,7 +82,7 @@ class VehicleDocument extends Model
                     if (file_exists($pathToFile)) {
                         $mime = mime_content_type($pathToFile);
                         $message->attach($pathToFile, [
-                            'as' => Str::replaceFirst('vehicles/', '', $document->file),
+                            'as' => Str::of($document->file)->afterLast('/'),
                             'mime' => $mime
                         ]);
                     }

@@ -185,13 +185,15 @@ const downloadCSV = async () => {
   vehiclesStores.getVehicles.forEach(element => {
 
     let data = {
-      ID: element.id,
-      KONTAKT: element.user.name + ' ' + (element.user.last_name ?? ''),
-      E_POST: element.user.email,
-      FÖRETAG: element.company ?? '',
-      ORGANISATIONSNUMMER: element.organization_number ?? '',
-      REGISTRERADE_KUNDER:  element.client_count,
-      STATU: element.state.name
+      INKÖPSDATUM: element.first_insc ?? '',
+      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
+      REGNR: element.reg_num,
+      INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
+      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
+      ANTECKNINGAR:  element.comments ?? '',
+      STATUS: element.state.name,
+      VAT: element.iva?.name,
+      BESIKTIGAS: element.control_inspection ?? ''
     }
 
     dataArray.push(data)
@@ -389,6 +391,12 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-eye" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
+                      </VListItem>
+                      <VListItem v-if="$can('edit', 'stock')" @click="editVehicle(vehicle)">
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
                         <template #prepend>
