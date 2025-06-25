@@ -1276,7 +1276,6 @@ const onSubmit = () => {
                                                                 class="cursor-pointer"
                                                                 @click="removeTask(task)"
                                                             />
-                                                            {{task.id}}
                                                         </div>
                                                         </VCardText>
                                                     </VCard>
