@@ -410,7 +410,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Radera</VListItemTitle>
+                        <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>

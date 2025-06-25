@@ -235,7 +235,7 @@ async function fetchData() {
             model_id.value = vehicle.value.model_id
         }
 
-        if(Object.keys(selectedTask.value).length > 0) {
+        if(Object.keys(selectedTask.value).length > 0 && selectedTask.value.cost) {
             selectedTask.value = tasks.value.filter(item => item.id === selectedTask.value.id)[0]
             selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
         }
@@ -357,6 +357,12 @@ const updateTask = async () => {
                         }
 
                         isRequestOngoing.value = false
+                        selectedTask.value.vehicle_id = null
+                        selectedTask.value.measure = null
+                        selectedTask.value.cost = null
+                        selectedTask.value.start_date = null
+                        selectedTask.value.end_date = null
+
                         await fetchData()
                     })
                     .catch((err) => {
@@ -383,14 +389,22 @@ const updateTask = async () => {
     })
 }
 
+const closeTask = () => {
+    isConfirmUpdateTaskDialogVisible.value = false
+    selectedTask.value.vehicle_id = null
+    selectedTask.value.measure = null
+    selectedTask.value.cost = null
+    selectedTask.value.start_date = null
+    selectedTask.value.end_date = null
+}
+
 const showTask = taskData => {
-  isConfirmUpdateTaskDialogVisible.value = true
-  selectedTask.value = { ...taskData }
-  selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
+    isConfirmUpdateTaskDialogVisible.value = true
+    selectedTask.value = { ...taskData }
+    selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
 }
 
 const removeTask = async (task) => {
-
   let res = await tasksStores.deleteTask(task.id)
 
   advisor.value = {
@@ -1261,6 +1275,7 @@ const onSubmit = () => {
                                                                 class="cursor-pointer"
                                                                 @click="removeTask(task)"
                                                             />
+                                                            {{task.id}}
                                                         </div>
                                                         </VCardText>
                                                     </VCard>
@@ -1593,7 +1608,7 @@ const onSubmit = () => {
             class="v-dialog-sm">
             <!-- Dialog close btn -->
                 
-            <DialogCloseBtn @click="isConfirmUpdateTaskDialogVisible = !isConfirmUpdateTaskDialogVisible" />
+            <DialogCloseBtn @click="closeTask" />
 
             <!-- Dialog Content -->
             <VForm
@@ -1720,7 +1735,7 @@ const onSubmit = () => {
                             class="mt-4"
                             color="secondary"
                             variant="tonal"
-                            @click="isConfirmUpdateTaskDialogVisible = false">
+                            @click="closeTask">
                             Avbryt
                         </VBtn>
                         <VBtn class="mt-4" type="submit">
