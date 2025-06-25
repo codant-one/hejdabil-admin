@@ -591,6 +591,7 @@ const removeCost = async (cost) => {
 
 const showDocument = () => {
     isConfirmCreateDocumentDialogVisible.value = true
+    alertFile.value = null
     document_type_id.value = null
     reference.value = null
     filename.value = []
@@ -1342,7 +1343,7 @@ const onSubmit = () => {
                                                                     <template #prepend>
                                                                     <VIcon icon="tabler-trash" />
                                                                     </template>
-                                                                    <VListItemTitle>Avaktivera</VListItemTitle>
+                                                                    <VListItemTitle>Ta bort</VListItemTitle>
                                                                 </VListItem>
                                                             </VList>
                                                         </VMenu>
@@ -1459,7 +1460,7 @@ const onSubmit = () => {
                                                                         <template #prepend>
                                                                         <VIcon icon="tabler-trash" />
                                                                         </template>
-                                                                        <VListItemTitle>Avaktivera</VListItemTitle>
+                                                                        <VListItemTitle>Ta bort</VListItemTitle>
                                                                     </VListItem>
                                                                 </VList>
                                                             </VMenu>

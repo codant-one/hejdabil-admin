@@ -386,7 +386,7 @@ const downloadCSV = async () => {
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
-                        <VListItemTitle>Avaktivera</VListItemTitle>
+                        <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
                       <VListItem
                         v-if="$can('delete','suppliers') && supplier.state_id === 1"
