@@ -491,10 +491,10 @@ const onSubmit = () => {
       <DialogCloseBtn @click="isConfirmChangeLogoVisible = !isConfirmChangeLogoVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Change logo">
+      <VCard title="Byt logotyp">
         <VDivider class="mt-4"/>
         <VCardText>
-          The logo you select will be displayed on your billing.
+          Logotypen du väljer kommer att visas på din faktura och dina kontrakt.
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
              <VRow>
@@ -532,10 +532,10 @@ const onSubmit = () => {
             color="secondary"
             variant="tonal"
             @click="isConfirmChangeLogoVisible = false">
-              Cancel
+              Avbryt 
           </VBtn>
           <VBtn @click="cropImage"> 
-              Save
+              Spara
           </VBtn>
         </VCardText>
       </VCard>

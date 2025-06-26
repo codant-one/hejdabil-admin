@@ -5,6 +5,7 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
+import show from "@/components/vehicles/show.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -19,6 +20,7 @@ const totalPages = ref(1)
 const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isVehicleDetailDialog = ref(false)
 const selectedVehicle = ref({})
 
 const year = ref(null)
@@ -104,6 +106,11 @@ function registerEvents() {
 
 const editVehicle = vehicleData => {
   router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: vehicleData.id } })
+}
+
+const showVehicle = async (id) => {
+  isVehicleDetailDialog.value = true
+  selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
 }
 
 const showDeleteDialog = vehicleData => {
@@ -331,7 +338,7 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
-                <td class="text-wrap cursor-pointer"  @click="editVehicle(vehicle)">
+                <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
                       v-if="vehicle.model_id"
@@ -386,7 +393,7 @@ const downloadCSV = async () => {
                     </template>
 
                     <VList>
-                      <VListItem v-if="$can('edit', 'stock')">
+                      <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id)">
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
@@ -476,6 +483,9 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+    <show 
+      v-model:isDrawerOpen="isVehicleDetailDialog"
+      :vehicle="selectedVehicle"/>
   </section>
 </template>
 

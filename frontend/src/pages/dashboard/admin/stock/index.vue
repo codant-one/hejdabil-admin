@@ -410,7 +410,7 @@ const downloadCSV = async () => {
                 :key="vehicle.id"
                 style="height: 3rem;">
                 <td> {{ vehicle.first_insc }} </td>
-                <td class="cursor-pointer" @click="editVehicle(vehicle)">
+                <td class="cursor-pointer" @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
                       v-if="vehicle.model_id"

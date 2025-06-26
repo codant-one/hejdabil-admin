@@ -36,7 +36,11 @@ const currentSlide = ref(0)
 const modules = ref([FreeMode, Navigation, Thumbs, Scrollbar])
 const thumbsSwiper = ref(null);
 
-const title = ref('')
+const title = computed(() => {
+  const v = props.vehicle;
+  if (!v || !v.model || !v.model.brand) return '';
+  return v.model.brand.name + ' ' + v.model.name + (v.year === null ? '' : ', ' + v.year);
+});
 const reg_num = ref('')
 const brand = ref(null)
 const model = ref(null)
@@ -70,23 +74,22 @@ const tab = ref('0')
 watchEffect(async () => {
     if (props.isDrawerOpen) {
         if (!(Object.entries(props.vehicle).length === 0) && props.vehicle.constructor === Object) {
-            title.value = props.vehicle.model.brand.name + ' ' + props.vehicle.model.name + (props.vehicle.year === null ? '' :  ', ' + props.vehicle.year)
             reg_num.value = props.vehicle.reg_num
 
-            brand.value = props.vehicle.model.brand.name
-            model.value = props.vehicle.model.name
+            brand.value = props.vehicle.model?.brand.name
+            model.value = props.vehicle.model?.name
             year.value = props.vehicle.year
             color.value = props.vehicle.color
 
             mileage.value = props.vehicle.mileage
             generation.value = props.vehicle.generation
-            car_body.value = props.vehicle.carbody.name
+            car_body.value = props.vehicle.carbody?.name
             first_insc.value = props.vehicle.first_insc
             control_inspection.value = props.vehicle.control_inspection
-            fuel.value = props.vehicle.fuel.name
-            gearbox.value = props.vehicle.gearbox.name
+            fuel.value = props.vehicle.fuel?.name
+            gearbox.value = props.vehicle.gearbox?.name
             purchase_price.value = props.vehicle.purchase_price
-            iva.value = props.vehicle.iva.name
+            iva.value = props.vehicle.iva?.name
             state.value = props.vehicle.state.name
             sale_price.value = props.vehicle.sale_price
             min_sale_price.value = props.vehicle.min_sale_price

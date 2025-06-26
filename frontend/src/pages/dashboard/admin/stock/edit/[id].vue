@@ -1215,7 +1215,7 @@ const onSubmit = () => {
                                                                 <strong>Planerat startdatum:</strong> {{ task.start_date }}
                                                             </p>
                                                             <p class="clamp-text mb-0">
-                                                                <strong>Förväntat startdatum:</strong> {{ task.end_date }}
+                                                                <strong>Förväntat slutdatum:</strong> {{ task.end_date }}
                                                             </p>
                                                             <p class="clamp-text mb-0 mt-2">
                                                                 <VExpansionPanels>
@@ -1577,7 +1577,7 @@ const onSubmit = () => {
                                     v-model="end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Förväntat startdatum"
+                                    label="Förväntat slutdatum"
                                     clearable
                                 />
                             </VCol>
@@ -1651,7 +1651,7 @@ const onSubmit = () => {
                                     v-model="selectedTask.end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Förväntat startdatum"
+                                    label="Förväntat slutdatum"
                                     clearable
                                 />
                             </VCol>
