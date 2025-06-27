@@ -1,4 +1,13 @@
 [
-  { "id": 1, "name": "Euros" },
-  { "id": 2, "name": "Bolovarez" },
+  { "id": 1, "name": "SEK" },
+  { "id": 2, "name": "EUR" },
+  { "id": 3, "name": "USD" },
+  { "id": 4, "name": "DKK" },
+  { "id": 5, "name": "GBP" },
+  { "id": 6, "name": "NOK" },
+  { "id": 7, "name": "PLN" },
+  { "id": 8, "name": "TRY" },
+  { "id": 9, "name": "CHF" },
+  { "id": 10, "name": "HUF" },
+  { "id": 11, "name": "CZK" }
 ]

@@ -4,6 +4,11 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
+
+use App\Models\Currency;
+
+use Str;
 
 class CurrencySeeder extends Seeder
 {
@@ -12,11 +17,11 @@ class CurrencySeeder extends Seeder
      */
     public function run(): void
     {
-        $json_info = Storage::disk('local')->get('/json/currency.json');
+        $json_info = Storage::disk('local')->get('/json/currencies.json');
         $currencies = json_decode($json_info, true);
 
         foreach($currencies as $currency){
-            Equipment::query()->updateOrCreate([
+            Currency::query()->updateOrCreate([
                 'id' => $currency['id'],
                 'name' => $currency['name']
             ]);

@@ -33,7 +33,15 @@ class DatabaseSeeder extends Seeder
             FuelSeeder::class,
             EquipmentSeeder::class,
             InventoryPermissionSeeder::class,
-            DocumentTypeSeeder::class  
+            DocumentTypeSeeder::class,  
+
+            AgreementTypeSeeder::class,
+            CurrencySeeder::class,
+            GuarantySeeder::class,
+            GuarantyTypeSeeder::class,
+            InsuranceCompanySeeder::class,
+            InsuranceTypeSeeder::class,
+            PaymentTypeSeeder::class,
         ]);
 
     }

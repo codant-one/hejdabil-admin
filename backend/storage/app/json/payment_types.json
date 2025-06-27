@@ -1,0 +1,15 @@
+[
+  { "id": 1, "name": "Kontant" },
+  { "id": 2, "name": "Faktura" },
+  { "id": 3, "name": "Finansiering med handpenning" },
+  { "id": 4, "name": "Leasing" },
+  { "id": 5, "name": "Direktbetalning via Zimpler" },
+  { "id": 6, "name": "Banköverföring" },
+  { "id": 7, "name": "Swish" },
+  { "id": 8, "name": "Finansering utan handpenning" },
+  { "id": 9, "name": "Mymoney bank - Blancolån" },
+  { "id": 10, "name": "Money GO - Blancolån" },
+  { "id": 11, "name": "Svea bank - Blancolån" },
+  { "id": 12, "name": "Moank - Blancolån" },
+  { "id": 13, "name": "Wasa kredit - Blancolån" }
+]
