@@ -1,0 +1,11 @@
+[
+  { "id": 1, "name": "Nej, ingen garanti" },
+  { "id": 2, "name": "Trafiksäkerhetsgaranti" },
+  { "id": 3, "name": "Trygghetsgaranti av bilhandlaren" },
+  { "id": 4, "name": "Garanti gruppen" },
+  { "id": 5, "name": "Garanti Partner" },
+  { "id": 6, "name": "Svensk bilhandelsförsäkring" },
+  { "id": 7, "name": "Autoconcept" },
+  { "id": 8, "name": "Fragus" },
+  { "id": 9, "name": "Svensk bilgaranti" }
+]

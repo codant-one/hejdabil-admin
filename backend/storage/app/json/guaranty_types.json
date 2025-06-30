@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "1 månads garanti" },
+  { "id": 2, "name": "1 månad / 100 Mil" },
+  { "id": 3, "name": "3 månader garanti" },
+  { "id": 4, "name": "3 månader / 300 Mil" },
+  { "id": 5, "name": "6 månader garanti" },
+  { "id": 6, "name": "6 månader / 500 Mil" },
+  { "id": 7, "name": "12 månader garanti" },
+  { "id": 8, "name": "12 månader / 1000 Mil" },
+  { "id": 9, "name": "24 månader garanti" },
+  { "id": 10, "name": "36 månader garanti" }
+]

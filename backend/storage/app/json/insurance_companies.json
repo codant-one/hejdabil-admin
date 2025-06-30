@@ -1,0 +1,12 @@
+[
+  { "id": 1, "name": "Ingen försäkring" },
+  { "id": 2, "name": "Kund har egen försäkring" },
+  { "id": 3, "name": "Länsförsäkringa" },
+  { "id": 4, "name": "Ica försäkring" },
+  { "id": 5, "name": "Trygg-Hansa" },
+  { "id": 6, "name": "IF försäkring" },
+  { "id": 7, "name": "Folksam" },
+  { "id": 8, "name": "Paydrive" },
+  { "id": 9, "name": "Hedvig" },
+  { "id": 10, "name": "Solid försäkring" }
+]
