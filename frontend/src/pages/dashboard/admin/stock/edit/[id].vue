@@ -62,6 +62,7 @@ const reg_num = ref('')
 const mileage = ref(null)
 const brand_id = ref(null)
 const model_id = ref(null)
+const model = ref(null)
 const generation = ref(null)
 const car_body_id = ref(null)
 const year = ref(null)
@@ -245,13 +246,27 @@ async function fetchData() {
 }
 
 const getModels = computed(() => {
-  return modelsByBrand.value.map((model) => {
-    return {
-      title: model.name,
-      value: model.id
+    const models = modelsByBrand.value.map((model) => ({
+        title: model.name,
+        value: model.id
+    }))
+
+    if (modelsByBrand.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
     }
-  })
+
+    return models
 })
+
+const onClearBrand = () => {
+    modelsByBrand.value = []
+}
+
+const selectModel = selected => {
+
+    model.value = selected !== 0 ? null : model.value
+
+}
 
 const selectBrand = brand => {
     if (brand) {
@@ -770,7 +785,9 @@ const onSubmit = () => {
             formData.append('id', Number(route.params.id))
             formData.append('_method', 'PUT')
             formData.append('reg_num', reg_num.value)
+            formData.append('brand_id', brand_id.value)
             formData.append('model_id', model_id.value)
+            formData.append('model', model.value)
             formData.append('car_body_id', car_body_id.value)
             formData.append('gearbox_id', gearbox_id.value)
             formData.append('iva_id', iva_id.value)
@@ -954,16 +971,24 @@ const onSubmit = () => {
                                                         autocomplete="off"
                                                         clearable
                                                         clear-icon="tabler-x"
-                                                        @update:modelValue="selectBrand"/>
+                                                        @update:modelValue="selectBrand"
+                                                        @click:clear="onClearBrand"/>
                                                 </VCol>
-                                                <VCol cols="12" md="6">
+                                                <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                     <VAutocomplete
                                                         v-model="model_id"
                                                         label="Modell"
                                                         :items="getModels"
                                                         autocomplete="off"
                                                         clearable
-                                                        clear-icon="tabler-x"/>
+                                                        clear-icon="tabler-x"
+                                                        @update:modelValue="selectModel"/>
+                                                </VCol>
+                                                <VCol cols="12" md="3" v-if="model_id === 0">
+                                                    <VTextField
+                                                        v-model="model"
+                                                        label="Modellens namn"
+                                                    />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
                                                     <VTextField

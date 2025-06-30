@@ -325,10 +325,13 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col">Information om bilen </th>
+                <th scope="col"> Försäljningsdatum </th>
+                <th scope="col"> Bil info </th>
+                <th scope="col" class="text-end"> Inköpspris </th>
                 <th scope="col" class="text-end"> Kostnader </th>
                 <th scope="col" class="text-end"> Försäljningspris </th>
-                <th scope="col" class="text-center"> Annons </th>
+                <th scope="col" class="text-end"> Vinst </th>
+                <th scope="col"> Köparen </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -338,6 +341,7 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
+                <td> {{ vehicle.sale_date }}</td>
                 <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
@@ -366,18 +370,12 @@ const downloadCSV = async () => {
                     </div>
                   </div>
                 </td>                
-                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>
+                <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
+                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>                
                 <td class="text-end"> {{ formatNumber(vehicle.sale_price ?? 0) }} kr</td>
-                <td class="d-flex justify-content-center">
-                   <VCheckbox
-                    v-model="vehicle.checked"
-                    color="info"
-                    class="w-100 text-center d-flex justify-content-center"
-                    :disabled="(vehicle.state_id === 11) ? true : false"
-                    :readonly="(vehicle.state_id === 11) ? false : true"
-                    :value="(vehicle.state_id === 11) ? false : true"
-                  />
-                </td>
+                <td class="text-end"> {{ formatNumber(vehicle.sale_price - vehicle.purchase_price) }} kr</td>
+                <td> relacionar comprador </td>
+                
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -426,7 +424,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!vehicles.length">
               <tr>
                 <td
-                  colspan="6"
+                  colspan="8"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

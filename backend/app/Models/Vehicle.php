@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
+use App\Models\CarModel;
+
 use Carbon\Carbon;
 use PDF;
 
@@ -139,8 +141,18 @@ class Vehicle extends Model
 
     public static function updateVehicle($request, $vehicle) {
 
+        if($request->model_id === '0') {//other model
+            $model = CarModel::create([
+                'name' => $request->model,
+                'brand_id' => $request->brand_id
+            ]);
+
+            $model_id = $model->id;
+        } else 
+            $model_id = $request->model_id === 'null' ? null : $request->model_id;
+
         $vehicle->update([
-            'model_id' => $request->model_id === 'null' ? null : $request->model_id,
+            'model_id' => $model_id,
             'car_body_id' => $request->car_body_id === 'null' ? null : $request->car_body_id,
             'gearbox_id' => $request->gearbox_id === 'null' ? null : $request->gearbox_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
