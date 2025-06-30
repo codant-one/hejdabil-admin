@@ -68,7 +68,7 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   await modelsStores.fetchModels(data)
-  await brandsStores.fetchBrands()
+  await brandsStores.fetchBrands({limit: -1})
   brands.value = brandsStores.getBrands
 
   models.value = modelsStores.getModels
@@ -274,7 +274,7 @@ const downloadCSV = async () => {
             <VSpacer class="d-none d-md-block"/>
 
             <div class="d-flex align-center w-100 w-md-10">
-              <VSelect
+              <VAutocomplete
                   v-model="brand_id"
                   placeholder="Märke"
                   :items="brands"
