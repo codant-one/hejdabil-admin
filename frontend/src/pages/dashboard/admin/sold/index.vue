@@ -389,7 +389,7 @@ const downloadCSV = async () => {
                     <span v-else class="font-weight-medium  text-primary">
                       {{ vehicle.client.fullname }} 
                     </span>
-                    <span class="text-sm text-disabled">{{ vehicle.client.email }}</span>
+                    <span class="text-sm text-disabled">{{ vehicle.client.phone }}</span>
                   </div>
                 </td>                
                 <!-- 👉 Acciones -->
