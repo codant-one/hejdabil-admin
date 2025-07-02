@@ -48,14 +48,15 @@ const mileage = ref(null)
 const generation = ref(null)
 const car_body = ref(null)
 const year = ref(null)
-const first_insc = ref(null)
 const control_inspection = ref(null)
 const color = ref(null)
 const fuel = ref(null)
 const gearbox = ref(null)
 const purchase_price = ref(null)
-const iva = ref(null)
+const iva_purchase = ref(null)
+const iva_sale = ref(null)
 const state = ref(null)
+const state_id = ref(null)
 const sale_price = ref(null)
 const min_sale_price = ref(null)
 const purchase_date = ref(null)
@@ -68,6 +69,13 @@ const last_service = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
+const sale_comments = ref(null)
+const organization_number = ref('')
+const address = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
 
 const tab = ref('0')
 
@@ -84,13 +92,14 @@ watchEffect(async () => {
             mileage.value = props.vehicle.mileage
             generation.value = props.vehicle.generation
             car_body.value = props.vehicle.carbody?.name
-            first_insc.value = props.vehicle.first_insc
             control_inspection.value = props.vehicle.control_inspection
             fuel.value = props.vehicle.fuel?.name
             gearbox.value = props.vehicle.gearbox?.name
             purchase_price.value = props.vehicle.purchase_price
-            iva.value = props.vehicle.iva?.name
+            iva_purchase.value = props.vehicle.iva_purchase?.name
+            iva_sale.value = props.vehicle.iva_sale?.name
             state.value = props.vehicle.state.name
+            state_id.value = props.vehicle.state_id
             sale_price.value = props.vehicle.sale_price
             min_sale_price.value = props.vehicle.min_sale_price
             purchase_date.value = props.vehicle.purchase_date
@@ -102,6 +111,14 @@ watchEffect(async () => {
             last_service.value = props.vehicle.last_service
             dist_belt.value = props.vehicle.dist_belt
             last_dist_belt.value = props.vehicle.last_dist_belt
+
+            sale_comments.value = props.vehicle.sale_comments
+            organization_number.value = props.vehicle.client?.organization_number
+            address.value = props.vehicle.client?.address
+            postal_code.value = props.vehicle.client?.postal_code
+            phone.value = props.vehicle.client?.phone
+            fullname.value = props.vehicle.client?.fullname
+            email.value = props.vehicle.client?.email
 
             vehicleImages.value = [
                 { url: car },
@@ -247,8 +264,10 @@ const setThumbsSwiper = (swiper) => {
                                 align-tabs="center"
                             >
                                 <VTab value="0">Fordon</VTab>
-                                <VTab value="1">Prisinformation</VTab>
-                                <VTab value="2">Information om bilen</VTab>
+                                <VTab value="1">Information om bilen</VTab>
+                                <VTab value="2">Prisinformation</VTab>
+                                <VTab value="3" v-if="state_id === 12">Försäljningsuppgifter</VTab>
+                                <VTab value="4" v-if="state_id === 12">Köpare</VTab>
                             </VTabs>
                             <VWindow v-model="tab">
                                 <VWindowItem value="0">
@@ -269,7 +288,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Inköpsdatum: </span>
-                                                    <span>{{ first_insc }}</span>
+                                                    <span>{{ purchase_date }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Kontrollbesiktning gäller tom: </span>
@@ -288,26 +307,6 @@ const setThumbsSwiper = (swiper) => {
                                     </VContainer>
                                 </VWindowItem>
                                 <VWindowItem value="1">
-                                    <VContainer fluid>
-                                        <VRow>
-                                            <VCol cols="12">
-                                                <div>
-                                                    <span class="font-weight-semibold"> Inköpspris: </span>
-                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
-                                                </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> VMB / Moms: </span>
-                                                    <span>{{ iva }}</span>
-                                                </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Status: </span>
-                                                    <span>{{ state }}</span>
-                                                </div>
-                                            </VCol>
-                                        </VRow>
-                                    </VContainer>
-                                </VWindowItem>
-                                <VWindowItem value="2">
                                     <VContainer fluid>
                                         <VRow>
                                             <VCol cols="12">
@@ -342,6 +341,82 @@ const setThumbsSwiper = (swiper) => {
                                                 <div>
                                                     <span class="font-weight-semibold"> Anteckningar: </span>
                                                     <span>{{ comments }}</span>                                                    
+                                                </div>
+                                            </VCol>
+                                        </VRow>
+                                    </VContainer>
+                                </VWindowItem>
+                                <VWindowItem value="2">
+                                    <VContainer fluid>
+                                        <VRow>
+                                            <VCol cols="12">
+                                                <div>
+                                                    <span class="font-weight-semibold"> Inköpspris: </span>
+                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> VMB / Moms: </span>
+                                                    <span>{{ iva_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Status: </span>
+                                                    <span>{{ state }}</span>
+                                                </div>
+                                            </VCol>
+                                        </VRow>
+                                    </VContainer>
+                                </VWindowItem>
+                                <VWindowItem value="3" v-if="state_id === 12">
+                                    <VContainer fluid>
+                                        <VRow>
+                                            <VCol cols="12">
+                                                <div>
+                                                    <span class="font-weight-semibold"> Försäljningspris: </span>
+                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Lägsta försäljningspris: </span>
+                                                    <span>{{ min_sale_price }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> VMB / Moms: </span>
+                                                    <span>{{ iva_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Försäljningsdag: </span>
+                                                    <span>{{ sale_date }}</span>
+                                                </div>
+                                            </VCol>
+                                        </VRow>
+                                    </VContainer>
+                                </VWindowItem>
+                                 <VWindowItem value="4" v-if="state_id === 12">
+                                    <VContainer fluid>
+                                        <VRow>
+                                            <VCol cols="12">                                             
+                                                <div>
+                                                    <span class="font-weight-semibold"> Org/personummer: </span>
+                                                    <span>{{ organization_number }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Namn: </span>
+                                                    <span>{{ fullname }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Adress: </span>
+                                                    <span>{{ address }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Postnr. ort: </span>
+                                                    <span>{{ postal_code }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Telefon: </span>
+                                                    <span>{{ phone }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> E-post: </span>
+                                                    <span>{{ email }}</span>
                                                 </div>
                                             </VCol>
                                         </VRow>

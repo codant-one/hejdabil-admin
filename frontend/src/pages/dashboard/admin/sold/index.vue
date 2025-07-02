@@ -160,6 +160,10 @@ const removeVehicle = async () => {
   return true
 }
 
+const seeClient = clientData => {
+  router.push({ name : 'dashboard-admin-clients-id', params: { id: clientData.id } })
+}
+
 const download = async(vehicle) => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + vehicle.file);
@@ -199,7 +203,7 @@ const downloadCSV = async () => {
       MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
       ANTECKNINGAR:  element.comments ?? '',
       STATUS: element.state.name,
-      VAT: element.iva?.name,
+      VAT: element.iva_sale?.name,
       BESIKTIGAS: element.control_inspection ?? ''
     }
 
@@ -374,8 +378,17 @@ const downloadCSV = async () => {
                 <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>                
                 <td class="text-end"> {{ formatNumber(vehicle.sale_price ?? 0) }} kr</td>
                 <td class="text-end"> {{ formatNumber(vehicle.sale_price - vehicle.purchase_price) }} kr</td>
-                <td> relacionar comprador </td>
-                
+                <td class="text-wrap">
+                  <div class="d-flex flex-column">
+                    <span v-if="vehicle.client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client.client)">
+                      {{ vehicle.client.fullname }} 
+                    </span>
+                    <span v-else class="font-weight-medium  text-primary">
+                      {{ vehicle.client.fullname }} 
+                    </span>
+                    <span class="text-sm text-disabled">{{ vehicle.client.email }}</span>
+                  </div>
+                </td>                
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -396,12 +409,6 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-eye" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('edit', 'stock')" @click="editVehicle(vehicle)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
                         <template #prepend>

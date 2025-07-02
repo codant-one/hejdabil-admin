@@ -21,6 +21,10 @@ class Vehicles {
     delete(id){
         return axios.delete(`/vehicles/${id}`)
     }
+
+    send(data) {
+        return axios.post('/vehicles/send', data)
+    }
     
 }
 

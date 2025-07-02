@@ -148,6 +148,11 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
         Route::post('send', [VehicleDocumentController::class, 'send']);
     });
 
+    //Vehicles
+    Route::group(['prefix' => 'vehicles'], function () {
+        Route::post('send', [VehicleController::class, 'send']);
+    });
+
 });
 
 //Public Endpoints

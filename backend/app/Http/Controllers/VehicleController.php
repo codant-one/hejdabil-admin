@@ -21,6 +21,8 @@ use App\Models\Fuel;
 use App\Models\DocumentType;
 use App\Models\State;
 use App\Models\Client;
+use App\Models\ClientType;
+use App\Models\Identification;
 
 class VehicleController extends Controller
 {
@@ -44,11 +46,13 @@ class VehicleController extends Controller
             $query = Vehicle::with([
                         'model.brand', 
                         'state', 
-                        'iva',
+                        'iva_purchase',
+                        'iva_sale',
                         'costs',
                         'carbody',
                         'gearbox',
-                        'fuel'
+                        'fuel',
+                        'client.client'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -153,7 +157,9 @@ class VehicleController extends Controller
                     'fuels' => Fuel::all(),
                     'document_types' => DocumentType::all(),
                     'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
-                    'clients' => $clients
+                    'clients' => $clients,
+                    'client_types' => ClientType::all(),
+                    'identifications' => Identification::all()
                 ]
             ]);
 
@@ -169,7 +175,7 @@ class VehicleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-     public function update(VehicleRequest $request, $id): JsonResponse
+    public function update(VehicleRequest $request, $id): JsonResponse
     {
         try {
             $vehicle = Vehicle::find($id);
@@ -217,6 +223,36 @@ class VehicleController extends Controller
             
 
             $vehicle->deleteVehicle($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'vehicle' => $vehicle
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function send(Request $request): JsonResponse
+    {
+        try {
+            $vehicle = Vehicle::find($request->id);
+        
+            if (!$vehicle)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fordon hittades inte'
+                ], 404);
+
+            $vehicle->sendVehicle($request, $vehicle); 
 
             return response()->json([
                 'success' => true,
