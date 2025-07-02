@@ -187,7 +187,7 @@ const downloadCSV = async () => {
 
   isRequestOngoing.value = true
 
-  let data = { limit: -1 }
+  let data = { limit: -1, state_id: 12}
 
   await vehiclesStores.fetchVehicles(data)
 
@@ -195,16 +195,19 @@ const downloadCSV = async () => {
       
   vehiclesStores.getVehicles.forEach(element => {
 
+    const bilinfo =
+      (element.model?.brand?.name ?? '') + ' ' +
+      (element.model?.name ?? '') +
+      (element.year == null ? '' : ', ' + element.year);
+
     let data = {
-      INKÖPSDATUM: element.first_insc ?? '',
-      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
-      REGNR: element.reg_num,
+      FÖRSÄLJNINGSDATUM: element.sale_date ?? '',
+      BILINFO: bilinfo,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
-      ANTECKNINGAR:  element.comments ?? '',
-      STATUS: element.state.name,
-      VAT: element.iva_sale?.name,
-      BESIKTIGAS: element.control_inspection ?? ''
+      KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
+      FÖRSÄLJNINGSPRIS: formatNumber(element.sale_price ?? 0) + ' kr',
+      VINST: formatNumber(element.sale_price - element.purchase_price) + ' kr',
+      KÖPAREN: element.client?.fullname
     }
 
     dataArray.push(data)

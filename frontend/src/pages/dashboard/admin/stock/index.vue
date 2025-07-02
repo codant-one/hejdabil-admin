@@ -239,9 +239,14 @@ const downloadCSV = async () => {
       
   vehiclesStores.getVehicles.forEach(element => {
 
+    const bilinfo =
+      (element.model?.brand?.name ?? '') + ' ' +
+      (element.model?.name ?? '') +
+      (element.year == null ? '' : ', ' + element.year);
+
     let data = {
       INKÖPSDATUM: element.purchase_date ?? '',
-      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
+      BILINFO: bilinfo,
       REGNR: element.reg_num,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
       MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
