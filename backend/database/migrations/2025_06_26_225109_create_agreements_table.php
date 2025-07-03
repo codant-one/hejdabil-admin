@@ -34,7 +34,8 @@ return new class extends Migration
             $table->string("payment_description")->nullable()->comment("Payment description");
             $table->unsignedBigInteger('vehicle_interchange_id')->nullable();
             $table->unsignedBigInteger('client_id')->nullable();
-            $table->unsignedBigInteger('supplier_id')->nullable();
+            $table->unsignedBigInteger('agreement_client_id')->nullable();
+            $table->unsignedBigInteger('supplier_id');
 
 
             $table->timestamps();
@@ -50,6 +51,7 @@ return new class extends Migration
             $table->foreign('payment_type_id')->references('id')->on('payment_types')->onDelete('cascade');
             $table->foreign('vehicle_interchange_id')->references('id')->on('vehicle_interchanges')->onDelete('cascade');
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
+            $table->foreign('agreement_client_id')->references('id')->on('agreement_clients')->onDelete('cascade');
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
         });
     }

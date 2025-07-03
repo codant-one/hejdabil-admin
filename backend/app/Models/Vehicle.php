@@ -57,6 +57,10 @@ class Vehicle extends Model
         return $this->hasMany(VehicleDocument::class, 'vehicle_id', 'id');
     }
 
+    public function agreement(){
+        return $this->hasMany(Agreement::class, 'vehicle_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('reg_num', 'LIKE', '%' . $search . '%');

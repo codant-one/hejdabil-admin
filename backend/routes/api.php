@@ -32,7 +32,8 @@ use App\Http\Controllers\{
     VehicleTaskController,
     VehicleCostController,
     VehicleDocumentController,
-    NoteController
+    NoteController,
+    AgreementController
 };
 
 /*
@@ -91,6 +92,7 @@ Route::group(['middleware' => ['cors','jwt'] ], function(){
     Route::apiResource('costs', VehicleCostController::class);
     Route::apiResource('documents', VehicleDocumentController::class);
     Route::apiResource('notes', NoteController::class);
+    Route::apiResource('agreements', AgreementController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');

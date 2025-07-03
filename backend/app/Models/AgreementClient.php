@@ -4,14 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Auth;
 
-class Client extends Model
+class AgreementClient extends Model
 {
-    use HasFactory, SoftDeletes;
-
-    protected $guarded = [];
+    use HasFactory;
 
     /**** Relationship ****/
     public function supplier() {
@@ -19,8 +15,9 @@ class Client extends Model
     }
 
     public function agreement(){
-        return $this->hasMany(Agreement::class, 'client_id', 'id');
+        return $this->hasMany(Agreement::class, 'agreement_client_id', 'id');
     }
+
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
@@ -111,4 +108,3 @@ class Client extends Model
         }
     }
 }
-

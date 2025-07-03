@@ -16,6 +16,10 @@ class Iva extends Model
         return $this->hasMany(Vehicle::class, 'iva_id', 'id');
     }
 
+    public function agreement(){
+        return $this->hasMany(Agreement::class, 'iva_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('name', 'LIKE', '%' . $search . '%');

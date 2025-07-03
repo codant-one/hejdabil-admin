@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class GuarantyType extends Model
 {
     use HasFactory;
+
+    /**** Relationship ****/
+    public function agreement(){
+        return $this->hasMany(Agreement::class, 'guaranty_type_id', 'id');
+    }
 }
