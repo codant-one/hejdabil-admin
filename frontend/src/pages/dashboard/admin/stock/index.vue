@@ -574,6 +574,7 @@ const downloadCSV = async () => {
                 v-model="plate"
                 :rules="[requiredValidator]"
                 placeholder="ABC12X"
+                style="text-transform: uppercase !important"
             />
           </VCardText>
 
