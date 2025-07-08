@@ -57,6 +57,10 @@ const paginationData = computed(() => {
   return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
 })
 
+watch(() => plate.value, (val) => {
+  plate.value = val === null ? null : val.toUpperCase()
+});
+
 // 👉 watching current page
 watchEffect(() => {
   if (currentPage.value > totalPages.value)
@@ -196,12 +200,22 @@ const onSubmit = () => {
           router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: res.data.data.vehicle.id } })  
         })
         .catch((err) => {
-          console.log('err', err)
+          //console.log('err', err)
+          plate.value = null
             advisor.value = {
                 type: 'error',
                 message: err.message,
                 show: true
             }
+
+            setTimeout(() => {
+              advisor.value = {
+                type: '',
+                message: '',
+                show: false
+              }
+            }, 3000)
+
             isRequestOngoing.value = false
         })
     }

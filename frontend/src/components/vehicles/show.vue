@@ -383,6 +383,10 @@ const setThumbsSwiper = (swiper) => {
                                                     <span class="font-weight-semibold"> Försäljningsdag: </span>
                                                     <span>{{ sale_date }}</span>
                                                 </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Comments: </span>
+                                                    <span>{{ sale_comments }}</span>
+                                                </div>
                                             </VCol>
                                         </VRow>
                                     </VContainer>

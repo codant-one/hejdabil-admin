@@ -28,7 +28,10 @@ class VehicleRequest extends FormRequest
     {
         $rules = [
             'reg_num' => [
-                'required'
+                'required',
+                Rule::unique('vehicles')->where(function ($query) {
+                    return $query->where('user_id', auth()->id());
+                }),
             ]
         ];
 
@@ -39,7 +42,8 @@ class VehicleRequest extends FormRequest
     public function messages()
     {
         return [
-            'reg_num.required' => 'Reg nr är obligatoriskt'
+            'reg_num.required' => 'Reg nr är obligatoriskt',
+            'reg_num.unique' => 'Fordonsnumret är redan registrerat',
         ];
     }
 

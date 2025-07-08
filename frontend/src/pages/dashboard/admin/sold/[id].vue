@@ -50,7 +50,6 @@ const sale_date = ref(null)
 const iva_sale_id = ref(null)
 const sale_comments = ref(null)
 const purchase_date = ref(null)
-const today = new Date()
 
 const organization_number = ref('')
 const address = ref('')
@@ -136,7 +135,7 @@ async function fetchData() {
 
         sale_price.value = vehicle.value.sale_price
         min_sale_price.value = vehicle.value.min_sale_price
-        sale_date.value = vehicle.value.sale_date
+        sale_date.value = new Date()
         iva_sale_id.value = vehicle.value.iva_sale_id
         sale_comments.value = vehicle.value.sale_comments
 
