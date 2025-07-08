@@ -135,7 +135,7 @@ async function fetchData() {
 
         sale_price.value = vehicle.value.sale_price
         min_sale_price.value = vehicle.value.min_sale_price
-        sale_date.value = new Date()
+        sale_date.value = formatDate(new Date())
         iva_sale_id.value = vehicle.value.iva_sale_id
         sale_comments.value = vehicle.value.sale_comments
 
@@ -148,6 +148,13 @@ async function fetchData() {
     }
 
     isRequestOngoing.value = false
+}
+
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const clearClient = () => {
