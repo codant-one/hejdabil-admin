@@ -50,6 +50,7 @@ const sale_date = ref(null)
 const iva_sale_id = ref(null)
 const sale_comments = ref(null)
 const purchase_date = ref(null)
+const today = new Date()
 
 const organization_number = ref('')
 const address = ref('')
@@ -170,7 +171,7 @@ const selectClient = client => {
         email.value = _client.email
         organization_number.value = _client.organization_number
         address.value = _client.address
-        postal_code.value = _client.postal_code
+        postal_code.value = _client.street + ' ' + _client.postal_code
         phone.value = _client.phone
 
         save_client.value = false
@@ -441,15 +442,7 @@ const onSubmit = () => {
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
-                                                        <VCol cols="12" md="6">
-                                                            <VTextField
-                                                                type="number"
-                                                                v-model="min_sale_price"
-                                                                label="Lägsta försäljningspris"
-                                                                min="0"
-                                                                :rules="[requiredValidator]"
-                                                            />
-                                                        </VCol>
+                                                       
                                                         <VCol cols="12" md="6">
                                                             <VAutocomplete
                                                                 v-model="iva_sale_id"

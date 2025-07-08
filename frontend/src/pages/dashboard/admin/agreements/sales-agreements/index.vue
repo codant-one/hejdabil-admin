@@ -763,5 +763,5 @@ return config
 <route lang="yaml">
     meta:
       action: create
-      subject: suppliers
+      subject: agreements
 </route>

@@ -288,7 +288,7 @@ const addAgreements = () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','suppliers')"
+                v-if="$can('create','agreements')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
                 @click="isModalVisible = true">
@@ -308,7 +308,7 @@ const addAgreements = () => {
                 <th scope="col"> xxx </th>
                 <th scope="col"> xxx </th>
                 <th scope="col"> xxx </th>
-                <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
+                <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -482,5 +482,5 @@ const addAgreements = () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: suppliers
+    subject: agreements
 </route>

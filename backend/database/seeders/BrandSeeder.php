@@ -33,11 +33,11 @@ class BrandSeeder extends Seeder
             Brand::query()->updateOrCreate([
                 'id' => $brand['id'],
                 'name' => $brand['name'],
-                'url' => $brand['url'],
+                'url' => ($brand['url'] === 'null') ? null : $brand['url'],
                 'logo' => ($brand['logo'] === 'null') ? null : $brand['logo']
             ]);
 
-            if($brand['logo'] !== 'null')
+            if($brand['logo'] !== 'null' && $brand['logo'] !== null)
                 copy(public_path($brand['logo']), storage_path('app/public/').$brand['logo']);
         }
     }

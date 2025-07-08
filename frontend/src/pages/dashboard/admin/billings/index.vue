@@ -469,7 +469,7 @@ const downloadCSV = async () => {
                 </div>
               </VCol>
               <VCol cols="12" md="2" class="d-flex flex-column">
-                <VSelect
+                <VAutocomplete
                   v-model="client_id"
                   :items="clients"
                   :item-title="item => item.fullname"
@@ -480,7 +480,7 @@ const downloadCSV = async () => {
                   clearable
                   clear-icon="tabler-x"/>
 
-                <VSelect
+                <VAutocomplete
                   v-if="role !== 'Supplier'"
                   v-model="supplier_id"
                   placeholder="Leverantörer"

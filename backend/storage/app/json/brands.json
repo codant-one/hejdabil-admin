@@ -1,86 +1,260 @@
 [
-  { 
-    "id": 1, 
-    "name": "Volvo", 
+  {
+    "id": 1,
+    "name": "Volvo",
     "url": "https://www.volvo.com/en",
-    "logo": "brands/volvo.svg" 
+    "logo": "brands/volvo.svg"
   },
-  { 
-    "id": 2, 
-    "name": "Volkswagen", 
+  {
+    "id": 2,
+    "name": "Volkswagen",
     "url": "https://www.volkswagen.se/sv.html",
-    "logo": "brands/volkswagen.svg" 
+    "logo": "brands/volkswagen.svg"
   },
-  { 
-    "id": 3, 
-    "name": "Tesla", 
+  {
+    "id": 3,
+    "name": "Tesla",
     "url": "https://www.tesla.com",
-    "logo": "brands/tesla.svg" 
+    "logo": "brands/tesla.svg"
   },
-  { 
-    "id": 4, 
+  {
+    "id": 4,
     "name": "Kia",
     "url": "https://www.kia.com/se",
-    "logo": "brands/kia.svg" 
+    "logo": "brands/kia.svg"
   },
-  { 
-    "id": 5, 
-    "name": "Toyota", 
+  {
+    "id": 5,
+    "name": "Toyota",
     "url": "https://www.toyota.se",
-    "logo": "brands/toyota.svg" 
+    "logo": "brands/toyota.svg"
   },
-  { 
-    "id": 6, 
-    "name": "Škoda", 
+  {
+    "id": 6,
+    "name": "Škoda",
     "url": "https://www.skoda.se",
-    "logo": "brands/skoda.svg" 
+    "logo": "brands/skoda.svg"
   },
-  { 
-    "id": 7, 
-    "name": "Audi", 
+  {
+    "id": 7,
+    "name": "Audi",
     "url": "https://www.audi.se/sv",
-    "logo": "brands/audi.svg" 
+    "logo": "brands/audi.svg"
   },
-  { 
-    "id": 8, 
-    "name": "BMW", 
+  {
+    "id": 8,
+    "name": "BMW",
     "url": "https://www.bmw.se/sv/index.html",
-    "logo": "brands/bmw.svg" 
+    "logo": "brands/bmw.svg"
   },
-  { 
-    "id": 9, 
-    "name": "Mercedes-Benz", 
+  {
+    "id": 9,
+    "name": "Mercedes-Benz",
     "url": "https://www.mercedes-benz.se",
-    "logo": "brands/mercedes-benz.svg" 
+    "logo": "brands/mercedes-benz.svg"
   },
-  { 
-    "id": 10, 
-    "name": "Nissan", 
+  {
+    "id": 10,
+    "name": "Nissan",
     "url": "https://www.nissan.se",
-    "logo": "brands/nissan.svg" 
+    "logo": "brands/nissan.svg"
   },
-  { 
-    "id": 11, 
-    "name": "Polestar", 
+  {
+    "id": 11,
+    "name": "Polestar",
     "url": "https://www.polestar.com/se",
-    "logo": "brands/polestar.svg" 
+    "logo": "brands/polestar.svg"
   },
-  { 
-    "id": 12, 
+  {
+    "id": 12,
     "name": "BYD",
     "url": "https://www.byd.com/se",
-    "logo": "brands/byd.svg" 
+    "logo": "brands/byd.svg"
   },
-  { 
-    "id": 13, 
-    "name": "Koenigsegg", 
+  {
+    "id": 13,
+    "name": "Koenigsegg",
     "url": "https://www.koenigsegg.com",
-    "logo": "brands/koenigsegg.svg" 
+    "logo": "brands/koenigsegg.svg"
   },
   {
     "id": 14,
     "name": "Ford",
     "url": "https://ford.se/",
     "logo": "brands/ford.svg"
+  },
+  {
+    "id": 15,
+    "name": "Seat",
+    "url": "https://www.seat.se/",
+    "logo": null
+  },
+  {
+    "id": 16,
+    "name": "Renault",
+    "url": "https://www.renault.se/",
+    "logo": null
+  },
+  {
+    "id": 17,
+    "name": "Peugeot",
+    "url": "https://www.peugeot.se/",
+    "logo": null
+  },
+  {
+    "id": 18,
+    "name": "Dacia",
+    "url": "https://www.dacia.se/",
+    "logo": null
+  },
+  {
+    "id": 19,
+    "name": "Citroën",
+    "url": "https://www.citroen.se/",
+    "logo": null
+  },
+  {
+    "id": 20,
+    "name": "Opel",
+    "url": "https://www.opel.se/",
+    "logo": null
+  },
+  {
+    "id": 21,
+    "name": "Alfa Romeo",
+    "url": "https://www.alfaromeo.se/",
+    "logo": null
+  },
+  {
+    "id": 22,
+    "name": "Chevrolet",
+    "url": "https://www.chevrolet.com/",
+    "logo": null
+  },
+  {
+    "id": 23,
+    "name": "Porsche",
+    "url": "https://www.porsche.com/sweden/",
+    "logo": null
+  },
+  {
+    "id": 24,
+    "name": "Honda",
+    "url": "https://www.honda.se/",
+    "logo": null
+  },
+  {
+    "id": 25,
+    "name": "Subaru",
+    "url": "https://www.subaru.se/",
+    "logo": null
+  },
+  {
+    "id": 26,
+    "name": "Mazda",
+    "url": "https://www.mazda.se/",
+    "logo": null
+  },
+  {
+    "id": 27,
+    "name": "Mitsubishi",
+    "url": "https://www.mitsubishi-motors.se/",
+    "logo": null
+  },
+  {
+    "id": 28,
+    "name": "Lexus",
+    "url": "https://www.lexus.se/",
+    "logo": null
+  },
+  {
+    "id": 29,
+    "name": "Suzuki",
+    "url": "https://www.suzuki.se/",
+    "logo": null
+  },
+  {
+    "id": 30,
+    "name": "Saab",
+    "url": "https://www.saab.com/",
+    "logo": null
+  },
+  {
+    "id": 31,
+    "name": "Land Rover",
+    "url": "https://www.landrover.se/",
+    "logo": null
+  },
+  {
+    "id": 32,
+    "name": "Dodge",
+    "url": "https://www.dodge.com/",
+    "logo": null
+  },
+  {
+    "id": 33,
+    "name": "Chrysler",
+    "url": "https://www.chrysler.com/",
+    "logo": null
+  },
+  {
+    "id": 34,
+    "name": "Hummer",
+    "url": "https://www.gmc.com/electric/hummer-ev",
+    "logo": null
+  },
+  {
+    "id": 35,
+    "name": "Hyundai",
+    "url": "https://www.hyundai.se/",
+    "logo": null
+  },
+  {
+    "id": 36,
+    "name": "Infiniti",
+    "url": "https://www.infiniti.com/",
+    "logo": null
+  },
+  {
+    "id": 37,
+    "name": "Jaguar",
+    "url": "https://www.jaguar.se/",
+    "logo": null
+  },
+  {
+    "id": 38,
+    "name": "Jeep",
+    "url": "https://www.jeep.com/se/",
+    "logo": null
+  },
+  {
+    "id": 39,
+    "name": "Daewoo",
+    "url": "https://daewooelectronics.com/",
+    "logo": null
+  },
+  {
+    "id": 40,
+    "name": "Fiat",
+    "url": "https://www.fiat.se/",
+    "logo": null
+  },
+  {
+    "id": 41,
+    "name": "MINI",
+    "url": "https://www.mini.se/",
+    "logo": null
+  },
+  {
+    "id": 42,
+    "name": "Rover",
+    "url": null,
+    "logo": null
+  },
+  {
+    "id": 43,
+    "name": "Smart",
+    "url": "https://my.smart.com/",
+    "logo": null
   }
 ]

@@ -293,7 +293,7 @@ const downloadCSV = async () => {
             <VSpacer class="d-none d-md-block"/>
 
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-              <VSelect
+              <VAutocomplete
                 v-if="role !== 'Supplier'"
                 v-model="supplier_id"
                 placeholder="Leverantörer"
@@ -303,7 +303,7 @@ const downloadCSV = async () => {
                 autocomplete="off"
                 clearable
                 clear-icon="tabler-x"
-                style="width: 300px"
+                style="width: 200px"
                 :menu-props="{ maxHeight: '300px' }"/>
 
               <!-- 👉 Search  -->

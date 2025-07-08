@@ -273,7 +273,7 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center w-100 w-md-10">
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
               <VAutocomplete
                   v-model="brand_id"
                   placeholder="Märke"
@@ -282,20 +282,18 @@ const downloadCSV = async () => {
                   :item-value="item => item.id"
                   autocomplete="off"
                   clearable
+                  style="width: 200px"
                   clear-icon="tabler-x"/>
-            </div>
 
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök"
-                  density="compact"
-                  clearable
-                />
-              </div>
+                  <!-- 👉 Search  -->
+                  <div class="search">
+                    <VTextField
+                      v-model="searchQuery"
+                      placeholder="Sök"
+                      density="compact"
+                      clearable
+                    />
+                  </div>
 
               <!-- 👉 Add user button -->
               <v-btn
@@ -338,6 +336,15 @@ const downloadCSV = async () => {
                       rounded
                       :image="themeConfig.settings.urlStorage + model.brand.logo"
                     />
+                    <VAvatar
+                        v-else
+                        size="38"
+                        variant="tonal"
+                        rounded
+                        color="secondary"
+                    >
+                        <VIcon size="x-large" icon="mdi-image-outline" />                        
+                    </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="text-body-1 font-weight-medium text-high-emphasis">{{ model.brand.name }}</span>
                       <span class="text-body-2 cursor-pointer" @click="seeUrl(model.brand)">{{ model.brand.url }}</span>

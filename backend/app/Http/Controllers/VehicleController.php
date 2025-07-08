@@ -65,7 +65,7 @@ class VehicleController extends Controller
                             'year',
                             'gearbox_id'
                         ])
-                    );
+                    )->where('user_id', Auth::user()->id);
 
             $count = $query->count();
 

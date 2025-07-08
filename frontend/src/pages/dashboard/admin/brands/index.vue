@@ -316,6 +316,15 @@ const downloadCSV = async () => {
                       rounded
                       :image="themeConfig.settings.urlStorage + brand.logo"
                     />
+                    <VAvatar
+                        v-else
+                        size="38"
+                        variant="tonal"
+                        rounded
+                        color="secondary"
+                    >
+                        <VIcon size="x-large" icon="mdi-image-outline" />                        
+                    </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="text-body-1 font-weight-medium text-high-emphasis">{{ brand.name }}</span>
                       <span class="text-body-2 cursor-pointer" @click="seeUrl(brand)">{{ brand.url }}</span>
