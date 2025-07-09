@@ -228,6 +228,7 @@ class Vehicle extends Model
         $vehicle->update();
 
         if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
             $client = Client::createClient($request);
             $order_id = Client::where('supplier_id', $client->supplier_id)
                             ->withTrashed()

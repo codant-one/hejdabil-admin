@@ -135,7 +135,7 @@ async function fetchData() {
 
         sale_price.value = vehicle.value.sale_price
         min_sale_price.value = vehicle.value.min_sale_price
-        sale_date.value = vehicle.value.sale_date
+        sale_date.value = formatDate(new Date())
         iva_sale_id.value = vehicle.value.iva_sale_id
         sale_comments.value = vehicle.value.sale_comments
 
@@ -148,6 +148,13 @@ async function fetchData() {
     }
 
     isRequestOngoing.value = false
+}
+
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const clearClient = () => {
@@ -170,7 +177,7 @@ const selectClient = client => {
         email.value = _client.email
         organization_number.value = _client.organization_number
         address.value = _client.address
-        postal_code.value = _client.postal_code
+        postal_code.value = _client.street + ' ' + _client.postal_code
         phone.value = _client.phone
 
         save_client.value = false
@@ -441,15 +448,7 @@ const onSubmit = () => {
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
-                                                        <VCol cols="12" md="6">
-                                                            <VTextField
-                                                                type="number"
-                                                                v-model="min_sale_price"
-                                                                label="Lägsta försäljningspris"
-                                                                min="0"
-                                                                :rules="[requiredValidator]"
-                                                            />
-                                                        </VCol>
+                                                       
                                                         <VCol cols="12" md="6">
                                                             <VAutocomplete
                                                                 v-model="iva_sale_id"

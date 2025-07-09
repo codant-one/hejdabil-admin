@@ -111,6 +111,7 @@ watchEffect(async () => {
             last_service.value = props.vehicle.last_service
             dist_belt.value = props.vehicle.dist_belt
             last_dist_belt.value = props.vehicle.last_dist_belt
+            comments.value = props.vehicle.comments
 
             sale_comments.value = props.vehicle.sale_comments
             organization_number.value = props.vehicle.client?.organization_number
@@ -375,16 +376,16 @@ const setThumbsSwiper = (swiper) => {
                                                     <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
                                                 </div>
                                                 <div>
-                                                    <span class="font-weight-semibold"> Lägsta försäljningspris: </span>
-                                                    <span>{{ min_sale_price }}</span>
-                                                </div>
-                                                <div>
                                                     <span class="font-weight-semibold"> VMB / Moms: </span>
                                                     <span>{{ iva_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Försäljningsdag: </span>
                                                     <span>{{ sale_date }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Comments: </span>
+                                                    <span>{{ sale_comments }}</span>
                                                 </div>
                                             </VCol>
                                         </VRow>

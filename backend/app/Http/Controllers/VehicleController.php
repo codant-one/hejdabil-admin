@@ -65,7 +65,7 @@ class VehicleController extends Controller
                             'year',
                             'gearbox_id'
                         ])
-                    );
+                    )->where('user_id', Auth::user()->id);
 
             $count = $query->count();
 
@@ -175,7 +175,7 @@ class VehicleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(VehicleRequest $request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         try {
             $vehicle = Vehicle::find($id);
