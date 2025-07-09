@@ -100,6 +100,19 @@ export const useVehiclesStores = defineStore('vehicles', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        sendVehicle(data) {
+            this.setLoading(true)
+            
+            return Vehicles.send(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
     }
 })

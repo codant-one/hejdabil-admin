@@ -42,6 +42,9 @@ class DatabaseSeeder extends Seeder
             InsuranceCompanySeeder::class,
             InsuranceTypeSeeder::class,
             PaymentTypeSeeder::class,
+
+            ClientTypeSeeder::class,
+            IdentificationSeeder::class
         ]);
 
     }

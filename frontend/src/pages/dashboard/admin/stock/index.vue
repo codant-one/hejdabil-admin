@@ -158,6 +158,10 @@ const editVehicle = vehicleData => {
   router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: vehicleData.id } })
 }
 
+const sellVehicle = vehicleData => {
+  router.push({ name : 'dashboard-admin-sold-id', params: { id: vehicleData.id } })
+}
+
 const getModels = computed(() => {
   return modelsByBrand.value.map((model) => {
     return {
@@ -235,15 +239,20 @@ const downloadCSV = async () => {
       
   vehiclesStores.getVehicles.forEach(element => {
 
+    const bilinfo =
+      (element.model?.brand?.name ?? '') + ' ' +
+      (element.model?.name ?? '') +
+      (element.year == null ? '' : ', ' + element.year);
+
     let data = {
-      INKÖPSDATUM: element.first_insc ?? '',
-      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
+      INKÖPSDATUM: element.purchase_date ?? '',
+      BILINFO: bilinfo,
       REGNR: element.reg_num,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
       MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
       ANTECKNINGAR:  element.comments ?? '',
       STATUS: element.state.name,
-      VAT: element.iva?.name,
+      VAT: element.iva_purchase?.name,
       BESIKTIGAS: element.control_inspection ?? ''
     }
 
@@ -409,7 +418,7 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
-                <td> {{ vehicle.first_insc }} </td>
+                <td> {{ vehicle.purchase_date }} </td>
                 <td class="cursor-pointer" @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
@@ -443,7 +452,7 @@ const downloadCSV = async () => {
                 <td class="text-end"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
                 <td> {{ vehicle.comments }} </td>
                 <td> {{ vehicle.state.name }} </td>
-                <td> {{ vehicle.iva?.name }} </td>
+                <td> {{ vehicle.iva_purchase?.name }} </td>
                 <td> {{ vehicle.control_inspection }} </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
@@ -465,6 +474,12 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-eye" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
+                      </VListItem>
+                      <VListItem v-if="$can('edit', 'stock')" @click="sellVehicle(vehicle)">
+                        <template #prepend>
+                          <VIcon icon="mdi-car-cog" />
+                        </template>
+                        <VListItemTitle>Sälj bil</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('edit', 'stock')" @click="editVehicle(vehicle)">
                         <template #prepend>

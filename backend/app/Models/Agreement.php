@@ -103,6 +103,21 @@ class Agreement extends Model
             $query->where('payment_type_id', $filters->get('payment_type_id'));
         }
 
+        if ($filters->get('vehicle_interchange_id') !== null) {
+            $query->where('vehicle_interchange_id', $filters->get('vehicle_interchange_id'));
+        }
+
+        if ($filters->get('client_id') !== null) {
+            $query->where('client_id', $filters->get('client_id'));
+        }
+
+        if ($filters->get('agreement_client_id') !== null) {
+            $query->where('agreement_client_id', $filters->get('agreement_client_id'));
+        }
+
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
             $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';

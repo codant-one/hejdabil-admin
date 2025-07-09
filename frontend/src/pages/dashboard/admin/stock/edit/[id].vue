@@ -62,16 +62,16 @@ const reg_num = ref('')
 const mileage = ref(null)
 const brand_id = ref(null)
 const model_id = ref(null)
+const model = ref(null)
 const generation = ref(null)
 const car_body_id = ref(null)
 const year = ref(null)
-const first_insc = ref(null)
 const control_inspection = ref(null)
 const color = ref(null)
 const fuel_id = ref(null)
 const gearbox_id = ref(null)
 const purchase_price = ref(null)
-const iva_id = ref(null)
+const iva_purchase_id = ref(null)
 const state_id = ref(null)
 const state_idOld = ref(null)
 const sale_price = ref(null)
@@ -205,13 +205,12 @@ async function fetchData() {
         generation.value = vehicle.value.generation
         car_body_id.value = vehicle.value.car_body_id
         year.value = vehicle.value.year
-        first_insc.value = vehicle.value.first_insc
         control_inspection.value = vehicle.value.control_inspection
         color.value = vehicle.value.color
         fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
         purchase_price.value = vehicle.value.purchase_price
-        iva_id.value = vehicle.value.iva_id
+        iva_purchase_id.value = vehicle.value.iva_purchase_id
         state_id.value = vehicle.value.state_id
         state_idOld.value = vehicle.value.state_id
         sale_price.value = vehicle.value.sale_price
@@ -245,13 +244,27 @@ async function fetchData() {
 }
 
 const getModels = computed(() => {
-  return modelsByBrand.value.map((model) => {
-    return {
-      title: model.name,
-      value: model.id
+    const models = modelsByBrand.value.map((model) => ({
+        title: model.name,
+        value: model.id
+    }))
+
+    if (modelsByBrand.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
     }
-  })
+
+    return models
 })
+
+const onClearBrand = () => {
+    modelsByBrand.value = []
+}
+
+const selectModel = selected => {
+
+    model.value = selected !== 0 ? null : model.value
+
+}
 
 const selectBrand = brand => {
     if (brand) {
@@ -767,18 +780,24 @@ const onSubmit = () => {
 
             state_id.value = state_idOld.value
 
+            if(state_id.value === 12) {
+                router.push({ name : 'dashboard-admin-sold-id'})
+                return false;
+            }
+
             formData.append('id', Number(route.params.id))
             formData.append('_method', 'PUT')
             formData.append('reg_num', reg_num.value)
+            formData.append('brand_id', brand_id.value)
             formData.append('model_id', model_id.value)
+            formData.append('model', model.value)
             formData.append('car_body_id', car_body_id.value)
             formData.append('gearbox_id', gearbox_id.value)
-            formData.append('iva_id', iva_id.value)
+            formData.append('iva_purchase_id', iva_purchase_id.value)
             formData.append('state_id', state_id.value)
             formData.append('mileage', mileage.value)
             formData.append('generation', generation.value)
             formData.append('year', year.value)
-            formData.append('first_insc', first_insc.value)
             formData.append('control_inspection', control_inspection.value)
             formData.append('color', color.value)
             formData.append('fuel_id', fuel_id.value)
@@ -813,12 +832,8 @@ const onSubmit = () => {
                             error: false
                         }
 
-                        if(state_id.value === 12)
-                            router.push({ name : 'dashboard-admin-sold'})
-                        else
-                            router.push({ name : 'dashboard-admin-stock'})
-                        
-                            emitter.emit('toast', data)
+                        router.push({ name : 'dashboard-admin-stock'})
+                        emitter.emit('toast', data)
                     }
                     isRequestOngoing.value = false
                 })
@@ -954,16 +969,24 @@ const onSubmit = () => {
                                                         autocomplete="off"
                                                         clearable
                                                         clear-icon="tabler-x"
-                                                        @update:modelValue="selectBrand"/>
+                                                        @update:modelValue="selectBrand"
+                                                        @click:clear="onClearBrand"/>
                                                 </VCol>
-                                                <VCol cols="12" md="6">
+                                                <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                     <VAutocomplete
                                                         v-model="model_id"
                                                         label="Modell"
                                                         :items="getModels"
                                                         autocomplete="off"
                                                         clearable
-                                                        clear-icon="tabler-x"/>
+                                                        clear-icon="tabler-x"
+                                                        @update:modelValue="selectModel"/>
+                                                </VCol>
+                                                <VCol cols="12" md="3" v-if="model_id === 0">
+                                                    <VTextField
+                                                        v-model="model"
+                                                        label="Modellens namn"
+                                                    />
                                                 </VCol>
                                                 <VCol cols="12" md="6">
                                                     <VTextField
@@ -993,7 +1016,7 @@ const onSubmit = () => {
                                                 <VCol cols="12" md="6">
                                                     <AppDateTimePicker
                                                         :key="JSON.stringify(startDateTimePickerConfig)"
-                                                        v-model="first_insc"
+                                                        v-model="purchase_date"
                                                         density="compact"
                                                         :config="startDateTimePickerConfig"
                                                         label="Inköpsdatum"
@@ -1054,7 +1077,7 @@ const onSubmit = () => {
                                                 </VCol>
                                                 <VCol cols="12" md="6">
                                                     <VAutocomplete
-                                                        v-model="iva_id"
+                                                        v-model="iva_purchase_id"
                                                         label="VMB / Moms"
                                                         :items="ivas"
                                                         :item-title="item => item.name"

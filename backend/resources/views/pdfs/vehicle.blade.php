@@ -190,11 +190,11 @@
             </tr>
             <tr>
                 <td class="font-weight-medium">VMB / Moms</td>
-                <td>{{ $vehicle->iva?->name }}</td>
+                <td>{{ $vehicle->iva_purchase?->name }}</td>
             </tr>
             <tr>
                 <td class="font-weight-medium">InköpsDatum </td>
-                <td>{{ $vehicle->first_insc }}</td>
+                <td>{{ $vehicle->purchase_date }}</td>
             </tr>
             <tr>
                 <td class="font-weight-medium">Kostnad </td>

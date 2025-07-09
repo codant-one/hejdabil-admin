@@ -160,6 +160,10 @@ const removeVehicle = async () => {
   return true
 }
 
+const seeClient = clientData => {
+  router.push({ name : 'dashboard-admin-clients-id', params: { id: clientData.id } })
+}
+
 const download = async(vehicle) => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + vehicle.file);
@@ -183,7 +187,7 @@ const downloadCSV = async () => {
 
   isRequestOngoing.value = true
 
-  let data = { limit: -1 }
+  let data = { limit: -1, state_id: 12}
 
   await vehiclesStores.fetchVehicles(data)
 
@@ -191,16 +195,19 @@ const downloadCSV = async () => {
       
   vehiclesStores.getVehicles.forEach(element => {
 
+    const bilinfo =
+      (element.model?.brand?.name ?? '') + ' ' +
+      (element.model?.name ?? '') +
+      (element.year == null ? '' : ', ' + element.year);
+
     let data = {
-      INKÖPSDATUM: element.first_insc ?? '',
-      BILINFO: element.model.brand.name + ' ' + element.model.name + (element.year === null ? '' :  ', ' + element.year),
-      REGNR: element.reg_num,
+      FÖRSÄLJNINGSDATUM: element.sale_date ?? '',
+      BILINFO: bilinfo,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
-      ANTECKNINGAR:  element.comments ?? '',
-      STATUS: element.state.name,
-      VAT: element.iva?.name,
-      BESIKTIGAS: element.control_inspection ?? ''
+      KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
+      FÖRSÄLJNINGSPRIS: formatNumber(element.sale_price ?? 0) + ' kr',
+      VINST: formatNumber(element.sale_price - element.purchase_price) + ' kr',
+      KÖPAREN: element.client?.fullname
     }
 
     dataArray.push(data)
@@ -325,10 +332,13 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col">Information om bilen </th>
+                <th scope="col"> Försäljningsdatum </th>
+                <th scope="col"> Bil info </th>
+                <th scope="col" class="text-end"> Inköpspris </th>
                 <th scope="col" class="text-end"> Kostnader </th>
                 <th scope="col" class="text-end"> Försäljningspris </th>
-                <th scope="col" class="text-center"> Annons </th>
+                <th scope="col" class="text-end"> Vinst </th>
+                <th scope="col"> Köparen </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -338,6 +348,7 @@ const downloadCSV = async () => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
+                <td> {{ vehicle.sale_date }}</td>
                 <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
@@ -366,18 +377,21 @@ const downloadCSV = async () => {
                     </div>
                   </div>
                 </td>                
-                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>
+                <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
+                <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>                
                 <td class="text-end"> {{ formatNumber(vehicle.sale_price ?? 0) }} kr</td>
-                <td class="d-flex justify-content-center">
-                   <VCheckbox
-                    v-model="vehicle.checked"
-                    color="info"
-                    class="w-100 text-center d-flex justify-content-center"
-                    :disabled="(vehicle.state_id === 11) ? true : false"
-                    :readonly="(vehicle.state_id === 11) ? false : true"
-                    :value="(vehicle.state_id === 11) ? false : true"
-                  />
-                </td>
+                <td class="text-end"> {{ formatNumber(vehicle.sale_price - vehicle.purchase_price) }} kr</td>
+                <td class="text-wrap">
+                  <div class="d-flex flex-column">
+                    <span v-if="vehicle.client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client.client)">
+                      {{ vehicle.client.fullname }} 
+                    </span>
+                    <span v-else class="font-weight-medium  text-primary">
+                      {{ vehicle.client.fullname }} 
+                    </span>
+                    <span class="text-sm text-disabled">{{ vehicle.client.phone }}</span>
+                  </div>
+                </td>                
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -398,12 +412,6 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-eye" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('edit', 'stock')" @click="editVehicle(vehicle)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
                         <template #prepend>
@@ -426,7 +434,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!vehicles.length">
               <tr>
                 <td
-                  colspan="6"
+                  colspan="8"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

@@ -4,20 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
-class AgreementClient extends Model
+class VehicleClient extends Model
 {
     use HasFactory;
 
+    protected $guarded = [];
+
     /**** Relationship ****/
-    public function supplier() {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    public function client(){
+        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
 
-    public function agreement(){
-        return $this->hasMany(Agreement::class, 'agreement_client_id', 'id');
+    public function vehicle(){
+        return $this->belongsTo(Vehicle::class, 'vehicle_id', 'id');
     }
-
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
@@ -55,7 +57,7 @@ class AgreementClient extends Model
     public static function createClient($request) {
 
         $client = self::create([
-            'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
+            'vehicle_id' => $request->vehicle_id === 'null' ? null : $request->vehicle_id,
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
             'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
             'client_id' => $request->client_id === 'null' ? null : $request->client_id,
@@ -103,4 +105,5 @@ class AgreementClient extends Model
             $client->delete();
         }
     }
+    
 }
