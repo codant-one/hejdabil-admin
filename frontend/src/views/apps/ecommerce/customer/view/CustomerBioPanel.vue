@@ -75,7 +75,7 @@ async function fetchData() {
     await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
 
-    supplier_id.value = props.customerData.supplier.id
+    supplier_id.value = props.customerData.supplier?.id
   }
 }
 
@@ -267,7 +267,7 @@ const onSubmit = () => {
                   </span>
                 </h6>
               </VListItemTitle>
-              <VListItemTitle v-if="role !== 'Supplier' && route.name.includes('clients') && suppliers.length > 0">
+              <VListItemTitle v-if="role !== 'Supplier' && route.name.includes('clients-id') && suppliers.length > 0 && props.customerData.supplier_id !== null">
                 <h6 class="text-base font-weight-semibold">
                   Leverantör:
                   <span class="text-body-2">

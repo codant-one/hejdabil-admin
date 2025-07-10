@@ -373,7 +373,7 @@ const setThumbsSwiper = (swiper) => {
                                             <VCol cols="12">
                                                 <div>
                                                     <span class="font-weight-semibold"> Försäljningspris: </span>
-                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
+                                                    <span>{{ formatNumber(vehicle.sale_price ?? 0) }} kr</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> VMB / Moms: </span>

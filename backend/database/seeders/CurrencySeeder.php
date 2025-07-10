@@ -23,7 +23,10 @@ class CurrencySeeder extends Seeder
         foreach($currencies as $currency){
             Currency::query()->updateOrCreate([
                 'id' => $currency['id'],
-                'name' => $currency['name']
+                'name' => $currency['name'],
+                'code' => $currency['code'],
+                'description' => $currency['description'],
+                'flag' => $currency['flag']
             ]);
         }
     }

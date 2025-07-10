@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('email');
             $table->string('organization_number')->nullable();
             $table->longText('address');
+            $table->string('street');
             $table->string('postal_code');
             $table->string('phone');
             $table->timestamps();

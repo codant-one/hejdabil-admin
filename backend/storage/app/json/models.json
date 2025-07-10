@@ -4603,5 +4603,285 @@
     "id": 921,
     "brand_id": 43,
     "name": "Roadster"
+  },
+  {
+    "id": 922,
+    "brand_id": 44,
+    "name": "Escalade"
+  },
+  {
+    "id": 923,
+    "brand_id": 44,
+    "name": "Escalade ESV"
+  },
+  {
+    "id": 924,
+    "brand_id": 44,
+    "name": "Lyriq"
+  },
+  {
+    "id": 925,
+    "brand_id": 44,
+    "name": "XT4"
+  },
+  {
+    "id": 926,
+    "brand_id": 44,
+    "name": "XT5"
+  },
+  {
+    "id": 927,
+    "brand_id": 44,
+    "name": "XT6"
+  },
+  {
+    "id": 928,
+    "brand_id": 44,
+    "name": "CT4"
+  },
+  {
+    "id": 929,
+    "brand_id": 44,
+    "name": "CT5"
+  },
+  {
+    "id": 930,
+    "brand_id": 44,
+    "name": "Celestiq"
+  },
+  {
+    "id": 931,
+    "brand_id": 45,
+    "name": "Ypsilon"
+  },
+  {
+    "id": 932,
+    "brand_id": 45,
+    "name": "Delta"
+  },
+  {
+    "id": 933,
+    "brand_id": 45,
+    "name": "Gamma"
+  },
+  {
+    "id": 934,
+    "brand_id": 45,
+    "name": "Stratos"
+  },
+  {
+    "id": 935,
+    "brand_id": 45,
+    "name": "Fulvia"
+  },
+  {
+    "id": 936,
+    "brand_id": 45,
+    "name": "Aurelia"
+  },
+  {
+    "id": 937,
+    "brand_id": 45,
+    "name": "Thema"
+  },
+  {
+    "id": 938,
+    "brand_id": 45,
+    "name": "037"
+  },
+  {
+    "id": 939,
+    "brand_id": 46,
+    "name": "Phantom"
+  },
+  {
+    "id": 940,
+    "brand_id": 46,
+    "name": "Ghost"
+  },
+  {
+    "id": 941,
+    "brand_id": 46,
+    "name": "Cullinan"
+  },
+  {
+    "id": 942,
+    "brand_id": 46,
+    "name": "Spectre"
+  },
+  {
+    "id": 943,
+    "brand_id": 46,
+    "name": "Wraith"
+  },
+  {
+    "id": 944,
+    "brand_id": 46,
+    "name": "Dawn"
+  },
+  {
+    "id": 945,
+    "brand_id": 47,
+    "name": "MG3"
+  },
+  {
+    "id": 946,
+    "brand_id": 47,
+    "name": "MG4"
+  },
+  {
+    "id": 947,
+    "brand_id": 47,
+    "name": "MG5"
+  },
+  {
+    "id": 948,
+    "brand_id": 47,
+    "name": "MG6"
+  },
+  {
+    "id": 949,
+    "brand_id": 47,
+    "name": "MG ZS"
+  },
+  {
+    "id": 950,
+    "brand_id": 47,
+    "name": "MG ZS EV"
+  },
+  {
+    "id": 951,
+    "brand_id": 47,
+    "name": "MG HS"
+  },
+  {
+    "id": 952,
+    "brand_id": 47,
+    "name": "MG HS PHEV"
+  },
+  {
+    "id": 953,
+    "brand_id": 47,
+    "name": "Marvel R"
+  },
+  {
+    "id": 954,
+    "brand_id": 47,
+    "name": "RX8"
+  },
+  {
+    "id": 955,
+    "brand_id": 48,
+    "name": "01"
+  },
+  {
+    "id": 956,
+    "brand_id": 48,
+    "name": "02"
+  },
+  {
+    "id": 957,
+    "brand_id": 48,
+    "name": "03"
+  },
+  {
+    "id": 958,
+    "brand_id": 48,
+    "name": "03+"
+  },
+  {
+    "id": 959,
+    "brand_id": 48,
+    "name": "05"
+  },
+  {
+    "id": 960,
+    "brand_id": 48,
+    "name": "06"
+  },
+  {
+    "id": 961,
+    "brand_id": 48,
+    "name": "07"
+  },
+  {
+    "id": 962,
+    "brand_id": 48,
+    "name": "08"
+  },
+  {
+    "id": 963,
+    "brand_id": 48,
+    "name": "09"
+  },
+  {
+    "id": 964,
+    "brand_id": 49,
+    "name": "001"
+  },
+  {
+    "id": 965,
+    "brand_id": 49,
+    "name": "001 FR"
+  },
+  {
+    "id": 966,
+    "brand_id": 49,
+    "name": "009"
+  },
+  {
+    "id": 967,
+    "brand_id": 49,
+    "name": "X"
+  },
+  {
+    "id": 968,
+    "brand_id": 49,
+    "name": "007"
+  },
+  {
+    "id": 969,
+    "brand_id": 50,
+    "name": "SF90 Stradale"
+  },
+  {
+    "id": 970,
+    "brand_id": 50,
+    "name": "SF90 Spider"
+  },
+  {
+    "id": 971,
+    "brand_id": 50,
+    "name": "296 GTB"
+  },
+  {
+    "id": 972,
+    "brand_id": 50,
+    "name": "296 GTS"
+  },
+  {
+    "id": 973,
+    "brand_id": 50,
+    "name": "Roma"
+  },
+  {
+    "id": 974,
+    "brand_id": 50,
+    "name": "Roma Spider"
+  },
+  {
+    "id": 975,
+    "brand_id": 50,
+    "name": "Purosangue"
+  },
+  {
+    "id": 976,
+    "brand_id": 50,
+    "name": "Daytona SP3"
+  },
+  {
+    "id": 977,
+    "brand_id": 50,
+    "name": "812 GTS"
   }
 ]

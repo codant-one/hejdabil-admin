@@ -53,7 +53,13 @@ watchEffect(() => {
 })
 
 onMounted(async () => {
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
   
+  if(role.value !== 'Supplier') {
+    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
+    suppliers.value = toRaw(suppliersStores.getSuppliers)
+  }
 })
 
 watchEffect(fetchData)
@@ -83,15 +89,6 @@ async function fetchData(cleanFilters = false) {
   clients.value = clientsStores.getClients
   totalPages.value = clientsStores.last_page
   totalClients.value = clientsStores.clientsTotalCount
-
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-
-  
-  if(role.value !== 'Supplier') {
-    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
-    suppliers.value = toRaw(suppliersStores.getSuppliers)
-  }
 
   isRequestOngoing.value = false
 }

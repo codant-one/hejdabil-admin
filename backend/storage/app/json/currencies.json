@@ -1,13 +1,79 @@
 [
-  { "id": 1, "name": "SEK" },
-  { "id": 2, "name": "EUR" },
-  { "id": 3, "name": "USD" },
-  { "id": 4, "name": "DKK" },
-  { "id": 5, "name": "GBP" },
-  { "id": 6, "name": "NOK" },
-  { "id": 7, "name": "PLN" },
-  { "id": 8, "name": "TRY" },
-  { "id": 9, "name": "CHF" },
-  { "id": 10, "name": "HUF" },
-  { "id": 11, "name": "CZK" }
+  { 
+    "id": 1, 
+    "name": "SEK", 
+    "code": "kr", 
+    "description": "Corona sueca", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/se.svg" 
+  },
+  { 
+    "id": 2, 
+    "name": "EUR", 
+    "code": "€", 
+    "description": "Euro", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/eu.svg" 
+  },
+  { 
+    "id": 3, 
+    "name": "USD", 
+    "code": "$", 
+    "description": "Dólar estadounidense", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/us.svg"
+  },
+  { 
+    "id": 4, 
+    "name": "DKK", 
+    "code": "kr", 
+    "description": "Corona danesa", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/dk.svg" 
+  },
+  { 
+    "id": 5, 
+    "name": "GBP", 
+    "code": "£", 
+    "description": "Libra esterlina", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/gb.svg" 
+  },
+  { 
+    "id": 6, 
+    "name": "NOK", 
+    "code": "kr",
+    "description": "Corona noruega", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/no.svg" 
+  },
+  { 
+    "id": 7, 
+    "name": "PLN", 
+    "code": "zł", 
+    "description": "Złoty polaco",
+    "flag": "https://hatscripts.github.io/circle-flags/flags/pl.svg"
+  },
+  { 
+    "id": 8, 
+    "name": "TRY", 
+    "code": "₺", 
+    "description": "Lira turca", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/tr.svg" 
+  },
+  { 
+    "id": 9,
+     "name": "CHF", 
+     "code": "CHF", 
+     "description": "Franco suizo (no tiene símbolo especial, se usa ISO)", 
+     "flag": "https://hatscripts.github.io/circle-flags/flags/ch.svg" 
+    },
+  { 
+    "id": 10,
+    "name": "HUF", 
+    "code": "Ft", 
+    "description": "Forinto húngaro", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/hu.svg" 
+  },
+  { 
+    "id": 11, 
+    "name": "CZK", 
+    "code": "Kč", 
+    "description": "Corona checa", 
+    "flag": "https://hatscripts.github.io/circle-flags/flags/cz.svg"
+  }
 ]

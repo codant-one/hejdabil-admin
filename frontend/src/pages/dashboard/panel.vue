@@ -16,7 +16,7 @@ async function fetchData() {
   const userData = localStorage.getItem('user_data')
     
   userDataJ.value = JSON.parse(userData)
-  name.value = userDataJ.value.name + " " + userDataJ.value.last_name
+  name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
 
   isRequestOngoing.value = false
 }

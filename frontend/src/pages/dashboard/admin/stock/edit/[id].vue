@@ -215,7 +215,7 @@ async function fetchData() {
         state_idOld.value = vehicle.value.state_id
         sale_price.value = vehicle.value.sale_price
         min_sale_price.value = vehicle.value.min_sale_price
-        purchase_date.value = vehicle.value.purchase_date
+        purchase_date.value = vehicle.value.purchase_date === null ? formatDate(new Date()) : vehicle.value.purchase_date
         sale_date.value = vehicle.value.sale_date
         number_keys.value = vehicle.value.number_keys
         service_book.value = vehicle.value.service_book
@@ -241,6 +241,13 @@ async function fetchData() {
     }
 
     isRequestOngoing.value = false
+}
+
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const getModels = computed(() => {

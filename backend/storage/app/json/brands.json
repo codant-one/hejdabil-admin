@@ -256,5 +256,47 @@
     "name": "Smart",
     "url": "https://my.smart.com/",
     "logo": null
+  },
+  {
+    "id": 44,
+    "name": "Cadillac",
+    "url": "https://www.cadillac.com",
+    "logo": null
+  },
+  {
+    "id": 45,
+    "name": "Lancia",
+    "url": "https://www.lancia.com",
+    "logo": null
+  },
+  {
+    "id": 46,
+    "name": "Rolls‑Royce",
+    "url": "https://www.rolls-roycemotorcars.com",
+    "logo": null
+  },
+  {
+    "id": 47,
+    "name": "MG",
+    "url": "https://www.mg.co.uk",
+    "logo": null
+  },
+  {
+    "id": 48,
+    "name": "Lynk & Co",
+    "url": "https://www.lynkco.com",
+    "logo": null
+  },
+  {
+    "id": 49,
+    "name": "Zeekr",
+    "url": "https://www.zeekr.eu",
+    "logo": null
+  },
+  {
+    "id": 50,
+    "name": "Ferrari",
+    "url": "https://www.ferrari.com",
+    "logo": null
   }
 ]

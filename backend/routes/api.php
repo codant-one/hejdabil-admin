@@ -69,7 +69,7 @@ Route::group([
 });
 
 //Private Endpoints
-Route::group(['middleware' => ['cors','jwt'] ], function(){
+Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
      
     //Resources 
     Route::apiResource('users', UsersController::class);

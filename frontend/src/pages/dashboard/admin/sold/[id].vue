@@ -53,6 +53,7 @@ const purchase_date = ref(null)
 
 const organization_number = ref('')
 const address = ref('')
+const street = ref('')
 const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
@@ -162,6 +163,7 @@ const clearClient = () => {
     email.value = null
     organization_number.value = null
     address.value = null
+    street.value = null
     postal_code.value = null
     phone.value = null
 
@@ -177,7 +179,8 @@ const selectClient = client => {
         email.value = _client.email
         organization_number.value = _client.organization_number
         address.value = _client.address
-        postal_code.value = _client.street + ' ' + _client.postal_code
+        street.value = _client.street
+        postal_code.value = _client.postal_code
         phone.value = _client.phone
 
         save_client.value = false
@@ -206,9 +209,9 @@ const onSubmit = () => {
             formData.append('email', email.value)
             formData.append('organization_number', organization_number.value)
             formData.append('address', address.value)
+            formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', phone.value)
-            formData.append('street', '-')
 
             isRequestOngoing.value = true
 
@@ -539,21 +542,21 @@ const onSubmit = () => {
                                                             <VTextField
                                                                 v-model="postal_code"
                                                                 :rules="[requiredValidator]"
-                                                                label="Postnr. ort"
+                                                                label="Postnummer"
                                                             />
+                                                        </VCol>
+                                                        <VCol cols="12" md="6">
+                                                            <VTextField
+                                                                v-model="street"
+                                                                :rules="[requiredValidator]"
+                                                                label="Stad"
+                                                            /> 
                                                         </VCol>
                                                         <VCol cols="12" md="6">
                                                             <VTextField
                                                                 v-model="phone"
                                                                 :rules="[requiredValidator, phoneValidator]"
                                                                 label="Telefon"
-                                                            />
-                                                        </VCol>
-                                                        <VCol cols="12" md="6">
-                                                            <VTextField
-                                                                v-model="email"
-                                                                :rules="[emailValidator, requiredValidator]"
-                                                                label="E-post"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
@@ -565,6 +568,13 @@ const onSubmit = () => {
                                                                 :item-value="item => item.id"
                                                                 :rules="[requiredValidator]"
                                                                 autocomplete="off"/>
+                                                        </VCol>
+                                                        <VCol cols="12" md="12">
+                                                            <VTextField
+                                                                v-model="email"
+                                                                :rules="[emailValidator, requiredValidator]"
+                                                                label="E-post"
+                                                            />
                                                         </VCol>
                                                     </VRow>
                                                 </VCol>

@@ -13,9 +13,11 @@ return new class extends Migration
     {
         Schema::create('currencies', function (Blueprint $table) {
             $table->id();
-            $table->string("name");
             $table->unsignedBigInteger('state_id')->default(2);
-            
+            $table->string("name");
+            $table->string("code");
+            $table->string("flag");
+            $table->string("description")=>nullable();
             $table->timestamps();
         });
     }

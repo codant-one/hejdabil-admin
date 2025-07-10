@@ -245,6 +245,7 @@ class Vehicle extends Model
             'email' => $request->email,
             'organization_number' => $request->organization_number,
             'address' => $request->address,
+            'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone
         ]);

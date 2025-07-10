@@ -46,6 +46,13 @@ watchEffect(() => {
         selectedModel.value = {}
 })
 
+onMounted(async () => {
+
+  await brandsStores.fetchBrands({limit: -1})
+  brands.value = brandsStores.getBrands
+  
+})
+
 watchEffect(fetchData)
 
 async function fetchData(cleanFilters = false) {
@@ -68,8 +75,6 @@ async function fetchData(cleanFilters = false) {
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
   await modelsStores.fetchModels(data)
-  await brandsStores.fetchBrands({limit: -1})
-  brands.value = brandsStores.getBrands
 
   models.value = modelsStores.getModels
   totalPages.value = modelsStores.last_page
@@ -463,7 +468,7 @@ const downloadCSV = async () => {
 
     @media(min-width: 991px){
         .search {
-            width: 30rem;
+            width: 15rem;
         }
     }
 </style>
