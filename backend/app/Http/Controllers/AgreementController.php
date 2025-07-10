@@ -1,0 +1,417 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\AgreementRequest;
+use App\Http\Requests\VehicleRequest;
+
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
+
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+
+use App\Models\Agreement;
+use App\Models\Vehicle;
+use App\Models\Brand;
+use App\Models\CarModel;
+use App\Models\CarBody;
+use App\Models\Gearbox;
+use App\Models\Iva;
+use App\Models\Fuel;
+use App\Models\DocumentType;
+use App\Models\State;
+use App\Models\Client;
+use App\Models\AgreementClient;
+use App\Models\VehicleClient;
+use App\Models\Guaranty;
+use App\Models\GuarantyType;
+use App\Models\InsuranceCompany;
+use App\Models\InsuranceType;
+use App\Models\Currency;
+use App\Models\PaymentType;
+
+class AgreementController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware(PermissionMiddleware::class . ':view stock|administrator')->only(['index']);
+        $this->middleware(PermissionMiddleware::class . ':create stock|administrator')->only(['store']);
+        $this->middleware(PermissionMiddleware::class . ':edit stock|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':delete stock|administrator')->only(['destroy']);
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+
+            $limit = $request->has('limit') ? $request->limit : 10;
+
+            $query = Agreement::with([
+                        'agreement_type',
+                        'guaranty',
+                        'guaranty_type',
+                        'insurance_company',
+                        'insurance_type',
+                        'currency',
+                        'iva',
+                        'payment_type',
+                        'vehicle_interchange',
+                        'supplier',
+                        'agreement_client',
+                        'vehicle_client',
+                        'supplier.user'
+                    ])->applyFilters(
+                        $request->only([
+                            'search',
+                            'orderByField',
+                            'guaranty_id',
+                            'guaranty_type_id',
+                            'insurance_company_id',
+                            'insurance_type_id',
+                            'currency_id',
+                            'payment_type_id',
+                            'vehicle_interchange_id',
+                            'vehicle_client_id',
+                            'supplier_id'
+                        ])
+                    );
+
+            $count = $query->count();
+
+            $agreements = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'agreements' => $agreements,
+                    'agreementsTotalCount' => $count,
+                    'brands' => Brand::all(),
+                    'models' => CarModel::with(['brand'])->get(),
+                    'gearboxes' => Gearbox::all(),
+                    'carbodies'  => CarBody::all(),
+                    'ivas'  => Iva::all(),
+                    'fuels'  => Fuel::all(),
+                    'states'  => State::all(),
+                    'guaranties'  => Guaranty::all(),
+                    'guarantytypes'  => GuarantyType::all(),
+                    'insuranceCompanies'  => InsuranceCompany::all(),
+                    'insuranceTypes'  => InsuranceType::all(),
+                    'currencies'  => Currency::all(),
+                    'paymenttypes'  => PaymentType::all()
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(AgreementRequest $request)
+    {
+        try {
+
+            $client = null;
+
+            if($request->save_client === 'true') {
+                $request->supplier_id = 'null';
+                $client = Client::createClient($request);
+                $order_id = Client::where('supplier_id', $client->supplier_id)
+                                ->withTrashed()
+                                ->latest('order_id')
+                                ->first()
+                                ->order_id ?? 0;
+
+                $client->order_id = $order_id + 1;
+                $client->update();
+            }
+
+            if ( $request->has("client_id") )
+                $request->merge([
+                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+                ]);
+            else
+                $request->request->add([
+                    'client_id' => $request->save_client === 'true' ? $client->id : null
+                ]);
+
+
+            //Create Vehicle
+            $vehicle = null;
+            $vehicleRequest = VehicleRequest::createFrom($request);
+
+            $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+            if($validate->fails()){
+                $vehicleRequest->failedValidation($validate);
+            }
+
+            //Set Vehicle State ID on Sold
+            if ( !$vehicleRequest->has('state_id') ){
+                $vehicleRequest->request->add([
+                    'state_id' => 12
+                ]);
+            }
+            elseif ( $vehicleRequest->has('state_id') && 
+                     ($vehicleRequest->state_id === 'null' || empty($vehicleRequest->state_id))
+                   ){
+                $vehicleRequest->merge([
+                    "state_id" => 12
+                ]);
+            }
+
+            //If Vehicle Not Exist
+            if ( !$vehicleRequest->has('vehicle_id') || 
+                 ($vehicleRequest->has('vehicle_id') && $vehicleRequest->vehicle_id === 'null')
+               ){
+                $vehicle = Vehicle::createVehicle($vehicleRequest);
+                $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
+
+                if ( $request->has("vehicle_id") )
+                    $request->merge([
+                        "vehicle_id" => $vehicle->id
+                    ]);
+                else
+                    $request->request->add([
+                        'vehicle_id' => $vehicle->id
+                    ]);
+
+                VehicleClient::createClient($request);
+            }
+            else {
+                $vehicle = Vehicle::find($vehicleRequest->vehicle_id);
+            }
+            
+            $vehicle = Vehicle::with(['vehicle_client'])->find($vehicle->id);
+            
+            //Get Client ID
+            if ( $request->has("client_id") )
+                $request->merge([
+                    "client_id" => $vehicle->vehicle_client->client_id
+                ]);
+            else
+                $request->request->add([
+                    'client_id' => $vehicle->vehicle_client->client_id
+                ]);
+
+            //Set VehicleClient ID
+            //Get Client ID
+            if ( $request->has("client_id") )
+                $request->merge([
+                    "vehicle_client_id" => $vehicle->vehicle_client->id
+                ]);
+            else
+                $request->request->add([
+                    'vehicle_client_id' => $vehicle->vehicle_client->id
+                ]);
+
+            //Create Agreement
+            $agreement = Agreement::createAgreement($request);
+            //Get Agreement ID
+            $request->request->add([
+                'agreement_id' => $agreement->id
+            ]);
+            
+            //Create Agreement Client.
+            $agreementClient = AgreementClient::createClient($request);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'agreement' => Agreement::find($agreement->id),
+                    'agreementClient' => AgreementClient::find($agreementClient->id),
+                    'vehicleClient' => VehicleClient::find($vehicle->vehicle_client->id)
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        try {
+
+            $agreement = Agreement::with([
+                        'agreement_type',
+                        'guaranty',
+                        'guaranty_type',
+                        'insurance_company',
+                        'insurance_type',
+                        'currency',
+                        'iva',
+                        'payment_type',
+                        'vehicle_interchange',
+                        'supplier',
+                        'agreement_client',
+                        'vehicle_client',
+                        'supplier.user'
+                    ])->find($id);
+
+            if (!$agreement)
+                return response()->json([
+                    'sucess' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Avtalet hittades inte'
+                ], 404);
+
+            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
+            } else {
+                $clients = Client::all();
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'agreement' => $agreement,
+                    'brands' => Brand::all(),
+                    'models' => CarModel::with(['brand'])->get(),
+                    'gearboxes' => Gearbox::all(),
+                    'carbodies'  => CarBody::all(),
+                    'ivas'  => Iva::all(),
+                    'fuels'  => Fuel::all(),
+                    'states'  => State::all(),
+                    'guaranties'  => Guaranty::all(),
+                    'guarantytypes'  => GuarantyType::all(),
+                    'insuranceCompanies'  => InsuranceCompany::all(),
+                    'insuranceTypes'  => InsuranceType::all(),
+                    'currencies'  => Currency::all(),
+                    'paymenttypes'  => PaymentType::all(),
+                    'clients' => $clients
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+     public function update(Request $request, $id): JsonResponse
+    {
+        try {
+            $agreement = Agreement::with([
+                'agreement_client',
+                'vehicle_client'
+            ])->find($id);
+        
+            if (!$agreement)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Avtalet hittades inte'
+                ], 404);
+            
+            
+            $client = null;
+            if($request->save_client === 'true' && !empty($agreement->agreement_client->client_id) ) {
+                $request->supplier_id = 'null';
+                $client = Client::createClient($request);
+                $order_id = Client::where('supplier_id', $client->supplier_id)
+                                ->withTrashed()
+                                ->latest('order_id')
+                                ->first()
+                                ->order_id ?? 0;
+
+                $client->order_id = $order_id + 1;
+                $client->update();
+            }
+
+            if ( $request->has("client_id") )
+                $request->merge([
+                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? $agreement->agreement_client->client_id : $request->client_id)
+                ]);
+            else
+                $request->request->add([
+                    'client_id' => $request->save_client === 'true' ? $client->id : $agreement->agreement_client->client_id
+                ]);
+            
+            //Update Agreement
+            $agreement = Agreement::updateAgreement($request, $agreement); 
+
+            //Update Agreement Client.
+            $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
+            $agreementClient = AgreementClient::updateClient($request, $agreementClient); 
+
+            //Update Vehicle Client.
+            $vehicleClient = VehicleClient::find($agreement->vehicle_client_id);
+            $vehicleClient = VehicleClient::updateClient($request, $vehicleClient); 
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'agreement' => Agreement::find($agreement->id),
+                    'agreementClient' => $agreementClient,
+                    'vehicleClient' => $vehicleClient
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+
+            $agreement = Agreement::find($id);
+        
+            if (!$agreement)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Avtalet hittades inte'
+                ], 404);
+            
+
+            $agreement->deleteAgreement($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'agreement' => $agreement
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+}

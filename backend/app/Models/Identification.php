@@ -11,4 +11,13 @@ class Identification extends Model
     use HasFactory;
 
     protected $guarded = [];
+
+    /**** Relationship ****/
+    public function vehicle_client(){
+        return $this->hasMany(VehicleClient::class, 'identification_id', 'id');
+    }
+
+    public function agreement_client(){
+        return $this->hasMany(VehicleClient::class, 'identification_id', 'id');
+    }
 }

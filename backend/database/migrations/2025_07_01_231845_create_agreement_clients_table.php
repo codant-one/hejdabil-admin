@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vehicle_clients', function (Blueprint $table) {
+        Schema::create('agreement_clients', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger("vehicle_id");
+            $table->unsignedBigInteger("agreement_id")->nullable();
             $table->unsignedBigInteger("client_type_id")->nullable();
             $table->unsignedBigInteger("identification_id")->nullable();
             $table->unsignedBigInteger("client_id")->nullable();
@@ -23,10 +23,11 @@ return new class extends Migration
             $table->longText('address')->nullable();
             $table->string('postal_code')->nullable();
             $table->string('phone')->nullable();
+            $table->string('reference')->nullable();
             $table->string('street')->nullable();
             $table->timestamps();
 
-            $table->foreign('vehicle_id')->references('id')->on('vehicles')->onDelete('cascade');
+            $table->foreign('agreement_id')->references('id')->on('agreements')->onDelete('cascade');
             $table->foreign('client_type_id')->references('id')->on('client_types')->onDelete('cascade');
             $table->foreign('identification_id')->references('id')->on('identifications')->onDelete('cascade');
             $table->foreign('client_id')->references('id')->on('clients')->onDelete('cascade');
@@ -38,6 +39,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vehicle_clients');
+        Schema::dropIfExists('agreement_clients');
     }
 };

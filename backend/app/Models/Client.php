@@ -18,6 +18,14 @@ class Client extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
+    public function agreement_client(){
+        return $this->hasMany(AgreementClient::class, 'client_id', 'id');
+    }
+
+    public function vehicle_client(){
+        return $this->hasMany(VehicleClient::class, 'client_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('fullname', 'LIKE', '%' . $search . '%')
