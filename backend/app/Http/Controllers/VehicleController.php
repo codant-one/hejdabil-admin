@@ -52,7 +52,7 @@ class VehicleController extends Controller
                         'carbody',
                         'gearbox',
                         'fuel',
-                        'client.client'
+                        'vehicle_client.client'
                     ])->applyFilters(
                         $request->only([
                             'search',

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string("name");
             $table->string("code");
             $table->string("flag");
-            $table->string("description")=>nullable();
+            $table->string("description")->nullable();
             $table->timestamps();
         });
     }

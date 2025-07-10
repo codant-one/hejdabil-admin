@@ -889,12 +889,12 @@ const onSubmit = () => {
                     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                         <div class="d-flex align-center">
                             <VAvatar
-                                v-if="model_id === null"
+                                v-if="model_id === null || logo === null"
                                 size="x-large"
                                 variant="tonal"
                                 color="secondary"
                             >
-                                <VIcon size="x-large" icon="tabler-car" />                        
+                                <VIcon size="x-large" icon="mdi-image-outline" />                        
                             </VAvatar>
                             <VAvatar
                                 v-else

@@ -434,9 +434,9 @@ const downloadCSV = async () => {
                 style="height: 3rem;">
                 <td> {{ vehicle.purchase_date }} </td>
                 <td class="cursor-pointer" @click="showVehicle(vehicle.id)">
-                  <div class="d-flex align-center gap-x-3">
+                  <div class="d-flex align-center gap-x-3"> 
                     <VAvatar
-                      v-if="vehicle.model_id"
+                      v-if="vehicle.model.brand.logo"
                       size="38"
                       variant="tonal"
                       rounded
@@ -449,7 +449,7 @@ const downloadCSV = async () => {
                         rounded
                         color="secondary"
                     >
-                        <VIcon size="x-large" icon="tabler-car" />                        
+                      <VIcon size="x-large" icon="mdi-image-outline" />               
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">

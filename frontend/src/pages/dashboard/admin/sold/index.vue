@@ -207,7 +207,7 @@ const downloadCSV = async () => {
       KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
       FÖRSÄLJNINGSPRIS: formatNumber(element.sale_price ?? 0) + ' kr',
       VINST: formatNumber(element.sale_price - element.purchase_price) + ' kr',
-      KÖPAREN: element.client?.fullname
+      KÖPAREN: element.vehicle_client?.fullname
     }
 
     dataArray.push(data)
@@ -352,7 +352,7 @@ const downloadCSV = async () => {
                 <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      v-if="vehicle.model_id"
+                      v-if="vehicle.model.brand.logo"
                       size="38"
                       variant="tonal"
                       rounded
@@ -365,7 +365,7 @@ const downloadCSV = async () => {
                         rounded
                         color="secondary"
                     >
-                        <VIcon size="x-large" icon="tabler-car" />                        
+                        <VIcon size="x-large" icon="mdi-image-outline" />                        
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">
@@ -383,13 +383,13 @@ const downloadCSV = async () => {
                 <td class="text-end"> {{ formatNumber(vehicle.sale_price - vehicle.purchase_price) }} kr</td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
-                    <span v-if="vehicle.client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client.client)">
-                      {{ vehicle.client.fullname }} 
+                    <span v-if="vehicle.vehicle_client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.vehicle_client.client)">
+                      {{ vehicle.vehicle_client.fullname }} 
                     </span>
                     <span v-else class="font-weight-medium  text-primary">
-                      {{ vehicle.client.fullname }} 
+                      {{ vehicle.vehicle_client.fullname }} 
                     </span>
-                    <span class="text-sm text-disabled">{{ vehicle.client.phone }}</span>
+                    <span class="text-sm text-disabled">{{ vehicle.vehicle_client.phone }}</span>
                   </div>
                 </td>                
                 <!-- 👉 Acciones -->
