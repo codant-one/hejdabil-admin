@@ -244,6 +244,20 @@ const closeTreeDialog  = function(){
                                     </li>
                                 </ul>
                             </ul>
+                            <li class="tab n2">
+                                <strong>Valuta</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till valutamodulen</code>
+                            </li>
+                            <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Skapa valuta</strong>&emsp;/&emsp;<code>Möjliggör skapande av valuta</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Redigera valuta</strong>&emsp;/&emsp;<code>Möjliggör redigering av valuta</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Radera valuta</strong>&emsp;/&emsp;<code>Möjliggör borttagning av valuta</code>
+                            </li>
+                        </ul>
                         </ul>
                     </ul>
                 </ol>

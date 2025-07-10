@@ -500,6 +500,35 @@ const closeRoleDetailDialog = function(){
                                         :readonly="readonly"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Valuta
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view currencies"
+                                        value="view currencies"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create currencies"
+                                        value="create currencies"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit currencies"
+                                        value="edit currencies"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete currencies"
+                                        value="delete currencies"
+                                        :readonly="readonly"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>

@@ -33,7 +33,8 @@ use App\Http\Controllers\{
     VehicleCostController,
     VehicleDocumentController,
     NoteController,
-    AgreementController
+    AgreementController,
+    CurrencyController
 };
 
 /*
@@ -93,6 +94,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::apiResource('documents', VehicleDocumentController::class);
     Route::apiResource('notes', NoteController::class);
     Route::apiResource('agreements', AgreementController::class);
+    Route::apiResource('currencies', CurrencyController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -153,6 +155,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Vehicles
     Route::group(['prefix' => 'vehicles'], function () {
         Route::post('send', [VehicleController::class, 'send']);
+    });
+
+    //Billing
+    Route::group(['prefix' => 'currencies'], function () {
+        Route::get('/updateState/{id}', [CurrencyController::class, 'updateState']);
     });
 
 });

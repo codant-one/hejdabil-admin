@@ -394,6 +394,31 @@ const closeModal = function(){
                                         value="delete invoices"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Valuta
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="view currencies"
+                                        value="view currencies"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="create currencies"
+                                        value="create currencies"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="edit currencies"
+                                        value="edit currencies"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="delete currencies"
+                                        value="delete currencies"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>

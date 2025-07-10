@@ -16,6 +16,13 @@ export default [
             subject: 'invoices', 
           }
         ]
+      },
+      { 
+        title: 'Valuta', 
+        icon: { icon: 'mdi-currency-usd' },
+        to: 'dashboard-admin-currencies', 
+        action: 'view',
+        subject: 'invoices'
       }
     ]
   }
