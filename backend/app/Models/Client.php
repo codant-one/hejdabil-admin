@@ -18,8 +18,12 @@ class Client extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
-    public function agreement(){
-        return $this->hasMany(Agreement::class, 'client_id', 'id');
+    public function agreement_client(){
+        return $this->hasMany(AgreementClient::class, 'client_id', 'id');
+    }
+
+    public function vehicle_client(){
+        return $this->hasMany(VehicleClient::class, 'client_id', 'id');
     }
 
     /**** Scopes ****/

@@ -8,14 +8,24 @@ use Illuminate\Database\Eloquent\Model;
 class AgreementClient extends Model
 {
     use HasFactory;
+    
+    protected $guarded = [];
 
     /**** Relationship ****/
-    public function supplier() {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    public function client(){
+        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
 
     public function agreement(){
-        return $this->hasMany(Agreement::class, 'agreement_client_id', 'id');
+        return $this->belongsTo(Agreement::class, 'agreement_id', 'id');
+    }
+
+    public function identification(){
+        return $this->belongsTo(Identification::class, 'identification_id', 'id');
+    }
+
+    public function client_type(){
+        return $this->belongsTo(ClientType::class, 'client_type_id', 'id');
     }
 
 
@@ -53,12 +63,11 @@ class AgreementClient extends Model
 
     /**** Public methods ****/
     public static function createClient($request) {
-
         $client = self::create([
             'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
             'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
-            'client_id' => $request->client_id === 'null' ? null : $request->client_id,
+            'client_id' => ($request->client_id === 'null' || empty($request->client_id) ) ? null : $request->client_id,
             'fullname' => $request->fullname === 'null' ? null : $request->fullname,
             'email' => $request->email === 'null' ? null : $request->email,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
@@ -73,21 +82,19 @@ class AgreementClient extends Model
     }
 
     public static function updateClient($request, $client) {
-        $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
-
         $client->update([
-            'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
-            'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
-            'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
-            'client_id' => $request->client_id === 'null' ? null : $request->client_id,
-            'fullname' => $request->fullname === 'null' ? null : $request->fullname,
-            'email' => $request->email === 'null' ? null : $request->email,
-            'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
-            'address' => $request->address === 'null' ? null : $request->address,
-            'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
-            'phone' => $request->phone === 'null' ? null : $request->phone,
-            'reference' => $request->reference === 'null' ? null : $request->reference,
-            'street' => $request->street === 'null' ? null : $request->street
+            // 'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
+            'client_type_id' => ($request->client_type_id === 'null' || empty($request->client_type_id)) ? $client->client_type_id : $request->client_type_id,
+            'identification_id' => ($request->identification_id === 'null' || empty($request->identification_id)) ? $client->identification_id : $request->identification_id,
+            'client_id' => ($request->client_id === 'null' || empty($request->client_id)) ? $client->client_id : $request->client_id,
+            'fullname' => ($request->fullname === 'null' || empty($request->fullname)) ? $client->fullname : $request->fullname,
+            'email' => ($request->email === 'null' || empty($request->email)) ? $client->email : $request->email,
+            'organization_number' => ($request->organization_number === 'null' || empty($request->organization_number)) ? $client->organization_number : $request->organization_number,
+            'address' => ($request->address === 'null' || empty($request->address)) ? $client->address : $request->address,
+            'postal_code' => ($request->postal_code === 'null' || empty($request->postal_code)) ? $client->postal_code : $request->postal_code,
+            'phone' => ($request->phone === 'null' || empty($request->phone)) ? $client->phone : $request->phone,
+            'reference' => ($request->reference === 'null' || empty($request->reference)) ? $client->reference : $request->reference,
+            'street' => ($request->street === 'null' || empty($request->street)) ? $client->street : $request->street
         ]);
 
         return $client;

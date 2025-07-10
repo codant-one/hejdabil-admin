@@ -65,12 +65,8 @@ class Vehicle extends Model
         return $this->hasMany(VehicleDocument::class, 'vehicle_id', 'id');
     }
 
-    public function agreement(){
-        return $this->hasMany(Agreement::class, 'vehicle_id', 'id');
-    }
-
     public function vehicle_client(){
-        return $this->hasMany(VehicleClient::class, 'vehicle_id', 'id');
+        return $this->hasOne(VehicleClient::class, 'vehicle_id', 'id');
     }
 
     /**** Scopes ****/
@@ -171,7 +167,7 @@ class Vehicle extends Model
             'gearbox_id' => $request->gearbox_id === 'null' ? null : $request->gearbox_id,
             'iva_purchase_id' => $request->iva_purchase_id === 'null' ? null : $request->iva_purchase_id,
             'fuel_id' => $request->fuel_id === 'null' ? null : $request->fuel_id,
-            'state_id' => $request->state_id === 'null' ? null : $request->state_id,
+            'state_id' => $request->state_id === 'null' ? 10 : $request->state_id,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'generation' => $request->generation === 'null' ? null : $request->generation,
             'year' => $request->year === 'null' ? null : $request->year,
@@ -180,11 +176,11 @@ class Vehicle extends Model
             'purchase_price' => $request->purchase_price === 'null' ? null : $request->purchase_price,
             'purchase_date' => $request->purchase_date === 'null' ? null : $request->purchase_date,
             'number_keys' => $request->number_keys === 'null' ? null : $request->number_keys,
-            'service_book' => $request->service_book === 'null' ? null : $request->service_book,
-            'summer_tire' => $request->summer_tire === 'null' ? null : $request->summer_tire,
-            'winter_tire' => $request->winter_tire === 'null' ? null : $request->winter_tire,
+            'service_book' => ( $request->service_book === 'null' || empty($request->service_book) ) ? 0 : $request->service_book,
+            'summer_tire' => ( $request->summer_tire === 'null' || empty($request->summer_tire) ) ? 0 : $request->summer_tire,
+            'winter_tire' => ( $request->winter_tire === 'null' || empty($request->winter_tire) ) ? 0 : $request->winter_tire,
             'last_service' => $request->last_service === 'null' ? null : $request->last_service,
-            'dist_belt' => $request->dist_belt === 'null' ? null : $request->dist_belt,
+            'dist_belt' => ( $request->dist_belt === 'null' || empty($request->dist_belt) ) ? 0 : $request->dist_belt,
             'last_dist_belt' => $request->last_dist_belt === 'null' ? null : $request->last_dist_belt,
             'comments' => $request->comments === 'null' ? null : $request->comments
         ]);
@@ -240,20 +236,25 @@ class Vehicle extends Model
             $client->update();
         }
 
-        VehicleClient::create([
-            'vehicle_id' => $vehicle->id,
-            'client_type_id' => $request->client_type_id,
-            'identification_id' => $request->identification_id,
-            'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id),
-            'fullname' => $request->fullname,
-            'email' => $request->email,
-            'organization_number' => $request->organization_number,
-            'address' => $request->address,
-            'postal_code' => $request->postal_code,
-            'phone' => $request->phone
-        ]);
-
+         if ( $request->has("client_id") )
+            $request->merge([
+                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+         else
+            $request->request->add([
+                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
         
+        if ( $request->has("vehicle_id") )
+            $request->merge([
+                "vehicle_id" => $vehicle->id
+            ]);
+         else
+            $request->request->add([
+                'vehicle_id' => $vehicle->id
+            ]);
+
+        VehicleClient::createClient($request);
 
         return $vehicle;
     }

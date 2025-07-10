@@ -3,34 +3,33 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 
 class Agreement extends Model
 {
     use HasFactory;
 
-    /**** Relationship ****/
-    public function agreementType(){
-        return $this->belongsTo(AgreementType::class, 'agreement_type_id', 'id');
-    }
+    protected $guarded = [];
 
-    public function vehicle(){
-        return $this->belongsTo(Vehicle::class, 'vehicle_id', 'id');
+    /**** Relationship ****/
+    public function agreement_type(){
+        return $this->belongsTo(AgreementType::class, 'agreement_type_id', 'id');
     }
 
     public function guaranty(){
         return $this->belongsTo(Guaranty::class, 'guaranty_id', 'id');
     }
 
-    public function guarantyType(){
+    public function guaranty_type(){
         return $this->belongsTo(GuarantyType::class, 'guaranty_type_id', 'id');
     }
 
-    public function insuranceCompany(){
+    public function insurance_company(){
         return $this->belongsTo(InsuranceCompany::class, 'insurance_company_id', 'id');
     }
 
-    public function insuranceType(){
+    public function insurance_type(){
         return $this->belongsTo(InsuranceType::class, 'insurance_type_id', 'id');
     }
 
@@ -42,16 +41,12 @@ class Agreement extends Model
         return $this->belongsTo(Iva::class, 'iva_id', 'id');
     }
 
-    public function paymentType(){
+    public function payment_type(){
         return $this->belongsTo(PaymentType::class, 'user_id', 'id');
     }
 
-    public function vehicleInterchange(){
+    public function vehicle_interchange(){
         return $this->belongsTo(VehicleInterchange::class, 'vehicle_interchange_id', 'id');
-    }
-
-    public function client(){
-        return $this->belongsTo(Client::class, 'client_id', 'id');
     }
 
     public function supplier(){
@@ -59,7 +54,11 @@ class Agreement extends Model
     }
 
     public function agreement_client(){
-        return $this->belongsTo(AgreementClient::class, 'agreement_client_id', 'id');
+        return $this->hasOne(AgreementClient::class, 'agreement_id', 'id');
+    }
+
+    public function vehicle_client(){
+        return $this->belongsTo(VehicleClient::class, 'vehicle_client_id', 'id');
     }
 
 
@@ -107,12 +106,8 @@ class Agreement extends Model
             $query->where('vehicle_interchange_id', $filters->get('vehicle_interchange_id'));
         }
 
-        if ($filters->get('client_id') !== null) {
-            $query->where('client_id', $filters->get('client_id'));
-        }
-
-        if ($filters->get('agreement_client_id') !== null) {
-            $query->where('agreement_client_id', $filters->get('agreement_client_id'));
+        if ($filters->get('vehicle_client_id') !== null) {
+            $query->where('vehicle_client_id', $filters->get('vehicle_client_id'));
         }
 
         if ($filters->get('supplier_id') !== null) {
@@ -139,9 +134,9 @@ class Agreement extends Model
     public static function createAgreement($request) {
 
         $agreement = self::create([
-            'supplier_id' => Auth::user()->supplier->id,
+            // 'supplier_id' => Auth::user()->supplier->id,
             'agreement_type_id' => $request->agreement_type_id,
-            'vehicle_id' => $request->vehicle_id === 'null' ? null : $request->vehicle_id,
+            'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
             'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,
             'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
@@ -160,8 +155,8 @@ class Agreement extends Model
             'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
             'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
             'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
-            'client_id' => $request->client_id === 'null' ? null : $request->client_id,
-            'agreement_client_id' => $request->agreement_client_id === 'null' ? null : $request->agreement_client_id
+            'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
+            'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
         ]);
         
         return $agreement;
@@ -170,28 +165,27 @@ class Agreement extends Model
     public static function updateAgreement($request, $agreement) {
 
         $agreement->update([
-            'vehicle_id' => $request->vehicle_id === 'null' ? null : $request->vehicle_id,
-            'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
-            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,
-            'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
-            'insurance_type_id' => $request->insurance_type_id === 'null' ? null : $request->insurance_type_id,
-            'insurance_agent' => $request->insurance_agent === 'null' ? null : $request->insurance_agent,
-            'price' => $request->price === 'null' ? null : $request->price,
-            'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
-            'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
-            'iva_amount' => $request->iva_amount === 'null' ? null : $request->iva_amount,
-            'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
-            'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
-            'down_payment_percentage' => $request->down_payment_percentage === 'null' ? null : $request->down_payment_percentage,
-            'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
-            'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
-            'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
-            'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
-            'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
-            'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
-            'client_id' => $request->client_id === 'null' ? null : $request->client_id,
-            'agreement_client_id' => $request->agreement_client_id === 'null' ? null : $request->agreement_client_id
-
+            'vehicle_client_id' => ($request->vehicle_client_id === 'null' || empty($request->vehicle_client_id)) ? $agreement->vehicle_client_id : $request->vehicle_client_id,
+            'guaranty_id' => ($request->guaranty_id === 'null' || empty($request->guaranty_id)) ? $agreement->guaranty_id : $request->guaranty_id,
+            'guaranty_type_id' => ($request->guaranty_type_id === 'null' || empty($request->guaranty_type_id)) ? $agreement->guaranty_type_id : $request->guaranty_type_id,
+            'insurance_company_id' => ($request->insurance_company_id === 'null' || empty($request->insurance_company_id)) ? $agreement->insurance_company_id : $request->insurance_company_id,
+            'insurance_type_id' => ($request->insurance_type_id === 'null' || empty($request->insurance_type_id)) ? $agreement->insurance_type_id : $request->insurance_type_id,
+            'insurance_agent' => ($request->insurance_agent === 'null' || empty($request->insurance_agent)) ? $agreement->insurance_agent : $request->insurance_agent,
+            'price' => ($request->price === 'null' || empty($request->price)) ? $agreement->price : $request->price,
+            'currency_id' => ($request->currency_id === 'null' || empty($request->currency_id)) ? $agreement->currency_id : $request->currency_id,
+            'iva_id' => ($request->iva_id === 'null' || empty($request->iva_id)) ? $agreement->iva_id : $request->iva_id,
+            'iva_amount' => ($request->iva_amount === 'null' || empty($request->iva_amount)) ? $agreement->iva_amount : $request->iva_amount,
+            'registration_fee' => ($request->registration_fee === 'null' || empty($request->registration_fee)) ? $agreement->registration_fee : $request->registration_fee,
+            'payment_type_id' => ($request->payment_type_id === 'null' || empty($request->payment_type_id)) ? $agreement->payment_type_id : $request->payment_type_id,
+            'down_payment_percentage' => ($request->down_payment_percentage === 'null' || empty($request->down_payment_percentage)) ? $agreement->down_payment_percentage : $request->down_payment_percentage,
+            'payment_received' => ($request->payment_received === 'null' || empty($request->payment_received)) ? $agreement->payment_received : $request->payment_received,
+            'payment_method_forcash' => ($request->payment_method_forcash === 'null' || empty($request->payment_method_forcash)) ? $agreement->payment_method_forcash : $request->payment_method_forcash,
+            'installment_amount' => ($request->installment_amount === 'null' || empty($request->installment_amount)) ? $agreement->installment_amount : $request->installment_amount,
+            'installment_contract_upon_delivery' => ($request->installment_contract_upon_delivery === 'null' || empty($request->installment_contract_upon_delivery)) ? $agreement->installment_contract_upon_delivery : $request->installment_contract_upon_delivery,
+            'payment_description' => ($request->payment_description === 'null' || empty($request->payment_description)) ? $agreement->payment_description : $request->payment_description,
+            'vehicle_interchange_id' => ($request->vehicle_interchange_id === 'null' || empty($request->vehicle_interchange_id)) ? $agreement->vehicle_interchange_id : $request->vehicle_interchange_id,
+            'terms_other_conditions' => ($request->terms_other_conditions === 'null' || empty($request->terms_other_conditions)) ? $agreement->terms_other_conditions : $request->terms_other_conditions,
+            'terms_other_information' => ($request->terms_other_information === 'null' || empty($request->terms_other_information)) ? $agreement->terms_other_information : $request->terms_other_information
         ]);
 
         return $agreement;

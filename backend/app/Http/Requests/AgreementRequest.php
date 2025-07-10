@@ -39,7 +39,7 @@ class AgreementRequest extends FormRequest
     public function messages()
     {
         return [
-            'reg_num.agreement_type_id' => 'Avtalet typ är obligatoriskt'
+            'agreement_type_id.required' => 'Avtalet typ är obligatoriskt'
         ];
     }
 

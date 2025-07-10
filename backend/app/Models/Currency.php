@@ -14,4 +14,3 @@ class Currency extends Model
         return $this->hasMany(Agreement::class, 'currency_id', 'id');
     }
 }
-}

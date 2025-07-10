@@ -14,4 +14,3 @@ class InsuranceType extends Model
         return $this->hasMany(Agreement::class, 'insurance_type_id', 'id');
     }
 }
-}
