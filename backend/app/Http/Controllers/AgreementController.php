@@ -215,6 +215,69 @@ class AgreementController extends Controller
                     'vehicle_client_id' => $vehicle->vehicle_client->id
                 ]);
 
+
+            if ($request->has("intercambie") && $request->intercambie === 'true'){
+                $request->merge([ 'reg_num' => $request->reg_num_interchange ]);
+                $request->merge([ 'model' => $request->model_interchange ]);
+                $request->merge([ 'brand_id' => $request->brand_id_interchange ]);
+                $request->merge([ 'model_id' => $request->model_id_interchange ]);
+                $request->merge([ 'car_body_id' => $request->car_body_id_interchange ]);
+                $request->merge([ 'gearbox_id' => $request->gearbox_id_interchange ]);
+                $request->merge([ 'iva_purchase_id' => $request->iva_purchase_id_interchange ]);
+                $request->merge([ 'fuel_id' => $request->fuel_id_interchange ]);
+                $request->merge([ 'state_id' => $request->state_id_interchange ]);
+                $request->merge([ 'mileage' => $request->mileage_interchange ]);
+                $request->merge([ 'generation' => $request->generation_interchange ]);
+                $request->merge([ 'year' => $request->year_interchange ]);
+                $request->merge([ 'control_inspection' => $request->control_inspection_interchange ]);
+                $request->merge([ 'color' => $request->color_interchange ]);
+                $request->merge([ 'purchase_price' => $request->purchase_price_interchange ]);
+                $request->merge([ 'purchase_date' => $request->purchase_date_interchange ]);
+                $request->merge([ 'number_keys' => $request->number_keys_interchange ]);
+                $request->merge([ 'service_book' => $request->service_book_interchange ]);
+                $request->merge([ 'summer_tire' => $request->summer_tire_interchange ]);
+                $request->merge([ 'winter_tire' => $request->winter_tire_interchange ]);
+                $request->merge([ 'last_service' => $request->last_service_interchange ]);
+                $request->merge([ 'dist_belt' => $request->dist_belt_interchange ]);
+                $request->merge([ 'last_dist_belt' => $request->last_dist_belt_interchange ]);
+                $request->merge([ 'comments' => $request->comments_interchange ]);
+
+                //Create Vehicle Interchange
+                $vehicleInterchange = null;
+                $vehicleRequest = VehicleRequest::createFrom($request);
+
+                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+                if($validate->fails()){
+                    $vehicleRequest->failedValidation($validate);
+                }
+
+                //Set Vehicle State ID on InStock
+                if ( !$vehicleRequest->has('state_id') ){
+                    $vehicleRequest->request->add([
+                        'state_id' => 10
+                    ]);
+                }
+                elseif ( $vehicleRequest->has('state_id') && 
+                        ($vehicleRequest->state_id === 'null' || empty($vehicleRequest->state_id))
+                    ){
+                    $vehicleRequest->merge([
+                        "state_id" => 10
+                    ]);
+                }
+
+                $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
+                $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
+
+                if ( $request->has("vehicle_interchange_id") )
+                    $request->merge([
+                        "vehicle_interchange_id" => $vehicleInterchange->id
+                    ]);
+                else
+                    $request->request->add([
+                        'vehicle_interchange_id' => $vehicleInterchange->id
+                    ]);
+            }
+
             //Create Agreement
             $agreement = Agreement::createAgreement($request);
             //Get Agreement ID

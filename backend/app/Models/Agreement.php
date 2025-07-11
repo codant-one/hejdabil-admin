@@ -46,7 +46,7 @@ class Agreement extends Model
     }
 
     public function vehicle_interchange(){
-        return $this->belongsTo(VehicleInterchange::class, 'vehicle_interchange_id', 'id');
+        return $this->belongsTo(Vehicle::class, 'vehicle_interchange_id', 'id');
     }
 
     public function supplier(){
@@ -134,7 +134,7 @@ class Agreement extends Model
     public static function createAgreement($request) {
 
         $agreement = self::create([
-            // 'supplier_id' => Auth::user()->supplier->id,
+            'supplier_id' => Auth::user()->supplier->id,
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,

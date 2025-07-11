@@ -42,7 +42,7 @@ return new class extends Migration
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             $table->foreign('agreement_type_id')->references('id')->on('agreement_types')->onDelete('cascade');
             $table->foreign('vehicle_client_id')->references('id')->on('vehicle_clients')->onDelete('cascade');
-            $table->foreign('vehicle_interchange_id')->references('id')->on('vehicle_interchanges')->onDelete('cascade');
+            $table->foreign('vehicle_interchange_id')->references('id')->on('vehicles')->onDelete('cascade');
             $table->foreign('guaranty_id')->references('id')->on('guaranties')->onDelete('cascade');
             $table->foreign('guaranty_type_id')->references('id')->on('guaranty_types')->onDelete('cascade');
             $table->foreign('insurance_company_id')->references('id')->on('insurance_companies')->onDelete('cascade');
