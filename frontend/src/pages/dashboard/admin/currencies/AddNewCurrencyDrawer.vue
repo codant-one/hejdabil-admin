@@ -159,14 +159,14 @@ const handleDrawerModelValueUpdate = val => {
                     label="Kod"
                 />
             </VCol>
-            <VCol cols="12" md="11">
+            <VCol :cols="isValidFlagUrl ? 10 : 12" :md="isValidFlagUrl ? 11 : 12">
                 <VTextField
                     v-model="flag"
                     :rules="[requiredValidator]"
                     label="Flagga"
                 />
             </VCol>
-            <VCol cols="12" md="1">
+            <VCol cols="2" md="1">
               <img v-if="isValidFlagUrl" :src="flag" alt="US Flag" width="32" height="32" />
             </VCol>
               <!-- 👉 Submit and Cancel -->
