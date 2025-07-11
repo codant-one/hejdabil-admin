@@ -470,7 +470,7 @@ const getFlag = (currency_id) => {
                                                                 <h6 class="text-base font-weight-semibold">
                                                                     Inköpspris:
                                                                     <span class="text-body-2">
-                                                                        {{ purchase_price }}
+                                                                        {{ purchase_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}
                                                                     </span>
                                                                 </h6>
                                                             </VListItemTitle>

@@ -86,7 +86,7 @@ const last_service = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
-const currency_id = ref(null)
+const currency_id = ref(1)
 
 const costs = ref([])
 const type = ref([])
@@ -211,7 +211,6 @@ async function fetchData() {
         color.value = vehicle.value.color
         fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
-        currency_id.value = vehicle.value.currency_purchase_id
         purchase_price.value = vehicle.value.purchase_price
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         state_id.value = vehicle.value.state_id
@@ -1095,7 +1094,7 @@ const getFlag = (currency_id) => {
                                                         :item-title="item => item.name"
                                                         :item-value="item => item.id"
                                                         autocomplete="off"
-                                                        clearable
+                                                        disabled
                                                         clear-icon="tabler-x">
                                                         <template
                                                             v-if="currency_id"
