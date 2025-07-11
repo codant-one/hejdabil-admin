@@ -71,6 +71,7 @@ async function fetchData() {
     data.value = await authStores.company()
 
     supplier.value = await suppliersStores.showSupplier(Number(userData.value.supplier.id))
+
     //company
     form.value.company = supplier.value.company
     form.value.organization_number = supplier.value.organization_number
@@ -92,13 +93,19 @@ async function fetchData() {
     form.value.vat = supplier.value.vat
 
     logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
-    logoCropped.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
+    logoCropped.value = await fetchImageAsBlob((data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ )
     
     setTimeout(() => {
         emit('window', false)
     }, 500)
 
     isRequestOngoing.value = false
+}
+
+const fetchImageAsBlob = async (url) => {
+  const response = await  fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + url);
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
 
 const resetAvatar = () => {

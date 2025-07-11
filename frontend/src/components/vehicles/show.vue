@@ -55,10 +55,16 @@ const gearbox = ref(null)
 const purchase_price = ref(null)
 const iva_purchase = ref(null)
 const iva_sale = ref(null)
+const iva_sale_amount = ref(null)
+const iva_sale_exclusive = ref(null)
+const discount = ref(null)
+const registration_fee = ref(null)
+const total_sale = ref(null)
+const currency_purchase = ref(null)
+const currency_sale = ref(null)
 const state = ref(null)
 const state_id = ref(null)
 const sale_price = ref(null)
-const min_sale_price = ref(null)
 const purchase_date = ref(null)
 const sale_date = ref(null)
 const number_keys = ref(null)
@@ -98,10 +104,16 @@ watchEffect(async () => {
             purchase_price.value = props.vehicle.purchase_price
             iva_purchase.value = props.vehicle.iva_purchase?.name
             iva_sale.value = props.vehicle.iva_sale?.name
+            iva_sale_amount.value = props.vehicle.iva_sale_amount
+            iva_sale_exclusive.value = props.vehicle.iva_sale_exclusive
+            discount.value = props.vehicle.discount
+            total_sale.value = props.vehicle.total_sale
+            registration_fee.value = props.vehicle.registration_fee
+            currency_purchase.value = props.vehicle.currency_purchase?.code
+            currency_sale.value = props.vehicle.currency_sale?.code
             state.value = props.vehicle.state.name
             state_id.value = props.vehicle.state_id
             sale_price.value = props.vehicle.sale_price
-            min_sale_price.value = props.vehicle.min_sale_price
             purchase_date.value = props.vehicle.purchase_date
             sale_date.value = props.vehicle.sale_date
             number_keys.value = props.vehicle.number_keys
@@ -114,12 +126,12 @@ watchEffect(async () => {
             comments.value = props.vehicle.comments
 
             sale_comments.value = props.vehicle.sale_comments
-            organization_number.value = props.vehicle.client?.organization_number
-            address.value = props.vehicle.client?.address
-            postal_code.value = props.vehicle.client?.postal_code
-            phone.value = props.vehicle.client?.phone
-            fullname.value = props.vehicle.client?.fullname
-            email.value = props.vehicle.client?.email
+            organization_number.value = props.vehicle.vehicle_client?.organization_number
+            address.value = props.vehicle.vehicle_client?.address
+            postal_code.value = props.vehicle.vehicle_client?.street + ' ' + props.vehicle.vehicle_client?.postal_code
+            phone.value = props.vehicle.vehicle_client?.phone
+            fullname.value = props.vehicle.vehicle_client?.fullname
+            email.value = props.vehicle.vehicle_client?.email
 
             vehicleImages.value = [
                 { url: car },
@@ -353,7 +365,7 @@ const setThumbsSwiper = (swiper) => {
                                             <VCol cols="12">
                                                 <div>
                                                     <span class="font-weight-semibold"> Inköpspris: </span>
-                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} kr</span>
+                                                    <span>{{ formatNumber(vehicle.purchase_price ?? 0) }} {{ currency_purchase }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> VMB / Moms: </span>
@@ -373,12 +385,32 @@ const setThumbsSwiper = (swiper) => {
                                             <VCol cols="12">
                                                 <div>
                                                     <span class="font-weight-semibold"> Försäljningspris: </span>
-                                                    <span>{{ formatNumber(vehicle.sale_price ?? 0) }} kr</span>
+                                                    <span>{{ formatNumber(vehicle.sale_price ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> VMB / Moms: </span>
                                                     <span>{{ iva_sale }}</span>
                                                 </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Varav moms: </span>
+                                                    <span>{{ formatNumber(vehicle.iva_sale_amount ?? 0) }} {{ currency_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Prix ex moms: </span>
+                                                    <span>{{ formatNumber(vehicle.iva_sale_exclusive ?? 0) }} {{ currency_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Rabatt: </span>
+                                                    <span>{{ formatNumber(vehicle.discount ?? 0) }} {{ currency_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Registreringsavgift: </span>
+                                                    <span>{{ formatNumber(vehicle.registration_fee ?? 0) }} {{ currency_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Totalpris: </span>
+                                                    <span>{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
+                                                </div>                                                
                                                 <div>
                                                     <span class="font-weight-semibold"> Försäljningsdag: </span>
                                                     <span>{{ sale_date }}</span>

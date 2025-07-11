@@ -41,6 +41,14 @@ class Vehicle extends Model
         return $this->belongsTo(Iva::class, 'iva_sale_id', 'id');
     }
 
+    public function currency_purchase(){
+        return $this->belongsTo(Currency::class, 'currency_purchase_id', 'id');
+    }
+
+    public function currency_sale(){
+        return $this->belongsTo(Currency::class, 'currency_sale_id', 'id');
+    }
+
     public function fuel(){
         return $this->belongsTo(Fuel::class, 'fuel_id', 'id');
     }
@@ -170,6 +178,8 @@ class Vehicle extends Model
             'car_body_id' => $request->car_body_id === 'null' ? null : $request->car_body_id,
             'gearbox_id' => $request->gearbox_id === 'null' ? null : $request->gearbox_id,
             'iva_purchase_id' => $request->iva_purchase_id === 'null' ? null : $request->iva_purchase_id,
+            'currency_purchase_id' => $request->currency_id === 'null' ? null : $request->currency_id,
+            'currency_sale_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'fuel_id' => $request->fuel_id === 'null' ? null : $request->fuel_id,
             'state_id' => $request->state_id === 'null' ? 10 : $request->state_id,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
@@ -209,10 +219,14 @@ class Vehicle extends Model
         $vehicle->update([
             'state_id' => 12,           
             'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
-            'min_sale_price' => $request->min_sale_price === 'null' ? null : $request->min_sale_price,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'iva_sale_id' => $request->iva_sale_id === 'null' ? null : $request->iva_sale_id,
-            'sale_comments' => $request->sale_comments === 'null' ? null : $request->sale_comments
+            'sale_comments' => $request->sale_comments === 'null' ? null : $request->sale_comments,
+            'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
+            'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
+            'discount' => $request->discount === 'null' ? null : $request->discount,
+            'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);

@@ -19,6 +19,8 @@ return new class extends Migration
             $table->unsignedBigInteger('gearbox_id')->nullable();
             $table->unsignedBigInteger("iva_purchase_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
             $table->unsignedBigInteger("iva_sale_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
+            $table->unsignedBigInteger("currency_purchase_id")->nullable();
+            $table->unsignedBigInteger("currency_sale_id")->nullable();
             $table->unsignedBigInteger('fuel_id')->nullable();
             $table->unsignedBigInteger('state_id')->default(10);
             
@@ -31,7 +33,6 @@ return new class extends Migration
             $table->decimal("purchase_price", 10, 2)->nullable()->comment("Purchase price");
             $table->date("purchase_date")->nullable()->comment("Purchase date");
             $table->decimal("sale_price", 10, 2)->nullable()->comment("Bellow sale price");
-            $table->decimal("min_sale_price", 10, 2)->nullable()->comment("Minimum selling price");
             $table->date("sale_date")->nullable()->comment("Sale date");
             $table->integer('number_keys')->nullable()->comment("Number of keys");
             $table->tinyInteger('service_book')->default(0)->comment("There is a Book Service? (0: No, 1: Yes)");
@@ -42,6 +43,11 @@ return new class extends Migration
             $table->string("last_dist_belt")->nullable()->comment("Miles or Date (DD-MM-YYYY) of last service distribution belt replace");
             $table->string("comments")->nullable();
             $table->string("sale_comments")->nullable();
+            $table->decimal("iva_sale_amount", 10, 2)->nullable()->comment("IVA amount");
+            $table->decimal("iva_sale_exclusive", 10, 2)->nullable()->comment("Sale without iva");
+            $table->decimal("discount", 10, 2)->nullable()->comment("Discount");
+            $table->decimal("registration_fee", 10, 2)->nullable()->comment("Registration fee");
+            $table->decimal("total_sale", 10, 2)->nullable()->comment("Total sale");
             $table->string("file")->nullable();
             $table->timestamps();
 
@@ -51,6 +57,8 @@ return new class extends Migration
             $table->foreign('gearbox_id')->references('id')->on('gearboxes')->onDelete('cascade');
             $table->foreign('iva_purchase_id')->references('id')->on('ivas')->onDelete('cascade');
             $table->foreign('iva_sale_id')->references('id')->on('ivas')->onDelete('cascade');
+            $table->foreign('currency_purchase_id')->references('id')->on('currencies')->onDelete('cascade');
+            $table->foreign('currency_sale_id')->references('id')->on('currencies')->onDelete('cascade');
             $table->foreign('fuel_id')->references('id')->on('fuels')->onDelete('cascade');
             $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
         });

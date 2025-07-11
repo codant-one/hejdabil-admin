@@ -23,6 +23,7 @@ use App\Models\State;
 use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\Identification;
+use App\Models\Currency;
 
 class VehicleController extends Controller
 {
@@ -48,6 +49,8 @@ class VehicleController extends Controller
                         'state', 
                         'iva_purchase',
                         'iva_sale',
+                        'currency_purchase',
+                        'currency_sale',
                         'costs',
                         'carbody',
                         'gearbox',
@@ -159,7 +162,8 @@ class VehicleController extends Controller
                     'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
                     'clients' => $clients,
                     'client_types' => ClientType::all(),
-                    'identifications' => Identification::all()
+                    'identifications' => Identification::all(),
+                    'currencies' => Currency::where('state_id', 2)->get()
                 ]
             ]);
 

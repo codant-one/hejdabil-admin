@@ -48,6 +48,7 @@ const isMobile = ref(false)
 const brands = ref([])
 const models = ref([])
 const modelsByBrand = ref([])
+const currencies = ref([])
 const carbodies = ref([])
 const gearboxes = ref([])
 const ivas = ref([])
@@ -75,7 +76,6 @@ const iva_purchase_id = ref(null)
 const state_id = ref(null)
 const state_idOld = ref(null)
 const sale_price = ref(null)
-const min_sale_price = ref(null)
 const purchase_date = ref(null)
 const sale_date = ref(null)
 const number_keys = ref(null)
@@ -86,6 +86,7 @@ const last_service = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
+const currency_id = ref(null)
 
 const costs = ref([])
 const type = ref([])
@@ -186,6 +187,7 @@ async function fetchData() {
     
         vehicle.value = data.vehicle
         brands.value = data.brands
+        currencies.value = data.currencies
         models.value = data.models
         carbodies.value = data.carbodies
         gearboxes.value = data.gearboxes
@@ -209,12 +211,12 @@ async function fetchData() {
         color.value = vehicle.value.color
         fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
+        currency_id.value = vehicle.value.currency_purchase_id
         purchase_price.value = vehicle.value.purchase_price
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         state_id.value = vehicle.value.state_id
         state_idOld.value = vehicle.value.state_id
         sale_price.value = vehicle.value.sale_price
-        min_sale_price.value = vehicle.value.min_sale_price
         purchase_date.value = vehicle.value.purchase_date === null ? formatDate(new Date()) : vehicle.value.purchase_date
         sale_date.value = vehicle.value.sale_date
         number_keys.value = vehicle.value.number_keys
@@ -801,6 +803,7 @@ const onSubmit = () => {
             formData.append('car_body_id', car_body_id.value)
             formData.append('gearbox_id', gearbox_id.value)
             formData.append('iva_purchase_id', iva_purchase_id.value)
+            formData.append('currency_id', currency_id.value)
             formData.append('state_id', state_id.value)
             formData.append('mileage', mileage.value)
             formData.append('generation', generation.value)
@@ -811,7 +814,6 @@ const onSubmit = () => {
             formData.append('purchase_price', purchase_price.value)
             formData.append('purchase_date', purchase_date.value)
             formData.append('sale_price', sale_price.value)
-            formData.append('min_sale_price', min_sale_price.value)
             formData.append('sale_date', sale_date.value)
             formData.append('number_keys', number_keys.value)
             formData.append('service_book', service_book.value)
@@ -860,6 +862,9 @@ const onSubmit = () => {
     })
 }
 
+const getFlag = (currency_id) => {
+    return currencies.value.filter(item => item.id === currency_id)[0].flag
+}
 </script>
 
 <template>
@@ -1081,6 +1086,29 @@ const onSubmit = () => {
                                                         label="Inköpspris"
                                                         min="0"
                                                     />
+                                                </VCol>
+                                                <VCol cols="12" md="6">
+                                                    <VAutocomplete
+                                                        v-model="currency_id"
+                                                        label="Valuta"
+                                                        :items="currencies"
+                                                        :item-title="item => item.name"
+                                                        :item-value="item => item.id"
+                                                        autocomplete="off"
+                                                        clearable
+                                                        clear-icon="tabler-x">
+                                                        <template
+                                                            v-if="currency_id"
+                                                            #prepend
+                                                            >
+                                                                <VAvatar
+                                                                start
+                                                                style="margin-top: -8px;"
+                                                                size="36"
+                                                                :image="getFlag(currency_id)"
+                                                            />
+                                                        </template>
+                                                    </VAutocomplete>
                                                 </VCol>
                                                 <VCol cols="12" md="6">
                                                     <VAutocomplete

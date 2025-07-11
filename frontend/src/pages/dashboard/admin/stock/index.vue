@@ -436,7 +436,7 @@ const downloadCSV = async () => {
                 <td class="cursor-pointer" @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3"> 
                     <VAvatar
-                      v-if="vehicle.model.brand.logo"
+                      v-if="vehicle.model?.brand?.logo"
                       size="38"
                       variant="tonal"
                       rounded

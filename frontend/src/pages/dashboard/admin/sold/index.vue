@@ -31,6 +31,8 @@ const brand_id = ref(null)
 const models = ref([])
 const model_id = ref(null)
 const modelsByBrand = ref([])
+const currencies = ref([])
+const currency_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -205,8 +207,8 @@ const downloadCSV = async () => {
       BILINFO: bilinfo,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
       KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
-      FÖRSÄLJNINGSPRIS: formatNumber(element.sale_price ?? 0) + ' kr',
-      VINST: formatNumber(element.sale_price - element.purchase_price) + ' kr',
+      FÖRSÄLJNINGSPRIS: formatNumber(element.total_sale ?? 0) + ' kr',
+      VINST: formatNumber(element.total_sale - element.purchase_price) + ' kr',
       KÖPAREN: element.vehicle_client?.fullname
     }
 
@@ -352,7 +354,7 @@ const downloadCSV = async () => {
                 <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      v-if="vehicle.model.brand.logo"
+                      v-if="vehicle.model?.brand?.logo"
                       size="38"
                       variant="tonal"
                       rounded
@@ -379,8 +381,8 @@ const downloadCSV = async () => {
                 </td>                
                 <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
                 <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>                
-                <td class="text-end"> {{ formatNumber(vehicle.sale_price ?? 0) }} kr</td>
-                <td class="text-end"> {{ formatNumber(vehicle.sale_price - vehicle.purchase_price) }} kr</td>
+                <td class="text-end"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
+                <td class="text-end"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
                     <span v-if="vehicle.vehicle_client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.vehicle_client.client)">

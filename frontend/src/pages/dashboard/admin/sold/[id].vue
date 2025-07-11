@@ -24,6 +24,7 @@ const isMobile = ref(false)
 
 const brands = ref([])
 const models = ref([])
+const currencies = ref([])
 const carbodies = ref([])
 const gearboxes = ref([])
 const ivas = ref([])
@@ -45,11 +46,17 @@ const gearbox_id = ref(null)
 const purchase_price = ref(null)
 const iva_purchase_id = ref(null)
 const sale_price = ref(null)
-const min_sale_price = ref(null)
 const sale_date = ref(null)
 const iva_sale_id = ref(null)
 const sale_comments = ref(null)
 const purchase_date = ref(null)
+const currency_id = ref(null)
+
+const iva_sale_amount = ref(0)
+const iva_sale_exclusive = ref(0)
+const discount = ref(0)
+const registration_fee = ref(0)
+const total_sale = ref(0)
 
 const organization_number = ref('')
 const address = ref('')
@@ -99,6 +106,37 @@ const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
 }
 
+const calculate = () => {
+    const sale = Number(sale_price.value) || 0
+    const fee = Number(registration_fee.value) || 0
+    const disc = Number(discount.value) || 0
+    const value = (sale + fee) - disc 
+
+    if(iva_sale_id.value === 2)
+        iva_sale_amount.value = ((Number(value) || 0) * 0.2)
+    else
+        iva_sale_amount.value = 0
+
+    iva_sale_exclusive.value = value - iva_sale_amount.value
+    total_sale.value = value
+}
+
+watch(() => sale_price.value, (val) => {
+    calculate()
+})
+
+watch(() => iva_sale_id.value, (val) => {
+    calculate()
+})
+
+watch(() => discount.value, (val) => {
+    calculate()
+})
+
+watch(() => registration_fee.value, (val) => {
+    calculate()
+})
+
 watchEffect(fetchData)
 
 async function fetchData() {
@@ -111,6 +149,7 @@ async function fetchData() {
         vehicle.value = data.vehicle
         brands.value = data.brands
         models.value = data.models
+        currencies.value = data.currencies
         carbodies.value = data.carbodies
         gearboxes.value = data.gearboxes
         ivas.value = data.ivas
@@ -133,9 +172,9 @@ async function fetchData() {
         purchase_price.value = vehicle.value.purchase_price
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         purchase_date.value = vehicle.value.purchase_date
+        currency_id.value = vehicle.value.currency_purchase_id
 
         sale_price.value = vehicle.value.sale_price
-        min_sale_price.value = vehicle.value.min_sale_price
         sale_date.value = formatDate(new Date())
         iva_sale_id.value = vehicle.value.iva_sale_id
         sale_comments.value = vehicle.value.sale_comments
@@ -196,8 +235,12 @@ const onSubmit = () => {
             let formData = new FormData()
             formData.append('id', Number(route.params.id))
             formData.append('sale_price', sale_price.value)
-            formData.append('min_sale_price', min_sale_price.value)
             formData.append('sale_date', sale_date.value)
+            formData.append('iva_sale_amount', iva_sale_amount.value)
+            formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+            formData.append('discount', discount.value)
+            formData.append('registration_fee', registration_fee.value)
+            formData.append('total_sale', total_sale.value) 
             formData.append('iva_sale_id', iva_sale_id.value)
             formData.append('sale_comments', sale_comments.value)
             formData.append('save_client', save_client.value)
@@ -245,6 +288,9 @@ const onSubmit = () => {
     })
 }
 
+const getFlag = (currency_id) => {
+    return currencies.value.filter(item => item.id === currency_id)[0].flag
+}
 </script>
 
 <template>
@@ -451,7 +497,30 @@ const onSubmit = () => {
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
-                                                       
+                                                        <VCol cols="12" md="6">
+                                                            <VAutocomplete
+                                                                v-model="currency_id"
+                                                                label="Valuta"
+                                                                disabled
+                                                                :items="currencies"
+                                                                :item-title="item => item.name"
+                                                                :item-value="item => item.id"
+                                                                autocomplete="off"
+                                                                clearable
+                                                                clear-icon="tabler-x">
+                                                                <template
+                                                                    v-if="currency_id"
+                                                                    #prepend
+                                                                    >
+                                                                        <VAvatar
+                                                                        start
+                                                                        style="margin-top: -8px;"
+                                                                        size="36"
+                                                                        :image="getFlag(currency_id)"
+                                                                    />
+                                                                </template>
+                                                            </VAutocomplete>
+                                                        </VCol>
                                                         <VCol cols="12" md="6">
                                                             <VAutocomplete
                                                                 v-model="iva_sale_id"
@@ -465,6 +534,44 @@ const onSubmit = () => {
                                                                 :rules="[requiredValidator]"/>
                                                         </VCol>
                                                         <VCol cols="12" md="6">
+                                                            <VTextField
+                                                                type="number"
+                                                                v-model="iva_sale_amount"
+                                                                label="Varav moms"
+                                                                min="0"
+                                                                disabled
+                                                                :rules="[requiredValidator]"
+                                                            />
+                                                        </VCol>
+                                                        <VCol cols="12" md="6">
+                                                            <VTextField
+                                                                type="number"
+                                                                v-model="iva_sale_exclusive"
+                                                                label="Prix ex moms"
+                                                                min="0"
+                                                                disabled
+                                                                :rules="[requiredValidator]"
+                                                            />
+                                                        </VCol>
+                                                        <VCol cols="12" md="6">
+                                                            <VTextField
+                                                                type="number"
+                                                                v-model="discount"
+                                                                label="Rabatt"
+                                                                min="0"
+                                                                :rules="[requiredValidator]"
+                                                            />
+                                                        </VCol>
+                                                        <VCol cols="12" md="6">
+                                                            <VTextField
+                                                                type="number"
+                                                                v-model="registration_fee"
+                                                                label="Registreringsavgift"
+                                                                min="0"
+                                                                :rules="[requiredValidator]"
+                                                            />
+                                                        </VCol>
+                                                        <VCol cols="12" md="6">
                                                             <AppDateTimePicker
                                                                 :key="JSON.stringify(startDateTimePickerConfig)"
                                                                 v-model="sale_date"
@@ -474,6 +581,9 @@ const onSubmit = () => {
                                                                 :rules="[requiredValidator]"
                                                                 clearable
                                                             />
+                                                        </VCol>
+                                                        <VCol cols="12" md="12" class="text-end">
+                                                            <span>Totalpris: {{ total_sale }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                                         </VCol>
                                                     </VRow>
                                                 </VCol>
