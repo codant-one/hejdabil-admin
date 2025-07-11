@@ -49,8 +49,8 @@ class Agreement extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_interchange_id', 'id');
     }
 
-    public function supplier(){
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
     public function agreement_client(){
@@ -110,10 +110,6 @@ class Agreement extends Model
             $query->where('vehicle_client_id', $filters->get('vehicle_client_id'));
         }
 
-        if ($filters->get('supplier_id') !== null) {
-            $query->where('supplier_id', $filters->get('supplier_id'));
-        }
-
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
             $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';
             $orderBy = $filters->get('orderBy') ? $filters->get('orderBy') : 'asc';
@@ -134,7 +130,7 @@ class Agreement extends Model
     public static function createAgreement($request) {
 
         $agreement = self::create([
-            'supplier_id' => Auth::user()->supplier->id,
+            'user_id' => Auth::user()->id,
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
