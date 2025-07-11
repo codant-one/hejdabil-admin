@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('agreements', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('supplier_id');
+            $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('agreement_type_id');
             $table->unsignedBigInteger('vehicle_client_id')->nullable();
             $table->unsignedBigInteger('vehicle_interchange_id')->nullable();
@@ -39,7 +39,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('agreement_type_id')->references('id')->on('agreement_types')->onDelete('cascade');
             $table->foreign('vehicle_client_id')->references('id')->on('vehicle_clients')->onDelete('cascade');
             $table->foreign('vehicle_interchange_id')->references('id')->on('vehicles')->onDelete('cascade');
