@@ -162,6 +162,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/updateState/{id}', [CurrencyController::class, 'updateState']);
     });
 
+    //Agreement
+    Route::group(['prefix' => 'agreements'], function () {
+        Route::get('/info/all', [AgreementController::class, 'info']);
+    });
+
 });
 
 //Public Endpoints

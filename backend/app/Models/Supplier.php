@@ -30,7 +30,7 @@ class Supplier extends Model
         return $this->belongsTo(State::class, 'state_id', 'id');
     }
 
-    public function agreement(){
+    public function agreements(){
         return $this->hasMany(Agreement::class, 'supplier_id', 'id');
     }
 

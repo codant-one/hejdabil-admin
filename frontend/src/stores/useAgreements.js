@@ -1,0 +1,132 @@
+import { defineStore } from 'pinia'
+import Agreements from '@/api/agreements'
+import vehicles from '@/api/vehicles'
+
+export const useAgreementsStores = defineStore('agreements', {
+    state: () => ({
+        agreements: {},
+        brands: {},
+        models: {},
+        carbodies: {},
+        ivas: {},
+        fuels: {},
+        states: {},
+        guaranties: {},
+        guarantyTypes: {},
+        insuranceCompanies: {},
+        insuranceTypes: {},
+        currencies: {},
+        paymenttypes: {},
+        agreementTypes: {},
+        vehicles: {},
+        agreement_id: 0,
+        loading: false,
+        last_page: 1,
+        agreementsTotalCount: 6
+    }),
+    getters:{
+        getAgreements(){
+            return this.agreements
+        }
+    },
+    actions: {
+        setLoading(payload){
+            this.loading = payload
+        },
+        fetchAgreements(params) {
+            this.setLoading(true)
+            
+            return Agreements.get(params)
+                .then((response) => {
+                    this.agreements = response.data.data.agreements.data
+                    this.last_page = response.data.data.agreements.last_page
+                    this.agreementsTotalCount = response.data.data.agreementsTotalCount
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        addAgreement(data) {
+            this.setLoading(true)
+
+            return Agreements.create(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        showAgreement(id) {
+            this.setLoading(true)
+
+            return Agreements.show(id)
+                .then((response) => {
+                    if(response.data.success)
+                        return Promise.resolve(response.data.data)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        updateAgreement(data) {
+            this.setLoading(true)
+            
+            return Agreements.update(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
+        deleteAgreement(id) {
+            this.setLoading(true)
+
+            return Agreements.delete(id)
+                .then((response) => {
+                    let index = this.agreements.findIndex((item) => item.id === id)
+                    this.agreements.splice(index, 1)
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        info() {
+            this.setLoading(true)
+
+            return Agreements.info()
+                .then((response) => {
+                    this.brands = response.data.data.brands
+                    this.models = response.data.data.models
+                    this.carbodies = response.data.data.carbodies
+                    this.ivas = response.data.data.ivas
+                    this.fuels = response.data.data.fuels
+                    this.states = response.data.data.states
+                    this.guaranties = response.data.data.guaranties
+                    this.guarantyTypes = response.data.data.guarantyTypes
+                    this.insuranceCompanies = response.data.data.insuranceCompanies
+                    this.insuranceTypes = response.data.data.insuranceTypes
+                    this.currencies = response.data.data.currencies
+                    this.paymenttypes = response.data.data.paymenttypes
+                    this.agreementTypes = response.data.data.agreementTypes
+                    this.vehicles = response.data.data.vehicles
+                    this.agreement_id = response.data.data.agreement_id
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        }
+    }
+})

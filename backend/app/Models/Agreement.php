@@ -49,8 +49,8 @@ class Agreement extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_interchange_id', 'id');
     }
 
-    public function user(){
-        return $this->belongsTo(User::class, 'user_id', 'id');
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
     }
 
     public function agreement_client(){
@@ -73,6 +73,12 @@ class Agreement extends Model
 
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
+
+        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } elseif ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        }
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
@@ -125,32 +131,36 @@ class Agreement extends Model
         return $query->paginate($limit);
     }
 
-
     /**** Public methods ****/
     public static function createAgreement($request) {
 
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+
         $agreement = self::create([
-            'user_id' => Auth::user()->id,
+            'supplier_id' => isSupplier ? Auth::user()->supplier->id : null,
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
+            'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
             'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
-            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,
+            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,            
             'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
             'insurance_type_id' => $request->insurance_type_id === 'null' ? null : $request->insurance_type_id,
+            'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
+            'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
+            'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
+            'agreement_id' => $request->agreement_id,
+            'first_registration_date' => $request->first_registration_date === 'null' ? null : $request->first_registration_date,
+            'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'insurance_agent' => $request->insurance_agent === 'null' ? null : $request->insurance_agent,
             'price' => $request->price === 'null' ? null : $request->price,
-            'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
-            'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
             'iva_amount' => $request->iva_amount === 'null' ? null : $request->iva_amount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
-            'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'down_payment_percentage' => $request->down_payment_percentage === 'null' ? null : $request->down_payment_percentage,
             'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
             'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
             'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
             'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
             'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
-            'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
             'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
         ]);
@@ -162,24 +172,25 @@ class Agreement extends Model
 
         $agreement->update([
             'vehicle_client_id' => ($request->vehicle_client_id === 'null' || empty($request->vehicle_client_id)) ? $agreement->vehicle_client_id : $request->vehicle_client_id,
+            'vehicle_interchange_id' => ($request->vehicle_interchange_id === 'null' || empty($request->vehicle_interchange_id)) ? $agreement->vehicle_interchange_id : $request->vehicle_interchange_id,
             'guaranty_id' => ($request->guaranty_id === 'null' || empty($request->guaranty_id)) ? $agreement->guaranty_id : $request->guaranty_id,
             'guaranty_type_id' => ($request->guaranty_type_id === 'null' || empty($request->guaranty_type_id)) ? $agreement->guaranty_type_id : $request->guaranty_type_id,
             'insurance_company_id' => ($request->insurance_company_id === 'null' || empty($request->insurance_company_id)) ? $agreement->insurance_company_id : $request->insurance_company_id,
             'insurance_type_id' => ($request->insurance_type_id === 'null' || empty($request->insurance_type_id)) ? $agreement->insurance_type_id : $request->insurance_type_id,
+            'payment_type_id' => ($request->payment_type_id === 'null' || empty($request->payment_type_id)) ? $agreement->payment_type_id : $request->payment_type_id,
+            'iva_id' => ($request->iva_id === 'null' || empty($request->iva_id)) ? $agreement->iva_id : $request->iva_id,
+            'first_registration_date' => ($request->first_registration_date === 'null' || empty($request->first_registration_date)) ? $agreement->first_registration_date : $request->first_registration_date,
+            'sale_date' => ($request->sale_date === 'null' || empty($request->sale_date)) ? $agreement->sale_date : $request->sale_date,
             'insurance_agent' => ($request->insurance_agent === 'null' || empty($request->insurance_agent)) ? $agreement->insurance_agent : $request->insurance_agent,
             'price' => ($request->price === 'null' || empty($request->price)) ? $agreement->price : $request->price,
-            'currency_id' => ($request->currency_id === 'null' || empty($request->currency_id)) ? $agreement->currency_id : $request->currency_id,
-            'iva_id' => ($request->iva_id === 'null' || empty($request->iva_id)) ? $agreement->iva_id : $request->iva_id,
             'iva_amount' => ($request->iva_amount === 'null' || empty($request->iva_amount)) ? $agreement->iva_amount : $request->iva_amount,
             'registration_fee' => ($request->registration_fee === 'null' || empty($request->registration_fee)) ? $agreement->registration_fee : $request->registration_fee,
-            'payment_type_id' => ($request->payment_type_id === 'null' || empty($request->payment_type_id)) ? $agreement->payment_type_id : $request->payment_type_id,
             'down_payment_percentage' => ($request->down_payment_percentage === 'null' || empty($request->down_payment_percentage)) ? $agreement->down_payment_percentage : $request->down_payment_percentage,
             'payment_received' => ($request->payment_received === 'null' || empty($request->payment_received)) ? $agreement->payment_received : $request->payment_received,
             'payment_method_forcash' => ($request->payment_method_forcash === 'null' || empty($request->payment_method_forcash)) ? $agreement->payment_method_forcash : $request->payment_method_forcash,
             'installment_amount' => ($request->installment_amount === 'null' || empty($request->installment_amount)) ? $agreement->installment_amount : $request->installment_amount,
             'installment_contract_upon_delivery' => ($request->installment_contract_upon_delivery === 'null' || empty($request->installment_contract_upon_delivery)) ? $agreement->installment_contract_upon_delivery : $request->installment_contract_upon_delivery,
             'payment_description' => ($request->payment_description === 'null' || empty($request->payment_description)) ? $agreement->payment_description : $request->payment_description,
-            'vehicle_interchange_id' => ($request->vehicle_interchange_id === 'null' || empty($request->vehicle_interchange_id)) ? $agreement->vehicle_interchange_id : $request->vehicle_interchange_id,
             'terms_other_conditions' => ($request->terms_other_conditions === 'null' || empty($request->terms_other_conditions)) ? $agreement->terms_other_conditions : $request->terms_other_conditions,
             'terms_other_information' => ($request->terms_other_information === 'null' || empty($request->terms_other_information)) ? $agreement->terms_other_information : $request->terms_other_information
         ]);
@@ -197,16 +208,5 @@ class Agreement extends Model
             $vehicle->delete();
         }
     }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
 }

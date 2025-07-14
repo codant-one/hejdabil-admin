@@ -935,447 +935,564 @@ const getFlag = (currency_id) => {
                     </div>
                 </VCol>
                 <VCol cols="12" md="12">              
-                        <VCard flat class="px-2 px-md-12">
-                            <VCardText class="px-2 pt-0 pt-md-5">                
-                                <VTabs v-model="currentTab" fixed-tabs>
-                                    <VTab>Fordon</VTab>
-                                    <VTab>Prisinformation</VTab>
-                                    <VTab>Utrustningslista</VTab>
-                                    <VTab>Information om bilen</VTab>
-                                    <VTab>Planerade åtgärder</VTab>
-                                    <VTab>Kostnader</VTab>
-                                    <VTab>Dokument</VTab>
-                                </VTabs>
-                                <VCardText class="px-2">
-                                    <VWindow v-model="currentTab" class="pt-3">
-                                        <!-- Fordon -->
-                                        <VWindowItem class="px-md-5">
-                                            <h6 class="text-md-h4 text-h5 font-weight-medium mb-7">
-                                                Grund och teknisk information
+                    <VCard flat class="px-2 px-md-12">
+                        <VCardText class="px-2 pt-0 pt-md-5">                
+                            <VTabs v-model="currentTab" fixed-tabs>
+                                <VTab>Fordon</VTab>
+                                <VTab>Prisinformation</VTab>
+                                <VTab>Utrustningslista</VTab>
+                                <VTab>Information om bilen</VTab>
+                                <VTab>Planerade åtgärder</VTab>
+                                <VTab>Kostnader</VTab>
+                                <VTab>Dokument</VTab>
+                            </VTabs>
+                            <VCardText class="px-2">
+                                <VWindow v-model="currentTab" class="pt-3">
+                                    <!-- Fordon -->
+                                    <VWindowItem class="px-md-5">
+                                        <h6 class="text-md-h4 text-h5 font-weight-medium mb-7">
+                                            Grund och teknisk information
+                                        </h6>
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="reg_num"
+                                                    disabled
+                                                    label="Reg nr"
+                                                />
+                                            </VCol>   
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="mileage"
+                                                    suffix="Mil"
+                                                    label="Miltal"
+                                                    min="0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="brand_id"
+                                                    label="Märke"
+                                                    :items="brands"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectBrand"
+                                                    @click:clear="onClearBrand"/>
+                                            </VCol>
+                                            <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
+                                                <VAutocomplete
+                                                    v-model="model_id"
+                                                    label="Modell"
+                                                    :items="getModels"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectModel"/>
+                                            </VCol>
+                                            <VCol cols="12" md="3" v-if="model_id === 0">
+                                                <VTextField
+                                                    v-model="model"
+                                                    label="Modellens namn"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="generation"
+                                                    label="Generation"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="car_body_id"
+                                                    label="Kaross"
+                                                    :items="carbodies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="year"
+                                                    :rules="[yearValidator]"
+                                                    label="Årsmodell"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(startDateTimePickerConfig)"
+                                                    v-model="purchase_date"
+                                                    density="compact"
+                                                    :config="startDateTimePickerConfig"
+                                                    label="Inköpsdatum"
+                                                    clearable
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                                    v-model="control_inspection"
+                                                    density="compact"
+                                                    :config="endDateTimePickerConfig"
+                                                    label="Kontrollbesiktning gäller tom"
+                                                    clearable
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="color"
+                                                    label="Färg"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="fuel_id"
+                                                    label="Drivmedel"
+                                                    :items="fuels"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"/>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="gearbox_id"
+                                                    label="Växellåda"
+                                                    :items="gearboxes"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                    <!-- Prisinformation -->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="purchase_price"
+                                                    label="Inköpspris"
+                                                    min="0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="currency_id"
+                                                    label="Valuta"
+                                                    :items="currencies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    disabled
+                                                    clear-icon="tabler-x">
+                                                    <template
+                                                        v-if="currency_id"
+                                                        #prepend
+                                                        >
+                                                            <VAvatar
+                                                            start
+                                                            style="margin-top: -8px;"
+                                                            size="36"
+                                                            :image="getFlag(currency_id)"
+                                                        />
+                                                    </template>
+                                                </VAutocomplete>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="iva_purchase_id"
+                                                    label="VMB / Moms"
+                                                    :items="ivas"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"/>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="state_idOld"
+                                                    label="Status"
+                                                    :items="states"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"/>
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                    <!-- Utrustningslista -->
+                                    <VWindowItem class="px-md-5 text-center">
+                                        Utrustningslista finns inte tillgänglig
+                                        <VRow class="px-md-5" v-if="false">
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="phone"
+                                                    label="Namn"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                    <!-- Information om bilen -->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="number_keys"
+                                                    type="number"
+                                                    label="Antal nycklar"
+                                                    min="1"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="2">
+                                                <div class="d-flex flex-column">
+                                                    <label class="v-label text-body-2 text-wrap"> Servicebok finns?</label>
+                                                    <VRadioGroup v-model="service_book" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="2">                                                
+                                                <div class="d-flex flex-column">
+                                                    <label class="v-label text-body-2 text-wrap">Sommardäck finns?</label>
+                                                    <VRadioGroup v-model="summer_tire" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="2">                                                
+                                                <div class="d-flex flex-column">
+                                                    <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
+                                                    <VRadioGroup v-model="winter_tire" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="last_service"
+                                                    label="Senaste service: Mil/datum"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <div class="d-flex flex-column">
+                                                    <label class="v-label text-body-2 text-wrap">Kamrem bytt?</label>
+                                                    <VRadioGroup v-model="dist_belt" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="12" v-if="dist_belt === 0">
+                                                <VTextField
+                                                    v-model="last_dist_belt"
+                                                    label="Kamrem bytt vid Mil/datum"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="12">
+                                                <VTextarea
+                                                    v-model="comments"
+                                                    rows="5"
+                                                    label="Anteckningar"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                    <!-- Planerade åtgärder -->
+                                    <VWindowItem class="px-md-5">
+                                        <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
+                                            <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
+                                                Övrigt
                                             </h6>
-                                            <VRow class="px-md-5">
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="reg_num"
-                                                        disabled
-                                                        label="Reg nr"
-                                                    />
-                                                </VCol>   
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        type="number"
-                                                        v-model="mileage"
-                                                        suffix="Mil"
-                                                        label="Miltal"
-                                                        min="0"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="brand_id"
-                                                        label="Märke"
-                                                        :items="brands"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                        @update:modelValue="selectBrand"
-                                                        @click:clear="onClearBrand"/>
-                                                </VCol>
-                                                <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
-                                                    <VAutocomplete
-                                                        v-model="model_id"
-                                                        label="Modell"
-                                                        :items="getModels"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                        @update:modelValue="selectModel"/>
-                                                </VCol>
-                                                <VCol cols="12" md="3" v-if="model_id === 0">
-                                                    <VTextField
-                                                        v-model="model"
-                                                        label="Modellens namn"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="generation"
-                                                        label="Generation"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="car_body_id"
-                                                        label="Kaross"
-                                                        :items="carbodies"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="year"
-                                                        :rules="[yearValidator]"
-                                                        label="Årsmodell"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(startDateTimePickerConfig)"
-                                                        v-model="purchase_date"
-                                                        density="compact"
-                                                        :config="startDateTimePickerConfig"
-                                                        label="Inköpsdatum"
-                                                        clearable
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                                        v-model="control_inspection"
-                                                        density="compact"
-                                                        :config="endDateTimePickerConfig"
-                                                        label="Kontrollbesiktning gäller tom"
-                                                        clearable
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="color"
-                                                        label="Färg"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="fuel_id"
-                                                        label="Drivmedel"
-                                                        :items="fuels"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"/>
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="gearbox_id"
-                                                        label="Växellåda"
-                                                        :items="gearboxes"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                    />
-                                                </VCol>
-                                            </VRow>
-                                        </VWindowItem>
-                                        <!-- Prisinformation -->
-                                        <VWindowItem class="px-md-5">
-                                            <VRow class="px-md-5">
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        type="number"
-                                                        v-model="purchase_price"
-                                                        label="Inköpspris"
-                                                        min="0"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="currency_id"
-                                                        label="Valuta"
-                                                        :items="currencies"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        disabled
-                                                        clear-icon="tabler-x">
-                                                        <template
-                                                            v-if="currency_id"
-                                                            #prepend
-                                                            >
-                                                                <VAvatar
-                                                                start
-                                                                style="margin-top: -8px;"
-                                                                size="36"
-                                                                :image="getFlag(currency_id)"
+                                            <VBtn class="w-100 w-md-auto" @click="isConfirmTaskDialogVisible = true">
+                                                Lägg till åtgärd
+                                            </VBtn>
+                                        </div>
+
+                                        <div v-if="tasks.length === 0" class="mt-10 text-center">Inga åtgärder hittades</div>
+
+                                        <VRow no-gutters v-else class="mt-5">
+                                            <VCol
+                                                v-for="(task, index) in tasks"
+                                                :key="index"
+                                                cols="12" md="4"
+                                            >
+                                                <VCard
+                                                    flat
+                                                    color="#E3DEEB"
+                                                    class="mx-1"
+                                                    style="box-shadow: none !important; border-radius: 12px !important;"
+                                                >
+                                                    <VCardItem>
+                                                        <template #prepend>
+                                                            <VIcon
+                                                            size="1.9rem"
+                                                            icon="mdi-note-outline"
                                                             />
                                                         </template>
-                                                    </VAutocomplete>
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="iva_purchase_id"
-                                                        label="VMB / Moms"
-                                                        :items="ivas"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"/>
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VAutocomplete
-                                                        v-model="state_idOld"
-                                                        label="Status"
-                                                        :items="states"
-                                                        :item-title="item => item.name"
-                                                        :item-value="item => item.id"/>
-                                                </VCol>
-                                            </VRow>
-                                        </VWindowItem>
-                                        <!-- Utrustningslista -->
-                                        <VWindowItem class="px-md-5 text-center">
-                                            Utrustningslista finns inte tillgänglig
-                                            <VRow class="px-md-5" v-if="false">
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="phone"
-                                                        label="Namn"
-                                                    />
-                                                </VCol>
-                                            </VRow>
-                                        </VWindowItem>
-                                        <!-- Information om bilen -->
-                                        <VWindowItem class="px-md-5">
-                                            <VRow class="px-md-5">
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="number_keys"
-                                                        type="number"
-                                                        label="Antal nycklar"
-                                                        min="1"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="2">
-                                                    <div class="d-flex flex-column">
-                                                        <label class="v-label text-body-2 text-wrap"> Servicebok finns?</label>
-                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </VCol>
-                                                <VCol cols="12" md="2">                                                
-                                                    <div class="d-flex flex-column">
-                                                        <label class="v-label text-body-2 text-wrap">Sommardäck finns?</label>
-                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </VCol>
-                                                <VCol cols="12" md="2">                                                
-                                                    <div class="d-flex flex-column">
-                                                        <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
-                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <VTextField
-                                                        v-model="last_service"
-                                                        label="Senaste service: Mil/datum"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <div class="d-flex flex-column">
-                                                        <label class="v-label text-body-2 text-wrap">Kamrem bytt?</label>
-                                                        <VRadioGroup v-model="dist_belt" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </VCol>
-                                                <VCol cols="12" md="12" v-if="dist_belt === 0">
-                                                    <VTextField
-                                                        v-model="last_dist_belt"
-                                                        label="Kamrem bytt vid Mil/datum"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="12">
-                                                    <VTextarea
-                                                        v-model="comments"
-                                                        rows="5"
-                                                        label="Anteckningar"
-                                                    />
-                                                </VCol>
-                                            </VRow>
-                                        </VWindowItem>
-                                        <!-- Planerade åtgärder -->
-                                        <VWindowItem class="px-md-5">
-                                            <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
-                                                <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
-                                                    Övrigt
-                                                </h6>
-                                                <VBtn class="w-100 w-md-auto" @click="isConfirmTaskDialogVisible = true">
-                                                    Lägg till åtgärd
-                                                </VBtn>
-                                            </div>
+                                                    <VCardTitle> {{ index + 1 }}</VCardTitle>
+                                                    </VCardItem>
 
-                                            <div v-if="tasks.length === 0" class="mt-10 text-center">Inga åtgärder hittades</div>
+                                                    <VCardText>
+                                                        <p class="clamp-text mb-0">
+                                                            <strong>Vad ska göras?:</strong> {{ task.measure }}
+                                                        </p>
+                                                        <p class="clamp-text mb-0">
+                                                            <strong>Beräknad kostnad (kr):</strong> {{ task.cost }} kr
+                                                        </p>
+                                                        <p class="clamp-text mb-0">
+                                                            <strong>Planerat startdatum:</strong> {{ task.start_date }}
+                                                        </p>
+                                                        <p class="clamp-text mb-0">
+                                                            <strong>Förväntat slutdatum:</strong> {{ task.end_date }}
+                                                        </p>
+                                                        <p class="clamp-text mb-0 mt-2">
+                                                            <VExpansionPanels>
+                                                                <VExpansionPanel>
+                                                                    <VExpansionPanelTitle>kommentarer</VExpansionPanelTitle>
+                                                                    <VExpansionPanelText>
+                                                                        <VAlert 
+                                                                            v-for="(comment, index) in task.comments" 
+                                                                            :key="index"
+                                                                            variant="outlined" 
+                                                                            color="secondary"
+                                                                            class="my-1">
+                                                                            <div class="d-flex flex-column">
+                                                                                {{ comment.comment }}
+                                                                                <span class="text-xs">  
+                                                                                    {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
+                                                                                        year: 'numeric', 
+                                                                                        month: '2-digit', 
+                                                                                        day: '2-digit', 
+                                                                                        hour: '2-digit', 
+                                                                                        minute: '2-digit',
+                                                                                        hour12: false
+                                                                                    }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
+                                                                                </span>                                        
+                                                                            </div>            
+                                                                        </VAlert>                                
+                                                                    </VExpansionPanelText>
+                                                                </VExpansionPanel>
+                                                            </VExpansionPanels>
+                                                        </p>
+                                                    </VCardText>
 
-                                            <VRow no-gutters v-else class="mt-5">
-                                                <VCol
-                                                    v-for="(task, index) in tasks"
+                                                    <VCardText class="d-flex justify-space-between align-center flex-wrap">
+                                                    <div class="text-no-wrap">
+                                                        <VAvatar
+                                                            color="#E3DEEB"
+                                                            :variant="task.user.avatar ? 'outlined' : 'tonal'"
+                                                            size="34"
+                                                        >
+                                                            <VImg
+                                                                v-if="task.user.avatar"
+                                                                style="border-radius: 50%;"
+                                                                :src="themeConfig.settings.urlStorage + task.user.avatar"
+                                                            />
+                                                            <span v-else>{{ avatarText(task.user.name) }}</span>
+                                                        </VAvatar>
+                                                        <span class="ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
+                                                    </div>
+
+                                                    <div class="d-flex align-center">
+                                                        <VIcon
+                                                            icon="tabler-edit"
+                                                            class="me-1 cursor-pointer"
+                                                            @click="showTask(task)"
+                                                        />
+                                                        <VIcon
+                                                            icon="tabler-trash"
+                                                            class="cursor-pointer"
+                                                            @click="removeTask(task)"
+                                                        />
+                                                    </div>
+                                                    </VCardText>
+                                                </VCard>
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                    <!-- Kostnader -->
+                                    <VWindowItem class="px-md-5">
+                                        <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
+                                            <VSpacer class="d-none d-md-block"/>   
+                                            <VBtn
+                                                v-if="$can('edit', 'stock')"
+                                                class="w-100 w-md-auto"
+                                                prepend-icon="tabler-plus"
+                                                @click="isConfirmCreateCostDialogVisible = true">
+                                                Lägg till kostnad
+                                            </VBtn>
+                                        </div>
+                                        <div v-if="costs.length === 0" class="mt-10 text-center">Ingen kostnader registrerade ännu</div>
+                                        <VTable v-else class="text-no-wrap">
+                                            <!-- 👉 table head -->
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">Händelse</th>
+                                                    <th scope="col">Datum</th>
+                                                    <th scope="col">Typ</th>
+                                                    <th scope="col" class="text-end">Belopp (kr)</th>
+                                                    <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+                                                </tr>
+                                            </thead>
+                                            <!-- 👉 table body -->
+                                            <tbody>
+                                                <tr 
+                                                    v-for="(cost, index) in costs"
                                                     :key="index"
-                                                    cols="12" md="4"
-                                                >
-                                                    <VCard
-                                                        flat
-                                                        color="#E3DEEB"
-                                                        class="mx-1"
-                                                        style="box-shadow: none !important; border-radius: 12px !important;"
-                                                    >
-                                                        <VCardItem>
-                                                            <template #prepend>
-                                                                <VIcon
-                                                                size="1.9rem"
-                                                                icon="mdi-note-outline"
-                                                                />
-                                                            </template>
-                                                        <VCardTitle> {{ index + 1 }}</VCardTitle>
-                                                        </VCardItem>
+                                                    style="height: 3rem;">
 
-                                                        <VCardText>
-                                                            <p class="clamp-text mb-0">
-                                                                <strong>Vad ska göras?:</strong> {{ task.measure }}
-                                                            </p>
-                                                            <p class="clamp-text mb-0">
-                                                                <strong>Beräknad kostnad (kr):</strong> {{ task.cost }} kr
-                                                            </p>
-                                                            <p class="clamp-text mb-0">
-                                                                <strong>Planerat startdatum:</strong> {{ task.start_date }}
-                                                            </p>
-                                                            <p class="clamp-text mb-0">
-                                                                <strong>Förväntat slutdatum:</strong> {{ task.end_date }}
-                                                            </p>
-                                                            <p class="clamp-text mb-0 mt-2">
-                                                                <VExpansionPanels>
-                                                                    <VExpansionPanel>
-                                                                        <VExpansionPanelTitle>kommentarer</VExpansionPanelTitle>
-                                                                        <VExpansionPanelText>
-                                                                            <VAlert 
-                                                                                v-for="(comment, index) in task.comments" 
-                                                                                :key="index"
-                                                                                variant="outlined" 
-                                                                                color="secondary"
-                                                                                class="my-1">
-                                                                                <div class="d-flex flex-column">
-                                                                                    {{ comment.comment }}
-                                                                                    <span class="text-xs">  
-                                                                                        {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
-                                                                                            year: 'numeric', 
-                                                                                            month: '2-digit', 
-                                                                                            day: '2-digit', 
-                                                                                            hour: '2-digit', 
-                                                                                            minute: '2-digit',
-                                                                                            hour12: false
-                                                                                        }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
-                                                                                    </span>                                        
-                                                                                </div>            
-                                                                            </VAlert>                                
-                                                                        </VExpansionPanelText>
-                                                                    </VExpansionPanel>
-                                                                </VExpansionPanels>
-                                                            </p>
-                                                        </VCardText>
+                                                    <td> {{ index + 1 }} </td>
+                                                    <td> {{ cost.date }} </td>
+                                                    <td class="text-wrap"> {{ cost.type }} </td>
+                                                    <td class="text-end"> {{ formatNumber(cost.value ?? 0) }} kr</td>
+                                                    <!-- 👉 Acciones -->
+                                                    <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                                                    <VMenu>
+                                                        <template #activator="{ props }">
+                                                            <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                                                                <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                                                                <path d="M19 16v6"></path>
+                                                                <path d="M22 19l-3 3l-3 -3"></path>
+                                                                <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                                                                </svg>
+                                                            </VBtn>
+                                                        </template>
 
-                                                        <VCardText class="d-flex justify-space-between align-center flex-wrap">
-                                                        <div class="text-no-wrap">
-                                                            <VAvatar
-                                                                color="#E3DEEB"
-                                                                :variant="task.user.avatar ? 'outlined' : 'tonal'"
-                                                                size="34"
-                                                            >
-                                                                <VImg
-                                                                    v-if="task.user.avatar"
-                                                                    style="border-radius: 50%;"
-                                                                    :src="themeConfig.settings.urlStorage + task.user.avatar"
-                                                                />
-                                                                <span v-else>{{ avatarText(task.user.name) }}</span>
-                                                            </VAvatar>
-                                                            <span class="ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
-                                                        </div>
+                                                        <VList>
+                                                            <VListItem v-if="$can('edit', 'stock')" @click="showCost(cost)">
+                                                                <template #prepend>
+                                                                    <VIcon icon="tabler-edit" />
+                                                                </template>
+                                                                <VListItemTitle>Redigera</VListItemTitle>
+                                                            </VListItem>
+                                                            <VListItem v-if="$can('delete','stock')" @click="removeCost(cost)">
+                                                                <template #prepend>
+                                                                <VIcon icon="tabler-trash" />
+                                                                </template>
+                                                                <VListItemTitle>Ta bort</VListItemTitle>
+                                                            </VListItem>
+                                                        </VList>
+                                                    </VMenu>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                            <!-- 👉 table footer  -->
+                                            <tfoot v-show="!costs.length">
+                                            <tr>
+                                                <td
+                                                colspan="6"
+                                                class="text-center">
+                                                Uppgifter ej tillgängliga
+                                                </td>
+                                            </tr>
+                                            </tfoot>
+                                        </VTable>
+                                        <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3" v-if="costs.length > 0">
+                                            <span class="d-block d-md-flex text-sm text-disabled">
+                                                <strong class="d-block me-md-5">Totalt: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
+                                            </span>
+                                        </VCardText>
+                                    </VWindowItem>
+                                    <!-- Dokument -->
+                                    <VWindowItem class="px-md-5">
+                                        <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="documents.length === 0 ? 'border-bottom-secondary' : ''">           
+                                            <VSpacer class="d-none d-md-block"/> 
+                                            <VBtn
+                                                v-if="selectedIds.length > 0"
+                                                color="secondary"
+                                                variant="tonal"
+                                                class="me-2"
+                                                @click="isConfirmSendDocumentDialogVisible = true">
+                                                Sänd PDF
+                                            </VBtn>  
+                                            <VBtn
+                                                v-if="$can('edit', 'stock')"
+                                                class="w-100 w-md-auto"
+                                                prepend-icon="mdi-cloud-upload-outline"
+                                                @click="showDocument">
+                                                Ladda upp dokument
+                                            </VBtn>
 
-                                                        <div class="d-flex align-center">
-                                                            <VIcon
-                                                                icon="tabler-edit"
-                                                                class="me-1 cursor-pointer"
-                                                                @click="showTask(task)"
-                                                            />
-                                                            <VIcon
-                                                                icon="tabler-trash"
-                                                                class="cursor-pointer"
-                                                                @click="removeTask(task)"
-                                                            />
-                                                        </div>
-                                                        </VCardText>
-                                                    </VCard>
-                                                </VCol>
-                                            </VRow>
-                                        </VWindowItem>
-                                        <!-- Kostnader -->
-                                        <VWindowItem class="px-md-5">
-                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
-                                                <VSpacer class="d-none d-md-block"/>   
-                                                <VBtn
-                                                    v-if="$can('edit', 'stock')"
-                                                    class="w-100 w-md-auto"
-                                                    prepend-icon="tabler-plus"
-                                                    @click="isConfirmCreateCostDialogVisible = true">
-                                                    Lägg till kostnad
-                                                </VBtn>
-                                            </div>
-                                            <div v-if="costs.length === 0" class="mt-10 text-center">Ingen kostnader registrerade ännu</div>
-                                            <VTable v-else class="text-no-wrap">
-                                                <!-- 👉 table head -->
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">Händelse</th>
-                                                        <th scope="col">Datum</th>
-                                                        <th scope="col">Typ</th>
-                                                        <th scope="col" class="text-end">Belopp (kr)</th>
-                                                        <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
-                                                    </tr>
-                                                </thead>
-                                                <!-- 👉 table body -->
-                                                <tbody>
-                                                    <tr 
-                                                        v-for="(cost, index) in costs"
-                                                        :key="index"
-                                                        style="height: 3rem;">
-
-                                                        <td> {{ index + 1 }} </td>
-                                                        <td> {{ cost.date }} </td>
-                                                        <td class="text-wrap"> {{ cost.type }} </td>
-                                                        <td class="text-end"> {{ formatNumber(cost.value ?? 0) }} kr</td>
-                                                        <!-- 👉 Acciones -->
-                                                        <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                                        </div>
+                                        <div v-if="documents.length === 0" class="mt-10 text-center">Inga dokument uppladdade</div>
+                                        <VTable v-else class="text-no-wrap">
+                                            <!-- 👉 table head -->
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col">
+                                                        <VCheckbox
+                                                            :model-value="allSelected"
+                                                            @update:model-value="allSelected = $event"
+                                                            density="compact"
+                                                            hide-details
+                                                        />
+                                                    </th>
+                                                    <th scope="col">Namn</th>
+                                                    <th scope="col">Dokumenttyp</th>
+                                                    <th scope="col">Datum</th>
+                                                    <th scope="col">Skapad av</th>                                                        
+                                                    <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+                                                </tr>
+                                            </thead>
+                                            <!-- 👉 table body -->
+                                            <tbody>
+                                                <tr 
+                                                    v-for="(document, index) in documents"
+                                                    :key="index"
+                                                    style="height: 3rem;">
+                                                    <td>
+                                                        <VCheckbox
+                                                            :value="document.id"
+                                                            v-model="selectedIds"
+                                                            density="compact"
+                                                            hide-details
+                                                        />
+                                                    </td>
+                                                    <td class="text-wrap">{{ document.file.split('/').pop() }} </td>
+                                                    <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
+                                                    <td>  
+                                                        {{ new Date(document.created_at).toLocaleString('sv-SE', { 
+                                                            year: 'numeric', 
+                                                            month: '2-digit', 
+                                                            day: '2-digit', 
+                                                            hour: '2-digit', 
+                                                            minute: '2-digit',
+                                                            hour12: false
+                                                        }) }} 
+                                                    </td>
+                                                    <td> {{ document.user.name }} {{ document.user.last_name }}</td>
+                                                    <!-- 👉 Acciones -->
+                                                    <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                         <VMenu>
                                                             <template #activator="{ props }">
                                                                 <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -1389,13 +1506,13 @@ const getFlag = (currency_id) => {
                                                             </template>
 
                                                             <VList>
-                                                                <VListItem v-if="$can('edit', 'stock')" @click="showCost(cost)">
+                                                                <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
                                                                     <template #prepend>
-                                                                        <VIcon icon="tabler-edit" />
+                                                                        <VIcon icon="mdi-cloud-download-outline" />
                                                                     </template>
-                                                                    <VListItemTitle>Redigera</VListItemTitle>
+                                                                    <VListItemTitle>Ladda ner</VListItemTitle>
                                                                 </VListItem>
-                                                                <VListItem v-if="$can('delete','stock')" @click="removeCost(cost)">
+                                                                <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
                                                                     <template #prepend>
                                                                     <VIcon icon="tabler-trash" />
                                                                     </template>
@@ -1403,142 +1520,25 @@ const getFlag = (currency_id) => {
                                                                 </VListItem>
                                                             </VList>
                                                         </VMenu>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                                <!-- 👉 table footer  -->
-                                                <tfoot v-show="!costs.length">
-                                                <tr>
-                                                    <td
-                                                    colspan="6"
-                                                    class="text-center">
-                                                    Uppgifter ej tillgängliga
                                                     </td>
                                                 </tr>
-                                                </tfoot>
-                                            </VTable>
-                                            <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3" v-if="costs.length > 0">
-                                                <span class="d-block d-md-flex text-sm text-disabled">
-                                                    <strong class="d-block me-md-5">Totalt: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
-                                                </span>
-                                            </VCardText>
-                                        </VWindowItem>
-                                        <!-- Dokument -->
-                                        <VWindowItem class="px-md-5">
-                                            <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="documents.length === 0 ? 'border-bottom-secondary' : ''">           
-                                                <VSpacer class="d-none d-md-block"/> 
-                                                <VBtn
-                                                    v-if="selectedIds.length > 0"
-                                                    color="secondary"
-                                                    variant="tonal"
-                                                    class="me-2"
-                                                    @click="isConfirmSendDocumentDialogVisible = true">
-                                                    Sänd PDF
-                                                </VBtn>  
-                                                <VBtn
-                                                    v-if="$can('edit', 'stock')"
-                                                    class="w-100 w-md-auto"
-                                                    prepend-icon="mdi-cloud-upload-outline"
-                                                    @click="showDocument">
-                                                    Ladda upp dokument
-                                                </VBtn>
-
-                                            </div>
-                                            <div v-if="documents.length === 0" class="mt-10 text-center">Inga dokument uppladdade</div>
-                                            <VTable v-else class="text-no-wrap">
-                                                <!-- 👉 table head -->
-                                                <thead>
-                                                    <tr>
-                                                        <th scope="col">
-                                                            <VCheckbox
-                                                                :model-value="allSelected"
-                                                                @update:model-value="allSelected = $event"
-                                                                density="compact"
-                                                                hide-details
-                                                            />
-                                                        </th>
-                                                        <th scope="col">Namn</th>
-                                                        <th scope="col">Dokumenttyp</th>
-                                                        <th scope="col">Datum</th>
-                                                        <th scope="col">Skapad av</th>                                                        
-                                                        <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
-                                                    </tr>
-                                                </thead>
-                                                <!-- 👉 table body -->
-                                                <tbody>
-                                                    <tr 
-                                                        v-for="(document, index) in documents"
-                                                        :key="index"
-                                                        style="height: 3rem;">
-                                                        <td>
-                                                            <VCheckbox
-                                                                :value="document.id"
-                                                                v-model="selectedIds"
-                                                                density="compact"
-                                                                hide-details
-                                                            />
-                                                        </td>
-                                                        <td class="text-wrap">{{ document.file.split('/').pop() }} </td>
-                                                        <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
-                                                        <td>  
-                                                            {{ new Date(document.created_at).toLocaleString('sv-SE', { 
-                                                                year: 'numeric', 
-                                                                month: '2-digit', 
-                                                                day: '2-digit', 
-                                                                hour: '2-digit', 
-                                                                minute: '2-digit',
-                                                                hour12: false
-                                                            }) }} 
-                                                        </td>
-                                                        <td> {{ document.user.name }} {{ document.user.last_name }}</td>
-                                                        <!-- 👉 Acciones -->
-                                                        <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
-                                                            <VMenu>
-                                                                <template #activator="{ props }">
-                                                                    <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                                                                        <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                                                                        <path d="M19 16v6"></path>
-                                                                        <path d="M22 19l-3 3l-3 -3"></path>
-                                                                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                                                                        </svg>
-                                                                    </VBtn>
-                                                                </template>
-
-                                                                <VList>
-                                                                    <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
-                                                                        <template #prepend>
-                                                                            <VIcon icon="mdi-cloud-download-outline" />
-                                                                        </template>
-                                                                        <VListItemTitle>Ladda ner</VListItemTitle>
-                                                                    </VListItem>
-                                                                    <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
-                                                                        <template #prepend>
-                                                                        <VIcon icon="tabler-trash" />
-                                                                        </template>
-                                                                        <VListItemTitle>Ta bort</VListItemTitle>
-                                                                    </VListItem>
-                                                                </VList>
-                                                            </VMenu>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                                <!-- 👉 table footer  -->
-                                                <tfoot v-show="!documents.length">
-                                                <tr>
-                                                    <td
-                                                    colspan="6"
-                                                    class="text-center">
-                                                    Uppgifter ej tillgängliga
-                                                    </td>
-                                                </tr>
-                                                </tfoot>
-                                            </VTable>
-                                        </VWindowItem>
-                                    </VWindow>
-                                </VCardText>
+                                            </tbody>
+                                            <!-- 👉 table footer  -->
+                                            <tfoot v-show="!documents.length">
+                                            <tr>
+                                                <td
+                                                colspan="6"
+                                                class="text-center">
+                                                Uppgifter ej tillgängliga
+                                                </td>
+                                            </tr>
+                                            </tfoot>
+                                        </VTable>
+                                    </VWindowItem>
+                                </VWindow>
                             </VCardText>
-                        </VCard>                
+                        </VCardText>
+                    </VCard>                
                 </VCol>
             </VRow>
         </VForm>

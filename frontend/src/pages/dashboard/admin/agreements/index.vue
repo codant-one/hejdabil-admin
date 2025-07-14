@@ -1,42 +1,33 @@
 <script setup>
 
-import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useAgreementsStores } from '@/stores/useAgreements'
+import { requiredValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
-const suppliersStores = useSuppliersStores()
+const agreementsStores = useAgreementsStores()
 const emitter = inject("emitter")
 
-const suppliers = ref([])
+const agreements = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalSuppliers = ref(0)
+const totalAgreements = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
-const isConfirmActiveDialogVisible = ref(false)
-const selectedSupplier = ref({})
+const selectedAgreement = ref({})
 const state_id = ref(null)
+
+const agreementTypes = ref([])
 
 // Modal select type contract
 const isModalVisible = ref(false)
-const selectedOption = ref(null) 
-
-const selectItems = ref([
-  { title: 'Försäljningsavtal', value: 1 },
-  { title: 'Inköpsavtal', value: 2 },
-  { title: 'Förmedlingsavtal', value: 3 },
-  { title: 'Affärsförslag', value: 4 },
-])
-
-const states = ref ([
-  { id: 2, name: "Aktiv" },
-  { id: 1, name: "Inaktiv" }
-])
+const agreement_type_id = ref(null) 
+const refVForm = ref()
 
 const advisor = ref({
   type: '',
@@ -46,16 +37,21 @@ const advisor = ref({
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = suppliers.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = suppliers.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = agreements.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = agreements.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalSuppliers.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalAgreements.value } register`
 })
 
 // 👉 watching current page
 watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value
+})
+
+onMounted(async () => {
+
+  await loadData()
 })
 
 watchEffect(fetchData)
@@ -80,11 +76,11 @@ async function fetchData(cleanFilters = false) {
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
-  await suppliersStores.fetchSuppliers(data)
+  await agreementsStores.fetchAgreements(data)
 
-  suppliers.value = suppliersStores.getSuppliers
-  totalPages.value = suppliersStores.last_page
-  totalSuppliers.value = suppliersStores.suppliersTotalCount
+  agreements.value = agreementsStores.getAgreements
+  totalPages.value = agreementsStores.last_page
+  totalAgreements.value = agreementsStores.agreementsTotalCount
 
   isRequestOngoing.value = false
 
@@ -96,35 +92,26 @@ function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
 
-const resolveStatus = state_id => {
-  if (state_id === 2)
-    return { color: 'success' }
-  if (state_id === 1)
-    return { color: 'error' }
+const loadData = async () => {
+  await agreementsStores.info()
+
+  agreementTypes.value = agreementsStores.agreementTypes
 }
 
-const editSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
+const editAgreement = agreementData => {
+  router.push({ name : 'dashboard-admin-agreement-edit-id', params: { id: agreementData.id } })
 }
 
-const showDeleteDialog = supplierData => {
+const showDeleteDialog = agreementData => {
   isConfirmDeleteDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
+  selectedAgreement.value = { ...agreementData }
 }
 
-const showActivateDialog = supplierData => {
-  isConfirmActiveDialogVisible.value = true
-  selectedSupplier.value = { ...supplierData }
-}
 
-const seeSupplier = supplierData => {
-  router.push({ name : 'dashboard-admin-suppliers-id', params: { id: supplierData.id } })
-}
-
-const removeSupplier = async () => {
+const removeAgreement = async () => {
   isConfirmDeleteDialogVisible.value = false
-  let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
+  let res = await agreementsStores.deleteAgreement(selectedAgreement.value.id)
+  selectedAgreement.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
@@ -145,29 +132,6 @@ const removeSupplier = async () => {
   return true
 }
 
-const activateSupplier = async () => {
-  isConfirmActiveDialogVisible.value = false
-  let res = await suppliersStores.activateSupplier(selectedSupplier.value.id)
-  selectedSupplier.value = {}
-
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör aktiverad!' : res.data.message,
-    show: true
-  }
-
-  await fetchData()
-
-  setTimeout(() => {
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
-
-  return true
-}
 
 const downloadCSV = async () => {
 
@@ -175,11 +139,11 @@ const downloadCSV = async () => {
 
   let data = { limit: -1 }
 
-  await suppliersStores.fetchSuppliers(data)
+  await agreementsStores.fetchAgreements(data)
 
   let dataArray = [];
       
-  suppliersStores.getSuppliers.forEach(element => {
+  agreementsStores.getAgreements.forEach(element => {
 
     let data = {
       ID: element.id,
@@ -195,36 +159,27 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "suppliers", "csv");
+    .exportDataFromJSON(dataArray, "agreements", "csv");
 
   isRequestOngoing.value = false
 
 }
 
-// Función para manejar el guardado/confirmación del modal
-const handleConfirmSelection = () => {
-  if (selectedOption.value) {
-    console.log('Opción seleccionada:', selectedOption.value)
-    // Aquí puedes añadir la lógica para usar el valor seleccionado
-    // Por ejemplo, emitir un evento, llamar a una API, etc.
-    alert(`Has seleccionado: ${selectedOption.value}`) // Ejemplo
-  } else {
-    alert('Por favor, selecciona una opción.')
-    return; // No cerrar el modal si no se seleccionó nada (opcional)
-  }
-  isModalVisible.value = false // Cierra el modal después de confirmar
-}
-
 const handleCloseModal = () => {
   isModalVisible.value = false
-  // Opcional: resetear la selección si se cancela
-  // selectedOption.value = null 
 }
 
 const addAgreements = () => {
 
-   if(selectedOption.value === 1)
-    router.push({ name : 'dashboard-admin-agreements-sales-agreements' })
+  refVForm.value?.validate().then(({ valid: isValid }) => {
+
+    if (isValid) {
+
+      if(agreement_type_id.value === 1)
+        router.push({ name : 'dashboard-admin-agreements-sales-agreements' })
+    }
+
+  })
 }
 </script>
 
@@ -246,7 +201,6 @@ const addAgreements = () => {
           v-if="advisor.show"
           :type="advisor.type"
           class="mb-6">
-            
           {{ advisor.message }}
         </VAlert>
 
@@ -273,7 +227,7 @@ const addAgreements = () => {
               Exportera
             </VBtn>
 
-            <VSpacer class="d-none d-md-block"/>
+            <VSpacer class="d-md-block"/>
 
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
               <!-- 👉 Search  -->
@@ -299,7 +253,7 @@ const addAgreements = () => {
 
           <VDivider />
 
-          <VTable class="text-no-wrap d-none">
+          <VTable class="text-no-wrap">
             <!-- 👉 table head -->
             <thead>
               <tr>
@@ -316,10 +270,10 @@ const addAgreements = () => {
               
             </tbody>
             <!-- 👉 table footer  -->
-            <tfoot v-show="!suppliers.length">
+            <tfoot v-show="!agreements.length">
               <tr>
                 <td
-                  colspan="6"
+                  colspan="8"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>
@@ -329,7 +283,7 @@ const addAgreements = () => {
         
           <VDivider />
 
-          <VCardText class="d-none  text-center align-center flex-wrap gap-4 py-3">
+          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
@@ -360,7 +314,7 @@ const addAgreements = () => {
       <VCard title="Ta bort leverantör">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill ta bort leverantör <strong>{{ selectedAgreement.user.name }} {{ selectedAgreement.user.last_name ?? '' }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -370,49 +324,18 @@ const addAgreements = () => {
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeSupplier">
+          <VBtn @click="removeAgreement">
               Acceptera
           </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
 
-    <!-- 👉 Confirm Delete -->
-    <VDialog
-      v-model="isConfirmActiveDialogVisible"
-      persistent
-      class="v-dialog-sm" >
-      <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
-
-      <!-- Dialog Content -->
-      <VCard title="Aktivera leverantör">
-        <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill aktivera leverantören <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
-        </VCardText>
-
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmActiveDialogVisible = false">
-              Avbryt
-          </VBtn>
-          <VBtn @click="activateSupplier">
-              Acceptera
-          </VBtn>
-        </VCardText>
-      </VCard>
-    </VDialog>
     <!--Modal Select type Contract-->
-    <!-- 👉 El Modal (Dialog) -->
     <VDialog
       v-model="isModalVisible"
       max-width="500"
     >
-
       <VBtn
         icon
         variant="text"
@@ -423,45 +346,44 @@ const addAgreements = () => {
       >
         <VIcon icon="tabler-x" />
       </VBtn>
+    
+      <VForm
+        ref="refVForm"
+        @submit.prevent="addAgreements"
+      >
+        <!-- Dialog Content -->
+        <VCard title="Skapa">
+          <VCardText>
+            <VRow>
+              <VCol cols="12">
+                <VAutocomplete
+                  v-model="agreement_type_id"
+                  :items="agreementTypes"
+                  item-title="name"      
+                  item-value="id"
+                  label="Välj typ"
+                  placeholder="Välj typ"
+                  :rules="[requiredValidator]"
+                  clearable
+                />
+              </VCol>
+            </VRow>
+          </VCardText>
 
-
-      <!-- Dialog Content -->
-      <VCard title="Skapa">
-        <VCardText>
-          <VRow>
-            <VCol cols="12">
-              <VSelect
-                v-model="selectedOption"
-                :items="selectItems"
-                item-title="title"      
-                item-value="value"
-                label="Välj typ"
-                placeholder="Välj typ"
-                clearable
-                outlined
-              />
-              <!-- Si selectItems fuera un array de strings: ['Alfa', 'Beta', 'Gamma'] -->
-              <!-- No necesitarías item-title ni item-value -->
-            </VCol>
-          </VRow>
-        </VCardText>
-
-        <VCardActions>
-          <VSpacer />
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="handleCloseModal"
-          >
-            Avbryt
-          </VBtn>
-          <VBtn
-            @click="addAgreements"
-          >
-            Bekräfta
-          </VBtn>
-        </VCardActions>
-      </VCard>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              @click="handleCloseModal"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn type="submit" >
+              Bekräfta
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
     <!--End Modal Select type Contract-->  
 
@@ -469,15 +391,15 @@ const addAgreements = () => {
 </template>
 
 <style scope>
-    .search {
-        width: 100%;
-    }
+  .search {
+      width: 100%;
+  }
 
-    @media(min-width: 991px){
-        .search {
-            width: 20rem;
-        }
-    }
+  @media(min-width: 991px){
+      .search {
+          width: 20rem;
+      }
+  }
 </style>
 <route lang="yaml">
   meta:

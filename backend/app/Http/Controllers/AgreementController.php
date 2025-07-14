@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Agreement;
+use App\Models\AgreementType;
 use App\Models\Vehicle;
 use App\Models\Brand;
 use App\Models\CarModel;
@@ -36,10 +37,10 @@ class AgreementController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(PermissionMiddleware::class . ':view stock|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create stock|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit stock|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete stock|administrator')->only(['destroy']);
+        $this->middleware(PermissionMiddleware::class . ':view agreements|administrator')->only(['index']);
+        $this->middleware(PermissionMiddleware::class . ':create agreements|administrator')->only(['store']);
+        $this->middleware(PermissionMiddleware::class . ':edit agreements|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':delete agreements|administrator')->only(['destroy']);
     }
 
     /**
@@ -89,20 +90,7 @@ class AgreementController extends Controller
                 'success' => true,
                 'data' => [
                     'agreements' => $agreements,
-                    'agreementsTotalCount' => $count,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'carbodies'  => CarBody::all(),
-                    'ivas'  => Iva::all(),
-                    'fuels'  => Fuel::all(),
-                    'states'  => State::all(),
-                    'guaranties'  => Guaranty::all(),
-                    'guarantytypes'  => GuarantyType::all(),
-                    'insuranceCompanies'  => InsuranceCompany::all(),
-                    'insuranceTypes'  => InsuranceType::all(),
-                    'currencies'  => Currency::all(),
-                    'paymenttypes'  => PaymentType::all()
+                    'agreementsTotalCount' => $count
                 ]
             ]);
 
@@ -217,30 +205,30 @@ class AgreementController extends Controller
 
 
             if ($request->has("intercambie") && $request->intercambie === 'true'){
-                $request->merge([ 'reg_num' => $request->reg_num_interchange ]);
-                $request->merge([ 'model' => $request->model_interchange ]);
-                $request->merge([ 'brand_id' => $request->brand_id_interchange ]);
-                $request->merge([ 'model_id' => $request->model_id_interchange ]);
-                $request->merge([ 'car_body_id' => $request->car_body_id_interchange ]);
-                $request->merge([ 'gearbox_id' => $request->gearbox_id_interchange ]);
-                $request->merge([ 'iva_purchase_id' => $request->iva_purchase_id_interchange ]);
-                $request->merge([ 'fuel_id' => $request->fuel_id_interchange ]);
-                $request->merge([ 'state_id' => $request->state_id_interchange ]);
-                $request->merge([ 'mileage' => $request->mileage_interchange ]);
-                $request->merge([ 'generation' => $request->generation_interchange ]);
-                $request->merge([ 'year' => $request->year_interchange ]);
-                $request->merge([ 'control_inspection' => $request->control_inspection_interchange ]);
-                $request->merge([ 'color' => $request->color_interchange ]);
-                $request->merge([ 'purchase_price' => $request->purchase_price_interchange ]);
-                $request->merge([ 'purchase_date' => $request->purchase_date_interchange ]);
-                $request->merge([ 'number_keys' => $request->number_keys_interchange ]);
-                $request->merge([ 'service_book' => $request->service_book_interchange ]);
-                $request->merge([ 'summer_tire' => $request->summer_tire_interchange ]);
-                $request->merge([ 'winter_tire' => $request->winter_tire_interchange ]);
-                $request->merge([ 'last_service' => $request->last_service_interchange ]);
-                $request->merge([ 'dist_belt' => $request->dist_belt_interchange ]);
-                $request->merge([ 'last_dist_belt' => $request->last_dist_belt_interchange ]);
-                $request->merge([ 'comments' => $request->comments_interchange ]);
+                $request->merge(['reg_num' => $request->reg_num_interchange ]);
+                $request->merge(['model' => $request->model_interchange ]);
+                $request->merge(['brand_id' => $request->brand_id_interchange ]);
+                $request->merge(['model_id' => $request->model_id_interchange ]);
+                $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
+                $request->merge(['gearbox_id' => $request->gearbox_id_interchange ]);
+                $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
+                $request->merge(['fuel_id' => $request->fuel_id_interchange ]);
+                $request->merge(['state_id' => $request->state_id_interchange ]);
+                $request->merge(['mileage' => $request->mileage_interchange ]);
+                $request->merge(['generation' => $request->generation_interchange ]);
+                $request->merge(['year' => $request->year_interchange ]);
+                $request->merge(['control_inspection' => $request->control_inspection_interchange ]);
+                $request->merge(['color' => $request->color_interchange ]);
+                $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
+                $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
+                $request->merge(['number_keys' => $request->number_keys_interchange ]);
+                $request->merge(['service_book' => $request->service_book_interchange ]);
+                $request->merge(['summer_tire' => $request->summer_tire_interchange ]);
+                $request->merge(['winter_tire' => $request->winter_tire_interchange ]);
+                $request->merge(['last_service' => $request->last_service_interchange ]);
+                $request->merge(['dist_belt' => $request->dist_belt_interchange ]);
+                $request->merge(['last_dist_belt' => $request->last_dist_belt_interchange ]);
+                $request->merge(['comments' => $request->comments_interchange ]);
 
                 //Create Vehicle Interchange
                 $vehicleInterchange = null;
@@ -354,7 +342,7 @@ class AgreementController extends Controller
                     'fuels'  => Fuel::all(),
                     'states'  => State::all(),
                     'guaranties'  => Guaranty::all(),
-                    'guarantytypes'  => GuarantyType::all(),
+                    'guarantyTypes'  => GuarantyType::all(),
                     'insuranceCompanies'  => InsuranceCompany::all(),
                     'insuranceTypes'  => InsuranceType::all(),
                     'currencies'  => Currency::all(),
@@ -474,6 +462,49 @@ class AgreementController extends Controller
                 'success' => false,
                 'message' => 'database_error',
                 'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function info() {
+
+        try {
+
+            $agreement_id = Agreement::whereNull('supplier_id')->count();
+            $vehicles = 
+                Vehicle::with(['model.brand'])
+                       ->where([
+                            ['user_id', Auth::user()->id], 
+                            ['state_id', 10]
+                       ])->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'brands' => Brand::all(),
+                    'models' => CarModel::with(['brand'])->get(),
+                    'gearboxes' => Gearbox::all(),
+                    'carbodies'  => CarBody::all(),
+                    'ivas'  => Iva::all(),
+                    'fuels'  => Fuel::all(),
+                    'states'  => State::all(),
+                    'guaranties'  => Guaranty::all(),
+                    'guarantyTypes'  => GuarantyType::all(),
+                    'insuranceCompanies'  => InsuranceCompany::all(),
+                    'insuranceTypes'  => InsuranceType::all(),
+                    'currencies'  => Currency::all(),
+                    'paymenttypes'  => PaymentType::all(),
+                    'agreementTypes' => AgreementType::all(),
+                    'agreement_id' => $agreement_id,
+                    'vehicles' => $vehicles
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
             ], 500);
         }
     }

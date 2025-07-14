@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('agreements', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('supplier_id')->nullable();
             $table->unsignedBigInteger('agreement_type_id');
             $table->unsignedBigInteger('vehicle_client_id')->nullable();
             $table->unsignedBigInteger('vehicle_interchange_id')->nullable();
@@ -21,13 +21,17 @@ return new class extends Migration
             $table->unsignedBigInteger('guaranty_type_id')->nullable();
             $table->unsignedBigInteger('insurance_company_id')->nullable();
             $table->unsignedBigInteger('insurance_type_id')->nullable();
+            $table->unsignedBigInteger('currency_id')->nullable();
+            $table->unsignedBigInteger('payment_type_id')->nullable();
+            $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
+            $table->unsignedBigInteger('agreement_id');
+
+            $table->date("first_registration_date")->nullable()->comment("First registration date");
+            $table->date("sale_date")->nullable()->comment("Sale date");
             $table->string("insurance_agent")->nullable()->comment("Insurance agent");
             $table->decimal("price", 10, 2)->nullable()->comment("Agreement price");
-            $table->unsignedBigInteger('currency_id')->nullable();
-            $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
             $table->decimal("iva_amount", 10, 2)->nullable()->comment("IVA amount");
             $table->decimal("registration_fee", 10, 2)->nullable()->comment("Registration fee");
-            $table->unsignedBigInteger('payment_type_id')->nullable();
             $table->decimal("down_payment_percentage", 2, 2)->nullable()->comment("Down payment percentage (Handpenning)");
             $table->decimal("payment_received", 10, 2)->nullable()->comment("Total cash / down payment (Summa kontant / handpenning)");
             $table->string("payment_method_forcash")->nullable()->comment("Payment method for cash / down payment (Betalsätt för kontant / handpenning)"); 
@@ -39,7 +43,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             $table->foreign('agreement_type_id')->references('id')->on('agreement_types')->onDelete('cascade');
             $table->foreign('vehicle_client_id')->references('id')->on('vehicle_clients')->onDelete('cascade');
             $table->foreign('vehicle_interchange_id')->references('id')->on('vehicles')->onDelete('cascade');
