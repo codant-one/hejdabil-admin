@@ -267,7 +267,17 @@ const addAgreements = () => {
             </thead>
             <!-- 👉 table body -->
             <tbody>
-              
+              <tr 
+                v-for="agreement in agreements"
+                :key="agreement.id"
+                style="height: 3rem;">
+                <td> {{ agreement.id }}</td>
+                <td> {{ agreement.id }}</td>                
+                <td> {{ agreement.id }}</td>
+                <td> {{ agreement.id }}</td>          
+                <td> {{ agreement.id }}</td>
+                <td> {{ agreement.id }}</td>
+              </tr> 
             </tbody>
             <!-- 👉 table footer  -->
             <tfoot v-show="!agreements.length">

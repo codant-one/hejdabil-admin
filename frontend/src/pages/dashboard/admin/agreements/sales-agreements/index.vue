@@ -1,11 +1,14 @@
 <script setup>
 
 import router from '@/router'
-import { requiredValidator, yearValidator } from '@/@core/utils/validators'
+import { requiredValidator, yearValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useAuthStores } from '@/stores/useAuth'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 
 const agreementsStores = useAgreementsStores()
-
+const authStores = useAuthStores()
+const ability = useAppAbility()
 const emitter = inject("emitter")
 
 const isRequestOngoing = ref(false)
@@ -23,10 +26,13 @@ const vehicles = ref([])
 const vehicle_id = ref(null)
 const reg_num = ref(null)
 const agreement_id = ref(null)
+const currencies = ref([])
+const currency_id = ref(1)
 
 //const tab 1
-const brand = ref(null)
-const model = ref(null)
+const brand_id = ref(null)
+const model_id = ref(null)
+const modelsByBrand = ref([])
 const year = ref(null)
 const color = ref(null)
 const chassis = ref(null)
@@ -39,7 +45,7 @@ const guaranty_type_id = ref(null)
 const guarantyTypes = ref([])
 const insurance_company_id = ref(null)
 const insuranceCompanies = ref([])
-const insurance_type_id = ref(null)                                 
+const insurance_type_id = ref(5)                                 
 const insuranceTypes = ref([])
 const insurance_agent = ref(null)
 
@@ -47,85 +53,86 @@ const insurance_agent = ref(null)
 const brands = ref([])
 const brand_id_interchange = ref(null)
 const models = ref([])
-const modelsByBrand = ref([])
+const modelsByBrandInterchange = ref([])
 const model_id_interchange = ref(null)
 const year_interchange = ref(null)
-const meter_reading = ref(null)
-const card_body = ref(null)
-const color_2 = ref(null)
-const regnr_2 = ref(null)
-const chassis_2 = ref(null)
-const first_date_2 = ref(null)
+const meter_reading_interchange = ref(null)
+const carbodies = ref([])
+const car_body_id_interchange = ref(null)
+const color_interchange = ref(null)
+const reg_num_interchange = ref(null)
+const chassis_interchange = ref(null)
+const sale_date_interchange = ref(null)
 const trade_price = ref(0)
-const selected_residual = ref(null)
-const residual_debt = ref([ { label: 'Ja', value: 1 },{ label: 'Nej', value: 2 }])
-const residual_debt_price = ref(0)
-const selected_vat = ref(null)
-const vat_items = ref([{title:'Moms', value: 1}, {title:'VMB', value: 2}])
+const residual_debt = ref(0)
+const optionsRadio = ['Ja', 'Nej']
+const residual_price = ref(null)
+const ivas = ref([])
+const iva_purchase_id_interchange = ref(null)
 const remaining_paid_to = ref(null)
-const selected_ransom_offer = ref(null)
-const ransom_offer_items = ref([{title:'ja', value: 1},{title: 'nej', value: 2}])
+const redemption_offer = ref(0)
 
 //const tab 3
-const org_number=ref(null)
-const selected_buyer = ref(null)
-const buyer_items = ref([{title:'Konsument', value: 1}, {title:'Företag', value:2}])
-const name_buyer = ref(null)
-const address = ref(null)
-const postal_code = ref(null)
-const phone = ref(null)
-const email_buyer = ref(null)
-const selected_legitimation = ref(null)
-const legitimation_items = ref([{title:'Pass', value: 1}, {title:'Körkort', value:2}, {title:'Mobilt bank-ID', value:3}]) 
+const clients = ref([])
+const client_id = ref(null)
+const client_types = ref([])
+const client_type_id = ref(null)
+const identifications = ref([])
+const identification_id = ref(null)
+const organization_number = ref('')
+const address = ref('')
+const street = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
+const save_client = ref(true)
+const disabled_client = ref(false)
 
 //Const tab 4
-const price_2 = ref(0)
-const selected_currency = ref(null)
-const currency_items = ref([{title:'SEK', value: 1}, {title: 'EUR', value: 2}, {title: 'USD', value: 3}])
-const selected_taxes_type = ref(null)
+const price = ref(null)
+const iva_id = ref(null)
+const iva_sale_amount = ref(0)
+const iva_sale_exclusive = ref(0)
 const discount = ref(0)
 const registration_fee = ref(0)
-const mid_price = ref(0)
+const total_sale = ref(0)
+const paymentTypes = ref([])
+const payment_type_id = ref(null)
+const advances = ref([])
+const advance_id = ref(null)
+const payment_received = ref(null)
+const payment_method_forcash = ref(null)
+const installment_amount = ref(null)
+const installment_contract_upon_delivery = ref(false)
+const payment_description = ref(null)
 
-const which_vat = computed(()=>{
-    const price_1 = Number(price_2.value)||0
-    const discount_ = Number(discount.value)||0
-    const registration_fee_2 = Number(registration_fee.value)|| 0
-    if(selected_taxes_type.value == 1)
-    {
-        return ((price_1 + registration_fee_2 - discount_) *0.2) 
-    }
-    else 
-    return 0
-})
+//Const tab 5
+const terms_other_conditions = ref(null)
+const terms_other_information = ref(null)
 
-const price_without_vat = computed(()=>{
-    const price_1 = Number(price_2.value)||0
-    const discount_ = Number(discount.value)||0
-    const registration_fee_2 = Number(registration_fee.value)|| 0
-    if(selected_taxes_type.value == 1)
-    {
-        return price_1 + registration_fee_2 - discount_ - which_vat.value 
-    }
+const calculate = () => {
+    const sale = Number(price.value) || 0
+    const fee = Number(registration_fee.value) || 0
+    const disc = Number(discount.value) || 0
+    const value = (sale + fee) - disc 
+
+    if(iva_id.value === 2)
+        iva_sale_amount.value = ((Number(value) || 0) * 0.2)
     else
-    return price_1 - discount_
-})
+        iva_sale_amount.value = 0
 
-const total_price = computed(()=>{
-    const price_1 = Number(price_2.value)||0
-    const discount_ = Number(discount.value)||0
-    const registration_fee_2 = Number(registration_fee.value)|| 0
+    iva_sale_exclusive.value = value - iva_sale_amount.value
+    total_sale.value = value
+}
 
-    return price_1 + registration_fee_2 - discount_
-})
-
-const price_whitout_trade_price = computed(()=>{
-    return total_price.value - trade_price.value
+const middle_price = computed(()=>{
+    return total_sale.value - trade_price.value
 })
 
 const fair_value = computed(() => {
   const price1 = Number(trade_price.value) || 0
-  const price2 = Number(residual_debt_price.value) || 0
+  const price2 = Number(residual_price.value) || 0
   
   return price1 - price2
 })
@@ -139,6 +146,23 @@ onMounted(async () => {
 const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768
 }
+
+watch(() => price.value, (val) => {
+    calculate()
+})
+
+watch(() => iva_id.value, (val) => {
+    calculate()
+})
+
+watch(() => discount.value, (val) => {
+    calculate()
+})
+
+watch(() => registration_fee.value, (val) => {
+    calculate()
+})
+
 
 watchEffect(fetchData)
 
@@ -173,6 +197,14 @@ async function fetchData() {
     insuranceTypes.value = agreementsStores.insuranceTypes
     brands.value = agreementsStores.brands
     models.value = agreementsStores.models 
+    carbodies.value = agreementsStores.carbodies
+    currencies.value = agreementsStores.currencies
+    ivas.value = agreementsStores.ivas
+    clients.value = agreementsStores.clients
+    client_types.value = agreementsStores.client_types
+    identifications.value = agreementsStores.identifications
+    paymentTypes.value = agreementsStores.paymentTypes
+    advances.value = agreementsStores.advances
 
     isRequestOngoing.value = false
 }
@@ -203,9 +235,11 @@ const selectVehicle = vehicle => {
     if (vehicle) {
         let _vehicle = vehicles.value.find(item => item.id === vehicle)
     
+        selectBrand(_vehicle.model?.brand.id)
+
         reg_num.value = _vehicle.reg_num
-        brand.value = _vehicle.model?.brand.name
-        model.value = _vehicle.model?.name
+        brand_id.value = _vehicle.model?.brand.id
+        model_id.value = _vehicle.model?.id
         year.value = _vehicle.year
         color.value = _vehicle.color
         mileage.value = _vehicle.mileage
@@ -218,13 +252,26 @@ const selectGuaranty  = guaranty => {
     }
 }
 
-const selectBrand = brand => {
+const selectBrandInterchange = brand => {
     if (brand) {
         let _brand = brands.value.find(item => item.id === brand)
     
         model_id_interchange.value = ''
-        modelsByBrand.value = models.value.filter(item => item.brand_id_interchange === _brand.id)
+        modelsByBrandInterchange.value = models.value.filter(item => item.brand_id === _brand.id)
     }
+}
+
+const selectBrand = brand => {
+    if (brand) {
+        let _brand = brands.value.find(item => item.id === brand)
+    
+        model_id.value = ''
+        modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+    }
+}
+
+const onClearBrandInterchange = () => {
+    modelsByBrandInterchange.value = []
 }
 
 const onClearBrand = () => {
@@ -244,29 +291,191 @@ const getModels = computed(() => {
     return models
 })
 
+const getModelsInterchange = computed(() => {
+    const models = modelsByBrandInterchange.value.map((model) => ({
+        title: model.name,
+        value: model.id
+    }))
+
+    if (modelsByBrandInterchange.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
+    }
+
+    return models
+})
+
 const selectModel = selected => {
+    model_id.value = selected !== 0 ? null : model_id.value
+}
 
-    model.value = selected !== 0 ? null : model.value
+const selectModelInterchange = selected => {
+    model_id_interchange.value = selected !== 0 ? null : model_id_interchange.value
+}
 
+const clearClient = () => {
+    fullname.value = null
+    email.value = null
+    organization_number.value = null
+    address.value = null
+    street.value = null
+    postal_code.value = null
+    phone.value = null
+
+    save_client.value = true
+    disabled_client.value = false
+}
+
+const selectClient = client => {
+    if (client) {
+        let _client = clients.value.find(item => item.id === client)
+    
+        fullname.value = _client.fullname
+        email.value = _client.email
+        organization_number.value = _client.organization_number
+        address.value = _client.address
+        street.value = _client.street
+        postal_code.value = _client.postal_code
+        phone.value = _client.phone
+
+        save_client.value = false
+        disabled_client.value = true
+    }
+}
+
+const getFlag = (currency_id) => {
+    return currencies.value.filter(item => item.id === currency_id)[0].flag
+}
+
+const selectPaymentType = () => {
+    advance_id.value = null
+}
+
+const formatDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
-        currentTab.value++
-        console.log('valid', valid)
-        console.log('currentTab.value', currentTab.value)
-        console.log('entra', refForm.value.items.length)
-        /*if (valid && currentTab.value === 0 && refForm.value.items.length < 12) {
+        if (valid && currentTab.value === 0 && refForm.value.items.length < 60) {
             currentTab.value++
-        } else if ((!valid && currentTab.value === 0 && refForm.value.items.length === 10) || (!valid && currentTab.value === 0 && refForm.value.items.length === 13)) {
+        } else if (!valid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 60) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 1 && refForm.value.items.length > 10) {
+        } else if (currentTab.value === 1 && refForm.value.items.length < 60) {
             currentTab.value++
-        } else if (valid  && currentTab.value < 2 && refForm.value.items.length > 8) {
+        } else if (valid && currentTab.value === 2 && refForm.value.items.length < 60) {
             currentTab.value++
-        } else if (valid && currentTab.value === 2) {
-            console.log('llego')
-        }*/
+        } else if (!valid && currentTab.value === 2 && refForm.value.items.length > 44 && refForm.value.items.length < 60) {
+            currentTab.value++
+        } else if (valid && currentTab.value === 3 && refForm.value.items.length < 60) {
+            currentTab.value++
+        } else if (currentTab.value === 4) {
+
+            let formData = new FormData()
+
+            //client
+            formData.append('save_client', save_client.value)
+            formData.append('client_type_id', client_type_id.value)
+            formData.append('identification_id', identification_id.value)
+            formData.append('client_id', client_id.value)
+            formData.append('fullname', fullname.value)
+            formData.append('email', email.value)
+            formData.append('organization_number', organization_number.value)
+            formData.append('address', address.value)
+            formData.append('street', street.value)
+            formData.append('postal_code', postal_code.value)
+            formData.append('phone', phone.value)
+
+            //vehicle
+            formData.append('reg_num', reg_num.value)
+            formData.append('brand_id', brand_id.value)
+            formData.append('model_id', model_id.value)
+            formData.append('year', year.value)
+            formData.append('color', color.value)
+            formData.append('chassis', chassis.value)
+            formData.append('mileage', mileage.value)
+            formData.append('first_registration_date', first_registration_date.value)
+            formData.append('sale_date', sale_date.value)
+            formData.append('vehicle_id', vehicle_id.value)
+
+            //vehicle interchange
+            formData.append('intercambie', reg_num_interchange.value !== null ? true : false)
+            formData.append('reg_num_interchange', reg_num_interchange.value)
+            formData.append('brand_id_interchange', brand_id_interchange.value)
+            formData.append('model_id_interchange', model_id_interchange.value)
+            formData.append('car_body_id_interchange', car_body_id_interchange.value)
+            formData.append('iva_purchase_id_interchange', iva_purchase_id_interchange.value)
+            formData.append('year_interchange', year_interchange.value)
+            formData.append('color_interchange', color_interchange.value)
+            formData.append('purchase_price_interchange', trade_price.value)
+            formData.append('purchase_date_interchange', formatDate(new Date()))
+            formData.append('meter_reading_interchange', meter_reading_interchange.value)
+            formData.append('chassis_interchange', chassis_interchange.value)
+            formData.append('sale_date_interchange', sale_date_interchange.value)
+
+            //agreement
+            formData.append('agreement_type_id', 1)
+            formData.append('agreement_id', agreement_id.value)
+            formData.append('guaranty_id', guaranty_id.value)
+            formData.append('guaranty_type_id', guaranty_type_id.value)
+            formData.append('insurance_company_id', insurance_company_id.value)
+            formData.append('insurance_type_id', insurance_type_id.value)
+            formData.append('insurance_agent', insurance_agent.value)
+            formData.append('fair_value', fair_value.value)
+            formData.append('residual_debt', residual_debt.value)
+            formData.append('residual_price', residual_price.value)
+            formData.append('remaining_paid_to', remaining_paid_to.value)
+            formData.append('redemption_offer', redemption_offer.value)
+            formData.append('price', price.value)
+            formData.append('iva_id', iva_id.value)
+            formData.append('iva_sale_amount', iva_sale_amount.value)
+            formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+            formData.append('discount', discount.value)
+            formData.append('registration_fee', registration_fee.value)
+            formData.append('total_sale', total_sale.value)
+            formData.append('payment_type_id', payment_type_id.value)
+            formData.append('advance_id', advance_id.value)
+            formData.append('middle_price', middle_price.value)
+            formData.append('payment_received', payment_received.value)
+            formData.append('payment_method_forcash', payment_method_forcash.value)
+            formData.append('installment_amount', installment_amount.value)
+            formData.append('installment_contract_upon_delivery', installment_contract_upon_delivery.value === false ? 0 : 1)
+            formData.append('payment_description', payment_description.value)
+
+            formData.append('terms_other_conditions', terms_other_conditions.value)
+            formData.append('terms_other_information', terms_other_information.value)
+
+            isRequestOngoing.value = true
+
+            agreementsStores.addAgreement(formData)
+                .then((res) => {
+                    if (res.data.success) {
+                        
+                        let data = {
+                            message: 'Kontrakt framgångsrikt skapat',
+                            error: false
+                        }
+
+                        router.push({ name : 'dashboard-admin-agreements'})
+                        emitter.emit('toast', data)
+                    }
+                    isRequestOngoing.value = false
+                })
+                .catch((err) => {
+                    
+                    let data = {
+                        message: err.message,
+                        error: true
+                    }
+
+                    router.push({ name : 'dashboard-admin-agreements'})
+                    emitter.emit('toast', data)
+
+                    isRequestOngoing.value = false
+                })
+        }
 
     })
 }
@@ -323,524 +532,700 @@ const onSubmit = () => {
                                 <VTab>Pris</VTab>
                                 <VTab>Villkor</VTab>
                             </VTabs>
-                            <VCardText>
-                            <VWindow v-model="currentTab">
-                                <!--Försäljning-->
-                                <VWindowItem class="px-md-5">
-                                    <VRow class="px-md-5 mt-1">
-                                        <VCol cols="12" md="3">
-                                            <VAutocomplete
-                                                v-model="vehicle_id"
-                                                label="Stockbilar"
-                                                :items="vehicles"
-                                                item-title="reg_num"      
-                                                item-value="id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                @update:modelValue="selectVehicle"
-                                                @click:clear="reg_num = null"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </VCol>
-                                        <VCol cols="12" md="3">
-                                            <VTextField
-                                                v-model="reg_num"
-                                                label="Regnr"
-                                            />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="agreement_id"
-                                                disabled
-                                                label="Avtalsnummer"
-                                                prefix="#"
-                                                density="compact"
-                                            />
-                                        </VCol>
-                                    </VRow>
-                                    <h6 class="text-md-h4 text-h5 font-weight-medium my-5">
-                                        Fordon
-                                    </h6>
-                                    <VRow class="px-md-5">
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="brand"
-                                                label="Märke"
-                                                :rules="[requiredValidator]"
-                                            />   
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="model"
-                                                label="Modell"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </VCol>
-
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="year"
-                                                label="Årsmodell"
-                                                :rules="[requiredValidator, yearValidator]"
-                                            />   
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="color"
-                                                label="Färg"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="chassis"
-                                                label="Chassinummer"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                type="number"
-                                                v-model="mileage"
-                                                suffix="Mil"
-                                                label="Miltal"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="first_registration_date"
-                                                density="compact"
-                                                label="Första registreringsdatum"
-                                                :config="startDateTimePickerConfig"
-                                                :rules="[requiredValidator]"
-                                                clearable
-                                            />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="sale_date"
-                                                density="compact"
-                                                label="Försäljningsdatum"
-                                                :config="startDateTimePickerConfig"
-                                                :rules="[requiredValidator]"
-                                                clearable
-                                            />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VAutocomplete
-                                                v-model="guaranty_id"
-                                                label="Garanti"
-                                                :items="guaranties"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                @update:modelValue="selectGuaranty"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VAutocomplete
-                                                v-model="guaranty_type_id"
-                                                :items="guarantyTypes"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :disabled="guaranty_id === 1"
-                                                label="Typ av garanti"
-                                                autocomplete="off"
-                                            />    
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VAutocomplete
-                                                v-model="insurance_company_id"
-                                                :items="insuranceCompanies"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :rules="[requiredValidator]"
-                                                label="Försäkringsbolag"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />    
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VTextField
-                                                v-model="insurance_agent"
-                                                :rules="[requiredValidator]"
-                                                label="Ombudsnummer"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VSelect
-                                                v-model="insurance_type_id"
-                                                :items="insuranceTypes"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :rules="[requiredValidator]"
-                                                label="Försäkringsbolag"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />    
-                                        </VCol>
-                                    </VRow>
-                                </VWindowItem>
-
-                                <!--Inbytesfordon-->
-                                <VWindowItem class="px-md-5">
-                                    <h6 class="text-md-h4 text-h5 font-weight-medium my-5">
-                                        Inbytesfordon
-                                    </h6>
-                                    <VRow class="px-md-5">
-                                        <VCol cols="12" md="6">
-                                            <VAutocomplete
-                                                v-model="brand_id_interchange"
-                                                label="Märke"
-                                                :items="brands"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                @update:modelValue="selectBrand"
-                                                @click:clear="onClearBrand"/> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <VAutocomplete
-                                                v-model="model_id_interchange"
-                                                label="Modell"
-                                                :items="getModels"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                @update:modelValue="selectModel"/> 
-                                        </VCol>
-                                        <VCol cols="12" md="3">
-                                            <VTextField
-                                                v-model="year_interchange"
-                                                :rules="[yearValidator]"
-                                                label="Årsmodell"
-                                            />
-                                        </VCol> 
-                                        <VCol cols="12" md="3">
-                                            <label for="">Mätarställning</label>
-                                            <VTextField
-                                                v-model="meter_reading"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="3">
-                                            <label for="">Kaross</label>
-                                            <VTextField
-                                                v-model="card_body"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="3">
-                                            <label for="">Färg</label>
-                                            <VTextField
-                                                v-model="color_2"
-                                            /> 
-                                        </VCol>
-                                        
-                                        <VCol cols="12" md="3">
-                                            <label for="">Regnr</label>
-                                            <VTextField
-                                                v-model="regnr_2"
-                                            /> 
-                                        </VCol> 
-                                        <VCol cols="12" md="3">
-                                            <label for="">Chassinummer</label>
-                                            <VTextField
-                                                v-model="chassis_2"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <label for="">Försäljningsdatum</label>
-                                            <AppDateTimePicker
-                                                    :key="JSON.stringify(startDateTimePickerConfig)"
-                                                    v-model="first_date_2"
+                            <VCardText class="px-0 px-md-2">
+                                <VWindow v-model="currentTab">
+                                    <!--Försäljning-->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5 mt-1">
+                                            <VCol cols="12" md="3">
+                                                <VAutocomplete
+                                                    v-model="vehicle_id"
+                                                    label="Stockbilar"
+                                                    :items="vehicles"
+                                                    item-title="reg_num"      
+                                                    item-value="id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectVehicle"
+                                                    @click:clear="reg_num = null"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="reg_num"
+                                                    label="Regnr"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="agreement_id"
+                                                    disabled
+                                                    label="Avtalsnummer"
+                                                    prefix="#"
                                                     density="compact"
-                                                    placeholder="YYYY-MM-DD"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                        <h6 class="text-md-h4 text-h5 font-weight-medium my-5">
+                                            Fordon
+                                        </h6>
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="brand_id"
+                                                    label="Märke"
+                                                    :items="brands"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    :rules="[requiredValidator]"
+                                                    @update:modelValue="selectBrand"
+                                                    @click:clear="onClearBrand"/>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="model_id"
+                                                    label="Modell"
+                                                    :items="getModels"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectModel"/> 
+                                            </VCol>
+
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="year"
+                                                    label="Årsmodell"
+                                                    :rules="[requiredValidator, yearValidator]"
+                                                />   
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="color"
+                                                    label="Färg"
+                                                    :rules="[requiredValidator]"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="chassis"
+                                                    label="Chassinummer"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="mileage"
+                                                    suffix="Mil"
+                                                    label="Miltal"
+                                                    min="0"
+                                                    :rules="[requiredValidator]"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(startDateTimePickerConfig)"
+                                                    v-model="first_registration_date"
+                                                    density="compact"
+                                                    label="Första registreringsdatum"
                                                     :config="startDateTimePickerConfig"
                                                     clearable
                                                 />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
-                                            <label for="">Inbytespris kr</label>
-                                            <VTextField
-                                                v-model="trade_price"
-                                                type="number"
-                                            /> 
-                                        </VCol>
-                                        <VCol cols="6" md="2">
-                                            <label for="">Restskuld</label>
-                                            <VRadioGroup
-                                                v-model="selected_residual"
-                                                inline
-                                                # :rules="[requiredValidator]"
-                                            >
-                                                <VRadio
-                                                v-for="option in residual_debt"
-                                                :key="option.value"
-                                                :label="option.label"
-                                                :value="option.value"
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(startDateTimePickerConfig)"
+                                                    v-model="sale_date"
+                                                    density="compact"
+                                                    label="Försäljningsdatum"
+                                                    :config="startDateTimePickerConfig"
+                                                    :rules="[requiredValidator]"
+                                                    clearable
                                                 />
-                                            </VRadioGroup>
-                                        </VCol>
-                                        <VCol cols="6" md="2">
-                                            <label for="">Restskuld kr</label>
-                                            <VTextField
-                                                v-model="residual_debt_price"
-                                                type="number"
-                                            /> 
-                                        </VCol>
-                                        
-                                        <VCol cols="6" md="2">
-                                            <label for="">Verkligt värde kr</label>
-                                            <VTextField
-                                                :model-value="fair_value"
-                                                readonly 
-                                            />
-                                        </VCol>
-                                        <VCol cols="6" md="4">
-                                            <label for="">Moms / VMB</label>
-                                            <VSelect
-                                                v-model="selected_vat"
-                                                :items="vat_items"
-                                                placeholder="välj"
-                                                item-title="title"      
-                                                item-value="value"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />
-
-                                        </VCol>
-                                        <VCol cols="6" md="4">
-                                            <label for="">Restskuld betalas till</label>
-                                            <VTextField
-                                                v-model="remaining_paid_to"
-                                            />
-
-                                        </VCol>
-                                        <VCol cols="6" md="4">
-                                            <label for="">Har lösenoffert beställts</label>
-                                            <VSelect
-                                                v-model="selected_ransom_offer"
-                                                :items="ransom_offer_items"
-                                                placeholder="välj"
-                                                item-title="title"      
-                                                item-value="value"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />
-
-                                        </VCol>
-                                    </VRow>
-                                </VWindowItem>
-
-                                <!--Kund-->
-                                <VWindowItem class="px-md-5">
-
-                                    <VRow class="mt-5">
-                                    <VCol cols="12" md="6" class="pe-md-32">
-                                            <h4>Köpare</h4>
-                                            <VRow class="mt-3">
-                                                <VCol cols="12" md="12">
-                                                    <label for="">Org/personummer</label>
-                                                    <VTextField
-                                                        v-model="org_number"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="6">
-                                                    <label for="">Köparen är</label>
-                                                    <VSelect
-                                                        v-model="selected_buyer"
-                                                        :items="buyer_items"
-                                                        placeholder="välj"
-                                                        item-title="title"      
-                                                        item-value="value"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="6">
-                                                    <label for="">Namn</label>
-                                                    <VTextField
-                                                        v-model="name_buyer"
-                                                        :rules="[requiredValidator]"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="12">
-                                                    <label for="">Adress</label>
-                                                    <VTextField
-                                                        v-model="address"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="6">
-                                                    <label for="">Postnr. ort</label>
-                                                    <VTextField
-                                                        v-model="postal_code"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="6">
-                                                    <label for="">Telefon</label>
-                                                    <VTextField
-                                                        v-model="phone"
-                                                    />
-                                                </VCol>
-
-                                                <VCol cols="12" md="6">
-                                                    <label for="">E-post</label>
-                                                    <VTextField
-                                                        v-model="email_buyer"
-                                                        type="email"
-                                                    />
-                                                </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <label for="">Legitimation</label>
-                                                    <VSelect
-                                                        v-model="selected_legitimation"
-                                                        :items="legitimation_items"
-                                                        placeholder="välj"
-                                                        item-title="title"      
-                                                        item-value="value"
-                                                        autocomplete="off"
-                                                        clearable
-                                                        clear-icon="tabler-x"
-                                                    />
-                                                </VCol>
-
-                                            </VRow>
-                                    </VCol>
-                                    
-                                    <VCol cols="12" md="6" class="ps-md-32">
-                                        <h4>Säljare</h4>
-                                    </VCol>
-                                                                                
-                                    </VRow>
-                                    
-                                </VWindowItem>
-
-                                <!--Pris-->
-                                <VWindowItem class="px-md-5">
-                                    <VRow class="mt-5">
-                                    <VCol cols="12" md="12">
-                                            <h4>Specifikation, pris</h4>
-                                    </VCol>
-                                    <VCol cols="12" md="6">
-                                            <label for="">Pris</label>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="guaranty_id"
+                                                    label="Garanti"
+                                                    :items="guaranties"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    @update:modelValue="selectGuaranty"
+                                                    :rules="[requiredValidator]"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="guaranty_type_id"
+                                                    :items="guarantyTypes"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    :disabled="guaranty_id === 1"
+                                                    label="Typ av garanti"
+                                                    autocomplete="off"
+                                                />    
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="insurance_company_id"
+                                                    :items="insuranceCompanies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    :rules="[requiredValidator]"
+                                                    label="Försäkringsbolag"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                />    
+                                            </VCol>
+                                            <VCol cols="12" md="6">
                                                 <VTextField
-                                                    v-model="price_2"
+                                                    v-model="insurance_agent"
+                                                    label="Ombudsnummer"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VSelect
+                                                    v-model="insurance_type_id"
+                                                    :items="insuranceTypes"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    label="Försäkringstyp"
+                                                    autocomplete="off"
+                                                />    
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+
+                                    <!--Inbytesfordon-->
+                                    <VWindowItem class="px-md-5">
+                                        <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 d-block d-md-flex">
+                                            Inbytesfordon
+                                            <VSpacer />
+                                            <div class="d-flex w-md-50 mt-5 mt-md-0">
+                                                <VTextField
+                                                    v-model="reg_num_interchange"
+                                                    label="Regnr"
+                                                />
+                                                <div class="px-0 d-flex align-center ms-2">
+                                                    <VBtn
+                                                        icon="tabler-search"
+                                                        variant="tonal"
+                                                        color="primary"
+                                                        size="x-small"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </h6>
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="brand_id_interchange"
+                                                    label="Märke"
+                                                    :items="brands"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectBrandInterchange"
+                                                    @click:clear="onClearBrandInterchange"/> 
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="model_id_interchange"
+                                                    label="Modell"
+                                                    :items="getModelsInterchange"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectModelInterchange"/> 
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="year_interchange"
+                                                    :rules="[yearValidator]"
+                                                    label="Årsmodell"
+                                                />
+                                            </VCol> 
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="meter_reading_interchange" 
+                                                    label="Mätarställning"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VAutocomplete
+                                                    v-model="car_body_id_interchange"
+                                                    label="Kaross"
+                                                    :items="carbodies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="color_interchange"
+                                                    label="Färg"
+                                                />
+                                            </VCol>                                        
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="chassis_interchange"
+                                                    label="Chassinummer"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(startDateTimePickerConfig)"
+                                                    v-model="sale_date_interchange"
+                                                    density="compact"
+                                                    :config="startDateTimePickerConfig"
+                                                    label="Försäljningsdatum"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="trade_price"
+                                                    :label="'Inbytespris ' + (currencies.find(item => item.id === currency_id)?.code || '')"
                                                     type="number"
+                                                    min="0"
+                                                /> 
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <div class="d-flex flex-column ms-2">
+                                                    <label class="v-label text-body-2 text-wrap">Restskuld</label>
+                                                    <VRadioGroup v-model="residual_debt" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    v-model="residual_price"
+                                                    :label="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')"
+                                                    type="number"
+                                                    min="0"
+                                                /> 
+                                            </VCol>                                        
+                                            <VCol cols="12" md="3">
+                                                <VTextField
+                                                    :model-value="fair_value"
+                                                    :label="'Verkligt värde ' + (currencies.find(item => item.id === currency_id)?.code || '')"
+                                                    disabled 
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <VAutocomplete
+                                                    v-model="iva_purchase_id_interchange"
+                                                    label="VMB / Moms"
+                                                    :items="ivas"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"/>
+                                            </VCol>
+                                            <VCol cols="12" md="3">
+                                                <div class="d-flex flex-column ms-2">
+                                                    <label class="v-label text-body-2 text-wrap">Har lösenoffert beställts</label>
+                                                    <VRadioGroup v-model="redemption_offer" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="remaining_paid_to"
+                                                    label="Restskuld betalas till"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+
+                                    <!--Kund-->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="6">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                                    Köpare
+                                                </h6>
+                                                <VRow>
+                                                    <VCol cols="12" md="12">
+                                                        <VAutocomplete
+                                                            v-model="client_id"
+                                                            label="Kunder"
+                                                            :items="clients"
+                                                            :item-title="item => item.fullname"
+                                                            :item-value="item => item.id"
+                                                            autocomplete="off"
+                                                            clearable
+                                                            @click:clear="clearClient"
+                                                            @update:modelValue="selectClient"/>
+                                                    </VCol>
+                                                    <VCol cols="10" md="11">
+                                                        <VTextField
+                                                            v-model="organization_number"
+                                                            label="Org/personummer"
+                                                            :rules="[requiredValidator]"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="2" md="1" class="px-0 d-flex align-center">
+                                                        <VBtn
+                                                            icon="tabler-search"
+                                                            variant="tonal"
+                                                            color="primary"
+                                                            size="x-small"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VAutocomplete
+                                                            v-model="client_type_id"
+                                                            label="Köparen är"
+                                                            :items="client_types"
+                                                            :item-title="item => item.name"
+                                                            :item-value="item => item.id"
+                                                            :rules="[requiredValidator]"
+                                                            autocomplete="off"/>
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="fullname"
+                                                            label="Namn"
+                                                            :rules="[requiredValidator]"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="12">
+                                                        <VTextField
+                                                            v-model="address"
+                                                            :rules="[requiredValidator]"
+                                                            label="Adress"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="postal_code"
+                                                            :rules="[requiredValidator]"
+                                                            label="Postnummer"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="street"
+                                                            :rules="[requiredValidator]"
+                                                            label="Stad"
+                                                        /> 
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="phone"
+                                                            :rules="[requiredValidator, phoneValidator]"
+                                                            label="Telefon"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VAutocomplete
+                                                            v-model="identification_id"
+                                                            label="Legitimation"
+                                                            :items="identifications"
+                                                            :item-title="item => item.name"
+                                                            :item-value="item => item.id"
+                                                            :rules="[requiredValidator]"
+                                                            autocomplete="off"/>
+                                                    </VCol>
+                                                    <VCol cols="12" md="12">
+                                                        <VTextField
+                                                            v-model="email"
+                                                            :rules="[emailValidator, requiredValidator]"
+                                                            label="E-post"
+                                                        />
+                                                    </VCol>
+                                                </VRow>
+                                            </VCol>                                        
+                                            <VCol cols="12" md="6">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                                    Säljare
+                                                </h6>
+                                                <VList class="card-list mt-2">
+                                                    <VListItem>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Namn:
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Org/personummer:
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Adress:
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Postnr. ort:
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Telefon:
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                E-post
+                                                                <span class="text-body-2">
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Bilfirma:
+                                                                <span class="text-body-2">
+                                                                    ???
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                    </VListItem>
+                                                </VList>
+                                                <VRow>
+                                                    <VCol cols="12" md="12" class="py-3">
+                                                        <VCheckbox
+                                                            v-model="save_client"
+                                                            :readonly="disabled_client"
+                                                            color="primary"
+                                                            label="Spara kund?"
+                                                            class="w-100 text-center d-flex justify-content-end"
+                                                        />
+                                                    </VCol>
+                                                </VRow>
+                                            </VCol>                                                                                    
+                                        </VRow>
+                                        
+                                    </VWindowItem>
+
+                                    <!--Pris-->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="12">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                                    Specifikation, pris
+                                                </h6>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="price"
+                                                    label="Pris"
+                                                    type="number"
+                                                    min="0"
                                                     :rules="[requiredValidator]"
                                                 />
-                                    </VCol>
-                                    <VCol cols="12" md="6">
-                                            <label for="">Valuta</label>
-                                            <VSelect
-                                                v-model="selected_currency"
-                                                :items="currency_items"
-                                                placeholder="välj"
-                                                item-title="title"      
-                                                item-value="value"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                :rule="requiredValidator"
-                                            />
-                                    </VCol>
-                                    
-                                    <VCol cols="12" md="6">
-                                            <label for="">Moms / VMB / Export</label>
-                                            <VSelect
-                                                v-model="selected_taxes_type"
-                                                :items="vat_items"
-                                                placeholder="välj"
-                                                item-title="title"      
-                                                item-value="value"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                :rule="requiredValidator"
-                                            />
-                                    </VCol>
-                                    <VCol cols="12" md="6">
-                                            <label for="">Varav moms</label>
-                                            <VTextField
-                                                :model-value="which_vat"
-                                                readonly 
-                                            />
-                                    </VCol>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="currency_id"
+                                                    label="Valuta"
+                                                    :items="currencies"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    disabled
+                                                    clear-icon="tabler-x">
+                                                    <template
+                                                        v-if="currency_id"
+                                                        #prepend
+                                                        >
+                                                            <VAvatar
+                                                            start
+                                                            style="margin-top: -8px;"
+                                                            size="36"
+                                                            :image="getFlag(currency_id)"
+                                                        />
+                                                    </template>
+                                                </VAutocomplete>
+                                            </VCol>                                        
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="iva_id"
+                                                    label="Moms / VMB / Export"
+                                                    :items="ivas"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    :rules="[requiredValidator]"/>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="iva_sale_amount"
+                                                    label="Varav moms"
+                                                    min="0"
+                                                    disabled
+                                                    :rules="[requiredValidator]"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="iva_sale_exclusive"
+                                                    label="Prix ex moms"
+                                                    min="0"
+                                                    disabled
+                                                    :rules="[requiredValidator]"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="discount"
+                                                    label="Rabatt"
+                                                    min="0"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="registration_fee"
+                                                    label="Registreringsavgift"
+                                                    min="0"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="2">
+                                                <span>Totalpris: {{ total_sale }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            </VCol>
+                                            <VCol cols="12" md="2">
+                                                <span>Pris på inbytesbil: {{ trade_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            </VCol>
+                                            <VCol cols="12" md="2">
+                                                <span>Mellanpris: {{ middle_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="payment_type_id"
+                                                    label="Betalsätt"
+                                                    :items="paymentTypes"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                    :rules="[requiredValidator]"
+                                                    @update:modelValue="selectPaymentType"
+                                                    @click:clear="selectPaymentType"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="advance_id"
+                                                    label="Handpenning procent"
+                                                    :items="advances"
+                                                    :item-title="item => item.name"
+                                                    :item-value="item => item.id"
+                                                    :disabled="payment_type_id !== 3 && payment_type_id !== 4 && payment_type_id !== 10"
+                                                    autocomplete="off"
+                                                    clearable
+                                                    clear-icon="tabler-x"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="payment_received"
+                                                    label="Summa kontant / handpenning"
+                                                    type="number"
+                                                    min="0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="payment_method_forcash"
+                                                    label="Betalsätt för kontant / handpenning"
+                                                    type="number"
+                                                    min="0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="installment_amount"
+                                                    label="Avbetalningsbelopp (kreditbelopp/leasing)"
+                                                    type="number"
+                                                    min="0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6" class="py-0">
+                                                <VCheckbox
+                                                    v-model="installment_contract_upon_delivery"
+                                                    color="primary"
+                                                    label="Ja, se bifogade kreditvillkor"
+                                                    class="w-100 text-center d-flex justify-content-end"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="payment_description"
+                                                    label="Betalningsbeskrivning"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
 
-                                    <VCol cols="12" md="6">
-                                            <label for="">Pris ex moms</label>
-                                            <VTextField
-                                                :model-value="price_without_vat"
-                                                readonly 
-                                            />
-                                    </VCol>
-
-                                    <VCol cols="12" md="6">
-                                            <label for="">Rabatt</label>
-                                            <VTextField
-                                                v-model="discount"
-                                                type="number"
-                                            />
-                                    </VCol>
-
-                                    <VCol cols="12" md="6">
-                                            <label for="">Registreringsavgift</label>
-                                            <VTextField
-                                                v-model="registration_fee"
-                                                type="number"
-                                            />
-                                    </VCol>
-
-                                    <VCol cols="12" md="6">
-                                            <label for="">Totalpris</label>
-                                            <VTextField
-                                                :model-value="total_price"
-                                                type="number"
-                                                readonly 
-                                            />
-                                    </VCol>
-
-                                    <VCol cols="12" md="6">
-                                            <label for="">Pris på inbytesbil</label>
-                                            <VTextField
-                                                v-model="trade_price"
-                                                type="number"
-                                                readonly 
-                                            />
-                                    </VCol>
-
-                                    <VCol cols="12" md="6">
-                                            <label for="">Mellanpris</label>
-                                            <VTextField
-                                                :model-value="price_whitout_trade_price"
-                                                type="number"
-                                                readonly 
-                                            />
-                                    </VCol>
-                                    </VRow>
-                                </VWindowItem>
-
-                                <!--Villkor-->
-                                <VWindowItem class="px-md-5">
-                                    Villkor
-                                </VWindowItem>
-                            </VWindow>
-
+                                    <!--Villkor-->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
+                                            <VCol cols="12" md="12">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                                    Villkor
+                                                </h6>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextarea
+                                                    v-model="terms_other_conditions"
+                                                    label="Övriga villkor inhämtas från mall"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextarea
+                                                    v-model="terms_other_information"
+                                                    label="Övriga upplysningar"
+                                                />
+                                            </VCol>
+                                        </VRow>
+                                    </VWindowItem>
+                                </VWindow>
                             </VCardText>
                         </VCardText>
                     </VCard>
@@ -870,8 +1255,24 @@ const onSubmit = () => {
 </template>
 
 <style scoped>
+    ::v-deep .radio-form .v-input--density-comfortable, ::v-deep  .v-radio {
+        --v-input-control-height: 0 !important;
+    }
+
+    ::v-deep .radio-form .v-selection-control__wrapper {
+        height: 20px !important;
+    }
+
+    ::v-deep .radio-form .v-icon--size-default {
+        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
+    }
+    
     .v-btn--disabled {
         opacity: 1 !important
+    }
+
+    .justify-content-end {
+        justify-content: end !important;
     }
 </style>
 

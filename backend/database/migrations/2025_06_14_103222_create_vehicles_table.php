@@ -48,6 +48,8 @@ return new class extends Migration
             $table->decimal("discount", 10, 2)->nullable()->comment("Discount");
             $table->decimal("registration_fee", 10, 2)->nullable()->comment("Registration fee");
             $table->decimal("total_sale", 10, 2)->nullable()->comment("Total sale");
+            $table->string("meter_reading")->nullable();
+            $table->string("chassis")->nullable();
             $table->string("file")->nullable();
             $table->timestamps();
 

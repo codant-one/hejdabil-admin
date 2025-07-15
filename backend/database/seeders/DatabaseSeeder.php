@@ -46,7 +46,9 @@ class DatabaseSeeder extends Seeder
             ClientTypeSeeder::class,
             IdentificationSeeder::class,
 
-            CurrencyPermissionSeeder::Class
+            CurrencyPermissionSeeder::Class,
+
+            AdvanceSeeder::class
         ]);
 
     }

@@ -233,6 +233,7 @@ const onSubmit = () => {
             currentTab.value++
         } else if (valid && currentTab.value === 1) {
             let formData = new FormData()
+            
             formData.append('id', Number(route.params.id))
             formData.append('sale_price', sale_price.value)
             formData.append('sale_date', sale_date.value)
@@ -616,12 +617,12 @@ const getFlag = (currency_id) => {
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
-                                                        <VCol cols="2" md="1" class="px-0">
+                                                        <VCol cols="2" md="1" class="px-0 d-flex align-center">
                                                             <VBtn
                                                                 icon="tabler-search"
                                                                 variant="tonal"
                                                                 color="primary"
-                                                                size="small"
+                                                                size="x-small"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">

@@ -24,6 +24,7 @@ use App\Models\Fuel;
 use App\Models\DocumentType;
 use App\Models\State;
 use App\Models\Client;
+use App\Models\ClientType;
 use App\Models\AgreementClient;
 use App\Models\VehicleClient;
 use App\Models\Guaranty;
@@ -32,6 +33,8 @@ use App\Models\InsuranceCompany;
 use App\Models\InsuranceType;
 use App\Models\Currency;
 use App\Models\PaymentType;
+use App\Models\Identification;
+use App\Models\Advance;
 
 class AgreementController extends Controller
 {
@@ -125,7 +128,7 @@ class AgreementController extends Controller
                 $client->update();
             }
 
-            if ( $request->has("client_id") )
+            if ($request->has("client_id"))
                 $request->merge([
                     "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
                 ]);
@@ -134,34 +137,24 @@ class AgreementController extends Controller
                     'client_id' => $request->save_client === 'true' ? $client->id : null
                 ]);
 
-
             //Create Vehicle
             $vehicle = null;
-            $vehicleRequest = VehicleRequest::createFrom($request);
+            
+            //If Vehicle Not Exist
+            if ($request->vehicle_id === 'null'){
 
-            $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
-            if($validate->fails()){
-                $vehicleRequest->failedValidation($validate);
-            }
+                $vehicleRequest = VehicleRequest::createFrom($request);
 
-            //Set Vehicle State ID on Sold
-            if ( !$vehicleRequest->has('state_id') ){
+                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+                if($validate->fails()) {
+                    $vehicleRequest->failedValidation($validate);
+                }
+
+                //Set Vehicle State ID on Sold
                 $vehicleRequest->request->add([
                     'state_id' => 12
                 ]);
-            }
-            elseif ( $vehicleRequest->has('state_id') && 
-                     ($vehicleRequest->state_id === 'null' || empty($vehicleRequest->state_id))
-                   ){
-                $vehicleRequest->merge([
-                    "state_id" => 12
-                ]);
-            }
 
-            //If Vehicle Not Exist
-            if ( !$vehicleRequest->has('vehicle_id') || 
-                 ($vehicleRequest->has('vehicle_id') && $vehicleRequest->vehicle_id === 'null')
-               ){
                 $vehicle = Vehicle::createVehicle($vehicleRequest);
                 $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
 
@@ -175,60 +168,36 @@ class AgreementController extends Controller
                     ]);
 
                 VehicleClient::createClient($request);
-            }
-            else {
-                $vehicle = Vehicle::find($vehicleRequest->vehicle_id);
+            } else {
+                $vehicle = Vehicle::find($request->vehicle_id);
             }
             
             $vehicle = Vehicle::with(['vehicle_client'])->find($vehicle->id);
-            
-            //Get Client ID
-            if ( $request->has("client_id") )
-                $request->merge([
-                    "client_id" => $vehicle->vehicle_client->client_id
-                ]);
-            else
-                $request->request->add([
-                    'client_id' => $vehicle->vehicle_client->client_id
-                ]);
 
             //Set VehicleClient ID
             //Get Client ID
-            if ( $request->has("client_id") )
+           /* if ($request->has("client_id"))
                 $request->merge([
                     "vehicle_client_id" => $vehicle->vehicle_client->id
                 ]);
             else
                 $request->request->add([
                     'vehicle_client_id' => $vehicle->vehicle_client->id
-                ]);
-
+                ]);*/
 
             if ($request->has("intercambie") && $request->intercambie === 'true'){
                 $request->merge(['reg_num' => $request->reg_num_interchange ]);
-                $request->merge(['model' => $request->model_interchange ]);
                 $request->merge(['brand_id' => $request->brand_id_interchange ]);
                 $request->merge(['model_id' => $request->model_id_interchange ]);
                 $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
-                $request->merge(['gearbox_id' => $request->gearbox_id_interchange ]);
                 $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
-                $request->merge(['fuel_id' => $request->fuel_id_interchange ]);
-                $request->merge(['state_id' => $request->state_id_interchange ]);
-                $request->merge(['mileage' => $request->mileage_interchange ]);
-                $request->merge(['generation' => $request->generation_interchange ]);
                 $request->merge(['year' => $request->year_interchange ]);
-                $request->merge(['control_inspection' => $request->control_inspection_interchange ]);
                 $request->merge(['color' => $request->color_interchange ]);
                 $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
                 $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
-                $request->merge(['number_keys' => $request->number_keys_interchange ]);
-                $request->merge(['service_book' => $request->service_book_interchange ]);
-                $request->merge(['summer_tire' => $request->summer_tire_interchange ]);
-                $request->merge(['winter_tire' => $request->winter_tire_interchange ]);
-                $request->merge(['last_service' => $request->last_service_interchange ]);
-                $request->merge(['dist_belt' => $request->dist_belt_interchange ]);
-                $request->merge(['last_dist_belt' => $request->last_dist_belt_interchange ]);
-                $request->merge(['comments' => $request->comments_interchange ]);
+                $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
+                $request->merge(['chassis' => $request->chassis_interchange ]);
+                $request->merge(['sale_date' => $request->sale_date_interchange ]);
 
                 //Create Vehicle Interchange
                 $vehicleInterchange = null;
@@ -279,9 +248,7 @@ class AgreementController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'agreement' => Agreement::find($agreement->id),
-                    'agreementClient' => AgreementClient::find($agreementClient->id),
-                    'vehicleClient' => VehicleClient::find($vehicle->vehicle_client->id)
+                    'agreement' => Agreement::find($agreement->id)
                 ]
             ]);
 
@@ -346,7 +313,7 @@ class AgreementController extends Controller
                     'insuranceCompanies'  => InsuranceCompany::all(),
                     'insuranceTypes'  => InsuranceType::all(),
                     'currencies'  => Currency::all(),
-                    'paymenttypes'  => PaymentType::all(),
+                    'paymentTypes'  => PaymentType::all(),
                     'clients' => $clients
                 ]
             ]);
@@ -470,6 +437,12 @@ class AgreementController extends Controller
 
         try {
 
+            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
+            } else {
+                $clients = Client::all();
+            }
+
             $agreement_id = Agreement::whereNull('supplier_id')->count();
             $vehicles = 
                 Vehicle::with(['model.brand'])
@@ -493,10 +466,14 @@ class AgreementController extends Controller
                     'insuranceCompanies'  => InsuranceCompany::all(),
                     'insuranceTypes'  => InsuranceType::all(),
                     'currencies'  => Currency::all(),
-                    'paymenttypes'  => PaymentType::all(),
+                    'paymentTypes'  => PaymentType::all(),
                     'agreementTypes' => AgreementType::all(),
                     'agreement_id' => $agreement_id,
-                    'vehicles' => $vehicles
+                    'vehicles' => $vehicles,
+                    'clients' => $clients,
+                    'client_types' => ClientType::all(),
+                    'identifications' => Identification::all(),
+                    'advances' => Advance::all()
                 ]
             ]);
 

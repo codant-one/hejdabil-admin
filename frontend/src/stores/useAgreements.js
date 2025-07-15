@@ -16,9 +16,13 @@ export const useAgreementsStores = defineStore('agreements', {
         insuranceCompanies: {},
         insuranceTypes: {},
         currencies: {},
-        paymenttypes: {},
+        paymentTypes: {},
         agreementTypes: {},
         vehicles: {},
+        clients: {},
+        client_types: {},
+        identifications: {},
+        advances: {},
         agreement_id: 0,
         loading: false,
         last_page: 1,
@@ -118,10 +122,14 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.insuranceCompanies = response.data.data.insuranceCompanies
                     this.insuranceTypes = response.data.data.insuranceTypes
                     this.currencies = response.data.data.currencies
-                    this.paymenttypes = response.data.data.paymenttypes
+                    this.paymentTypes = response.data.data.paymentTypes
                     this.agreementTypes = response.data.data.agreementTypes
                     this.vehicles = response.data.data.vehicles
                     this.agreement_id = response.data.data.agreement_id
+                    this.clients = response.data.data.clients
+                    this.client_types = response.data.data.client_types
+                    this.identifications = response.data.data.identifications
+                    this.advances = response.data.data.advances
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {

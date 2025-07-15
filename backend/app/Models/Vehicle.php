@@ -196,7 +196,18 @@ class Vehicle extends Model
             'last_service' => $request->last_service === 'null' ? null : $request->last_service,
             'dist_belt' => ( $request->dist_belt === 'null' || empty($request->dist_belt) ) ? 0 : $request->dist_belt,
             'last_dist_belt' => $request->last_dist_belt === 'null' ? null : $request->last_dist_belt,
-            'comments' => $request->comments === 'null' ? null : $request->comments
+            'comments' => $request->comments === 'null' ? null : $request->comments,
+            'meter_reading' => $request->meter_reading === 'null' ? null : $request->meter_reading,
+            'chassis' => $request->chassis === 'null' ? null : $request->chassis,
+            'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
+            'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
+            'iva_sale_id' => $request->iva_sale_id === 'null' ? null : $request->iva_sale_id,
+            'sale_comments' => $request->sale_comments === 'null' ? null : $request->sale_comments,
+            'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
+            'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
+            'discount' => $request->discount === 'null' ? null : $request->discount,
+            'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);

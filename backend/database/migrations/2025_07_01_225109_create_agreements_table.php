@@ -24,15 +24,28 @@ return new class extends Migration
             $table->unsignedBigInteger('currency_id')->nullable();
             $table->unsignedBigInteger('payment_type_id')->nullable();
             $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
+            $table->unsignedBigInteger('advance_id')->nullable();
             $table->unsignedBigInteger('agreement_id');
 
             $table->date("first_registration_date")->nullable()->comment("First registration date");
             $table->date("sale_date")->nullable()->comment("Sale date");
             $table->string("insurance_agent")->nullable()->comment("Insurance agent");
+            $table->decimal("trade_price")->nullable()->comment("Trade price");
+            $table->tinyInteger('residual_debt')->default(0)->comment("Residual debt (0: No, 1: Yes)");
+            $table->decimal("residual_price")->nullable()->comment("Residual price");
+            $table->decimal("fair_value")->nullable()->comment("Fair price");
+            $table->string("remaining_paid_to")->nullable()->comment("Remaining paid to");
+            $table->tinyInteger('redemption_offer')->default(0)->comment("Redemption offer (0: No, 1: Yes)");
+            
             $table->decimal("price", 10, 2)->nullable()->comment("Agreement price");
-            $table->decimal("iva_amount", 10, 2)->nullable()->comment("IVA amount");
+            $table->decimal("iva_sale_amount", 10, 2)->nullable()->comment("IVA amount");
+            $table->decimal("iva_sale_exclusive", 10, 2)->nullable()->comment("Sale without iva");
+            $table->decimal("discount", 10, 2)->nullable()->comment("Discount");
             $table->decimal("registration_fee", 10, 2)->nullable()->comment("Registration fee");
-            $table->decimal("down_payment_percentage", 2, 2)->nullable()->comment("Down payment percentage (Handpenning)");
+            $table->decimal("total_sale", 10, 2)->nullable()->comment("Total sale");
+
+            $table->decimal("middle_price", 10, 2)->nullable()->comment("Middle price");
+
             $table->decimal("payment_received", 10, 2)->nullable()->comment("Total cash / down payment (Summa kontant / handpenning)");
             $table->string("payment_method_forcash")->nullable()->comment("Payment method for cash / down payment (Betalsätt för kontant / handpenning)"); 
             $table->decimal("installment_amount", 10, 2)->nullable()->comment("Installment amount - credit amount/leasing (Avbetalningsbelopp (kreditbelopp/leasing))");
@@ -54,6 +67,7 @@ return new class extends Migration
             $table->foreign('currency_id')->references('id')->on('currencies')->onDelete('cascade');
             $table->foreign('iva_id')->references('id')->on('ivas')->onDelete('cascade');
             $table->foreign('payment_type_id')->references('id')->on('payment_types')->onDelete('cascade');
+            $table->foreign('advance_id')->references('id')->on('advances')->onDelete('cascade');
         });
     }
 
