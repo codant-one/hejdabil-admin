@@ -31,10 +31,8 @@
         h2 {
             font-size: 15px;
             color: #0056b3;
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 6px;
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 0;
         }
 
         /* --- HEADER --- */
@@ -61,7 +59,7 @@
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 20px;
+            padding-top: 10px;
         }
         .column-cell {
             width: 50%;
@@ -90,22 +88,21 @@
             font-size: 10px;
         }
         .info-table .value {
-            font-size: 12px;
+            font-size: 10px;
             background-color: #f9f9f9;
-            padding: 6px 10px;
+            padding: 5px;
             border-radius: 4px;
             border: 1px solid #eee;
-            min-height: 17px;
+            min-height: 12px
         }
 
         /* --- TABLA FINANCIERA --- */
         .financials-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
         }
         .financials-table td {
-            padding: 8px 10px;
+            padding: 5px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
         }
@@ -123,7 +120,7 @@
         .financials-table .moms-row td { font-weight: normal; }
 
         /* --- PIE DE PÁGINA --- */
-        .footer-section { padding-top: 25px; }
+        .footer-section { padding-top: 15px; }
         .consent-text {
             font-size: 10px;
             color: #666;
@@ -131,7 +128,7 @@
             padding: 10px;
             border-radius: 4px;
             border-left: 3px solid #0056b3;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
         .signatures-table {
             width: 100%;
@@ -448,7 +445,11 @@
                                         <td>
                                             <div class="label">Plusgiro</div>
                                             <div class="value">
-                                                {{ $agreement->payment_description }} 
+                                                @if(!$agreement->supplier)
+                                                    {{ $user->userDetail->plus_spin }} 
+                                                @else
+                                                    {{ $agreement->supplier?->plus_spin }} 
+                                                @endif 
                                             </div>
                                         </td>
                                     </tr>
@@ -468,14 +469,24 @@
                                         <td>
                                             <div class="label">Bank för inbetalning</div>
                                             <div class="value">
-                                                {{ $agreement->payment_description}} 
+                                                @if(!$agreement->supplier)
+                                                    {{ $user->userDetail->bank }} 
+                                                @else
+                                                    {{ $agreement->supplier?->bank }} 
+                                                @endif 
                                             </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td>
                                             <div class="label">Kontonummer</div>
-                                            <div class="value">???</div>
+                                            <div class="value">
+                                               @if(!$agreement->supplier)
+                                                    {{ $user->userDetail->account_number }} 
+                                                @else
+                                                    {{ $agreement->supplier?->account_number }} 
+                                                @endif 
+                                            </div>
                                         </td>
                                     </tr>
                                 </table>

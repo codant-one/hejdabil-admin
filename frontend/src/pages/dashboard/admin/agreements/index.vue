@@ -20,7 +20,6 @@ const totalAgreements = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const selectedAgreement = ref({})
-const state_id = ref(null)
 
 const agreementTypes = ref([])
 
@@ -31,8 +30,6 @@ const refVForm = ref()
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
-
 
 const advisor = ref({
   type: '',
@@ -67,16 +64,14 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
-    state_id.value = null
   }
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'agreement_id',
+    orderByField: 'created_at',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value,
-    state_id: state_id.value
+    page: currentPage.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -114,7 +109,6 @@ const showDeleteDialog = agreementData => {
   isConfirmDeleteDialogVisible.value = true
   selectedAgreement.value = { ...agreementData }
 }
-
 
 const removeAgreement = async () => {
   isConfirmDeleteDialogVisible.value = false
@@ -299,7 +293,7 @@ const addAgreements = () => {
                 v-for="agreement in agreements"
                 :key="agreement.id"
                 style="height: 3rem;">
-                <td> {{ agreement.vehicle_client.vehicle.reg_num }}</td>
+                <td> {{ agreement.vehicle_client.vehicle.reg_num }} </td>
                 <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
                 <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
                 <td> {{ agreement.agreement_type.name  }}</td>          

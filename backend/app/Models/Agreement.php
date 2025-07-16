@@ -88,6 +88,8 @@ class Agreement extends Model
             $query->where('supplier_id', Auth::user()->supplier->id);
         } elseif ($filters->get('supplier_id') !== null) {
             $query->where('supplier_id', $filters->get('supplier_id'));
+        } elseif ($filters->get('supplier_id') === null) {
+            $query->whereNull('supplier_id');
         }
 
         if ($filters->get('search')) {

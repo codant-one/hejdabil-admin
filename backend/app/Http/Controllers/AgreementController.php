@@ -55,30 +55,14 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'agreement_type',
-                        'guaranty',
-                        'guaranty_type',
-                        'insurance_company',
-                        'insurance_type',
-                        'currency',
-                        'iva',
-                        'payment_types',
                         'vehicle_interchange',
-                        'agreement_client',
                         'vehicle_client.vehicle',
                         'supplier.user'
                     ])->applyFilters(
                         $request->only([
                             'search',
                             'orderByField',
-                            'guaranty_id',
-                            'guaranty_type_id',
-                            'insurance_company_id',
-                            'insurance_type_id',
-                            'currency_id',
-                            'payment_type_id',
-                            'vehicle_interchange_id',
-                            'vehicle_client_id',
-                            'supplier_id'
+                            'orderBy'
                         ])
                     );
 
