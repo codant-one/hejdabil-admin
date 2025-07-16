@@ -181,7 +181,6 @@ const onImageSelected = event => {
         <VTabs
           v-model="userTab"
           class="v-tabs-pill"
-          v-if="role === 'Supplier'"
         >
           <VTab
             v-for="tab in tabs"
@@ -198,14 +197,13 @@ const onImageSelected = event => {
 
         <VWindow
           v-model="userTab"
-          :class="role === 'Supplier' ? 'mt-3' : ''"
-          class="disable-tab-transition"
+          class="disable-tab-transition mt-3"
           :touch="false"
         >
           <VWindowItem>
             <TabSecurity @alert="showAlert"/>
           </VWindowItem>
-          <VWindowItem v-if="role === 'Supplier'">
+          <VWindowItem>
             <TabDealer 
               @alert="showAlert"
               @window="showWindow"/>

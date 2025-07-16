@@ -24,9 +24,9 @@ export const useProfileStores = defineStore('profile', {
                         console.error(error.response.data)
                     }) 
         },
-        updateSupplier(data) {
+        updateCompany(data) {
 
-            return Profile.updateSupplier(data)
+            return Profile.updateCompany(data)
                     .then((response) => {
                         return Promise.resolve(response.data.data)
                     }).catch(error => {

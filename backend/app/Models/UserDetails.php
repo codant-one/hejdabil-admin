@@ -13,8 +13,21 @@ class UserDetails extends Model
     
     protected $fillable = [
         'user_id',
+        'company',
+        'organization_number',
+        'address',
+        'street',
+        'postal_code',
         'phone',
-        'address'
+        'bank',
+        'account_number',
+        'iban',
+        'iban_number',
+        'bic',
+        'plus_spin',
+        'swish',
+        'vat',
+        'logo'
     ];
 
     /**** Relationship ****/
@@ -27,8 +40,21 @@ class UserDetails extends Model
         $userD = UserDetails::updateOrCreate(
             [    'user_id' => $user->id ],
             [
+                'company' => $request->company,
+                'organization_number' => $request->organization_number,
+                'link' => $request->link,
+                'address' => $request->address,
+                'street' => $request->street,
+                'postal_code' => $request->postal_code,
                 'phone' => $request->phone,
-                'address' => $request->address
+                'bank' => $request->bank,
+                'account_number' => $request->account_number,
+                'iban' => $request->iban === 'null' ? null : $request->iban,
+                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
+                'bic' => $request->bic === 'null' ? null : $request->bic,
+                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
+                'swish' => $request->swish === 'null' ? null : $request->swish,
+                'vat' => $request->vat === 'null' ? null : $request->vat
             ]
         );
 

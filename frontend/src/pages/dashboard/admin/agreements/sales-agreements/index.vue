@@ -37,7 +37,6 @@ const year = ref(null)
 const color = ref(null)
 const chassis = ref(null)
 const mileage = ref(null)
-const first_registration_date = ref(null)
 const sale_date = ref(null)
 const guaranty_id = ref(1)
 const guaranties = ref([])
@@ -47,7 +46,6 @@ const insurance_company_id = ref(null)
 const insuranceCompanies = ref([])
 const insurance_type_id = ref(5)                                 
 const insuranceTypes = ref([])
-const insurance_agent = ref(null)
 
 //const tab 2
 const brands = ref([])
@@ -69,8 +67,6 @@ const optionsRadio = ['Ja', 'Nej']
 const residual_price = ref(null)
 const ivas = ref([])
 const iva_purchase_id_interchange = ref(null)
-const remaining_paid_to = ref(null)
-const redemption_offer = ref(0)
 
 //const tab 3
 const clients = ref([])
@@ -97,6 +93,7 @@ const iva_sale_exclusive = ref(0)
 const discount = ref(0)
 const registration_fee = ref(0)
 const total_sale = ref(0)
+const payment_type = ref(null)
 const paymentTypes = ref([])
 const payment_type_id = ref(null)
 const advances = ref([])
@@ -209,6 +206,19 @@ async function fetchData() {
     isRequestOngoing.value = false
 }
 
+const getPaymentTypes = computed(() => {
+    const types = paymentTypes.value.map((model) => ({
+        title: model.name,
+        value: model.id
+    }))
+
+    if (paymentTypes.value.length > 0) {
+        types.push({ title: 'En annan..', value: 0 })
+    }
+
+    return types
+})
+
 const startDateTimePickerConfig = computed(() => {
 
     const now = new Date()
@@ -244,6 +254,16 @@ const selectVehicle = vehicle => {
         color.value = _vehicle.color
         mileage.value = _vehicle.mileage
     }
+}
+
+const clearVehicle = () => {
+    reg_num.value = null
+    brand_id.value = null
+    model_id.value = null
+    year.value = null
+    color.value = null
+    mileage.value = null
+    modelsByBrand.value = []
 }
 
 const selectGuaranty  = guaranty => {
@@ -284,10 +304,6 @@ const getModels = computed(() => {
         value: model.id
     }))
 
-    if (modelsByBrand.value.length > 0) {
-        models.push({ title: 'En annan..', value: 0 })
-    }
-
     return models
 })
 
@@ -297,20 +313,8 @@ const getModelsInterchange = computed(() => {
         value: model.id
     }))
 
-    if (modelsByBrandInterchange.value.length > 0) {
-        models.push({ title: 'En annan..', value: 0 })
-    }
-
     return models
 })
-
-const selectModel = selected => {
-    model_id.value = selected !== 0 ? null : model_id.value
-}
-
-const selectModelInterchange = selected => {
-    model_id_interchange.value = selected !== 0 ? null : model_id_interchange.value
-}
 
 const clearClient = () => {
     fullname.value = null
@@ -396,7 +400,6 @@ const onSubmit = () => {
             formData.append('color', color.value)
             formData.append('chassis', chassis.value)
             formData.append('mileage', mileage.value)
-            formData.append('first_registration_date', first_registration_date.value)
             formData.append('sale_date', sale_date.value)
             formData.append('vehicle_id', vehicle_id.value)
 
@@ -417,17 +420,15 @@ const onSubmit = () => {
 
             //agreement
             formData.append('agreement_type_id', 1)
+            formData.append('currency_id', currency_id.value)
             formData.append('agreement_id', agreement_id.value)
             formData.append('guaranty_id', guaranty_id.value)
             formData.append('guaranty_type_id', guaranty_type_id.value)
             formData.append('insurance_company_id', insurance_company_id.value)
             formData.append('insurance_type_id', insurance_type_id.value)
-            formData.append('insurance_agent', insurance_agent.value)
             formData.append('fair_value', fair_value.value)
             formData.append('residual_debt', residual_debt.value)
             formData.append('residual_price', residual_price.value)
-            formData.append('remaining_paid_to', remaining_paid_to.value)
-            formData.append('redemption_offer', redemption_offer.value)
             formData.append('price', price.value)
             formData.append('iva_id', iva_id.value)
             formData.append('iva_sale_amount', iva_sale_amount.value)
@@ -435,7 +436,8 @@ const onSubmit = () => {
             formData.append('discount', discount.value)
             formData.append('registration_fee', registration_fee.value)
             formData.append('total_sale', total_sale.value)
-            formData.append('payment_type_id', payment_type_id.value)
+            formData.append('payment_type', payment_type.value)
+            formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
             formData.append('advance_id', advance_id.value)
             formData.append('middle_price', middle_price.value)
             formData.append('payment_received', payment_received.value)
@@ -515,10 +517,6 @@ const onSubmit = () => {
                                     :to="{ name: 'dashboard-admin-agreements' }">
                                     Tillbaka
                                 </VBtn>
-
-                                <VBtn type="submit" class="w-100 w-md-auto">
-                                    Spara
-                                </VBtn>
                             </div>
                     </div>
                 </VCol>
@@ -548,7 +546,7 @@ const onSubmit = () => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectVehicle"
-                                                    @click:clear="reg_num = null"
+                                                    @click:clear="clearVehicle"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3">
@@ -594,7 +592,7 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    @update:modelValue="selectModel"/> 
+                                                    :rules="[requiredValidator]"/> 
                                             </VCol>
 
                                             <VCol cols="12" md="6">
@@ -626,16 +624,6 @@ const onSubmit = () => {
                                                     min="0"
                                                     :rules="[requiredValidator]"
                                                 /> 
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <AppDateTimePicker
-                                                    :key="JSON.stringify(startDateTimePickerConfig)"
-                                                    v-model="first_registration_date"
-                                                    density="compact"
-                                                    label="Första registreringsdatum"
-                                                    :config="startDateTimePickerConfig"
-                                                    clearable
-                                                />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <AppDateTimePicker
@@ -683,12 +671,6 @@ const onSubmit = () => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                 />    
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="insurance_agent"
-                                                    label="Ombudsnummer"
-                                                /> 
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VSelect
@@ -744,8 +726,7 @@ const onSubmit = () => {
                                                     :items="getModelsInterchange"
                                                     autocomplete="off"
                                                     clearable
-                                                    clear-icon="tabler-x"
-                                                    @update:modelValue="selectModelInterchange"/> 
+                                                    clear-icon="tabler-x"/> 
                                             </VCol>
                                             <VCol cols="12" md="3">
                                                 <VTextField
@@ -839,25 +820,6 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"/>
-                                            </VCol>
-                                            <VCol cols="12" md="3">
-                                                <div class="d-flex flex-column ms-2">
-                                                    <label class="v-label text-body-2 text-wrap">Har lösenoffert beställts</label>
-                                                    <VRadioGroup v-model="redemption_offer" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsRadio"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="remaining_paid_to"
-                                                    label="Restskuld betalas till"
-                                                />
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
@@ -971,6 +933,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Namn:
                                                                 <span class="text-body-2">
+                                                                    {{ userData.name }} {{ userData.last_name }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -978,6 +941,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Org/personummer:
                                                                 <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.organization_number : userData.user_details.organization_number }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -985,6 +949,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Adress:
                                                                 <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.address : userData.user_details.address }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -992,6 +957,11 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Postnr. ort:
                                                                 <span class="text-body-2">
+                                                                    {{ 
+                                                                        role === 'Supplier' ? 
+                                                                        supplier.street + ' ' +  supplier.postal_code : 
+                                                                        userData.user_details.street  + ' ' +  userData.user_details.postal_code
+                                                                    }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -999,6 +969,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Telefon:
                                                                 <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.phone : userData.user_details.phone }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1006,6 +977,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 E-post
                                                                 <span class="text-body-2">
+                                                                    {{ userData.email }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1013,7 +985,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Bilfirma:
                                                                 <span class="text-body-2">
-                                                                    ???
+                                                                    {{ role === 'Supplier' ? supplier.company : userData.user_details.company }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1125,22 +1097,20 @@ const onSubmit = () => {
                                                     :rules="[requiredValidator]"
                                                 />
                                             </VCol>
-                                            <VCol cols="12" md="2">
-                                                <span>Totalpris: {{ total_sale }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            <VCol cols="12" md="6" class="d-flex align-center">
+                                                <span class="ms-1 ms-md-0">Totalpris: {{ total_sale }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                             </VCol>
-                                            <VCol cols="12" md="2">
-                                                <span>Pris på inbytesbil: {{ trade_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            <VCol cols="12" md="3" class="d-flex align-center">
+                                                <span class="ms-1 ms-md-0">Pris på inbytesbil: {{ trade_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                             </VCol>
-                                            <VCol cols="12" md="2">
-                                                <span>Mellanpris: {{ middle_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
+                                            <VCol cols="12" md="3" class="d-flex align-center">
+                                                <span class="ms-1 ms-md-0">Mellanpris: {{ middle_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                             </VCol>
-                                            <VCol cols="12" md="6">
+                                            <VCol cols="12" :md="payment_type_id !== 0 ? 6 : 3">
                                                 <VAutocomplete
                                                     v-model="payment_type_id"
                                                     label="Betalsätt"
-                                                    :items="paymentTypes"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
+                                                    :items="getPaymentTypes"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
@@ -1149,7 +1119,13 @@ const onSubmit = () => {
                                                     @click:clear="selectPaymentType"
                                                 />
                                             </VCol>
-                                            <VCol cols="12" md="6">
+                                            <VCol cols="12" md="3" v-if="payment_type_id === 0">
+                                                <VTextField
+                                                    v-model="payment_type"
+                                                    label="Betalsätt"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6" class="d-none">
                                                 <VAutocomplete
                                                     v-model="advance_id"
                                                     label="Handpenning procent"
@@ -1174,8 +1150,6 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="payment_method_forcash"
                                                     label="Betalsätt för kontant / handpenning"
-                                                    type="number"
-                                                    min="0"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">

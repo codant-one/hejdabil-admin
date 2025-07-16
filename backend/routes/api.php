@@ -106,8 +106,8 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::post('update/password', [UsersController::class, 'updatePassword']);
         Route::post('update/profile',  [UsersController::class, 'updateProfile']);
         Route::get('user/profile',  [UsersController::class, 'getProfile']);
-        Route::post('update/supplier', [UsersController::class, 'updateSupplier']);
-        Route::post('update/supplier/logo', [UsersController::class, 'updateLogo']);
+        Route::post('update/company', [UsersController::class, 'updateCompany']);
+        Route::post('update/company/logo', [UsersController::class, 'updateLogo']);
     });
 
     //Roles
@@ -175,6 +175,7 @@ Route::get('emails', [TestingController::class , 'emails'])->name('emails');
 Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
+Route::get('agreement', [TestingController::class , 'agreement'])->name('agreement');
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);

@@ -19,8 +19,6 @@ class DatabaseSeeder extends Seeder
             StateSeeder::class,
 
             MorePermissionSeeder::class,
-            SupplierSeeder::class,
-            ClientSeeder::class,
 
             TypeSeeder::class,
             InvoiceSeeder::class,

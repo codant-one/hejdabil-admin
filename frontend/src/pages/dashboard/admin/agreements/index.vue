@@ -4,7 +4,7 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { requiredValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
+import { formatNumber } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
@@ -28,6 +28,11 @@ const agreementTypes = ref([])
 const isModalVisible = ref(false)
 const agreement_type_id = ref(null) 
 const refVForm = ref()
+
+const userData = ref(null)
+const role = ref(null)
+const supplier = ref([])
+
 
 const advisor = ref({
   type: '',
@@ -67,7 +72,7 @@ async function fetchData(cleanFilters = false) {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'id',
+    orderByField: 'agreement_id',
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
@@ -82,6 +87,9 @@ async function fetchData(cleanFilters = false) {
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+  
   isRequestOngoing.value = false
 
 }
@@ -132,6 +140,24 @@ const removeAgreement = async () => {
   return true
 }
 
+const download = async(agreement) => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + agreement.file);
+    const blob = await response.blob();
+    
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = agreement.file.replace('pdfs/', '');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+  } catch (error) {
+    console.error('Error:', error);
+  }
+};
 
 const downloadCSV = async () => {
 
@@ -257,11 +283,13 @@ const addAgreements = () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> #ID </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
-                <th scope="col"> xxx </th>
+                <th scope="col"> REG. NR </th>
+                <th scope="col"> INBYTESFORDON REG. NR </th>
+                <th scope="col" class="text-end"> KREDIT / LEASING </th>
+                <th scope="col"> TYP </th>
+                <th scope="col"> SKAPAD </th>
+                <th scope="col"> SKAPAD AV </th>
+                <th scope="col"> SIGNERA STATUS </th>
                 <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
               </tr>
             </thead>
@@ -271,12 +299,80 @@ const addAgreements = () => {
                 v-for="agreement in agreements"
                 :key="agreement.id"
                 style="height: 3rem;">
-                <td> {{ agreement.id }}</td>
-                <td> {{ agreement.id }}</td>                
-                <td> {{ agreement.id }}</td>
-                <td> {{ agreement.id }}</td>          
-                <td> {{ agreement.id }}</td>
-                <td> {{ agreement.id }}</td>
+                <td> {{ agreement.vehicle_client.vehicle.reg_num }}</td>
+                <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
+                <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
+                <td> {{ agreement.agreement_type.name  }}</td>          
+                <td>  
+                  {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
+                      year: 'numeric', 
+                      month: '2-digit', 
+                      day: '2-digit', 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: false
+                  }) }}
+                </td>
+                <td> 
+                  {{ agreement.supplier ? 
+                    agreement.supplier.user.name + ' ' + agreement.supplier.user.last_name : 
+                    userData.name + ' ' + userData.last_name
+                   }}
+                </td>
+                <td></td>
+                <!-- 👉 Acciones -->
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
+                  <VMenu>
+                    <template #activator="{ props }">
+                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
+                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
+                          <path d="M19 16v6"></path>
+                          <path d="M22 19l-3 3l-3 -3"></path>
+                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
+                        </svg>
+                      </VBtn>
+                    </template>
+                    <VList>
+                      <VListItem >
+                        <template #prepend>
+                          <VIcon icon="mdi-draw" />
+                        </template>
+                        <VListItemTitle>Signera</VListItemTitle>
+                      </VListItem>
+                      <VListItem >
+                        <template #prepend>
+                          <VIcon icon="mdi-file-pdf-box" />
+                        </template>
+                        <VListItemTitle>Kontantkvitto</VListItemTitle>
+                      </VListItem>
+                      <VListItem>
+                        <template #prepend>
+                          <VIcon icon="mdi-file-pdf-box" />
+                        </template>
+                        <VListItemTitle>Sänd PDF</VListItemTitle>
+                      </VListItem>
+                      <VListItem @click="download(agreement)">
+                        <template #prepend>
+                          <VIcon icon="mdi-cloud-download-outline"/>
+                        </template>
+                        <VListItemTitle>Ladda ner</VListItemTitle>
+                      </VListItem>
+                      <VListItem>
+                        <template #prepend>
+                          <VIcon icon="tabler-edit" />
+                        </template>
+                        <VListItemTitle>Redigera</VListItemTitle>
+                      </VListItem>
+                      <VListItem >
+                        <template #prepend>
+                          <VIcon icon="tabler-trash" />
+                        </template>
+                        <VListItemTitle>Ta bort</VListItemTitle>
+                      </VListItem>
+                    </VList>
+                  </VMenu>
+                </td>
               </tr> 
             </tbody>
             <!-- 👉 table footer  -->

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Testing;
 use App\Http\Controllers\Controller;
 
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 
 use App\Models\User;
@@ -12,6 +13,7 @@ use App\Models\Billing;
 use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
+use App\Models\Agreement;
 
 class TestingController extends Controller
 {
@@ -147,6 +149,33 @@ class TestingController extends Controller
         return view('pdfs.vehicle', 
             compact(
                 'vehicle'
+            )
+        );
+    }
+
+    public function agreement() {
+
+        $agreement = Agreement::with([
+            'agreement_type',
+            'guaranty',
+            'guaranty_type',
+            'insurance_company',
+            'insurance_type',
+            'currency',
+            'iva',
+            'payment_types',
+            'vehicle_interchange',
+            'agreement_client',
+            'vehicle_client.vehicle.model.brand',
+            'supplier.user'
+        ])->find(9);
+
+        $user = User::with(['userDetail'])->find(1);
+
+        return view('pdfs.agreement', 
+            compact(
+                'agreement',
+                'user'
             )
         );
     }

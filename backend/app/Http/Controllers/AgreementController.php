@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AgreementRequest;
-use App\Http\Requests\VehicleRequest;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -21,7 +20,6 @@ use App\Models\CarBody;
 use App\Models\Gearbox;
 use App\Models\Iva;
 use App\Models\Fuel;
-use App\Models\DocumentType;
 use App\Models\State;
 use App\Models\Client;
 use App\Models\ClientType;
@@ -63,11 +61,10 @@ class AgreementController extends Controller
                         'insurance_type',
                         'currency',
                         'iva',
-                        'payment_type',
+                        'payment_types',
                         'vehicle_interchange',
-                        'supplier',
                         'agreement_client',
-                        'vehicle_client',
+                        'vehicle_client.vehicle',
                         'supplier.user'
                     ])->applyFilters(
                         $request->only([
@@ -113,137 +110,7 @@ class AgreementController extends Controller
     {
         try {
 
-            $client = null;
-
-            if($request->save_client === 'true') {
-                $request->supplier_id = 'null';
-                $client = Client::createClient($request);
-                $order_id = Client::where('supplier_id', $client->supplier_id)
-                                ->withTrashed()
-                                ->latest('order_id')
-                                ->first()
-                                ->order_id ?? 0;
-
-                $client->order_id = $order_id + 1;
-                $client->update();
-            }
-
-            if ($request->has("client_id"))
-                $request->merge([
-                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
-                ]);
-            else
-                $request->request->add([
-                    'client_id' => $request->save_client === 'true' ? $client->id : null
-                ]);
-
-            //Create Vehicle
-            $vehicle = null;
-            
-            //If Vehicle Not Exist
-            if ($request->vehicle_id === 'null'){
-
-                $vehicleRequest = VehicleRequest::createFrom($request);
-
-                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
-                if($validate->fails()) {
-                    $vehicleRequest->failedValidation($validate);
-                }
-
-                //Set Vehicle State ID on Sold
-                $vehicleRequest->request->add([
-                    'state_id' => 12
-                ]);
-
-                $vehicle = Vehicle::createVehicle($vehicleRequest);
-                $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
-
-                if ( $request->has("vehicle_id") )
-                    $request->merge([
-                        "vehicle_id" => $vehicle->id
-                    ]);
-                else
-                    $request->request->add([
-                        'vehicle_id' => $vehicle->id
-                    ]);
-
-                VehicleClient::createClient($request);
-            } else {
-                $vehicle = Vehicle::find($request->vehicle_id);
-            }
-            
-            $vehicle = Vehicle::with(['vehicle_client'])->find($vehicle->id);
-
-            //Set VehicleClient ID
-            //Get Client ID
-           /* if ($request->has("client_id"))
-                $request->merge([
-                    "vehicle_client_id" => $vehicle->vehicle_client->id
-                ]);
-            else
-                $request->request->add([
-                    'vehicle_client_id' => $vehicle->vehicle_client->id
-                ]);*/
-
-            if ($request->has("intercambie") && $request->intercambie === 'true'){
-                $request->merge(['reg_num' => $request->reg_num_interchange ]);
-                $request->merge(['brand_id' => $request->brand_id_interchange ]);
-                $request->merge(['model_id' => $request->model_id_interchange ]);
-                $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
-                $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
-                $request->merge(['year' => $request->year_interchange ]);
-                $request->merge(['color' => $request->color_interchange ]);
-                $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
-                $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
-                $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
-                $request->merge(['chassis' => $request->chassis_interchange ]);
-                $request->merge(['sale_date' => $request->sale_date_interchange ]);
-
-                //Create Vehicle Interchange
-                $vehicleInterchange = null;
-                $vehicleRequest = VehicleRequest::createFrom($request);
-
-                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
-                if($validate->fails()){
-                    $vehicleRequest->failedValidation($validate);
-                }
-
-                //Set Vehicle State ID on InStock
-                if ( !$vehicleRequest->has('state_id') ){
-                    $vehicleRequest->request->add([
-                        'state_id' => 10
-                    ]);
-                }
-                elseif ( $vehicleRequest->has('state_id') && 
-                        ($vehicleRequest->state_id === 'null' || empty($vehicleRequest->state_id))
-                    ){
-                    $vehicleRequest->merge([
-                        "state_id" => 10
-                    ]);
-                }
-
-                $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
-                $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
-
-                if ( $request->has("vehicle_interchange_id") )
-                    $request->merge([
-                        "vehicle_interchange_id" => $vehicleInterchange->id
-                    ]);
-                else
-                    $request->request->add([
-                        'vehicle_interchange_id' => $vehicleInterchange->id
-                    ]);
-            }
-
-            //Create Agreement
             $agreement = Agreement::createAgreement($request);
-            //Get Agreement ID
-            $request->request->add([
-                'agreement_id' => $agreement->id
-            ]);
-            
-            //Create Agreement Client.
-            $agreementClient = AgreementClient::createClient($request);
 
             return response()->json([
                 'success' => true,
@@ -276,7 +143,7 @@ class AgreementController extends Controller
                         'insurance_type',
                         'currency',
                         'iva',
-                        'payment_type',
+                        'payment_types',
                         'vehicle_interchange',
                         'supplier',
                         'agreement_client',

@@ -23,7 +23,6 @@ return new class extends Migration
             $table->longText('address')->nullable();
             $table->string('postal_code')->nullable();
             $table->string('phone')->nullable();
-            $table->string('reference')->nullable();
             $table->string('street')->nullable();
             $table->timestamps();
 

@@ -10,12 +10,12 @@ class Profile {
         return axios.post('users/update/password', data)
     }
 
-    updateSupplier(data) {
-        return axios.post('users/update/supplier', data)
+    updateCompany(data) {
+        return axios.post('users/update/company', data)
     }
 
     updateLogo(data) {
-        return axios.post('users/update/supplier/logo', data)
+        return axios.post('users/update/company/logo', data)
     }
 
 }

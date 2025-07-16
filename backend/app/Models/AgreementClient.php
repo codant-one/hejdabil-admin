@@ -74,7 +74,6 @@ class AgreementClient extends Model
             'address' => $request->address === 'null' ? null : $request->address,
             'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
             'phone' => $request->phone === 'null' ? null : $request->phone,
-            'reference' => $request->reference === 'null' ? null : $request->reference,
             'street' => $request->street === 'null' ? null : $request->street
         ]);
 
@@ -83,7 +82,6 @@ class AgreementClient extends Model
 
     public static function updateClient($request, $client) {
         $client->update([
-            // 'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
             'client_type_id' => ($request->client_type_id === 'null' || empty($request->client_type_id)) ? $client->client_type_id : $request->client_type_id,
             'identification_id' => ($request->identification_id === 'null' || empty($request->identification_id)) ? $client->identification_id : $request->identification_id,
             'client_id' => ($request->client_id === 'null' || empty($request->client_id)) ? $client->client_id : $request->client_id,
@@ -93,7 +91,6 @@ class AgreementClient extends Model
             'address' => ($request->address === 'null' || empty($request->address)) ? $client->address : $request->address,
             'postal_code' => ($request->postal_code === 'null' || empty($request->postal_code)) ? $client->postal_code : $request->postal_code,
             'phone' => ($request->phone === 'null' || empty($request->phone)) ? $client->phone : $request->phone,
-            'reference' => ($request->reference === 'null' || empty($request->reference)) ? $client->reference : $request->reference,
             'street' => ($request->street === 'null' || empty($request->street)) ? $client->street : $request->street
         ]);
 

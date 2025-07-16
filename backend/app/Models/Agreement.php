@@ -3,8 +3,18 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+
+use Carbon\Carbon;
+use PDF;
+
+use App\Http\Requests\VehicleRequest;
+
+use App\Models\Client;
+use App\Models\Vehicle;
+use App\Models\AgreementClient;
 
 class Agreement extends Model
 {
@@ -41,8 +51,8 @@ class Agreement extends Model
         return $this->belongsTo(Iva::class, 'iva_id', 'id');
     }
 
-    public function payment_type(){
-        return $this->belongsTo(PaymentType::class, 'user_id', 'id');
+    public function payment_types(){
+        return $this->belongsTo(PaymentType::class, 'payment_type_id', 'id');
     }
 
     public function vehicle_interchange(){
@@ -134,6 +144,12 @@ class Agreement extends Model
     /**** Public methods ****/
     public static function createAgreement($request) {
 
+        switch ($request->agreement_type_id) {
+            case 1:
+                $request = self::salesAgreement($request);
+                break;
+        }
+
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
 
         $agreement = self::create([
@@ -150,14 +166,10 @@ class Agreement extends Model
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
             'agreement_id' => $request->agreement_id,
-            'first_registration_date' => $request->first_registration_date === 'null' ? null : $request->first_registration_date,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
-            'insurance_agent' => $request->insurance_agent === 'null' ? null : $request->insurance_agent,
             'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
             'residual_price' => $request->residual_price === 'null' ? null : $request->residual_price,
             'fair_value' => $request->fair_value === 'null' ? null : $request->fair_value,
-            'remaining_paid_to' => $request->remaining_paid_to === 'null' ? null : $request->remaining_paid_to,
-            'redemption_offer' => $request->redemption_offer === 'null' ? null : $request->redemption_offer,
             'price' => $request->price === 'null' ? null : $request->price,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
@@ -166,6 +178,7 @@ class Agreement extends Model
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
             'advance_id' => $request->advance_id === 'null' ? null : $request->advance_id,
             'middle_price' => $request->middle_price === 'null' ? null : $request->middle_price,
+            'payment_type' => $request->payment_type === 'null' ? null : $request->payment_type,
             'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
             'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
             'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
@@ -174,6 +187,39 @@ class Agreement extends Model
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
             'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
         ]);
+
+        //set agreement ID
+        $request->request->add([
+            'agreement_id' => $agreement->id
+        ]);
+        
+        AgreementClient::createClient($request);
+
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
+        $agreement = Agreement::with([
+            'agreement_type',
+            'guaranty',
+            'guaranty_type',
+            'insurance_company',
+            'insurance_type',
+            'currency',
+            'iva',
+            'payment_types',
+            'vehicle_interchange',
+            'agreement_client',
+            'vehicle_client.vehicle.model.brand',
+            'supplier.user'
+        ])->find($agreement->id);
+
+        $user = Auth::user()->load(['userDetail']);
+
+        PDF::loadView('pdfs.agreement', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+
+        $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
+        $agreement->update();
         
         return $agreement;
     }
@@ -189,14 +235,10 @@ class Agreement extends Model
             'insurance_type_id' => ($request->insurance_type_id === 'null' || empty($request->insurance_type_id)) ? $agreement->insurance_type_id : $request->insurance_type_id,
             'payment_type_id' => ($request->payment_type_id === 'null' || empty($request->payment_type_id)) ? $agreement->payment_type_id : $request->payment_type_id,
             'iva_id' => ($request->iva_id === 'null' || empty($request->iva_id)) ? $agreement->iva_id : $request->iva_id,
-            'first_registration_date' => ($request->first_registration_date === 'null' || empty($request->first_registration_date)) ? $agreement->first_registration_date : $request->first_registration_date,
             'sale_date' => ($request->sale_date === 'null' || empty($request->sale_date)) ? $agreement->sale_date : $request->sale_date,
-            'insurance_agent' => ($request->insurance_agent === 'null' || empty($request->insurance_agent)) ? $agreement->insurance_agent : $request->insurance_agent,
             'residual_debt' => ($request->residual_debt === 'null' || empty($request->residual_debt)) ? $agreement->residual_debt : $request->residual_debt,
             'residual_price' => ($request->residual_price === 'null' || empty($request->residual_price)) ? $agreement->residual_price : $request->residual_price,
             'fair_value' => ($request->fair_value === 'null' || empty($request->fair_value)) ? $agreement->fair_value : $request->fair_value,
-            'remaining_paid_to' => ($request->remaining_paid_to === 'null' || empty($request->remaining_paid_to)) ? $agreement->remaining_paid_to : $request->remaining_paid_to,
-            'redemption_offer' => ($request->redemption_offer === 'null' || empty($request->redemption_offer)) ? $agreement->redemption_offer : $request->redemption_offer,
             'price' => ($request->price === 'null' || empty($request->price)) ? $agreement->price : $request->price,
             'iva_sale_amount' => ($request->iva_sale_amount === 'null' || empty($request->iva_sale_amount)) ? $agreement->iva_sale_amount : $request->iva_sale_amount,
             'iva_sale_exclusive' => ($request->iva_sale_exclusive === 'null' || empty($request->iva_sale_exclusive)) ? $agreement->iva_sale_exclusive : $request->iva_sale_exclusive,
@@ -205,6 +247,7 @@ class Agreement extends Model
             'total_sale' => ($request->total_sale === 'null' || empty($request->total_sale)) ? $agreement->total_sale : $request->total_sale,
             'advance_id' => ($request->advance_id === 'null' || empty($request->advance_id)) ? $agreement->advance_id : $request->advance_id,
             'middle_price' => ($request->middle_price === 'null' || empty($request->middle_price)) ? $agreement->middle_price : $request->middle_price,
+            'payment_type' => ($request->payment_type === 'null' || empty($request->payment_type)) ? $agreement->payment_type : $request->payment_type,
             'payment_received' => ($request->payment_received === 'null' || empty($request->payment_received)) ? $agreement->payment_received : $request->payment_received,
             'payment_method_forcash' => ($request->payment_method_forcash === 'null' || empty($request->payment_method_forcash)) ? $agreement->payment_method_forcash : $request->payment_method_forcash,
             'installment_amount' => ($request->installment_amount === 'null' || empty($request->installment_amount)) ? $agreement->installment_amount : $request->installment_amount,
@@ -226,6 +269,116 @@ class Agreement extends Model
             $vehicle = self::find($id);
             $vehicle->delete();
         }
+    }
+
+    // agremment types
+    public static function salesAgreement($request) {
+
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
+        if ($request->has("client_id"))
+            $request->merge([
+                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+        else
+            $request->request->add([
+                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+
+        if ($request->vehicle_id === 'null') {//no existe
+
+            $vehicleRequest = VehicleRequest::createFrom($request);
+
+            $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+
+            if($validate->fails()) {
+                $vehicleRequest->failedValidation($validate);
+            }
+
+            //Set Vehicle State ID on Sold
+            $vehicleRequest->request->add(['state_id' => 12]);
+
+            $vehicle = Vehicle::createVehicle($vehicleRequest);
+            $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
+
+            if ($request->has("vehicle_id"))
+                $request->merge([
+                    "vehicle_id" => $vehicle->id
+                ]);
+            else
+                $request->request->add([
+                    'vehicle_id' => $vehicle->id
+                ]);
+
+            VehicleClient::createClient($request);
+        } else {// existe pero no esta vendido 
+            $vehicle = Vehicle::find($request->vehicle_id);
+            Vehicle::sendVehicle($request, $vehicle); 
+        }
+        
+        $vehicle = Vehicle::with(['vehicle_client'])->find($vehicle->id);
+
+        //Set VehicleClient ID
+       if ($request->has("client_id"))
+            $request->merge([
+                "vehicle_client_id" => $vehicle->vehicle_client->id
+            ]);
+        else
+            $request->request->add([
+                'vehicle_client_id' => $vehicle->vehicle_client->id
+            ]);
+
+        if ($request->has("intercambie") && $request->intercambie === 'true') {
+            $request->merge(['reg_num' => $request->reg_num_interchange ]);
+            $request->merge(['brand_id' => $request->brand_id_interchange ]);
+            $request->merge(['model_id' => $request->model_id_interchange ]);
+            $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
+            $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
+            $request->merge(['year' => $request->year_interchange ]);
+            $request->merge(['color' => $request->color_interchange ]);
+            $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
+            $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
+            $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
+            $request->merge(['chassis' => $request->chassis_interchange ]);
+            $request->merge(['sale_date' => $request->sale_date_interchange ]);
+
+            //Create Vehicle Interchange
+            $vehicleRequest = VehicleRequest::createFrom($request);
+
+            $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+            if($validate->fails()){
+                $vehicleRequest->failedValidation($validate);
+            }
+
+            //Set Vehicle State ID on InStock
+            $vehicleRequest->request->add(['state_id' => 10]);
+
+            $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
+            $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
+
+            if ($request->has("vehicle_interchange_id"))
+                $request->merge([
+                    "vehicle_interchange_id" => $vehicleInterchange->id
+                ]);
+            else
+                $request->request->add([
+                    'vehicle_interchange_id' => $vehicleInterchange->id
+                ]);
+        }
+
+        return $request;
+
     }
     
 }

@@ -372,7 +372,7 @@ class UsersController extends Controller
         }
     }
 
-    public function updateSupplier(Request $request): JsonResponse
+    public function updateCompany(Request $request): JsonResponse
     {
 
         try {
@@ -386,7 +386,7 @@ class UsersController extends Controller
                 if ($request->hasFile('logo')) {
                     $image = $request->file('logo');
 
-                    $path = 'suppliers/';
+                    $path = 'logos/';
 
                     $file_data = uploadFile($image, $path, $supplier->logo);
 
@@ -395,6 +395,23 @@ class UsersController extends Controller
                 } else {
                     $supplier->logo = null;
                     $supplier->update();
+                }
+            } else {
+                $user_details = UserDetails::where('user_id', $user->id)->first();
+                $user_details->updateOrCreateUser($request, $user);
+
+                if ($request->hasFile('logo')) {
+                    $image = $request->file('logo');
+
+                    $path = 'logos/';
+
+                    $file_data = uploadFile($image, $path, $user_details->logo);
+
+                    $user_details->logo = $file_data['filePath'];
+                    $user_details->update();
+                } else {
+                    $user_details->logo = null;
+                    $user_details->update();
                 }
             }
 
@@ -439,6 +456,22 @@ class UsersController extends Controller
                 } else {
                     $supplier->logo = null;
                     $supplier->update();
+                }
+            } else {
+                $user_details = UserDetails::where('user_id', $user->id)->first();
+
+                if ($request->hasFile('logo')) {
+                    $image = $request->file('logo');
+
+                    $path = 'logos/';
+
+                    $file_data = uploadFile($image, $path, $user_details->logo);
+
+                    $user_details->logo = $file_data['filePath'];
+                    $user_details->update();
+                } else {
+                    $user_details->logo = null;
+                    $user_details->update();
                 }
             }
 
