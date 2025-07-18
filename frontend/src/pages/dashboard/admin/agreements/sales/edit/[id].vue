@@ -226,25 +226,25 @@ async function fetchData() {
         }
 
         if(agreement.value.vehicle_interchange) {
-        year_interchange.value = agreement.value.vehicle_interchange.year
-        meter_reading_interchange.value = agreement.value.vehicle_interchange.meter_reading
-        car_body_id_interchange.value = agreement.value.vehicle_interchange.car_body_id
-        color_interchange.value = agreement.value.vehicle_interchange.color
-        reg_num_interchange.value = agreement.value.vehicle_interchange.reg_num
-        chassis_interchange.value = agreement.value.vehicle_interchange.chassis
-        sale_date_interchange.value = agreement.value.vehicle_interchange.sale_date
-        trade_price.value = formatDecimal(agreement.value.vehicle_interchange.purchase_price)
-        residual_debt.value = agreement.value.residual_debt
-        residual_price.value = formatDecimal(agreement.value.residual_price)
-        iva_purchase_id_interchange.value = agreement.value.vehicle_interchange.iva_purchase_id
+            year_interchange.value = agreement.value.vehicle_interchange.year
+            meter_reading_interchange.value = agreement.value.vehicle_interchange.meter_reading
+            car_body_id_interchange.value = agreement.value.vehicle_interchange.car_body_id
+            color_interchange.value = agreement.value.vehicle_interchange.color
+            reg_num_interchange.value = agreement.value.vehicle_interchange.reg_num
+            chassis_interchange.value = agreement.value.vehicle_interchange.chassis
+            sale_date_interchange.value = agreement.value.vehicle_interchange.sale_date
+            trade_price.value = formatDecimal(agreement.value.vehicle_interchange.purchase_price ?? 0)
+            residual_debt.value = agreement.value.residual_debt
+            residual_price.value = agreement.value.residual_price ? formatDecimal(agreement.value.residual_price) : null
+            iva_purchase_id_interchange.value = agreement.value.vehicle_interchange.iva_purchase_id
 
-        if(agreement.value.vehicle_interchange.model_id !== null) {
-            let modelId = agreement.value.vehicle_interchange.model_id
-            let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
-            selectBrandInterchange(brandId)
-            brand_id_interchange.value = brandId
-            model_id_interchange.value = agreement.value.vehicle_interchange.model_id
-        }
+            if(agreement.value.vehicle_interchange.model_id !== null) {
+                let modelId = agreement.value.vehicle_interchange.model_id
+                let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
+                selectBrandInterchange(brandId)
+                brand_id_interchange.value = brandId
+                model_id_interchange.value = agreement.value.vehicle_interchange.model_id
+            }
         }
 
         client_type_id.value = agreement.value.agreement_client.client_type_id
