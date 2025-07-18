@@ -229,6 +229,7 @@ class Vehicle extends Model
 
         $vehicle->update([
             'state_id' => 12,           
+            'chassis' => $request->chassis === 'null' ? null : $request->chassis,
             'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'iva_sale_id' => $request->iva_sale_id === 'null' ? null : $request->iva_sale_id,
@@ -296,6 +297,9 @@ class Vehicle extends Model
         foreach ($ids as $id) {
             $vehicle = self::find($id);
             $vehicle->delete();
+
+            if($vehicle->file)
+                deleteFile($vehicle->file);
         }
     }
 

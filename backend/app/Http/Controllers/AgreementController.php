@@ -7,6 +7,8 @@ use App\Http\Requests\AgreementRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -55,6 +57,7 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'agreement_type',
+                        'agreement_client',
                         'vehicle_interchange',
                         'vehicle_client.vehicle',
                         'supplier.user'
@@ -128,10 +131,10 @@ class AgreementController extends Controller
                         'currency',
                         'iva',
                         'payment_types',
-                        'vehicle_interchange',
+                        'vehicle_interchange.model.brand',
                         'supplier',
                         'agreement_client',
-                        'vehicle_client',
+                        'vehicle_client.vehicle.model.brand',
                         'supplier.user'
                     ])->find($id);
 
@@ -142,30 +145,10 @@ class AgreementController extends Controller
                     'message' => 'Avtalet hittades inte'
                 ], 404);
 
-            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
-            } else {
-                $clients = Client::all();
-            }
-
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'agreement' => $agreement,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'carbodies'  => CarBody::all(),
-                    'ivas'  => Iva::all(),
-                    'fuels'  => Fuel::all(),
-                    'states'  => State::all(),
-                    'guaranties'  => Guaranty::all(),
-                    'guarantyTypes'  => GuarantyType::all(),
-                    'insuranceCompanies'  => InsuranceCompany::all(),
-                    'insuranceTypes'  => InsuranceType::all(),
-                    'currencies'  => Currency::all(),
-                    'paymentTypes'  => PaymentType::all(),
-                    'clients' => $clients
+                    'agreement' => $agreement
                 ]
             ]);
 
@@ -181,9 +164,10 @@ class AgreementController extends Controller
     /**
      * Update the specified resource in storage.
      */
-     public function update(Request $request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         try {
+
             $agreement = Agreement::with([
                 'agreement_client',
                 'vehicle_client'
@@ -196,47 +180,12 @@ class AgreementController extends Controller
                     'message' => 'Avtalet hittades inte'
                 ], 404);
             
-            
-            $client = null;
-            if($request->save_client === 'true' && !empty($agreement->agreement_client->client_id) ) {
-                $request->supplier_id = 'null';
-                $client = Client::createClient($request);
-                $order_id = Client::where('supplier_id', $client->supplier_id)
-                                ->withTrashed()
-                                ->latest('order_id')
-                                ->first()
-                                ->order_id ?? 0;
-
-                $client->order_id = $order_id + 1;
-                $client->update();
-            }
-
-            if ( $request->has("client_id") )
-                $request->merge([
-                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? $agreement->agreement_client->client_id : $request->client_id)
-                ]);
-            else
-                $request->request->add([
-                    'client_id' => $request->save_client === 'true' ? $client->id : $agreement->agreement_client->client_id
-                ]);
-            
-            //Update Agreement
-            $agreement = Agreement::updateAgreement($request, $agreement); 
-
-            //Update Agreement Client.
-            $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
-            $agreementClient = AgreementClient::updateClient($request, $agreementClient); 
-
-            //Update Vehicle Client.
-            $vehicleClient = VehicleClient::find($agreement->vehicle_client_id);
-            $vehicleClient = VehicleClient::updateClient($request, $vehicleClient); 
+            $agreement->updateAgreement($request, $agreement); 
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'agreement' => Agreement::find($agreement->id),
-                    'agreementClient' => $agreementClient,
-                    'vehicleClient' => $vehicleClient
+                    'agreement' => $agreement
                 ]
             ], 200);
 
@@ -336,4 +285,87 @@ class AgreementController extends Controller
             ], 500);
         }
     }
+
+    public function sendMails(Request $request, $id)
+    {
+        try {
+
+            $agreement = Agreement::with([
+                'agreement_client',
+            ])->find($id);
+
+            $data = [
+                'user' => $agreement->agreement_client->fullname,
+                'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny avtal i ditt namn med följande uppgifter:',
+                'agreement' => $agreement,
+                'text_info' => 'Bifogat finns avtalan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
+                'buttonText' => 'Nedladdningar',
+                'pdfFile' => asset('storage/'.$agreement->file)
+            ];
+
+            if($request->emailDefault === true) {
+                $clientEmail = $agreement->agreement_client->email;
+                $subject = 'Din avtal #'. $agreement->agreement_id . ' är tillgänglig';
+                    
+                try {
+                    \Mail::send(
+                        'emails.agreements.notifications'
+                        , $data
+                        , function ($message) use ($clientEmail, $subject, $agreement) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($clientEmail)->subject($subject);
+
+                            $pathToFile = storage_path('app/public/' . $agreement->file);
+                            if (file_exists($pathToFile)) {
+                                $message->attach($pathToFile, [
+                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                                    'mime' => 'application/pdf',
+                                ]);
+                            }
+                    });
+
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
+                }
+            }
+
+            foreach($request->emails as $email) {
+
+                $subject = 'Din avtal #'. $agreement->agreement_id . ' är tillgänglig';
+                    
+                try {
+                    \Mail::send(
+                        'emails.agreements.notifications'
+                        , $data
+                        , function ($message) use ($email, $subject, $agreement) {
+                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                            $message->to($email)->subject($subject);
+
+                            $pathToFile = storage_path('app/public/' . $agreement->file);
+                            if (file_exists($pathToFile)) {
+                                $message->attach($pathToFile, [
+                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                                    'mime' => 'application/pdf',
+                                ]);
+                            }
+                    });
+
+                } catch (\Exception $e){
+                    Log::info("Error mail => ". $e);
+                }
+            }
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 }

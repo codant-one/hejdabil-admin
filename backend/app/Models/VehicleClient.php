@@ -87,7 +87,6 @@ class VehicleClient extends Model
 
     public static function updateClient($request, $client) {
         $client->update([
-            // 'vehicle_id' => $request->vehicle_id === 'null' ? null : $request->vehicle_id,
             'client_type_id' => (!$request->has("client_type_id") || $request->client_type_id === 'null' || empty($request->client_type_id)) ? $client->client_type_id : $request->client_type_id,
             'identification_id' => (!$request->has("identification_id") || $request->identification_id === 'null' || empty($request->identification_id)) ? $client->identification_id : $request->identification_id,
             'client_id' => (!$request->has("client_id") || $request->client_id === 'null' || empty($request->client_id)) ? $client->client_id : $request->client_id,

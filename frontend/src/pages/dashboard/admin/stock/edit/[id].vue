@@ -2007,15 +2007,15 @@ const getFlag = (currency_id) => {
 
 <style scoped>
 
-    ::v-deep .radio-form .v-input--density-comfortable, ::v-deep  .v-radio {
+    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
         --v-input-control-height: 0 !important;
     }
 
-    ::v-deep .radio-form .v-selection-control__wrapper {
+    :deep(.radio-form .v-selection-control__wrapper) {
         height: 20px !important;
     }
 
-    ::v-deep .radio-form .v-icon--size-default {
+    :deep(.radio-form .v-icon--size-default) {
         font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
     }
 

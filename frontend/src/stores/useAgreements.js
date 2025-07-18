@@ -71,7 +71,7 @@ export const useAgreementsStores = defineStore('agreements', {
             return Agreements.show(id)
                 .then((response) => {
                     if(response.data.success)
-                        return Promise.resolve(response.data.data)
+                        return Promise.resolve(response.data.data.agreement)
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {
@@ -135,6 +135,19 @@ export const useAgreementsStores = defineStore('agreements', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        sendMails(data) {
+            this.setLoading(true)
+            
+            return Agreements.sendMails(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
     }
 })

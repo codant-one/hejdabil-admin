@@ -404,7 +404,7 @@ const onSubmit = () => {
             formData.append('vehicle_id', vehicle_id.value)
 
             //vehicle interchange
-            formData.append('intercambie', reg_num_interchange.value !== null ? true : false)
+            formData.append('interchange', reg_num_interchange.value !== null ? true : false)
             formData.append('reg_num_interchange', reg_num_interchange.value)
             formData.append('brand_id_interchange', brand_id_interchange.value)
             formData.append('model_id_interchange', model_id_interchange.value)
@@ -505,7 +505,7 @@ const onSubmit = () => {
                     <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
                         <div class="d-flex flex-column justify-center">
                             <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                Försäljningsavtal
+                                Affärsförslag
                             </h6>
                         </div>
                         <VSpacer />
@@ -520,7 +520,7 @@ const onSubmit = () => {
                             </div>
                     </div>
                 </VCol>
-                <VCol cols="12" md="12">              
+                <VCol cols="12" md="12" class="d-none">              
                     <VCard flat class="px-2 px-md-12">
                         <VCardText class="px-2 pt-0 pt-md-5">               
                             <VTabs v-model="currentTab" grow disabled>
@@ -687,7 +687,7 @@ const onSubmit = () => {
 
                                     <!--Inbytesfordon-->
                                     <VWindowItem class="px-md-5">
-                                        <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 d-block d-md-flex">
+                                        <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 d-block d-md-flex mt-2">
                                             Inbytesfordon
                                             <VSpacer />
                                             <div class="d-flex w-md-50 mt-5 mt-md-0">
@@ -1217,7 +1217,7 @@ const onSubmit = () => {
                                     Tillbaka
                                 </VBtn>
                                 <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 2) ? 'Skicka' : ' Nästa' }}
+                                    {{ (currentTab === 4) ? 'Skicka' : ' Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>
@@ -1229,15 +1229,15 @@ const onSubmit = () => {
 </template>
 
 <style scoped>
-    ::v-deep .radio-form .v-input--density-comfortable, ::v-deep  .v-radio {
+    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
         --v-input-control-height: 0 !important;
     }
 
-    ::v-deep .radio-form .v-selection-control__wrapper {
+    :deep(.radio-form .v-selection-control__wrapper) {
         height: 20px !important;
     }
 
-    ::v-deep .radio-form .v-icon--size-default {
+    :deep(.radio-form .v-icon--size-default) {
         font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
     }
     

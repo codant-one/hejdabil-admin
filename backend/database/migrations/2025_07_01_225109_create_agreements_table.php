@@ -53,6 +53,7 @@ return new class extends Migration
             $table->string("file")->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
             $table->foreign('agreement_type_id')->references('id')->on('agreement_types')->onDelete('cascade');

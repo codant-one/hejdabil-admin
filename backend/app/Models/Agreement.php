@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 use Carbon\Carbon;
 use PDF;
@@ -14,11 +15,12 @@ use App\Http\Requests\VehicleRequest;
 
 use App\Models\Client;
 use App\Models\Vehicle;
+use App\Models\VehicleClient;
 use App\Models\AgreementClient;
 
 class Agreement extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $guarded = [];
 
@@ -70,7 +72,6 @@ class Agreement extends Model
     public function vehicle_client(){
         return $this->belongsTo(VehicleClient::class, 'vehicle_client_id', 'id');
     }
-
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
@@ -196,10 +197,73 @@ class Agreement extends Model
         ]);
         
         AgreementClient::createClient($request);
+        
+        self::generatePdf($agreement, $request);
 
-        if (!file_exists(storage_path('app/public/pdfs'))) {
-            mkdir(storage_path('app/public/pdfs'), 0755,true);
-        } //create a folder
+        return $agreement;
+    }
+
+    public static function updateAgreement($request, $agreement) {
+
+        switch ($request->agreement_type_id) {
+            case 1:
+                self::updateSales($request, $agreement);
+                break;
+        }
+
+        $agreement->update([
+            'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
+            'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
+            'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
+            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,            
+            'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
+            'insurance_type_id' => $request->insurance_type_id === 'null' ? null : $request->insurance_type_id,
+            'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
+            'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
+            'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
+            'agreement_id' => $request->agreement_id,
+            'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
+            'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
+            'residual_price' => $request->residual_price === 'null' ? null : $request->residual_price,
+            'fair_value' => $request->fair_value === 'null' ? null : $request->fair_value,
+            'price' => $request->price === 'null' ? null : $request->price,
+            'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
+            'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'discount' => $request->discount === 'null' ? null : $request->discount,
+            'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
+            'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
+            'advance_id' => $request->advance_id === 'null' ? null : $request->advance_id,
+            'middle_price' => $request->middle_price === 'null' ? null : $request->middle_price,
+            'payment_type' => $request->payment_type === 'null' ? null : $request->payment_type,
+            'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
+            'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
+            'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
+            'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
+            'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
+            'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
+            'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
+        ]);
+
+        self::generatePdf($agreement, $request);
+
+        return $agreement;
+    }
+
+    public static function deleteAgreement($id) {
+        self::deleteAgreements(array($id));
+    }
+
+    public static function deleteAgreements($ids) {
+        foreach ($ids as $id) {
+            $agreement = self::find($id);
+            $agreement->delete();
+
+            if($agreement->file)
+                deleteFile($agreement->file);
+        }
+    }
+
+    public static function generatePdf($agreement, $request) {
 
         $agreement = Agreement::with([
             'agreement_type',
@@ -216,61 +280,20 @@ class Agreement extends Model
             'supplier.user'
         ])->find($agreement->id);
 
+        if (!file_exists(storage_path('app/public/pdfs'))) {
+            mkdir(storage_path('app/public/pdfs'), 0755,true);
+        } //create a folder
+
         $user = Auth::user()->load(['userDetail']);
 
-        PDF::loadView('pdfs.agreement', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
-
-        $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
-        $agreement->update();
-        
-        return $agreement;
-    }
-
-    public static function updateAgreement($request, $agreement) {
-
-        $agreement->update([
-            'vehicle_client_id' => ($request->vehicle_client_id === 'null' || empty($request->vehicle_client_id)) ? $agreement->vehicle_client_id : $request->vehicle_client_id,
-            'vehicle_interchange_id' => ($request->vehicle_interchange_id === 'null' || empty($request->vehicle_interchange_id)) ? $agreement->vehicle_interchange_id : $request->vehicle_interchange_id,
-            'guaranty_id' => ($request->guaranty_id === 'null' || empty($request->guaranty_id)) ? $agreement->guaranty_id : $request->guaranty_id,
-            'guaranty_type_id' => ($request->guaranty_type_id === 'null' || empty($request->guaranty_type_id)) ? $agreement->guaranty_type_id : $request->guaranty_type_id,
-            'insurance_company_id' => ($request->insurance_company_id === 'null' || empty($request->insurance_company_id)) ? $agreement->insurance_company_id : $request->insurance_company_id,
-            'insurance_type_id' => ($request->insurance_type_id === 'null' || empty($request->insurance_type_id)) ? $agreement->insurance_type_id : $request->insurance_type_id,
-            'payment_type_id' => ($request->payment_type_id === 'null' || empty($request->payment_type_id)) ? $agreement->payment_type_id : $request->payment_type_id,
-            'iva_id' => ($request->iva_id === 'null' || empty($request->iva_id)) ? $agreement->iva_id : $request->iva_id,
-            'sale_date' => ($request->sale_date === 'null' || empty($request->sale_date)) ? $agreement->sale_date : $request->sale_date,
-            'residual_debt' => ($request->residual_debt === 'null' || empty($request->residual_debt)) ? $agreement->residual_debt : $request->residual_debt,
-            'residual_price' => ($request->residual_price === 'null' || empty($request->residual_price)) ? $agreement->residual_price : $request->residual_price,
-            'fair_value' => ($request->fair_value === 'null' || empty($request->fair_value)) ? $agreement->fair_value : $request->fair_value,
-            'price' => ($request->price === 'null' || empty($request->price)) ? $agreement->price : $request->price,
-            'iva_sale_amount' => ($request->iva_sale_amount === 'null' || empty($request->iva_sale_amount)) ? $agreement->iva_sale_amount : $request->iva_sale_amount,
-            'iva_sale_exclusive' => ($request->iva_sale_exclusive === 'null' || empty($request->iva_sale_exclusive)) ? $agreement->iva_sale_exclusive : $request->iva_sale_exclusive,
-            'discount' => ($request->discount === 'null' || empty($request->discount)) ? $agreement->discount : $request->discount,
-            'registration_fee' => ($request->registration_fee === 'null' || empty($request->registration_fee)) ? $agreement->registration_fee : $request->registration_fee,
-            'total_sale' => ($request->total_sale === 'null' || empty($request->total_sale)) ? $agreement->total_sale : $request->total_sale,
-            'advance_id' => ($request->advance_id === 'null' || empty($request->advance_id)) ? $agreement->advance_id : $request->advance_id,
-            'middle_price' => ($request->middle_price === 'null' || empty($request->middle_price)) ? $agreement->middle_price : $request->middle_price,
-            'payment_type' => ($request->payment_type === 'null' || empty($request->payment_type)) ? $agreement->payment_type : $request->payment_type,
-            'payment_received' => ($request->payment_received === 'null' || empty($request->payment_received)) ? $agreement->payment_received : $request->payment_received,
-            'payment_method_forcash' => ($request->payment_method_forcash === 'null' || empty($request->payment_method_forcash)) ? $agreement->payment_method_forcash : $request->payment_method_forcash,
-            'installment_amount' => ($request->installment_amount === 'null' || empty($request->installment_amount)) ? $agreement->installment_amount : $request->installment_amount,
-            'installment_contract_upon_delivery' => ($request->installment_contract_upon_delivery === 'null' || empty($request->installment_contract_upon_delivery)) ? $agreement->installment_contract_upon_delivery : $request->installment_contract_upon_delivery,
-            'payment_description' => ($request->payment_description === 'null' || empty($request->payment_description)) ? $agreement->payment_description : $request->payment_description,
-            'terms_other_conditions' => ($request->terms_other_conditions === 'null' || empty($request->terms_other_conditions)) ? $agreement->terms_other_conditions : $request->terms_other_conditions,
-            'terms_other_information' => ($request->terms_other_information === 'null' || empty($request->terms_other_information)) ? $agreement->terms_other_information : $request->terms_other_information
-        ]);
-
-        return $agreement;
-    }
-
-    public static function deleteAgreement($id) {
-        self::deleteVehicles(array($id));
-    }
-
-    public static function deleteAgreements($ids) {
-        foreach ($ids as $id) {
-            $vehicle = self::find($id);
-            $vehicle->delete();
+        switch ($request->agreement_type_id) {
+            case 1:
+                PDF::loadView('pdfs.agreement', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+                $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
+                break;
         }
+
+        $agreement->update();
     }
 
     // agremment types
@@ -341,7 +364,7 @@ class Agreement extends Model
                 'vehicle_client_id' => $vehicle->vehicle_client->id
             ]);
 
-        if ($request->has("intercambie") && $request->intercambie === 'true') {
+        if ($request->has("interchange") && $request->interchange === 'true') {
             $request->merge(['reg_num' => $request->reg_num_interchange ]);
             $request->merge(['brand_id' => $request->brand_id_interchange ]);
             $request->merge(['model_id' => $request->model_id_interchange ]);
@@ -381,6 +404,41 @@ class Agreement extends Model
 
         return $request;
 
+    }
+
+    public static function updateSales($request, $agreement) {
+        //Update Vehicle Client.
+        $vehicleClient = VehicleClient::find($request->vehicle_client_id);
+        $vehicleClient->updateClient($request, $vehicleClient);
+        
+        //Update Vehicle.
+        $vehicle = Vehicle::find($vehicleClient->vehicle_id);
+        $request->request->add(['state_id' => $vehicle->state_id]);
+        $vehicle->updateVehicle($request, $vehicle);
+
+        //Update Vehicle interchange.
+        if ($request->has("interchange") && $request->interchange === 'true') {
+            $request->merge(['reg_num' => $request->reg_num_interchange ]);
+            $request->merge(['brand_id' => $request->brand_id_interchange ]);
+            $request->merge(['model_id' => $request->model_id_interchange ]);
+            $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
+            $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
+            $request->merge(['year' => $request->year_interchange ]);
+            $request->merge(['color' => $request->color_interchange ]);
+            $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
+            $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
+            $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
+            $request->merge(['chassis' => $request->chassis_interchange ]);
+            $request->merge(['sale_date' => $request->sale_date_interchange ]);
+
+            $vehicleInterchange = Vehicle::find($request->vehicle_interchange_id);
+            $request->request->add(['state_id' => $vehicleInterchange->state_id]);
+            $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+        }
+
+        //Update Agreement Client.
+        $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
+        $agreementClient->updateClient($request, $agreementClient);
     }
     
 }

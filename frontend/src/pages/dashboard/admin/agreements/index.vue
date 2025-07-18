@@ -19,6 +19,11 @@ const totalPages = ref(1)
 const totalAgreements = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmSendMailVisible = ref(false)
+const emailDefault = ref(true)
+const selectedTags = ref([])
+const existingTags = ref([])
+const isValid = ref(false)
 const selectedAgreement = ref({})
 
 const agreementTypes = ref([])
@@ -102,12 +107,85 @@ const loadData = async () => {
 }
 
 const editAgreement = agreementData => {
-  router.push({ name : 'dashboard-admin-agreement-edit-id', params: { id: agreementData.id } })
+
+  var route = ''
+
+  switch(agreementData.agreement_type_id) {
+    case 1: 
+      route = 'dashboard-admin-agreements-sales-edit-id'
+    break
+    case 2:
+      route = 'dashboard-admin-agreements-purchase-edit-id'
+    break
+    case 3:
+      route = 'dashboard-admin-agreements-mediation-edit-id'
+    break   
+    case 4:
+      route = 'dashboard-admin-agreements-business-edit-id'
+    break 
+  }
+
+  router.push({ name : route , params: { id: agreementData.id } })
 }
 
 const showDeleteDialog = agreementData => {
   isConfirmDeleteDialogVisible.value = true
   selectedAgreement.value = { ...agreementData }
+}
+
+const addTag = (event) => {
+  const newTag = event.target.value.trim();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (newTag && emailRegex.test(newTag)) {
+    // no hago nada, sino invalido
+  } else {
+    isValid.value = true
+    selectedTags.value.pop();
+  }
+};
+
+const send = agreementData => {
+  isConfirmSendMailVisible.value = true
+  selectedAgreement.value = { ...agreementData }
+}
+
+const sendMails = async () => {
+
+  if(!isValid.value) {
+    isConfirmSendMailVisible.value = false
+    isRequestOngoing.value = true
+
+    let data = {
+      id: selectedAgreement.value.id,
+      emailDefault: emailDefault.value,
+      emails: selectedTags.value
+    }
+
+    let res = await agreementsStores.sendMails(data)
+
+    isRequestOngoing.value = false
+
+    advisor.value = {
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.success ? 'Avtalan är skickad!' : res.data.message,
+      show: true
+    }
+
+    setTimeout(() => {
+      selectedTags.value = []
+      existingTags.value = []
+      emailDefault.value = true 
+
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
+
+    return true
+  }
 }
 
 const removeAgreement = async () => {
@@ -117,7 +195,7 @@ const removeAgreement = async () => {
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör borttagen!' : res.data.message,
+    message: res.data.success ? 'Avtal borttagen!' : res.data.message,
     show: true
   }
 
@@ -195,8 +273,21 @@ const addAgreements = () => {
 
     if (isValid) {
 
-      if(agreement_type_id.value === 1)
-        router.push({ name : 'dashboard-admin-agreements-sales-agreements' })
+      switch(agreement_type_id.value) {
+        case 1: 
+          router.push({ name : 'dashboard-admin-agreements-sales' })
+        break
+        case 2:
+          router.push({ name : 'dashboard-admin-agreements-purchase' })
+        break
+        case 3:
+          router.push({ name : 'dashboard-admin-agreements-mediation' })
+        break   
+        case 4:
+          router.push({ name : 'dashboard-admin-agreements-business' })
+        break 
+      }
+
     }
 
   })
@@ -328,37 +419,31 @@ const addAgreements = () => {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem >
+                      <VListItem v-if="$can('edit','agreements')">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
                         <VListItemTitle>Signera</VListItemTitle>
                       </VListItem>
-                      <VListItem >
-                        <template #prepend>
-                          <VIcon icon="mdi-file-pdf-box" />
-                        </template>
-                        <VListItemTitle>Kontantkvitto</VListItemTitle>
-                      </VListItem>
-                      <VListItem>
+                      <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
                         </template>
                         <VListItemTitle>Sänd PDF</VListItemTitle>
                       </VListItem>
-                      <VListItem @click="download(agreement)">
+                      <VListItem v-if="$can('view','agreements')" @click="download(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-cloud-download-outline"/>
                         </template>
                         <VListItemTitle>Ladda ner</VListItemTitle>
                       </VListItem>
-                      <VListItem>
+                      <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
-                      <VListItem >
+                      <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
@@ -411,10 +496,10 @@ const addAgreements = () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort leverantör">
+      <VCard title="Ta bort avtal">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedAgreement.user.name }} {{ selectedAgreement.user.last_name ?? '' }}</strong>?.
+          Är du säker att du vill ta bort avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -486,6 +571,56 @@ const addAgreements = () => {
       </VForm>
     </VDialog>
     <!--End Modal Select type Contract-->  
+
+    <!-- 👉 Confirm send -->
+    <VDialog
+      v-model="isConfirmSendMailVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmSendMailVisible = !isConfirmSendMailVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Skicka avtal via e-post">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Är du säker på att du vill skicka avtal till följande e-postadresser?
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+          <VCheckbox
+            v-model="emailDefault"
+            :label="selectedAgreement.agreement_client.email"
+          />
+
+          <VCombobox
+            v-model="selectedTags"
+            :items="existingTags"
+            label="Ange e-postadresser för att skicka avtal"
+            multiple
+            chips
+            deletable-chips
+            clearable
+            @blur="addTag"
+            @keydown.enter.prevent="addTag"
+            @input="isValid = false"
+          /> 
+          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmSendMailVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn @click="sendMails">
+              Skicka
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
 
   </section>
 </template>

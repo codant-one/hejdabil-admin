@@ -26,6 +26,9 @@ class Agreements {
         return axios.get(`/agreements/info/all`)
     }
     
+    sendMails(data) {
+        return axios.post(`/agreements/sendMails/${data.id}`, data)
+    }
 }
 
 const agreements = new Agreements();

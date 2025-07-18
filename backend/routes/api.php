@@ -165,6 +165,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Agreement
     Route::group(['prefix' => 'agreements'], function () {
         Route::get('/info/all', [AgreementController::class, 'info']);
+        Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
     });
 
 });

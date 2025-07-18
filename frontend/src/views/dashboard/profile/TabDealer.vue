@@ -579,14 +579,14 @@ const onSubmit = () => {
 </template>
 <style scoped>
 
-    ::v-deep .vue-simple-handler {
+    :deep(.vue-simple-handler) {
         background: #9966FF !important;
     }
-    ::v-deep .cropper-preview-circle {
+    :deep(.cropper-preview-circle) {
         border: dashed 1px #9966FF
     }
-    ::v-deep .cropper-background,
-    ::v-deep .vue-advanced-cropper__foreground {
+    :deep(.cropper-background),
+    :deep(.vue-advanced-cropper__foreground) {
         background-color: transparent !important;
     }
 

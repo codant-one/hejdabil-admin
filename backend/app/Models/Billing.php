@@ -311,6 +311,9 @@ class Billing extends Model
         foreach ($ids as $id) {
             $billing = self::find($id);
             $billing->delete();
+
+            if($billing->file)
+                deleteFile($billing->file);
         }
     }
 
