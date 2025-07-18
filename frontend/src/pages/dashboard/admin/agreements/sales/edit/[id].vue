@@ -225,6 +225,7 @@ async function fetchData() {
             model_id.value = agreement.value.vehicle_client.vehicle.model_id
         }
 
+        if(agreement.value.vehicle_interchange) {
         year_interchange.value = agreement.value.vehicle_interchange.year
         meter_reading_interchange.value = agreement.value.vehicle_interchange.meter_reading
         car_body_id_interchange.value = agreement.value.vehicle_interchange.car_body_id
@@ -244,6 +245,7 @@ async function fetchData() {
             brand_id_interchange.value = brandId
             model_id_interchange.value = agreement.value.vehicle_interchange.model_id
         }
+        }
 
         client_type_id.value = agreement.value.agreement_client.client_type_id
         identification_id.value = agreement.value.agreement_client.identification_id
@@ -257,17 +259,17 @@ async function fetchData() {
 
         price.value = formatDecimal(agreement.value.price)
         iva_id.value = agreement.value.iva_id
-        iva_sale_amount.value = formatDecimal(agreement.value.iva_sale_amount)
-        iva_sale_exclusive.value = formatDecimal(agreement.value.iva_sale_exclusive)
-        discount.value = formatDecimal(agreement.value.discount)
-        registration_fee.value = formatDecimal(agreement.value.registration_fee)
+        iva_sale_amount.value = formatDecimal(agreement.value.iva_sale_amount ?? 0)
+        iva_sale_exclusive.value = formatDecimal(agreement.value.iva_sale_exclusive ?? 0)
+        discount.value = formatDecimal(agreement.value.discount ?? 0)
+        registration_fee.value = formatDecimal(agreement.value.registration_fee ?? 0)
         total_sale.value = agreement.value.total_sale
         payment_type.value = agreement.value.payment_type
         payment_type_id.value = agreement.value.payment_type_id
         advance_id.value = agreement.value.advance_id
-        payment_received.value = formatDecimal(agreement.value.payment_received)
-        payment_method_forcash.value = formatDecimal(agreement.value.payment_method_forcash)
-        installment_amount.value = formatDecimal(agreement.value.installment_amount)
+        payment_received.value = agreement.value.payment_received ? formatDecimal(agreement.value.payment_received) : null
+        payment_method_forcash.value = agreement.value.payment_method_forcash ? formatDecimal(agreement.value.payment_method_forcash) : null
+        installment_amount.value =agreement.value.installment_amount ?  formatDecimal(agreement.value.installment_amount) : null
         installment_contract_upon_delivery.value = agreement.value.installment_contract_upon_delivery === 1 ? true : false
         payment_description.value = agreement.value.payment_description
 
@@ -729,7 +731,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="reg_num_interchange"
                                                     label="Regnr"
-                                                    disabled
+                                                    :disabled="reg_num_interchange !== null"
                                                 />
                                                 <div class="px-0 d-flex align-center ms-2">
                                                     <VBtn
