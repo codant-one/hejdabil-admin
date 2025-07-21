@@ -8,8 +8,10 @@ import { useVehiclesStores } from '@/stores/useVehicles'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
+import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
 
+const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
 const tasksStores = useTasksStores()
 const costsStores = useCostsStores()
