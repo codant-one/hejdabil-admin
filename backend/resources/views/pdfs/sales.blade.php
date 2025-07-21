@@ -368,7 +368,7 @@
 
                                     <tr>
                                         <td colspan="2">
-                                            <div class="label">Miltal (km)</div>
+                                            <div class="label">Miltal</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->mileage }}
                                             </div>

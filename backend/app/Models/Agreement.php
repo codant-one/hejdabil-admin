@@ -16,6 +16,7 @@ use App\Http\Requests\VehicleRequest;
 use App\Models\Client;
 use App\Models\Vehicle;
 use App\Models\VehicleClient;
+use App\Models\VehiclePayment;
 use App\Models\AgreementClient;
 
 class Agreement extends Model
@@ -119,6 +120,9 @@ class Agreement extends Model
             case 1:
                 $request = self::salesAgreement($request);
                 break;
+            case 2:
+                $request = self::purchaseAgreement($request);
+                break;
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
@@ -148,6 +152,7 @@ class Agreement extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
             'advance_id' => $request->advance_id === 'null' ? null : $request->advance_id,
+            'vehicle_payment_id' => $request->vehicle_payment_id === 'null' ? null : $request->vehicle_payment_id,
             'middle_price' => $request->middle_price === 'null' ? null : $request->middle_price,
             'payment_type' => $request->payment_type === 'null' ? null : $request->payment_type,
             'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
@@ -177,6 +182,9 @@ class Agreement extends Model
             case 1:
                 self::updateSales($request, $agreement);
                 break;
+            case 2:
+                self::updatePurchase($request, $agreement);
+                break;
         }
 
         $agreement->update([
@@ -201,6 +209,7 @@ class Agreement extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
             'advance_id' => $request->advance_id === 'null' ? null : $request->advance_id,
+            'vehicle_payment_id' => $request->vehicle_payment_id === 'null' ? null : $request->vehicle_payment_id,
             'middle_price' => $request->middle_price === 'null' ? null : $request->middle_price,
             'payment_type' => $request->payment_type === 'null' ? null : $request->payment_type,
             'payment_received' => $request->payment_received === 'null' ? null : $request->payment_received,
@@ -247,6 +256,9 @@ class Agreement extends Model
             'vehicle_interchange.iva_purchase',
             'agreement_client',
             'vehicle_client.vehicle.model.brand',
+            'vehicle_client.vehicle.fuel',
+            'vehicle_client.vehicle.gearbox',
+            'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
         ])->find($agreement->id);
 
@@ -260,6 +272,10 @@ class Agreement extends Model
             case 1:
                 PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
+                break;
+            case 2:
+                PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+                $agreement->file = 'pdfs/'.'inköpsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
                 break;
         }
 
@@ -409,6 +425,96 @@ class Agreement extends Model
         //Update Agreement Client.
         $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
         $agreementClient->updateClient($request, $agreementClient);
+    }
+
+    public static function purchaseAgreement($request) {
+
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
+        if ($request->has("client_id"))
+            $request->merge([
+                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+        else
+            $request->request->add([
+                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+
+
+        $vehicleRequest = VehicleRequest::createFrom($request);
+
+        $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+
+        if($validate->fails()) {
+            $vehicleRequest->failedValidation($validate);
+        }
+
+        //Set Vehicle State ID in stock
+        $vehicleRequest->request->add(['state_id' => 10]);
+
+        $vehicle = Vehicle::createVehicle($vehicleRequest);
+        $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
+
+        if ($request->has("vehicle_id"))
+            $request->merge([
+                "vehicle_id" => $vehicle->id
+            ]);
+        else
+            $request->request->add([
+                'vehicle_id' => $vehicle->id
+            ]);
+
+        VehicleClient::createClient($request);
+        
+        $vehicle = Vehicle::with(['client_purchase'])->find($vehicle->id);
+
+        //Set VehicleClient ID
+       if ($request->has("client_id"))
+            $request->merge([
+                "vehicle_client_id" => $vehicle->client_purchase->id
+            ]);
+        else
+            $request->request->add([
+                'vehicle_client_id' => $vehicle->client_purchase->id
+            ]);
+
+        VehiclePayment::createVehiclePayment($request);
+
+        return $request;
+
+    }
+
+    public static function updatePurchase($request, $agreement) {
+        //Update Vehicle Client.
+        $vehicleClient = VehicleClient::find($request->vehicle_client_id);
+        $vehicleClient->updateClient($request, $vehicleClient);
+       
+        //Update Vehicle.
+        $vehicle = Vehicle::find($vehicleClient->vehicle_id);
+        $request->request->add(['state_id' => 10]);
+        $vehicle->updateVehicle($request, $vehicle);
+
+        //Update Vehicle Payment.
+        $vehicle_payment = VehiclePayment::where('vehicle_id', $vehicle->id)->first();
+        $vehicle_payment->updateVehiclePayment($request, $vehicle_payment);
+
+        //Update Agreement Client.
+        $agreementClient = AgreementClient::where('agreement_id', $agreement->id)->first();
+        $agreementClient->updateClient($request, $agreementClient);
+        
+        return $request;
+
     }
     
 }

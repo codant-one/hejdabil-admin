@@ -10,6 +10,7 @@ const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const isRequestOngoing = ref(false)
 
@@ -22,6 +23,7 @@ const userData = ref(null)
 const role = ref(null)
 const supplier = ref([])
 
+const agreement = ref([])
 const vehicles = ref([])
 const vehicle_id = ref(null)
 const reg_num = ref(null)
@@ -52,8 +54,6 @@ const fuels = ref([])
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
 //const tab 2
-const clients = ref([])
-const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
@@ -65,8 +65,6 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
-const save_client = ref(true)
-const disabled_client = ref(false)
 
 //const tab 3
 const ivas = ref([])
@@ -93,6 +91,8 @@ const optionsSettled = ['Bilhandlare', 'Kund']
 //Const tab 4
 const terms_other_conditions = ref(null)
 const terms_other_information = ref(null)
+
+const vehicle_client_id = ref(null)
 
 const calculate = () => {
     const sale = Number(price.value) || 0
@@ -139,45 +139,110 @@ watchEffect(fetchData)
 
 async function fetchData() {
 
-    isRequestOngoing.value = true
+    if(Number(route.params.id) && route.name === 'dashboard-admin-agreements-purchase-edit-id') {
+        isRequestOngoing.value = true
 
-    await agreementsStores.info()
+        await agreementsStores.info()
 
-    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-    role.value = userData.value.roles[0].name
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        role.value = userData.value.roles[0].name
 
-    if(role.value === 'Supplier') {
-        const { user_data, userAbilities } = await authStores.me(userData.value)
+        if(role.value === 'Supplier') {
+            const { user_data, userAbilities } = await authStores.me(userData.value)
 
-        localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+            localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
 
-        ability.update(userAbilities)
+            ability.update(userAbilities)
 
-        localStorage.setItem('user_data', JSON.stringify(user_data))
+            localStorage.setItem('user_data', JSON.stringify(user_data))
 
-        supplier.value = user_data.supplier
-        agreement_id.value = supplier.value.agreements.length + 1
-    } else {
-        agreement_id.value = agreementsStores.agreement_id + 1
+            supplier.value = user_data.supplier
+            agreement_id.value = supplier.value.agreements.length + 1
+        } else {
+            agreement_id.value = agreementsStores.agreement_id + 1
+        }
+
+        vehicles.value = agreementsStores.vehicles
+        brands.value = agreementsStores.brands
+        models.value = agreementsStores.models 
+        carbodies.value = agreementsStores.carbodies
+        gearboxes.value = agreementsStores.gearboxes
+        fuels.value = agreementsStores.fuels
+        currencies.value = agreementsStores.currencies
+        ivas.value = agreementsStores.ivas
+        client_types.value = agreementsStores.client_types
+        identifications.value = agreementsStores.identifications
+        paymentTypes.value = agreementsStores.paymentTypes
+        advances.value = agreementsStores.advances
+
+        agreement.value = await agreementsStores.showAgreement(Number(route.params.id))
+
+        reg_num.value = agreement.value.vehicle_client.vehicle.reg_num
+        agreement_id.value = agreement.value.agreement_id
+
+        number_keys.value = agreement.value.vehicle_client.vehicle.number_keys
+        fuel_id.value = agreement.value.vehicle_client.vehicle.fuel_id ?? fuel_id.value
+        gearbox_id.value = agreement.value.vehicle_client.vehicle.gearbox_id ?? gearbox_id.value
+        year.value = agreement.value.vehicle_client.vehicle.year
+        color.value = agreement.value.vehicle_client.vehicle.color
+        chassis.value = agreement.value.vehicle_client.vehicle.chassis
+        mileage.value = agreement.value.vehicle_client.vehicle.mileage
+        purchase_date.value = agreement.value.vehicle_client.vehicle.purchase_date === null ? formatDate(new Date()) : agreement.value.vehicle_client.vehicle.purchase_date
+
+        if(agreement.value.vehicle_client.vehicle.model_id !== null) {
+            let modelId = agreement.value.vehicle_client.vehicle.model_id
+            let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
+            selectBrand(brandId)
+            brand_id.value = brandId
+            model_id.value = agreement.value.vehicle_client.vehicle.model_id
+        }
+
+
+        client_type_id.value = agreement.value.agreement_client.client_type_id
+        identification_id.value = agreement.value.agreement_client.identification_id
+        organization_number.value = agreement.value.agreement_client.organization_number
+        address.value = agreement.value.agreement_client.address
+        street.value = agreement.value.agreement_client.street
+        postal_code.value = agreement.value.agreement_client.postal_code
+        phone.value = agreement.value.agreement_client.phone
+        fullname.value = agreement.value.agreement_client.fullname
+        email.value = agreement.value.agreement_client.email
+
+        price.value = formatDecimal(agreement.value.price)
+        iva_id.value = agreement.value.iva_id
+        iva_sale_amount.value = formatDecimal(agreement.value.iva_sale_amount ?? 0)
+        iva_sale_exclusive.value = formatDecimal(agreement.value.iva_sale_exclusive ?? 0)
+        registration_fee.value = formatDecimal(agreement.value.registration_fee ?? 0)
+        total_sale.value = agreement.value.total_sale
+        payment_type.value = agreement.value.payment_type
+        payment_type_id.value = agreement.value.payment_type_id
+        advance_id.value = agreement.value.advance_id
+
+        is_loan.value = agreement.value.vehicle_client.vehicle.payment.is_loan
+        loan_amount.value = agreement.value.vehicle_client.vehicle.payment.loan_amount
+        lessor.value = agreement.value.vehicle_client.vehicle.payment.lessor
+        settled_by.value = agreement.value.vehicle_client.vehicle.payment.settled_by
+        bank.value = agreement.value.vehicle_client.vehicle.payment.bank
+        account.value = agreement.value.vehicle_client.vehicle.payment.account
+        description.value = agreement.value.vehicle_client.vehicle.payment.description
+
+        terms_other_conditions.value = agreement.value.terms_other_conditions
+        terms_other_information.value = agreement.value.terms_other_information
+
+        vehicle_client_id.value = agreement.value.vehicle_client_id
+
+        isRequestOngoing.value = false
+    }
+}
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
     }
 
-    vehicles.value = agreementsStores.vehicles
-    brands.value = agreementsStores.brands
-    models.value = agreementsStores.models 
-    carbodies.value = agreementsStores.carbodies
-    gearboxes.value = agreementsStores.gearboxes
-    fuels.value = agreementsStores.fuels
-    currencies.value = agreementsStores.currencies
-    ivas.value = agreementsStores.ivas
-    clients.value = agreementsStores.clients
-    client_types.value = agreementsStores.client_types
-    identifications.value = agreementsStores.identifications
-    paymentTypes.value = agreementsStores.paymentTypes
-    advances.value = agreementsStores.advances
-
-    purchase_date.value = formatDate(new Date())
-
-    isRequestOngoing.value = false
+    return number.toString();
 }
 
 const getPaymentTypes = computed(() => {
@@ -237,36 +302,6 @@ const getModels = computed(() => {
     return models
 })
 
-const clearClient = () => {
-    fullname.value = null
-    email.value = null
-    organization_number.value = null
-    address.value = null
-    street.value = null
-    postal_code.value = null
-    phone.value = null
-
-    save_client.value = true
-    disabled_client.value = false
-}
-
-const selectClient = client => {
-    if (client) {
-        let _client = clients.value.find(item => item.id === client)
-    
-        fullname.value = _client.fullname
-        email.value = _client.email
-        organization_number.value = _client.organization_number
-        address.value = _client.address
-        street.value = _client.street
-        postal_code.value = _client.postal_code
-        phone.value = _client.phone
-
-        save_client.value = false
-        disabled_client.value = true
-    }
-}
-
 const getFlag = (currency_id) => {
     return currencies.value.filter(item => item.id === currency_id)[0].flag
 }
@@ -300,6 +335,9 @@ const onSubmit = () => {
 
             let formData = new FormData()
 
+            formData.append('id', Number(route.params.id))
+            formData.append('_method', 'PUT')
+
             //vehicle
             formData.append('reg_num', reg_num.value)
             formData.append('brand_id', brand_id.value)
@@ -330,11 +368,8 @@ const onSubmit = () => {
             formData.append('description', description.value)
 
             //client
-            formData.append('type', 2)
-            formData.append('save_client', save_client.value)
             formData.append('client_type_id', client_type_id.value)
             formData.append('identification_id', identification_id.value)
-            formData.append('client_id', client_id.value)
             formData.append('fullname', fullname.value)
             formData.append('email', email.value)
             formData.append('organization_number', organization_number.value)
@@ -357,14 +392,19 @@ const onSubmit = () => {
             formData.append('payment_type', payment_type.value)
             formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
             formData.append('advance_id', advance_id.value)
+            formData.append('vehicle_client_id', vehicle_client_id.value)
 
             formData.append('terms_other_conditions', terms_other_conditions.value)
             formData.append('terms_other_information', terms_other_information.value)
             
-
             isRequestOngoing.value = true
 
-            agreementsStores.addAgreement(formData)
+            let data = {
+                data: formData, 
+                id: Number(route.params.id)
+            }
+
+            agreementsStores.updateAgreement(data)
                 .then((res) => {
                     if (res.data.success) {
                         
@@ -623,18 +663,6 @@ const onSubmit = () => {
                                                     Säljare
                                                 </h6>
                                                 <VRow>
-                                                    <VCol cols="12" md="12">
-                                                        <VAutocomplete
-                                                            v-model="client_id"
-                                                            label="Kunder"
-                                                            :items="clients"
-                                                            :item-title="item => item.fullname"
-                                                            :item-value="item => item.id"
-                                                            autocomplete="off"
-                                                            clearable
-                                                            @click:clear="clearClient"
-                                                            @update:modelValue="selectClient"/>
-                                                    </VCol>
                                                     <VCol cols="10" md="11">
                                                         <VTextField
                                                             v-model="organization_number"
@@ -782,17 +810,6 @@ const onSubmit = () => {
                                                         </VListItemTitle>
                                                     </VListItem>
                                                 </VList>
-                                                <VRow>
-                                                    <VCol cols="12" md="12" class="py-3">
-                                                        <VCheckbox
-                                                            v-model="save_client"
-                                                            :readonly="disabled_client"
-                                                            color="primary"
-                                                            label="Spara kund?"
-                                                            class="w-100 text-center d-flex justify-content-end"
-                                                        />
-                                                    </VCol>
-                                                </VRow>
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
@@ -1032,6 +1049,6 @@ const onSubmit = () => {
 
 <route lang="yaml">
     meta:
-      action: create
+      action: edit
       subject: agreements
 </route>

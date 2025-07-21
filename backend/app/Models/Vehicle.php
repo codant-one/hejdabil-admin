@@ -85,6 +85,10 @@ class Vehicle extends Model
         return $this->hasOne(Agreement::class, 'vehicle_interchange_id', 'id');
     }
 
+    public function payment(){
+        return $this->hasOne(VehiclePayment::class, 'vehicle_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('reg_num', 'LIKE', '%' . $search . '%');

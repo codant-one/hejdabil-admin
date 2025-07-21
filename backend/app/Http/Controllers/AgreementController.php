@@ -132,9 +132,13 @@ class AgreementController extends Controller
                         'iva',
                         'payment_types',
                         'vehicle_interchange.model.brand',
-                        'supplier',
+                        'vehicle_interchange.carbody',
+                        'vehicle_interchange.iva_purchase',
                         'agreement_client',
                         'vehicle_client.vehicle.model.brand',
+                        'vehicle_client.vehicle.fuel',
+                        'vehicle_client.vehicle.gearbox',
+                        'vehicle_client.vehicle.payment.payment_types',
                         'supplier.user'
                     ])->find($id);
 

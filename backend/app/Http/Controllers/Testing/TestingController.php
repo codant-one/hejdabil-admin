@@ -169,8 +169,11 @@ class TestingController extends Controller
             'vehicle_interchange.iva_purchase',
             'agreement_client',
             'vehicle_client.vehicle.model.brand',
+            'vehicle_client.vehicle.fuel',
+            'vehicle_client.vehicle.gearbox',
+            'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(1);
+        ])->find(5);
 
         $user = User::with(['userDetail'])->find(1);
 
@@ -179,7 +182,7 @@ class TestingController extends Controller
                 $pdf = 'pdfs.sales';
                 break;
             case 2:
-                $pdf = '';
+                $pdf = 'pdfs.purchase';
                 break;
             case 3:
                 $pdf = '';

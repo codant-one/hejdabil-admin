@@ -7,6 +7,7 @@ export const useAgreementsStores = defineStore('agreements', {
         agreements: {},
         brands: {},
         models: {},
+        gearboxes: {},
         carbodies: {},
         ivas: {},
         fuels: {},
@@ -113,6 +114,7 @@ export const useAgreementsStores = defineStore('agreements', {
                 .then((response) => {
                     this.brands = response.data.data.brands
                     this.models = response.data.data.models
+                    this.gearboxes = response.data.data.gearboxes
                     this.carbodies = response.data.data.carbodies
                     this.ivas = response.data.data.ivas
                     this.fuels = response.data.data.fuels
