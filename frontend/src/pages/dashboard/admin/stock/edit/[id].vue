@@ -10,7 +10,9 @@ import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
 import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 
+const ability = useAppAbility()
 const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
 const tasksStores = useTasksStores()
