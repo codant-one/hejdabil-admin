@@ -242,7 +242,9 @@ class Agreement extends Model
             'currency',
             'iva',
             'payment_types',
-            'vehicle_interchange',
+            'vehicle_interchange.model.brand',
+            'vehicle_interchange.carbody',
+            'vehicle_interchange.iva_purchase',
             'agreement_client',
             'vehicle_client.vehicle.model.brand',
             'supplier.user'

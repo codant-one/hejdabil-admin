@@ -24,6 +24,10 @@ const advisor = ref({
   show: false
 })
 
+const userData = ref(null)
+const role = ref(null)
+const supplier = ref([])
+
 const isRequestOngoing = ref(true)
 const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
@@ -199,6 +203,13 @@ async function fetchData() {
     isRequestOngoing.value = true
 
     if(Number(route.params.id) && route.name === 'dashboard-admin-stock-edit-id') {
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        role.value = userData.value.roles[0].name
+
+        if(role.value === 'Supplier') {
+            supplier.value = user_data.supplier
+        }
+
         const data = await vehiclesStores.showVehicle(Number(route.params.id))
     
         vehicle.value = data.vehicle
@@ -1012,7 +1023,7 @@ const getFlag = (currency_id) => {
                             <VTabs v-model="currentTab" fixed-tabs>
                                 <VTab>Fordon</VTab>
                                 <VTab>Prisinformation</VTab>
-                                <VTab>Säljaren</VTab>
+                                <VTab>Kund</VTab>
                                 <VTab>Information om bilen</VTab>
                                 <VTab>Planerade åtgärder</VTab>
                                 <VTab>Kostnader</VTab>
@@ -1202,15 +1213,15 @@ const getFlag = (currency_id) => {
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
-                                    <!-- Säljaren -->
+                                    <!-- Kund -->
                                     <VWindowItem class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Köpare
+                                                    Säljare
                                                 </h6>
                                                 <VRow>
-                                                    <VCol cols="12" md="12">
+                                                    <VCol cols="12" md="12" v-if="vehicle.client_purchase === null">
                                                         <VAutocomplete
                                                             v-model="client_id"
                                                             label="Kunder"
@@ -1296,17 +1307,74 @@ const getFlag = (currency_id) => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Comments
+                                                    Köpare
                                                 </h6>
-                                                <VRow>
-                                                    <VCol cols="12" md="12">
-                                                        <VTextarea
-                                                            v-model="comments"
-                                                            rows="4"
-                                                            label="Anteckningar"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="12" class="py-0">
+                                                <VList class="card-list mt-2">
+                                                    <VListItem>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Namn:
+                                                                <span class="text-body-2">
+                                                                    {{ userData.name }} {{ userData.last_name }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Org/personummer:
+                                                                <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.organization_number : userData.user_details.organization_number }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Adress:
+                                                                <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.address : userData.user_details.address }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Postnr. ort:
+                                                                <span class="text-body-2">
+                                                                    {{ 
+                                                                        role === 'Supplier' ? 
+                                                                        supplier.street + ' ' +  supplier.postal_code : 
+                                                                        userData.user_details.street  + ' ' +  userData.user_details.postal_code
+                                                                    }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Telefon:
+                                                                <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.phone : userData.user_details.phone }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                E-post
+                                                                <span class="text-body-2">
+                                                                    {{ userData.email }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                        <VListItemTitle>
+                                                            <h6 class="text-base font-weight-semibold">
+                                                                Bilfirma:
+                                                                <span class="text-body-2">
+                                                                    {{ role === 'Supplier' ? supplier.company : userData.user_details.company }}
+                                                                </span>
+                                                            </h6>
+                                                        </VListItemTitle>
+                                                    </VListItem>
+                                                </VList>
+                                                <VRow v-if="vehicle.client_purchase === null">
+                                                    <VCol cols="12" md="12" class="py-3">
                                                         <VCheckbox
                                                             v-model="save_client"
                                                             :readonly="disabled_client"
@@ -1392,6 +1460,13 @@ const getFlag = (currency_id) => {
                                                 <VTextField
                                                     v-model="last_dist_belt"
                                                     label="Kamrem bytt vid Mil/datum"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="12">
+                                                <VTextarea
+                                                    v-model="comments"
+                                                    rows="4"
+                                                    label="Anteckningar"
                                                 />
                                             </VCol>
                                         </VRow>

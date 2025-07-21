@@ -217,14 +217,14 @@ class Vehicle extends Model
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs',  'client_purchase', 'client_sale'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
-        if($vehicle->client_purchase) {
-            VehicleClient::updateClient($request, $vehicle->client_purchase);  
-        } else {
+        if(!$vehicle->client_purchase && $request->type === '2') {
             $request->request->add([
                 'vehicle_id' => $vehicle->id
             ]);
             
-            VehicleClient::createClient($request);         
+            VehicleClient::createClient($request);
+        } else if($vehicle->client_purchase && $request->type === '2') {
+            VehicleClient::updateClient($request, $vehicle->client_purchase);     
         }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {

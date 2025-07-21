@@ -475,13 +475,13 @@ const downloadCSV = async () => {
                 <td> {{ vehicle.control_inspection }} </td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
-                    <span v-if="vehicle.client_purchase.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_purchase.client)">
-                      {{ vehicle.client_purchase.fullname }} 
+                    <span v-if="vehicle.client_purchase?.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_purchase?.client)">
+                      {{ vehicle.client_purchase?.fullname }} 
                     </span>
                     <span v-else class="font-weight-medium  text-primary">
-                      {{ vehicle.client_purchase.fullname }} 
+                      {{ vehicle.client_purchase?.fullname }} 
                     </span>
-                    <span class="text-sm text-disabled">{{ vehicle.client_purchase.phone }}</span>
+                    <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone }}</span>
                   </div>
                 </td> 
                 <!-- 👉 Acciones -->

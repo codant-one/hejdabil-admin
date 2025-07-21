@@ -389,14 +389,16 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Märke & Modell</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->model->brand->name }},
-                                                {{ $agreement->vehicle_interchange->model->name }}
+                                                {{ collect([
+                                                    $agreement->vehicle_interchange?->model?->brand?->name,
+                                                    $agreement->vehicle_interchange?->model?->name
+                                                ])->filter()->implode(', ') }}
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Färg</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->color }}
+                                                {{ $agreement->vehicle_interchange?->color }}
                                             </div>
                                         </td>
                                     </tr>
@@ -405,13 +407,13 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Årsmodell</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->year }}
+                                                {{ $agreement->vehicle_interchange?->year }}
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Chassinummer (VIN)</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->chassis }}
+                                                {{ $agreement->vehicle_interchange?->chassis }}
                                             </div>
                                         </td>
                                     </tr>
@@ -420,13 +422,13 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Regnr</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->reg_num }}
+                                                {{ $agreement->vehicle_interchange?->reg_num }}
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Försäljningsdatum</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->created_at->format('Y-m-d') }}
+                                                {{ $agreement->vehicle_interchange?->created_at->format('Y-m-d') }}
                                             </div>
                                         </td>
                                     </tr>
@@ -435,13 +437,13 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Inbytespris</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange->purchase_price) }} kr
+                                                {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Mätarställning</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->meter_reading }}
+                                                {{ $agreement->vehicle_interchange?->meter_reading }}
                                             </div>
                                         </td>
                                     </tr>
@@ -450,13 +452,13 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Kaross</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->carbody?->name }}
+                                                {{ $agreement->vehicle_interchange?->carbody?->name }}
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Avdragbar moms</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_interchange->iva_purchase?->name }}
+                                                {{ $agreement->vehicle_interchange?->iva_purchase?->name }}
                                             </div>
                                         </td>
                                     </tr>
@@ -465,13 +467,13 @@
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Restskuld</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange->residual_debt) }} kr
+                                                {{ formatCurrency($agreement->vehicle_interchange?->residual_debt) }} kr
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Verkligt värde</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange->fair_value) }} kr
+                                                {{ formatCurrency($agreement->vehicle_interchange?->fair_value) }} kr
                                             </div>
                                         </td>
                                     </tr>
