@@ -207,6 +207,14 @@ async function fetchData() {
         role.value = userData.value.roles[0].name
 
         if(role.value === 'Supplier') {
+            const { user_data, userAbilities } = await authStores.me(userData.value)
+
+            localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+            ability.update(userAbilities)
+
+            localStorage.setItem('user_data', JSON.stringify(user_data))
+
             supplier.value = user_data.supplier
         }
 
