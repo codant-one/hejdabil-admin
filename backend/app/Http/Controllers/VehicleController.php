@@ -55,7 +55,8 @@ class VehicleController extends Controller
                         'carbody',
                         'gearbox',
                         'fuel',
-                        'vehicle_client.client'
+                        'client_purchase.client',
+                        'client_sale.client'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -132,7 +133,9 @@ class VehicleController extends Controller
                 'tasks.histories.user',
                 'costs',
                 'documents.user',
-                'documents.type'
+                'documents.type',
+                'client_purchase.client',
+                'client_sale.client'
             ])->find($id);
 
             if (!$vehicle)

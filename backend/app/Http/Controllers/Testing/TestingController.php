@@ -164,15 +164,32 @@ class TestingController extends Controller
             'currency',
             'iva',
             'payment_types',
-            'vehicle_interchange',
+            'vehicle_interchange.model.brand',
+            'vehicle_interchange.carbody',
+            'vehicle_interchange.iva_purchase',
             'agreement_client',
             'vehicle_client.vehicle.model.brand',
             'supplier.user'
-        ])->find(9);
+        ])->find(1);
 
         $user = User::with(['userDetail'])->find(1);
 
-        return view('pdfs.agreement', 
+        switch ($agreement->agreement_type_id) {
+            case 1:
+                $pdf = 'pdfs.sales';
+                break;
+            case 2:
+                $pdf = '';
+                break;
+            case 3:
+                $pdf = '';
+                break;
+            case 4:
+                $pdf = '';
+                break;
+        }
+        
+        return view($pdf, 
             compact(
                 'agreement',
                 'user'

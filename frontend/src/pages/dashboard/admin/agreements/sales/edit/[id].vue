@@ -211,7 +211,7 @@ async function fetchData() {
         color.value = agreement.value.vehicle_client.vehicle.color
         chassis.value = agreement.value.vehicle_client.vehicle.chassis
         mileage.value = agreement.value.vehicle_client.vehicle.mileage
-        sale_date.value = agreement.value.vehicle_client.vehicle.sale_date
+        sale_date.value = agreement.value.vehicle_client.vehicle.sale_date === null ? formatDate(new Date()) : agreement.value.vehicle_client.vehicle.sale_date
         guaranty_id.value = agreement.value.guaranty_id
         guaranty_type_id.value = agreement.value.guaranty_type_id
         insurance_company_id.value = agreement.value.insurance_company_id

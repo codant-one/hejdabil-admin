@@ -29,7 +29,7 @@
 
         /* Títulos de sección */
         h2 {
-            font-size: 15px;
+            font-size: 13px;
             color: #0056b3;
             margin-top: 0;
             margin-bottom: 0;
@@ -64,12 +64,14 @@
         .column-cell {
             width: 50%;
             vertical-align: top;
-            padding-top: 20px;
+            padding-top: 10px;
         }
         /* Añade espacio entre las columnas */
         .column-cell-left { padding-right: 15px; }
         .column-cell-right { padding-left: 15px; }
 
+        .column-cell-left-2 { padding-right: 10px !important; }
+        .column-cell-right-2 { padding-left: 10px !important; }
 
         /* --- Tablas de información (Key-Value) --- */
         .info-table {
@@ -78,7 +80,7 @@
         }
         .info-table td {
             padding: 0;
-            padding-bottom: 8px;
+            padding-bottom: 4px;
         }
         .info-table .label {
             font-weight: 600;
@@ -111,7 +113,7 @@
             font-weight: 600;
         }
         .financials-table .total-row td {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
             color: #0056b3;
             border-top: 2px solid #ccc;
@@ -120,7 +122,7 @@
         .financials-table .moms-row td { font-weight: normal; }
 
         /* --- PIE DE PÁGINA --- */
-        .footer-section { padding-top: 15px; }
+        .footer-section { padding-top: 10px; }
         .consent-text {
             font-size: 10px;
             color: #666;
@@ -136,7 +138,7 @@
         .signature-box {
             border-top: 1px solid #333;
             padding-top: 8px;
-            font-size: 12px;
+            font-size: 13px;
             color: #333;
         }
     </style>
@@ -147,7 +149,7 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 15px; border-bottom: 2px solid #e0e0e0;">
+                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #e0e0e0;">
                     <table style="width: 100%;">
                         <tr>
                             <td style="vertical-align: top;">
@@ -287,93 +289,189 @@
 
             <!-- === VEHICLE INFORMATION === -->
             <tr>
-                <td colspan="2" class="section-cell">
+                <td class="column-cell column-cell-left">
                     <h2>Fordonsinformation</h2>
                     <table style="width: 100%;">
                         <tr>
-                            <td class="column-cell" style="padding-top:0; padding-right:15px; padding-left:0;">
+                            <td style="padding:0;">
                                 <table class="info-table">
                                     <tr>
-                                        <td>
+                                        <td class="column-cell column-cell-left-2">
                                             <div class="label">Märke & Modell</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->model->brand->name }}, {{ $agreement->vehicle_client->vehicle->model->name }}
+                                                {{ $agreement->vehicle_client->vehicle->model->brand->name }},
+                                                {{ $agreement->vehicle_client->vehicle->model->name }}
                                             </div>
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Årsmodell</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->year }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
+                                        <td class="column-cell column-cell-right-2">
                                             <div class="label">Färg</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->color }}
                                             </div>
                                         </td>
                                     </tr>
+
                                     <tr>
-                                        <td>
-                                            <div class="label">Första registreringsdatum</div>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Årsmodell</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->purchase_date }}
+                                                {{ $agreement->vehicle_client->vehicle->year }}
                                             </div>
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Garanti</div>
-                                            <div class="value">
-                                                {{ $agreement->guaranty->name }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                            <td class="column-cell" style="padding-top:0; padding-left:15px; padding-right:0;">
-                                 <table class="info-table">
-                                    <tr>
-                                        <td>
+                                        <td class="column-cell column-cell-right-2">
                                             <div class="label">Chassinummer (VIN)</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->chassis }}
                                             </div>
                                         </td>
                                     </tr>
+
                                     <tr>
-                                        <td>
+                                        <td class="column-cell column-cell-left-2">
                                             <div class="label">Regnr</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->reg_num }}
                                             </div>
                                         </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Första registreringsdatum</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_client->vehicle->purchase_date }}
+                                            </div>
+                                        </td>
                                     </tr>
+
                                     <tr>
-                                        <td>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Försäljningsdatum</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_client->vehicle->sale_date }}
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Garanti</div>
+                                            <div class="value">
+                                                {{ $agreement->guaranty->name }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td colspan="2">
+                                            <div class="label">Försäkring</div>
+                                            <div class="value">
+                                                {{ $agreement->insurance_company->name }} 
+                                                ({{ $agreement->insurance_type->name }})
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td colspan="2">
                                             <div class="label">Miltal (km)</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->mileage }}
                                             </div>
                                         </td>
                                     </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="column-cell column-cell-right">
+                    <h2>Inbytesfordon</h2>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td style="padding:0;">
+                                <table class="info-table">
                                     <tr>
-                                        <td>
-                                            <div class="label">Försäljningsdatum</div>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Märke & Modell</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->sale_date }}
+                                                {{ $agreement->vehicle_interchange->model->brand->name }},
+                                                {{ $agreement->vehicle_interchange->model->name }}
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Färg</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->color }}
                                             </div>
                                         </td>
                                     </tr>
+
                                     <tr>
-                                        <td>
-                                            <div class="label">Försäkring</div>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Årsmodell</div>
                                             <div class="value">
-                                                {{ $agreement->insurance_company->name }} ({{ $agreement->insurance_type->name }})
+                                                {{ $agreement->vehicle_interchange->year }}
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Chassinummer (VIN)</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->chassis }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Regnr</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->reg_num }}
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Försäljningsdatum</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->created_at->format('Y-m-d') }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Inbytespris</div>
+                                            <div class="value">
+                                                {{ formatCurrency($agreement->vehicle_interchange->purchase_price) }} kr
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Mätarställning</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->meter_reading }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Kaross</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->carbody?->name }}
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Avdragbar moms</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_interchange->iva_purchase?->name }}
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td class="column-cell column-cell-left-2">
+                                            <div class="label">Restskuld</div>
+                                            <div class="value">
+                                                {{ formatCurrency($agreement->vehicle_interchange->residual_debt) }} kr
+                                            </div>
+                                        </td>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Verkligt värde</div>
+                                            <div class="value">
+                                                {{ formatCurrency($agreement->vehicle_interchange->fair_value) }} kr
                                             </div>
                                         </td>
                                     </tr>

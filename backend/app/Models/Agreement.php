@@ -97,38 +97,6 @@ class Agreement extends Model
             $query->whereSearch($filters->get('search'));
         }
 
-        if ($filters->get('guaranty_id') === '0') {
-            $query->where('guaranty_id',  $filters->get('guaranty_id'));
-        }
-
-        if ($filters->get('guaranty_type_id') !== null) {
-            $query->where('guaranty_type_id', $filters->get('guaranty_type_id'));
-        }
-
-        if ($filters->get('insurance_company_id') !== null) {
-            $query->where('insurance_company_id', $filters->get('insurance_company_id'));
-        }
-
-        if ($filters->get('insurance_type_id') !== null) {
-            $query->where('insurance_type_id', $filters->get('insurance_type_id'));
-        }
-
-        if ($filters->get('currency_id') !== null) {
-            $query->where('currency_id', $filters->get('currency_id'));
-        }
-
-        if ($filters->get('payment_type_id') !== null) {
-            $query->where('payment_type_id', $filters->get('payment_type_id'));
-        }
-
-        if ($filters->get('vehicle_interchange_id') !== null) {
-            $query->where('vehicle_interchange_id', $filters->get('vehicle_interchange_id'));
-        }
-
-        if ($filters->get('vehicle_client_id') !== null) {
-            $query->where('vehicle_client_id', $filters->get('vehicle_client_id'));
-        }
-
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
             $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';
             $orderBy = $filters->get('orderBy') ? $filters->get('orderBy') : 'asc';
@@ -288,7 +256,7 @@ class Agreement extends Model
 
         switch ($request->agreement_type_id) {
             case 1:
-                PDF::loadView('pdfs.agreement', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
                 break;
         }
@@ -352,16 +320,16 @@ class Agreement extends Model
             Vehicle::sendVehicle($request, $vehicle); 
         }
         
-        $vehicle = Vehicle::with(['vehicle_client'])->find($vehicle->id);
+        $vehicle = Vehicle::with(['client_sale'])->find($vehicle->id);
 
         //Set VehicleClient ID
        if ($request->has("client_id"))
             $request->merge([
-                "vehicle_client_id" => $vehicle->vehicle_client->id
+                "vehicle_client_id" => $vehicle->client_sale->id
             ]);
         else
             $request->request->add([
-                'vehicle_client_id' => $vehicle->vehicle_client->id
+                'vehicle_client_id' => $vehicle->client_sale->id
             ]);
 
         if ($request->has("interchange") && $request->interchange === 'true') {

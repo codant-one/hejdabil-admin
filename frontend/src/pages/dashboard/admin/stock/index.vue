@@ -222,6 +222,10 @@ const onSubmit = () => {
   })
 }
 
+const seeClient = clientData => {
+  router.push({ name : 'dashboard-admin-clients-id', params: { id: clientData.id } })
+}
+
 const download = async(vehicle) => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + vehicle.file);
@@ -423,6 +427,7 @@ const downloadCSV = async () => {
                 <th scope="col"> Status </th>
                 <th scope="col"> VAT </th>
                 <th scope="col"> Besiktigas </th>
+                <th scope="col"> Köparen </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -468,6 +473,17 @@ const downloadCSV = async () => {
                 <td> {{ vehicle.state.name }} </td>
                 <td> {{ vehicle.iva_purchase?.name }} </td>
                 <td> {{ vehicle.control_inspection }} </td>
+                <td class="text-wrap">
+                  <div class="d-flex flex-column">
+                    <span v-if="vehicle.client_purchase.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_purchase.client)">
+                      {{ vehicle.client_purchase.fullname }} 
+                    </span>
+                    <span v-else class="font-weight-medium  text-primary">
+                      {{ vehicle.client_purchase.fullname }} 
+                    </span>
+                    <span class="text-sm text-disabled">{{ vehicle.client_purchase.phone }}</span>
+                  </div>
+                </td> 
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>

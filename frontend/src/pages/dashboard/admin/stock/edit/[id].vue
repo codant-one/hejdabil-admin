@@ -4,8 +4,8 @@ import router from '@/router'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatNumber } from '@/@core/utils/formatters'
-import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
 import { useDocumentsStores } from '@/stores/useDocuments'
@@ -105,8 +105,24 @@ const alertFile = ref(null)
 const selectedIds = ref([])
 
 const clients = ref([])
+const cl_id = ref(null)
+const mail = ref(null)
+
 const client_id = ref(null)
-const email = ref(null)
+const client_types = ref([])
+const client_type_id = ref(null)
+const identifications = ref([])
+const identification_id = ref(null)
+
+const organization_number = ref('')
+const address = ref('')
+const street = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
+const save_client = ref(true)
+const disabled_client = ref(false)
 
 const isCreateCost = ref(true)
 const tasks = ref([])
@@ -196,36 +212,49 @@ async function fetchData() {
         document_types.value = data.document_types
         states.value = data.states
         clients.value = data.clients
+        client_types.value = data.client_types
+        identifications.value = data.identifications
 
-        vehicle_id.value = vehicle.value.id
-        reg_num.value = vehicle.value.reg_num
-        tasks.value = vehicle.value.tasks
-        costs.value = vehicle.value.costs
-        documents.value = vehicle.value.documents
+        vehicle_id.value = vehicle.value.id ?? vehicle_id.value
+        reg_num.value = vehicle.value.reg_num ?? reg_num.value
+        tasks.value = vehicle.value.tasks ?? tasks.value
+        costs.value = vehicle.value.costs ?? costs.value
+        documents.value = vehicle.value.documents ?? documents.value
 
-        mileage.value = vehicle.value.mileage
-        generation.value = vehicle.value.generation
-        car_body_id.value = vehicle.value.car_body_id
-        year.value = vehicle.value.year
-        control_inspection.value = vehicle.value.control_inspection
-        color.value = vehicle.value.color
-        fuel_id.value = vehicle.value.fuel_id
-        gearbox_id.value = vehicle.value.gearbox_id
-        purchase_price.value = vehicle.value.purchase_price
-        iva_purchase_id.value = vehicle.value.iva_purchase_id
-        state_id.value = vehicle.value.state_id
-        state_idOld.value = vehicle.value.state_id
-        sale_price.value = vehicle.value.sale_price
+        mileage.value = vehicle.value.mileage ?? mileage.value
+        generation.value = vehicle.value.generation ?? generation.value
+        car_body_id.value = vehicle.value.car_body_id ?? car_body_id.value
+        year.value = vehicle.value.year ?? year.value
+        control_inspection.value = vehicle.value.control_inspection ?? control_inspection.value
+        color.value = vehicle.value.color ?? color.value
+        fuel_id.value = vehicle.value.fuel_id ?? fuel_id.value
+        gearbox_id.value = vehicle.value.gearbox_id ?? gearbox_id.value
+        purchase_price.value = vehicle.value.purchase_price ?? purchase_price.value
+        iva_purchase_id.value = vehicle.value.iva_purchase_id ?? iva_purchase_id.value
+        state_id.value = vehicle.value.state_id ?? state_id.value
+        state_idOld.value = vehicle.value.state_id ?? state_idOld.value
+        sale_price.value = vehicle.value.sale_price ?? sale_price.value
         purchase_date.value = vehicle.value.purchase_date === null ? formatDate(new Date()) : vehicle.value.purchase_date
-        sale_date.value = vehicle.value.sale_date
-        number_keys.value = vehicle.value.number_keys
-        service_book.value = vehicle.value.service_book
-        summer_tire.value = vehicle.value.summer_tire
-        winter_tire.value = vehicle.value.winter_tire
-        last_service.value = vehicle.value.last_service
-        dist_belt.value = vehicle.value.dist_belt
-        last_dist_belt.value = vehicle.value.last_dist_belt
-        comments.value = vehicle.value.comments
+        sale_date.value = vehicle.value.sale_date ?? sale_date.value
+        number_keys.value = vehicle.value.number_keys ?? number_keys.value
+        service_book.value = vehicle.value.service_book ?? service_book.value
+        summer_tire.value = vehicle.value.summer_tire ?? summer_tire.value
+        winter_tire.value = vehicle.value.winter_tire ?? winter_tire.value
+        last_service.value = vehicle.value.last_service ?? last_service.value
+        dist_belt.value = vehicle.value.dist_belt ?? dist_belt.value
+        dist_belt.value = vehicle.value.last_dist_belt ?? dist_belt.value
+        comments.value = vehicle.value.comments ?? comments.value
+
+        client_type_id.value = vehicle.value.client_purchase?.client_type_id ?? client_type_id.value
+        identification_id.value = vehicle.value.client_purchase?.identification_id ?? identification_id.value
+        client_id.value = vehicle.value.client_purchase?.client_id ?? client_id.value
+        fullname.value = vehicle.value.client_purchase?.fullname ?? fullname.value
+        email.value = vehicle.value.client_purchase?.email ?? email.value
+        organization_number.value = vehicle.value.client_purchase?.organization_number ?? organization_number.value
+        address.value = vehicle.value.client_purchase?.address ?? address.value
+        postal_code.value = vehicle.value.client_purchase?.postal_code ?? postal_code.value
+        phone.value = vehicle.value.client_purchase?.phone ?? phone.value
+        street.value = vehicle.value.client_purchase?.street ?? street.value
 
         if(vehicle.value.model_id !== null) {
             let modelId = vehicle.value.model_id
@@ -719,12 +748,42 @@ const removeDocument = async (document) => {
     return true
 }
 
+const selectCl = client => {
+    if (client) {
+        let _client = clients.value.find(item => item.id === client)
+    
+        mail.value = _client.email
+    }
+}
+
 const selectClient = client => {
     if (client) {
         let _client = clients.value.find(item => item.id === client)
     
+        fullname.value = _client.fullname
         email.value = _client.email
+        organization_number.value = _client.organization_number
+        address.value = _client.address
+        street.value = _client.street
+        postal_code.value = _client.postal_code
+        phone.value = _client.phone
+
+        save_client.value = false
+        disabled_client.value = true
     }
+}
+
+const clearClient = () => {
+    fullname.value = null
+    email.value = null
+    organization_number.value = null
+    address.value = null
+    street.value = null
+    postal_code.value = null
+    phone.value = null
+
+    save_client.value = true
+    disabled_client.value = false
 }
 
 const handleSendMail = () => {
@@ -735,7 +794,7 @@ const handleSendMail = () => {
             let formData = new FormData()
 
             formData.append('ids', selectedIds.value)
-            formData.append('email', email.value)
+            formData.append('email', mail.value)
 
             isConfirmSendDocumentDialogVisible.value = false
             isRequestOngoing.value = true
@@ -769,8 +828,8 @@ const handleSendMail = () => {
 
             setTimeout(() => {
                 selectedIds.value = []
-                email.value = null
-                client_id.value = null
+                mail.value = null
+                cl_id.value = null
                 advisor.value = {
                     type: '',
                     message: '',
@@ -822,6 +881,19 @@ const onSubmit = () => {
             formData.append('dist_belt', dist_belt.value)
             formData.append('last_dist_belt', last_dist_belt.value)
             formData.append('comments', comments.value)
+
+            formData.append('type', 2)
+            formData.append('save_client', save_client.value)
+            formData.append('client_type_id', client_type_id.value)
+            formData.append('identification_id', identification_id.value)
+            formData.append('client_id', client_id.value)
+            formData.append('fullname', fullname.value)
+            formData.append('email', email.value)
+            formData.append('organization_number', organization_number.value)
+            formData.append('address', address.value)
+            formData.append('street', street.value)
+            formData.append('postal_code', postal_code.value)
+            formData.append('phone', phone.value)
 
             isConfirmStatusDialogVisible.value = false
             isRequestOngoing.value = true
@@ -940,7 +1012,7 @@ const getFlag = (currency_id) => {
                             <VTabs v-model="currentTab" fixed-tabs>
                                 <VTab>Fordon</VTab>
                                 <VTab>Prisinformation</VTab>
-                                <VTab>Utrustningslista</VTab>
+                                <VTab>Säljaren</VTab>
                                 <VTab>Information om bilen</VTab>
                                 <VTab>Planerade åtgärder</VTab>
                                 <VTab>Kostnader</VTab>
@@ -1130,15 +1202,120 @@ const getFlag = (currency_id) => {
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
-                                    <!-- Utrustningslista -->
-                                    <VWindowItem class="px-md-5 text-center">
-                                        Utrustningslista finns inte tillgänglig
-                                        <VRow class="px-md-5" v-if="false">
+                                    <!-- Säljaren -->
+                                    <VWindowItem class="px-md-5">
+                                        <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="phone"
-                                                    label="Namn"
-                                                />
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                                    Köpare
+                                                </h6>
+                                                <VRow>
+                                                    <VCol cols="12" md="12">
+                                                        <VAutocomplete
+                                                            v-model="client_id"
+                                                            label="Kunder"
+                                                            :items="clients"
+                                                            :item-title="item => item.fullname"
+                                                            :item-value="item => item.id"
+                                                            autocomplete="off"
+                                                            clearable
+                                                            @click:clear="clearClient"
+                                                            @update:modelValue="selectClient"/>
+                                                    </VCol>
+                                                    <VCol cols="10" md="11">
+                                                        <VTextField
+                                                            v-model="organization_number"
+                                                            label="Org/personummer"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="2" md="1" class="px-0 d-flex align-center">
+                                                        <VBtn
+                                                            icon="tabler-search"
+                                                            variant="tonal"
+                                                            color="primary"
+                                                            size="x-small"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VAutocomplete
+                                                            v-model="client_type_id"
+                                                            label="Köparen är"
+                                                            :items="client_types"
+                                                            :item-title="item => item.name"
+                                                            :item-value="item => item.id"
+                                                            autocomplete="off"/>
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="fullname"
+                                                            label="Namn"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="12">
+                                                        <VTextField
+                                                            v-model="address"
+                                                            label="Adress"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="postal_code"
+                                                            label="Postnummer"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="street"
+                                                            label="Stad"
+                                                        /> 
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VTextField
+                                                            v-model="phone"
+                                                            :rules="[phoneValidator]"
+                                                            label="Telefon"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="6">
+                                                        <VAutocomplete
+                                                            v-model="identification_id"
+                                                            label="Legitimation"
+                                                            :items="identifications"
+                                                            :item-title="item => item.name"
+                                                            :item-value="item => item.id"
+                                                            autocomplete="off"/>
+                                                    </VCol>
+                                                    <VCol cols="12" md="12">
+                                                        <VTextField
+                                                            v-model="email"
+                                                            :rules="[emailValidator]"
+                                                            label="E-post"
+                                                        />
+                                                    </VCol>
+                                                </VRow>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                                    Comments
+                                                </h6>
+                                                <VRow>
+                                                    <VCol cols="12" md="12">
+                                                        <VTextarea
+                                                            v-model="comments"
+                                                            rows="4"
+                                                            label="Anteckningar"
+                                                        />
+                                                    </VCol>
+                                                    <VCol cols="12" md="12" class="py-0">
+                                                        <VCheckbox
+                                                            v-model="save_client"
+                                                            :readonly="disabled_client"
+                                                            color="primary"
+                                                            label="Spara kund?"
+                                                            class="w-100 text-center d-flex justify-content-end"
+                                                        />
+                                                    </VCol>
+                                                </VRow>
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
@@ -1217,13 +1394,6 @@ const getFlag = (currency_id) => {
                                                     label="Kamrem bytt vid Mil/datum"
                                                 />
                                             </VCol>
-                                            <VCol cols="12" md="12">
-                                                <VTextarea
-                                                    v-model="comments"
-                                                    rows="5"
-                                                    label="Anteckningar"
-                                                />
-                                            </VCol>
                                         </VRow>
                                     </VWindowItem>
                                     <!-- Planerade åtgärder -->
@@ -1248,7 +1418,7 @@ const getFlag = (currency_id) => {
                                                 <VCard
                                                     flat
                                                     color="#E3DEEB"
-                                                    class="mx-1"
+                                                    class="mx-1 my-1"
                                                     style="box-shadow: none !important; border-radius: 12px !important;"
                                                 >
                                                     <VCardItem>
@@ -1470,7 +1640,7 @@ const getFlag = (currency_id) => {
                                                     v-for="(document, index) in documents"
                                                     :key="index"
                                                     style="height: 3rem;">
-                                                    <td>
+                                                    <td style="min-width: 30px;">
                                                         <VCheckbox
                                                             :value="document.id"
                                                             v-model="selectedIds"
@@ -1970,19 +2140,20 @@ const getFlag = (currency_id) => {
                          <VRow>
                             <VCol cols="12" md="12">
                                 <VAutocomplete
-                                    v-model="client_id"
+                                    v-model="cl_id"
                                     label="Kunder"
                                     :items="clients"
                                     :item-title="item => item.fullname"
                                     :item-value="item => item.id"
                                     autocomplete="off"
-                                    @update:modelValue="selectClient"
+                                    @update:modelValue="selectCl"
                                     :rules="[requiredValidator]"/>
                             </VCol>
                             <VCol cols="12" md="12">
                                 <VTextField
-                                    v-model="email"
+                                    v-model="mail"
                                     label="E-post"
+                                    :rules="[emailValidator]"
                                 />
                             </VCol>
                         </VRow>
@@ -2030,6 +2201,10 @@ const getFlag = (currency_id) => {
 
     .justify-content-center {
         justify-content: center !important;
+    }
+
+    .justify-content-end {
+        justify-content: end !important;
     }
 </style>
 

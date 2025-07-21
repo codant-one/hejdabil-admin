@@ -203,6 +203,8 @@ async function fetchData() {
     paymentTypes.value = agreementsStores.paymentTypes
     advances.value = agreementsStores.advances
 
+    sale_date.value = formatDate(new Date())
+
     isRequestOngoing.value = false
 }
 

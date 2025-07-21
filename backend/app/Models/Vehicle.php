@@ -73,8 +73,12 @@ class Vehicle extends Model
         return $this->hasMany(VehicleDocument::class, 'vehicle_id', 'id');
     }
 
-    public function vehicle_client(){
-        return $this->hasOne(VehicleClient::class, 'vehicle_id', 'id');
+    public function client_sale(){
+        return $this->hasOne(VehicleClient::class, 'vehicle_id', 'id')->where('type', 1);
+    }
+
+    public function client_purchase(){
+        return $this->hasOne(VehicleClient::class, 'vehicle_id', 'id')->where('type', 2);
     }
 
     public function vehicle_interchange(){
@@ -210,8 +214,18 @@ class Vehicle extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
-        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
+        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs',  'client_purchase', 'client_sale'])->find($vehicle->id);
         $name = $vehicle->reg_num;
+
+        if($vehicle->client_purchase) {
+            VehicleClient::updateClient($request, $vehicle->client_purchase);  
+        } else {
+            $request->request->add([
+                'vehicle_id' => $vehicle->id
+            ]);
+            
+            VehicleClient::createClient($request);         
+        }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {
             mkdir(storage_path('app/public/pdfs'), 0755,true);

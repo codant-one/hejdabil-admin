@@ -172,7 +172,7 @@ async function fetchData() {
         purchase_price.value = vehicle.value.purchase_price
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         purchase_date.value = vehicle.value.purchase_date
-        currency_id.value = vehicle.value.currency_purchase_id
+        currency_id.value = vehicle.value.currency_purchase_id ?? 1
 
         sale_price.value = vehicle.value.sale_price
         sale_date.value = formatDate(new Date())
@@ -590,7 +590,7 @@ const getFlag = (currency_id) => {
                                                 </VCol>
                                             </VRow>
                                         </VWindowItem>
-                                        <!-- Försäljningsuppgifter -->
+                                        <!-- Kund -->
                                         <VWindowItem class="px-md-5">
                                             <VRow class="px-md-5">
                                                 <VCol cols="12" md="6">

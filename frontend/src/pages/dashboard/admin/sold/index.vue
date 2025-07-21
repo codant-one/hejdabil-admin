@@ -209,7 +209,7 @@ const downloadCSV = async () => {
       KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
       FÖRSÄLJNINGSPRIS: formatNumber(element.total_sale ?? 0) + ' kr',
       VINST: formatNumber(element.total_sale - element.purchase_price) + ' kr',
-      KÖPAREN: element.vehicle_client?.fullname
+      KÖPAREN: element.client_sale?.fullname
     }
 
     dataArray.push(data)
@@ -385,13 +385,13 @@ const downloadCSV = async () => {
                 <td class="text-end"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>
                 <td class="text-wrap">
                   <div class="d-flex flex-column">
-                    <span v-if="vehicle.vehicle_client.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.vehicle_client.client)">
-                      {{ vehicle.vehicle_client.fullname }} 
+                    <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_sale.client)">
+                      {{ vehicle.client_sale.fullname }} 
                     </span>
                     <span v-else class="font-weight-medium  text-primary">
-                      {{ vehicle.vehicle_client.fullname }} 
+                      {{ vehicle.client_sale.fullname }} 
                     </span>
-                    <span class="text-sm text-disabled">{{ vehicle.vehicle_client.phone }}</span>
+                    <span class="text-sm text-disabled">{{ vehicle.client_sale.phone }}</span>
                   </div>
                 </td>                
                 <!-- 👉 Acciones -->

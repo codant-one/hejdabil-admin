@@ -76,12 +76,20 @@ const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const comments = ref(null)
 const sale_comments = ref(null)
-const organization_number = ref('')
-const address = ref('')
-const postal_code = ref('')
-const phone = ref('')
-const fullname = ref('')
-const email = ref('')
+
+const organization_number_purchase = ref('')
+const address_purchase = ref('')
+const postal_code_purchase = ref('')
+const phone_purchase = ref('')
+const fullname_purchase= ref('')
+const email_purchase = ref('')
+
+const organization_number_sale = ref('')
+const address_sale = ref('')
+const postal_code_sale = ref('')
+const phone_sale = ref('')
+const fullname_sale= ref('')
+const email_sale = ref('')
 
 const tab = ref('0')
 
@@ -123,15 +131,22 @@ watchEffect(async () => {
             last_service.value = props.vehicle.last_service
             dist_belt.value = props.vehicle.dist_belt
             last_dist_belt.value = props.vehicle.last_dist_belt
-            comments.value = props.vehicle.comments
 
             sale_comments.value = props.vehicle.sale_comments
-            organization_number.value = props.vehicle.vehicle_client?.organization_number
-            address.value = props.vehicle.vehicle_client?.address
-            postal_code.value = props.vehicle.vehicle_client?.street + ' ' + props.vehicle.vehicle_client?.postal_code
-            phone.value = props.vehicle.vehicle_client?.phone
-            fullname.value = props.vehicle.vehicle_client?.fullname
-            email.value = props.vehicle.vehicle_client?.email
+            organization_number_sale.value = props.vehicle.client_sale?.organization_number
+            address_sale.value = props.vehicle.client_sale?.address
+            postal_code_sale.value = props.vehicle.client_sale?.street + ' ' + props.vehicle.client_sale?.postal_code
+            phone_sale.value = props.vehicle.client_sale?.phone
+            fullname_sale.value = props.vehicle.client_sale?.fullname
+            email_sale.value = props.vehicle.client_sale?.email
+
+            comments.value = props.vehicle.comments
+            organization_number_purchase.value = props.vehicle.client_purchase?.organization_number
+            address_purchase.value = props.vehicle.client_purchase?.address
+            postal_code_purchase.value = props.vehicle.client_purchase?.street + ' ' + props.vehicle.client_purchase?.postal_code
+            phone_purchase.value = props.vehicle.client_purchase?.phone
+            fullname_purchase.value = props.vehicle.client_purchase?.fullname
+            email_purchase.value = props.vehicle.client_purchase?.email
 
             vehicleImages.value = [
                 { url: car },
@@ -279,8 +294,9 @@ const setThumbsSwiper = (swiper) => {
                                 <VTab value="0">Fordon</VTab>
                                 <VTab value="1">Information om bilen</VTab>
                                 <VTab value="2">Prisinformation</VTab>
-                                <VTab value="3" v-if="state_id === 12">Försäljningsuppgifter</VTab>
-                                <VTab value="4" v-if="state_id === 12">Köpare</VTab>
+                                <VTab value="3">Säljaren</VTab>
+                                <VTab value="4" v-if="state_id === 12">Försäljningsuppgifter</VTab>
+                                <VTab value="5" v-if="state_id === 12">Köpare</VTab>
                             </VTabs>
                             <VWindow v-model="tab">
                                 <VWindowItem value="0">
@@ -379,7 +395,39 @@ const setThumbsSwiper = (swiper) => {
                                         </VRow>
                                     </VContainer>
                                 </VWindowItem>
-                                <VWindowItem value="3" v-if="state_id === 12">
+                                <VWindowItem value="3">
+                                    <VContainer fluid>
+                                        <VRow>
+                                            <VCol cols="12">                                             
+                                                <div>
+                                                    <span class="font-weight-semibold"> Org/personummer: </span>
+                                                    <span>{{ organization_number_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Namn: </span>
+                                                    <span>{{ fullname_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Adress: </span>
+                                                    <span>{{ address_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Postnr. ort: </span>
+                                                    <span>{{ postal_code_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Telefon: </span>
+                                                    <span>{{ phone_purchase }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> E-post: </span>
+                                                    <span>{{ email_purchase }}</span>
+                                                </div>
+                                            </VCol>
+                                        </VRow>
+                                    </VContainer>
+                                </VWindowItem>
+                                <VWindowItem value="4" v-if="state_id === 12">
                                     <VContainer fluid>
                                         <VRow>
                                             <VCol cols="12">
@@ -423,33 +471,33 @@ const setThumbsSwiper = (swiper) => {
                                         </VRow>
                                     </VContainer>
                                 </VWindowItem>
-                                 <VWindowItem value="4" v-if="state_id === 12">
+                                <VWindowItem value="5" v-if="state_id === 12">
                                     <VContainer fluid>
                                         <VRow>
                                             <VCol cols="12">                                             
                                                 <div>
                                                     <span class="font-weight-semibold"> Org/personummer: </span>
-                                                    <span>{{ organization_number }}</span>
+                                                    <span>{{ organization_number_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Namn: </span>
-                                                    <span>{{ fullname }}</span>
+                                                    <span>{{ fullname_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Adress: </span>
-                                                    <span>{{ address }}</span>
+                                                    <span>{{ address_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Postnr. ort: </span>
-                                                    <span>{{ postal_code }}</span>
+                                                    <span>{{ postal_code_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> Telefon: </span>
-                                                    <span>{{ phone }}</span>
+                                                    <span>{{ phone_sale }}</span>
                                                 </div>
                                                 <div>
                                                     <span class="font-weight-semibold"> E-post: </span>
-                                                    <span>{{ email }}</span>
+                                                    <span>{{ email_sale }}</span>
                                                 </div>
                                             </VCol>
                                         </VRow>
