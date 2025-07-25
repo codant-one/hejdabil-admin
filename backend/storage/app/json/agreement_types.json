@@ -2,5 +2,5 @@
   { "id": 1, "name": "Försäljningsavtal", "value": "sales-agreement" },
   { "id": 2, "name": "Inköpsavtal", "value": "purchase-agreement" },
   { "id": 3, "name": "Förmedlingsavtal", "value": "mediation-agreement" },
-  { "id": 4, "name": "Affärsförslag", "value": "business-proposal" }
+  { "id": 4, "name": "Prisförslag", "value": "business-proposal" }
 ]
