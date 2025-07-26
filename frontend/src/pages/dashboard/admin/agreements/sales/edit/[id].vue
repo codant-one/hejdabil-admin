@@ -400,15 +400,6 @@ const getModelsInterchange = computed(() => {
     return models
 })
 
-const clearClient = () => {
-    fullname.value = null
-    email.value = null
-    organization_number.value = null
-    address.value = null
-    street.value = null
-    postal_code.value = null
-    phone.value = null
-}
 
 const getFlag = (currency_id) => {
     return currencies.value.filter(item => item.id === currency_id)[0].flag

@@ -10,6 +10,8 @@ use Carbon\Carbon;
 use App\Models\UserDetails;
 use App\Models\UserMenu;
 use App\Models\Supplier;
+use App\Models\Offer;
+
 
 /**
  * Trait for models with stores
@@ -27,6 +29,10 @@ trait UserHelper
 
     public function supplier() {
         return $this->hasOne(Supplier::class, 'user_id', 'id');
+    }
+
+    public function offers() {
+        return $this->hasMany(Offer::class, 'user_id', 'id');
     }
 
     /**** Public methods ****/

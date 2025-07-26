@@ -19,7 +19,8 @@
                 'roles' => $rol,
                 'hash' => $user->password,
                 'full_profile' => $user->full_profile,
-                'supplier' => $user->supplier
+                'supplier' => $user->supplier,
+                'offers' => $user->offers
             );
 
             return $userData;

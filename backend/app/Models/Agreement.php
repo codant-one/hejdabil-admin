@@ -18,6 +18,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleClient;
 use App\Models\VehiclePayment;
 use App\Models\AgreementClient;
+use App\Models\Offer;
 
 class Agreement extends Model
 {
@@ -74,6 +75,10 @@ class Agreement extends Model
         return $this->belongsTo(VehicleClient::class, 'vehicle_client_id', 'id');
     }
 
+    public function offer(){
+        return $this->belongsTo(Offer::class, 'offer_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('id', $search);
@@ -123,6 +128,9 @@ class Agreement extends Model
             case 2:
                 $request = self::purchaseAgreement($request);
                 break;
+            case 4:
+                $request = self::createOffer($request);
+                break;
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
@@ -140,6 +148,7 @@ class Agreement extends Model
             'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
+            'offer_id' => $request->offer_id === 'null' ? null : $request->offer_id,
             'agreement_id' => $request->agreement_id,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
@@ -185,6 +194,9 @@ class Agreement extends Model
             case 2:
                 self::updatePurchase($request, $agreement);
                 break;
+            case 4:
+                self::updateOffer($request, $agreement);
+                break;
         }
 
         $agreement->update([
@@ -197,6 +209,7 @@ class Agreement extends Model
             'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
+            'offer_id' => $request->offer_id === 'null' ? null : $request->offer_id,
             'agreement_id' => $request->agreement_id,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
@@ -250,6 +263,7 @@ class Agreement extends Model
             'insurance_type',
             'currency',
             'iva',
+            'offer',
             'payment_types',
             'vehicle_interchange.model.brand',
             'vehicle_interchange.carbody',
@@ -270,12 +284,16 @@ class Agreement extends Model
 
         switch ($request->agreement_type_id) {
             case 1:
-                PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 2:
-                PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
+                break;
+            case 4:
+                PDF::loadView('pdfs.business', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
+                $agreement->file = 'pdfs/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf';
                 break;
         }
 
@@ -517,6 +535,22 @@ class Agreement extends Model
         
         return $request;
 
+    }
+    
+    public static function createOffer($request) {
+
+        $offer = Offer::createOffer($request);
+
+        $request->request->add([
+            'offer_id' => $offer->id
+        ]);
+
+        return $request;
+    }
+
+    public static function updateOffer($request, $agreement) {
+        $offer = Offer::find($agreement->offer_id);
+        $offer->updateOffer($request, $offer);
     }
     
 }

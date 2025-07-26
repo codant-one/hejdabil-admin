@@ -3,16 +3,13 @@
 import { ref, watchEffect, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { requiredValidator } from '@/@core/utils/validators'
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
-import { useAuthStores } from '@/stores/useAuth'
 import { useAgreementsStores } from '@/stores/useAgreements'
 
 const router = useRouter()
 const emitter = inject("emitter")
 
-const authStores = useAuthStores()
+const route = useRoute()
 const agreementsStores = useAgreementsStores()
-const ability = useAppAbility()
 
 const isRequestOngoing = ref(false)
 const refForm = ref()
@@ -20,6 +17,7 @@ const refForm = ref()
 const userData = ref(null)
 const currencies = ref([])
 const currency_id = ref(1)
+const agreement = ref(null)
 
 const brands = ref([])
 const models = ref([])
@@ -34,30 +32,53 @@ const price = ref(null)
 const comment = ref(null)
 const terms_other_conditions = ref(null)
 
-watchEffect(async () => {
-    isRequestOngoing.value = true
+watchEffect(fetchData)
 
-    await agreementsStores.info()
+async function fetchData() {
 
-    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  
-    const { user_data, userAbilities } = await authStores.me(userData.value)
+    if(Number(route.params.id) && route.name === 'dashboard-admin-agreements-business-edit-id') {
+        isRequestOngoing.value = true
 
-    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+        await agreementsStores.info()
 
-    ability.update(userAbilities)
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
 
-    localStorage.setItem('user_data', JSON.stringify(user_data))
+        brands.value = agreementsStores.brands
+        models.value = agreementsStores.models 
+        currencies.value = agreementsStores.currencies
 
-    offer_id.value = user_data.offers.length + 1
+        agreement.value = await agreementsStores.showAgreement(Number(route.params.id))
 
-    brands.value = agreementsStores.brands
-    models.value = agreementsStores.models 
-    currencies.value = agreementsStores.currencies
+        reg_num.value = agreement.value.offer.reg_num
+        offer_id.value = agreement.value.offer.offer_id
 
-    isRequestOngoing.value = false
-   
-})
+        reg_num.value = agreement.value.offer.reg_num
+        price.value =  formatDecimal(agreement.value.offer.price)
+        comment.value = agreement.value.offer.comment
+        mileage.value = agreement.value.offer.mileage
+        terms_other_conditions.value = agreement.value.terms_other_conditions
+     
+        if(agreement.value.offer.model_id !== null) {
+            let modelId = agreement.value.offer.model_id
+            let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
+            selectBrand(brandId)
+            brand_id.value = brandId
+            model_id.value = agreement.value.offer.model_id
+        }      
+
+        isRequestOngoing.value = false
+    }
+}
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
+    }
+
+    return number.toString();
+}
 
 const selectBrand = brand => {
     if (brand) {
@@ -94,53 +115,62 @@ const selectModel = selected => {
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid: isValid }) => {
     if (isValid) {
-      let formData = new FormData()
+        let formData = new FormData()
 
-      //vehicle
-      formData.append('reg_num', reg_num.value)
-      formData.append('brand_id', brand_id.value)
-      formData.append('model_id', model_id.value)
-      formData.append('model', model.value)
-      formData.append('offerId', offer_id.value)
-      formData.append('mileage', mileage.value)
-      formData.append('comment', comment.value)
-      formData.append('price', price.value)
-      formData.append('terms_other_conditions', terms_other_conditions.value)
+        formData.append('id', Number(route.params.id))
+        formData.append('_method', 'PUT')
 
-      //agreement
-      formData.append('agreement_type_id', 4)
-      formData.append('currency_id', currency_id.value)
-      formData.append('price', price.value)
-      formData.append('residual_debt', 0)
+        //vehicle
+        formData.append('reg_num', reg_num.value)
+        formData.append('brand_id', brand_id.value)
+        formData.append('model_id', model_id.value)
+        formData.append('model', model.value)
+        formData.append('offerId', offer_id.value)
+        formData.append('offer_id', agreement.value.offer_id)
+        formData.append('mileage', mileage.value)
+        formData.append('comment', comment.value)
+        formData.append('price', price.value)
+        formData.append('terms_other_conditions', terms_other_conditions.value)
 
-      isRequestOngoing.value = true
+        //agreement
+        formData.append('agreement_type_id', 4)
+        formData.append('currency_id', currency_id.value)
+        formData.append('price', price.value)
+        formData.append('residual_debt', 0)
 
-      agreementsStores.addAgreement(formData)
-          .then((res) => {
-              if (res.data.success) {
-                  
-                  let data = {
-                      message: 'Erbjudande framgångsrikt skapat',
-                      error: false
-                  }
+        isRequestOngoing.value = true
 
-                  router.push({ name : 'dashboard-admin-agreements'})
-                  emitter.emit('toast', data)
-              }
-              isRequestOngoing.value = false
-          })
-          .catch((err) => {
-              
-              let data = {
-                  message: err.message,
-                  error: true
-              }
+        let data = {
+            data: formData, 
+            id: Number(route.params.id)
+        }
 
-              router.push({ name : 'dashboard-admin-agreements'})
-              emitter.emit('toast', data)
+        agreementsStores.updateAgreement(data)
+            .then((res) => {
+                if (res.data.success) {
+                    
+                    let data = {
+                        message: 'Erbjudande framgångsrikt skapat',
+                        error: false
+                    }
 
-              isRequestOngoing.value = false
-          })
+                    router.push({ name : 'dashboard-admin-agreements'})
+                    emitter.emit('toast', data)
+                }
+                isRequestOngoing.value = false
+            })
+            .catch((err) => {
+                
+                let data = {
+                    message: err.message,
+                    error: true
+                }
+
+                router.push({ name : 'dashboard-admin-agreements'})
+                emitter.emit('toast', data)
+
+                isRequestOngoing.value = false
+            })
     }
   })
 }
@@ -185,7 +215,7 @@ const onSubmit = () => {
                     class="w-100 w-md-auto"
                     :loading="isRequestOngoing"
                   >
-                      Lägg till
+                    Uppdatering
                   </VBtn>
             </div>
           </div>
@@ -301,6 +331,6 @@ const onSubmit = () => {
 
 <route lang="yaml">
   meta:
-    action: create
+    action: edit
     subject: agreements
 </route>

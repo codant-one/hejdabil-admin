@@ -25,7 +25,7 @@ return new class extends Migration
             $table->unsignedBigInteger('payment_type_id')->nullable();
             $table->unsignedBigInteger("iva_id")->nullable()->comment("IVA (0: VMB, 1: TINA)");
             $table->unsignedBigInteger('advance_id')->nullable();
-            $table->unsignedBigInteger('agreement_id');
+            $table->unsignedBigInteger('agreement_id')->nullable();
 
             $table->date("sale_date")->nullable()->comment("Sale date");
             $table->decimal("trade_price")->nullable()->comment("Trade price");

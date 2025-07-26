@@ -384,7 +384,12 @@ const addAgreements = () => {
                 v-for="agreement in agreements"
                 :key="agreement.id"
                 style="height: 3rem;">
-                <td> {{ agreement.vehicle_client.vehicle.reg_num }} </td>
+                <td> 
+                  {{ agreement.agreement_type_id === 4 ?
+                    agreement.offer.reg_num : 
+                    agreement.vehicle_client?.vehicle.reg_num 
+                  }} 
+                </td>
                 <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
                 <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
                 <td> {{ agreement.agreement_type.name  }}</td>          

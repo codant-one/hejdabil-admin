@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('offers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('model_id')->nullable()->comment("Model a car, example Corolla");
+            $table->unsignedBigInteger('model_id')->comment("Model a car, example Corolla");
             $table->unsignedBigInteger('offer_id');
             $table->string('reg_num')->comment('Register number');
             $table->string('mileage')->nullable()->comment("Kilometers traveled");
-            $table->longtext('comment');
+            $table->longtext('comment')->nullable();
             $table->decimal("price", 10, 2)->nullable()->comment("Agreement price");
             $table->longText("terms_other_conditions")->nullable()->comment("Terms other conditions");
             $table->timestamps();

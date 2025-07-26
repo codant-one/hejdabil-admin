@@ -163,6 +163,8 @@ class TestingController extends Controller
             'insurance_type',
             'currency',
             'iva',
+            'offer.user',
+            'offer.model.brand',
             'payment_types',
             'vehicle_interchange.model.brand',
             'vehicle_interchange.carbody',
@@ -173,10 +175,10 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(5);
+        ])->find(12);
 
         $user = User::with(['userDetail'])->find(1);
-
+ 
         switch ($agreement->agreement_type_id) {
             case 1:
                 $pdf = 'pdfs.sales';
@@ -188,10 +190,10 @@ class TestingController extends Controller
                 $pdf = '';
                 break;
             case 4:
-                $pdf = '';
+                $pdf = 'pdfs.business';
                 break;
         }
-        
+
         return view($pdf, 
             compact(
                 'agreement',

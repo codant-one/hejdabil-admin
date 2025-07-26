@@ -56,6 +56,7 @@ class AgreementController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Agreement::with([
+                        'offer',
                         'agreement_type',
                         'agreement_client',
                         'vehicle_interchange',
@@ -130,6 +131,7 @@ class AgreementController extends Controller
                         'insurance_type',
                         'currency',
                         'iva',
+                        'offer',
                         'payment_types',
                         'vehicle_interchange.model.brand',
                         'vehicle_interchange.carbody',
