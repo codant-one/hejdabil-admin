@@ -271,11 +271,11 @@ class Agreement extends Model
         switch ($request->agreement_type_id) {
             case 1:
                 PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
-                $agreement->file = 'pdfs/'.'försäljningsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
+                $agreement->file = 'pdfs/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 2:
                 PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf');
-                $agreement->file = 'pdfs/'.'inköpsavtal-'.$user->id.'-'.$agreement->agreement_id.'.pdf';
+                $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
         }
 
@@ -354,6 +354,7 @@ class Agreement extends Model
             $request->merge(['reg_num' => $request->reg_num_interchange ]);
             $request->merge(['brand_id' => $request->brand_id_interchange ]);
             $request->merge(['model_id' => $request->model_id_interchange ]);
+            $request->merge(['model' => $request->model_interchange ]);
             $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
             $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
             $request->merge(['year' => $request->year_interchange ]);
@@ -407,6 +408,7 @@ class Agreement extends Model
             $request->merge(['reg_num' => $request->reg_num_interchange ]);
             $request->merge(['brand_id' => $request->brand_id_interchange ]);
             $request->merge(['model_id' => $request->model_id_interchange ]);
+            $request->merge(['model' => $request->model_interchange ]);
             $request->merge(['car_body_id' => $request->car_body_id_interchange ]);
             $request->merge(['iva_purchase_id' => $request->iva_purchase_id_interchange ]);
             $request->merge(['year' => $request->year_interchange ]);

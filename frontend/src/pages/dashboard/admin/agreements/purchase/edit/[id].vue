@@ -36,6 +36,7 @@ const brands = ref([])
 const models = ref([])
 const brand_id = ref(null)
 const model_id = ref(null)
+const model = ref(null)
 const modelsByBrand = ref([])
 const year = ref(null)
 const color = ref(null)
@@ -72,7 +73,7 @@ const price = ref(null)
 const iva_id = ref(null)
 const iva_sale_amount = ref(0)
 const iva_sale_exclusive = ref(0)
-const is_loan = ref(0)
+const is_loan = ref(1)
 const loan_amount = ref(null)
 const lessor = ref(null)
 const settled_by = ref(0)
@@ -289,6 +290,12 @@ const selectBrand = brand => {
     }
 }
 
+const selectModel = selected => {
+
+    model.value = selected !== 0 ? null : model.value
+
+}
+
 const onClearBrand = () => {
     modelsByBrand.value = []
 }
@@ -298,6 +305,10 @@ const getModels = computed(() => {
         title: model.name,
         value: model.id
     }))
+
+    if (modelsByBrand.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
+    }
 
     return models
 })
@@ -342,6 +353,7 @@ const onSubmit = () => {
             formData.append('reg_num', reg_num.value)
             formData.append('brand_id', brand_id.value)
             formData.append('model_id', model_id.value)
+            formData.append('model', model.value)
             formData.append('year', year.value)
             formData.append('color', color.value)
             formData.append('chassis', chassis.value)
@@ -530,7 +542,7 @@ const onSubmit = () => {
                                                     @update:modelValue="selectBrand"
                                                     @click:clear="onClearBrand"/>
                                             </VCol>
-                                            <VCol cols="12" md="6">
+                                            <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VAutocomplete
                                                     v-model="model_id"
                                                     label="Modell"
@@ -538,9 +550,15 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    :rules="[requiredValidator]"/> 
+                                                    :rules="[requiredValidator]"
+                                                    @update:modelValue="selectModel"/> 
                                             </VCol>
-
+                                            <VCol cols="12" md="3" v-if="model_id === 0">
+                                                <VTextField
+                                                    v-model="model"
+                                                    label="Modellens namn"
+                                                />
+                                            </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="year"
@@ -905,12 +923,14 @@ const onSubmit = () => {
                                                     label="Kreditbelopp"
                                                     type="number"
                                                     min="0"
+                                                    :disabled="is_loan === 1 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="lessor"
                                                     label="Kredit/leasinggivare"
+                                                    :disabled="is_loan === 1 ? true : false"
                                                 />
                                             </VCol>           
                                             <VCol cols="12" md="6" class="d-flex align-center">
@@ -941,6 +961,7 @@ const onSubmit = () => {
                                                     :rules="[requiredValidator]"
                                                     @update:modelValue="selectPaymentType"
                                                     @click:clear="selectPaymentType"
+                                                    :disabled="settled_by === 0 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="payment_type_id === 0">
@@ -955,6 +976,7 @@ const onSubmit = () => {
                                                     v-model="bank"
                                                     label="Namn på banken"
                                                     :rules="[requiredValidator]"
+                                                    :disabled="settled_by === 0 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -962,13 +984,15 @@ const onSubmit = () => {
                                                     v-model="account"
                                                     label="Clearing/kontonummer"
                                                     :rules="[requiredValidator]"
+                                                    :disabled="settled_by === 0 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="description"
                                                     label="Betalningsbeskrivning"
-                                                     :rules="[requiredValidator]"
+                                                    :rules="[requiredValidator]"
+                                                    :disabled="settled_by === 0 ? true : false"
                                                 />
                                             </VCol>
                                         </VRow>

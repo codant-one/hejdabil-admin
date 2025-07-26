@@ -418,37 +418,23 @@
                                         </div>
                                     </td>
                                 </tr>
-
+                                @if($agreement->vehicle_client->vehicle->payment->is_loan === 0)
                                 <tr>
                                     <td class="column-cell column-cell-left-2">
-                                        <div class="label">Har bilen Kredit/leasing</div>
-                                        <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->payment->is_loan === 0 ? 'Ja' : 'Nej' }}
-                                        </div>
-                                    </td>
-                                    <td class="column-cell column-cell-right-2">
                                         <div class="label">Kreditbelopp</div>
                                         <div class="value">
                                             {{ formatCurrency($agreement->vehicle_client->vehicle->payment->loan_amount) }} kr
                                         </div>
                                     </td>
-                                </tr>
-
-                                <tr>
-                                    <td class="column-cell column-cell-left-2">
+                                    <td class="column-cell column-cell-right-2">
                                         <div class="label">Kredit/leasinggivare</div>
                                         <div class="value">
                                             {{ $agreement->vehicle_client->vehicle->payment->lessor }}
                                         </div>
                                     </td>
-                                    <td class="column-cell column-cell-right-2">
-                                        <div class="label">Restskulden löses av</div>
-                                        <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->payment->settled_by === 0 ? 'Bilhandlare' : 'Kund' }}
-                                        </div>
-                                    </td>
                                 </tr>
-
+                                @endif
+                                @if($agreement->vehicle_client->vehicle->payment->settled_by === 1)
                                 <tr>
                                     <td class="column-cell column-cell-left-2">
                                         <div class="label">Typ av utbetalning till säljaren</div>
@@ -478,6 +464,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                @endif
                             </table>
                         </td>
                     </tr>
@@ -520,7 +507,7 @@
 
         <tr>
             <td class="column-cell column-cell-left">
-                <h2>Avtalstext</h2>
+                <h2>Villkor</h2>
                 <table class="info-table">
                     <tr>
                         <td>

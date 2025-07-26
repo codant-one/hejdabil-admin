@@ -462,18 +462,19 @@
                                             </div>
                                         </td>
                                     </tr>
-
                                     <tr>
+                                        @if($agreement->residual_debt === 1)
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Restskuld</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange?->residual_debt) }} kr
+                                                {{ formatCurrency($agreement->residual_price) }} kr
                                             </div>
                                         </td>
+                                        @endif
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Verkligt värde</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange?->fair_value) }} kr
+                                                {{ formatCurrency($agreement->fair_value) }} kr
                                             </div>
                                         </td>
                                     </tr>

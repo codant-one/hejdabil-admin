@@ -32,6 +32,7 @@ const currency_id = ref(1)
 //const tab 1
 const brand_id = ref(null)
 const model_id = ref(null)
+const model = ref(null)
 const modelsByBrand = ref([])
 const year = ref(null)
 const color = ref(null)
@@ -53,6 +54,7 @@ const brand_id_interchange = ref(null)
 const models = ref([])
 const modelsByBrandInterchange = ref([])
 const model_id_interchange = ref(null)
+const model_interchange = ref(null)
 const year_interchange = ref(null)
 const meter_reading_interchange = ref(null)
 const carbodies = ref([])
@@ -63,7 +65,7 @@ const chassis_interchange = ref(null)
 const sale_date_interchange = ref(null)
 const trade_price = ref(0)
 const residual_debt = ref(0)
-const optionsRadio = ['Ja', 'Nej']
+const optionsRadio = ['Nej', 'Ja']
 const residual_price = ref(null)
 const ivas = ref([])
 const iva_purchase_id_interchange = ref(null)
@@ -270,7 +272,6 @@ async function fetchData() {
         payment_received.value = agreement.value.payment_received ? formatDecimal(agreement.value.payment_received) : null
         payment_method_forcash.value = agreement.value.payment_method_forcash ? formatDecimal(agreement.value.payment_method_forcash) : null
         installment_amount.value =agreement.value.installment_amount ?  formatDecimal(agreement.value.installment_amount) : null
-        installment_contract_upon_delivery.value = agreement.value.installment_contract_upon_delivery === 1 ? true : false
         payment_description.value = agreement.value.payment_description
 
         terms_other_conditions.value = agreement.value.terms_other_conditions
@@ -353,6 +354,18 @@ const selectBrand = brand => {
     }
 }
 
+const selectModel = selected => {
+
+    model.value = selected !== 0 ? null : model.value
+
+}
+
+const selectModelInterchange = selected => {
+
+    model_interchange.value = selected !== 0 ? null : model_interchange.value
+
+}
+
 const onClearBrandInterchange = () => {
     modelsByBrandInterchange.value = []
 }
@@ -367,6 +380,10 @@ const getModels = computed(() => {
         value: model.id
     }))
 
+    if (modelsByBrand.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
+    }
+
     return models
 })
 
@@ -375,6 +392,10 @@ const getModelsInterchange = computed(() => {
         title: model.name,
         value: model.id
     }))
+
+    if (modelsByBrandInterchange.value.length > 0) {
+        models.push({ title: 'En annan..', value: 0 })
+    }
 
     return models
 })
@@ -402,6 +423,10 @@ const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+const onChangeRadio = (newValue) => {
+  residual_price.value = newValue === 1 ? 0 : residual_price.value
 }
 
 const onSubmit = () => {
@@ -440,6 +465,7 @@ const onSubmit = () => {
             formData.append('reg_num', reg_num.value)
             formData.append('brand_id', brand_id.value)
             formData.append('model_id', model_id.value)
+            formData.append('model', model.value)
             formData.append('year', year.value)
             formData.append('color', color.value)
             formData.append('chassis', chassis.value)
@@ -451,6 +477,7 @@ const onSubmit = () => {
             formData.append('reg_num_interchange', reg_num_interchange.value)
             formData.append('brand_id_interchange', brand_id_interchange.value)
             formData.append('model_id_interchange', model_id_interchange.value)
+            formData.append('model_interchange', model_interchange.value)
             formData.append('car_body_id_interchange', car_body_id_interchange.value)
             formData.append('iva_purchase_id_interchange', iva_purchase_id_interchange.value)
             formData.append('year_interchange', year_interchange.value)
@@ -621,7 +648,7 @@ const onSubmit = () => {
                                                     @update:modelValue="selectBrand"
                                                     @click:clear="onClearBrand"/>
                                             </VCol>
-                                            <VCol cols="12" md="6">
+                                            <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VAutocomplete
                                                     v-model="model_id"
                                                     label="Modell"
@@ -629,9 +656,15 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    :rules="[requiredValidator]"/> 
+                                                    :rules="[requiredValidator]"
+                                                    @update:modelValue="selectModel"/>
                                             </VCol>
-
+                                            <VCol cols="12" md="3" v-if="model_id === 0">
+                                                <VTextField
+                                                    v-model="model"
+                                                    label="Modellens namn"
+                                                />
+                                            </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="year"
@@ -757,14 +790,21 @@ const onSubmit = () => {
                                                     @update:modelValue="selectBrandInterchange"
                                                     @click:clear="onClearBrandInterchange"/> 
                                             </VCol>
-                                            <VCol cols="12" md="6">
+                                            <VCol cols="12" :md="model_id_interchange !== 0 ? 6 : 3">
                                                 <VAutocomplete
                                                     v-model="model_id_interchange"
                                                     label="Modell"
                                                     :items="getModelsInterchange"
                                                     autocomplete="off"
                                                     clearable
-                                                    clear-icon="tabler-x"/> 
+                                                    clear-icon="tabler-x"
+                                                    @update:modelValue="selectModelInterchange"/> 
+                                            </VCol>
+                                            <VCol cols="12" md="3" v-if="model_id_interchange === 0">
+                                                <VTextField
+                                                    v-model="model_interchange"
+                                                    label="Modellens namn"
+                                                />
                                             </VCol>
                                             <VCol cols="12" md="3">
                                                 <VTextField
@@ -823,7 +863,11 @@ const onSubmit = () => {
                                             <VCol cols="12" md="3">
                                                 <div class="d-flex flex-column ms-2">
                                                     <label class="v-label text-body-2 text-wrap">Restskuld</label>
-                                                    <VRadioGroup v-model="residual_debt" inline class="radio-form">
+                                                    <VRadioGroup 
+                                                        v-model="residual_debt" 
+                                                        inline 
+                                                        class="radio-form"
+                                                        @update:modelValue="onChangeRadio">
                                                         <VRadio
                                                             v-for="(radio, index) in optionsRadio"
                                                             :key="index"
@@ -839,6 +883,7 @@ const onSubmit = () => {
                                                     :label="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')"
                                                     type="number"
                                                     min="0"
+                                                    :disabled="residual_debt === 0 ? true : false"
                                                 /> 
                                             </VCol>                                        
                                             <VCol cols="12" md="3">
@@ -1173,14 +1218,6 @@ const onSubmit = () => {
                                                     label="Avbetalningsbelopp (kreditbelopp/leasing)"
                                                     type="number"
                                                     min="0"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6" class="py-0">
-                                                <VCheckbox
-                                                    v-model="installment_contract_upon_delivery"
-                                                    color="primary"
-                                                    label="Ja, se bifogade kreditvillkor"
-                                                    class="w-100 text-center d-flex justify-content-end"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
