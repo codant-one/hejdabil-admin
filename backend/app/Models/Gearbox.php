@@ -16,6 +16,10 @@ class Gearbox extends Model
         return $this->hasMany(Vehicle::class, 'gearbox_id', 'id');
     }
 
+    public function commission_vehicles(){
+        return $this->hasMany(CommissionVehicle::class, 'gearbox_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('name', 'LIKE', '%' . $search . '%');

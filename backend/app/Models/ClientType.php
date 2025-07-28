@@ -17,6 +17,10 @@ class ClientType extends Model
         return $this->hasMany(VehicleClient::class, 'client_type_id', 'id');
     }
 
+    public function commission_client(){
+        return $this->hasMany(CommissionClient::class, 'client_type_id', 'id');
+    }
+
     public function agreement_client(){
         return $this->hasMany(VehicleClient::class, 'client_type_id', 'id');
     }

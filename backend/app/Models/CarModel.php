@@ -22,6 +22,10 @@ class CarModel extends Model
         return $this->hasMany(Vehicle::class, 'model_id', 'id');
     }
 
+    public function commission_vehicles(){
+        return $this->hasMany(CommissionVehicle::class, 'model_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->whereHas('brand', function ($q) use ($search) {

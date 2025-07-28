@@ -17,6 +17,10 @@ class Identification extends Model
         return $this->hasMany(VehicleClient::class, 'identification_id', 'id');
     }
 
+    public function commission_client(){
+        return $this->hasMany(CommissionClient::class, 'identification_id', 'id');
+    }
+
     public function agreement_client(){
         return $this->hasMany(VehicleClient::class, 'identification_id', 'id');
     }

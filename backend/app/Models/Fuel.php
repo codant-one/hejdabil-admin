@@ -15,4 +15,8 @@ class Fuel extends Model
     public function vehicles(){
         return $this->hasMany(Vehicle::class, 'fuel_id', 'id');
     }
+
+    public function commission_vehicles(){
+        return $this->hasMany(CommissionVehicle::class, 'fuel_id', 'id');
+    }
 }
