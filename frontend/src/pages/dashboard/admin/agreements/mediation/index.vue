@@ -62,10 +62,35 @@ const gearboxes = ref([])
 const carbodies = ref([])
 const fuels = ref([])
 const trade_price = ref(0)
-const residual_debt = ref(0)
 const optionsRadio = ['Ja', 'Nej']
 const residual_price = ref(null)
 const ivas = ref([])
+
+//const tab 3 - Förmedlingsavgift
+const commission_type_id = ref(null)
+const commission_fee = ref(null)
+const outstanding_debt = ref(1)
+const residual_debt = ref(0)
+const remaining_debt = ref(null)
+const paid_bank = ref(null)
+const selling_price = ref(null)
+
+// Opciones para los selectores de la pestaña 3
+const commissionTypes = ref([
+    { title: 'Fast avgift', value: 1 },
+    { title: 'Procent', value: 2 }
+])
+
+const outstandingDebtOptions = ref([
+    { title: 'Ja', value: 0 },
+    { title: 'Nej', value: 1 }
+])
+
+const residualDebtPayerOptions = ref([
+    { title: 'Kund', value: 0 },
+    { title: 'Bilhandlare', value: 1 }
+])
+
 
 //const tab 3
 const clients = ref([])
@@ -101,9 +126,33 @@ const payment_received = ref(null)
 const payment_method_forcash = ref(null)
 const installment_amount = ref(null)
 const installment_contract_upon_delivery = ref(false)
+
+
+const bank_name = ref('Swedbank AB') 
+const payment_days = ref(1) 
+const account_number = ref('1234-567890')
 const payment_description = ref(null)
 
-//Const tab 5
+//Const tab 5 - Förmedlingsdatum
+const start_date = ref(new Date())
+const end_date = ref(null)
+
+const endDateTimePickerConfig = computed(() => {
+    return {
+        dateFormat: 'Y-m-d',
+        position: 'auto right',
+        minDate: start_date.value 
+    }
+})
+
+ //Limpia la fecha de fin si la fecha de inicio se cambia a una posterior
+watch(start_date, (newStartDate) => {
+    if (end_date.value && newStartDate > end_date.value) {
+        end_date.value = null; 
+    }
+})
+
+//Const tab 6
 const test = ref(null)
 const terms_other_conditions = ref(null)
 const terms_other_information = ref(`Förmedlaren har rätt att sälja fordonet och ansvarar för visning, marknadsföring, kontrakt, betalning, leverans samt hantering av reklamationer. Fordonsägaren ansvarar för att bilen är försäkrad under förmedlingsperioden och att tillhörigheter som nycklar och servicehistorik lämnas in.
@@ -664,11 +713,93 @@ const onSubmit = () => {
                                     <VWindowItem class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
                                                     Förmedlingsavgift
                                                 </h6>
                                             </VCol>
+
+                                            <!-- Campo: commision_type_id -->
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="commission_type_id"
+                                                    label="Typ av provision"
+                                                    :items="commissionTypes"
+                                                    item-title="title"
+                                                    item-value="value"
+                                                    autocomplete="off"
+                                                />
+                                            </VCol>
+
+                                            <!-- Campo: commission_fee -->
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="commission_fee"
+                                                    label="Provisionsavgift"
+                                                    type="number"
+                                                    step="0.01"
+                                                />
+                                            </VCol>
+
+                                            <!-- Campo: outstanding_debt (El que controla la condición) -->
+                                            <VCol cols="12" md="6">
+                                                <VAutocomplete
+                                                    v-model="outstanding_debt"
+                                                    label="Har fordonet restskuld"
+                                                    :items="outstandingDebtOptions"
+                                                    item-title="title"
+                                                    item-value="value"
+                                                    autocomplete="off"
+                                                />
+                                            </VCol>
+
+                                            <!-- espaciador para mantener el diseño cuando los campos condicionales están ocultos -->
+                                            <VCol cols="12" md="6" v-if="outstanding_debt !== 0" />
+
+                                            <!-- CAMPOS CONDICIONALES: Solo se muestran si outstanding_debt es 'Ja' (valor 0) -->
+                                            <template v-if="outstanding_debt === 0">
+                                                <!-- Campo: remaining_debt -->
+                                                <VCol cols="12" md="6">
+                                                    <VTextField
+                                                        v-model="remaining_debt"
+                                                        label="Restskuld SEK"
+                                                        type="number"
+                                                        step="0.01"
+                                                    />
+                                                </VCol>
+
+                                                <!-- Campo: residual_debt_payer -->
+                                                <VCol cols="12" md="6">
+                                                    <VAutocomplete
+                                                        v-model="residual_debt_payer"
+                                                        label="Restskuld löses av"
+                                                        :items="residualDebtPayerOptions"
+                                                        item-title="title"
+                                                        item-value="value"
+                                                        autocomplete="off"
+                                                    />
+                                                </VCol>
+
+                                                <!-- Campo: paid_bank -->
+                                                <VCol cols="12" md="6">
+                                                    <VTextField
+                                                        v-model="paid_bank"
+                                                        label="Restskuld betalas till bank"
+                                                        type="number"
+                                                        step="0.01"
+                                                    />
+                                                </VCol>
+                                            </template>
                                             
+                                            <!-- Campo final: selling_price (siempre visible) -->
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="selling_price"
+                                                    label="Försäljningspris"
+                                                    type="number"
+                                                    step="0.01"
+                                                />
+                                            </VCol>
+
                                         </VRow>
                                     </VWindowItem>
 
@@ -676,21 +807,89 @@ const onSubmit = () => {
                                     <VWindowItem class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
                                                     Betalningsinformation
                                                 </h6>
                                             </VCol>
+
                                             
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="bank_name"
+                                                    label="Bankens namn"
+                                                    readonly
+                                                />
+                                            </VCol>
+
+                                         
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="payment_days"
+                                                    label="Utbetalning antal bankdagar efter försäljning"
+                                                    type="number"
+                                                    min="0"
+                                                    max="30"
+                                                    :rules="[
+                                                        v => !!v || 'Fältet är obligatoriskt',
+                                                        v => v >= 0 || 'Värdet måste vara minst 0',
+                                                        v => v <= 30 || 'Värdet får inte överstiga 30',
+                                                        v => /^\d+$/.test(v) || 'Endast heltal är tillåtna'
+                                                    ]"
+                                                />
+                                            </VCol>
+
+                                            
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="account_number"
+                                                    label="Kontonummer"
+                                                    readonly
+                                                />
+                                            </VCol>
+                                            
+                                           
+                                            <VCol cols="12" md="12">
+                                                <VTextarea
+                                                    v-model="payment_description"
+                                                    label="Betalningsbeskrivning"
+                                                    rows="3"
+                                                />
+                                            </VCol>
+
                                         </VRow>
                                     </VWindowItem>
 
                                       <!--Förmedlingsdatum-->
-                                      <VWindowItem class="px-md-5">
+                                    <VWindowItem class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                                    Förmedlingsdatum
+                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                                    Förmedlingsdatum och giltighetstid
                                                 </h6>
+                                            </VCol>
+
+                                            <!-- Campo: start_date -->
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    v-model="start_date"
+                                                    label="Startdatum"
+                                                    :rules="[requiredValidator]"
+                                                    :config="{
+                                                        dateFormat: 'Y-m-d',
+                                                        position: 'auto right'
+                                                    }"
+                                                />
+                                            </VCol>
+
+                                            <!-- Campo: end_date -->
+                                            <VCol cols="12" md="6">
+                                                <AppDateTimePicker
+                                                    :key="start_date"
+                                                    v-model="end_date"
+                                                    label="Slutdatum"
+                                                    :rules="[requiredValidator]"
+                                                    :config="endDateTimePickerConfig"
+                                                />
                                             </VCol>
                                             
                                         </VRow>
