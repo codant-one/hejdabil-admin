@@ -2,10 +2,9 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prisförslag</title>
+    <title>Prisförslag - PDF</title>
+    <!-- ESTILOS COPIADOS EXACTAMENTE DEL CONTRATO 1 -->
     <style>
-        /* Estilos optimizados para PDF de UNA SOLA PÁGINA con layout de TABLAS */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
         @page {
@@ -14,281 +13,311 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            font-size: 12px;
+            margin: 0;
+            padding: 0;
+            font-size: 11px;
             color: #333;
             background-color: #fff;
-            margin: 0;
-            padding: 0;
         }
-
-        .invoice-box {
-            /* --- CAMBIO PRINCIPAL AQUÍ --- */
-            width: 100%;
-            padding: 30px;
-            box-sizing: border-box; /* Importante para que el padding no incremente el ancho total */
-        }
-
-        .main-title {
-            font-size: 48px;
-            font-weight: 800;
-            color: #9333ea; /* Purple */
-            margin-bottom: 40px;
-        }
-
-        .main-layout-table {
+        
+        .main-container {
             width: 100%;
             border-collapse: collapse;
+            border-spacing: 0;
         }
 
-        .main-layout-table td {
+        h2 {
+            font-size: 13px;
+            color: #0056b3;
+            margin-top: 0;
+            margin-bottom: 8px; /* Un poco de espacio extra para los títulos de sección */
+        }
+
+        /* --- HEADER --- */
+        .header-logo {
+            width: 150px;
+        }
+        .header-logo img {
+            max-width: 100%;
+        }
+        .header-title-cell {
+            text-align: right;
             vertical-align: top;
         }
-
-        .left-column {
-            width: 35%;
-            padding-right: 20px;
-        }
-
-        .right-column {
-            width: 65%;
-            padding-left: 20px;
-        }
-        
-        .info-block {
-            margin-bottom: 20px;
-        }
-
-        .info-block p {
-            margin: 0 0 5px 0;
-        }
-
-        .info-block strong {
-            display: block;
-            margin-bottom: 3px;
+        .header-title-cell h1 {
+            margin: 0;
+            font-size: 24px;
             color: #111;
         }
-
-        .logo-container {
-            padding-top: 100px; /* Space to push logo down */
+        .header-title-cell .contract-details {
+            font-size: 10px;
+            color: #555;
+            margin-top: 5px;
         }
 
-        .logo {
-            max-width: 120px;
+        /* --- Celdas principales de las secciones --- */
+        .section-cell {
+            padding-top: 20px;
         }
+        .column-cell {
+            width: 50%;
+            vertical-align: top;
+            padding-top: 15px;
+        }
+        .column-cell-left { padding-right: 15px; }
+        .column-cell-right { padding-left: 15px; }
 
-        .details-table {
+        /* --- Tablas de información (Key-Value) --- */
+        .info-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
         }
-
-        .details-table thead th {
-            background-color: #a855f7; /* Lighter Purple */
-            color: white;
-            padding: 10px;
-            text-align: left;
-            font-weight: bold;
-        }
-        
-        .details-table th.amount, .details-table td.amount {
-            text-align: right;
-        }
-
-        .details-table tr.item-row td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .details-table tr.anmarkning-header td {
-            background-color: #a855f7; /* Lighter Purple */
-            color: white;
-            padding: 10px;
-            font-weight: bold;
-        }
-
-        .details-table tr.anmarkning-row td {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .details-table tr.summary-row td {
-            background-color: #cffafe; /* Light Cyan */
-            font-weight: bold;
-            padding: 10px;
-            border-top: 2px solid #9333ea;
-        }
-
-        .notes {
-            margin-top: 30px;
-            padding-left: 20px;
-        }
-
-        .notes ul {
-            margin: 0;
+        .info-table td {
             padding: 0;
-            list-style: disc;
+            padding-bottom: 6px;
         }
-        
-        .notes li {
-            margin-bottom: 10px;
+        .info-table .label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 3px;
+            color: #555;
+            font-size: 10px;
         }
-
-        .thank-you {
-            margin-top: 40px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #9333ea;
-        }
-
-        .signature-area {
-            margin-top: 40px;
-            width: 250px;
-            height: 60px; /* Altura para mantener el espacio de la firma */
-            position: relative;
-        }
-        
-        .signature-area img {
-            max-width: 100%;
-            max-height: 100%;
+        .info-table .value {
+            font-size: 10px;
+            background-color: #f9f9f9;
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            min-height: 12px
         }
 
-        .signature-line {
-            border-top: 1px solid #555;
+        /* --- TABLA FINANCIERA --- */
+        .financials-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 5px;
         }
-
-        .signature-name {
-            text-align: center;
-            margin-top: 5px;
+        .financials-table td {
+            padding: 6px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
         }
-        
-        .seal-container {
+        .financials-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+        .financials-table .total-row td {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0056b3;
+            border-top: 2px solid #ccc;
+            border-bottom: none;
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+
+        /* --- PIE DE PÁGINA --- */
+        .footer-section { padding-top: 25px; }
+        .notes-text {
+            font-size: 10px;
+            color: #666;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #0056b3;
+            margin-bottom: 15px;
+        }
+        .signatures-table {
+            width: 100%;
             margin-top: 30px;
-            text-align: center;
         }
-
-        .seal {
-            width: 100px;
-            height: 100px;
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 8px;
+            font-size: 11px; /* Ajustado para consistencia */
+            color: #333;
         }
-
+        .thank-you-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
-    <div class="invoice-box">
-        <!-- Título principal -->
-        <h1 class="main-title">Prisförslag</h1>
 
-        <!-- Tabla principal para layout de 2 columnas -->
-        <table class="main-layout-table">
+    <table class="main-container">
+        <tbody>
+            <!-- === HEADER === -->
             <tr>
-                <!-- COLUMNA IZQUIERDA -->
-                <td class="left-column">
-                    <div class="info-block">
-                        <strong>Datum</strong>
-                        <p>{{ $agreement->offer->created_at->format('Y-m-d')}}</p>
-                    </div>
-
-                    <div class="info-block">
-                        <strong>Offert #</strong>
-                        <p>{{ $agreement->offer->id }}</p>
-                    </div>
-
-                    <div class="info-block">
-                        <strong>Förberedd av</strong>
-                        <p>{{ $user->name }} {{ $user->last_name }}</p>
-                    </div>
-
-                    <div class="info-block">
-                        <strong>Mail</strong>
-                        <p>{{ $user->email }}</p>
-                    </div>
-
-                    <div class="info-block">
-                        <strong>Adress</strong>
-                        <p>
-                            {{ $user->userDetail->address }} 
-                        </p>
-                    </div>
-
-                    <div class="info-block">
-                        <strong>Tel</strong>
-                        <p>{{ $user->userDetail->phone }} </p>
-                    </div>
-                    
-                    <div class="logo-container">
-                        @if(!$agreement->supplier)
-                            <img src="{{ asset('/logos/logo_black.png') }}" width="200" alt="logo-main">  
-                        @else
-                            @if($agreement->supplier->logo)
-                                <img src="{{ asset('storage/'.$agreement->supplier->logo) }}" width="200" alt="logo-main">
-                            @else
-                                <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                            @endif
-                        @endif
-                    </div>
-                </td>
-
-                <!-- COLUMNA DERECHA -->
-                <td class="right-column">
-                    <h2>Kommentarer och special instruktioner</h2>
-
-                    <!-- Tabla de precios y detalles -->
-                    <table class="details-table">
-                        <thead>
-                            <tr>
-                                <th>Beskrivning</th>
-                                <th class="amount">BELOPP</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="item-row">
-                                <td>
-                                    <strong>{{ $agreement->offer->reg_num }}</strong><br>
-                                    {{ $agreement->offer->model->brand->name }} {{ $agreement->offer->model->name }}<br>
-                                    Mätarställning: Cirka {{ $agreement->offer->mileage }} Mil
-                                </td>
-                                <td class="amount">{{ formatCurrency($agreement->offer->price) }} kr</td>
-                            </tr>
-                            @if($agreement->offer->comment)
-                            <tr class="anmarkning-header">
-                                <td colspan="2">Anmärkning</td>
-                            </tr>
-                             <tr class="anmarkning-row">
-                                <td colspan="2">{{ $agreement->offer->comment }}</td>
-                            </tr>
-                            @endif
-                        </tbody>
-                        <tfoot>
-                            <tr class="summary-row">
-                                <td>SUMMA</td>
-                                <td class="amount">{{ formatCurrency($agreement->offer->price) }} kr</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    
-                    <div class="notes">
-                        {{ $agreement->offer->terms_other_conditions }}
-                    </div>
-
-                    <p class="thank-you">TACK FÖR DIN BESÖK!</p>
-                    
+                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #e0e0e0;">
                     <table style="width: 100%;">
                         <tr>
-                            <td style="width: 50%; vertical-align: bottom;">
-                                <div class="signature-area">
-                                    
+                            <td style="vertical-align: top;">
+                                <div class="header-logo">
+                                    @if(!$agreement->supplier)
+                                        <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">  
+                                    @else
+                                        @if($agreement->supplier->logo)
+                                            <img src="{{ asset('storage/'.$agreement->supplier->logo) }}" alt="logo-main">
+                                        @else
+                                            <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">
+                                        @endif
+                                    @endif
                                 </div>
-                                <div class="signature-line"></div>
-                                <div class="signature-name">
-                                    <p>{{ $user->name }} {{ $user->last_name }}</p>
+                            </td>
+                            <td class="header-title-cell">
+                                <h1>Prisförslag</h1>
+                                <div class="contract-details">
+                                    Offert nr: {{ $agreement->offer->id }} <br>
+                                    Datum: {{ $agreement->offer->created_at->format('Y-m-d')}}
                                 </div>
                             </td>
                         </tr>
                     </table>
                 </td>
             </tr>
-        </table>
-    </div>
+
+            <!-- === PREPARED BY / VEHICLE INFORMATION === -->
+            <tr>
+                <td class="column-cell column-cell-left">
+                    <h2>Förberedd av</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="label">Företag</div>
+                                <div class="value">
+                                    @if(!$agreement->supplier)
+                                        {{ $user->userDetail->company }} 
+                                    @else
+                                        {{ $agreement->supplier?->company }} 
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Namn</div>
+                                <div class="value">
+                                    {{ $user->name }} {{ $user->last_name }} 
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Adress</div>
+                                <div class="value">
+                                    @if(!$agreement->supplier)
+                                        {{ $user->userDetail->address }}
+                                    @else
+                                        {{ $agreement->supplier?->address }}
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">E-post</div>
+                                <div class="value">{{ $user->email }}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Telefon</div>
+                                <div class="value">{{ $user->userDetail->phone }}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="column-cell column-cell-right">
+                    <h2>Information om fordonet</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="label">Regnr</div>
+                                <div class="value">{{ $agreement->offer->reg_num }}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Märke & Modell</div>
+                                <div class="value">
+                                    {{ $agreement->offer->model->brand->name }} {{ $agreement->offer->model->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Mätarställning</div>
+                                <div class="value">
+                                    Cirka {{ $agreement->offer->mileage }} Mil
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <!-- === FINANCIAL OVERVIEW === -->
+            <tr>
+                <td colspan="2" class="section-cell">
+                    <h2>Prisinformation</h2>
+                    <table class="financials-table">
+                        <tbody>
+                            <tr>
+                                <td>Pris för {{ $agreement->offer->reg_num }}</td>
+                                <td>{{ formatCurrency($agreement->offer->price) }} kr</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="total-row">
+                                <td>SUMMA</td>
+                                <td>{{ formatCurrency($agreement->offer->price) }} kr</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </td>
+            </tr>
+            
+            <!-- === COMMENTS & CONDITIONS === -->
+            <tr>
+                <td colspan="2" class="section-cell">
+                    @if($agreement->offer->comment)
+                        <h2>Anmärkning</h2>
+                        <div class="notes-text" style="margin-bottom: 20px;">
+                            {{ $agreement->offer->comment }}
+                        </div>
+                    @endif
+
+                    @if($agreement->offer->terms_other_conditions)
+                        <h2>Övriga villkor</h2>
+                        <div class="notes-text">
+                            {!! nl2br(e($agreement->offer->terms_other_conditions)) !!}
+                        </div>
+                    @endif
+                </td>
+            </tr>
+
+
+            <!-- === FOOTER & SIGNATURE === -->
+            <tr>
+                <td colspan="2" class="footer-section">
+                    <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
+                    <table class="signatures-table">
+                        <tr>
+                            <td style="width: 50%; padding-right: 20px;">
+                                <div class="signature-box">(Säljarens underskrift)</div>
+                                <div style="padding-top: 5px; font-size: 10px;">{{ $user->name }} {{ $user->last_name }}</div>
+                            </td>
+                            <td style="width: 50%;"></td> <!-- Espacio en blanco a la derecha -->
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
 </body>
 </html>

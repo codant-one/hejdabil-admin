@@ -442,30 +442,35 @@ const onSubmit = () => {
                                                             :items="client_types"
                                                             :item-title="item => item.name"
                                                             :item-value="item => item.id"
+                                                            :rules="[requiredValidator]"
                                                             autocomplete="off"/>
                                                     </VCol>
                                                     <VCol cols="12" md="6">
                                                         <VTextField
                                                             v-model="fullname"
                                                             label="Namn"
+                                                            :rules="[requiredValidator]"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="12">
                                                         <VTextField
                                                             v-model="address"
                                                             label="Adress"
+                                                            :rules="[requiredValidator]"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
                                                         <VTextField
                                                             v-model="postal_code"
                                                             label="Postnummer"
+                                                            :rules="[requiredValidator]"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
                                                         <VTextField
                                                             v-model="street"
                                                             label="Stad"
+                                                            :rules="[requiredValidator]"
                                                         /> 
                                                     </VCol>
                                                     <VCol cols="12" md="6">
@@ -482,12 +487,13 @@ const onSubmit = () => {
                                                             :items="identifications"
                                                             :item-title="item => item.name"
                                                             :item-value="item => item.id"
+                                                            :rules="[requiredValidator]"
                                                             autocomplete="off"/>
                                                     </VCol>
                                                     <VCol cols="12" md="12">
                                                         <VTextField
                                                             v-model="email"
-                                                            :rules="[emailValidator]"
+                                                            :rules="[emailValidator,requiredValidator]"
                                                             label="E-post"
                                                         />
                                                     </VCol>
@@ -594,6 +600,7 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
+                                                    :rules="[requiredValidator]"
                                                     @update:modelValue="selectModel"/> 
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id === 0">
@@ -606,7 +613,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="year"
                                                     label="Årsmodell"
-                                                    :rules="[yearValidator]"
+                                                    :rules="[yearValidator, requiredValidator]"
                                                 />   
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -619,6 +626,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="chassis"
                                                     label="Chassinummer"
+                                                    :rules="[requiredValidator]"
                                                 /> 
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -627,6 +635,7 @@ const onSubmit = () => {
                                                     v-model="mileage"
                                                     suffix="Mil"
                                                     label="Miltal"
+                                                    :rules="[requiredValidator]"
                                                     min="0"
                                                 /> 
                                             </VCol>
@@ -637,6 +646,7 @@ const onSubmit = () => {
                                                     :items="fuels"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
+                                                    :rules="[requiredValidator]"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"/>
@@ -648,6 +658,7 @@ const onSubmit = () => {
                                                     :items="gearboxes"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
+                                                    :rules="[requiredValidator]"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
@@ -658,6 +669,7 @@ const onSubmit = () => {
                                                     v-model="number_keys"
                                                     type="number"
                                                     label="Antal nycklar"
+                                                    :rules="[requiredValidator]"
                                                     min="1"
                                                 />
                                             </VCol>
