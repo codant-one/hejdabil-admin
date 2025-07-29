@@ -387,7 +387,10 @@ const addAgreements = () => {
                 <td> 
                   {{ agreement.agreement_type_id === 4 ?
                     agreement.offer.reg_num : 
-                    agreement.vehicle_client?.vehicle.reg_num 
+                    (agreement.agreement_type_id === 3 ? 
+                      agreement.commission?.vehicle.reg_num   :
+                      agreement.vehicle_client?.vehicle.reg_num 
+                    )                    
                   }} 
                 </td>
                 <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                

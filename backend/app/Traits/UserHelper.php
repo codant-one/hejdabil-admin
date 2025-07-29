@@ -11,7 +11,7 @@ use App\Models\UserDetails;
 use App\Models\UserMenu;
 use App\Models\Supplier;
 use App\Models\Offer;
-
+use App\Models\Commission;
 
 /**
  * Trait for models with stores
@@ -33,6 +33,10 @@ trait UserHelper
 
     public function offers() {
         return $this->hasMany(Offer::class, 'user_id', 'id');
+    }
+
+    public function commissions() {
+        return $this->hasMany(Commission::class, 'user_id', 'id');
     }
 
     /**** Public methods ****/

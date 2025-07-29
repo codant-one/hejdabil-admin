@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('agreements', function (Blueprint $table) {
             $table->unsignedBigInteger('commission_id')->nullable()->after('offer_id');
+            
             $table->foreign('commission_id')->references('id')->on('commissions')->onDelete('cascade');
         });
     }

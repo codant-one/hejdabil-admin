@@ -24,6 +24,7 @@ export const useAgreementsStores = defineStore('agreements', {
         client_types: {},
         identifications: {},
         advances: {},
+        commission_types: {},
         agreement_id: 0,
         loading: false,
         last_page: 1,
@@ -132,6 +133,7 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.client_types = response.data.data.client_types
                     this.identifications = response.data.data.identifications
                     this.advances = response.data.data.advances
+                    this.commission_types = response.data.data.commission_types
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {

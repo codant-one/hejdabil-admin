@@ -35,6 +35,7 @@ use App\Models\Currency;
 use App\Models\PaymentType;
 use App\Models\Identification;
 use App\Models\Advance;
+use App\Models\CommissionType;
 
 class AgreementController extends Controller
 {
@@ -57,6 +58,7 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'offer',
+                        'commission.vehicle',
                         'agreement_type',
                         'agreement_client',
                         'vehicle_interchange',
@@ -132,6 +134,8 @@ class AgreementController extends Controller
                         'currency',
                         'iva',
                         'offer',
+                        'commission.vehicle',
+                        'commission.client',
                         'payment_types',
                         'vehicle_interchange.model.brand',
                         'vehicle_interchange.carbody',
@@ -279,7 +283,8 @@ class AgreementController extends Controller
                     'clients' => $clients,
                     'client_types' => ClientType::all(),
                     'identifications' => Identification::all(),
-                    'advances' => Advance::all()
+                    'advances' => Advance::all(),
+                    'commission_types' => CommissionType::all()
                 ]
             ]);
 

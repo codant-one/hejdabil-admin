@@ -20,7 +20,8 @@
                 'hash' => $user->password,
                 'full_profile' => $user->full_profile,
                 'supplier' => $user->supplier,
-                'offers' => $user->offers
+                'offers' => $user->offers,
+                'commissions' => $user->commissions
             );
 
             return $userData;

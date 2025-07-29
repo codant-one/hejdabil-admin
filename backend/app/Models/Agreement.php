@@ -19,6 +19,7 @@ use App\Models\VehicleClient;
 use App\Models\VehiclePayment;
 use App\Models\AgreementClient;
 use App\Models\Offer;
+use App\Models\Commission;
 
 class Agreement extends Model
 {
@@ -79,6 +80,10 @@ class Agreement extends Model
         return $this->belongsTo(Offer::class, 'offer_id', 'id');
     }
 
+    public function commission(){
+        return $this->belongsTo(Commission::class, 'commission_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('id', $search);
@@ -128,6 +133,9 @@ class Agreement extends Model
             case 2:
                 $request = self::purchaseAgreement($request);
                 break;
+            case 3:
+                $request = self::createCommission($request);
+                break;
             case 4:
                 $request = self::createOffer($request);
                 break;
@@ -149,6 +157,7 @@ class Agreement extends Model
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
             'offer_id' => $request->offer_id === 'null' ? null : $request->offer_id,
+            'commission_id' => $request->commission_id === 'null' ? null : $request->commission_id,
             'agreement_id' => $request->agreement_id,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
@@ -194,6 +203,9 @@ class Agreement extends Model
             case 2:
                 self::updatePurchase($request, $agreement);
                 break;
+            case 3:
+                self::updateCommission($request, $agreement);
+                break;
             case 4:
                 self::updateOffer($request, $agreement);
                 break;
@@ -210,6 +222,7 @@ class Agreement extends Model
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
             'iva_id' => $request->iva_id === 'null' ? null : $request->iva_id,
             'offer_id' => $request->offer_id === 'null' ? null : $request->offer_id,
+            'commission_id' => $request->commission_id === 'null' ? null : $request->commission_id,
             'agreement_id' => $request->agreement_id,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'residual_debt' => $request->residual_debt === 'null' ? null : $request->residual_debt,
@@ -264,6 +277,7 @@ class Agreement extends Model
             'currency',
             'iva',
             'offer',
+            'commission.vehicle',
             'payment_types',
             'vehicle_interchange.model.brand',
             'vehicle_interchange.carbody',
@@ -290,6 +304,10 @@ class Agreement extends Model
             case 2:
                 PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
+                break;
+            case 3:
+                PDF::loadView('pdfs.mediation', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                $agreement->file = 'pdfs/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 4:
                 PDF::loadView('pdfs.business', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
@@ -551,6 +569,22 @@ class Agreement extends Model
     public static function updateOffer($request, $agreement) {
         $offer = Offer::find($agreement->offer_id);
         $offer->updateOffer($request, $offer);
+    }
+
+    public static function createCommission($request) {
+
+        $commission = Commission::createCommission($request);
+
+        $request->request->add([
+            'commission_id' => $commission->id
+        ]);
+
+        return $request;
+    }
+
+    public static function updateCommission($request, $agreement) {
+        $commission = Commission::find($agreement->commission_id);
+        $commission->updateCommission($request, $commission);
     }
     
 }

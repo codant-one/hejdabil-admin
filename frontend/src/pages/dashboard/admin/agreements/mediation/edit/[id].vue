@@ -4,11 +4,10 @@ import router from '@/router'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
 
-const agreementsStores = useAgreementsStores()
+const route = useRoute()
 const authStores = useAuthStores()
-const ability = useAppAbility()
+const agreementsStores = useAgreementsStores()
 const emitter = inject("emitter")
 
 const isRequestOngoing = ref(false)
@@ -25,6 +24,7 @@ const supplier = ref([])
 const currencies = ref([])
 const commission_id = ref(null)
 const currency_id = ref(1)
+const agreement = ref(null)
 
 //const tab 1
 const client_types = ref([])
@@ -126,44 +126,95 @@ watchEffect(fetchData)
 
 async function fetchData() {
 
-    isRequestOngoing.value = true
+    if(Number(route.params.id) && route.name === 'dashboard-admin-agreements-mediation-edit-id') {
+        isRequestOngoing.value = true
 
-    await agreementsStores.info()
+        userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        const { user_data } = await authStores.me(userData.value)
 
-    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        if(role.value === 'Supplier') {
+            supplier.value = user_data.supplier
 
-    const { user_data, userAbilities } = await authStores.me(userData.value)
+            bank_name.value = supplier.value.bank
+            account_number.value = supplier.value.account_number
+        } else {
+            bank_name.value = user_data.user_details.bank
+            account_number.value = user_data.user_details.account_number
+        }
 
-    if(role.value === 'Supplier') {
-        localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+        await agreementsStores.info()
 
-        ability.update(userAbilities)
+        agreement.value = await agreementsStores.showAgreement(Number(route.params.id))
 
-        localStorage.setItem('user_data', JSON.stringify(user_data))
+        brands.value = agreementsStores.brands
+        models.value = agreementsStores.models 
+        carbodies.value = agreementsStores.carbodies
+        gearboxes.value = agreementsStores.gearboxes
+        fuels.value = agreementsStores.fuels
+        currencies.value = agreementsStores.currencies
+        client_types.value = agreementsStores.client_types
+        identifications.value = agreementsStores.identifications
+        commission_types.value = agreementsStores.commission_types
 
-        supplier.value = user_data.supplier
+        client_type_id.value = agreement.value.commission.client.client_type_id
+        identification_id.value = agreement.value.commission.client.identification_id
+        organization_number.value = agreement.value.commission.client.organization_number
+        address.value = agreement.value.commission.client.address
+        street.value = agreement.value.commission.client.street
+        postal_code.value = agreement.value.commission.client.postal_code
+        phone.value = agreement.value.commission.client.phone
+        fullname.value = agreement.value.commission.client.fullname
+        email.value = agreement.value.commission.client.email
+        
+        reg_num.value = agreement.value.commission.vehicle.reg_num
+        year.value = agreement.value.commission.vehicle.year
+        color.value = agreement.value.commission.vehicle.color
+        chassis.value = agreement.value.commission.vehicle.chassis
+        mileage.value = agreement.value.commission.vehicle.mileage
+        gearbox_id.value = agreement.value.commission.vehicle.gearbox_id
+        fuel_id.value = agreement.value.commission.vehicle.fuel_id
+        number_keys.value = agreement.value.commission.vehicle.number_keys
+        service_book.value = agreement.value.commission.vehicle.service_book
+        summer_tire.value = agreement.value.commission.vehicle.summer_tire
+        winter_tire.value = agreement.value.commission.vehicle.winter_tire
+        comments.value = agreement.value.commission.vehicle.comments
 
-        bank_name.value = supplier.value.bank
-        account_number.value = supplier.value.account_number
-    } else {
-        bank_name.value = user_data.user_details.bank
-        account_number.value = user_data.user_details.account_number
+        if(agreement.value.commission.vehicle.model_id !== null) {
+            let modelId = agreement.value.commission.vehicle.model_id
+            let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
+            selectBrand(brandId)
+            brand_id.value = brandId
+            model_id.value = agreement.value.commission.vehicle.model_id
+        } 
+
+        commission_id.value = agreement.value.commission.commission_id
+        commission_type_id.value = agreement.value.commission.commission_type_id
+        commission_fee.value = formatDecimal(agreement.value.commission.commission_fee)
+        outstanding_debt.value = agreement.value.commission.outstanding_debt
+        remaining_debt.value = agreement.value.commission.remaining_debt
+        paid_bank.value = agreement.value.commission.paid_bank
+        selling_price.value = formatDecimal(agreement.value.commission.selling_price)
+        residual_debt.value = agreement.value.commission.residual_debt
+        payment_days.value = agreement.value.commission.payment_days
+        payment_description.value = agreement.value.commission.payment_description
+        start_date.value = agreement.value.commission.start_date
+        end_date.value = agreement.value.commission.end_date
+
+        terms_other_conditions.value = agreement.value.terms_other_conditions
+        terms_other_information.value = agreement.value.terms_other_information
+
+        isRequestOngoing.value = false
+    }
+}
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
     }
 
-    commission_id.value = user_data.commissions.length + 1
-
-    brands.value = agreementsStores.brands
-    models.value = agreementsStores.models 
-    carbodies.value = agreementsStores.carbodies
-    gearboxes.value = agreementsStores.gearboxes
-    fuels.value = agreementsStores.fuels
-    currencies.value = agreementsStores.currencies
-    client_types.value = agreementsStores.client_types
-    identifications.value = agreementsStores.identifications
-    commission_types.value = agreementsStores.commission_types
-
-    start_date.value = formatDate(new Date())
-    isRequestOngoing.value = false
+    return number.toString();
 }
 
 const selectBrand = brand => {
@@ -226,6 +277,9 @@ const onSubmit = () => {
     } else if (tab === 5) {
         let formData = new FormData()
 
+        formData.append('id', Number(route.params.id))
+        formData.append('_method', 'PUT')
+
         //client
         formData.append('client_type_id', client_type_id.value)
         formData.append('identification_id', identification_id.value)
@@ -257,6 +311,7 @@ const onSubmit = () => {
         // commission
         formData.append('commission_type_id', commission_type_id.value)
         formData.append('commissionId', commission_id.value)
+        formData.append('commission_id', agreement.value.commission_id)
         formData.append('commission_fee', commission_fee.value)
         formData.append('start_date', start_date.value)
         formData.append('end_date', end_date.value)
@@ -278,12 +333,17 @@ const onSubmit = () => {
 
         isRequestOngoing.value = true
 
-        agreementsStores.addAgreement(formData)
+        let data = {
+            data: formData, 
+            id: Number(route.params.id)
+        }
+
+        agreementsStores.updateAgreement(data)
             .then((res) => {
                 if (res.data.success) {
                     
                     let data = {
-                        message: 'Kontrakt framgångsrikt skapat',
+                        message: 'Kommissionen framgångsrikt skapat',
                         error: false
                     }
 
@@ -888,7 +948,7 @@ const onSubmit = () => {
                                     Tillbaka
                                 </VBtn>
                                 <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 5) ? 'Skicka' : ' Nästa' }}
+                                    {{ (currentTab === 5) ? 'Uppdatering' : ' Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>
@@ -923,6 +983,6 @@ const onSubmit = () => {
 
 <route lang="yaml">
     meta:
-      action: create
+      action: edit
       subject: agreements
 </route>

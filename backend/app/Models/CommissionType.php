@@ -10,16 +10,11 @@ class CommissionType extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $guarded = [];
 
-    public function commission(){
-        return $this->hasMany(Commission::class, 'commision_type_id', 'id');
+    /**** Relationship ****/
+    public function commission() {
+        return $this->hasMany(Commission::class, 'commission_type_id', 'id');
     }
-
 
 }

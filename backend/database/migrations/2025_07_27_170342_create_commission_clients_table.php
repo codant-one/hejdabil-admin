@@ -13,18 +13,19 @@ return new class extends Migration
     {
         Schema::create('commission_clients', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('commision_id');
+            $table->unsignedBigInteger('commission_id');
             $table->unsignedBigInteger('client_type_id');
             $table->unsignedBigInteger("identification_id")->nullable();
-            $table->string('fullname');
-            $table->string('email');
+            $table->string('fullname')->nullable();
+            $table->string('email')->nullable();
             $table->string('organization_number')->nullable();
-            $table->longText('address');
-            $table->string('street');
-            $table->string('postal_code');
-            $table->string('phone');
+            $table->longText('address')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('street')->nullable();
             $table->timestamps();
-            $table->foreign('commision_id')->references('id')->on('commissions')->onDelete('cascade');
+
+            $table->foreign('commission_id')->references('id')->on('commissions')->onDelete('cascade');
             $table->foreign('client_type_id')->references('id')->on('client_types')->onDelete('cascade');
             $table->foreign('identification_id')->references('id')->on('identifications')->onDelete('cascade');
         });
