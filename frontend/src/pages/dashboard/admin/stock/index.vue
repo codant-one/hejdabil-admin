@@ -427,7 +427,7 @@ const downloadCSV = async () => {
                 <th scope="col"> Status </th>
                 <th scope="col"> VAT </th>
                 <th scope="col"> Besiktigas </th>
-                <th scope="col"> Köparen </th>
+                <th scope="col"> Säljaren </th>
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>

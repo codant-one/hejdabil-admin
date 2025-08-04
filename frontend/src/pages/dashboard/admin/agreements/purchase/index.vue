@@ -78,7 +78,7 @@ const iva_sale_exclusive = ref(0)
 const is_loan = ref(1)
 const loan_amount = ref(null)
 const lessor = ref(null)
-const settled_by = ref(0)
+const settled_by = ref(3)
 const bank = ref(null)
 const account = ref(null)
 const description = ref(null)
@@ -111,6 +111,10 @@ const calculate = () => {
 
 const remaining_amount = computed(()=>{
     return price.value - loan_amount.value
+})
+
+const conditionalRules = computed(() => {
+    return settled_by.value === 1 ? [requiredValidator] : []
 })
 
 onMounted(async () => {
@@ -449,7 +453,7 @@ const onSubmit = () => {
                     <VCard flat class="px-2 px-md-12">
                         <VCardText class="px-2 pt-0 pt-md-5">               
                             <VTabs v-model="currentTab" grow disabled>
-                                <VTab>Inköpsavtal - Reg nr</VTab>
+                                <VTab>Inköpsavtal</VTab>
                                 <VTab>Kund</VTab>
                                 <VTab>Pris</VTab>
                                 <VTab>Villkor</VTab>
@@ -929,6 +933,7 @@ const onSubmit = () => {
                                                             :key="index"
                                                             :label="radio"
                                                             :value="index"
+                                                            :disabled="is_loan === 1 ? true : false"
                                                         />
                                                     </VRadioGroup>
                                                 </div>
@@ -941,10 +946,10 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    :rules="[requiredValidator]"
+                                                    :rules="conditionalRules"
                                                     @update:modelValue="selectPaymentType"
                                                     @click:clear="selectPaymentType"
-                                                    :disabled="settled_by === 0 ? true : false"
+                                                    :disabled="settled_by !== 1 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="payment_type_id === 0">
@@ -958,24 +963,24 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="bank"
                                                     label="Namn på banken"
-                                                    :rules="[requiredValidator]"
-                                                    :disabled="settled_by === 0 ? true : false"
+                                                    :rules="conditionalRules"
+                                                    :disabled="settled_by !== 1 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="account"
                                                     label="Clearing/kontonummer"
-                                                    :rules="[requiredValidator]"
-                                                    :disabled="settled_by === 0 ? true : false"
+                                                    :rules="conditionalRules"
+                                                    :disabled="settled_by !== 1 ? true : false"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="description"
                                                     label="Betalningsbeskrivning"
-                                                    :rules="[requiredValidator]"
-                                                    :disabled="settled_by === 0 ? true : false"
+                                                    :rules="conditionalRules"
+                                                    :disabled="settled_by !== 1 ? true : false"
                                                 />
                                             </VCol>
                                         </VRow>

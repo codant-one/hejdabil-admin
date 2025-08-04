@@ -361,7 +361,6 @@
                                             <div class="label">Försäkring</div>
                                             <div class="value">
                                                 {{ $agreement->insurance_company->name }} 
-                                                ({{ $agreement->insurance_type->name }})
                                             </div>
                                         </td>
                                     </tr>

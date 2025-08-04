@@ -252,7 +252,7 @@
                             <td>
                                 <div class="label">Mätarställning</div>
                                 <div class="value">
-                                    Cirka {{ $agreement->offer->mileage }} Mil
+                                    {{ $agreement->offer->mileage }} Mil
                                 </div>
                             </td>
                         </tr>
@@ -308,7 +308,7 @@
                     <table class="signatures-table">
                         <tr>
                             <td style="width: 50%; padding-right: 20px;">
-                                <div class="signature-box">(Säljarens underskrift)</div>
+                                <div class="signature-box">(Köparens underskrift)</div>
                                 <div style="padding-top: 5px; font-size: 10px;">{{ $user->name }} {{ $user->last_name }}</div>
                             </td>
                             <td style="width: 50%;"></td> <!-- Espacio en blanco a la derecha -->

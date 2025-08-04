@@ -185,7 +185,7 @@ const onSubmit = () => {
                     class="w-100 w-md-auto"
                     :loading="isRequestOngoing"
                   >
-                      Lägg till
+                   Skapa
                   </VBtn>
             </div>
           </div>

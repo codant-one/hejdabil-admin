@@ -405,6 +405,7 @@
                             </table>
                         </td>
                     </tr>
+                    @if($agreement->commission->vehicle->comments!==null)
                     <tr>
                         <td colspan="2" style="padding-top: 6px;">
                             <table class="info-table">
@@ -419,6 +420,7 @@
                             </table>
                         </td>
                     </tr>
+                    @endif
                 </table>
             </td>
         </tr>
@@ -449,14 +451,16 @@
                                         </div>
                                     </td>
                                 </tr>
+                                @if($agreement->commission->outstanding_debt === 0)
                                 <tr>
                                     <td>
                                         <div class="label">Vem betalar restskulden?</div>
                                         <div class="value">
-                                            {{ $agreement->commission->residual_debt === 0 ? 'Ja' : 'Nej' }}
+                                            {{ $agreement->commission->residual_debt === 0 ? 'Bilhandlare' : 'Kund' }}
                                         </div>
                                     </td>
                                 </tr>
+                                @endif
                             </table>
                         </td>
                         <td class="column-cell column-cell-right" style="padding-left: 8px;">
@@ -469,11 +473,12 @@
                                         </div>
                                     </td>
                                 </tr>
+                                @if($agreement->commission->outstanding_debt === 0)
                                 <tr>
                                     <td>
                                         <div class="label">Restskuld</div>
                                         <div class="value">
-                                            {{ formatCurrency($agreement->commission->selling_price) }} kr
+                                            {{ formatCurrency($agreement->commission->remaining_debt) }} kr
                                         </div>
                                     </td>
                                 </tr>
@@ -485,6 +490,7 @@
                                         </div>
                                     </td>
                                 </tr>
+                                @endif
                             </table>
                         </td>
                     </tr>
@@ -555,6 +561,7 @@
                 </table>
             </td>
         </tr>
+        @if($agreement->commission->payment_description!==null)
          <tr>
             <td colspan="2" style="padding-top: 10px;">
                 <table class="info-table">
@@ -569,12 +576,13 @@
                 </table>
             </td>
         </tr>
-
+        @endif
 
         <!-- ====================================================== -->
         <!-- =============== PESTAÑA 6: TILLÄGG =================== -->
         <!-- ====================================================== -->
         <tr>
+            @if($agreement->terms_other_conditions!==null)
             <td class="column-cell column-cell-left section-cell">
                 <h2>Övriga villkor</h2>
                 <table class="info-table">
@@ -587,6 +595,7 @@
                     </tr>
                 </table>
             </td>
+            @endif
             <td class="column-cell column-cell-right section-cell">
                 <h2>Övriga upplysningar</h2>
                 <table class="info-table">
@@ -608,8 +617,8 @@
             <td colspan="2" class="footer-section">
                 <table class="signatures-table">
                     <tr>
-                        <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Fordonsägarens underskrift)</div></td>
-                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Förmedlarens underskrift)</div></td>
+                            <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Fordonsägarens underskrift)</div></td>
+                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Förmedlarens underskrift)</div></td>
                     </tr>
                 </table>
             </td>
