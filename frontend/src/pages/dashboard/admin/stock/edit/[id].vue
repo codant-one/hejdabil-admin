@@ -1086,7 +1086,8 @@ const getFlag = (currency_id) => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    @update:modelValue="selectModel"/>
+                                                    @update:modelValue="selectModel"
+                                                    :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id === 0">
                                                 <VTextField

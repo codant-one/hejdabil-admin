@@ -269,7 +269,8 @@ const downloadCSV = async () => {
                   :items="getModels"
                   autocomplete="off"
                   clearable
-                  clear-icon="tabler-x"/>
+                  clear-icon="tabler-x"
+                  :menu-props="{ maxHeight: '300px' }"/>
               </VCol>
               <VCol cols="12" md="3">
                 <VTextField

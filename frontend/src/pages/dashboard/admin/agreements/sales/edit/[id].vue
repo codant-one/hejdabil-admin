@@ -648,7 +648,8 @@ const onSubmit = () => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                     :rules="[requiredValidator]"
-                                                    @update:modelValue="selectModel"/>
+                                                    @update:modelValue="selectModel"
+                                                    :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id === 0">
                                                 <VTextField
@@ -789,7 +790,8 @@ const onSubmit = () => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    @update:modelValue="selectModelInterchange"/> 
+                                                    @update:modelValue="selectModelInterchange"
+                                                    :menu-props="{ maxHeight: '300px' }"/> 
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id_interchange === 0">
                                                 <VTextField
