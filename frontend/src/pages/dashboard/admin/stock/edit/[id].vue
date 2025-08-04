@@ -1076,7 +1076,8 @@ const getFlag = (currency_id) => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectBrand"
-                                                    @click:clear="onClearBrand"/>
+                                                    @click:clear="onClearBrand"
+                                                    :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VAutocomplete

@@ -260,7 +260,8 @@ const downloadCSV = async () => {
                   autocomplete="off"
                   clearable
                   clear-icon="tabler-x"
-                  @update:modelValue="selectBrand"/>
+                  @update:modelValue="selectBrand"
+                  :menu-props="{ maxHeight: '300px' }"/>
               </VCol>
               <VCol cols="12" md="3">
                 <VAutocomplete

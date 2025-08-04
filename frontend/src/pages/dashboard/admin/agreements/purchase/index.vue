@@ -504,7 +504,8 @@ const onSubmit = () => {
                                                     clear-icon="tabler-x"
                                                     :rules="[requiredValidator]"
                                                     @update:modelValue="selectBrand"
-                                                    @click:clear="onClearBrand"/>
+                                                    @click:clear="onClearBrand"
+                                                    :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VAutocomplete

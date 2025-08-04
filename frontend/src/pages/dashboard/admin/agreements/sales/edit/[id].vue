@@ -637,7 +637,8 @@ const onSubmit = () => {
                                                     clear-icon="tabler-x"
                                                     :rules="[requiredValidator]"
                                                     @update:modelValue="selectBrand"
-                                                    @click:clear="onClearBrand"/>
+                                                    @click:clear="onClearBrand"
+                                                    :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VAutocomplete
@@ -780,7 +781,8 @@ const onSubmit = () => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectBrandInterchange"
-                                                    @click:clear="onClearBrandInterchange"/> 
+                                                    @click:clear="onClearBrandInterchange"
+                                                    :menu-props="{ maxHeight: '300px' }"/> 
                                             </VCol>
                                             <VCol cols="12" :md="model_id_interchange !== 0 ? 6 : 3">
                                                 <VAutocomplete
