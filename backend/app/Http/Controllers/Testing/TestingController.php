@@ -157,9 +157,7 @@ class TestingController extends Controller
 
         $agreement = Agreement::with([
             'agreement_type',
-            'guaranty',
             'guaranty_type',
-            'insurance_company',
             'insurance_type',
             'currency',
             'iva',

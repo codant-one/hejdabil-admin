@@ -267,9 +267,7 @@ class Agreement extends Model
 
         $agreement = Agreement::with([
             'agreement_type',
-            'guaranty',
             'guaranty_type',
-            'insurance_company',
             'insurance_type',
             'currency',
             'iva',

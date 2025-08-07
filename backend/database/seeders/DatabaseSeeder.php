@@ -35,9 +35,7 @@ class DatabaseSeeder extends Seeder
 
             AgreementTypeSeeder::class,
             CurrencySeeder::class,
-            GuarantySeeder::class,
             GuarantyTypeSeeder::class,
-            InsuranceCompanySeeder::class,
             InsuranceTypeSeeder::class,
             PaymentTypeSeeder::class,
 
