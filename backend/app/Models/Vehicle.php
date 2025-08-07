@@ -95,7 +95,11 @@ class Vehicle extends Model
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
-        $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
+        $fields = explode(',', $orderByField);
+
+        foreach ($fields as $field) {
+            $query->orderByRaw('(IFNULL(' . trim($field) . ', id)) ' . $orderBy);
+        }
     }
 
     public function scopeApplyFilters($query, array $filters) {

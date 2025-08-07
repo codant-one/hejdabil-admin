@@ -348,22 +348,26 @@
                                                 {{ $agreement->vehicle_client->vehicle->sale_date }}
                                             </div>
                                         </td>
+                                        @if($agreement->guaranty === 1)
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Garanti</div>
                                             <div class="value">
-                                                {{ $agreement->guaranty->name }}
+                                                {{ $agreement->guaranty_description }}
                                             </div>
                                         </td>
+                                        @endif
                                     </tr>
 
+                                    @if($agreement->insurance_company === 1)
                                     <tr>
                                         <td colspan="2">
                                             <div class="label">Försäkring</div>
                                             <div class="value">
-                                                {{ $agreement->insurance_company->name }} 
+                                                {{ $agreement->insurance_company_description }} 
                                             </div>
                                         </td>
                                     </tr>
+                                    @endif
 
                                     <tr>
                                         <td colspan="2">

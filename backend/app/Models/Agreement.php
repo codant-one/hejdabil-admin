@@ -394,7 +394,7 @@ class Agreement extends Model
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
             $request->merge(['chassis' => $request->chassis_interchange ]);
-            $request->merge(['sale_date' => $request->sale_date_interchange ]);
+            $request->merge(['sale_date' => $request->sale_date_interchange ]);           
 
             //Create Vehicle Interchange
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -406,6 +406,7 @@ class Agreement extends Model
 
             //Set Vehicle State ID on InStock
             $vehicleRequest->request->add(['state_id' => 10]);
+            $vehicleRequest->request->add(['type' => '2']);
 
             $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
             $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);

@@ -70,7 +70,7 @@ async function fetchData(cleanFilters = false) {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'sale_date',
+    orderByField: 'sale_date,id',
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
