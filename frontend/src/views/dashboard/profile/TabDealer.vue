@@ -1,6 +1,6 @@
 <script setup>
 
-import { requiredValidator, phoneValidator, urlValidator } from '@/@core/utils/validators'
+import { requiredValidator, phoneValidator, urlValidator, lengthValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useAuthStores } from '@/stores/useAuth'
@@ -271,11 +271,6 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
-const lengthValidator = value => {
-  if (!value) return true;
-  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
-}
-
 const onSubmit = () => {
     
     refVForm.value?.validate().then(({ valid: isValid }) => {
@@ -417,8 +412,8 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :rules="[requiredValidator, lengthValidator]"
-                                    :counter="12"
+                                    :rules="[requiredValidator, lengthValidator(12)]"
+                                    maxlength="12"
                                     :disabled="role === 'Supplier'"
                                 />
                             </VCol>

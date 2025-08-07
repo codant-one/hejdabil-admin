@@ -83,11 +83,11 @@ export const urlValidator = value => {
 }
 
 // 👉 Length Validator
-export const lengthValidator = (value, length) => {
-  if (isEmpty(value))
-    return true
-  
-  return String(value).length === length || `Fältet Min Character måste innehålla minst ${length} tecken`
+export const lengthValidator = (length) => {
+  return (value) => {
+    if (isEmpty(value)) return true
+    return String(value).length === length || `Numret måste bestå av ${length} siffror.`
+  }
 }
 
 // 👉 Alpha-dash Validator

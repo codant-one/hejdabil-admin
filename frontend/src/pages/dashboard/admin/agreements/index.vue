@@ -292,6 +292,10 @@ const addAgreements = () => {
 
   })
 }
+
+const openLink = function (agreementData) {
+  window.open(themeConfig.settings.urlStorage + agreementData.file)
+}
 </script>
 
 <template>
@@ -432,6 +436,14 @@ const addAgreements = () => {
                           <VIcon icon="mdi-draw" />
                         </template>
                         <VListItemTitle>Signera</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('view', 'agreements')"
+                         @click="openLink(agreement)">
+                        <template #prepend>
+                          <VIcon icon="mdi-file-pdf-box" />
+                        </template>
+                        <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
                       <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
                         <template #prepend>

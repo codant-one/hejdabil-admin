@@ -84,7 +84,7 @@ async function fetchData(cleanFilters = false) {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'id',
+    orderByField: 'purchase_date',
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,

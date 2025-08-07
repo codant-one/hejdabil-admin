@@ -1,7 +1,7 @@
 <script setup>
 
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
+import { emailValidator, requiredValidator, phoneValidator, lengthValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -86,11 +86,6 @@ const closeNavigationDrawer = () => {
     isEdit.value = false 
     id.value = 0
   })
-}
-
-const lengthValidator = value => {
-  if (!value) return true;
-  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
 }
 
 const onSubmit = () => {
@@ -198,8 +193,8 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="organization_number"
                     label="Organisationsnummer"
-                    :rules="[lengthValidator]"
-                    :counter="12"
+                    :rules="[requiredValidator, lengthValidator(12)]"
+                    maxlength="12"
                 />
             </VCol>
             <VCol cols="12" md="6">

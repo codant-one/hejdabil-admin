@@ -1,7 +1,7 @@
 <script setup>
 
 import router from '@/router'
-import { emailValidator, requiredValidator, phoneValidator, urlValidator } from '@/@core/utils/validators'
+import { emailValidator, requiredValidator, phoneValidator, urlValidator, lengthValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 
 const suppliersStores = useSuppliersStores()
@@ -72,11 +72,6 @@ watchEffect(async() => {
 
     isRequestOngoing.value = false
 })
-
-const lengthValidator = value => {
-  if (!value) return true;
-  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
-}
 
 const onSubmit = () => {
 
@@ -227,8 +222,8 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="organization_number"
-                                                    :rules="[requiredValidator, lengthValidator]"
-                                                    :counter="12"
+                                                    :rules="[requiredValidator, lengthValidator(12)]"
+                                                    maxlength="12"
                                                     label="Organisationsnummer"
                                                 />
                                             </VCol>

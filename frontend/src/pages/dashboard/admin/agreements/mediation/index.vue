@@ -1,7 +1,7 @@
 <script setup>
 
 import router from '@/router'
-import { requiredValidator, yearValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { requiredValidator, yearValidator, emailValidator, phoneValidator, lengthValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -198,11 +198,6 @@ const selectModel = selected => {
 
 }
 
-const lengthValidator = value => {
-  if (!value) return true;
-  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
-}
-
 const onSubmit = () => {
   const tab = currentTab.value
   const itemsLength = refForm.value.items.length
@@ -385,17 +380,18 @@ const onSubmit = () => {
                                                     <VCol cols="10" md="11">
                                                         <VTextField
                                                             v-model="organization_number"
-                                                            :rules="[lengthValidator]"
-                                                            :counter="12"
                                                             label="Org/personummer"
+                                                            :rules="[requiredValidator, lengthValidator(12)]"
+                                                            maxlength="12"
                                                         />
                                                     </VCol>
-                                                    <VCol cols="2" md="1" class="px-0 d-flex align-center">
+                                                    <VCol cols="2" md="1" class="px-0 d-flex align-start">
                                                         <VBtn
                                                             icon="tabler-search"
                                                             variant="tonal"
                                                             color="primary"
                                                             size="x-small"
+                                                            class="mt-1"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
