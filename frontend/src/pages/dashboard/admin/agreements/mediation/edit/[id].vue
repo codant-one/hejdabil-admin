@@ -328,6 +328,8 @@ const onSubmit = () => {
         formData.append('currency_id', currency_id.value)
         formData.append('price', selling_price.value)
         formData.append('residual_debt', 0)
+        formData.append('guaranty', 0)
+        formData.append('insurance_company', 0)
         formData.append('terms_other_conditions', terms_other_conditions.value)
         formData.append('terms_other_information', terms_other_information.value)
 

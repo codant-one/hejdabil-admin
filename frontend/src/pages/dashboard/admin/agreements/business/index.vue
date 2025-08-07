@@ -112,6 +112,8 @@ const onSubmit = () => {
       formData.append('currency_id', currency_id.value)
       formData.append('price', price.value)
       formData.append('residual_debt', 0)
+      formData.append('guaranty', 0)
+      formData.append('insurance_company', 0)
 
       isRequestOngoing.value = true
 

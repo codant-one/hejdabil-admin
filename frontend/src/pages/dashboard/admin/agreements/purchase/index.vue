@@ -365,6 +365,8 @@ const onSubmit = () => {
             formData.append('agreement_id', agreement_id.value)
             formData.append('price', price.value)
             formData.append('residual_debt', 0)
+            formData.append('guaranty', 0)
+            formData.append('insurance_company', 0)
             formData.append('iva_id', iva_id.value)
             formData.append('iva_sale_amount', iva_sale_amount.value)
             formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
