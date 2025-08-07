@@ -135,7 +135,7 @@
                         <td class="header-title-cell">
                             <h1>Förmedlingsavtal</h1>
                             <div class="contract-details">
-                                Kommission: #{{ $agreement->commission->commission_id}} <br>
+                                Avtalsnummer: #{{ $agreement->commission->commission_id}} <br>
                                 Skapad: {{ $agreement->commission->created_at->format('Y-m-d')}}
                             </div>
                         </td>
@@ -201,7 +201,7 @@
                         </tr>
                     <tr>
                         <td>
-                            <div class="label">Köparen är</div>
+                            <div class="label">Fordonsägaren är:</div>
                             <div class="value">
                                 {{ $agreement->commission->client->client_type->name }}
                             </div>

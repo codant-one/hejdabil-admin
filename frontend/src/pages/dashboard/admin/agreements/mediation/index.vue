@@ -399,7 +399,7 @@ const onSubmit = () => {
                                                     <VCol cols="12" md="6">
                                                         <VAutocomplete
                                                             v-model="client_type_id"
-                                                            label="Köparen är"
+                                                            label="Fordonsägaren är:"
                                                             :items="client_types"
                                                             :item-title="item => item.name"
                                                             :item-value="item => item.id"
@@ -895,7 +895,7 @@ const onSubmit = () => {
                                     Tillbaka
                                 </VBtn>
                                 <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 5) ? 'Skicka' : ' Nästa' }}
+                                    {{ (currentTab === 5) ? 'Skapa' : ' Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>

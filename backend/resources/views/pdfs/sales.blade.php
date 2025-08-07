@@ -168,7 +168,7 @@
                             <td class="header-title-cell">
                                 <h1>Försäljningsavtal</h1>
                                 <div class="contract-details">
-                                    Köpeavtal nr: {{ $agreement->agreement_id}} <br>
+                                    Avtalsnummer: {{ $agreement->agreement_id}} <br>
                                     @if(!$agreement->supplier)
                                         {{ strtoupper($user->userDetail->address) }}, {{ strtoupper($user->userDetail->postal_code) }} {{ strtoupper($user->userDetail->street) }} 
                                     @else
@@ -253,7 +253,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="label">Utdelningsadress</div>
+                                <div class="label">Adress</div>
                                 <div class="value">
                                 {{ $agreement->agreement_client->address }}, {{ $agreement->agreement_client->postal_code }} {{ $agreement->agreement_client->street }} 
                                 </div>
@@ -333,21 +333,15 @@
                                                 {{ $agreement->vehicle_client->vehicle->reg_num }}
                                             </div>
                                         </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Första registreringsdatum</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->purchase_date }}
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Försäljningsdatum</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->sale_date }}
                                             </div>
                                         </td>
+                                    </tr>
+
+                                    <tr>
                                         @if($agreement->guaranty === 1)
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Garanti</div>
@@ -499,6 +493,14 @@
                                 <td>{{ formatCurrency($agreement->price) }} kr</td>
                             </tr>
                             <tr>
+                                <td>Inbytespris</td>
+                                @if($agreement->residual_debt === 1)
+                                <td>{{ formatCurrency($agreement->fair_value) }} kr</td>
+                                @else
+                                <td>- {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr</td>
+                                @endif
+                            </tr>
+                            <tr>
                                 <td>Avgår rabatt</td>
                                 <td>{{ formatCurrency($agreement->discount) }} kr</td>
                             </tr>
@@ -510,7 +512,7 @@
                         <tfoot>
                             <tr class="total-row">
                                 <td>Totalpris</td>
-                                <td>{{ formatCurrency($agreement->total_sale) }} kr</td>
+                                <td>{{ formatCurrency($agreement->middle_price) }} kr</td>
                             </tr>
                             <tr class="moms-row">
                                 <td>Varav moms (20%)</td>
@@ -603,11 +605,17 @@
             <!-- === FOOTER === -->
             <tr>
                 <td colspan="2" class="footer-section">
+                    <table class="signatures-table">
+                        <tr>
+                            <td style="width: 50%; padding-right: 20px;"><div class="signature-box"> {{ $agreement->terms_other_conditions }}</div></td>
+                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">{{ $agreement->terms_other_information }}</div></td>
+                        </tr>
+                    </table>
                     <div class="consent-text"><p style="margin: 0;">Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.</p></div>
                     <table class="signatures-table">
                         <tr>
                             <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Köparens underskrift)</div></td>
-                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljföretagets underskrift - behörig företrädare)</div></td>
+                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljföretagets underskrift)</div></td>
                         </tr>
                     </table>
                 </td>
