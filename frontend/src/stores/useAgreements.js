@@ -12,9 +12,7 @@ export const useAgreementsStores = defineStore('agreements', {
         ivas: {},
         fuels: {},
         states: {},
-        guaranties: {},
         guarantyTypes: {},
-        insuranceCompanies: {},
         insuranceTypes: {},
         currencies: {},
         paymentTypes: {},
@@ -120,9 +118,7 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.ivas = response.data.data.ivas
                     this.fuels = response.data.data.fuels
                     this.states = response.data.data.states
-                    this.guaranties = response.data.data.guaranties
                     this.guarantyTypes = response.data.data.guarantyTypes
-                    this.insuranceCompanies = response.data.data.insuranceCompanies
                     this.insuranceTypes = response.data.data.insuranceTypes
                     this.currencies = response.data.data.currencies
                     this.paymentTypes = response.data.data.paymentTypes
