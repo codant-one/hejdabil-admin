@@ -153,17 +153,17 @@
                 <table class="info-table">
                     <tr>
                         <td>
-                            <div class="label">Org/personummer</div>
+                            <div class="label">Namn</div>
                             <div class="value">
-                                {{ $agreement->commission->client->organization_number }}
+                                {{ $agreement->commission->client->fullname }}
                             </div>
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            <div class="label">Namn</div>
+                            <div class="label">Org/personummer</div>
                             <div class="value">
-                                {{ $agreement->commission->client->fullname }}
+                                {{ $agreement->commission->client->organization_number }}
                             </div>
                         </td>
                     </tr>
@@ -177,9 +177,9 @@
                     </tr>
                     <tr>
                         <td>
-                            <div class="label">Postnummer / Stad</div>
+                            <div class="label">Postnummer / Ort</div>
                             <div class="value">
-                                {{ $agreement->commission->client->postal_code }} /  {{ $agreement->commission->client->street }}
+                                {{ $agreement->commission->client->postal_code }}  {{ $agreement->commission->client->street }}
                             </div>
                         </td>
                     </tr>
@@ -246,12 +246,12 @@
                     </tr>
                     <tr>
                         <td>
-                            <div class="label">Postnummer / Stad</div>
+                            <div class="label">Postnummer / Ort</div>
                             <div class="value">
                                 @if(!$agreement->supplier)
-                                    {{ $user->userDetail->street }} {{ $user->userDetail->postal_code }} 
+                                {{ $user->userDetail->postal_code }} {{ $user->userDetail->street }} 
                                 @else
-                                    {{ $agreement->supplier?->street }} {{ $agreement->supplier?->postal_code }}
+                                {{ $agreement->supplier?->postal_code }} {{ $agreement->supplier?->street }}
                                 @endif
                             </div>
                         </td>

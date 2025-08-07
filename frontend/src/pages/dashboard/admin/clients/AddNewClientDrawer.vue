@@ -88,6 +88,11 @@ const closeNavigationDrawer = () => {
   })
 }
 
+const lengthValidator = value => {
+  if (!value) return true;
+  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -193,6 +198,8 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="organization_number"
                     label="Organisationsnummer"
+                    :rules="[lengthValidator]"
+                    :counter="12"
                 />
             </VCol>
             <VCol cols="12" md="6">

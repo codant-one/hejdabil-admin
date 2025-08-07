@@ -297,6 +297,11 @@ const formatDate = (date) => {
   return `${year}-${month}-${day}`
 }
 
+const lengthValidator = value => {
+  if (!value) return true;
+  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
+}
+
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
         if (valid && currentTab.value === 0 && refForm.value.items.length < 42) {
@@ -663,7 +668,8 @@ const onSubmit = () => {
                                                         <VTextField
                                                             v-model="organization_number"
                                                             label="Org/personummer"
-                                                            :rules="[requiredValidator]"
+                                                            :rules="[requiredValidator, lengthValidator]"
+                                                            :counter="12"
                                                         />
                                                     </VCol>
                                                     <VCol cols="2" md="1" class="px-0 d-flex align-center">

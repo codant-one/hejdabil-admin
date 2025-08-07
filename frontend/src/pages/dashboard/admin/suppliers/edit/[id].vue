@@ -73,6 +73,11 @@ watchEffect(async() => {
     isRequestOngoing.value = false
 })
 
+const lengthValidator = value => {
+  if (!value) return true;
+  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
+}
+
 const onSubmit = () => {
 
     refForm.value?.validate().then(({ valid }) => {
@@ -222,7 +227,8 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="organization_number"
-                                                    :rules="[requiredValidator]"
+                                                    :rules="[requiredValidator, lengthValidator]"
+                                                    :counter="12"
                                                     label="Organisationsnummer"
                                                 />
                                             </VCol>

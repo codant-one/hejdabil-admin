@@ -198,6 +198,11 @@ const selectModel = selected => {
 
 }
 
+const lengthValidator = value => {
+  if (!value) return true;
+  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
+}
+
 const onSubmit = () => {
   const tab = currentTab.value
   const itemsLength = refForm.value.items.length
@@ -367,7 +372,7 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="commission_id"
                                                     disabled
-                                                    label="Kommission"
+                                                    label="Avtalsnummer"
                                                     prefix="#"
                                                     density="compact"
                                                 />
@@ -380,6 +385,8 @@ const onSubmit = () => {
                                                     <VCol cols="10" md="11">
                                                         <VTextField
                                                             v-model="organization_number"
+                                                            :rules="[lengthValidator]"
+                                                            :counter="12"
                                                             label="Org/personummer"
                                                         />
                                                     </VCol>

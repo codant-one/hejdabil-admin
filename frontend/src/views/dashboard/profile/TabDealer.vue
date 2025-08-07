@@ -271,6 +271,11 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
+const lengthValidator = value => {
+  if (!value) return true;
+  return value.length === 12 || 'Företagsnumret måste vara 12 siffror.';
+}
+
 const onSubmit = () => {
     
     refVForm.value?.validate().then(({ valid: isValid }) => {
@@ -412,7 +417,8 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :rules="[requiredValidator]"
+                                    :rules="[requiredValidator, lengthValidator]"
+                                    :counter="12"
                                     :disabled="role === 'Supplier'"
                                 />
                             </VCol>
