@@ -27,9 +27,7 @@ use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\AgreementClient;
 use App\Models\VehicleClient;
-use App\Models\Guaranty;
 use App\Models\GuarantyType;
-use App\Models\InsuranceCompany;
 use App\Models\InsuranceType;
 use App\Models\Currency;
 use App\Models\PaymentType;
@@ -127,9 +125,7 @@ class AgreementController extends Controller
 
             $agreement = Agreement::with([
                         'agreement_type',
-                        'guaranty',
                         'guaranty_type',
-                        'insurance_company',
                         'insurance_type',
                         'currency',
                         'iva',
@@ -271,9 +267,7 @@ class AgreementController extends Controller
                     'ivas'  => Iva::all(),
                     'fuels'  => Fuel::all(),
                     'states'  => State::all(),
-                    'guaranties'  => Guaranty::all(),
                     'guarantyTypes'  => GuarantyType::all(),
-                    'insuranceCompanies'  => InsuranceCompany::all(),
                     'insuranceTypes'  => InsuranceType::all(),
                     'currencies'  => Currency::all(),
                     'paymentTypes'  => PaymentType::all(),

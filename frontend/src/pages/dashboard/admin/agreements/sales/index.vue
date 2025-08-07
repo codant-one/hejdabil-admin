@@ -39,12 +39,20 @@ const color = ref(null)
 const chassis = ref(null)
 const mileage = ref(null)
 const sale_date = ref(null)
-const guaranty_id = ref(1)
-const guaranties = ref([])
+const guaranty = ref(0);
+const guaranties = ref([
+    { id: 1, name: 'Ja' },
+    { id: 0, name: 'Ingen garanti' }
+]);
+const guaranty_description = ref(null);
 const guaranty_type_id = ref(null)
 const guarantyTypes = ref([])
-const insurance_company_id = ref(null)
-const insuranceCompanies = ref([])
+const insurance_company = ref(0);
+const insuranceCompanies = ref([
+    { id: 1, name: 'Ja' },
+    { id: 0, name: 'försäkring' }
+]);
+const insurance_company_description = ref(null);
 const insurance_type_id = ref(5)                                 
 const insuranceTypes = ref([])
 
@@ -190,9 +198,7 @@ async function fetchData() {
     }
 
     vehicles.value = agreementsStores.vehicles
-    guaranties.value = agreementsStores.guaranties
     guarantyTypes.value = agreementsStores.guarantyTypes
-    insuranceCompanies.value = agreementsStores.insuranceCompanies
     insuranceTypes.value = agreementsStores.insuranceTypes
     brands.value = agreementsStores.brands
     models.value = agreementsStores.models 
@@ -389,6 +395,20 @@ const onChangeRadio = (newValue) => {
   residual_price.value = newValue === 1 ? 0 : residual_price.value
 }
 
+const guarantyDescriptionRules = computed(() => {
+    if (guaranty.value === 1) {
+        return [requiredValidator];
+    }
+    return [];
+});
+
+const insuranceDescriptionRules = computed(() => {
+    if (insurance_company.value === 1) {
+        return [requiredValidator];
+    }
+    return [];
+});
+
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
         if (valid && currentTab.value === 0 && refForm.value.items.length < 60) {
@@ -452,9 +472,7 @@ const onSubmit = () => {
             formData.append('agreement_type_id', 1)
             formData.append('currency_id', currency_id.value)
             formData.append('agreement_id', agreement_id.value)
-            formData.append('guaranty_id', guaranty_id.value)
             formData.append('guaranty_type_id', guaranty_type_id.value)
-            formData.append('insurance_company_id', insurance_company_id.value)
             formData.append('insurance_type_id', insurance_type_id.value)
             formData.append('fair_value', fair_value.value)
             formData.append('residual_debt', residual_debt.value)
@@ -474,6 +492,10 @@ const onSubmit = () => {
             formData.append('payment_method_forcash', payment_method_forcash.value)
             formData.append('installment_amount', installment_amount.value)
             formData.append('installment_contract_upon_delivery', installment_contract_upon_delivery.value === false ? 0 : 1)
+            formData.append('guaranty', guaranty.value)
+            formData.append('guaranty_description', guaranty_description.value)
+            formData.append('insurance_company', insurance_company.value)
+            formData.append('insurance_company_description', insurance_company_description.value)
             formData.append('payment_description', payment_description.value)
 
             formData.append('terms_other_conditions', terms_other_conditions.value)
@@ -676,7 +698,7 @@ const onSubmit = () => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VAutocomplete
-                                                    v-model="guaranty_id"
+                                                    v-model="guaranty"
                                                     label="Garanti"
                                                     :items="guaranties"
                                                     :item-title="item => item.name"
@@ -687,19 +709,27 @@ const onSubmit = () => {
                                                 /> 
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="guaranty_description"
+                                                    label="Garantibeskrivning"
+                                                    :rules="guarantyDescriptionRules"
+                                                    :disabled="guaranty === 0"
+                                                />
+                                            </VCol>
+                                            <VCol cols="12" md="6">
                                                 <VAutocomplete
                                                     v-model="guaranty_type_id"
                                                     :items="guarantyTypes"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
-                                                    :disabled="guaranty_id === 1"
+                                                    :disabled="guaranty === 0"
                                                     label="Typ av garanti"
                                                     autocomplete="off"
                                                 />    
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VAutocomplete
-                                                    v-model="insurance_company_id"
+                                                    v-model="insurance_company"
                                                     :items="insuranceCompanies"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
@@ -709,6 +739,14 @@ const onSubmit = () => {
                                                     clearable
                                                     clear-icon="tabler-x"
                                                 />    
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextField
+                                                    v-model="insurance_company_description"
+                                                    label="Beskrivning av försäkringsbolag"
+                                                    :rules="insuranceDescriptionRules"
+                                                    :disabled="insurance_company === 0"
+                                                />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VSelect

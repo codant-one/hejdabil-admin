@@ -32,17 +32,10 @@ class Agreement extends Model
         return $this->belongsTo(AgreementType::class, 'agreement_type_id', 'id');
     }
 
-    public function guaranty(){
-        return $this->belongsTo(Guaranty::class, 'guaranty_id', 'id');
-    }
-
     public function guaranty_type(){
         return $this->belongsTo(GuarantyType::class, 'guaranty_type_id', 'id');
     }
 
-    public function insurance_company(){
-        return $this->belongsTo(InsuranceCompany::class, 'insurance_company_id', 'id');
-    }
 
     public function insurance_type(){
         return $this->belongsTo(InsuranceType::class, 'insurance_type_id', 'id');
@@ -149,9 +142,7 @@ class Agreement extends Model
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
-            'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
-            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,            
-            'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
+            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,
             'insurance_type_id' => $request->insurance_type_id === 'null' ? null : $request->insurance_type_id,
             'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
@@ -177,6 +168,10 @@ class Agreement extends Model
             'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
             'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
             'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
+            'guaranty' => $request->guaranty === 'null' ? null : $request->guaranty,
+            'guaranty_description' => $request->guaranty_description === 'null' ? null : $request->guaranty_description,
+            'insurance_company' => $request->insurance_company === 'null' ? null : $request->insurance_company,
+            'insurance_company_description' => $request->insurance_company_description === 'null' ? null : $request->insurance_company_description,
             'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
             'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
@@ -214,9 +209,7 @@ class Agreement extends Model
         $agreement->update([
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
-            'guaranty_id' => $request->guaranty_id === 'null' ? null : $request->guaranty_id,
-            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,            
-            'insurance_company_id' => $request->insurance_company_id === 'null' ? null : $request->insurance_company_id,
+            'guaranty_type_id' => $request->guaranty_type_id === 'null' ? null : $request->guaranty_type_id,
             'insurance_type_id' => $request->insurance_type_id === 'null' ? null : $request->insurance_type_id,
             'currency_id' => $request->currency_id === 'null' ? null : $request->currency_id,
             'payment_type_id' => $request->payment_type_id === 'null' ? null : $request->payment_type_id,
@@ -242,6 +235,10 @@ class Agreement extends Model
             'payment_method_forcash' => $request->payment_method_forcash === 'null' ? null : $request->payment_method_forcash,
             'installment_amount' => $request->installment_amount === 'null' ? null : $request->installment_amount,
             'installment_contract_upon_delivery' => $request->installment_contract_upon_delivery === 'null' ? null : $request->installment_contract_upon_delivery,
+            'guaranty' => $request->guaranty === 'null' ? null : $request->guaranty,
+            'guaranty_description' => $request->guaranty_description === 'null' ? null : $request->guaranty_description,
+            'insurance_company' => $request->insurance_company === 'null' ? null : $request->insurance_company,
+            'insurance_company_description' => $request->insurance_company_description === 'null' ? null : $request->insurance_company_description,
             'payment_description' => $request->payment_description === 'null' ? null : $request->payment_description,
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions,
             'terms_other_information' => $request->terms_other_information === 'null' ? null : $request->terms_other_information
