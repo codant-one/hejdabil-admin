@@ -50,7 +50,7 @@ const guarantyTypes = ref([])
 const insurance_company = ref(0);
 const insuranceCompanies = ref([
     { id: 1, name: 'Ja' },
-    { id: 0, name: 'försäkring' }
+    { id: 0, name: 'Inge försäkring' }
 ]);
 const insurance_company_description = ref(null);
 const insurance_type_id = ref(5)                                 
