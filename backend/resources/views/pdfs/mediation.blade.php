@@ -8,40 +8,88 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
         @page {
-            margin: 1.5cm;
+            margin: 1cm;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            font-size: 11px;
+            font-size: 9px;
             color: #333;
-            background-color: #fff;
-        }
-        
-        .main-container {
-            width: 100%;
-            border-collapse: collapse;
-            border-spacing: 0;
         }
 
         h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 16px;
             color: #111;
         }
 
         h2 {
-            font-size: 13px;
+            font-size: 10px;
             color: #0056b3;
-            margin-top: 0;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #e0e0e0;
-            padding-bottom: 4px;
+            margin: 0 0 4px 0;
+            padding-bottom: 2px;
+            border-bottom: 1px solid #ccc;
         }
 
-        /* --- HEADER --- */
+        .main-container {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .section-cell {
+            padding-top: 6px;
+        }
+
+        /* Cambiamos a 4 columnas para compactar */
+        .column-cell {
+            width: 25%;
+            vertical-align: top;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            padding-bottom: 3px;
+            vertical-align: top;
+        }
+
+        .label {
+            font-weight: 600;
+            font-size: 8px;
+            margin-bottom: 2px;
+            color: #555;
+        }
+
+        .value {
+            font-size: 9px;
+            padding: 3px 4px;
+            background-color: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 2px;
+            line-height: 1.2;
+        }
+
+        .value-large {
+            min-height: auto;
+        }
+
+        .footer-section {
+            padding-top: 10px;
+        }
+
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 4px;
+            font-size: 9px;
+            color: #333;
+            text-align: center;
+        }
+
         .header-logo img {
             max-width: 150px;
         }
@@ -53,58 +101,6 @@
             font-size: 10px;
             color: #555;
             margin-top: 5px;
-        }
-
-        /* --- Celdas de Layout --- */
-        .section-cell {
-            padding-top: 15px;
-        }
-        .column-cell {
-            width: 50%;
-            vertical-align: top;
-        }
-        .column-cell-left { padding-right: 15px; }
-        .column-cell-right { padding-left: 15px; }
-        
-        /* --- Tablas de Información (Key-Value) --- */
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .info-table td {
-            padding-bottom: 6px;
-            vertical-align: top;
-        }
-        .info-table .label {
-            font-weight: 600;
-            display: block;
-            margin-bottom: 3px;
-            color: #555;
-            font-size: 10px;
-        }
-        .info-table .value {
-            font-size: 11px;
-            background-color: #f9f9f9;
-            padding: 6px 8px;
-            border-radius: 4px;
-            border: 1px solid #eee;
-            min-height: 14px;
-            line-height: 1.4;
-        }
-        .info-table .value-large {
-            min-height: 60px;
-        }
-
-        /* --- PIE DE PÁGINA --- */
-        .footer-section { padding-top: 30px; }
-        .signatures-table {
-            width: 100%;
-        }
-        .signature-box {
-            border-top: 1px solid #333;
-            padding-top: 8px;
-            font-size: 12px;
-            color: #333;
         }
     </style>
 </head>

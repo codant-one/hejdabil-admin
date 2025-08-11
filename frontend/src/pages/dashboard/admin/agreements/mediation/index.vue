@@ -133,6 +133,7 @@ async function fetchData() {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
 
     const { user_data, userAbilities } = await authStores.me(userData.value)
+    role.value = userData.value.roles[0].name
 
     if(role.value === 'Supplier') {
         localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
@@ -895,7 +896,7 @@ const onSubmit = () => {
                                     Tillbaka
                                 </VBtn>
                                 <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 5) ? 'Skicka' : ' Nästa' }}
+                                    {{ (currentTab === 5) ? 'Skapa' : ' Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>

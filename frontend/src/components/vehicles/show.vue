@@ -391,6 +391,14 @@ const setThumbsSwiper = (swiper) => {
                                                     <span class="font-weight-semibold"> Status: </span>
                                                     <span>{{ state }}</span>
                                                 </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Försäljningspris: </span>
+                                                    <span>{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-semibold"> Vinst: </span>
+                                                    <span>{{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} {{ currency_sale }}</span>
+                                                </div>
                                             </VCol>
                                         </VRow>
                                     </VContainer>

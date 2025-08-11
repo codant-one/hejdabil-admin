@@ -8,14 +8,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
         @page {
-            margin: 1.5cm;
+            margin: 1cm;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            font-size: 11px;
+            font-size: 9px;
             color: #333;
             background-color: #fff;
         }
@@ -24,32 +24,23 @@
         .main-container {
             width: 100%;
             border-collapse: collapse;
-            border-spacing: 0;
         }
 
         /* Títulos de sección */
         h2 {
-            font-size: 13px;
+            font-size: 10px;
             color: #0056b3;
             margin-top: 0;
             margin-bottom: 0;
         }
 
         /* --- HEADER --- */
-        .header-logo {
-            width: 150px;
-        }
         .header-logo img {
-            max-width: 100%;
+            max-width: 150px;
         }
         .header-title-cell {
             text-align: right;
             vertical-align: top;
-        }
-        .header-title-cell h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #111;
         }
         .header-title-cell .contract-details {
             font-size: 10px;
@@ -59,12 +50,11 @@
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 10px;
+            padding-top: 6px;
         }
         .column-cell {
-            width: 50%;
+            width: 25%;
             vertical-align: top;
-            padding-top: 10px;
         }
         /* Añade espacio entre las columnas */
         .column-cell-left { padding-right: 15px; }
@@ -80,19 +70,19 @@
         }
         .info-table td {
             padding: 0;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .info-table .label {
             font-weight: 600;
             display: block;
             margin-bottom: 3px;
             color: #555;
-            font-size: 10px;
+            font-size: 8px;
         }
         .info-table .value {
-            font-size: 10px;
+            font-size: 9px;
             background-color: #f9f9f9;
-            padding: 5px;
+            padding: 3px 4px;
             border-radius: 4px;
             border: 1px solid #eee;
             min-height: 12px
@@ -137,8 +127,8 @@
         }
         .signature-box {
             border-top: 1px solid #333;
-            padding-top: 8px;
-            font-size: 13px;
+            padding-top: 4px;
+            font-size: 9px;
             color: #333;
         }
     </style>
@@ -594,6 +584,42 @@
                                         </td>
                                     </tr>
                                 </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
+            <tr>
+                <td colspan="2" class="section-cell">
+                    <h2>Villkor</h2>
+                </td>
+            </tr>
+            @endif
+            <tr>  
+                @if($agreement->terms_other_conditions!==null)
+                <td class="column-cell column-cell-left section-cell">
+                    <h2>Övriga villkor</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="value value-large">
+                                    {{ $agreement->terms_other_conditions }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                @endif
+                <td class="column-cell column-cell-right section-cell">
+                    <h2>Övriga upplysningar</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="value value-large">
+                                {{ $agreement->terms_other_information }}
+                                </div>
                             </td>
                         </tr>
                     </table>

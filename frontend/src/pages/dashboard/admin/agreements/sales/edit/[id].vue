@@ -1304,7 +1304,7 @@ const onSubmit = () => {
                                     Tillbaka
                                 </VBtn>
                                 <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 4) ? 'Skicka' : ' Nästa' }}
+                                    {{ (currentTab === 4) ? 'Uppdatering' : ' Nästa' }}
                                 </VBtn>
                             </div>
                         </VCol>

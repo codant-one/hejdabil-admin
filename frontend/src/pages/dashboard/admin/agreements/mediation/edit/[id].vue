@@ -131,7 +131,8 @@ async function fetchData() {
 
         userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
         const { user_data } = await authStores.me(userData.value)
-
+        role.value = userData.value.roles[0].name
+        
         if(role.value === 'Supplier') {
             supplier.value = user_data.supplier
 
