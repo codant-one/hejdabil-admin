@@ -614,6 +614,7 @@
                     </table>
                 </td>
                 @endif
+                @if($agreement->terms_other_information!==null)
                 <td class="column-cell column-cell-right section-cell">
                     <h2>Övriga upplysningar</h2>
                     <table class="info-table">
@@ -626,6 +627,7 @@
                         </tr>
                     </table>
                 </td>
+                @endif
             </tr>
 
             <!-- === FOOTER === -->
