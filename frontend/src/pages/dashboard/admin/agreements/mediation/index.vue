@@ -400,7 +400,7 @@ const onSubmit = () => {
                                                     <VCol cols="12" md="6">
                                                         <VAutocomplete
                                                             v-model="client_type_id"
-                                                            label="Köparen är"
+                                                            label="Fordonsägaren är:"
                                                             :items="client_types"
                                                             :item-title="item => item.name"
                                                             :item-value="item => item.id"

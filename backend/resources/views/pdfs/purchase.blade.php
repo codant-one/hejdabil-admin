@@ -215,9 +215,9 @@
                             <div class="label">Postnr. ort</div>
                             <div class="value">
                                 @if(!$agreement->supplier)
-                                    {{ $user->userDetail->street }} {{ $user->userDetail->postal_code }} 
+                                {{ $user->userDetail->postal_code }} {{ $user->userDetail->street }}  
                                 @else
-                                    {{ $agreement->supplier?->street }} {{ $agreement->supplier?->postal_code }}
+                                {{ $agreement->supplier?->postal_code }} {{ $agreement->supplier?->street }} 
                                 @endif
                             </div>
                         </td>

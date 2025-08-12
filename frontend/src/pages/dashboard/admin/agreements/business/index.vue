@@ -218,7 +218,7 @@ const onSubmit = () => {
                   <VCol cols="12" md="2">
                     <VTextField
                       v-model="offer_id"
-                      label="Erbjudandenummer"
+                      label="Offertnummer"
                       readonly
                       disabled
                       prefix="#"
@@ -268,7 +268,7 @@ const onSubmit = () => {
                 <VCol cols="12" md="6">
                   <VTextField
                     v-model="price"
-                    :label="'Bellop ' + (currencies.find(item => item.id === currency_id)?.code || '')"
+                    :label="'Belopp ' + (currencies.find(item => item.id === currency_id)?.code || '')"
                     type="number"
                     min="0"
                     :rules="[requiredValidator]"

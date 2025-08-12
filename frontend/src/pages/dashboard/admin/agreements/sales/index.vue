@@ -50,7 +50,7 @@ const guarantyTypes = ref([])
 const insurance_company = ref(0);
 const insuranceCompanies = ref([
     { id: 1, name: 'Ja' },
-    { id: 0, name: 'Inge försäkring' }
+    { id: 0, name: 'Ingen försäkring' }
 ]);
 const insurance_company_description = ref(null);
 const insurance_type_id = ref(5)                                 
@@ -590,7 +590,7 @@ const onSubmit = () => {
                                             <VCol cols="12" md="3">
                                                 <VAutocomplete
                                                     v-model="vehicle_id"
-                                                    label="Stockbilar"
+                                                    label="Lagerbilar"
                                                     :items="vehicles"
                                                     item-title="reg_num"      
                                                     item-value="id"
@@ -734,7 +734,7 @@ const onSubmit = () => {
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     :rules="[requiredValidator]"
-                                                    label="Försäkringsbolag"
+                                                    label="Försäkring"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
@@ -755,6 +755,7 @@ const onSubmit = () => {
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     label="Försäkringstyp"
+                                                    :disabled="insurance_company === 0"
                                                     autocomplete="off"
                                                 />    
                                             </VCol>
@@ -856,7 +857,7 @@ const onSubmit = () => {
                                                     v-model="sale_date_interchange"
                                                     density="compact"
                                                     :config="startDateTimePickerConfig"
-                                                    label="Försäljningsdatum"
+                                                    label="Inbytesdatum"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3">
@@ -1052,7 +1053,7 @@ const onSubmit = () => {
                                                                     {{ 
                                                                         role === 'Supplier' ? 
                                                                         supplier.street + ' ' +  supplier.postal_code : 
-                                                                        userData.user_details.street  + ' ' +  userData.user_details.postal_code
+                                                                        userData.user_details.postal_code  + ' ' +  userData.user_details.street
                                                                     }}
                                                                 </span>
                                                             </h6>
