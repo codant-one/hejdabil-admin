@@ -1,7 +1,7 @@
 <script setup>
 
 import router from '@/router'
-import { emailValidator, requiredValidator, phoneValidator, urlValidator, lengthValidator } from '@/@core/utils/validators'
+import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 
 const suppliersStores = useSuppliersStores()
@@ -37,6 +37,15 @@ onMounted(async () => {
 
 const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
+}
+
+const formatOrgNumber = () => {
+
+    let numbers = organization_number.value.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    organization_number.value = numbers
 }
 
 const onSubmit = () => {
@@ -180,9 +189,11 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="organization_number"
-                                                   :rules="[requiredValidator, lengthValidator(12)]"
-                                                    maxlength="12"
                                                     label="Organisationsnummer"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="11"
+                                                    @input="formatOrgNumber()"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">

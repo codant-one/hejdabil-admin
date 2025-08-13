@@ -537,7 +537,7 @@
                 <table class="signatures-table">
                     <tr>
                         <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Köparens underskrift)</div></td>
-                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljföretagets underskrift)</div></td>
+                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljarens underskrift)</div></td>
                     </tr>
                 </table>
             </td>

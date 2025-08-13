@@ -1,7 +1,7 @@
 <script setup>
 
 import router from '@/router'
-import { requiredValidator, yearValidator, emailValidator, phoneValidator, lengthValidator } from '@/@core/utils/validators'
+import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -295,6 +295,15 @@ const formatDate = (date) => {
   const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
   const day = String(date.getDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+const formatOrgNumber = () => {
+
+    let numbers = organization_number.value.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    organization_number.value = numbers
 }
 
 const onSubmit = () => {
@@ -665,8 +674,10 @@ const onSubmit = () => {
                                                         <VTextField
                                                             v-model="organization_number"
                                                             label="Org/personummer"
-                                                            :rules="[requiredValidator, lengthValidator(12)]"
-                                                            maxlength="12"
+                                                            :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                            minLength="11"
+                                                            maxlength="13"
+                                                            @input="formatOrgNumber()"
                                                         />
                                                     </VCol>
                                                     <VCol cols="2" md="1" class="px-0 d-flex align-start">

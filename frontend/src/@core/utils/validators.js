@@ -90,6 +90,15 @@ export const lengthValidator = (length) => {
   }
 }
 
+// 👉 Min Length Validator (solo números)
+export const minLengthDigitsValidator = (minLength) => {
+  return (value) => {
+    if (isEmpty(value)) return true
+    const digitsOnly = String(value).replace(/\D/g, '') // eliminar todo excepto números
+    return digitsOnly.length >= minLength || `Numret måste innehålla minst ${minLength} siffror.`
+  }
+}
+
 // 👉 Alpha-dash Validator
 export const alphaDashValidator = value => {
   if (isEmpty(value))

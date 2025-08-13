@@ -346,6 +346,14 @@
                                         </div>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td>
+                                        <div class="label">Försäljningspris</div>
+                                        <div class="value">
+                                            {{ formatCurrency($agreement->price) }} kr
+                                        </div>
+                                    </td>
+                                </tr>
                             </table>
                         </td>
                         <td class="column-cell column-cell-right" style="padding-left: 8px;">

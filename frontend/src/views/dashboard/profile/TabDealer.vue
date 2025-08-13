@@ -1,6 +1,6 @@
 <script setup>
 
-import { requiredValidator, phoneValidator, urlValidator, lengthValidator } from '@/@core/utils/validators'
+import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useAuthStores } from '@/stores/useAuth'
@@ -271,6 +271,15 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
+const formatOrgNumber = () => {
+
+    let numbers = form.value.organization_number.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    form.value.organization_number = numbers
+}
+
 const onSubmit = () => {
     
     refVForm.value?.validate().then(({ valid: isValid }) => {
@@ -412,9 +421,11 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :rules="[requiredValidator, lengthValidator(12)]"
-                                    maxlength="12"
                                     :disabled="role === 'Supplier'"
+                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                    minLength="11"
+                                    maxlength="11"
+                                    @input="formatOrgNumber()"
                                 />
                             </VCol>
                             <VCol cols="12" md="12">
