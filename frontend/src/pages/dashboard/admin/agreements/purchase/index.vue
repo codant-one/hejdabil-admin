@@ -78,7 +78,7 @@ const iva_sale_exclusive = ref(0)
 const is_loan = ref(1)
 const loan_amount = ref(null)
 const lessor = ref(null)
-const settled_by = ref(3)
+const settled_by = ref(2)
 const bank = ref(null)
 const account = ref(null)
 const description = ref(null)
@@ -115,6 +115,10 @@ const remaining_amount = computed(()=>{
 
 const conditionalRules = computed(() => {
     return settled_by.value === 1 ? [requiredValidator] : []
+})
+
+const conditionalRulesJa = computed(() => {
+    return is_loan.value === 0 ? [requiredValidator] : []
 })
 
 onMounted(async () => {
@@ -304,6 +308,22 @@ const formatOrgNumber = () => {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
     organization_number.value = numbers
+}
+
+const handleChange = (val) => {
+
+    if(val === 1) {
+        loan_amount.value = null
+        lessor.value = null
+        settled_by.value = 2
+        payment_type_id.value = null
+        payment_type.value = null
+        bank.value = null
+        account.value = null
+        description.value = null
+    } else {
+        settled_by.value = 0
+    }
 }
 
 const onSubmit = () => {
@@ -911,7 +931,11 @@ const onSubmit = () => {
                                             <VCol cols="12" md="6">
                                                 <div class="d-flex flex-column">
                                                     <label class="v-label text-body-2 text-wrap"> Har bilen Kredit/leasing?</label>
-                                                    <VRadioGroup v-model="is_loan" inline class="radio-form">
+                                                    <VRadioGroup 
+                                                        v-model="is_loan" 
+                                                        inline 
+                                                        class="radio-form"
+                                                        @update:modelValue="handleChange">
                                                         <VRadio
                                                             v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                             :key="index"
@@ -927,6 +951,7 @@ const onSubmit = () => {
                                                     label="Kreditbelopp"
                                                     type="number"
                                                     min="0"
+                                                    :rules="conditionalRulesJa"
                                                     :disabled="is_loan === 1 ? true : false"
                                                 />
                                             </VCol>
@@ -934,13 +959,13 @@ const onSubmit = () => {
                                                 <VTextField
                                                     v-model="lessor"
                                                     label="Kredit/leasinggivare"
+                                                    :rules="conditionalRulesJa"
                                                     :disabled="is_loan === 1 ? true : false"
                                                 />
                                             </VCol>           
                                             <VCol cols="12" md="6" class="d-flex align-center">
                                                 <span class="ms-1 ms-md-0">Restsumma: {{ remaining_amount }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                             </VCol>                                 
-
                                             <VCol cols="12" md="6">
                                                 <div class="d-flex flex-column">
                                                     <label class="v-label text-body-2 text-wrap">Restskulden löses av</label>

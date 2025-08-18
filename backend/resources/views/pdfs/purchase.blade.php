@@ -143,6 +143,7 @@
             margin-bottom: 30px;
         }
         .signatures-table {
+            margin-top: 30px;
             width: 100%;
         }
         .signature-box {
