@@ -175,7 +175,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(27);
+        ])->find(22);
 
         $user = User::with(['userDetail'])->find(1);
  

@@ -36,6 +36,7 @@
         .main-container {
             width: 100%;
             border-collapse: collapse;
+            border-spacing: 0;
         }
 
         .section-cell {
@@ -46,7 +47,13 @@
         .column-cell {
             width: 25%;
             vertical-align: top;
+            padding-top: 8px;
         }
+        .column-cell-left { padding-right: 10px; }
+        .column-cell-right { padding-left: 10px; }
+
+        .column-cell-left-2 { padding-right: 8px !important; }
+        .column-cell-right-2 { padding-left: 8px !important; }
 
         .info-table {
             width: 100%;
@@ -54,6 +61,7 @@
         }
 
         .info-table td {
+            padding: 0;
             padding-bottom: 3px;
             vertical-align: top;
         }
@@ -72,6 +80,7 @@
             border: 1px solid #eee;
             border-radius: 2px;
             line-height: 1.2;
+            min-height: 12px;
         }
 
         .value-large {
@@ -82,6 +91,11 @@
             padding-top: 10px;
         }
 
+        .signatures-table {
+            margin-top: 20px;
+            width: 100%;
+        }
+        
         .signature-box {
             border-top: 1px solid #333;
             padding-top: 4px;
@@ -91,16 +105,21 @@
         }
 
         .header-logo img {
-            max-width: 150px;
+            max-width: 140px;
         }
         .header-title-cell {
             text-align: right;
             vertical-align: top;
         }
+        .header-title-cell h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #111;
+        }
         .header-title-cell .contract-details {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #555;
-            margin-top: 5px;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -299,35 +318,43 @@
                         <td class="column-cell column-cell-left" style="padding-right: 8px;">
                             <table class="info-table">
                                 <tr>
-                                    <td>
-                                        <div class="label">Märke</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->model->brand->name }}
-                                        </div>
+                                    <td style="padding:0;">
+                                        <table class="info-table">
+                                            <tr>
+                                                <td class="column-cell column-cell-left-2">
+                                                    <div class="label">Märke</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->model->brand->name }}
+                                                    </div>
+                                                </td>
+                                                <td class="column-cell column-cell-right-2">
+                                                    <div class="label">Modell</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->model->name }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td>
-                                        <div class="label">Årsmodell</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->year }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Chassinummer</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->chassis }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Drivmedel</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->fuel?->name }}
-                                        </div>
+                                    <td style="padding:0;">
+                                        <table class="info-table">
+                                            <tr>
+                                                <td class="column-cell column-cell-left-2">
+                                                    <div class="label">Årsmodell</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->year }}
+                                                    </div>
+                                                </td>
+                                                <td class="column-cell column-cell-right-2">
+                                                    <div class="label">Farg</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->color }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                                 <tr>
@@ -335,14 +362,6 @@
                                         <div class="label">Antal nycklar</div>
                                         <div class="value">
                                             {{ $agreement->commission->vehicle->number_keys }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Sommardäck finns?</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->summer_tire === 0 ? 'Ja' : 'Nej' }}
                                         </div>
                                     </td>
                                 </tr>
@@ -359,50 +378,70 @@
                         <td class="column-cell column-cell-right" style="padding-left: 8px;">
                             <table class="info-table">
                                 <tr>
-                                    <td>
-                                        <div class="label">Modell</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->model->name }}
-                                        </div>
+                                    <td style="padding:0;">
+                                        <table class="info-table">
+                                            <tr>
+                                                <td class="column-cell column-cell-left-2">
+                                                    <div class="label">Chassinummer</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->chassis }}
+                                                    </div>
+                                                </td>
+                                                <td class="column-cell column-cell-right-2">
+                                                    <div class="label">Miltal</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->mileage }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0;">
+                                        <table class="info-table">
+                                            <tr>
+                                                <td class="column-cell column-cell-left-2">
+                                                    <div class="label">Växellåda</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->gearbox?->name }}
+                                                    </div>
+                                                </td>
+                                                <td class="column-cell column-cell-right-2">
+                                                    <div class="label">Drivmedel</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->fuel?->name }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:0;">
+                                        <table class="info-table">
+                                            <tr>
+                                                <td class="column-cell column-cell-left-2">
+                                                    <div class="label">Servicebok finns?</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->service_book === 0 ? 'Ja' : 'Nej' }}
+                                                    </div>
+                                                </td>
+                                                <td class="column-cell column-cell-right-2">
+                                                    <div class="label">Vinterdäck finns?</div>
+                                                    <div class="value">
+                                                        {{ $agreement->commission->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
                                 </tr>
                                 <tr>
                                     <td>
-                                        <div class="label">Färg</div>
+                                        <div class="label">Sommardäck finns?</div>
                                         <div class="value">
-                                            {{ $agreement->commission->vehicle->color }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Miltal</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->mileage }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Växellåda</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->gearbox?->name }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Servicebok finns?</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->service_book === 0 ? 'Ja' : 'Nej' }}
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <div class="label">Vinterdäck finns?</div>
-                                        <div class="value">
-                                            {{ $agreement->commission->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                            {{ $agreement->commission->vehicle->summer_tire === 0 ? 'Ja' : 'Nej' }}
                                         </div>
                                     </td>
                                 </tr>
@@ -411,7 +450,7 @@
                     </tr>
                     @if($agreement->commission->vehicle->comments!==null)
                     <tr>
-                        <td colspan="2" style="padding-top: 6px;">
+                        <td colspan="2">
                             <table class="info-table">
                                 <tr>
                                     <td>
@@ -533,6 +572,31 @@
                             </div>
                         </td>
                     </tr>
+                </table>
+            </td>
+            <td class="column-cell column-cell-right section-cell">
+                <h2>Förmedlingsdatum</h2>
+                <table class="info-table">
+                    <tr>
+                        <td style="padding:0;">
+                            <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">Startdatum</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->start_date }}
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Slutdatum</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->end_date }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
                     <tr>
                         <td>
                             <div class="label">Betalningsvillkor (dagar)</div>
@@ -543,31 +607,10 @@
                     </tr>
                 </table>
             </td>
-            <td class="column-cell column-cell-right section-cell">
-                <h2>Förmedlingsdatum</h2>
-                <table class="info-table">
-                    <tr>
-                        <td>
-                            <div class="label">Startdatum</div>
-                            <div class="value">
-                                {{ $agreement->commission->start_date }}
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="label">Slutdatum</div>
-                            <div class="value">
-                                {{ $agreement->commission->end_date }}
-                            </div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
         </tr>
         @if($agreement->commission->payment_description!==null)
          <tr>
-            <td colspan="2" style="padding-top: 10px;">
+            <td colspan="2">
                 <table class="info-table">
                     <tr>
                         <td>
@@ -621,8 +664,8 @@
             <td colspan="2" class="footer-section">
                 <table class="signatures-table">
                     <tr>
-                            <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Fordonsägarens underskrift)</div></td>
-                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Förmedlarens underskrift)</div></td>
+                        <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Fordonsägarens underskrift)</div></td>
+                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Förmedlarens underskrift)</div></td>
                     </tr>
                 </table>
             </td>
