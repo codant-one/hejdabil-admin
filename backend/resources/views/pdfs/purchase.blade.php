@@ -9,39 +9,36 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
         @page {
-            margin: 1.5cm;
+            margin: 1.2cm;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            font-size: 11px;
+            font-size: 10.5px;
             color: #333;
             background-color: #fff;
+            line-height: 1.35;
         }
-        
-        /* Tabla principal que actúa como contenedor */
+
+        /* Tabla principal */
         .main-container {
             width: 100%;
             border-collapse: collapse;
             border-spacing: 0;
         }
 
-        /* Títulos de sección */
+        /* Títulos */
         h2 {
-            font-size: 13px;
+            font-size: 12px;
             color: #0056b3;
-            margin-top: 0;
-            margin-bottom: 0;
+            margin: 0 0 6px 0;
         }
 
         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
-        }
-        .header-logo img {
-            max-width: 100%;
+            width: 140px;
         }
         .header-title-cell {
             text-align: right;
@@ -49,81 +46,81 @@
         }
         .header-title-cell h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 20px;
             color: #111;
         }
         .header-title-cell .contract-details {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #555;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
-        /* --- Celdas principales de las secciones --- */
+        /* --- Celdas de secciones --- */
         .section-cell {
-            padding-top: 10px;
+            padding-top: 8px;
         }
         .column-cell {
             width: 50%;
             vertical-align: top;
-            padding-top: 10px;
+            padding-top: 8px;
         }
-        /* Añade espacio entre las columnas */
-        .column-cell-left { padding-right: 15px; }
-        .column-cell-right { padding-left: 15px; }
+        .column-cell-left { padding-right: 10px; }
+        .column-cell-right { padding-left: 10px; }
 
-        .column-cell-left-2 { padding-right: 10px !important; }
-        .column-cell-right-2 { padding-left: 10px !important; }
+        .column-cell-left-2 { padding-right: 8px !important; }
+        .column-cell-right-2 { padding-left: 8px !important; }
 
-        /* --- Tablas de información (Key-Value) --- */
+        /* --- Tablas de información --- */
         .info-table {
             width: 100%;
             border-collapse: collapse;
         }
         .info-table td {
             padding: 0;
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .info-table .label {
             font-weight: 600;
             display: block;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             color: #555;
-            font-size: 10px;
+            font-size: 9px;
         }
         .info-table .value {
-            font-size: 10px;
+            font-size: 9.5px;
             background-color: #f9f9f9;
-            padding: 5px;
-            border-radius: 4px;
+            padding: 4px 5px;
+            border-radius: 3px;
             border: 1px solid #eee;
-            min-height: 12px
+            min-height: 12px;
         }
-
         .info-table .value2 {
-            font-size: 10px;
+            font-size: 9.5px;
             background-color: #f9f9f9;
-            padding: 5px;
-            border-radius: 4px;
+            padding: 5px 6px;
+            border-radius: 3px;
             border: 1px solid #eee;
-            min-height: 40px
+            min-height: 35px;
         }
 
         /* --- TABLA FINANCIERA --- */
         .financials-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 4px;
         }
         .financials-table td {
-            padding: 5px;
+            padding: 4px 5px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
+            font-size: 9.5px;
         }
         .financials-table td:last-child {
             text-align: right;
             font-weight: 600;
         }
         .financials-table .total-row td {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: #0056b3;
             border-top: 2px solid #ccc;
@@ -134,23 +131,24 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section { padding-top: 10px; }
         .consent-text {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #666;
             background-color: #f9f9f9;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 8px 10px;
+            border-radius: 3px;
             border-left: 3px solid #0056b3;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .signatures-table {
-            margin-top: 30px;
+            margin-top: 20px;
             width: 100%;
         }
         .signature-box {
             border-top: 1px solid #333;
-            padding-top: 8px;
-            font-size: 13px;
+            padding-top: 6px;
+            font-size: 11px;
             color: #333;
+            text-align: center;
         }
     </style>
 </head>
@@ -405,6 +403,14 @@
                     <tr>
                         <td style="padding:0;">
                             <table class="info-table">
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="label">Anteckningar</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_client->vehicle->comments }}
+                                        </div>
+                                    </td>
+                                </tr>
                                 <tr>
                                     <td class="column-cell column-cell-left-2">
                                         <div class="label">Inköpspris</div>

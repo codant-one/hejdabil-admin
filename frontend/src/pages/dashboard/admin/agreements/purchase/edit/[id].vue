@@ -43,6 +43,7 @@ const color = ref(null)
 const chassis = ref(null)
 const mileage = ref(null)
 const purchase_date = ref(null)
+const comments = ref(null)
 const gearbox_id = ref(null)
 const fuel_id = ref(null)
 const number_keys = ref(null)
@@ -198,6 +199,7 @@ async function fetchData() {
         chassis.value = agreement.value.vehicle_client.vehicle.chassis
         mileage.value = agreement.value.vehicle_client.vehicle.mileage
         purchase_date.value = agreement.value.vehicle_client.vehicle.purchase_date === null ? formatDate(new Date()) : agreement.value.vehicle_client.vehicle.purchase_date
+        comments.value = agreement.value.vehicle_client.vehicle.comments
 
         if(agreement.value.vehicle_client.vehicle.model_id !== null) {
             let modelId = agreement.value.vehicle_client.vehicle.model_id
@@ -364,17 +366,17 @@ const handleChange = (val) => {
 
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
-        if (valid && currentTab.value === 0 && refForm.value.items.length < 42) {
+        if (valid && currentTab.value === 0 && refForm.value.items.length < 43) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 42) {
+        } else if (!valid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 43) {
             currentTab.value++
-        } else if (valid && currentTab.value === 1 && refForm.value.items.length < 42) {
+        } else if (valid && currentTab.value === 1 && refForm.value.items.length < 43) {
             currentTab.value++
-        }  else if (!valid && currentTab.value === 1 && refForm.value.items.length > 26 && refForm.value.items.length < 42) {
+        }  else if (!valid && currentTab.value === 1 && refForm.value.items.length > 26 && refForm.value.items.length < 43) {
             currentTab.value++
         } else if (valid && currentTab.value === 2 && refForm.value.items.length < 46) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 2 && refForm.value.items.length > 42 && refForm.value.items.length < 46) {
+        } else if (!valid && currentTab.value === 2 && refForm.value.items.length > 43 && refForm.value.items.length < 46) {
             currentTab.value++
         } else if (currentTab.value === 3) {
 
@@ -402,6 +404,7 @@ const onSubmit = () => {
             formData.append('summer_tire', summer_tire.value)
             formData.append('winter_tire', winter_tire.value)
             formData.append('fuel_id', fuel_id.value)
+            formData.append('comments', comments.value)
 
             //vehicle payment
             formData.append('is_loan', is_loan.value)
@@ -525,7 +528,7 @@ const onSubmit = () => {
                     <VCard flat class="px-2 px-md-12">
                         <VCardText class="px-2 pt-0 pt-md-5">               
                             <VTabs v-model="currentTab" grow disabled>
-                                <VTab>Inköpsavtal - Reg nr</VTab>
+                                <VTab>Inköpsavtal</VTab>
                                 <VTab>Kund</VTab>
                                 <VTab>Pris</VTab>
                                 <VTab>Villkor</VTab>
@@ -696,6 +699,13 @@ const onSubmit = () => {
                                                         />
                                                     </VRadioGroup>
                                                 </div>
+                                            </VCol>
+                                            <VCol cols="12" md="6">
+                                                <VTextarea
+                                                    v-model="comments"
+                                                    rows="4"
+                                                    label="Anteckningar"
+                                                />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <AppDateTimePicker
