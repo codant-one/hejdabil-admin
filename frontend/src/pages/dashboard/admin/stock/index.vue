@@ -478,19 +478,13 @@ const truncateText = (text, length = 15) => {
                 <td> {{ vehicle.reg_num }} </td>             
                 <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
                 <td class="text-end"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
-                <td 
-                  :id="`comment-cell-${vehicle.id}`"
-                  style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;"
-                >
-                  <span v-if="vehicle.comments">
-                    {{ truncateText(vehicle.comments) }}
-                  </span>
-                  <VTooltip
-                    v-if="vehicle.comments"
-                    :key="`tooltip-for-${vehicle.id}`"
-                    :activator="`#comment-cell-${vehicle.id}`"
-                    location="top"
-                  >
+                <td class="cursor-pointer">
+                  <VTooltip location="bottom">
+                    <template #activator="{ props }">
+                      <span v-bind="props" v-if="vehicle.comments">
+                        {{ truncateText(vehicle.comments) }}
+                      </span>
+                    </template>
                     <span>{{ vehicle.comments }}</span>
                   </VTooltip>
                 </td>
