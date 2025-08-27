@@ -36,7 +36,7 @@ use App\Http\Controllers\{
     AgreementController,
     CurrencyController
 };
-
+use App\Http\Controllers\Api\CarInfoController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -180,3 +180,5 @@ Route::get('agreement', [TestingController::class , 'agreement'])->name('agreeme
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);
+
+Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLicensePlate']);
