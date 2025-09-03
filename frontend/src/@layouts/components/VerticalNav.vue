@@ -180,7 +180,8 @@ const closeAll = () =>{
 // 👉 Vertical Nav
 .layout-vertical-nav {
   position: fixed;
-  z-index: variables.$layout-vertical-nav-z-index;
+  z-index: 1;
+  margin-top: 100px;
   display: flex;
   flex-direction: column;
   block-size: 100%;
