@@ -60,23 +60,25 @@ const router = createRouter({
 
 
 // Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
-
-router.beforeEach(to => {
+router.beforeEach((to) => {
   const isLoggedIn = isUserLoggedIn()
-  
-  if (canNavigate(to)) {
 
-    if (to.meta.redirectIfLoggedIn && isLoggedIn) { 
-      return '/info'
-    }
-      
+  if (to.meta?.redirectIfLoggedIn === false || to.meta?.public === true) {
+    return true
   }
-  else {
-    if (isLoggedIn) {      
+
+  if (to.meta?.redirectIfLoggedIn && isLoggedIn) {
+    return { name: 'info' }
+  }
+
+  if (!canNavigate(to)) {
+    if (isLoggedIn) {
       return { name: 'not-authorized' }
-    } else {      
+    } else {
       return { name: 'login', query: { to: to.name !== 'index' ? to.fullPath : undefined } }
     }
   }
+
+  return true
 })
 export default router
