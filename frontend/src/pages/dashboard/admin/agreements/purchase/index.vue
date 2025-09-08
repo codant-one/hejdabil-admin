@@ -3,11 +3,13 @@
 import router from '@/router'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
+const carInfoStores = useCarInfoStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -327,6 +329,20 @@ const handleChange = (val) => {
     }
 }
 
+const searchVehicule = async () => {
+
+    isRequestOngoing.value = true
+
+    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+
+    isRequestOngoing.value = false
+
+    if (carRes.success) {
+        chassis.value = carRes.result.chassis
+        year.value = carRes.result.model_year
+    }
+}
+
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
         if (valid && currentTab.value === 0 && refForm.value.items.length < 43) {
@@ -518,6 +534,7 @@ const onSubmit = () => {
                                                     variant="tonal"
                                                     color="primary"
                                                     size="x-small"
+                                                    @click="searchVehicule"
                                                 />
                                             </VCol>
                                         </VRow>

@@ -37,7 +37,11 @@ use App\Http\Controllers\{
     CurrencyController,
     SignatureController
 };
-use App\Http\Controllers\Api\CarInfoController;
+
+use App\Http\Controllers\Services\{
+    CarInfoController
+};
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -188,4 +192,5 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);
 
+//SERVICES
 Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLicensePlate']);

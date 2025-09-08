@@ -3,11 +3,14 @@
 import router from '@/router'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { getLineChartSimpleConfig } from '@/@core/libs/apex-chart/apexCharConfig'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
+const carInfoStores = useCarInfoStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -206,6 +209,20 @@ const formatOrgNumber = () => {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
     organization_number.value = numbers
+}
+
+const searchVehicule = async () => {
+
+    isRequestOngoing.value = true
+
+    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+
+    isRequestOngoing.value = false
+
+    if (carRes.success) {
+        chassis.value = carRes.result.chassis
+        year.value = carRes.result.model_year
+    }
 }
 
 const onSubmit = () => {
@@ -562,6 +579,7 @@ const onSubmit = () => {
                                                     variant="tonal"
                                                     color="primary"
                                                     size="x-small"
+                                                    @click="searchVehicule"
                                                 />
                                             </VCol>
                                         </VRow>
