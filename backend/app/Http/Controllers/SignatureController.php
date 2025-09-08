@@ -18,8 +18,11 @@ class SignatureController extends Controller
      * Método 1: Iniciar el proceso de firma (Activado desde tu Dashboard de Vue).
      * URL: POST /api/agreements/{agreement}/send-signature-request
      */
-    public function sendSignatureRequest(Agreement $agreement)
+    public function sendSignatureRequest(Agreement $agreement, Request $request)
     {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
             return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
@@ -42,7 +45,7 @@ class SignatureController extends Controller
         ]);
 
         // 5. Enviar el email al cliente con el enlace de firma.
-        Mail::to('dbolivarv90@gmail.com')->send(new SignatureRequestMail($token));
+        Mail::to($validated['email'])->send(new SignatureRequestMail($token));
         
         return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
     }
