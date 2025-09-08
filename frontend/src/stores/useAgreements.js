@@ -149,5 +149,13 @@ export const useAgreementsStores = defineStore('agreements', {
                 })
          
         },
+
+        requestSignature(agreementId) {
+            return new Promise((resolve, reject) => {
+              axios.post(`/agreements/${agreementId}/send-signature-request`)
+                .then(response => resolve(response))
+                .catch(error => reject(error))
+            })
+          },
     }
 })

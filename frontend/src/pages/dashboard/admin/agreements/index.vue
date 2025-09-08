@@ -263,6 +263,40 @@ const downloadCSV = async () => {
 
 }
 
+
+const requestSignature = async (agreementId) => {
+  if (!confirm('¿Är du säker på att du vill skicka en signeringsförfrågan för detta avtal?')) {
+    return
+  }
+
+  isRequestOngoing.value = true
+  try {
+    const response = await agreementsStores.requestSignature(agreementId) // Usaremos Pinia para esto
+    
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true
+    }
+
+    // Opcional: Actualizar la fila específica o recargar todos los datos
+    await fetchData() 
+    
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true
+    }
+    console.error('Error sending signature request:', error.response)
+  } finally {
+    isRequestOngoing.value = false
+    setTimeout(() => {
+      advisor.value = { show: false }
+    }, 3000)
+  }
+}
+
 const handleCloseModal = () => {
   isModalVisible.value = false
 }
@@ -431,7 +465,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')">
+                      <VListItem v-if="$can('edit','agreements')" @click="requestSignature(agreement.id)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
