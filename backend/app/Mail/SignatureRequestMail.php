@@ -20,7 +20,7 @@ class SignatureRequestMail extends Mailable
 
     public function content(): Content
     {
-        $signingUrl = env('APP_DOMAIN') . '/sign/' . $this->token->signing_token;
+        $signingUrl = env('URL_DOMAIN') . '/sign/' . $this->token->signing_token;
         return new Content(
             view: 'emails.agreements.signature_request',
             with: ['signingUrl' => $signingUrl]
