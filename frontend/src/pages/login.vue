@@ -81,7 +81,6 @@ const login = async () => {
         localStorage.setItem('password',''); 
       }
 
-      console.log('response.message', response.message)
       // Redirect to `to` query if exist or redirect to index route
       router.replace(route.query.to ? String(route.query.to) : (response.message === 'login_success' ? '/info': '/'))
 
