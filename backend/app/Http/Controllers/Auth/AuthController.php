@@ -71,7 +71,7 @@ class AuthController extends Controller
         if (env('APP_DEBUG') || ($user->is_2fa === 0)) {
             return response()->json([
                 'success' => true,
-                'message' => 'login_success1',
+                'message' => 'login_success',
                 'data' => $this->respondWithToken($token)
             ], 200);
         }
@@ -129,7 +129,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'login_success2'
+                'message' => 'login_success'
             ], 200);
         }
 
