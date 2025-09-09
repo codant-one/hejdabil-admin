@@ -9,57 +9,57 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: to => {
+      redirect: () => {
         const is_2fa = JSON.parse(localStorage.getItem('is_2fa') || 'null')
         const two_factor = JSON.parse(localStorage.getItem('two_factor') || 'null')
 
-        if(two_factor && is_2fa.status){
-          if(two_factor.generate_qr) { 
+        if (two_factor && is_2fa?.status) {
+          if (two_factor.generate_qr) { 
             return { name: '2fa-generate' }
           } else {            
             return { name: '2fa' }
-          }          
-        }         
-        
-        return { name: 'login', query: to.query }
+          }
+        }
+
+        return { name: 'login' }
       },
     },
     {
       path: '/info',
-      redirect: to => {
+      name: 'info',
+      redirect: () => {
         const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-        if(userData){
-          if(!userData.full_profile) {            
+        if (userData) {
+          if (!userData.full_profile) {            
             return { name: 'complete-profile' }
           } else {            
             return { name: 'dashboard-panel' }
-          }          
-        }         
-        
-        return { name: 'login', query: to.query }
+          }
+        }
+
+        return { name: 'login' }
       },
     },
     {
       path: '/complete-profile',
-      redirect: to => {
+      name: 'complete-profile-redirect',
+      redirect: () => {
         const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-        if(userData){
-          if(!userData.full_profile) {            
+        if (userData) {
+          if (!userData.full_profile) {            
             return { name: 'complete-profile' }
           } else {            
             return { name: 'dashboard-panel' }
-          }          
-        }         
-        
-        return { name: 'login', query: to.query }
+          }
+        }
+
+        return { name: 'login' }
       },
     },
     ...setupLayouts(routes),
   ],
 })
 
-
-// Docs: https://router.vuejs.org/guide/advanced/navigation-guards.html#global-before-guards
 router.beforeEach((to) => {
   const isLoggedIn = isUserLoggedIn()
 
@@ -75,10 +75,14 @@ router.beforeEach((to) => {
     if (isLoggedIn) {
       return { name: 'not-authorized' }
     } else {
-      return { name: 'login', query: { to: to.name !== 'index' ? to.fullPath : undefined } }
+      return { 
+        name: 'login', 
+        query: to.fullPath !== '/' ? { to: to.fullPath } : {} 
+      }
     }
   }
 
   return true
 })
+
 export default router
