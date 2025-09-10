@@ -1,6 +1,7 @@
 <script setup>
 
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -10,6 +11,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 
 const vehiclesStores = useVehiclesStores()
+const carInfoStores = useCarInfoStores()
 const emitter = inject("emitter")
 
 const vehicles = ref([])
@@ -35,6 +37,9 @@ const model_id = ref(null)
 const modelsByBrand = ref([])
 
 const plate = ref(null)
+const chassis = ref(null)
+const year_api = ref(null)
+const generation = ref(null)
 const refForm = ref()
 
 const states = ref ([
@@ -184,16 +189,27 @@ const selectBrand = brand => {
     }
 }
 
-const onSubmit = () => {
-  refForm.value?.validate().then(({ valid }) => {
+const onSubmit = async () => {
+  refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
 
       isConfirmCreateDialogVisible.value = false
       isRequestOngoing.value = true
 
+      const carRes = await carInfoStores.getLicensePlate(plate.value)
+
+      if (carRes.success) {
+        chassis.value = carRes.result.chassis
+        year_api.value = carRes.result.model_year
+        generation.value = carRes.result.generation
+      }
+
       let formData = new FormData()
 
       formData.append('reg_num', plate.value)
+      formData.append('chassis', chassis.value)
+      formData.append('year', year_api.value)
+      formData.append('generation', generation.value)
 
       vehiclesStores.addVehicle(formData)
         .then((res) => {

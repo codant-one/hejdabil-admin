@@ -159,11 +159,15 @@
                                 <h1>Försäljningsavtal</h1>
                                 <div class="contract-details">
                                     Avtalsnummer: {{ $agreement->agreement_id}} <br>
-                                    @if(!$agreement->supplier)
-                                        {{ strtoupper($user->userDetail->address) }}, {{ strtoupper($user->userDetail->postal_code) }} {{ strtoupper($user->userDetail->street) }} 
+                                    <!-- INICIO DEL CAMBIO 1 -->
+                                    @if($agreement->supplier)
+                                        {{-- Si es un Supplier, usa la dirección del Supplier --}}
+                                        {{ strtoupper($agreement->supplier->address) }}, {{ strtoupper($agreement->supplier->postal_code) }} {{ strtoupper($agreement->supplier->street) }} 
                                     @else
-                                        {{ strtoupper($agreement->supplier?->address) }}, {{ strtoupper($agreement->supplier?->postal_code) }} {{ strtoupper($agreement->supplier?->street) }} 
+                                        {{-- Si es un Admin, usa un valor por defecto (tu empresa) --}}
+                                        FÖRETAGSGATAN 1, 123 45 STADEN
                                     @endif
+                                    <!-- FIN DEL CAMBIO 1 -->
                                 </div>
                             </td>
                         </tr>
@@ -176,14 +180,15 @@
                 <td class="column-cell column-cell-left">
                     <h2>Säljarinformation</h2>
                     <table class="info-table">
+                        <!-- INICIO DEL CAMBIO 2 (Múltiples campos) -->
                         <tr>
                             <td>
                                 <div class="label">Bilhandlare</div>
                                 <div class="value">
-                                    @if(!$agreement->supplier)
-                                        {{ $user->userDetail->company }} 
+                                    @if($agreement->supplier)
+                                        {{ $agreement->supplier->company }} 
                                     @else
-                                        {{ $agreement->supplier?->company }} 
+                                        Hejdåbil AB
                                     @endif
                                 </div>
                             </td>
@@ -192,7 +197,13 @@
                             <td>
                                 <div class="label">Försäljare</div>
                                 <div class="value">
-                                    {{ $user->name }} {{ $user->last_name }} 
+                                    @if($user)
+                                        {{-- Solo muestra el nombre del vendedor si existe (es un Supplier) --}}
+                                        {{ $user->name }} {{ $user->last_name }}
+                                    @else
+                                        {{-- Si es un Admin, puedes poner un nombre genérico o el de la empresa --}}
+                                        Hejdåbil Försäljning
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -200,10 +211,10 @@
                             <td>
                                 <div class="label">Organisationsnr</div>
                                 <div class="value">
-                                    @if(!$agreement->supplier)
-                                        {{ $user->userDetail->organization_number }} 
+                                    @if($agreement->supplier)
+                                        {{ $agreement->supplier->organization_number }}
                                     @else
-                                        {{ $agreement->supplier?->organization_number }} 
+                                        556677-8899
                                     @endif
                                 </div>
                             </td>
@@ -212,7 +223,11 @@
                             <td>
                                 <div class="label">E-post</div>
                                 <div class="value">
-                                    {{ $user->email }} 
+                                    @if($user)
+                                        {{ $user->email }}
+                                    @else
+                                        info@hejdabil.se
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -220,14 +235,15 @@
                             <td>
                                 <div class="label">Mobiltelefon</div>
                                 <div class="value">
-                                    @if(!$agreement->supplier)
-                                        {{ $user->userDetail->phone }} 
+                                    @if($agreement->supplier)
+                                        {{ $agreement->supplier->phone }}
                                     @else
-                                        {{ $agreement->supplier?->phone }} 
+                                        08-123 456 78
                                     @endif
                                 </div>
                             </td>
                         </tr>
+                        <!-- FIN DEL CAMBIO 2 -->
                     </table>
                 </td>
                 <td class="column-cell column-cell-right">
@@ -541,11 +557,13 @@
                                         <td>
                                             <div class="label">Plusgiro</div>
                                             <div class="value">
-                                                @if(!$agreement->supplier)
-                                                    {{ $user->userDetail->plus_spin }} 
+                                                <!-- INICIO DEL CAMBIO 3 -->
+                                                @if($agreement->supplier)
+                                                    {{ $agreement->supplier->plus_spin }} 
                                                 @else
-                                                    {{ $agreement->supplier?->plus_spin }} 
-                                                @endif 
+                                                    123 45 67-8
+                                                @endif
+                                                <!-- FIN DEL CAMBIO 3 -->
                                             </div>
                                         </td>
                                     </tr>
@@ -565,11 +583,13 @@
                                         <td>
                                             <div class="label">Bank för inbetalning</div>
                                             <div class="value">
-                                                @if(!$agreement->supplier)
-                                                    {{ $user->userDetail->bank }} 
+                                                <!-- INICIO DEL CAMBIO 4 -->
+                                                @if($agreement->supplier)
+                                                    {{ $agreement->supplier->bank }}
                                                 @else
-                                                    {{ $agreement->supplier?->bank }} 
-                                                @endif 
+                                                    Banken AB
+                                                @endif
+                                                <!-- FIN DEL CAMBIO 4 --> 
                                             </div>
                                         </td>
                                     </tr>
@@ -577,11 +597,13 @@
                                         <td>
                                             <div class="label">Kontonummer</div>
                                             <div class="value">
-                                               @if(!$agreement->supplier)
-                                                    {{ $user->userDetail->account_number }} 
+                                               <!-- INICIO DEL CAMBIO 5 -->
+                                               @if($agreement->supplier)
+                                                    {{ $agreement->supplier->account_number }}
                                                 @else
-                                                    {{ $agreement->supplier?->account_number }} 
-                                                @endif 
+                                                    9999, 12 345 678-9
+                                                @endif
+                                               <!-- FIN DEL CAMBIO 5 -->
                                             </div>
                                         </td>
                                     </tr>
@@ -634,12 +656,33 @@
             <tr>
                 <td colspan="2" class="footer-section">
                     <div class="consent-text"><p style="margin: 0;">Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.</p></div>
-                    <table class="signatures-table">
-                        <tr>
-                            <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Köparens underskrift)</div></td>
-                            <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljföretagets underskrift)</div></td>
-                        </tr>
-                    </table>
+                    <tr>
+                        <td colspan="2" class="footer-section">
+                            <div class="consent-text"><p style="margin: 0;">Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.</p></div>
+                            
+                            <table class="signatures-table" style="width: 100%;">
+                                <tr>
+                                    <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+                                        
+                                        <div style="min-height: 70px;">
+                                            @if(isset($signature_url))
+                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; max-height: 70; display: block; margin-bottom: 5px;">
+                                            @endif
+                                        </div>
+                                        <div class="signature-box">(Köparens underskrift)</div>
+                                    </td>
+                                    <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+                                        <div style="min-height: 70px;">
+                                            <!-- Este espacio asegura que la línea de abajo se alinee con la de la izquierda -->
+                                        </div>
+
+                                        <!-- 2. La línea de firma, siempre visible -->
+                                        <div class="signature-box">(Säljföretagets underskrift)</div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
                 </td>
             </tr>
         </tbody>

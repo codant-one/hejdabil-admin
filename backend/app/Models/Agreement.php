@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 use PDF;
 
@@ -75,6 +75,16 @@ class Agreement extends Model
 
     public function commission(){
         return $this->belongsTo(Commission::class, 'commission_id', 'id');
+    }
+
+    public function tokens(): HasMany
+    {
+        return $this->hasMany(Token::class);
+    }
+
+    public function latestToken()
+    {
+        return $this->tokens()->latest()->first();
     }
 
     /**** Scopes ****/

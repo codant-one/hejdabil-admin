@@ -149,5 +149,18 @@ export const useAgreementsStores = defineStore('agreements', {
                 })
          
         },
+
+        requestSignature(payload) {
+            return new Promise((resolve, reject) => {
+              // La URL sigue siendo la misma, pero ahora le añadimos un cuerpo (body) a la petición.
+              // El segundo argumento de axios.post es el objeto de datos que se enviará.
+              axios.post(
+                `/agreements/${payload.agreementId}/send-signature-request`, 
+                { email: payload.email } // <-- ¡ESTE ES EL CAMBIO CLAVE!
+              )
+              .then(response => resolve(response))
+              .catch(error => reject(error))
+            })
+          },
     }
 })

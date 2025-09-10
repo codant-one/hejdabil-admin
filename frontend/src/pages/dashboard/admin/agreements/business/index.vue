@@ -6,11 +6,13 @@ import { requiredValidator } from '@/@core/utils/validators'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 
 const router = useRouter()
 const emitter = inject("emitter")
 
 const authStores = useAuthStores()
+const carInfoStores = useCarInfoStores()
 const agreementsStores = useAgreementsStores()
 const ability = useAppAbility()
 
@@ -89,6 +91,15 @@ const selectModel = selected => {
 
   model.value = selected !== 0 ? null : model.value
 
+}
+
+const searchVehicule = async () => {
+
+  isRequestOngoing.value = true
+
+  const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+
+  isRequestOngoing.value = false
 }
 
 const onSubmit = () => {
@@ -213,6 +224,7 @@ const onSubmit = () => {
                         variant="tonal"
                         color="primary"
                         size="x-small"
+                        @click="searchVehicule"
                     />
                   </VCol>
                   <VCol cols="12" md="2">

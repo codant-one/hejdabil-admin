@@ -547,19 +547,12 @@ const onSubmit = () => {
                                                     density="compact"
                                                 />
                                             </VCol>
-                                            <VCol cols="10" md="5">
+                                            <VCol cols="12" md="6">
                                                 <VTextField
                                                     v-model="reg_num"
                                                     label="Regnr"
+                                                    disabled
                                                     :rules="[requiredValidator]"
-                                                />
-                                            </VCol>
-                                            <VCol cols="2" md="1" class="px-0 d-flex align-center">
-                                                <VBtn
-                                                    icon="tabler-search"
-                                                    variant="tonal"
-                                                    color="primary"
-                                                    size="x-small"
                                                 />
                                             </VCol>
                                         </VRow>

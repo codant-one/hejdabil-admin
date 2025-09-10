@@ -155,7 +155,10 @@ class Vehicle extends Model
 
         $vehicle = self::create([
             'user_id' => Auth::user()->id,
-            'reg_num' => $request->reg_num
+            'reg_num' => $request->reg_num,
+            'chassis' => $request->chassis === 'null' ? null : $request->chassis,
+            'year' => $request->year === 'null' ? null : $request->year,
+            'generation' => $request->generation === 'null' ? null : $request->generation
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);

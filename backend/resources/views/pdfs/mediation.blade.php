@@ -230,38 +230,57 @@
                     <tr>
                         <td>
                             <div class="label">Namn</div>
-                            <div class="value">
-                                {{ $user->name }} {{ $user->last_name }} 
-                            </div>
+                            @if($user)
+                                <div class="value">
+                                    {{ $user->name }} {{ $user->last_name }} 
+                                </div>
+                            @else 
+                                <div class="value">
+                                    Admin Billogg
+                                </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Org/personummer</div>
-                            <div class="value">
-                                @if(!$agreement->supplier)
-                                    {{ $user->userDetail->organization_number }} 
-                                @else
-                                    {{ $agreement->supplier?->organization_number }} 
-                                @endif
-                            </div>
+                            @if($user)
+                                <div class="value">
+                                    @if(!$agreement->supplier)
+                                        {{ $user->userDetail->organization_number }} 
+                                    @else
+                                        {{ $agreement->supplier?->organization_number }} 
+                                    @endif
+                                </div>
+                            @else
+                                <div class="value">
+                                   512002901002
+                                </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Adress</div>
-                            <div class="value">
-                                @if(!$agreement->supplier)
-                                    {{ $user->userDetail->address }} 
-                                @else
-                                    {{ $agreement->supplier?->address }} 
-                                @endif
-                            </div>
+                            @if($user)
+                                <div class="value">
+                                    @if(!$agreement->supplier)
+                                        {{ $user->userDetail->address }} 
+                                    @else
+                                        {{ $agreement->supplier?->address }} 
+                                    @endif
+                                </div>
+                            @else
+                                <div class="value">
+                                    Abrahamsbergsvägen 47, 168 30 Bromma, Suecia
+                                </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Postnummer / Ort</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                 {{ $user->userDetail->postal_code }} {{ $user->userDetail->street }} 
@@ -269,11 +288,17 @@
                                 {{ $agreement->supplier?->postal_code }} {{ $agreement->supplier?->street }}
                                 @endif
                             </div>
+                            @else
+                            <div class="value">
+                                10020010
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Telefon</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->phone }} 
@@ -281,19 +306,31 @@
                                     {{ $agreement->supplier?->phone }} 
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                073-663 11 41
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">E-post</div>
+                            @if($user)
                             <div class="value">
                                 {{ $user->email }} 
                             </div>
+                            @else
+                            <div class="value">
+                                admin@billogg.se
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Bilfirma</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->company }} 
@@ -301,6 +338,11 @@
                                     {{ $agreement->supplier?->company }} 
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                Hejdabil
+                            </div>
+                            @endif
                         </td>
                     </tr>
                 </table>
@@ -551,6 +593,7 @@
                     <tr>
                         <td>
                             <div class="label">Bank</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->bank }}
@@ -558,11 +601,17 @@
                                     {{ $agreement->supplier?->bank }}
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                Bank of America
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Konto nr</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->account_number }}
@@ -570,6 +619,11 @@
                                     {{ $agreement->supplier?->account_number }}
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                1000200001
+                            </div>
+                            @endif
                         </td>
                     </tr>
                 </table>
@@ -664,8 +718,27 @@
             <td colspan="2" class="footer-section">
                 <table class="signatures-table">
                     <tr>
-                        <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Fordonsägarens underskrift)</div></td>
-                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Förmedlarens underskrift)</div></td>
+                        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+                            <div style="min-height: 70px; text-align:center"> 
+                                @if(isset($signature_url))
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; max-height: 70px; display: block; margin-bottom: 5px;">
+                                @endif
+                            </div>
+                            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
+                                (Fordonsägarens underskrift)
+                            </div>
+                        </td>
+
+                        <!-- CELDA DE LA DERECHA (SIN FIRMA) -->
+                        <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+                            <div style="min-height: 70px;">
+
+                            </div>
+                            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
+                                (Förmedlarens underskrift)
+                            </div>
+
+                        </td>
                     </tr>
                 </table>
             </td>

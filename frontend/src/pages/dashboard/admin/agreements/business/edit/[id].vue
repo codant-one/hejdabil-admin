@@ -230,20 +230,13 @@ const onSubmit = () => {
                 </h6>
                 <VRow>
                   <VCol cols="12" md="6" class="d-none d-md-block"></VCol>
-                  <VCol cols="10" md="3">
+                  <VCol cols="12" md="4">
                       <VTextField
                           v-model="reg_num"
                           label="Regnr"
+                          disabled
                           :rules="[requiredValidator]"
                       />
-                  </VCol>
-                  <VCol cols="2" md="1" class="px-0">
-                    <VBtn
-                        icon="tabler-search"
-                        variant="tonal"
-                        color="primary"
-                        size="x-small"
-                    />
                   </VCol>
                   <VCol cols="12" md="2">
                     <VTextField
