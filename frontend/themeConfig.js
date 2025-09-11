@@ -6,7 +6,7 @@ import { defineThemeConfig } from '@core'
 import { RouteTransitions, Skins } from '@core/enums'
 import logo from '@images/logo.svg?raw'
 import logoWhite from '@images/logo_white.svg'
-import logoFull from '@images/logo.svg'
+import logoFull from '@images/logos/billogg-logo.svg'
 import logoBlack from '@images/logo_black.png'
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
