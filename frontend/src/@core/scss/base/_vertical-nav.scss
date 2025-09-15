@@ -23,11 +23,6 @@
 
     // 👉 Nav header
     .nav-header {
-      overflow: hidden;
-      padding: variables.$vertical-nav-header-padding;
-      margin-inline: variables.$vertical-nav-header-inline-spacing;
-      min-block-size: variables.$vertical-nav-header-height;
-
       // TEMPLATE: Check if we need to move this to master
       .app-logo {
         flex-shrink: 0;
@@ -113,11 +108,14 @@
 
       > :first-child {
         @extend %vertical-nav-item;
-        @extend %vertical-nav-item-interactive;
+        height: 48px;
+        padding: 8px;
+        margin: 0 24px !important;
+        gap: 8px;
       }
 
       .nav-item-icon {
-        @extend %vertical-nav-items-icon;
+        color: #6E9383;
       }
 
       &.disabled {
@@ -131,7 +129,16 @@
       @extend %nav-link;
 
       > .router-link-exact-active {
-        @extend %nav-link-active;
+        background-color: #1C2925;
+        border-radius: 64px;
+
+        span {
+          color: #FFF;
+        }
+
+        svg {
+          color: #57F287;
+        }
       }
 
       > a {

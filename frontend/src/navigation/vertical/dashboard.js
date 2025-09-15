@@ -1,9 +1,9 @@
 export default [
-    { 
-        heading: 'Instrumentpanel',
-        action: 'view' , 
-        subject: 'dashboard'
-    },
+    // { 
+    //     heading: 'Instrumentpanel',
+    //     action: 'view' , 
+    //     subject: 'dashboard'
+    // },
     {
         title: 'Översikt', 
         icon: { icon: 'tabler-home' },

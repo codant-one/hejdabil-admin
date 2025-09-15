@@ -1,14 +1,7 @@
 export default [
-    { 
-      heading: 'MODULER'
-    },
-    { 
-      title: 'Leverantörer', 
-      icon: { icon: 'mdi-account-tie' },
-      to: 'dashboard-admin-suppliers', 
-      action: 'view' , 
-      subject: 'suppliers'
-    },
+    // { 
+    //   heading: 'MODULER'
+    // },
     { 
       title: 'Kunder', 
       icon: { icon: 'mdi-account-star' },
@@ -22,6 +15,13 @@ export default [
       to: 'dashboard-admin-billings', 
       action: 'view', 
       subject: 'billing'
-    }
+    },
+    { 
+      title: 'Leverantörer', 
+      icon: { icon: 'mdi-account-tie' },
+      to: 'dashboard-admin-suppliers', 
+      action: 'view' , 
+      subject: 'suppliers'
+    },
   ]
   

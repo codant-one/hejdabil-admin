@@ -50,11 +50,11 @@ const { width: windowWidth } = useWindowSize()
 
 
         <div class="d-flex align-center gap-x-3"> <!-- Aumentamos el gap un poco -->
-          <VBtn class="btn-custom btn-kop" variant="flat" height="48">
+          <VBtn class="btn-blue">
             Köp
             <img :src="kopIcon" alt="Köp Icon" class="ms-2" />
           </VBtn>
-          <VBtn class="btn-custom btn-salj" variant="flat" height="48">
+          <VBtn class="btn-green">
             Sälj
             <img :src="saljIcon" alt="Sälj Icon" class="ms-2" />
           </VBtn>
@@ -63,9 +63,9 @@ const { width: windowWidth } = useWindowSize()
         <VSpacer />
 
         <!-- Iconos a la Derecha -->
-        <div class="navbar-actions-group d-flex align-center">
+        <div class="d-flex align-center gap-x-2">
           <NavBarNotifications />
-          <VBtn icon variant="flat" class="btn-settings" height="48" width="48">
+          <VBtn variant="flat" class="btn-custom-settings" height="48" width="48">
             <img :src="settingsIcon" alt="Settings Icon" width="24" />
           </VBtn>
           <UserProfile class="ms-2" />
@@ -130,19 +130,14 @@ const { width: windowWidth } = useWindowSize()
   }
 }
 
-
-:deep(.btn-kop) {
-  background-color: #3AF8FF !important;
-  color: #1C2925 !important; 
+:deep(.btn-custom-settings) {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: auto !important;
+  border-radius: 50% !important;
+  background-color: #FFF !important;
+  padding: 0 !important;
 }
-
-
-:deep(.btn-salj) {
-  background-color: #79FCA2 !important;
-  color: #1C2925 !important; 
-}
-
-
 
 .navbar-actions-group {
   background-color: #FFFFFF;
@@ -151,5 +146,4 @@ const { width: windowWidth } = useWindowSize()
   padding-block: 4px;
   gap: 8px; 
 }
-
 </style>

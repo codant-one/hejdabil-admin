@@ -68,11 +68,11 @@ body,
 }
 
 // Removes padding-top for immediately placed v-card-text after itself
-.v-card-text {
-  & + & {
-    padding-block-start: 0 !important;
-  }
-}
+// .v-card-text {
+//   & + & {
+//     padding-block-start: 0 !important;
+//   }
+// }
 
 /*
   👉 Checkbox & Radio Ripple

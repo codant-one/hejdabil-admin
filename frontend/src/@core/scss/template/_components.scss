@@ -30,7 +30,7 @@ $alert-prepend-icon-font-size: 1.125rem !important;
 .v-alert {
   font-weight: 500;
 
-  &.v-alert--density-comfortable{
+  &.v-alert--density-comfortable {
     padding-inline: 14px;
   }
 
@@ -76,7 +76,7 @@ $alert-prepend-icon-font-size: 1.125rem !important;
       }
     }
 
-    &.v-alert--variant-tonal{
+    &.v-alert--variant-tonal {
       .v-alert__prepend {
         z-index: 1;
         background-color: rgb(var(--v-theme-surface));
@@ -110,7 +110,7 @@ $alert-prepend-icon-font-size: 1.125rem !important;
       &:not(.v-alert--prominent) {
         &.text-#{$color-name},
         &.bg-#{$color-name} {
-          .v-alert__prepend { 
+          .v-alert__prepend {
             background-color: rgb(var(--v-theme-#{$color-name}));
 
             .v-icon {
@@ -126,22 +126,80 @@ $alert-prepend-icon-font-size: 1.125rem !important;
 // 👉 Button
 // Above map but opacity values as key and variant as value
 $btn-active-overlay-opacity: (
-  0.08: (outlined, flat, text, plain),
-  0.24: (tonal),
+  0.08: (
+    outlined,
+    flat,
+    text,
+    plain,
+  ),
+  0.24: (
+    tonal,
+  ),
 );
 $btn-hover-overlay-opacity: (
-  0.1: (elevated),
-  0.08: (outlined, flat, text, plain),
-  0.24: (tonal),
+  0.1: (
+    elevated,
+  ),
+  0.08: (
+    outlined,
+    flat,
+    text,
+    plain,
+  ),
+  0.24: (
+    tonal,
+  ),
 );
 
 body .v-btn {
-  transform: scale(1.001);
+  box-shadow: none !important;
+  height: 48px !important;
+  border-radius: 56px;
+  padding: 0 16px;
+  gap: 8px !important;
 
-  // ℹ️ This is necessary because as we have darker overlay on hover for elevated variant, button text doesn't get dimmed
-  // This style is already applied to `.v-icon`
   .v-btn__content {
     z-index: 0;
+    color: #416054 !important;
+  }
+
+  &.btn-gradient {
+    background: linear-gradient(
+      90deg,
+      #57f287 0%,
+      #00eeb0 50%,
+      #00ffff 100%
+    ) !important;
+    color: #416054 !important;
+
+    :hover {
+    }
+  }
+
+  &.btn-light {
+    border: solid 1px #6e9383;
+    background-color: transparent !important;
+
+    .v-btn__prepend {
+      color: #6e9383 !important;
+    }
+
+    .v-btn__content {
+      z-index: 0;
+      color: #6e9383 !important;
+    }
+  }
+
+  &.btn-green {
+    background-color: #3af8ff !important;
+  }
+
+  &.btn-blue {
+    background-color: #79fca2 !important;
+  }
+
+  .v-btn__prepend {
+    margin: 0 !important;
   }
 
   &:active {
@@ -168,7 +226,10 @@ body .v-btn {
 
     // append each variant to selectors list
     @each $variant in $variants {
-      $selectors: list.append($selectors, "&.v-btn--variant-#{$variant}:active > .v-btn__overlay,");
+      $selectors: list.append(
+        $selectors,
+        "&.v-btn--variant-#{$variant}:active > .v-btn__overlay,"
+      );
     }
 
     #{$selectors} {
@@ -185,7 +246,10 @@ body .v-btn {
 
     // append each variant to selectors list
     @each $variant in $variants {
-      $selectors: list.append($selectors, "&.v-btn--variant-#{$variant}:hover > .v-btn__overlay,");
+      $selectors: list.append(
+        $selectors,
+        "&.v-btn--variant-#{$variant}:hover > .v-btn__overlay,"
+      );
     }
 
     #{$selectors} {
@@ -266,13 +330,12 @@ body .v-btn {
     .v-selection-control__input {
       .v-icon.custom-checkbox-checked {
         // ℹ️ Using filter: drop-shadow() instead of box-shadow because box-shadow creates white background for SVG
-        filter: drop-shadow(map.get(vuetify.$shadow-key-umbra, 2));        
+        filter: drop-shadow(map.get(vuetify.$shadow-key-umbra, 2));
       }
     }
   }
 
-
-  .v-icon--size-default{
+  .v-icon--size-default {
     font-size: calc(var(--v-icon-size-multiplier) * 1.1rem) !important;
   }
 }
@@ -394,7 +457,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 }
 
 .v-field {
-  &.v-field--variant-solo, 
+  &.v-field--variant-solo,
   &.v-field--variant-filled {
     --v-field-padding-top: 7px !important;
 
@@ -435,9 +498,9 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     transition: none;
   }
 
-  &.v-list-item--active{
-    .v-selection-control.v-selection-control--dirty.v-checkbox-btn{
-      .v-icon{
+  &.v-list-item--active {
+    .v-selection-control.v-selection-control--dirty.v-checkbox-btn {
+      .v-icon {
         color: #fff;
       }
     }
@@ -520,7 +583,9 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         }
       }
 
-      .v-list-item--density-default:not(.v-list-item--nav).v-list-item--one-line {
+      .v-list-item--density-default:not(
+          .v-list-item--nav
+        ).v-list-item--one-line {
         padding-block: 0.5rem;
       }
     }
@@ -593,7 +658,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   }
 }
 
-.v-input.v-radio-group > .v-input__control > .v-label{
+.v-input.v-radio-group > .v-input__control > .v-label {
   margin-inline-start: 0;
 }
 
@@ -676,11 +741,17 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   &.v-input--disabled {
     &:not(.v-input--dirty) {
       .v-selection-control__input .v-switch__thumb {
-        background: rgba(var(--v-theme-on-surface), var(--v-switch-disabled-thumb-opacity));
+        background: rgba(
+          var(--v-theme-on-surface),
+          var(--v-switch-disabled-thumb-opacity)
+        );
       }
 
       .v-switch__track {
-        background-color: rgba(var(--v-theme-on-surface), var(--v-switch-disabled-track-opacity));
+        background-color: rgba(
+          var(--v-theme-on-surface),
+          var(--v-switch-disabled-track-opacity)
+        );
       }
     }
 
@@ -732,30 +803,36 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 .v-table {
   --v-table-row-height: 56px;
   --v-table-header-height: 48px !important;
+  .v-table__wrapper {
+    thead {
+      th {
+        border: 0 !important;
+        padding: 0 8px !important;
+        background-color: #f5f8f6;
+        color: #454545 !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
 
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)) !important;
-
-  th {
-    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity)) !important;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.0625rem;
-    text-transform: uppercase;
-
-    .v-data-table-header__content {
-      display: flex;
-      justify-content: space-between;
+        &:first-child {
+          border-top-left-radius: 32px;
+          border-bottom-left-radius: 32px;
+        }
+        &:last-child {
+          border-top-right-radius: 32px;
+          border-bottom-right-radius: 32px;
+        }
+      }
     }
   }
 }
 
 // 👉 Datatable
 
-.v-data-table{
-  table{
-    tbody{
-      .v-data-table-group-header-row{
-        td{
+.v-data-table {
+  table {
+    tbody {
+      .v-data-table-group-header-row {
+        td {
           background-color: rgb(var(--v-theme-surface));
         }
       }
@@ -771,15 +848,29 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
     &:not(.v-tabs-pill) {
       block-size: 100%;
-      border-inline-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+      border-inline-end: 1px solid
+        rgba(var(--v-border-color), var(--v-border-opacity));
     }
   }
 
   &.v-tabs--horizontal:not(.v-tabs-pill) {
-    border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    .v-btn {
+      min-width: 256px;
+      height: 48px;
 
+      padding-right: 16px;
+      padding-left: 16px;
+      justify-content: left;
+    }
+
+    // border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    .v-btn__content {
+      display: flex;
+      gap: 8px;
+    }
     .v-tab__slider {
-      block-size: 3px;
+      block-size: 1px;
+      background: linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%);
     }
   }
 
@@ -789,8 +880,8 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     font-weight: 400;
     transform: none !important;
 
-    &:hover{
-      color: rgb(var(--v-theme-primary))
+    &:hover {
+      color: rgb(var(--v-theme-primary));
     }
 
     &.v-btn--stacked {
@@ -843,7 +934,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       box-shadow: 0 0 0 0.1875rem rgb(var(--v-theme-on-surface-variant));
 
       @each $color-name in variables.$theme-colors-name {
-
         &.bg-#{$color-name} {
           box-shadow: 0 0 0 0.1875rem rgba(var(--v-theme-#{$color-name}), 0.12);
         }
@@ -857,13 +947,17 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       .v-timeline-divider__inner-dot {
         background: rgb(var(--v-theme-background));
         box-shadow: none;
-
       }
     }
   }
 
   // we have to override the default bg-color of the timeline dot in the card
-  .v-card:not(.v-card--variant-text, .v-card--variant-plain, .v-card--variant-outlined) & {
+  .v-card:not(
+      .v-card--variant-text,
+      .v-card--variant-plain,
+      .v-card--variant-outlined
+    )
+    & {
     &.v-timeline-icon-only {
       .v-timeline-divider__dot {
         .v-timeline-divider__inner-dot {
@@ -1054,21 +1148,26 @@ body {
   background: transparent;
 }
 
-
 // otp input
 .v-otp-input {
-  justify-content:unset !important;
+  justify-content: unset !important;
 
-  .v-otp-input__content{
-    max-inline-size: 100% ;
+  .v-otp-input__content {
+    max-inline-size: 100%;
 
     .v-field.v-field--focused {
-      .v-field__outline{
+      .v-field__outline {
         .v-field__outline__start,
-        .v-field__outline__end{
+        .v-field__outline__end {
           border-color: rgb(var(--v-theme-primary)) !important;
         }
       }
     }
   }
+}
+
+// Divider
+
+.v-divider {
+  border-color: #e7e7e7 !important;
 }
