@@ -55,6 +55,7 @@ div.v-avatar {
 }
 
 .layout-nav-type-vertical .layout-vertical-nav {
+  margin-top: 125px;
   background-color: transparent !important;
   box-shadow: none !important;
 }
@@ -339,7 +340,10 @@ body {
   background-color: #c0feff;
 }
 
-.layout-nav-type-vertical .layout-vertical-nav .nav-link > a:not(.router-link-active, .router-link-exact-active):hover::before {
+.layout-nav-type-vertical
+  .layout-vertical-nav
+  .nav-link
+  > a:not(.router-link-active, .router-link-exact-active):hover::before {
   display: none !important;
 }
 
@@ -357,10 +361,8 @@ body {
       border: none !important;
 
       .v-field__outline__start {
-        
       }
       .v-field__outline__end {
-        
       }
     }
   }
