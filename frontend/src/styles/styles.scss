@@ -129,12 +129,87 @@ body .v-dialog .v-dialog-close-btn {
   font-family: "Gelion Regular";
   font-style: normal;
   font-weight: 400;
-  src: url("@assets/fonts/Gelion-Regular.ttf") format("ttf");
+  src: url("/src/assets/fonts/Gelion-Regular.ttf") format("truetype");
   font-display: swap;
 }
 
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 100;
+  src: url("/src/assets/fonts/DMSans-VariableFont.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/src/assets/fonts/DMSans-VariableFont.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 500;
+  src: url("/src/assets/fonts/DMSans-VariableFont.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 600;
+  src: url("/src/assets/fonts/DMSans-VariableFont.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 700;
+  src: url("/src/assets/fonts/DMSans-VariableFont.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: italic;
+  font-weight: 100;
+  src: url("/src/assets/fonts/DMSans-Italic-VariableFont.ttf")
+    format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: italic;
+  font-weight: 400;
+  src: url("/src/assets/fonts/DMSans-Italic-VariableFont.ttf")
+    format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: italic;
+  font-weight: 500;
+  src: url("/src/assets/fonts/DMSans-Italic-VariableFont.ttf")
+    format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: italic;
+  font-weight: 600;
+  src: url("/src/assets/fonts/DMSans-Italic-VariableFont.ttf")
+    format("truetype");
+}
+
+@font-face {
+  font-family: "DM Sans";
+  font-style: italic;
+  font-weight: 700;
+  src: url("/src/assets/fonts/DMSans-Italic-VariableFont.ttf")
+    format("truetype");
+}
+
 body {
-  font-family: "Gelion Regular", Arial, sans-serif !important;
+  font-family: "DM Sans", Arial, sans-serif !important;
 }
 
 .v-text-field .v-input__details {
@@ -200,6 +275,28 @@ body {
   color: #1c2925;
 }
 
+.v-pagination {
+  .v-btn {
+    .v-btn__underlay {
+      border: solid 1px #000 !important;
+      background-color: #fff !important;
+      opacity: 1 !important;
+    }
+  }
+
+  .v-pagination__item--is-active {
+    .v-btn {
+      .v-btn__underlay {
+        background-color: #000 !important;
+      }
+
+      .v-btn__content {
+        color: #57f287 !important;
+      }
+    }
+  }
+}
+
 .v-btn {
   &.btn-custom-notifications {
     width: auto !important;
@@ -240,6 +337,70 @@ body {
 
 .bg-forfallna {
   background-color: #c0feff;
+}
+
+.layout-nav-type-vertical .layout-vertical-nav .nav-link > a:not(.router-link-active, .router-link-exact-active):hover::before {
+  display: none !important;
+}
+
+// search navbar
+
+.search {
+  width: 100% !important;
+  .v-field__input {
+    height: 48px;
+    padding-left: 50px;
+    background: url("/src/assets/images/icons/figma/searchIcon.svg") no-repeat
+      left 1rem center !important;
+
+    .v-field__outline {
+      border: none !important;
+
+      .v-field__outline__start {
+        
+      }
+      .v-field__outline__end {
+        
+      }
+    }
+  }
+}
+
+.visa-select {
+  border-radius: 64px;
+  padding-right: 16px;
+  padding-left: 16px;
+  border: 1px solid #e7e7e7;
+
+  font-weight: 400;
+  font-size: 16px;
+  color: #454545;
+
+  .v-input {
+    border-left: 1px solid #e7e7e7 !important;
+    padding-left: 16px !important;
+  }
+
+  .v-field {
+    height: 48px !important;
+    padding: 0px !important;
+    .v-field__append-inner {
+      align-items: center;
+      padding-top: 0px !important;
+    }
+    .v-field__input {
+      height: 48px !important;
+      padding-inline-start: 0px !important;
+      padding-inline-end: 0px !important;
+      align-items: center;
+      color: #454545;
+    }
+
+    .v-field__outline__start,
+    .v-field__outline__end {
+      border: none !important;
+    }
+  }
 }
 
 @media (min-width: 991px) {

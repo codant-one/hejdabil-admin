@@ -172,7 +172,8 @@ body .v-btn {
     ) !important;
     color: #416054 !important;
 
-    :hover {
+    &:hover {
+      background: #0fd84e !important;
     }
   }
 
@@ -188,14 +189,36 @@ body .v-btn {
       z-index: 0;
       color: #6e9383 !important;
     }
+
+    &:hover {
+      border: solid 1px #416054 !important;
+      background-color: transparent !important;
+      .v-btn__overlay {
+        display: none;
+      }
+      .v-btn__prepend {
+        color: #416054 !important;
+      }
+      .v-btn__content {
+        color: #416054 !important;
+      }
+    }
   }
 
   &.btn-green {
     background-color: #3af8ff !important;
+
+    &:hover {
+      background-color: #00e1e2 !important;
+    }
   }
 
   &.btn-blue {
     background-color: #79fca2 !important;
+
+    &:hover {
+      background-color: #0fd84e !important;
+    }
   }
 
   .v-btn__prepend {
@@ -1170,4 +1193,46 @@ body {
 
 .v-divider {
   border-color: #e7e7e7 !important;
+}
+
+// Input
+
+.search {
+  .v-input.v-text-field {
+    .v-input__control {
+      .v-field {
+        .v-field__outline {
+          .v-field__outline__start {
+            flex: 0 0 50px !important;
+            border-radius: 32px 0 0 32px;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-left: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+          .v-field__outline__end {
+            border-radius: 0 32px 32px 0;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-right: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+.card-client {
+  .v-input {
+    .v-input__control {
+      .v-field {
+        background-color: #f6f6f6;
+        .v-field__outline {
+          color: #416054 !important;
+          border-color: #416054 !important;
+        }
+      }
+    }
+  }
 }

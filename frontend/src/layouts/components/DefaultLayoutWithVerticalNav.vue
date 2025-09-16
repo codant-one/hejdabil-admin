@@ -50,11 +50,11 @@ const { width: windowWidth } = useWindowSize()
 
 
         <div class="d-flex align-center gap-x-3"> <!-- Aumentamos el gap un poco -->
-          <VBtn class="btn-blue">
+          <VBtn class="btn-green">
             Köp
             <img :src="kopIcon" alt="Köp Icon" class="ms-2" />
           </VBtn>
-          <VBtn class="btn-green">
+          <VBtn class="btn-blue">
             Sälj
             <img :src="saljIcon" alt="Sälj Icon" class="ms-2" />
           </VBtn>

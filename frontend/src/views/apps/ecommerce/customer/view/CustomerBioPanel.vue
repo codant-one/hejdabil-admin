@@ -9,6 +9,8 @@ import {
 } from "@/@core/utils/validators";
 import { useSuppliersStores } from "@/stores/useSuppliers";
 
+import avatarImg from "@/assets/images/sample-avatar.jpg";
+
 const props = defineProps({
   customerData: {
     type: Object,
@@ -141,6 +143,7 @@ const onSubmit = () => {
           }}</span> -->
       </VAvatar>
 
+
       <VAvatar
         v-else
         rounded
@@ -148,9 +151,8 @@ const onSubmit = () => {
         color="primary"
         class="position-relative"
       >
-        <span class="text-5xl font-weight-medium">
-          {{ avatarText(props.customerData.fullname) }}
-        </span>
+        <VImg :src="avatarImg"
+        />
         <h4 class="avatar-username" v-if="props.isSupplier">
           {{ props.customerData.user.name }}
           <br />

@@ -8,6 +8,11 @@ import { avatarText, formatNumber } from "@/@core/utils/formatters";
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
 import router from "@/router";
 
+import searchIcon from "@/assets/images/icons/figma/searchIcon.svg";
+import eyeIcon from "@/assets/images/icons/figma/eye.svg";
+import editIcon from "@/assets/images/icons/figma/edit.svg";
+import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+
 const clientsStores = useClientsStores();
 const suppliersStores = useSuppliersStores();
 const emitter = inject("emitter");
@@ -289,7 +294,7 @@ const downloadCSV = async () => {
                 <VTextField v-model="searchQuery" placeholder="Sök" clearable />
               </div>
 
-              <VAutocomplete
+              <!-- <VAutocomplete
                 v-if="role !== 'Supplier'"
                 v-model="supplier_id"
                 placeholder="Leverantörer"
@@ -301,21 +306,19 @@ const downloadCSV = async () => {
                 clear-icon="tabler-x"
                 style="width: 200px"
                 :menu-props="{ maxHeight: '300px' }"
-              />
+              /> -->
             </div>
 
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+            <VSpacer class="d-none d-md-block" />
+
+            <div class="d-flex align-center w-100 w-md-auto visa-select">
+              <span class="text-no-wrap pr-4">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
-                density="compact"
-                variant="outlined"
                 class="w-100"
                 :items="[10, 20, 30, 50]"
               />
             </div>
-
-            <VSpacer class="d-none d-md-block" />
           </VCardText>
 
           <v-table class="pa-4 text-no-wrap">
@@ -324,7 +327,7 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col">#ID</th>
                 <th scope="col">Kontakt</th>
-                <th scope="col">Organisationsnummer</th>
+                <th scope="col" class="text-center">Organisationsnummer</th>
                 <th scope="col">Telefon</th>
                 <th scope="col">Adress</th>
                 <th scope="col" v-if="role !== 'Supplier'">Leverantör</th>
@@ -376,7 +379,7 @@ const downloadCSV = async () => {
                     }}</span> -->
                   </div>
                 </td>
-                <td class="text-wrap">
+                <td class="text-wrap text-center">
                   <span
                     class="text-sm text-disabled"
                     v-if="client.organization_number"
@@ -458,12 +461,18 @@ const downloadCSV = async () => {
                       </VBtn>
                     </template>
                     <VList>
+                      <VListItem @click="seeClient(client)">
+                        <template #prepend>
+                          <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                        </template>
+                        <VListItemTitle>Se detaljer</VListItemTitle>
+                      </VListItem>
                       <VListItem
                         v-if="$can('edit', 'clients')"
                         @click="editClient(client)"
                       >
                         <template #prepend>
-                          <VIcon icon="tabler-edit" />
+                          <img :src="editIcon" alt="Edit Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
@@ -472,7 +481,7 @@ const downloadCSV = async () => {
                         @click="showDeleteDialog(client)"
                       >
                         <template #prepend>
-                          <VIcon icon="tabler-trash" />
+                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
@@ -556,9 +565,17 @@ const downloadCSV = async () => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss" scoped>
 .search {
   width: 100% !important;
+  .v-field__input {
+    background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+      1rem center !important;
+  }
+}
+
+.justify-between {
+  justify-content: space-between !important;
 }
 
 @media (min-width: 991px) {

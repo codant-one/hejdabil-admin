@@ -30,11 +30,19 @@
 
         @at-root {
           // Move logo a bit to align center with the icons in vertical nav mini variant
-          .layout-vertical-nav-collapsed#{$sl-layout-nav-type-vertical}:not(.hovered) .nav-header .app-logo {
-            transform: translateX(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini);
+          .layout-vertical-nav-collapsed#{$sl-layout-nav-type-vertical}:not(
+              .hovered
+            )
+            .nav-header
+            .app-logo {
+            transform: translateX(
+              variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini
+            );
 
             @include layoutsMixins.rtl {
-              transform: translateX(-(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini));
+              transform: translateX(
+                -(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini)
+              );
             }
           }
         }
@@ -49,13 +57,12 @@
     .vertical-nav-items-shadow {
       position: absolute;
       z-index: 1;
-      background:
-        linear-gradient(
-          rgb(#{variables.$vertical-nav-background-color-rgb}) 5%,
-          rgba(#{variables.$vertical-nav-background-color-rgb}, 75%) 45%,
-          rgba(#{variables.$vertical-nav-background-color-rgb}, 20%) 80%,
-          transparent
-        );
+      background: linear-gradient(
+        rgb(#{variables.$vertical-nav-background-color-rgb}) 5%,
+        rgba(#{variables.$vertical-nav-background-color-rgb}, 75%) 45%,
+        rgba(#{variables.$vertical-nav-background-color-rgb}, 20%) 80%,
+        transparent
+      );
       block-size: 55px;
       inline-size: 100%;
       inset-block-start: calc(#{variables.$vertical-nav-header-height} - 2px);
@@ -115,7 +122,7 @@
       }
 
       .nav-item-icon {
-        color: #6E9383;
+        color: #6e9383;
       }
 
       &.disabled {
@@ -128,16 +135,32 @@
     .nav-link {
       @extend %nav-link;
 
+      &:hover {
+        a {
+          background-color: #bdd2c8;
+          border-radius: 64px;
+
+          ::before {
+            display: none;
+          }
+
+          span,
+          svg {
+            color: #416054;
+          }
+        }
+      }
+
       > .router-link-exact-active {
-        background-color: #1C2925;
+        background-color: #1c2925 !important;
         border-radius: 64px;
 
         span {
-          color: #FFF;
+          color: #fff !important;
         }
 
         svg {
-          color: #57F287;
+          color: #57f287 !important;
         }
       }
 
@@ -147,7 +170,7 @@
 
         // Adds vuetify states
 
-        &:not(.router-link-active, .router-link-exact-active){
+        &:not(.router-link-active, .router-link-exact-active) {
           @include vuetifyStates.states($active: false);
         }
       }
@@ -176,7 +199,9 @@
       .nav-group-arrow {
         flex-shrink: 0;
         transform-origin: center;
-        transition: transform variables.$vertical-nav-nav-group-arrow-transition-duration variables.$vertical-nav-nav-group-arrow-transition-timing-function;
+        transition: transform
+          variables.$vertical-nav-nav-group-arrow-transition-duration
+          variables.$vertical-nav-nav-group-arrow-transition-timing-function;
         will-change: transform;
       }
 
@@ -190,10 +215,10 @@
       // Nav group label
       > :first-child {
         // Adds before psudo element to style hover state
-        @include mixins.before-pseudo;     
+        @include mixins.before-pseudo;
       }
 
-      &:not(.active,.open) > :first-child {
+      &:not(.active, .open) > :first-child {
         // Adds vuetify states
         @include vuetifyStates.states($active: false);
       }
