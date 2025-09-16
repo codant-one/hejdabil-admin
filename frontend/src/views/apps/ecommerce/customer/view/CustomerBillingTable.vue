@@ -237,7 +237,7 @@ const sendMails = async () => {
       <VCardText class="d-flex align-center flex-wrap gap-4">
         <VSpacer class="d-none d-md-block" />
 
-        <div class="d-flex align-center w-100 w-md-auto">
+        <div class="d-flex align-center w-100 w-md-auto visa-select">
           <span class="text-no-wrap me-3">Visa:</span>
           <VSelect
             v-model="rowPerPage"
