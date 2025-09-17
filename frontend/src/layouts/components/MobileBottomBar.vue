@@ -18,7 +18,19 @@ const props = defineProps({
 </script>
 
 <template>
-  <VBottomNavigation v-if="width < MOBILE_BREAKPOINT" class="mobile-bottom-bar">
+  <VBottomNavigation v-if="width < MOBILE_BREAKPOINT" height="88" class="mobile-bottom-bar">
+    <VBtn>
+      <VIcon icon="custom-home" size="28" />
+      <span>Hem</span>
+    </VBtn>
+    <VBtn class="btn-green">
+      <VIcon icon="custom-car-close" size="28" />
+      <span>Köp</span>
+    </VBtn>
+    <VBtn class="btn-blue">
+      <VIcon icon="custom-car-open" size="28" />
+      <span>Sälj</span>
+    </VBtn>
     <VMenu
       v-model="showMenu"
       :close-on-content-click="false"
@@ -32,6 +44,7 @@ const props = defineProps({
         </VBtn>
       </template>
       <div class="d-flex mobile-nav-sheet">
+        <span class="mb-4">Meny</span>
         <div v-for="(item, index) in props.navItems" class="nav-link">
           <Component
             :is="item.to ? 'RouterLink' : 'a'"

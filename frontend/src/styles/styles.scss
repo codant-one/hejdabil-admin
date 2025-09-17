@@ -7,25 +7,8 @@
   }
 }
 
-.mobile-bottom-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 9999;
-  background: linear-gradient(
-    90deg,
-    #eafff1 0%,
-    #eafff8 50%,
-    #ecffff 100%
-  ) !important;
-  display: flex;
-  justify-content: center;
-  padding: 8px 0;
-}
-
 .mobile-nav-sheet {
-  background-color: #FFF;
+  background-color: #fff;
   padding: 32px 24px;
   flex-direction: column;
 }
@@ -330,7 +313,6 @@ body {
 }
 
 .v-btn {
-  
 }
 
 .bg-netto {
@@ -437,5 +419,39 @@ body {
 
   .v-table > .v-table__wrapper > table > tbody > tr > td {
     font-size: 14px;
+  }
+}
+
+.mobile-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: linear-gradient(
+    90deg,
+    #eafff1 0%,
+    #eafff8 50%,
+    #ecffff 100%
+  ) !important;
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+
+  .v-bottom-navigation__content {
+    gap: 24px;
+    .v-btn {
+      height: 72px !important;
+      width: 72px !important;
+
+      .v-btn__content {
+        gap: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 16px;
+
+        color: #1c2925 !important;
+      }
+    }
   }
 }
