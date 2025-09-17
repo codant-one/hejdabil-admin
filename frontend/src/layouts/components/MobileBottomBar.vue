@@ -38,7 +38,7 @@ const props = defineProps({
     >
       <template #activator="{ props: menuProps }">
         <!-- Keep the menu button as activator -->
-        <VBtn v-bind="menuProps" aria-label="Open menu">
+        <VBtn v-bind="menuProps" aria-label="Open menu" class="btn-ghost">
           <VIcon icon="tabler-menu-2" size="28" />
           <span>Meny</span>
         </VBtn>
