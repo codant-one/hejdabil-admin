@@ -4,14 +4,14 @@ export default [
     // },
     { 
       title: 'Kunder', 
-      icon: { icon: 'mdi-account-star' },
+      icon: { icon: 'custom-clients' },
       to: 'dashboard-admin-clients', 
       action: 'view', 
       subject: 'clients'
     },
     { 
       title: 'Fakturor', 
-      icon: { icon: 'tabler-clipboard-list' },
+      icon: { icon: 'custom-facture' },
       to: 'dashboard-admin-billings', 
       action: 'view', 
       subject: 'billing'

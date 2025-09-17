@@ -14,7 +14,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
   app: {
     title: import.meta.env.VITE_APP_TITLE,
     logo: h('div', { innerHTML: logo, style: 'line-height:0; color: rgb(var(--v-global-theme-primary))' }),
-    logoFull: h('img', { src: logoFull, style: 'width: 150px' }),
+    logoFull: h('img', { src: logoFull }),
     logoBlack: h('img', { src: logoBlack, style: 'width: 200px' }),
     logoWhite: h('img', { src: logoWhite, style: 'width: 40px' }),
     contentWidth: ContentWidth.Boxed,

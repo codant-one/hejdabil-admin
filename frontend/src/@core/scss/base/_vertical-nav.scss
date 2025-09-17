@@ -280,4 +280,136 @@
   }
 }
 
-// !SECTION
+// Mobile Nav
+
+.mobile-nav-sheet {
+  // Nav item badge
+  .nav-item-badge {
+    @extend %vertical-nav-item-badge;
+  }
+
+  // 👉 Nav group & Link
+  .nav-link,
+  .nav-group {
+    overflow: hidden;
+
+    > :first-child {
+      @extend %vertical-nav-item;
+      display: flex;
+      height: 48px;
+      padding: 8px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav-item-icon {
+      color: #6e9383;
+    }
+
+    &.disabled {
+      opacity: var(--v-disabled-opacity);
+      pointer-events: none;
+    }
+  }
+
+  // 👉 Vertical nav link
+  .nav-link {
+    @extend %nav-link;
+
+    &:hover {
+      a {
+        background-color: #bdd2c8;
+        border-radius: 64px;
+
+        ::before {
+          display: none;
+        }
+
+        span,
+        svg {
+          color: #416054;
+        }
+      }
+    }
+
+    > .router-link-exact-active {
+      background-color: #1c2925 !important;
+      border-radius: 64px;
+
+      span {
+        color: #fff !important;
+      }
+
+      svg {
+        color: #57f287 !important;
+      }
+    }
+
+    > a {
+      // Adds before psudo element to style hover state
+      @include mixins.before-pseudo;
+
+      // Adds vuetify states
+
+      &:not(.router-link-active, .router-link-exact-active) {
+        @include vuetifyStates.states($active: false);
+      }
+    }
+  }
+
+  // 👉 Vertical nav group
+  .nav-group {
+    // Reduce the size of icon if link/group is inside group
+    .nav-group,
+    .nav-link {
+      .nav-item-icon {
+        @extend %vertical-nav-items-nested-icon;
+      }
+    }
+
+    // Hide icons after 2nd level
+    & .nav-group {
+      .nav-link,
+      .nav-group {
+        .nav-item-icon {
+          @extend %vertical-nav-items-icon-after-2nd-level;
+        }
+      }
+    }
+
+    .nav-group-arrow {
+      flex-shrink: 0;
+      transform-origin: center;
+      transition: transform
+        variables.$vertical-nav-nav-group-arrow-transition-duration
+        variables.$vertical-nav-nav-group-arrow-transition-timing-function;
+      will-change: transform;
+    }
+
+    // Rotate arrow icon if group is opened
+    &.open {
+      > .nav-group-label .nav-group-arrow {
+        transform: rotateZ(90deg);
+      }
+    }
+
+    // Nav group label
+    > :first-child {
+      // Adds before psudo element to style hover state
+      @include mixins.before-pseudo;
+    }
+
+    &:not(.active, .open) > :first-child {
+      // Adds vuetify states
+      @include vuetifyStates.states($active: false);
+    }
+
+    // Active & open states for nav group label
+    &.active,
+    &.open {
+      > :first-child {
+        @extend %vertical-nav-group-open-active;
+      }
+    }
+  }
+}

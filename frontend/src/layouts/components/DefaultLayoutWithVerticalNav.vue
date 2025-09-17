@@ -2,6 +2,7 @@
 import Footer from '@/layouts/components/Footer.vue'
 import navItems from '@/navigation/vertical'
 import { useThemeConfig } from '@core/composable/useThemeConfig'
+import MobileBottomBar from '@/layouts/components/MobileBottomBar.vue'
 
 // Components
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
@@ -29,7 +30,7 @@ const { width: windowWidth } = useWindowSize()
     <template #navbar="{ toggleVerticalOverlayNavActive }">
       <div class="d-flex h-100 align-center">
 
-        <VBtn
+        <!-- <VBtn
           v-if="isLessThanOverlayNavBreakpoint(windowWidth)"
           icon
           variant="text"
@@ -39,17 +40,17 @@ const { width: windowWidth } = useWindowSize()
           @click="toggleVerticalOverlayNavActive(true)"
         >
           <VIcon icon="tabler-menu-2" size="24" />
-        </VBtn>
+        </VBtn> -->
         
 
-        <RouterLink to="/" class="d-flex align-center ms-3">
+        <RouterLink to="/" class="d-flex align-center md-ms-3 header-logo">
           <VNodeRenderer :nodes="themeConfig.app.logoFull" />
         </RouterLink>
 
         <VSpacer />
 
 
-        <div class="d-flex align-center gap-x-3"> <!-- Aumentamos el gap un poco -->
+        <div class="align-center gap-x-3 d-none d-md-flex">
           <VBtn class="btn-green">
             Köp
             <img :src="kopIcon" alt="Köp Icon" class="ms-2" />
@@ -65,7 +66,7 @@ const { width: windowWidth } = useWindowSize()
         <!-- Iconos a la Derecha -->
         <div class="d-flex align-center gap-x-2">
           <NavBarNotifications />
-          <VBtn variant="flat" class="btn-custom-settings" height="48" width="48">
+          <VBtn variant="flat" class="btn-white d-none d-md-flex" height="48" width="48">
             <img :src="settingsIcon" alt="Settings Icon" width="24" />
           </VBtn>
           <UserProfile class="ms-2" />
@@ -94,6 +95,9 @@ const { width: windowWidth } = useWindowSize()
 
     <!-- 👉 Customizer -->
     <!-- <TheCustomizer /> -->
+
+    <!-- 👉 Mobile Bottom Bar -->
+    <MobileBottomBar :nav-items="navItems" />
   </VerticalNavLayout>
 </template>
 <style lang="scss" scoped>

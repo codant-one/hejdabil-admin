@@ -153,6 +153,7 @@ $btn-hover-overlay-opacity: (
 
 body .v-btn {
   box-shadow: none !important;
+  min-width: auto !important;
   height: 48px !important;
   border-radius: 56px;
   padding: 0 16px;
@@ -196,12 +197,22 @@ body .v-btn {
       .v-btn__overlay {
         display: none;
       }
-      .v-btn__prepend {
-        color: #416054 !important;
-      }
+      .v-btn__prepend,
       .v-btn__content {
         color: #416054 !important;
       }
+    }
+  }
+
+  &.btn-white {
+    background-color: #fff !important;
+
+    &:hover {
+      background-color: #f6f6f6 !important;
+    }
+
+    .v-btn__overlay {
+      display: none !important;
     }
   }
 
@@ -218,6 +229,67 @@ body .v-btn {
 
     &:hover {
       background-color: #0fd84e !important;
+    }
+  }
+
+  &.btn-header-action {
+    width: 40px;
+    height: 40px !important;
+    border-radius: 40px;
+    background-color: #bdd2c8 !important;
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #1c2925 !important;
+    }
+  }
+
+  &.btn-ghost {
+    background-color: transparent !important;
+    width: auto !important;
+    padding: 0 !important;
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #6e9383 !important;
+      gap: 8px;
+    }
+
+    &:hover {
+      .v-btn__content,
+      .v-btn__prepend {
+        color: #454545 !important;
+      }
+    }
+  }
+
+  &.btn-custom-notifications {
+    width: auto !important;
+    min-width: none !important;
+    height: 48px !important;
+
+    border-radius: 64px;
+
+    padding-right: 16px;
+    padding-left: 16px;
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content {
+      gap: 8px;
+
+      font-weight: 500;
+      font-size: 16px;
+      color: #1c2925 !important;
+    }
+
+    &:hover {
+      background-color: #F6F6F6 !important;
     }
   }
 

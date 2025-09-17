@@ -10,6 +10,8 @@ import {
 import { config } from "@layouts/config";
 import { openGroups } from "@layouts/utils";
 
+import toggleNav from "@/assets/images/icons/figma/toggleNav.svg";
+
 const props = defineProps({
   tag: {
     type: [String, null],
@@ -120,20 +122,14 @@ const closeAll = () => {
         <!-- 👉 Vertical nav actions -->
         <!-- Show toggle collapsible in >md and close button in <md -->
         <template v-if="!isLessThanOverlayNavBreakpoint(windowWidth)">
-          <Component
-            :is="config.app.iconRenderer || 'div'"
-            v-show="isCollapsed && !hideTitleAndIcon"
-            class="header-action"
-            v-bind="config.icons.verticalNavUnPinned"
+          <VBtn
+            class="btn-header-action"
+            aria-label="toggle vertical navigation"
+            v-show="!hideTitleAndIcon"
             @click="isCollapsed = !isCollapsed"
-          />
-          <Component
-            :is="config.app.iconRenderer || 'div'"
-            v-show="!isCollapsed && !hideTitleAndIcon"
-            class="header-action header-action-toggle"
-            v-bind="config.icons.verticalNavPinned"
-            @click="isCollapsed = !isCollapsed"
-          />
+          >
+            <img :src="toggleNav" alt="Toggle Nav Icon" class="" />
+          </VBtn>
         </template>
         <template v-else>
           <Component
@@ -233,7 +229,7 @@ const closeAll = () => {
   // 👉 Collapsed
   .layout-vertical-nav-collapsed & {
     &:not(.hovered) {
-      inline-size: variables.$layout-vertical-nav-collapsed-width;
+      inline-size: 96px;
     }
   }
 

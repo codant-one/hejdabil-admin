@@ -1,4 +1,35 @@
 // Write your overrides
+.header-logo img {
+  width: 150px;
+
+  @media (max-width: 900px) {
+    width: 105px;
+  }
+}
+
+.mobile-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: linear-gradient(
+    90deg,
+    #eafff1 0%,
+    #eafff8 50%,
+    #ecffff 100%
+  ) !important;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.mobile-nav-sheet {
+  background-color: #FFF;
+  padding: 32px 24px;
+  flex-direction: column;
+}
+
 div.v-avatar {
   img.v-img__img {
     object-fit: cover;
@@ -55,7 +86,7 @@ div.v-avatar {
 }
 
 .layout-nav-type-vertical .layout-vertical-nav {
-  margin-top: 125px;
+  margin-top: 130px;
   background-color: transparent !important;
   box-shadow: none !important;
 }
@@ -304,7 +335,6 @@ body {
     min-width: none !important;
     height: 48px !important;
 
-    background-color: #fff;
     border-radius: 64px;
 
     padding-right: 16px;

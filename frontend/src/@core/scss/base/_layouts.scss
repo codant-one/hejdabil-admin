@@ -68,6 +68,10 @@
       margin-block-start: 0;
       padding-top: 0;
       padding-inline-start: 266px;
+
+      @media (max-width: 1000px) {
+        padding: 0 12px;
+      }
     }
   }
 }

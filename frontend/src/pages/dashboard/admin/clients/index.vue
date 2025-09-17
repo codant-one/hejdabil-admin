@@ -310,7 +310,10 @@ const downloadCSV = async () => {
             </div>
 
             <VSpacer class="d-none d-md-block" />
-
+            <VBtn icon class="btn-ghost">
+              <VIcon icon="custom-filter" />
+              Filtrera efter
+            </VBtn>
             <div class="d-flex align-center w-100 w-md-auto visa-select">
               <span class="text-no-wrap pr-4">Visa:</span>
               <VSelect
