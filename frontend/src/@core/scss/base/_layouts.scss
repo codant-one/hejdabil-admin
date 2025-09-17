@@ -58,6 +58,11 @@
       inset-block-start: 0rem;
       padding-top: 1.5rem;
       padding-bottom: 2.4rem;
+
+      @media (max-width: 1000px) {
+        padding-top: 3rem;
+        padding-bottom: 1.2rem;
+      }
     }
 
     /*
