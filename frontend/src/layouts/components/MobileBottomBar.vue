@@ -35,6 +35,7 @@ const props = defineProps({
       v-model="showMenu"
       :close-on-content-click="false"
       transition="scale-transition"
+      content-class="mobile-menu-full-width"
     >
       <template #activator="{ props: menuProps }">
         <!-- Keep the menu button as activator -->
