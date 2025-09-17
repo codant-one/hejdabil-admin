@@ -330,24 +330,7 @@ body {
 }
 
 .v-btn {
-  &.btn-custom-notifications {
-    width: auto !important;
-    min-width: none !important;
-    height: 48px !important;
-
-    border-radius: 64px;
-
-    padding-right: 16px;
-    padding-left: 16px;
-
-    .v-btn__content {
-      gap: 8px;
-
-      font-weight: 500;
-      font-size: 16px;
-      color: #1c2925 !important;
-    }
-  }
+  
 }
 
 .bg-netto {
