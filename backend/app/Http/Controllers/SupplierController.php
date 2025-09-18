@@ -267,4 +267,43 @@ class SupplierController extends Controller
         }
     }
 
+    public function users(Request $request): JsonResponse
+    {
+        try {
+            //Auth::user()->supplier->id
+            $limit = $request->has('limit') ? $request->limit : 10;;
+
+            $query = Supplier::with(['user.roles', 'user.userDetail'])
+                         ->whereHas('user.roles', function ($query) {
+                            $query->where('name', 'Supplier');
+                         })
+                         ->applyFilters(
+                            $request->only([
+                                'search',
+                                'orderByField',
+                                'orderBy'
+                            ])
+                        );
+
+            $count = $query->count();
+
+            $users = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'users' => $users,
+                    'usersTotalCount' => $count
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 }

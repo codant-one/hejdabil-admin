@@ -17,6 +17,13 @@ export default [
       subject: 'clients'
     },
     { 
+      title: 'Användare', 
+      icon: { icon: 'mdi-account-star' },
+      to: 'dashboard-supplier-users', 
+      action: 'view', 
+      subject: 'users'
+    },
+    { 
       title: 'Fakturor', 
       icon: { icon: 'tabler-clipboard-list' },
       to: 'dashboard-admin-billings', 

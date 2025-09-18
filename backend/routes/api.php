@@ -145,6 +145,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Suppliers
     Route::group(['prefix' => 'suppliers'], function () {
         Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+        Route::get('supplier/users', [SupplierController::class, 'users']);
     });
 
     //Tasks
