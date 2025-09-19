@@ -535,7 +535,7 @@ const downloadCSV = async () => {
           </VExpansionPanels>
 
           <VCardText
-            class="d-block d-md-flex text-center align-center flex-wrap gap-4 pt-0 pb-4"
+            class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 pb-4"
           >
             <span class="text-pagination-results">
               {{ paginationData }}

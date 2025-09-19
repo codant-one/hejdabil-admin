@@ -417,7 +417,7 @@ const sendMails = async () => {
           </div>
 
           <VBtn class="btn-white d-block d-md-none">
-            <VIcon icon="custom-filter" size="24"/>
+            <VIcon icon="custom-filter" size="24" />
           </VBtn>
         </div>
         <VWindow v-model="tabBilling">
@@ -640,23 +640,34 @@ const sendMails = async () => {
                     </div>
                   </div>
                   <div class="d-flex">
-                    <VBtn class="btn-light flex-1 mr-4" @click="showBilling(billing)">
+                    <VBtn
+                      class="btn-light flex-1 mr-4"
+                      @click="showBilling(billing)"
+                    >
                       <VIcon icon="custom-eye" size="24" />
                       Se detaljer
                     </VBtn>
 
-                    <VBtn class="btn-light flex-1" icon @click="billing.actionDialog = true">
+                    <VBtn
+                      class="btn-light"
+                      icon
+                      @click="billing.actionDialog = true"
+                    >
                       <VIcon icon="custom-dots-vertical" size="24" />
                     </VBtn>
                     <VDialog
                       v-model="billing.actionDialog"
                       transition="dialog-bottom-transition"
+                      content-class="dialog-bottom-full-width"
                     >
                       <VCard>
                         <VList>
                           <VListItem
                             v-if="$can('edit', 'billing')"
-                            @click="printInvoice(billing); billing.actionDialog = false"
+                            @click="
+                              printInvoice(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-print" size="24" />
@@ -665,7 +676,10 @@ const sendMails = async () => {
                           </VListItem>
                           <VListItem
                             v-if="$can('edit', 'billing')"
-                            @click="openLink(billing); billing.actionDialog = false"
+                            @click="
+                              openLink(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-pdf" size="24" />
@@ -674,7 +688,10 @@ const sendMails = async () => {
                           </VListItem>
                           <VListItem
                             v-if="$can('edit', 'billing')"
-                            @click="duplicate(billing); billing.actionDialog = false"
+                            @click="
+                              duplicate(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-duplicate" size="24" />
@@ -682,8 +699,13 @@ const sendMails = async () => {
                             <VListItemTitle>Duplicera</VListItemTitle>
                           </VListItem>
                           <VListItem
-                            v-if="$can('edit', 'billing') && billing.state_id === 8"
-                            @click="sendReminder(billing); billing.actionDialog = false"
+                            v-if="
+                              $can('edit', 'billing') && billing.state_id === 8
+                            "
+                            @click="
+                              sendReminder(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-alarm" size="24" />
@@ -692,7 +714,10 @@ const sendMails = async () => {
                           </VListItem>
                           <VListItem
                             v-if="$can('edit', 'billing')"
-                            @click="send(billing); billing.actionDialog = false"
+                            @click="
+                              send(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-paper-plane" size="24" />
@@ -700,8 +725,14 @@ const sendMails = async () => {
                             <VListItemTitle>Skicka</VListItemTitle>
                           </VListItem>
                           <VListItem
-                            v-if="$can('edit', 'billing') && (billing.state_id === 4 || billing.state_id === 8)"
-                            @click="editBilling(billing); billing.actionDialog = false"
+                            v-if="
+                              $can('edit', 'billing') &&
+                              (billing.state_id === 4 || billing.state_id === 8)
+                            "
+                            @click="
+                              editBilling(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-edit" size="24" />
@@ -709,8 +740,14 @@ const sendMails = async () => {
                             <VListItemTitle>Redigera</VListItemTitle>
                           </VListItem>
                           <VListItem
-                            v-if="$can('delete', 'billing') && billing.state_id === 7"
-                            @click="credit(billing); billing.actionDialog = false"
+                            v-if="
+                              $can('delete', 'billing') &&
+                              billing.state_id === 7
+                            "
+                            @click="
+                              credit(billing);
+                              billing.actionDialog = false;
+                            "
                           >
                             <template #prepend>
                               <VIcon icon="custom-waste" size="24" />
@@ -729,7 +766,7 @@ const sendMails = async () => {
             </VExpansionPanels>
 
             <div
-              class="d-block d-md-flex text-center align-center flex-wrap mt-6 gap-4 pt-0 pb-4"
+              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-4"
             >
               <span class="text-pagination-results">
                 {{ paginationData }}
@@ -745,7 +782,224 @@ const sendMails = async () => {
               />
             </div>
           </VWindowItem>
-          <VWindowItem value="avtal"> </VWindowItem>
+          <VWindowItem value="avtal">
+            <VTable v-if="!$vuetify.display.smAndDown" class="text-no-wrap">
+              <!-- 👉 table head -->
+              <thead>
+                <tr>
+                  <th scope="col">Reg. NR</th>
+                  <th scope="col">Inbytesfordon Reg. NR</th>
+                  <th scope="col" class="text-center">Fakturadatum</th>
+                  <th scope="col" class="text-center">Typ</th>
+                  <th scope="col" class="text-center">Status</th>
+                  <th
+                    class="text-center"
+                    scope="col"
+                    v-if="$can('edit', 'billing') || $can('delete', 'billing')"
+                  ></th>
+                </tr>
+              </thead>
+              <!-- 👉 table body -->
+              <tbody>
+                <tr
+                  v-for="billing in billings"
+                  :key="billing.id"
+                  style="height: 3rem"
+                >
+                  <td>{{ billing.reg_nr }}</td>
+                  <td>{{ billing.trade_in_reg_nr }}</td>
+                  <td class="text-center">{{ billing.invoice_date }}</td>
+                  <td class="text-center">{{ billing.type }}</td>
+                  <td class="text-center">
+                    <span class="status-pill">
+                      {{ billing.state.name }}
+                    </span>
+                  </td>
+                  <!-- 👉 Acciones -->
+                  <td
+                    class="text-center"
+                    style="width: 3rem"
+                    v-if="$can('edit', 'billing') || $can('delete', 'billing')"
+                  >
+                    <VMenu>
+                      <template #activator="{ props }">
+                        <VBtn
+                          v-bind="props"
+                          icon
+                          variant="text"
+                          class="btn-white"
+                        >
+                          <VIcon icon="custom-dots-vertical" size="24" />
+                        </VBtn>
+                      </template>
+                      <VList>
+                        <VListItem @click="showBilling(billing)">
+                          <template #prepend>
+                            <VIcon icon="custom-eye" size="24" />
+                          </template>
+                          <VListItemTitle>Se detaljer</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="$can('edit', 'billing')"
+                          @click="editBilling(billing)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-edit" size="24" />
+                          </template>
+                          <VListItemTitle>Redigera</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="$can('delete', 'billing')"
+                          @click="credit(billing)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-waste" size="24" />
+                          </template>
+                          <VListItemTitle>Ta bort</VListItemTitle>
+                        </VListItem>
+                      </VList>
+                    </VMenu>
+                  </td>
+                </tr>
+              </tbody>
+              <!-- 👉 table footer  -->
+              <tfoot v-show="!billings.length">
+                <tr>
+                  <td
+                    :colspan="role === 'Supplier' ? 6 : 6"
+                    class="text-center"
+                  >
+                    Uppgifter ej tillgängliga
+                  </td>
+                </tr>
+              </tfoot>
+            </VTable>
+
+            <VExpansionPanels
+              class="expansion-panels"
+              v-if="billings.length && $vuetify.display.smAndDown"
+            >
+              <VExpansionPanel v-for="billing in billings" :key="billing.id">
+                <VExpansionPanelTitle
+                  collapse-icon="custom-chevron-right"
+                  expand-icon="custom-chevron-down"
+                >
+                  <span class="order-id">{{ billing.id }}</span>
+                  <span class="title-panel">{{
+                    billing.client.fullname ?? ""
+                  }}</span>
+                </VExpansionPanelTitle>
+                <VExpansionPanelText>
+                  <div class="mb-6">
+                    <div class="expansion-panel-item-label">Inbytesfordon Reg. NR</div>
+                    <div class="expansion-panel-item-value">
+                      {{ billing.trade_in_reg_nr }}
+                    </div>
+                  </div>
+                  <div class="mb-6">
+                    <div class="expansion-panel-item-label">Fakturadatum</div>
+                    <div class="expansion-panel-item-value">
+                      {{ billing.invoice_date }}
+                    </div>
+                  </div>
+                  <div class="mb-6">
+                    <div class="expansion-panel-item-label">Typ</div>
+                    <div class="expansion-panel-item-value">
+                      {{ billing.type }}
+                    </div>
+                  </div>
+                  <div class="mb-6">
+                    <div class="expansion-panel-item-label">Status</div>
+                    <div class="expansion-panel-item-value">
+                      <span class="status-pill">{{ billing.state.name }}</span>
+                    </div>
+                  </div>
+                  <div class="d-flex">
+                    <VBtn
+                      class="btn-light flex-1 mr-4"
+                      @click="showBilling(billing)"
+                    >
+                      <VIcon icon="custom-eye" size="24" />
+                      Se detaljer
+                    </VBtn>
+
+                    <VBtn
+                      class="btn-light"
+                      icon
+                      @click="billing.actionDialog = true"
+                    >
+                      <VIcon icon="custom-dots-vertical" size="24" />
+                    </VBtn>
+                    <VDialog
+                      v-model="billing.actionDialog"
+                      transition="dialog-bottom-transition"
+                      content-class="dialog-bottom-full-width"
+                    >
+                      <VCard>
+                        <VList>
+                          <VListItem
+                            @click="
+                              showBilling(billing);
+                              billing.actionDialog = false;
+                            "
+                          >
+                            <template #prepend>
+                              <VIcon icon="custom-eye" size="24" />
+                            </template>
+                            <VListItemTitle>Se detaljer</VListItemTitle>
+                          </VListItem>
+                          <VListItem
+                            v-if="$can('edit', 'billing')"
+                            @click="
+                              editBilling(billing);
+                              billing.actionDialog = false;
+                            "
+                          >
+                            <template #prepend>
+                              <VIcon icon="custom-pencil" size="24" />
+                            </template>
+                            <VListItemTitle>Redigera</VListItemTitle>
+                          </VListItem>
+                          <VListItem
+                            v-if="$can('delete', 'billing')"
+                            @click="
+                              credit(billing);
+                              billing.actionDialog = false;
+                            "
+                          >
+                            <template #prepend>
+                              <VIcon icon="custom-waste" size="24" />
+                            </template>
+                            <VListItemTitle>Ta bort</VListItemTitle>
+                          </VListItem>
+                        </VList>
+                      </VCard>
+                    </VDialog>
+                  </div>
+                </VExpansionPanelText>
+              </VExpansionPanel>
+              <div v-if="!billings.length" class="text-center py-4">
+                Uppgifter ej tillgängliga
+              </div>
+            </VExpansionPanels>
+
+            <div
+              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-4"
+            >
+              <span class="text-pagination-results">
+                {{ paginationData }}
+              </span>
+
+              <VSpacer class="d-none d-md-block" />
+
+              <VPagination
+                v-model="currentPage"
+                size="small"
+                :total-visible="5"
+                :length="totalPages"
+              />
+            </div>
+          </VWindowItem>
         </VWindow>
       </VCardText>
     </VCard>
@@ -836,7 +1090,7 @@ const sendMails = async () => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss" scope>
 .text-center {
   text-align: center !important;
 }
@@ -862,6 +1116,19 @@ const sendMails = async () => {
   .billing-panel {
     border: 0px !important;
     padding: 0 !important;
+  }
+}
+.dialog-bottom-full-width {
+  position: fixed !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  .v-card {
+    border-radius: 24px 24px 0 0 !important;
   }
 }
 </style>

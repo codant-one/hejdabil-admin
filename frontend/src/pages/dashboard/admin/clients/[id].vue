@@ -128,6 +128,7 @@ const update = (clientData) => {
         :is-supplier="false"
         @update="update"
       />
+      <div class="w-100 d-block d-md-none">Svep för att se mer</div>
       <div class="d-flex gap-4 billing-items">
         <div
           v-for="item in cardItems"
