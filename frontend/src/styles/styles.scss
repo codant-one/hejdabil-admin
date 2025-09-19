@@ -37,12 +37,20 @@ div.v-avatar {
   font-size: 24px;
 }
 
+.layout-nav-type-vertical .layout-vertical-nav.hovered {
+  background: linear-gradient(
+    90deg,
+    #eafff1 0%,
+    #eafff8 50%,
+    #ecffff 100%
+  ) !important;
+}
+
 .layout-content-width-boxed .layout-page-content {
   max-inline-size: 1800px;
 }
 
-.layout-wrapper.layout-nav-type-vertical 
-.layout-navbar.navbar-blur::after {
+.layout-wrapper.layout-nav-type-vertical .layout-navbar.navbar-blur::after {
   background: none !important;
 }
 
@@ -569,7 +577,11 @@ body {
   }
 }
 
-.layout-nav-type-vertical .layout-vertical-nav .nav-group .nav-link .nav-item-icon {
+.layout-nav-type-vertical
+  .layout-vertical-nav
+  .nav-group
+  .nav-link
+  .nav-item-icon {
   margin: 0 !important;
 }
 
