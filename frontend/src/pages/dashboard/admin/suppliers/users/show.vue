@@ -8,10 +8,6 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
-  },
-  rolesList: {
-    type: Object,
-    required: true
   }
 })
 
@@ -29,8 +25,6 @@ const isPhone = ref(false)
 const address = ref('')
 const isAddress = ref(false)
 
-const assignedRoles = ref([])
-
 watchEffect(() => {
     if (props.isDrawerOpen) {
 
@@ -43,8 +37,6 @@ watchEffect(() => {
             isPhone.value = (props.user.user_detail?.phone === null) ? true : false
             address.value = props.user.user_detail?.address ?? '----'
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
-
-            assignedRoles.value = props.user.assignedRoles
         }
     }
 })
@@ -118,16 +110,6 @@ const closeUserDetailDialog = function() {
                             :disabled="isAddress"
                             />
                     </VCol>               
-                    <!-- <VCol md="12" cols="12">
-                        <VCombobox
-                            v-model="assignedRoles"
-                            chips
-                            multiple
-                            :items="rolesList"
-                            label="Roller som tilldelats användaren"
-                            readonly
-                        />
-                    </VCol> -->
                 </VRow>
             </VCardText>
         </VCard>

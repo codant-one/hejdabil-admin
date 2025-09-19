@@ -367,7 +367,7 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'user' => $user
+                    'user' => Supplier::with(['user.roles', 'user.userDetail'])->find($supplier->id)
                 ]
             ], 200);
         

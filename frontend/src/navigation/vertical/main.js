@@ -19,7 +19,7 @@ export default [
     { 
       title: 'Användare', 
       icon: { icon: 'mdi-account-star' },
-      to: 'dashboard-supplier-users', 
+      to: 'dashboard-admin-suppliers-users', 
       action: 'view', 
       subject: 'users'
     },

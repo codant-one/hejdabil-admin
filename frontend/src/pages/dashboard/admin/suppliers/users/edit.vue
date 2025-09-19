@@ -11,10 +11,6 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
-  },
-  rolesList: {
-    type: Object,
-    required: true
   }
 })
 
@@ -35,7 +31,6 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
-const assignedRoles = ref([])
 
 const advisor = ref({
   type: '',
@@ -59,8 +54,6 @@ async function fetchData() {
       phone.value = props.user.user_detail?.phone
       address.value = props.user.user_detail?.address
 
-      assignedRoles.value = props.user.assignedRoles
-
     }
   }
 }
@@ -79,8 +72,7 @@ const onSubmitEdit = () =>{
           email: email.value,
           last_name: last_name.value,
           phone: phone.value,
-          address: address.value,
-          roles: assignedRoles.value
+          address: address.value
         }
 
         usersStores.updateUser(data, id.value)
@@ -214,20 +206,7 @@ const onSubmitEdit = () =>{
                             label="Adress"
                             :rules="[requiredValidator]"
                           />
-                        </VCol>                
-                        <!-- <VCol cols="12">
-                          <VCombobox
-                            v-model="assignedRoles"
-                            chips
-                            clearable
-                            multiple
-                            closable-chips
-                            clear-icon="tabler-circle-x"
-                            :items="rolesList"
-                            label="Roller som tilldelats användaren"
-                            :rules="[requiredValidator]"
-                          />
-                        </VCol> -->
+                        </VCol>
                     </VRow>
                     <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
                         <VBtn

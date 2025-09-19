@@ -9,12 +9,10 @@ import destroy from './destroy.vue'
 import { avatarText } from '@/@core/utils/formatters'
 
 import { useSuppliersStores } from '@/stores/useSuppliers'
-import { useRolesStores } from '@/stores/useRoles'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 
 const usersStores = useSuppliersStores()
-const rolesStores = useRolesStores()
 
 const users = ref([])
 const searchQuery = ref('')
@@ -31,8 +29,6 @@ const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 
 const selectedUser = ref({})
-const rolesList = ref([])
-const roleUsers = ref([]) 
 
 const IdsUserOnline = ref([])
 const userOnline = ref([])
@@ -64,12 +60,6 @@ const onlineList = () => {
   })
 }
 
-const searchRoles = () => {
-  rolesStores.allRoles().then(response => {
-    rolesList.value = response.roles.filter(role => role === 'User');
-  }).catch(error => { })
-};
-
 // 👉 Computing pagination data
 const paginationData = computed(() => {
   const firstIndex = users.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
@@ -94,7 +84,7 @@ async function fetchData() {
   let data = {
     search: searchQuery.value,
     orderByField: 'id',
-    orderBy: 'asc',
+    orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value
   }
@@ -111,7 +101,6 @@ async function fetchData() {
     IdsUserOnline.value.push(element.user.id)
   })
 
-  searchRoles()
   onlineList()
 
   isRequestOngoing.value = false
@@ -121,12 +110,6 @@ async function fetchData() {
 const showUserDetailDialog = function(user){
   isUserDetailDialog.value = true
   selectedUser.value = { ...user }
-  
-  //user.roles.forEach(function(ro) {
- //   roleUsers.value.push(ro.name)
- // })
-
-  //selectedUser.value.assignedRoles = roleUsers
 }
 
 const showUserPasswordDialog = function(user){
@@ -138,12 +121,6 @@ const showUserPasswordDialog = function(user){
 const showUserEditDialog = function(user){
   isUserEditDialog.value = true
   selectedUser.value = { ...user }
-
- // user.roles.forEach(function(ro) {
- //   roleUsers.value.push(ro.name)
- // })
-
-  //selectedUser.value.assignedRoles = roleUsers
 }
 
 const showUserDeleteDialog = function(user){
@@ -200,7 +177,6 @@ const downloadCSV = async () => {
       NAMN: element.user.name,
       EFTERNAMN: (element.user.last_name ?? ''),
       E_POST: element.user.email,
-      ROLL: element.user.roles.map(e => e['name']).join(','),
       TELEFON: element.user.user_detail.phone ?? ''
     }
         
@@ -258,8 +234,6 @@ const downloadCSV = async () => {
             </VBtn>
 
             <create
-              :rolesList="rolesList"
-              @close="roleUsers = []"
               @data="fetchData"
               @alert="showAlert"/>
 
@@ -288,7 +262,6 @@ const downloadCSV = async () => {
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
                 <th scope="col"> E-POST </th>
-                <th scope="col"> ROLL </th>
                 <th scope="col"> TELEFON </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
@@ -338,15 +311,6 @@ const downloadCSV = async () => {
                 <!-- 👉 correo -->
                 <td>
                   {{ user.user.email }}
-                </td>
-
-                <!-- 👉 roles -->
-                <td>
-                  <ul>
-                    <li v-for="(value, key) in user.user.roles">
-                      {{ value.name }}
-                    </li>
-                  </ul>
                 </td>
 
                 <!-- 👉 phone -->
@@ -443,9 +407,7 @@ const downloadCSV = async () => {
 
           <show 
             v-model:isDrawerOpen="isUserDetailDialog"
-            :rolesList="rolesList"
-            :user="selectedUser"
-            @close="roleUsers = []"/>
+            :user="selectedUser"/>
 
           <password
             v-model:isDrawerOpen="isUserPasswordDialog"
@@ -455,10 +417,8 @@ const downloadCSV = async () => {
 
           <edit
             v-model:isDrawerOpen="isUserEditDialog"
-            :rolesList="rolesList"
             :user="selectedUser"
             @data="fetchData"
-            @close="roleUsers = []"
             @alert="showAlert"/>
 
           <destroy 

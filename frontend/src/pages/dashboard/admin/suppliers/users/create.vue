@@ -3,15 +3,7 @@
 import { emailValidator, requiredValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 
-const props = defineProps({
-  rolesList: {
-    type: Object,
-    required: true
-  }
-})
-
 const emit = defineEmits([
-  'close',
   'alert',
   'data'
 ])
@@ -28,7 +20,6 @@ const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
-const assignedRoles = ref([])
 
 const advisor = ref({
   type: '',
@@ -48,7 +39,6 @@ const closeUserCreateDialog  = function(){
     last_name.value = ''
     phone.value = '----'
     address.value = '----'
-    assignedRoles.value = []
   })
 }
 
@@ -61,7 +51,6 @@ const onSubmitCreate = () => {
         email: email.value,
         password: password.value,
         last_name: last_name.value,
-        roles: assignedRoles.value
       }
 
       usersStores.addUser(data)
@@ -76,7 +65,6 @@ const onSubmitCreate = () => {
           
           emit('alert', advisor)
           emit('data')
-          emit('close')
 
           nextTick(() => {
             refFormCreate.value?.reset()
@@ -87,7 +75,6 @@ const onSubmitCreate = () => {
             last_name.value = ''
             phone.value = '----'
             address.value = '----'
-            assignedRoles.value = []
           })
 
           setTimeout(() => {
@@ -113,7 +100,6 @@ const onSubmitCreate = () => {
 
           emit('alert', advisor)
           emit('data')
-          emit('close')
 
           setTimeout(() => {
             advisor.value.show = false
@@ -205,19 +191,6 @@ const onSubmitCreate = () => {
                 disabled
               />
             </VCol>
-            <!-- <VCol cols="12">
-              <VCombobox
-                v-model="assignedRoles"
-                chips
-                clearable
-                multiple
-                closable-chips
-                clear-icon="tabler-circle-x"
-                :items="rolesList"
-                label="Roller som tilldelats användaren"
-                :rules="[requiredValidator]"
-                />
-            </VCol> -->
           </VRow>
           <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
             <VBtn
