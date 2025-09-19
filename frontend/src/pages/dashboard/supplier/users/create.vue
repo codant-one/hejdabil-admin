@@ -1,7 +1,7 @@
 <script setup>
 
 import { emailValidator, requiredValidator } from '@/@core/utils/validators'
-import { useUsersStores } from '@/stores/useUsers'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 
 const props = defineProps({
   rolesList: {
@@ -16,7 +16,7 @@ const emit = defineEmits([
   'data'
 ])
 
-const usersStores = useUsersStores()
+const usersStores = useSuppliersStores()
 
 const refFormCreate = ref()
 
@@ -205,7 +205,7 @@ const onSubmitCreate = () => {
                 disabled
               />
             </VCol>
-            <VCol cols="12">
+            <!-- <VCol cols="12">
               <VCombobox
                 v-model="assignedRoles"
                 chips
@@ -217,7 +217,7 @@ const onSubmitCreate = () => {
                 label="Roller som tilldelats användaren"
                 :rules="[requiredValidator]"
                 />
-            </VCol>
+            </VCol> -->
           </VRow>
           <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
             <VBtn

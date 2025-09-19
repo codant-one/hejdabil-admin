@@ -66,7 +66,7 @@ const onlineList = () => {
 
 const searchRoles = () => {
   rolesStores.allRoles().then(response => {
-    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier');
+    rolesList.value = response.roles.filter(role => role === 'User');
   }).catch(error => { })
 };
 
@@ -122,28 +122,28 @@ const showUserDetailDialog = function(user){
   isUserDetailDialog.value = true
   selectedUser.value = { ...user }
   
-  user.roles.forEach(function(ro) {
-    roleUsers.value.push(ro.name)
-  })
+  //user.roles.forEach(function(ro) {
+ //   roleUsers.value.push(ro.name)
+ // })
 
-  selectedUser.value.assignedRoles = roleUsers
+  //selectedUser.value.assignedRoles = roleUsers
 }
 
 const showUserPasswordDialog = function(user){
   isUserPasswordDialog.value = true
-  selectedUser.value.id = user.user.id
-  selectedUser.value.email = user.user.email
+  selectedUser.value.id = user.id
+  selectedUser.value.email = user.email
 }
 
 const showUserEditDialog = function(user){
   isUserEditDialog.value = true
   selectedUser.value = { ...user }
 
-  user.user.roles.forEach(function(ro) {
-    roleUsers.value.push(ro.name)
-  })
+ // user.roles.forEach(function(ro) {
+ //   roleUsers.value.push(ro.name)
+ // })
 
-  selectedUser.value.assignedRoles = roleUsers
+  //selectedUser.value.assignedRoles = roleUsers
 }
 
 const showUserDeleteDialog = function(user){

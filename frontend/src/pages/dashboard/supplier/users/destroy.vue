@@ -1,6 +1,6 @@
 <script setup>
 
-import { useUsersStores } from '@/stores/useUsers'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -19,7 +19,7 @@ const emit = defineEmits([
   'data'
 ])
 
-const usersStores = useUsersStores()
+const usersStores = useSuppliersStores()
 
 const advisor = ref({
   type: '',

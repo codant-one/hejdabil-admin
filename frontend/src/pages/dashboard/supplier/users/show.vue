@@ -118,7 +118,7 @@ const closeUserDetailDialog = function() {
                             :disabled="isAddress"
                             />
                     </VCol>               
-                    <VCol md="12" cols="12">
+                    <!-- <VCol md="12" cols="12">
                         <VCombobox
                             v-model="assignedRoles"
                             chips
@@ -127,7 +127,7 @@ const closeUserDetailDialog = function() {
                             label="Roller som tilldelats användaren"
                             readonly
                         />
-                    </VCol>
+                    </VCol> -->
                 </VRow>
             </VCardText>
         </VCard>

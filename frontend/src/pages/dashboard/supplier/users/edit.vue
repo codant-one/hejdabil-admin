@@ -1,7 +1,7 @@
 <script setup>
 
 import { requiredValidator, phoneValidator } from '@/@core/utils/validators'
-import { useUsersStores } from '@/stores/useUsers'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -25,7 +25,7 @@ const emit = defineEmits([
   'data'
 ])
 
-const usersStores = useUsersStores()
+const usersStores = useSuppliersStores()
 
 const refFormEdit = ref()
 
@@ -215,7 +215,7 @@ const onSubmitEdit = () =>{
                             :rules="[requiredValidator]"
                           />
                         </VCol>                
-                        <VCol cols="12">
+                        <!-- <VCol cols="12">
                           <VCombobox
                             v-model="assignedRoles"
                             chips
@@ -227,7 +227,7 @@ const onSubmitEdit = () =>{
                             label="Roller som tilldelats användaren"
                             :rules="[requiredValidator]"
                           />
-                        </VCol>
+                        </VCol> -->
                     </VRow>
                     <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
                         <VBtn

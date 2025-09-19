@@ -92,10 +92,15 @@ class Supplier extends Model
      /**** Public methods ****/
      public static function createSupplier($request) {
         $user = User::createUser($request);
-        $user->assignRole('Supplier');
+
+        if( $request->has('boss_id') )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         $supplier = self::create([
             'user_id' => $user->id,
+            'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
             'company' => $request->company,
             'organization_number' => $request->organization_number,
             'link' => $request->link,
@@ -130,7 +135,10 @@ class Supplier extends Model
 
         User::updateUser($request, $user);
         
-        $user->assignRole('Supplier');
+        if( $supplier->boss_id > 0 )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         return $supplier;
     }
@@ -188,6 +196,53 @@ class Supplier extends Model
                 'vat' => $request->vat === 'null' ? null : $request->vat
             ]
         );
+
+        return $supplier;
+    }
+
+
+    public static function createUserRelatedToSupplier($request) {
+        $user = User::createUser($request);
+        $user->assignRole('User');
+
+        $supplier = self::create([
+            'user_id' => $user->id,
+            'boss_id' => $request->boss_id,
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        return $supplier;
+    }
+
+    public static function updateUserRelatedToSupplier($request, $supplier) {
+
+        $user = User::with('userDetail')->find($supplier->user_id);
+
+        $supplier->update([
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        User::updateUser($request, $user);
+        
+        $user->assignRole('User');
 
         return $supplier;
     }
