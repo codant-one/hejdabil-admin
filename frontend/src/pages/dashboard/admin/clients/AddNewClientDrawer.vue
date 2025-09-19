@@ -141,7 +141,7 @@ const handleDrawerModelValueUpdate = (val) => {
   >
     <!-- 👉 Title -->
     <div class="d-flex align-center pa-6 pb-1">
-      <h6 class="text-h6">
+      <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
 
@@ -149,14 +149,11 @@ const handleDrawerModelValueUpdate = (val) => {
 
       <!-- 👉 Close btn -->
       <VBtn
-        variant="tonal"
-        color="default"
         icon
-        size="32"
-        class="rounded btn-close-client"
+        class="btn-white"
         @click="closeNavigationDrawer"
       >
-        <VIcon size="18" icon="tabler-x" />
+        <VIcon size="32" icon="custom-cancel" />
       </VBtn>
     </div>
 
