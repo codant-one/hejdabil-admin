@@ -267,19 +267,19 @@ const downloadCSV = async () => {
 
             <div class="d-flex gap-4 title-action-buttons">
               <VBtn
-                prepend-icon="tabler-file-export"
                 class="btn-light w-100 w-md-auto"
                 @click="downloadCSV"
               >
+                <VIcon icon="custom-export" size="24" />
                 Exportera
               </VBtn>
 
               <VBtn
                 v-if="$can('create', 'clients')"
-                prepend-icon="tabler-plus"
                 class="btn-gradient w-100 w-md-auto"
                 @click="isAddNewClientDrawerVisible = true"
               >
+                <VIcon icon="custom-plus" size="24" />
                 Ny kund
               </VBtn>
             </div>
