@@ -186,7 +186,7 @@ const closeAll = () => {
   will-change: transform, inline-size;
 
   .nav-header {
-    margin: 0 24px 24px;
+    margin: 4px 24px 0 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -229,7 +229,11 @@ const closeAll = () => {
   // 👉 Collapsed
   .layout-vertical-nav-collapsed & {
     &:not(.hovered) {
-      inline-size: 96px;
+      inline-size: 120px;
+    }
+
+    &.layout-vertical-nav:not(.hovered) {
+      width: 96px;
     }
   }
 

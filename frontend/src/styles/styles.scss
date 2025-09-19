@@ -41,6 +41,11 @@ div.v-avatar {
   max-inline-size: 1800px;
 }
 
+.layout-wrapper.layout-nav-type-vertical 
+.layout-navbar.navbar-blur::after {
+  background: none !important;
+}
+
 .layout-content-width-boxed.layout-wrapper.layout-nav-type-vertical
   .layout-navbar,
 .layout-content-width-boxed.layout-wrapper.layout-nav-type-vertical
@@ -69,7 +74,7 @@ div.v-avatar {
 }
 
 .layout-nav-type-vertical .layout-vertical-nav {
-  margin-top: 130px;
+  margin-top: 110px;
   background-color: transparent !important;
   box-shadow: none !important;
 }

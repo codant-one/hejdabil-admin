@@ -56,12 +56,11 @@
         #ecffff 100%
       ) !important;
       inset-block-start: 0rem;
-      padding-top: 1.5rem;
-      padding-bottom: 2.4rem;
+      padding: 1.5rem;
 
       @media (max-width: 1000px) {
-        padding-top: 3rem;
-        padding-bottom: 1.2rem;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
       }
     }
 
@@ -72,7 +71,7 @@
     .layout-page-content {
       margin-block-start: 0;
       padding-top: 0;
-      padding-inline-start: 266px;
+      padding-inline-start: 236px;
 
       @media (max-width: 1000px) {
         padding: 0;
