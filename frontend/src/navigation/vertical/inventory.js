@@ -1,13 +1,14 @@
 export default [
     { 
         title: 'Mitt Fordonslager',
-        icon: { icon:'mdi-car' },
+        icon: { icon:'custom-car' },
         children:[
             { 
                 title: 'Märke', 
                 to: 'dashboard-admin-brands', 
                 action: 'view', 
-                subject: 'brands', 
+                subject: 'brands',
+                icon: { icon:'custom-point' },
             },
             { 
                 title: 'Modell', 

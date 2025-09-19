@@ -34,7 +34,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
   footer: { type: FooterType.Static },
   verticalNav: {
     isVerticalNavCollapsed: false,
-    defaultNavItemIconProps: { icon: 'tabler-circle', size: 10 },
+    defaultNavItemIconProps: { icon: 'custom-point' },
     isVerticalNavSemiDark: true,
   },
   horizontalNav: {
@@ -42,8 +42,8 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     transition: 'slide-y-reverse-transition',
   },
   icons: {
-    chevronDown: { icon: 'tabler-chevron-down' },
-    chevronRight: { icon: 'tabler-chevron-right', size: 18 },
+    chevronDown: { icon: 'custom-chevron-down' },
+    chevronRight: { icon: 'custom-chevron-right', size: 16 },
     close: { icon: 'tabler-x' },
     verticalNavPinned: { icon: 'tabler-circle-dot' },
     verticalNavUnPinned: { icon: 'tabler-circle' },

@@ -20,14 +20,14 @@ export const config = {
   footer: { type: ref(FooterType.Static) },
   verticalNav: {
     isVerticalNavCollapsed: ref(false),
-    defaultNavItemIconProps: { icon: 'tabler-circle' },
+    defaultNavItemIconProps: { icon: 'custom-point' },
   },
   horizontalNav: {
     type: ref('sticky'),
   },
   icons: {
-    chevronDown: { icon: 'tabler-chevron-down' },
-    chevronRight: { icon: 'tabler-chevron-right' },
+    chevronDown: { icon: 'custom-chevron-down' },
+    chevronRight: { icon: 'custom-chevron-right' },
     close: { icon: 'tabler-x' },
     verticalNavPinned: { icon: 'tabler-circle-dot' },
     verticalNavUnPinned: { icon: 'tabler-circle' },

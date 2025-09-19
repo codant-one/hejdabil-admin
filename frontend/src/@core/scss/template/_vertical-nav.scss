@@ -18,9 +18,9 @@
 
     // 👉 Nav group & Link
     .nav-link,
-    .nav-group {
+    .nav-group .nav-group-label {
       // shadow cut issue fix
-      margin-bottom: 8px;
+      margin-bottom: 8px !important;
 
       a {
         outline: none;
