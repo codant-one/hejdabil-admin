@@ -51,26 +51,24 @@ const { width: windowWidth } = useWindowSize()
 
 
         <div class="align-center gap-x-3 d-none d-md-flex">
-          <VBtn class="btn-green">
+          <VBtn class="btn-green px-6">
             Köp
-            <img :src="kopIcon" alt="Köp Icon" class="ms-2" />
+            <img :src="kopIcon" alt="Köp Icon" />
           </VBtn>
-          <VBtn class="btn-blue">
+          <VBtn class="btn-blue px-6">
             Sälj
-            <img :src="saljIcon" alt="Sälj Icon" class="ms-2" />
+            <img :src="saljIcon" alt="Sälj Icon" />
           </VBtn>
         </div>
 
         <VSpacer />
 
-        <!-- Iconos a la Derecha -->
         <div class="d-flex align-center gap-x-2">
           <NavBarNotifications />
           <VBtn variant="flat" class="btn-white d-none d-md-flex" height="48" width="48">
             <img :src="settingsIcon" alt="Settings Icon" width="24" />
           </VBtn>
-          <UserProfile class="ms-2" />
-          <VIcon icon="tabler-chevron-down" size="20" class="ms-n1" />
+          <UserProfile/>
         </div>
       </div>
     </template>

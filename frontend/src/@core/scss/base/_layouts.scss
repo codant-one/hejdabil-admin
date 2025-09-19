@@ -75,7 +75,16 @@
       padding-inline-start: 266px;
 
       @media (max-width: 1000px) {
-        padding: 0 12px;
+        padding: 0;
+
+        .page-content-container section > .v-row,
+        .page-content-container div > .v-row {
+          margin: 0;
+
+          .v-col {
+            padding: 0;
+          }
+        }
       }
     }
   }

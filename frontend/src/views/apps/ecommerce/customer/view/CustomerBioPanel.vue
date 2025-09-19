@@ -57,7 +57,7 @@ async function fetchData() {
     valueText.value = "Beställningar";
     icon.value = "tabler-shopping-cart";
 
-    fullname.value = props.customerData.fullname ?? '';
+    fullname.value = props.customerData.fullname ?? "";
     email.value = props.customerData.email;
     organization_number.value = props.customerData.organization_number;
     address.value = props.customerData.address;
@@ -118,7 +118,7 @@ const onSubmit = () => {
 <template>
   <VRow>
     <!-- SECTION Customer Details -->
-    <VCol cols="12" class="d-flex gap-4" v-if="props.customerData">
+    <VCol cols="12" class="d-flex gap-4 bio-panel" v-if="props.customerData">
       <VAvatar v-if="props.isSupplier" rounded :size="250">
         <VImg
           v-if="props.customerData.user.avatar"
@@ -143,7 +143,6 @@ const onSubmit = () => {
           }}</span> -->
       </VAvatar>
 
-
       <VAvatar
         v-else
         rounded
@@ -151,8 +150,7 @@ const onSubmit = () => {
         color="primary"
         class="position-relative"
       >
-        <VImg :src="avatarImg"
-        />
+        <VImg :src="avatarImg" />
         <h4 class="avatar-username" v-if="props.isSupplier">
           {{ props.customerData.user.name }}
           <br />
@@ -182,7 +180,7 @@ const onSubmit = () => {
       > -->
 
       <div class="user-bio">
-        <VList>
+        <VList class="first-bio">
           <VListItem>
             <VListItemTitle>E-post</VListItemTitle>
             <VListItemSubtitle>
@@ -210,7 +208,7 @@ const onSubmit = () => {
             </VListItemSubtitle>
           </VListItem>
         </VList>
-        <VList>
+        <VList class="second-bio">
           <VListItem>
             <VListItemTitle>Postnummer</VListItemTitle>
             <VListItemSubtitle>
@@ -230,7 +228,7 @@ const onSubmit = () => {
             </VListItemSubtitle>
           </VListItem>
         </VList>
-        <VList>
+        <VList class="third-bio">
           <VListItem>
             <VListItemTitle>Produktbeskrivning</VListItemTitle>
             <VListItemSubtitle>
@@ -531,5 +529,35 @@ const onSubmit = () => {
     #9e95f5 100%
   );
   color: #fff;
+}
+
+@media (max-width: 768px) {
+  .bio-panel {
+    gap: 25px;
+    flex-direction: column;
+
+    .v-avatar {
+      width: 100% !important;
+      height: 170px !important;
+    }
+
+    .first-bio,
+    .second-bio {
+      flex: 1 1;
+    }
+    .third-bio {
+      flex-basis: 100%;
+      width: 100%;
+      margin-top: 16px;
+
+      .v-list-item-subtitle {
+        font-size: 12px;
+      }
+    }
+    .user-bio {
+      flex-wrap: wrap;
+      padding: 16px !important;
+    }
+  }
 }
 </style>

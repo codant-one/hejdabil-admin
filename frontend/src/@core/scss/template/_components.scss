@@ -156,12 +156,14 @@ body .v-btn {
   min-width: auto !important;
   height: 48px !important;
   border-radius: 56px;
+  background-color: #fff !important;
   padding: 0 16px;
-  gap: 8px !important;
+  gap: 0px !important;
 
   .v-btn__content {
     z-index: 0;
     color: #416054 !important;
+    gap: 8px;
   }
 
   &.btn-gradient {
@@ -270,9 +272,8 @@ body .v-btn {
     width: auto !important;
     min-width: none !important;
     height: 48px !important;
-
     border-radius: 64px;
-
+    background-color: #fff !important;
     padding-right: 16px;
     padding-left: 16px;
 
@@ -289,12 +290,28 @@ body .v-btn {
     }
 
     &:hover {
-      background-color: #F6F6F6 !important;
+      background-color: #f6f6f6 !important;
     }
   }
 
+  &.btn-icon-profile {
+    padding: 0 16px 0 0 !important;
+
+    .v-btn__content {
+      .v-avatar {
+        width: 48px !important;
+        height: 48px !important;
+      }
+    }
+  }
+
+  // &.v-btn--icon {
+  //   width: 48px !important;
+  //   height: 48px !important;
+  // }
+
   .v-btn__prepend {
-    margin: 0 !important;
+    margin: 0 8px 0 0 !important;
   }
 
   &:active {
@@ -464,25 +481,20 @@ body .v-dialog {
 // 👉 Expansion panels
 body .v-layout .v-application__wrap .v-expansion-panels {
   // custom style for expansion panels
+  gap: 16px !important;
+
   &.expansion-panels-width-border {
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 0.375rem;
   }
 
   .v-expansion-panel {
-    margin-block-start: 0 !important;
+    margin: 0 !important;
 
     // expansion panel arrow font size
     .v-expansion-panel-title {
-      color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
-      font-weight: 500;
-
       .v-expansion-panel-title__icon {
         transition: transform 0.2s ease-in-out;
-
-        .v-icon {
-          font-size: 1.25rem;
-        }
       }
     }
 
@@ -495,15 +507,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     .v-expansion-panel-title--active:hover {
       .v-expansion-panel-title__overlay {
         opacity: 0 !important;
-      }
-    }
-
-    // Set Elevation when panel open
-    &:not(.v-expansion-panels--variant-accordion) {
-      &.v-expansion-panel--active {
-        .v-expansion-panel__shadow {
-          @include mixins.elevation(7);
-        }
       }
     }
   }
@@ -520,32 +523,69 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
       &.v-expansion-panel--active {
         .v-expansion-panel-title__icon {
-          transform: rotate(90deg);
+          // transform: rotate(90deg);
 
-          @include layoutsMixins.rtl {
-            transform: rotate(-90deg);
-          }
+          // @include layoutsMixins.rtl {
+          //   transform: rotate(-90deg);
+          // }
         }
       }
     }
   }
 
-  &:not(.expansion-panels-width-border) {
+  &.expansion-panels {
+    padding: 0 24px 24px !important;
+
+    @media (max-width: 768px) {
+      padding: 0 !important;
+    }
+
     .v-expansion-panel {
-      &:not(:last-child) {
-        margin-block-end: 0.5rem;
+      padding-right: 16px;
+      padding-left: 16px;
+      border-radius: 16px;
+      background-color: #f6f6f6 !important;
+
+      .v-expansion-panel__shadow {
+        display: none;
       }
 
-      &:not(:first-child)::after {
-        content: none;
-      }
+      .v-expansion-panel-title {
+        height: 56px;
+        padding: 0 16px 0 0;
+        border-radius: 0px;
 
-      // ℹ️ we have to use below style of increase the specificity and override the default style
-      /* stylelint-disable-next-line no-descending-specificity */
-      &:first-child:not(:last-child),
-      &:not(:first-child, :last-child),
-      &:not(:first-child) {
-        border-radius: 0.375rem !important;
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 16px;
+        color: #008c91;
+
+        .order-id {
+          width: 58px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          font-weight: 400;
+          font-size: 16px;
+          line-height: 24px;
+        }
+
+        .title-panel {
+          padding: 0 16px;
+        }
+
+        .v-expansion-panel-title__icon {
+        }
+
+        &.v-expansion-panel-title--active {
+          border-bottom: 1px solid #e7e7e7;
+        }
+      }
+      .v-expansion-panel-text {
+        .v-expansion-panel-text__wrapper {
+          padding: 24px 0 16px !important;
+        }
       }
     }
   }
@@ -902,10 +942,10 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     thead {
       th {
         border: 0 !important;
-        padding: 0 8px !important;
+        padding: 0 16px !important;
         background-color: #f5f8f6;
         color: #454545 !important;
-        font-size: 14px !important;
+        font-size: 16px !important;
         font-weight: 400 !important;
 
         &:first-child {
@@ -915,6 +955,17 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         &:last-child {
           border-top-right-radius: 32px;
           border-bottom-right-radius: 32px;
+        }
+      }
+    }
+    tbody {
+      tr {
+        td {
+          height: 56px !important;
+          border-bottom: solid 1px #e7e7e7;
+          color: #454545 !important;
+          font-size: 16px !important;
+          font-weight: 400 !important;
         }
       }
     }
@@ -938,9 +989,8 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 // 👉 Tabs
 // v-tab with pill support
 .v-tabs {
+  height: 48px !important;
   &.v-tabs--vertical {
-    --v-tabs-height: 38px !important;
-
     &:not(.v-tabs-pill) {
       block-size: 100%;
       border-inline-end: 1px solid
@@ -950,12 +1000,16 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
   &.v-tabs--horizontal:not(.v-tabs-pill) {
     .v-btn {
-      min-width: 256px;
-      height: 48px;
+      min-width: 256px !important;
+      height: 48px !important;
 
       padding-right: 16px;
       padding-left: 16px;
       justify-content: left;
+
+      @media (max-width: 768px) {
+        min-width: auto !important;
+      }
     }
 
     // border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
@@ -963,9 +1017,21 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       display: flex;
       gap: 8px;
     }
+    .v-slide-group-item--active {
+      .v-tab__slider {
+        block-size: 1px;
+        background: linear-gradient(
+          90deg,
+          #57f287 0%,
+          #00eeb0 50%,
+          #00ffff 100%
+        );
+      }
+    }
     .v-tab__slider {
       block-size: 1px;
-      background: linear-gradient(90deg, #57f287 0%, #00eeb0 50%, #00ffff 100%);
+      background: #e7e7e7;
+      opacity: 1;
     }
   }
 
@@ -1224,10 +1290,27 @@ body {
 
 // Style list differently when it's used in a components like select, menu etc
 .v-menu {
-  .v-list-item {
-    // Adjust padding of list item inside menu
-    padding-block: 8px !important;
-    padding-inline: 16px !important;
+  .v-overlay__content {
+    border-radius: 8px;
+
+    > .v-list {
+      box-shadow: 0 0 40px 0 #00000026;
+      padding: 0;
+
+      .v-list-item {
+        height: 48px;
+        min-width: 170px;
+        margin: 0 !important;
+        padding: 0 16px !important;
+
+        .v-list-item-title {
+          font-weight: 500;
+          font-size: 14px;
+          line-height: 16px;
+          color: #454545;
+        }
+      }
+    }
   }
 }
 

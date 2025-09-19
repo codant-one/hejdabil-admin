@@ -46,8 +46,8 @@ const paginationData = computed(() => {
     : 0;
   const lastIndex =
     clients.value.length + (currentPage.value - 1) * rowPerPage.value;
-
-  return `Visar ${firstIndex} till ${lastIndex} av ${totalClients.value} register`;
+  return `${totalClients.value} resultat`;
+  // return `Visar ${firstIndex} till ${lastIndex} av ${totalClients.value} register`;
 });
 
 // 👉 watching current page
@@ -261,11 +261,11 @@ const downloadCSV = async () => {
 
         <VCard title="">
           <VCardTitle class="d-flex pa-4 justify-space-between">
-            <div class="d-flex align-center w-100 w-md-auto">
+            <div class="d-flex align-center w-100 w-md-auto font-blauer">
               <h2>Kunder</h2>
             </div>
 
-            <div class="d-flex gap-4">
+            <div class="d-flex gap-4 title-action-buttons">
               <VBtn
                 prepend-icon="tabler-file-export"
                 class="btn-light w-100 w-md-auto"
@@ -285,16 +285,16 @@ const downloadCSV = async () => {
             </div>
           </VCardTitle>
 
-          <VDivider class="ma-4" />
+          <VDivider class="mt-2 mx-4" />
 
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField v-model="searchQuery" placeholder="Sök" clearable />
-              </div>
+          <VCardText class="d-flex align-center flex-wrap gap-4 filter-bar">
+            <!-- <div class="d-flex align-center flex-wrap gap-4"> -->
+            <!-- 👉 Search  -->
+            <div class="search">
+              <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+            </div>
 
-              <!-- <VAutocomplete
+            <!-- <VAutocomplete
                 v-if="role !== 'Supplier'"
                 v-model="supplier_id"
                 placeholder="Leverantörer"
@@ -307,14 +307,14 @@ const downloadCSV = async () => {
                 style="width: 200px"
                 :menu-props="{ maxHeight: '300px' }"
               /> -->
-            </div>
+            <!-- </div> -->
 
             <VSpacer class="d-none d-md-block" />
-            <VBtn icon class="btn-ghost">
+            <VBtn class="btn-white">
               <VIcon icon="custom-filter" />
-              Filtrera efter
+              <span class="d-none d-md-block">Filtrera efter</span>
             </VBtn>
-            <div class="d-flex align-center w-100 w-md-auto visa-select">
+            <div v-if="!$vuetify.display.smAndDown" class="d-flex align-center w-100 w-md-auto visa-select">
               <span class="text-no-wrap pr-4">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
@@ -324,11 +324,14 @@ const downloadCSV = async () => {
             </div>
           </VCardText>
 
-          <v-table class="pa-4 text-no-wrap">
+          <VTable
+            v-if="!$vuetify.display.smAndDown"
+            class="px-4 pb-6 text-no-wrap"
+          >
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col">#ID</th>
+                <th scope="col" style="width: 58px">#ID</th>
                 <th scope="col">Kontakt</th>
                 <th scope="col" class="text-center">Organisationsnummer</th>
                 <th scope="col">Telefon</th>
@@ -342,61 +345,35 @@ const downloadCSV = async () => {
             </thead>
             <!-- 👉 table body -->
             <tbody>
-              <tr
-                v-for="client in clients"
-                :key="client.id"
-                style="height: 3rem"
-              >
-                <td>{{ client.order_id }}</td>
+              <tr v-for="client in clients" :key="client.id">
+                <td class="text-center">
+                  <span>{{ client.order_id }}</span>
+                </td>
                 <td class="text-wrap">
-                  <div class="d-flex flex-column">
-                    <span
-                      class="d-flex justify-between font-weight-medium cursor-pointer text-aqua"
-                      @click="seeClient(client)"
-                    >
-                      {{ client.fullname }}
+                  <div
+                    class="d-flex justify-between font-weight-medium cursor-pointer text-aqua"
+                    @click="seeClient(client)"
+                  >
+                    {{ client.fullname }}
 
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="25"
-                        height="24"
-                        viewBox="0 0 25 24"
-                        fill="none"
-                      >
-                        <path
-                          d="M14.6758 6.7728L19.9025 12L14.6753 17.2272"
-                          stroke="#008C91"
-                          stroke-miterlimit="10"
-                          stroke-linecap="round"
-                        />
-                        <path
-                          d="M4.56982 12H19.6495"
-                          stroke="#008C91"
-                          stroke-miterlimit="10"
-                          stroke-linecap="round"
-                        />
-                      </svg>
-                    </span>
-                    <!-- <span class="text-sm text-disabled">{{
+                    <VIcon icon="custom-arrow-right" size="24" />
+                    <!-- <span class="">{{
                       client.email
                     }}</span> -->
                   </div>
                 </td>
                 <td class="text-wrap text-center">
-                  <span
-                    class="text-sm text-disabled"
-                    v-if="client.organization_number"
-                  >
+                  <span class="" v-if="client.organization_number">
                     {{ client.organization_number ?? "" }}
                   </span>
                 </td>
                 <td class="text-wrap">
-                  <span class="text-sm text-disabled">
+                  <span class="">
                     {{ client.phone ?? "" }}
                   </span>
                 </td>
                 <td class="text-wrap">
-                  <span class="text-sm text-disabled">
+                  <span class="">
                     {{ client.address ?? "" }}
                   </span>
                 </td>
@@ -428,9 +405,7 @@ const downloadCSV = async () => {
                         {{ client.supplier.user.name }}
                         {{ client.supplier.user.last_name ?? "" }}
                       </span>
-                      <span class="text-sm text-disabled">{{
-                        client.supplier.user.email
-                      }}</span>
+                      <span class="">{{ client.supplier.user.email }}</span>
                     </div>
                   </div>
                 </td>
@@ -446,21 +421,9 @@ const downloadCSV = async () => {
                         v-bind="props"
                         icon
                         variant="text"
-                        color="default"
-                        size="x-small"
+                        class="btn-white"
                       >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="6"
-                          height="22"
-                          viewBox="0 0 6 22"
-                          fill="none"
-                        >
-                          <path
-                            d="M3.00012 0.440002C1.41574 0.440002 0.120117 1.73563 0.120117 3.32C0.120117 4.90438 1.41574 6.2 3.00012 6.2C4.58449 6.2 5.88012 4.90438 5.88012 3.32C5.88012 1.73563 4.58449 0.440002 3.00012 0.440002ZM3.00012 8.12C1.41574 8.12 0.120117 9.41563 0.120117 11C0.120117 12.5844 1.41574 13.88 3.00012 13.88C4.58449 13.88 5.88012 12.5844 5.88012 11C5.88012 9.41563 4.58449 8.12 3.00012 8.12ZM3.00012 15.8C1.41574 15.8 0.120117 17.0956 0.120117 18.68C0.120117 20.2644 1.41574 21.56 3.00012 21.56C4.58449 21.56 5.88012 20.2644 5.88012 18.68C5.88012 17.0956 4.58449 15.8 3.00012 15.8Z"
-                            fill="#878787"
-                          />
-                        </svg>
+                        <VIcon icon="custom-dots-vertical" size="24" />
                       </VBtn>
                     </template>
                     <VList>
@@ -484,7 +447,11 @@ const downloadCSV = async () => {
                         @click="showDeleteDialog(client)"
                       >
                         <template #prepend>
-                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                          <img
+                            :src="wasteIcon"
+                            alt="Delete Icon"
+                            class="mr-2"
+                          />
                         </template>
                         <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
@@ -501,14 +468,76 @@ const downloadCSV = async () => {
                 </td>
               </tr>
             </tfoot>
-          </v-table>
+          </VTable>
 
-          <v-divider />
+          <VExpansionPanels
+            class="expansion-panels"
+            v-if="clients.length && $vuetify.display.smAndDown"
+          >
+            <VExpansionPanel v-for="client in clients" :key="client.id">
+              <VExpansionPanelTitle
+                collapse-icon="custom-chevron-right"
+                expand-icon="custom-chevron-down"
+              >
+                <span class="order-id">{{ client.order_id }}</span>
+                <span class="title-panel">{{ client.fullname }}</span>
+              </VExpansionPanelTitle>
+              <VExpansionPanelText>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">
+                    Organisationsnummer:
+                  </div>
+                  <div class="expansion-panel-item-value">
+                    {{ client.organization_number ?? "" }}
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Adress:</div>
+                  <div class="expansion-panel-item-value">
+                    {{ client.address ?? "" }}
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Telefon:</div>
+                  <div class="expansion-panel-item-value">
+                    {{ client.phone ?? "" }}
+                  </div>
+                </div>
+                <div class="mb-4 row-with-buttons">
+                  <VBtn
+                    v-if="$can('edit', 'clients')"
+                    class="btn-light"
+                    @click="editClient(client)"
+                  >
+                    <VIcon icon="custom-pencil" size="24" />
+                    Redigera
+                  </VBtn>
+                  <VBtn
+                    v-if="$can('delete', 'clients')"
+                    class="btn-light"
+                    @click="showDeleteDialog(client)"
+                  >
+                    <VIcon icon="custom-waste" size="24" />
+                    Ta bort
+                  </VBtn>
+                </div>
+                <div>
+                  <VBtn class="btn-light w-100" @click="seeClient(client)">
+                    <VIcon icon="custom-eye" size="24" />
+                    Se detaljer
+                  </VBtn>
+                </div>
+              </VExpansionPanelText>
+            </VExpansionPanel>
+            <div v-if="!clients.length" class="text-center py-4">
+              Uppgifter ej tillgängliga
+            </div>
+          </VExpansionPanels>
 
           <VCardText
-            class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3"
+            class="d-block d-md-flex text-center align-center flex-wrap gap-4 pt-0 pb-4"
           >
-            <span class="text-sm text-disabled">
+            <span class="text-pagination-results">
               {{ paginationData }}
             </span>
 
@@ -577,13 +606,9 @@ const downloadCSV = async () => {
   }
 }
 
-.justify-between {
-  justify-content: space-between !important;
-}
-
 @media (min-width: 991px) {
   .search {
-    width: 20rem !important;
+    max-width: 36rem !important;
   }
 }
 </style>

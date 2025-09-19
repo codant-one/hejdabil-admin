@@ -128,7 +128,7 @@ const update = (clientData) => {
         :is-supplier="false"
         @update="update"
       />
-      <div class="d-flex gap-4">
+      <div class="d-flex gap-4 billing-items">
         <div
           v-for="item in cardItems"
           class="billing-item"
@@ -177,7 +177,7 @@ const update = (clientData) => {
           </span>
         </div>
       </div>
-      <div class="d-flex gap-4">
+      <!-- <div class="d-flex gap-4">
         <VBtn
           variant="tonal"
           color="secondary"
@@ -186,7 +186,7 @@ const update = (clientData) => {
         >
           Tillbaka
         </VBtn>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -198,10 +198,17 @@ meta:
 </route>
 
 <style lang="scss" scoped>
+.billing-items {
+  overflow: auto;
+}
 .billing-item {
   flex: 1 1;
   border-radius: 8px;
   padding: 16px;
+
+  @media (max-width: 768px) {
+    min-width: 165px;
+  }
 
   img {
     margin-bottom: 10px;    
@@ -220,6 +227,14 @@ meta:
     font-size: 20px;
     line-height: 100%;
     color: #04585D;
+  }
+}
+
+.row-with-buttons {
+  display: flex;
+  gap: 16px;
+  > * {
+    flex: 1 1;
   }
 }
 </style>
