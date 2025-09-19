@@ -194,7 +194,11 @@ export default defineComponent({
   }
 
   &.layout-vertical-nav-collapsed .layout-page-content {
-    padding-inline-start: variables.$layout-vertical-nav-collapsed-width !important;
+    padding-inline-start: variables.$layout-vertical-nav-collapsed-width + 16px !important;
+  }
+
+  &.layout-vertical-nav-collapsed .nav-link > :first-child {
+    margin: 0 24px !important;
   }
 
   // 👉 Content height fixed
