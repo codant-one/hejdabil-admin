@@ -4,6 +4,7 @@ import create from './create.vue'
 import show from './show.vue' 
 import password from './password.vue' 
 import edit from './edit.vue'
+import permissions from './permissions.vue'
 import destroy from './destroy.vue'
 
 import { avatarText } from '@/@core/utils/formatters'
@@ -26,6 +27,7 @@ const selectedRows = ref([])
 const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
 const isUserEditDialog = ref(false)
+const isUserPermissionsDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 
 const selectedUser = ref({})
@@ -34,6 +36,8 @@ const IdsUserOnline = ref([])
 const userOnline = ref([])
 
 const isRequestOngoing = ref(true)
+
+const permissionsRol = ref([])
 
 const advisor = ref({
   type: '',
@@ -83,7 +87,7 @@ async function fetchData() {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'id',
+    orderByField: 'order_id',
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value
@@ -126,6 +130,15 @@ const showUserEditDialog = function(user){
 const showUserDeleteDialog = function(user){
   isUserDeleteDialog.value =true
   selectedUser.value = { ...user }
+}
+
+const showUserPermissions = function(user){
+  isUserPermissionsDialog.value = true
+  selectedUser.value = { ...user }
+
+  selectedUser.value.permissions.forEach(function(pe) {
+      permissionsRol.value.push(pe.name)
+  })
 }
 
 const online = id =>{
@@ -276,7 +289,7 @@ const downloadCSV = async () => {
               >
                 <!-- 👉 Id -->
                 <td>
-                  #{{ user.user.id }}
+                  #{{ user.order_id }}
                 </td>
 
                 <!-- 👉 name -->
@@ -331,6 +344,14 @@ const downloadCSV = async () => {
                       </VBtn>
                     </template>
                     <VList>
+                      <VListItem
+                         v-if="$can('edit', 'users')"
+                         @click="showUserPermissions(user.user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-plus" />
+                        </template>
+                        <VListItemTitle>Behörigheter</VListItemTitle>
+                      </VListItem>
                       <VListItem
                          v-if="$can('view', 'users')"
                          @click="showUserDetailDialog(user.user)">
@@ -418,6 +439,13 @@ const downloadCSV = async () => {
           <edit
             v-model:isDrawerOpen="isUserEditDialog"
             :user="selectedUser"
+            @data="fetchData"
+            @alert="showAlert"/>
+            
+          <permissions
+            v-model:isDrawerOpen="isUserPermissionsDialog"
+            :user="selectedUser"
+            :permissions="permissionsRol"
             @data="fetchData"
             @alert="showAlert"/>
 

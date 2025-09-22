@@ -273,7 +273,7 @@ class SupplierController extends Controller
         try {
             $limit = $request->has('limit') ? $request->limit : 10;
 
-            $query = Supplier::with(['user.roles', 'user.userDetail'])
+            $query = Supplier::with(['user.roles.permissions','user.permissions', 'user.userDetail'])
                         //  ->whereHas('user.roles', function ($query) {
                         //     $query->where('name', 'User');
                         //  })
@@ -322,7 +322,11 @@ class SupplierController extends Controller
             // $password = Str::random(8);
             // $request->merge(['password' => $password]);
 
+            $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
+                                ->max('order_id');
+
             $request->merge(['boss_id' => Auth::user()->supplier->id]);
+            $request->merge(['order_id' => $order_id + 1]);
             $request->merge(['company' => ""]);
             $request->merge(['organization_number' => ""]);
             $request->merge(['address' => ""]);
@@ -445,6 +449,40 @@ class SupplierController extends Controller
             $request->merge(['roles' => [0 => "User"] ]);
 
             $user->updateUser($request, $user); 
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => $user
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function permissionsRelatedUser(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $user = User::find($id);
+        
+            if (!$user)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+
+            $user->givePermissionTo($request->permissions);
 
             return response()->json([
                 'success' => true,

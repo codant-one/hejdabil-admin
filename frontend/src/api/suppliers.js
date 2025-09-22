@@ -42,6 +42,10 @@ class Suppliers {
         return axios.post(`/suppliers/supplier/updateuser/${id}`, data)
     }
 
+    updatePermissions(data, id) {
+        return axios.post(`/suppliers/supplier/permissions/${id}`, data)
+    }
+
     getUsersOnline(params) {
         return axios.get('users/user/online', {params})
     }

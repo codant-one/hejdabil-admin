@@ -101,6 +101,7 @@ class Supplier extends Model
         $supplier = self::create([
             'user_id' => $user->id,
             'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
+            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null,
             'company' => $request->company,
             'organization_number' => $request->organization_number,
             'link' => $request->link,

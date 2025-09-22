@@ -172,6 +172,21 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.setLoading(false)
                 })
          
+        },
+        updatePermissions(data, id) {
+            this.setLoading(true)
+            
+            return Suppliers.updatePermissions(data, id)
+                .then((response) => {
+                    let pos = this.users.findIndex((item) => item.id === response.data.data.user.id)
+                    this.users[pos] = response.data.data.user
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
         }
     }
 })
