@@ -42,6 +42,7 @@ class SupplierController extends Controller
             $query = Supplier::with(['user.userDetail', 'state'])
                              ->withTrashed()
                              ->clientsCount()
+                             ->whereNull('boss_id')
                              ->applyFilters(
                                 $request->only([
                                     'search',
@@ -354,6 +355,7 @@ class SupplierController extends Controller
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
+                'text-url'=>'Administrative panel'
             ];
     
             try {

@@ -160,6 +160,18 @@ const logout = async () => {
             <VListItemTitle>Användare</VListItemTitle>
           </VListItem>
 
+          <VListItem :to="{ name: 'dashboard-admin-suppliers-users' }" v-if="$can('view', 'users') && role === 'Supplier'">
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="mdi-accounts"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Mitt team</VListItemTitle>
+          </VListItem>
+
           <!--  👉 Profile -->
           <VListItem :to="{ name: 'dashboard-profile' }">
             <template #prepend>

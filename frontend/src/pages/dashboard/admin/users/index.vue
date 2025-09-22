@@ -66,7 +66,7 @@ const onlineList = () => {
 
 const searchRoles = () => {
   rolesStores.allRoles().then(response => {
-    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier');
+    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier' && role !== 'User');
   }).catch(error => { })
 };
 

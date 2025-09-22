@@ -99,6 +99,7 @@ class UsersController extends Controller
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
+                'text-url' => 'Administrative panel'
             ];
     
             try {
