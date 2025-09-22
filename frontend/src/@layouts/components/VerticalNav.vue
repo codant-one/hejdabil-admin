@@ -48,6 +48,18 @@ const {
 
 const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered);
 
+const wasCollapsed = ref(isCollapsed.value);
+
+
+watch(isHovered, val => {
+  if (val) {
+    wasCollapsed.value = isCollapsed.value;
+    isCollapsed.value = false;
+  } else {
+    isCollapsed.value = wasCollapsed.value;
+  }
+});
+
 const resolveNavItemComponent = (item) => {
   if ("heading" in item) return VerticalNavSectionTitle;
   if ("children" in item) return VerticalNavGroup;
@@ -186,7 +198,7 @@ const closeAll = () => {
   will-change: transform, inline-size;
 
   .nav-header {
-    margin: 4px 24px 0 24px;
+    margin: 4px 24px 24px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
