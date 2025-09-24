@@ -745,3 +745,7 @@ body {
     }
   }
 }
+
+.v-list-item--active, .v-list-item:hover {
+  background-color: #F6F6F6 !important;
+}
