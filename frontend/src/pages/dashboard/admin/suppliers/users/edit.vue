@@ -1,5 +1,7 @@
 <script setup>
 
+import permissions from './permissions.vue'
+
 import { requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 
@@ -11,6 +13,10 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
+  },
+  readonly: {
+    type: Boolean,
+    required: true
   }
 })
 
@@ -18,12 +24,14 @@ const emit = defineEmits([
   'update:isDrawerOpen',
   'close',
   'alert',
-  'data'
+  'data',
+  'readonly'
 ])
 
 const usersStores = useSuppliersStores()
 
 const refFormEdit = ref()
+const isUserPermissionsDialog = ref(false)
 
 const id = ref('')
 const email = ref('')
@@ -31,6 +39,8 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
+const assignedPermissions = ref([])
+const readonly = ref(false)
 
 const advisor = ref({
   type: '',
@@ -54,13 +64,27 @@ async function fetchData() {
       phone.value = props.user.user_detail?.phone
       address.value = props.user.user_detail?.address
 
+      assignedPermissions.value = props.user.assignedPermissions
     }
+    readonly.value = props.readonly
   }
 }
 
 const closeUserEditDialog = function(){
     emit('update:isDrawerOpen', false)
     emit('close')
+    emit('readonly')
+
+    nextTick(() => {
+        refFormEdit.value?.reset()
+        refFormEdit.value?.resetValidation()
+        name.value = ''
+        assignedPermissions.value = []
+    })
+}
+
+const getPermissions = function(permissions){
+    assignedPermissions.value = permissions
 }
 
 const onSubmitEdit = () =>{
@@ -72,7 +96,8 @@ const onSubmitEdit = () =>{
           email: email.value,
           last_name: last_name.value,
           phone: phone.value,
-          address: address.value
+          address: address.value,
+          permissions: assignedPermissions.value
         }
 
         usersStores.updateUser(data, id.value)
@@ -207,6 +232,15 @@ const onSubmitEdit = () =>{
                             :rules="[requiredValidator]"
                           />
                         </VCol>
+
+                        <VCol
+                            cols="12"
+                            class="text-center"
+                        >
+                            <VBtn class="w-100 w-md-auto" @click="isUserPermissionsDialog = true">
+                                Redigera roll permissions
+                            </VBtn>
+                        </VCol>
                     </VRow>
                     <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
                         <VBtn
@@ -224,6 +258,13 @@ const onSubmitEdit = () =>{
             </VForm>
         </VCard>
     </VDialog>
+
+    <permissions
+      v-model:isDrawerOpen="isUserPermissionsDialog"
+      :user="user"
+      :readonly="readonly"
+      @permissions="getPermissions"
+      @readonly="readonly = false"/>
 </template>
 <route lang="yaml">
   meta:

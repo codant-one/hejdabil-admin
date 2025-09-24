@@ -1,5 +1,7 @@
 <script setup>
 
+import permissions from './permissions.vue'
+
 import { emailValidator, requiredValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 
@@ -11,6 +13,7 @@ const emit = defineEmits([
 const usersStores = useSuppliersStores()
 
 const refFormCreate = ref()
+const isUserPermissionsDialog = ref(false)
 
 const isUserCreateDialog = ref(false)
 const isPasswordVisible = ref(false)
@@ -20,6 +23,8 @@ const password = ref('')
 const last_name = ref('')
 const phone = ref('----')
 const address = ref('----')
+const assignedPermissions = ref([])
+const readonly =  ref(false)
 
 const advisor = ref({
   type: '',
@@ -39,7 +44,12 @@ const closeUserCreateDialog  = function(){
     last_name.value = ''
     phone.value = '----'
     address.value = '----'
+    assignedPermissions.value = []
   })
+}
+
+const getPermissions = function(permissions){
+    assignedPermissions.value = permissions
 }
 
 const onSubmitCreate = () => {
@@ -51,6 +61,7 @@ const onSubmitCreate = () => {
         email: email.value,
         password: password.value,
         last_name: last_name.value,
+        permissions: assignedPermissions.value
       }
 
       usersStores.addUser(data)
@@ -191,6 +202,15 @@ const onSubmitCreate = () => {
                 disabled
               />
             </VCol>
+
+            <VCol
+                cols="12"
+                class="text-center"
+            >
+                <VBtn class="w-100 w-md-auto" @click="isUserPermissionsDialog = true">
+                    Redigera roll permissions
+                </VBtn>
+            </VCol>
           </VRow>
           <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
             <VBtn
@@ -208,6 +228,11 @@ const onSubmitCreate = () => {
       </VForm>
     </VCard>
   </VDialog>
+
+  <permissions
+      v-model:isDrawerOpen="isUserPermissionsDialog"
+      :readonly="readonly"
+      @permissions="getPermissions"/>
 </template>
 <route lang="yaml">
   meta:

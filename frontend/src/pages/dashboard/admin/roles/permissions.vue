@@ -24,6 +24,8 @@ watchEffect(() => {
         if (!(Object.entries(props.role).length === 0) && props.role.constructor === Object) {
             assignedPermissions.value = props.role.assignedPermissions
         }
+    } else{
+        assignedPermissions.value = []
     }
 })
 

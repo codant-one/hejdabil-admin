@@ -345,6 +345,7 @@ class SupplierController extends Controller
             );
 
             $user = User::find($supplier->user_id);
+            $user->syncPermissions($request->permissions);
 
             $email = $user->email;
             $subject = 'Välkommen till HejdåBil';
@@ -451,6 +452,7 @@ class SupplierController extends Controller
             $request->merge(['roles' => [0 => "User"] ]);
 
             $user->updateUser($request, $user); 
+            $user->syncPermissions($request->permissions);
 
             return response()->json([
                 'success' => true,
@@ -484,7 +486,7 @@ class SupplierController extends Controller
                     'message' => 'Användaren hittades inte'
                 ], 404);
 
-            $user->givePermissionTo($request->permissions);
+            $user->syncPermissions($request->permissions);
 
             return response()->json([
                 'success' => true,

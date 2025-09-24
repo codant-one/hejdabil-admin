@@ -1,5 +1,7 @@
 <script setup>
 
+import permissions from './permissions.vue'
+
 const props = defineProps({
   isDrawerOpen: {
     type: Boolean,
@@ -8,13 +10,20 @@ const props = defineProps({
   user: {
     type: Object,
     required: true
+  },
+  readonly: {
+    type: Boolean,
+    required: true
   }
 })
 
 const emit = defineEmits([
   'update:isDrawerOpen',
-  'close'
+  'close',
+  'readonly'
 ])
+
+const isUserPermissionsDialog = ref(false)
 
 const email = ref('')
 const name = ref('')
@@ -24,6 +33,7 @@ const phone = ref('')
 const isPhone = ref(false)
 const address = ref('')
 const isAddress = ref(false)
+const readonly =  ref(true)
 
 watchEffect(() => {
     if (props.isDrawerOpen) {
@@ -38,12 +48,15 @@ watchEffect(() => {
             address.value = props.user.user_detail?.address ?? '----'
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
         }
+
+        readonly.value = props.readonly
     }
 })
 
 const closeUserDetailDialog = function() {
     emit('update:isDrawerOpen', false)
     emit('close')
+    emit('readonly')
 }
 
 </script>
@@ -109,9 +122,25 @@ const closeUserDetailDialog = function() {
                             :readonly="!isAddress"
                             :disabled="isAddress"
                             />
+                    </VCol>
+
+                    <VCol
+                        cols="12"
+                        class="text-center"
+                    >
+                        <VBtn class="w-100 w-md-auto" @click="isUserPermissionsDialog = true">
+                            Redigera roll permissions
+                        </VBtn>
                     </VCol>               
                 </VRow>
             </VCardText>
         </VCard>
     </VDialog>
+
+    <permissions
+      v-model:isDrawerOpen="isUserPermissionsDialog"
+      :user="user"
+      :readonly="readonly"
+      @permissions="null"
+      @readonly="readonly = true"/>
 </template>

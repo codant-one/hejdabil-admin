@@ -4,7 +4,6 @@ import create from './create.vue'
 import show from './show.vue' 
 import password from './password.vue' 
 import edit from './edit.vue'
-import permissions from './permissions.vue'
 import destroy from './destroy.vue'
 
 import { avatarText } from '@/@core/utils/formatters'
@@ -27,7 +26,6 @@ const selectedRows = ref([])
 const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
 const isUserEditDialog = ref(false)
-const isUserPermissionsDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 
 const selectedUser = ref({})
@@ -38,6 +36,7 @@ const userOnline = ref([])
 const isRequestOngoing = ref(true)
 
 const permissionsRol = ref([])
+const readonly = ref(false)
 
 const advisor = ref({
   type: '',
@@ -114,6 +113,15 @@ async function fetchData() {
 const showUserDetailDialog = function(user){
   isUserDetailDialog.value = true
   selectedUser.value = { ...user }
+
+  permissionsRol.value = []
+
+  selectedUser.value.permissions.forEach(function(pe) {
+      permissionsRol.value.push(pe.name)
+  })
+
+  selectedUser.value.assignedPermissions = permissionsRol
+  readonly.value= true
 }
 
 const showUserPasswordDialog = function(user){
@@ -125,20 +133,20 @@ const showUserPasswordDialog = function(user){
 const showUserEditDialog = function(user){
   isUserEditDialog.value = true
   selectedUser.value = { ...user }
+
+  permissionsRol.value = []
+
+  selectedUser.value.permissions.forEach(function(pe) {
+      permissionsRol.value.push(pe.name)
+  })
+
+  selectedUser.value.assignedPermissions = permissionsRol
+  readonly.value= false
 }
 
 const showUserDeleteDialog = function(user){
   isUserDeleteDialog.value =true
   selectedUser.value = { ...user }
-}
-
-const showUserPermissions = function(user){
-  isUserPermissionsDialog.value = true
-  selectedUser.value = { ...user }
-
-  selectedUser.value.permissions.forEach(function(pe) {
-      permissionsRol.value.push(pe.name)
-  })
 }
 
 const online = id =>{
@@ -345,14 +353,6 @@ const downloadCSV = async () => {
                     </template>
                     <VList>
                       <VListItem
-                         v-if="$can('edit', 'users')"
-                         @click="showUserPermissions(user.user)">
-                        <template #prepend>
-                          <VIcon icon="tabler-plus" />
-                        </template>
-                        <VListItemTitle>Behörigheter</VListItemTitle>
-                      </VListItem>
-                      <VListItem
                          v-if="$can('view', 'users')"
                          @click="showUserDetailDialog(user.user)">
                         <template #prepend>
@@ -428,7 +428,10 @@ const downloadCSV = async () => {
 
           <show 
             v-model:isDrawerOpen="isUserDetailDialog"
-            :user="selectedUser"/>
+            :user="selectedUser"
+            :readonly="readonly"
+            @close="permissionsRol = []"
+            @readonly="readonly = false"/>
 
           <password
             v-model:isDrawerOpen="isUserPasswordDialog"
@@ -439,15 +442,11 @@ const downloadCSV = async () => {
           <edit
             v-model:isDrawerOpen="isUserEditDialog"
             :user="selectedUser"
+            :readonly="readonly"
             @data="fetchData"
-            @alert="showAlert"/>
-            
-          <permissions
-            v-model:isDrawerOpen="isUserPermissionsDialog"
-            :user="selectedUser"
-            :permissions="permissionsRol"
-            @data="fetchData"
-            @alert="showAlert"/>
+            @alert="showAlert"
+            @close="permissionsRol = []"
+            @readonly="readonly = true"/>
 
           <destroy 
             v-model:isDrawerOpen="isUserDeleteDialog"
