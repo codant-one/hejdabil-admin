@@ -46,19 +46,19 @@ const {
   isAppRtl,
 } = useLayouts();
 
-const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered);
+const hideTitleAndIcon = isVerticalNavMini(windowWidth);
 
-const wasCollapsed = ref(isCollapsed.value);
+// const wasCollapsed = ref(isCollapsed.value);
 
 
-watch(isHovered, val => {
-  if (val) {
-    wasCollapsed.value = isCollapsed.value;
-    isCollapsed.value = false;
-  } else {
-    isCollapsed.value = wasCollapsed.value;
-  }
-});
+// watch(isHovered, val => {
+//   if (val) {
+//     wasCollapsed.value = isCollapsed.value;
+//     isCollapsed.value = false;
+//   } else {
+//     isCollapsed.value = wasCollapsed.value;
+//   }
+// });
 
 const resolveNavItemComponent = (item) => {
   if ("heading" in item) return VerticalNavSectionTitle;
@@ -98,7 +98,6 @@ const closeAll = () => {
     :class="[
       {
         'overlay-nav': isLessThanOverlayNavBreakpoint(windowWidth),
-        hovered: isHovered,
         visible: isOverlayNavActive,
         scrolled: isVerticalNavScrolled,
       },
@@ -198,7 +197,7 @@ const closeAll = () => {
   will-change: transform, inline-size;
 
   .nav-header {
-    margin: 4px 24px 24px 24px;
+    margin: 0px 24px 24px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;

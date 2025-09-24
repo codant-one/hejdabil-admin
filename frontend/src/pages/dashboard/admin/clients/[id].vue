@@ -122,7 +122,10 @@ const update = (clientData) => {
 
 <template>
   <VCard title="">
-    <VCardText class="d-flex flex-column pa-4 gap-4">
+    <VCardText
+      class="d-flex flex-column pa-4 gap-4"
+      :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
+    >
       <CustomerBioPanel
         :customer-data="client"
         :is-supplier="false"

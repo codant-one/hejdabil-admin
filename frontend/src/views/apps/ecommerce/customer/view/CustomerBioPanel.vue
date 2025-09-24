@@ -504,7 +504,6 @@ const onSubmit = () => {
       margin-bottom: 8px;
       font-weight: 400;
       font-size: 14px;
-      line-height: 100%;
       color: #878787;
     }
 

@@ -73,7 +73,7 @@ div.v-avatar {
 }
 
 .layout-nav-type-vertical .layout-vertical-nav {
-  margin-top: 110px;
+  margin-top: 114px;
   background-color: transparent !important;
   box-shadow: none !important;
 }
@@ -376,6 +376,10 @@ body {
   font-size: 12px;
 }
 
+.v-table .v-table__wrapper > table > tfoot > tr > td, .v-table .v-table__wrapper > table > tfoot > tr > th {
+  border-top: 0 !important;
+}
+
 .layout-wrapper.layout-nav-type-vertical
   .layout-navbar
   .navbar-content-container {
@@ -388,6 +392,12 @@ body {
 
   border: none !important;
   border-radius: 0 !important;
+}
+
+.layout-wrapper.layout-nav-type-vertical
+  .navbar-blur.layout-navbar
+  .navbar-content-container {
+  block-size: auto;
 }
 
 .layout-wrapper.layout-nav-type-vertical .layout-navbar {

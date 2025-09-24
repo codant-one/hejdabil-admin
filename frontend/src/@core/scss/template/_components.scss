@@ -534,11 +534,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   }
 
   &.expansion-panels {
-    padding: 0 24px 24px !important;
-
-    @media (max-width: 768px) {
-      padding: 0 !important;
-    }
 
     .v-expansion-panel {
       padding-right: 16px;

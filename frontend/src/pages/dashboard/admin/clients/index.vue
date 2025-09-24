@@ -245,6 +245,13 @@ const downloadCSV = async () => {
 
   isRequestOngoing.value = false;
 };
+
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
 </script>
 
 <template>
@@ -260,16 +267,16 @@ const downloadCSV = async () => {
         </VAlert>
 
         <VCard title="">
-          <VCardTitle class="d-flex pa-4 justify-space-between">
+          <VCardTitle
+            class="d-flex justify-space-between"
+            :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+          >
             <div class="d-flex align-center w-100 w-md-auto font-blauer">
               <h2>Kunder</h2>
             </div>
 
             <div class="d-flex gap-4 title-action-buttons">
-              <VBtn
-                class="btn-light w-100 w-md-auto"
-                @click="downloadCSV"
-              >
+              <VBtn class="btn-light w-100 w-md-auto" @click="downloadCSV">
                 <VIcon icon="custom-export" size="24" />
                 Exportera
               </VBtn>
@@ -285,9 +292,12 @@ const downloadCSV = async () => {
             </div>
           </VCardTitle>
 
-          <VDivider class="mt-2 mx-4" />
+          <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
-          <VCardText class="d-flex align-center flex-wrap gap-4 filter-bar">
+          <VCardText
+            class="d-flex align-center flex-wrap gap-4 filter-bar"
+            :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+          >
             <!-- <div class="d-flex align-center flex-wrap gap-4"> -->
             <!-- 👉 Search  -->
             <div class="search">
@@ -314,11 +324,14 @@ const downloadCSV = async () => {
               <VIcon icon="custom-filter" />
               <span class="d-none d-md-block">Filtrera efter</span>
             </VBtn>
-            <div v-if="!$vuetify.display.smAndDown" class="d-flex align-center w-100 w-md-auto visa-select">
+            <div
+              v-if="!$vuetify.display.smAndDown"
+              class="d-flex align-center w-100 w-md-auto visa-select"
+            >
               <span class="text-no-wrap pr-4">Visa:</span>
               <VSelect
                 v-model="rowPerPage"
-                class="w-100"
+                class="w-100 custom-select-hover"
                 :items="[10, 20, 30, 50]"
               />
             </div>
@@ -332,7 +345,7 @@ const downloadCSV = async () => {
             <thead>
               <tr>
                 <th scope="col" style="width: 58px">#ID</th>
-                <th scope="col">Kontakt</th>
+                <th scope="col" style="width: 265px">Kontakt</th>
                 <th scope="col" class="text-center">Organisationsnummer</th>
                 <th scope="col">Telefon</th>
                 <th scope="col">Adress</th>
@@ -344,7 +357,7 @@ const downloadCSV = async () => {
               </tr>
             </thead>
             <!-- 👉 table body -->
-            <tbody>
+            <tbody v-show="clients.length">
               <tr v-for="client in clients" :key="client.id">
                 <td class="text-center">
                   <span>{{ client.order_id }}</span>
@@ -374,7 +387,14 @@ const downloadCSV = async () => {
                 </td>
                 <td class="text-wrap">
                   <span class="">
-                    {{ client.address ?? "" }}
+                    <VTooltip location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" v-if="client.address">
+                          {{ truncateText(client.address) }}
+                        </span>
+                      </template>
+                      <span>{{ client.address }}</span>
+                    </VTooltip>
                   </span>
                 </td>
                 <td class="text-wrap" v-if="role !== 'Supplier'">
@@ -471,7 +491,7 @@ const downloadCSV = async () => {
           </VTable>
 
           <VExpansionPanels
-            class="expansion-panels"
+            class="expansion-panels pb-6 px-6"
             v-if="clients.length && $vuetify.display.smAndDown"
           >
             <VExpansionPanel v-for="client in clients" :key="client.id">
@@ -535,7 +555,7 @@ const downloadCSV = async () => {
           </VExpansionPanels>
 
           <VCardText
-            class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 pb-4"
+            class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
           >
             <span class="text-pagination-results">
               {{ paginationData }}

@@ -232,7 +232,7 @@ const sendMails = async () => {
 </script>
 
 <template>
-  <section>
+  <section class="billing-panel border rounded-lg">
     <VCard title="">
       <VCardText class="d-flex align-center flex-wrap gap-4 pa-0">
         <!-- <VSpacer class="d-none d-md-block" />
@@ -264,7 +264,7 @@ const sendMails = async () => {
       </VCardText>
 
       <VCardText
-        class="d-flex flex-column border rounded-lg pa-4 gap-6 billing-panel"
+        class="d-flex flex-column pa-4 gap-6"
       >
         <div class="d-flex filter-bar">
           <VTabs v-model="tabBilling" class="billing-tabs" show-arrows="false">
@@ -442,7 +442,7 @@ const sendMails = async () => {
                 </tr>
               </thead>
               <!-- 👉 table body -->
-              <tbody>
+              <tbody v-show="billings.length">
                 <tr
                   v-for="billing in billings"
                   :key="billing.id"
@@ -1110,6 +1110,10 @@ const sendMails = async () => {
 
 .search {
   max-width: 350px;
+}
+
+.billing-panel {
+  border: 1px solid #E7E7E7 !important;
 }
 
 @media (max-width: 768px) {
