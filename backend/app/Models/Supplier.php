@@ -98,8 +98,6 @@ class Supplier extends Model
         else
             $user->assignRole('Supplier');
 
-        $user->givePermissionTo('view dashboard');
-
         $supplier = self::create([
             'user_id' => $user->id,
             'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,

@@ -346,6 +346,7 @@ class SupplierController extends Controller
 
             $user = User::find($supplier->user_id);
             $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
 
             $email = $user->email;
             $subject = 'Välkommen till HejdåBil';
@@ -453,6 +454,7 @@ class SupplierController extends Controller
 
             $user->updateUser($request, $user); 
             $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
 
             return response()->json([
                 'success' => true,
@@ -487,6 +489,7 @@ class SupplierController extends Controller
                 ], 404);
 
             $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
 
             return response()->json([
                 'success' => true,
