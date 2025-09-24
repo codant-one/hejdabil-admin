@@ -122,7 +122,7 @@ const closeAll = () => {
           </Transition> -->
         <!-- </RouterLink> -->
         <!-- Show toggle collapsible in >md and close button in <md -->
-        <span>Meny</span>
+        <span v-show="!hideTitleAndIcon">Meny</span>
         <!-- <VIcon
           icon="tabler-arrows-minimize"
           size="small"
@@ -136,7 +136,6 @@ const closeAll = () => {
           <VBtn
             class="btn-header-action"
             aria-label="toggle vertical navigation"
-            v-show="!hideTitleAndIcon"
             @click="isCollapsed = !isCollapsed"
           >
             <img :src="toggleNav" alt="Toggle Nav Icon" class="" />

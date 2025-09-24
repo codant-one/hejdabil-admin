@@ -376,7 +376,8 @@ body {
   font-size: 12px;
 }
 
-.v-table .v-table__wrapper > table > tfoot > tr > td, .v-table .v-table__wrapper > table > tfoot > tr > th {
+.v-table .v-table__wrapper > table > tfoot > tr > td,
+.v-table .v-table__wrapper > table > tfoot > tr > th {
   border-top: 0 !important;
 }
 
@@ -584,6 +585,10 @@ body {
   .nav-link
   .nav-item-icon {
   margin: 0 !important;
+}
+
+.layout-vertical-nav-collapsed .layout-vertical-nav .nav-header {
+  justify-content: center;
 }
 
 .mobile-menu-full-width {
