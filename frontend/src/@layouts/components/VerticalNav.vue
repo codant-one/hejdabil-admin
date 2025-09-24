@@ -34,10 +34,7 @@ const props = defineProps({
 
 const refNav = ref();
 const { width: windowWidth } = useWindowSize();
-const isHovered = useElementHover(refNav);
 const titleAPP = ref(import.meta.env.VITE_APP_TITLE);
-
-provide(injectionKeyIsVerticalNavHovered, isHovered);
 
 const {
   isVerticalNavCollapsed: isCollapsed,
