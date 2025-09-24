@@ -74,7 +74,7 @@ onMounted(async () => {
 
   await loadData()
   
-  if(role.value !== 'Supplier') {
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = billingsStores.suppliers
   }
 })
@@ -481,7 +481,7 @@ const downloadCSV = async () => {
                   clear-icon="tabler-x"/>
 
                 <VAutocomplete
-                  v-if="role !== 'Supplier'"
+                  v-if="role === 'SuperAdmin' || role === 'Administrator'"
                   v-model="supplier_id"
                   placeholder="Leverantörer"
                   :items="suppliers"
@@ -527,7 +527,7 @@ const downloadCSV = async () => {
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
 
               <!-- 👉 Search  -->
-              <div class="search" v-if="role !== 'Supplier'">
+              <div class="search" v-if="role === 'SuperAdmin' || role === 'Administrator'">
                 <VTextField
                   v-model="searchQuery"
                   placeholder="Sök"
@@ -555,7 +555,7 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> <span :class="textColor"> # FAKTURA </span> </th>
                 <th scope="col"> <span :class="textColor"> KUND </span> </th>
-                <th scope="col" v-if="role !== 'Supplier'"> <span :class="textColor"> LEVERANTÖR </span> </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> <span :class="textColor"> LEVERANTÖR </span> </th>
                 <th class="text-end" scope="col"> <span :class="textColor"> SUMMA </span> </th>
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> FÖRFALLER </span> </th>
@@ -577,7 +577,7 @@ const downloadCSV = async () => {
                       {{ billing.client.fullname ?? '' }}
                     </span>
                 </td>                
-                <td class="text-wrap" v-if="role !== 'Supplier'">
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
                   <span class="font-weight-medium"  v-if="billing.supplier">
                     {{ billing.supplier.user.name }} {{ billing.supplier.user.last_name ?? '' }} 
                   </span>

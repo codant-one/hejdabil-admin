@@ -553,11 +553,11 @@ const handleBlur = (element) => {
 
         <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 p-0 w-100 w-md-auto">
             <div class="my-sm-4 w-100">
-                <h6 class="text-h6 font-weight-medium" v-if="props.role !== 'Supplier'">
+                <h6 class="text-h6 font-weight-medium" v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'">
                     Leverantörer
                 </h6>
                 <VAutocomplete
-                    v-if="props.role !== 'Supplier'"
+                    v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'"
                     v-model="invoice.supplier_id"
                     :items="suppliers"
                     :item-title="item => item.full_name"
