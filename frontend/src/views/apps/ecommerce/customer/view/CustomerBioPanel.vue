@@ -510,7 +510,6 @@ const onSubmit = () => {
     .v-list-item-subtitle {
       font-weight: 400;
       font-size: 14px;
-      line-height: 100%;
       color: #454545;
       -webkit-line-clamp: initial;
     }

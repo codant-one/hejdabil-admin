@@ -345,11 +345,11 @@ const truncateText = (text, length = 15) => {
             <thead>
               <tr>
                 <th scope="col" style="width: 58px">#ID</th>
-                <th scope="col" style="width: 265px">Kontakt</th>
-                <th scope="col" class="text-center">Organisationsnummer</th>
-                <th scope="col">Telefon</th>
-                <th scope="col">Adress</th>
-                <th scope="col" v-if="role !== 'Supplier'">Leverantör</th>
+                <th scope="col" style="width: 221.25px">Kontakt</th>
+                <th scope="col" style="width: 221.25px" class="text-center">Organisationsnummer</th>
+                <th scope="col" style="width: 221.25px">Telefon</th>
+                <th scope="col" style="width: 221.25px">Adress</th>
+                <th scope="col" style="width: 48px" v-if="role !== 'Supplier'">Leverantör</th>
                 <th
                   scope="col"
                   v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -364,15 +364,14 @@ const truncateText = (text, length = 15) => {
                 </td>
                 <td class="text-wrap">
                   <div
-                    class="d-flex justify-between font-weight-medium cursor-pointer text-aqua"
+                    class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
                     @click="seeClient(client)"
                   >
-                    {{ client.fullname }}
-
-                    <VIcon icon="custom-arrow-right" size="24" />
-                    <!-- <span class="">{{
-                      client.email
-                    }}</span> -->
+                    <span class="flex-grow break-words">
+                      {{ client.fullname }}
+                    </span>
+                    
+                    <VIcon class="flex-shrink-0" icon="custom-arrow-right" size="24" />
                   </div>
                 </td>
                 <td class="text-wrap text-center">
