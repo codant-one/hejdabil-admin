@@ -12,6 +12,7 @@ import searchIcon from "@/assets/images/icons/figma/searchIcon.svg";
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+import AddNewClientMobile from "./AddNewClientMobile.vue";
 
 const clientsStores = useClientsStores();
 const suppliersStores = useSuppliersStores();
@@ -28,6 +29,7 @@ const isRequestOngoing = ref(true);
 const isAddNewClientDrawerVisible = ref(false);
 const isConfirmDeleteDialogVisible = ref(false);
 const selectedClient = ref({});
+const isDialogOpen = ref(false);
 
 const supplier_id = ref(null);
 const userData = ref(null);
@@ -282,13 +284,36 @@ const truncateText = (text, length = 15) => {
               </VBtn>
 
               <VBtn
-                v-if="$can('create', 'clients')"
+                v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
                 class="btn-gradient w-100 w-md-auto"
                 @click="isAddNewClientDrawerVisible = true"
               >
                 <VIcon icon="custom-plus" size="24" />
                 Ny kund
               </VBtn>
+              
+              <VBtn
+                v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
+                class="btn-gradient w-100 w-md-auto"
+                @click="isDialogOpen = true"  
+              >
+                <VIcon icon="custom-plus" size="24" />
+                Ny kund
+              </VBtn>
+              <VDialog
+                v-model="isDialogOpen"
+                transition="dialog-bottom-transition"
+                content-class="dialog-bottom-full-width"
+              >
+                <VCard>
+                  <AddNewClientMobile
+                    :client="selectedClient"
+                    :suppliers="suppliers"
+                    @client-data="handleClientData"
+                    @close="isDialogOpen = false"
+                  />
+                </VCard>
+              </VDialog>
             </div>
           </VCardTitle>
 
@@ -629,6 +654,19 @@ const truncateText = (text, length = 15) => {
   .search {
     max-width: 36rem !important;
   }
+}
+
+.dialog-bottom-full-width {
+  .v-card {
+    border-radius: 24px 24px 0 0 !important;
+  }
+}
+
+.bottom-sheet-card {
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
 }
 </style>
 <route lang="yaml">
