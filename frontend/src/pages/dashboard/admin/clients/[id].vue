@@ -121,7 +121,7 @@ const update = (clientData) => {
 </script>
 
 <template>
-  <VCard title="">
+  <VCard class="client-slug" title="">
     <VCardText
       class="d-flex flex-column pa-4 gap-4"
       :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
@@ -202,9 +202,18 @@ meta:
 </route>
 
 <style lang="scss" scoped>
+.client-slug {
+  border-radius: 0px !important;
+}
+
 .billing-items {
   overflow: auto;
 }
+
+.billing-items::-webkit-scrollbar {
+  display: none;
+}
+
 .billing-item {
   flex: 1 1;
   border-radius: 8px;

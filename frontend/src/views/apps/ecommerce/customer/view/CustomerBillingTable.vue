@@ -264,7 +264,7 @@ const sendMails = async () => {
       </VCardText>
 
       <VCardText
-        class="d-flex flex-column pa-4 gap-6"
+        class="d-flex flex-column pa-0 gap-6"
       >
         <div class="d-flex filter-bar">
           <VTabs v-model="tabBilling" class="billing-tabs" show-arrows="false">
@@ -1133,6 +1133,35 @@ const sendMails = async () => {
   box-shadow: none !important;
   .v-card {
     border-radius: 24px 24px 0 0 !important;
+  }
+}
+</style>
+
+<style lang="scss">
+.expansion-panels {
+  .v-expansion-panel {
+    border-radius: 6px !important;
+    margin-bottom: 8px;
+    
+    &:not(:first-child)::after {
+      border: none !important;
+    }
+  }
+
+  &:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active) {
+    border-radius: 16px !important;
+  }
+
+  &:not(.v-expansion-panels--variant-accordion) > :last-child:not(:first-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+    border-radius: 16px !important;
+  }
+
+  &:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+    border-radius: 16px !important;
+  }
+
+  &:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active) {
+    border-radius: 16px !important;
   }
 }
 </style>
