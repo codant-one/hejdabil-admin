@@ -24,6 +24,8 @@ watchEffect(() => {
         if (!(Object.entries(props.role).length === 0) && props.role.constructor === Object) {
             assignedPermissions.value = props.role.assignedPermissions
         }
+    } else{
+        assignedPermissions.value = []
     }
 })
 
@@ -59,23 +61,6 @@ const closeModal = function(){
                                 v-model="assignedPermissions"
                                 label="administrator"
                                 value="administrator"
-                            />
-                        </div>
-                    </div>
-                </VCardText>
-                <VCardTitle>
-                    Allmänt  
-                </VCardTitle>
-                <VCardText class="py-0">
-                    <div class="ml-5">
-                        <VLabel style="font-weight: bold;">
-                            Kontrollpanelen
-                        </VLabel>
-                        <div class="demo-space-x ml-5">
-                            <VCheckbox
-                                v-model="assignedPermissions"
-                                label="view dashboard"
-                                value="view dashboard"
                             />
                         </div>
                     </div>

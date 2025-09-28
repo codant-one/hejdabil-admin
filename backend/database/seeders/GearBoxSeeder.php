@@ -9,7 +9,7 @@ use App\Models\Gearbox;
 
 use Str;
 
-class GearboxSeeder extends Seeder
+class GearBoxSeeder extends Seeder
 {
     /**
      * Run the database seeds.

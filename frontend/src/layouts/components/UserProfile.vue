@@ -8,6 +8,16 @@ const authStores = useAuthStores()
 const router = useRouter()
 const ability = useAppAbility()
 
+const userData_ = ref(null)
+const role = ref(null)
+
+watchEffect(fetchData)
+
+async function fetchData(cleanFilters = false) {
+  userData_.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData_.value.roles[0].name
+}
+
 const userData = field =>{
   let values = JSON.parse(localStorage.getItem('user_data') || 'null')
 
@@ -138,7 +148,7 @@ const logout = async () => {
           </VListItem>
 
           <!--  👉 Users -->
-          <VListItem :to="{ name: 'dashboard-admin-users' }" v-if="$can('view', 'users')">
+          <VListItem :to="{ name: 'dashboard-admin-users' }" v-if="$can('view', 'users') && role !== 'Supplier'">
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -148,6 +158,18 @@ const logout = async () => {
             </template>
 
             <VListItemTitle>Användare</VListItemTitle>
+          </VListItem>
+
+          <VListItem :to="{ name: 'dashboard-admin-suppliers-users' }" v-if="$can('view', 'users') && role === 'Supplier'">
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="mdi-accounts"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Mitt team</VListItemTitle>
           </VListItem>
 
           <!--  👉 Profile -->

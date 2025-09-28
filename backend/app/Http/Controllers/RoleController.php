@@ -32,6 +32,7 @@ class RoleController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Role::with('permissions')
+                         ->whereNotIn('id', [1, 5])
                          ->applyFilters(
                             $request->only([
                                 'search',

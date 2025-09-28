@@ -71,7 +71,7 @@ async function fetchData() {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
 
-  if(role.value !== 'Supplier' && route.name.includes('clients-id')) {
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator' && route.name.includes('clients-id')) {
     await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
 
@@ -310,9 +310,8 @@ const onSubmit = () => {
         >      
           <VCardText class="pt-2 mt-6">
             <VRow>
-              <VCol cols="12" md="12">
-                <VSelect
-                  v-if="role !== 'Supplier'"
+              <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                <VSelect                  
                   v-model="supplier_id"
                   placeholder="Leverantörer"
                   :items="suppliers"

@@ -56,7 +56,7 @@ onMounted(async () => {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
   
-  if(role.value !== 'Supplier') {
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
   }
@@ -291,7 +291,7 @@ const downloadCSV = async () => {
 
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
               <VAutocomplete
-                v-if="role !== 'Supplier'"
+                v-if="role === 'SuperAdmin' || role === 'Administrator'"
                 v-model="supplier_id"
                 placeholder="Leverantörer"
                 :items="suppliers"
@@ -335,7 +335,7 @@ const downloadCSV = async () => {
                 <th scope="col"> ORGANISATIONSNUMMER </th>
                 <th scope="col"> TELEFON </th>
                 <th scope="col"> ADRESS </th>
-                <th scope="col" v-if="role !== 'Supplier'"> LEVERANTÖR </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
                 <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
               </tr>
             </thead>
@@ -370,7 +370,7 @@ const downloadCSV = async () => {
                     {{ client.address ?? ''}}
                   </span>
                 </td>               
-                <td class="text-wrap" v-if="role !== 'Supplier'">
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
                   <div class="d-flex align-center gap-x-3" v-if="client.supplier">
                     <VAvatar
                       :variant="client.supplier.user.avatar ? 'outlined' : 'tonal'"
@@ -430,7 +430,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!clients.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 6 : 7"
+                  :colspan="role === 'Supplier' || role === 'User' ? 6 : 7"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

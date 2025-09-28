@@ -8,13 +8,11 @@ import destroy from './destroy.vue'
 
 import { avatarText } from '@/@core/utils/formatters'
 
-import { useUsersStores } from '@/stores/useUsers'
-import { useRolesStores } from '@/stores/useRoles'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
 
-const usersStores = useUsersStores()
-const rolesStores = useRolesStores()
+const usersStores = useSuppliersStores()
 
 const users = ref([])
 const searchQuery = ref('')
@@ -31,13 +29,14 @@ const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 
 const selectedUser = ref({})
-const rolesList = ref([])
-const roleUsers = ref([]) 
 
 const IdsUserOnline = ref([])
 const userOnline = ref([])
 
 const isRequestOngoing = ref(true)
+
+const permissionsRol = ref([])
+const readonly = ref(false)
 
 const advisor = ref({
   type: '',
@@ -64,12 +63,6 @@ const onlineList = () => {
   })
 }
 
-const searchRoles = () => {
-  rolesStores.allRoles().then(response => {
-    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier' && role !== 'User');
-  }).catch(error => { })
-};
-
 // 👉 Computing pagination data
 const paginationData = computed(() => {
   const firstIndex = users.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
@@ -93,8 +86,8 @@ async function fetchData() {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'id',
-    orderBy: 'asc',
+    orderByField: 'order_id',
+    orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value
   }
@@ -102,16 +95,15 @@ async function fetchData() {
   await usersStores.fetchUsers(data)
 
   users.value = usersStores.getUsers
-  totalPages.value = usersStores.last_page
+  totalPages.value = usersStores.users_last_page
   totalUsers.value = usersStores.usersTotalCount
 
   IdsUserOnline.value = []
     
   users.value.forEach(element => {
-    IdsUserOnline.value.push(element.id)
+    IdsUserOnline.value.push(element.user.id)
   })
 
-  searchRoles()
   onlineList()
 
   isRequestOngoing.value = false
@@ -121,12 +113,15 @@ async function fetchData() {
 const showUserDetailDialog = function(user){
   isUserDetailDialog.value = true
   selectedUser.value = { ...user }
-  
-  user.roles.forEach(function(ro) {
-    roleUsers.value.push(ro.name)
+
+  permissionsRol.value = []
+
+  selectedUser.value.permissions.forEach(function(pe) {
+      permissionsRol.value.push(pe.name)
   })
 
-  selectedUser.value.assignedRoles = roleUsers
+  selectedUser.value.assignedPermissions = permissionsRol
+  readonly.value= true
 }
 
 const showUserPasswordDialog = function(user){
@@ -139,11 +134,14 @@ const showUserEditDialog = function(user){
   isUserEditDialog.value = true
   selectedUser.value = { ...user }
 
-  user.roles.forEach(function(ro) {
-    roleUsers.value.push(ro.name)
+  permissionsRol.value = []
+
+  selectedUser.value.permissions.forEach(function(pe) {
+      permissionsRol.value.push(pe.name)
   })
 
-  selectedUser.value.assignedRoles = roleUsers
+  selectedUser.value.assignedPermissions = permissionsRol
+  readonly.value= false
 }
 
 const showUserDeleteDialog = function(user){
@@ -197,11 +195,10 @@ const downloadCSV = async () => {
   
   usersStores.getUsers.forEach(element => {
     let data = {
-      NAMN: element.name,
-      EFTERNAMN: (element.last_name ?? ''),
-      E_POST: element.email,
-      ROLL: element.roles.map(e => e['name']).join(','),
-      TELEFON: element.user_detail.phone ?? ''
+      NAMN: element.user.name,
+      EFTERNAMN: (element.user.last_name ?? ''),
+      E_POST: element.user.email,
+      TELEFON: element.user.user_detail.phone ?? ''
     }
         
     dataArray.push(data)
@@ -258,27 +255,12 @@ const downloadCSV = async () => {
             </VBtn>
 
             <create
-              :rolesList="rolesList"
-              @close="roleUsers = []"
               @data="fetchData"
               @alert="showAlert"/>
 
             <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-              <!-- 👉 Select status -->
-              <div class="user-list-filter">
-                <VSelect
-                  v-model="searchQuery"
-                  label="Filtrera efter roll"
-                  clearable
-                  clear-icon="tabler-x"
-                  single-line
-                  :items="rolesList"
-                  class="w-100 w-md-auto"
-                />
-              </div>
-              
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
               <!-- 👉 Search  -->
               <div class="search rol-list-filter">
                 <VTextField
@@ -301,7 +283,6 @@ const downloadCSV = async () => {
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
                 <th scope="col"> E-POST </th>
-                <th scope="col"> ROLL </th>
                 <th scope="col"> TELEFON </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
@@ -311,12 +292,12 @@ const downloadCSV = async () => {
             <tbody>
               <tr
                 v-for="user in users"
-                :key="user.id"
+                :key="user.user.id"
                 style="height: 3rem;"
               >
                 <!-- 👉 Id -->
                 <td>
-                  #{{ user.id }}
+                  #{{ user.order_id }}
                 </td>
 
                 <!-- 👉 name -->
@@ -328,43 +309,34 @@ const downloadCSV = async () => {
                       offset-x="3"
                       offset-y="3"
                       bordered
-                      :color="online(user.id)"
+                      :color="online(user.user.id)"
                     >
                       <VAvatar
                         variant="tonal"
                         size="38"
                       >
                         <VImg
-                          v-if="user.avatar"
+                          v-if="user.user.avatar"
                           style="border-radius: 50%;"
-                          :src="themeConfig.settings.urlStorage + user.avatar"
+                          :src="themeConfig.settings.urlStorage + user.user.avatar"
                         />
-                        <span v-else>{{ avatarText(user.name) }}</span>
+                        <span v-else>{{ avatarText(user.user.name) }}</span>
                       </VAvatar>
                     </VBadge>
                     <div class="ml-3 d-flex flex-column">
-                      {{ user.name }}  {{ user.last_name ?? '' }}
+                      {{ user.user.name }}  {{ user.user.last_name ?? '' }}
                     </div>
                   </div>
                 </td>
 
                 <!-- 👉 correo -->
                 <td>
-                  {{ user.email }}
-                </td>
-
-                <!-- 👉 roles -->
-                <td>
-                  <ul>
-                    <li v-for="(value, key) in user.roles">
-                      {{ value.name }}
-                    </li>
-                  </ul>
+                  {{ user.user.email }}
                 </td>
 
                 <!-- 👉 phone -->
                   <td>
-                  {{ user.user_detail?.phone ?? '----' }}
+                  {{ user.user.user_detail?.phone ?? '----' }}
                 </td>
                 <!-- 👉 acciones -->
                 <td style="width: 3rem;">
@@ -382,7 +354,7 @@ const downloadCSV = async () => {
                     <VList>
                       <VListItem
                          v-if="$can('view', 'users')"
-                         @click="showUserDetailDialog(user)">
+                         @click="showUserDetailDialog(user.user)">
                         <template #prepend>
                           <VIcon icon="tabler-eye" />
                         </template>
@@ -390,7 +362,7 @@ const downloadCSV = async () => {
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users')"
-                         @click="showUserPasswordDialog(user)">
+                         @click="showUserPasswordDialog(user.user)">
                         <template #prepend>
                           <VIcon icon="tabler-key" />
                         </template>
@@ -398,7 +370,7 @@ const downloadCSV = async () => {
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users')"
-                         @click="showUserEditDialog(user)">
+                         @click="showUserEditDialog(user.user)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
@@ -406,7 +378,7 @@ const downloadCSV = async () => {
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','users')"
-                        @click="showUserDeleteDialog(user)">
+                        @click="showUserDeleteDialog(user.user)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
@@ -456,9 +428,10 @@ const downloadCSV = async () => {
 
           <show 
             v-model:isDrawerOpen="isUserDetailDialog"
-            :rolesList="rolesList"
             :user="selectedUser"
-            @close="roleUsers = []"/>
+            :readonly="readonly"
+            @close="permissionsRol = []"
+            @readonly="readonly = false"/>
 
           <password
             v-model:isDrawerOpen="isUserPasswordDialog"
@@ -468,11 +441,12 @@ const downloadCSV = async () => {
 
           <edit
             v-model:isDrawerOpen="isUserEditDialog"
-            :rolesList="rolesList"
             :user="selectedUser"
+            :readonly="readonly"
             @data="fetchData"
-            @close="roleUsers = []"
-            @alert="showAlert"/>
+            @alert="showAlert"
+            @close="permissionsRol = []"
+            @readonly="readonly = true"/>
 
           <destroy 
             v-model:isDrawerOpen="isUserDeleteDialog"

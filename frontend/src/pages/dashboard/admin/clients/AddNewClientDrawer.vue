@@ -171,9 +171,8 @@ const handleDrawerModelValueUpdate = val => {
             @submit.prevent="onSubmit"
           >
           <VRow>
-            <VCol cols="12" md="12">
-              <VSelect
-                v-if="role !== 'Supplier'"
+            <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+              <VSelect                
                 v-model="supplier_id"
                 placeholder="Leverantörer"
                 :items="suppliers"
