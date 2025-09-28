@@ -322,9 +322,9 @@
                     <table class="signatures-table">
                         <tr>
                             @if(isset($signature_url))
-                                <div style="margin-top: 50px; padding-top: 10px; border-top: 1px solid #ccc;">
-                                    <p style="margin-bottom: 5px;"><strong>Firma Electrónica del Cliente:</strong></p>
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 250px; height: auto;">
+                                {{-- Este div posicionará la firma en el lugar exacto --}}
+                                <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
                                 </div>
                             @endif
                             <td style="width: 50%; padding-right: 20px;">

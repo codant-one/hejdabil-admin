@@ -720,9 +720,11 @@
                     <tr>
                         <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
                             <div style="min-height: 70px; text-align:center"> 
-                                @if(isset($signature_url))
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; max-height: 70px; display: block; margin-bottom: 5px;">
-                                @endif
+                            @if(isset($signature_url))
+                                <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
+                                </div>
+                            @endif
                             </div>
                             <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
                                 (Fordonsägarens underskrift)

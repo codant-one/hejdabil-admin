@@ -187,6 +187,7 @@ Route::get('agreement', [TestingController::class , 'agreement'])->name('agreeme
 // Public Signature Endpoints
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::post('/submit/{token}', [SignatureController::class, 'storeSignature'])->name('signatures.store');
+    Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
 });
 
 //PROXY

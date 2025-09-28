@@ -11,7 +11,7 @@ use App\Mail\SignatureRequestMail; // Lo crearemos en el siguiente paso
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth; // Necesario para regenerar el PDF
 use PDF; // Tu modelo ya usa el Facade 'PDF', así que lo usamos también
-
+use Illuminate\Support\Facades\Response;
 class SignatureController extends Controller
 {
     /**
@@ -87,6 +87,13 @@ class SignatureController extends Controller
         // 2. Validar que la firma viene en la petición.
         $request->validate(['signature' => 'required|string']);
 
+        $validated = $request->validate([
+            'signature' => 'required|string',
+            'x' => 'required|numeric',
+            'y' => 'required|numeric',
+            'page' => 'required|integer',
+        ]);
+
         // 3. Decodificar y guardar la imagen de la firma.
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->signature));
         $agreement = $token->agreement;
@@ -96,8 +103,12 @@ class SignatureController extends Controller
 
         // --- LÓGICA DE REGENERACIÓN DEL PDF ADAPTADA A TU MODELO ---
         // 4. Regenerar el PDF, esta vez pasando la URL de la firma.
-        $signedPdfPath = $this->regeneratePdfWithSignature($agreement, Storage::disk('public')->url($signaturePath));
-
+        $signedPdfPath = $this->regeneratePdfWithSignature(
+            $agreement,
+            Storage::disk('public')->url($signaturePath),
+            $validated['x'],
+            $validated['y']
+        );
         if (!$signedPdfPath) {
             // Manejar un posible error durante la generación del PDF.
             return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
@@ -126,7 +137,7 @@ class SignatureController extends Controller
      * Helper privado para regenerar el PDF con la firma.
      * Esta función adapta la lógica de tu método Agreement::generatePdf().
      */
-    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl)
+    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, float $x, float $y)
     {
         // 1. Cargar todas las relaciones necesarias.
         $agreement->load([
@@ -151,8 +162,10 @@ class SignatureController extends Controller
         // 3. Preparar los datos para la vista, incluyendo el usuario y la firma.
         $data = [
             'agreement'     => $agreement,
-            'user'          => $creatorUser, // Pasamos el usuario que encontramos
-            'signature_url' => $signatureUrl
+            'user'          => $creatorUser,
+            'signature_url' => $signatureUrl,
+            'signature_x'   => $x,
+            'signature_y'   => $y,
         ];
         $user = $creatorUser;
         // 4. Determinar la vista y el nombre del archivo (esta parte ya estaba bien).
@@ -184,5 +197,17 @@ class SignatureController extends Controller
         PDF::loadView($viewName, $data)->save(storage_path('app/public/' . $filePath));
         
         return $filePath;
+    }
+
+    public function getUnsignedPdf($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->firstOrFail();
+        $agreement = $token->agreement;
+    
+        if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
+            $path = storage_path('app/public/' . $agreement->file);
+            return response()->file($path);
+        }
+        abort(404, 'Archivo PDF no encontrado.');
     }
 }

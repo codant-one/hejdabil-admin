@@ -665,9 +665,12 @@
                                     <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
                                         
                                         <div style="min-height: 70px;">
-                                            @if(isset($signature_url))
-                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; max-height: 70; display: block; margin-bottom: 5px;">
-                                            @endif
+                                        @if(isset($signature_url))
+                                            {{-- Este div posicionará la firma en el lugar exacto --}}
+                                            <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
+                                                <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
+                                            </div>
+                                        @endif
                                         </div>
                                         <div class="signature-box">(Köparens underskrift)</div>
                                     </td>

@@ -584,10 +584,12 @@
                             
                             <!-- Contenedor para la imagen con altura mínima -->
                             <div style="min-height: 70px;">
-                                @if(isset($signature_url))
-                                    <!-- La imagen de la firma se muestra aquí si existe -->
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto; display: block; margin-bottom: 5px; margin-left: auto; margin-right: auto;">
-                                @endif
+                            @if(isset($signature_url))
+                                {{-- Este div posicionará la firma en el lugar exacto --}}
+                                <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
+                                </div>
+                            @endif
                             </div>
                             
                             <!-- La línea de firma, siempre visible -->
