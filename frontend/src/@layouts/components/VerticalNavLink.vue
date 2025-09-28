@@ -39,7 +39,7 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
   <li
     v-if="can(item.action, item.subject)"
     class="nav-link"
-    :class="{ disabled: item.disable }"
+    :class="[{ disabled: item.disable }, item.class]"
   >
     <Component
       :is="item.to ? 'RouterLink' : 'a'"

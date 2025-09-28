@@ -25,6 +25,10 @@
       a {
         outline: none;
       }
+
+      &:last-child {
+        margin-bottom: 27px !important;
+      }
     }
 
     // 👉 Nav group active

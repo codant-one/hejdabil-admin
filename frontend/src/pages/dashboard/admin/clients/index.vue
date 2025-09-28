@@ -250,7 +250,7 @@ const downloadCSV = async () => {
 
 const truncateText = (text, length = 15) => {
   if (text && text.length > length) {
-    return text.substring(0, length) + '...';
+    return text.substring(0, length) + "...";
   }
   return text;
 };
@@ -291,11 +291,11 @@ const truncateText = (text, length = 15) => {
                 <VIcon icon="custom-plus" size="24" />
                 Ny kund
               </VBtn>
-              
+
               <VBtn
                 v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
                 class="btn-gradient w-100 w-md-auto"
-                @click="isDialogOpen = true"  
+                @click="isDialogOpen = true"
               >
                 <VIcon icon="custom-plus" size="24" />
                 Ny kund
@@ -345,8 +345,8 @@ const truncateText = (text, length = 15) => {
             <!-- </div> -->
 
             <VSpacer class="d-none d-md-block" />
-            <VBtn class="btn-white">
-              <VIcon icon="custom-filter" />
+            <VBtn class="btn-white-2">
+              <VIcon icon="custom-filter" size="24" />
               <span class="d-none d-md-block">Filtrera efter</span>
             </VBtn>
             <div
@@ -371,10 +371,14 @@ const truncateText = (text, length = 15) => {
               <tr>
                 <th scope="col" style="width: 58px">#ID</th>
                 <th scope="col" style="width: 221.25px">Kontakt</th>
-                <th scope="col" style="width: 221.25px" class="text-center">Organisationsnummer</th>
+                <th scope="col" style="width: 221.25px" class="text-center">
+                  Organisationsnummer
+                </th>
                 <th scope="col" style="width: 221.25px">Telefon</th>
                 <th scope="col" style="width: 221.25px">Adress</th>
-                <th scope="col" style="width: 48px" v-if="role !== 'Supplier'">Leverantör</th>
+                <th scope="col" style="width: 48px" v-if="role !== 'Supplier'">
+                  Leverantör
+                </th>
                 <th
                   scope="col"
                   v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -395,8 +399,12 @@ const truncateText = (text, length = 15) => {
                     <span class="flex-grow break-words">
                       {{ client.fullname }}
                     </span>
-                    
-                    <VIcon class="flex-shrink-0" icon="custom-arrow-right" size="24" />
+
+                    <VIcon
+                      class="flex-shrink-0"
+                      icon="custom-arrow-right"
+                      size="24"
+                    />
                   </div>
                 </td>
                 <td class="text-wrap text-center">
@@ -592,6 +600,8 @@ const truncateText = (text, length = 15) => {
               size="small"
               :total-visible="5"
               :length="totalPages"
+              next-icon="custom-chevron-right"
+              prev-icon="custom-chevron-left"
             />
           </VCardText>
         </VCard>

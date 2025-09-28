@@ -47,7 +47,6 @@ const hideTitleAndIcon = isVerticalNavMini(windowWidth);
 
 // const wasCollapsed = ref(isCollapsed.value);
 
-
 // watch(isHovered, val => {
 //   if (val) {
 //     wasCollapsed.value = isCollapsed.value;
@@ -181,16 +180,18 @@ const closeAll = () => {
 .layout-vertical-nav {
   position: fixed;
   z-index: 1;
-  margin-top: 100px;
+  margin-top: 0 !important;
+  padding-top: 114px;
   display: flex;
   flex-direction: column;
   block-size: 100%;
   inline-size: variables.$layout-vertical-nav-width;
   inset-block-start: 0;
   inset-inline-start: 0;
-  transition: transform 0.25s ease-in-out, inline-size 0.25s ease-in-out,
-    box-shadow 0.25s ease-in-out;
   will-change: transform, inline-size;
+  margin-top: 114px;
+  background-color: transparent !important;
+  box-shadow: none !important;
 
   .nav-header {
     margin: 0px 24px 24px 24px;
@@ -219,6 +220,13 @@ const closeAll = () => {
 
   .nav-items {
     block-size: 100%;
+    padding-bottom: 19px;
+    display: flex;
+    flex-direction: column;
+
+    > .help-button {
+      margin-top: auto;
+    }
 
     // ℹ️ We no loner needs this overflow styles as perfect scrollbar applies it
     // overflow-x: hidden;

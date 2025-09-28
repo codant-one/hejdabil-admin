@@ -232,7 +232,7 @@ const sendMails = async () => {
 </script>
 
 <template>
-  <section class="billing-panel border rounded-lg">
+  <section class="billing-panel border rounded-lg pa-4">
     <VCard title="">
       <VCardText class="d-flex align-center flex-wrap gap-4 pa-0">
         <!-- <VSpacer class="d-none d-md-block" />
@@ -263,9 +263,7 @@ const sendMails = async () => {
         </div> -->
       </VCardText>
 
-      <VCardText
-        class="d-flex flex-column pa-0 gap-6"
-      >
+      <VCardText class="d-flex flex-column pa-0 gap-6">
         <div class="d-flex filter-bar">
           <VTabs v-model="tabBilling" class="billing-tabs" show-arrows="false">
             <VTab value="fakturor">
@@ -779,6 +777,8 @@ const sendMails = async () => {
                 size="small"
                 :total-visible="5"
                 :length="totalPages"
+                next-icon="custom-chevron-right"
+                prev-icon="custom-chevron-left"
               />
             </div>
           </VWindowItem>
@@ -891,7 +891,9 @@ const sendMails = async () => {
                 </VExpansionPanelTitle>
                 <VExpansionPanelText>
                   <div class="mb-6">
-                    <div class="expansion-panel-item-label">Inbytesfordon Reg. NR</div>
+                    <div class="expansion-panel-item-label">
+                      Inbytesfordon Reg. NR
+                    </div>
                     <div class="expansion-panel-item-value">
                       {{ billing.trade_in_reg_nr }}
                     </div>
@@ -1113,7 +1115,7 @@ const sendMails = async () => {
 }
 
 .billing-panel {
-  border: 1px solid #E7E7E7 !important;
+  border: 1px solid #e7e7e7 !important;
 }
 
 @media (max-width: 768px) {
@@ -1142,25 +1144,37 @@ const sendMails = async () => {
   .v-expansion-panel {
     border-radius: 6px !important;
     margin-bottom: 8px;
-    
+
     &:not(:first-child)::after {
       border: none !important;
     }
   }
 
-  &:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active) {
+  &:not(.v-expansion-panels--variant-accordion)
+    > :first-child:not(:last-child):not(.v-expansion-panel--active):not(
+      .v-expansion-panel--before-active
+    ) {
     border-radius: 16px !important;
   }
 
-  &:not(.v-expansion-panels--variant-accordion) > :last-child:not(:first-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+  &:not(.v-expansion-panels--variant-accordion)
+    > :last-child:not(:first-child):not(.v-expansion-panel--active):not(
+      .v-expansion-panel--after-active
+    ) {
     border-radius: 16px !important;
   }
 
-  &:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+  &:not(.v-expansion-panels--variant-accordion)
+    > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(
+      .v-expansion-panel--after-active
+    ) {
     border-radius: 16px !important;
   }
 
-  &:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active) {
+  &:not(.v-expansion-panels--variant-accordion)
+    > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(
+      .v-expansion-panel--before-active
+    ) {
     border-radius: 16px !important;
   }
 }

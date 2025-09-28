@@ -111,7 +111,6 @@
     // 👉 Nav group & Link
     .nav-link,
     .nav-group {
-      overflow: hidden;
 
       > :first-child {
         @extend %vertical-nav-item;
@@ -120,7 +119,7 @@
         margin: 0 20px !important;
         gap: 8px;
         justify-content: center;
-      }  
+      }
 
       .nav-item-icon {
         color: #6e9383;
@@ -136,19 +135,17 @@
     .nav-link {
       @extend %nav-link;
 
-      &:hover {
-        a {
-          background-color: #bdd2c8;
-          border-radius: 64px;
+      a:hover {
+        background-color: #bdd2c8;
+        border-radius: 64px;
 
-          ::before {
-            display: none;
-          }
+        ::before {
+          display: none;
+        }
 
-          span,
-          svg {
-            color: #416054;
-          }
+        span,
+        svg {
+          color: #416054;
         }
       }
 
@@ -175,6 +172,16 @@
           @include vuetifyStates.states($active: false);
         }
       }
+
+      &.help-button a {
+        border: 1px solid #6e9383;
+        border-radius: 64px;
+
+        &:hover {
+          border: 1px solid #416054;
+          background-color: transparent;
+        }
+      }
     }
 
     // 👉 Vertical nav group
@@ -198,7 +205,7 @@
       }
 
       .nav-group-arrow {
-        color: #6E9383;
+        color: #6e9383;
         flex-shrink: 0;
         transform-origin: center;
         transition: transform

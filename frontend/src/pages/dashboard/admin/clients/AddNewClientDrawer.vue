@@ -135,7 +135,7 @@ const handleDrawerModelValueUpdate = (val) => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content"
+    class="scrollable-content right-drawer"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
@@ -268,5 +268,8 @@ const handleDrawerModelValueUpdate = (val) => {
 }
 .border-img .v-img__img--contain {
   padding: 10px;
+}
+.right-drawer {
+  border-radius: 16px 0 0 16px;
 }
 </style>
