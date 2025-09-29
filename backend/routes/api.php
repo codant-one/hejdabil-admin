@@ -177,6 +177,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
+        Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
     });
 
 });
@@ -193,6 +194,7 @@ Route::get('agreement', [TestingController::class , 'agreement'])->name('agreeme
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::post('/submit/{token}', [SignatureController::class, 'storeSignature'])->name('signatures.store');
     Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
+    Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
 });
 
 //PROXY

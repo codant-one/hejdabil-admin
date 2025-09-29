@@ -22,6 +22,9 @@ class SignatureController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
+            'x' => 'required|numeric',
+            'y' => 'required|numeric',
+            'page' => 'required|integer',
         ]);
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
@@ -42,6 +45,9 @@ class SignatureController extends Controller
             'signing_token' => $signingToken,
             'token_expires_at'    => now()->addDays(7),
             'signature_status'        => 'sent',
+            'placement_x'   => $validated['x'],
+            'placement_y'   => $validated['y'],
+            'placement_page'=> $validated['page'],
         ]);
 
         // 5. Enviar el email al cliente con el enlace de firma.
@@ -82,16 +88,13 @@ class SignatureController extends Controller
         $token = Token::where('signing_token', $tokenString)
                       ->where('signature_status', 'sent')
                       ->where('token_expires_at', '>', now())
-                      ->firstOrFail(); // Lanza un 404 si no se encuentra.
+                      ->firstOrFail();
 
         // 2. Validar que la firma viene en la petición.
         $request->validate(['signature' => 'required|string']);
 
         $validated = $request->validate([
-            'signature' => 'required|string',
-            'x' => 'required|numeric',
-            'y' => 'required|numeric',
-            'page' => 'required|integer',
+            'signature' => 'required|string'
         ]);
 
         // 3. Decodificar y guardar la imagen de la firma.
@@ -106,11 +109,10 @@ class SignatureController extends Controller
         $signedPdfPath = $this->regeneratePdfWithSignature(
             $agreement,
             Storage::disk('public')->url($signaturePath),
-            $validated['x'],
-            $validated['y']
+            $token->placement_x,
+            $token->placement_y
         );
         if (!$signedPdfPath) {
-            // Manejar un posible error durante la generación del PDF.
             return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
         }
 
@@ -209,5 +211,27 @@ class SignatureController extends Controller
             return response()->file($path);
         }
         abort(404, 'Archivo PDF no encontrado.');
+    }
+
+    public function getAdminPreviewPdf(Agreement $agreement)
+    {
+        
+        if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
+            $path = storage_path('app/public/' . $agreement->file);
+            return response()->file($path);
+        }
+
+        abort(404, 'Archivo PDF no encontrado para este contrato.');
+    }
+
+    public function getSignatureDetails($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->firstOrFail();
+
+        return response()->json([
+            'placement_x' => $token->placement_x,
+            'placement_y' => $token->placement_y,
+            'placement_page' => $token->placement_page,
+        ]);
     }
 }
