@@ -14,25 +14,12 @@ return new class extends Migration
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('company');
-            $table->string('organization_number');
-            $table->longText('address');
-            $table->string('street');
-            $table->string('postal_code');
-            $table->string('phone');
-            $table->string('link')->nullable();
-            $table->string('bank');
-            $table->string('iban')->nullable();
-            $table->string('account_number');
-            $table->string('iban_number')->nullable();
-            $table->string('bic')->nullable();
-            $table->string('plus_spin')->nullable();
-            $table->string('swish')->nullable();
-            $table->string('vat')->nullable();
-            $table->string('logo')->nullable();
+            $table->unsignedBigInteger('state_id')->default(2);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
         });
     }
 

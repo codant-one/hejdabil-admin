@@ -15,6 +15,7 @@ class UserDetails extends Model
         'user_id',
         'company',
         'organization_number',
+        'link',
         'address',
         'street',
         'postal_code',

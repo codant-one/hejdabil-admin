@@ -378,43 +378,20 @@ class UsersController extends Controller
         try {
 
             $user = Auth::user()->load(['userDetail']);
+            $user_details = UserDetails::where('user_id', $user->id)->first();
+            $user_details->updateOrCreateUser($request, $user);
 
-            if(Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $supplier = Supplier::where('user_id', $user->id)->first();
-                $supplier->updateOrCreateSupplier($request, $user);
+            if ($request->hasFile('logo')) {
+                $image = $request->file('logo');
 
-                if ($request->hasFile('logo')) {
-                    $image = $request->file('logo');
+                $path = 'logos/';
 
-                    $path = 'logos/';
+                $file_data = uploadFile($image, $path, $user_details->logo);
 
-                    $file_data = uploadFile($image, $path, $supplier->logo);
-
-                    $supplier->logo = $file_data['filePath'];
-                    $supplier->update();
-                } else {
-                    $supplier->logo = null;
-                    $supplier->update();
-                }
-            } else {
-                $user_details = UserDetails::where('user_id', $user->id)->first();
-                $user_details->updateOrCreateUser($request, $user);
-
-                if ($request->hasFile('logo')) {
-                    $image = $request->file('logo');
-
-                    $path = 'logos/';
-
-                    $file_data = uploadFile($image, $path, $user_details->logo);
-
-                    $user_details->logo = $file_data['filePath'];
-                    $user_details->update();
-                } else {
-                    $user_details->logo = null;
-                    $user_details->update();
-                }
+                $user_details->logo = $file_data['filePath'];
+                $user_details->update();
             }
-
+            
             $userData = getUserData($user->load(['userDetail']));
 
             return response()->json([
@@ -440,39 +417,20 @@ class UsersController extends Controller
         try {
 
             $user = Auth::user()->load(['userDetail']);
+            $user_details = UserDetails::where('user_id', $user->id)->first();
 
-            if(Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $supplier = Supplier::where('user_id', $user->id)->first();
-                
-                if ($request->hasFile('logo')) {
-                    $image = $request->file('logo');
+            if ($request->hasFile('logo')) {
+                $image = $request->file('logo');
 
-                    $path = 'suppliers/';
+                $path = 'logos/';
 
-                    $file_data = uploadFile($image, $path, $supplier->logo);
+                $file_data = uploadFile($image, $path, $user_details->logo);
 
-                    $supplier->logo = $file_data['filePath'];
-                    $supplier->update();
-                } else {
-                    $supplier->logo = null;
-                    $supplier->update();
-                }
+                $user_details->logo = $file_data['filePath'];
+                $user_details->update();
             } else {
-                $user_details = UserDetails::where('user_id', $user->id)->first();
-
-                if ($request->hasFile('logo')) {
-                    $image = $request->file('logo');
-
-                    $path = 'logos/';
-
-                    $file_data = uploadFile($image, $path, $user_details->logo);
-
-                    $user_details->logo = $file_data['filePath'];
-                    $user_details->update();
-                } else {
-                    $user_details->logo = null;
-                    $user_details->update();
-                }
+                $user_details->logo = null;
+                $user_details->update();
             }
 
             $userData = getUserData($user->load(['userDetail']));

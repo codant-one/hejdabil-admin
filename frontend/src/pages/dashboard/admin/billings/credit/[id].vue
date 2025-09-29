@@ -241,89 +241,76 @@ const credit = async () => {
             </div>
           <div class="px-0 border-divider">
             <VRow class="mt-3">
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Adress
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier">
-                    Abrahamsbergsvägen 47 <br>
-                    16830 BROMMA <br>
-                    Hejdå Bil AB
-                  </span>
-                  <span v-else class="d-flex flex-column">
-                    <span class="text-footer">{{ invoice.supplier.address }}</span>
-                    <span class="text-footer">{{ invoice.supplier.postal_code }}</span>
-                    <span class="text-footer">{{ invoice.supplier.street }}</span>
-                    <span class="text-footer">{{ invoice.supplier.phone }}</span>
-                  </span>
-                  <span class="me-2 text-h6 mt-2">
-                      Bolagets säte
-                  </span>
-                  <span class="text-footer"> Stockholm, Sweden </span>
-                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.swish">
-                      Swish
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.swish"> {{ invoice.supplier?.swish }} </span>
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Org.nr.
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 559374-0268 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.organization_number }} </span>
-                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.vat">
-                      Vat
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> SE559374026801 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.vat }} </span>
+                <VCol cols="12" md="3" class="d-flex flex-column">
+                    <span class="me-2 text-h6">
+                        Adress
+                    </span>
+                    <span class="d-flex flex-column">
+                        <span class="text-footer">{{ supplier.user_details.address }}</span>
+                        <span class="text-footer">{{ supplier.user_details.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.user_details.street }}</span>
+                        <span class="text-footer">{{ supplier.user_details.phone }}</span>
+                    </span>
+                    <span class="me-2 text-h6 mt-2">
+                        Bolagets säte
+                    </span>
+                    <span class="text-footer"> Stockholm, Sweden </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.swish">
+                        Swish
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.swish"> {{ supplier.user_details.swish }} </span>
+                </VCol>
+                <VCol cols="12" md="3" class="d-flex flex-column">
+                    <span class="me-2 text-h6">
+                        Org.nr.
+                    </span>
+                    <span class="text-footer"> {{ supplier.user_details.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.vat">
+                        Vat
+                    </span>
+                    <span class="text-footer"> {{ supplier.user_details.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.bic">
+                        BIC
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.bic"> {{ supplier.user_details.bic }} </span>
 
-                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.bic">
-                      BIC
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.bic"> {{ invoice.supplier.bic }} </span>
-
-                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.plus_spin">
-                      Plusgiro
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.plus_spin"> {{ invoice.supplier.plus_spin }} </span>
-                  
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6">
-                      Webbplats
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> www.hejdabil.se </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.link }} </span>
-                  <span class="me-2 text-h6 mt-2">
-                      Företagets e-post
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> info@hejdabil.se </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.user.email }} </span>
-              </VCol>
-              <VCol cols="12" md="3" class="d-flex flex-column">
-                  <span class="me-2 text-h6" v-if="invoice.supplier?.bank">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.plus_spin">
+                        Plusgiro
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.plus_spin"> {{ supplier.user_details.plus_spin }} </span>
+                </VCol>
+                <VCol cols="12" md="3" class="d-flex flex-column">
+                    <span class="me-2 text-h6">
+                        Webbplats
+                    </span>
+                    <span class="text-footer"> {{ supplier.user_details.link }} </span>
+                    <span class="me-2 text-h6 mt-2">
+                        Företagets e-post
+                    </span>
+                    <span class="text-footer"> {{ supplier.email }} </span>
+                </VCol>
+                <VCol cols="12" md="3" class="d-flex flex-column">
+                    <span class="me-2 text-h6" v-if="supplier.user_details.bank">
                       Bank
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.bank"> {{ invoice.supplier.bank }} </span>
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.bank"> {{ supplier.user_details.bank }} </span>
 
-                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.iban">
-                      Bankgiro
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 5886-4976 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.iban }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban">
+                        Bankgiro
+                    </span>
+                    <span class="text-footer"> {{ supplier.user_details.iban }} </span>
 
-                  <span class="me-2 text-h6 mt-2" v-if="!invoice.supplier || invoice.supplier?.account_number">
-                      Kontonummer
-                  </span>
-                  <span class="text-footer" v-if="!invoice.supplier"> 9960 1821054721 </span>
-                  <span class="text-footer" v-else> {{ invoice.supplier.account_number }} </span>
-                  
-                  <span class="me-2 text-h6 mt-2" v-if="invoice.supplier?.iban_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.account_number">
+                        Kontonummer
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.account_number"> {{ supplier.user_details.account_number }} </span>
+                    
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban_number">
                       Iban nummer
-                  </span>
-                  <span class="text-footer" v-if="invoice.supplier?.iban_number"> {{ invoice.supplier.iban_number }} </span>
+                    </span>
+                    <span class="text-footer" v-if="supplier.user_details.iban_number"> {{ supplier.user_details.iban_number }} </span>
 
-              </VCol>
+                </VCol>
             </VRow>
           </div>
           </VCardText>

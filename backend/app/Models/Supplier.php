@@ -92,17 +92,10 @@ class Supplier extends Model
 
         $supplier = self::create([
             'user_id' => $user->id,
-            'company' => $request->company,
-            'organization_number' => $request->organization_number,
-            'link' => $request->link,
-            'address' => $request->address,
-            'street' => $request->street,
-            'postal_code' => $request->postal_code,
-            'phone' => $request->phone,
-            'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'swish' => $request->swish === 'null' ? null : $request->swish
         ]);
+
+        $user_details = UserDetails::where('user_id', $user->id)->first();
+        $user_details->updateOrCreateUser($request, $user);
 
         return $supplier;
     }
@@ -111,22 +104,11 @@ class Supplier extends Model
 
         $user = User::with('userDetail')->find($supplier->user_id);
 
-        $supplier->update([
-            'company' => $request->company,
-            'organization_number' => $request->organization_number,
-            'link' => $request->link,
-            'address' => $request->address,
-            'street' => $request->street,
-            'postal_code' => $request->postal_code,
-            'phone' => $request->phone,
-            'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'swish' => $request->swish === 'null' ? null : $request->swish
-        ]);
-
         User::updateUser($request, $user);
         
         $user->assignRole('Supplier');
+        $user_details = UserDetails::where('user_id', $user->id)->first();
+        $user_details->updateOrCreateUser($request, $user);
 
         return $supplier;
     }
@@ -163,36 +145,11 @@ class Supplier extends Model
         $user->assignRole('Supplier');
     }
 
-    public static function updateOrCreateSupplier($request, $user) {
-        $supplier = Supplier::updateOrCreate(
-            [    'user_id' => $user->id ],
-            [
-                'company' => $request->company,
-                'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
-                'link' => $request->link === 'null' ? null : $request->link,
-                'address' => $request->address === 'null' ? null : $request->address,
-                'street' => $request->street === 'null' ? null : $request->street,
-                'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
-                'phone' => $request->phone === 'null' ? null : $request->phone,
-                'bank' => $request->bank === 'null' ? null : $request->bank,
-                'account_number' => $request->account_number === 'null' ? null : $request->account_number,
-                'iban' => $request->iban === 'null' ? null : $request->iban,
-                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
-                'bic' => $request->bic === 'null' ? null : $request->bic,
-                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
-                'swish' => $request->swish === 'null' ? null : $request->swish,
-                'vat' => $request->vat === 'null' ? null : $request->vat
-            ]
-        );
-
-        return $supplier;
-    }
-
     /**** attributes ****/
     public function getFullNameAttribute()
     {
         if ($this->user)
-            return "{$this->user->name} {$this->user->last_name} - {$this->company}";
+            return "{$this->user->name} {$this->user->last_name} - {$this->user->userDetail->company}";
         else
             return "";
     }

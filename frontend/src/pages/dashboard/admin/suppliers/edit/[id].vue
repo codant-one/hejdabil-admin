@@ -51,18 +51,18 @@ watchEffect(async() => {
         supplier.value = await suppliersStores.showSupplier(Number(route.params.id))
        
         //company
-        company.value = supplier.value.company
-        organization_number.value = supplier.value.organization_number
-        link.value = supplier.value.link
-        address.value = supplier.value.address
-        street.value = supplier.value.street
-        postal_code.value = supplier.value.postal_code
-        phone.value = supplier.value.phone
-        swish.value = supplier.value.swish
+        company.value = supplier.value.user.user_detail.company
+        organization_number.value = supplier.value.user.user_detail.organization_number
+        link.value = supplier.value.user.user_detail.link
+        address.value = supplier.value.user.user_detail.address
+        street.value = supplier.value.user.user_detail.street
+        postal_code.value = supplier.value.user.user_detail.postal_code
+        phone.value = supplier.value.user.user_detail.phone
+        swish.value = supplier.value.user.user_detail.swish
 
         //bank
-        bank.value = supplier.value.bank
-        account_number.value = supplier.value.account_number
+        bank.value = supplier.value.user.user_detail.bank
+        account_number.value = supplier.value.user.user_detail.account_number
 
         // contact
         name.value  = supplier.value.user.name

@@ -23,8 +23,8 @@ class Billing extends Model
     protected $guarded = [];
 
     /**** Relationship ****/
-    public function supplier() {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
+    public function user() {
+        return $this->belongsTo(Supplier::class, 'user_id', 'id')->withTrashed();
     }
 
     public function client() {
@@ -67,10 +67,10 @@ class Billing extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $query->where('supplier_id', Auth::user()->supplier->id);
-        } elseif ($filters->get('supplier_id') !== null) {
-            $query->where('supplier_id', $filters->get('supplier_id'));
+        if ($filters->get('user_id') !== null) {
+            $query->where('user_id', $filters->get('user_id'));
+        } else {
+            $query->where('user_id', Auth::user()->id);
         }
 
         if ($filters->get('search')) {
@@ -125,7 +125,7 @@ class Billing extends Model
         $dueDate = Carbon::parse($request->due_date);
 
         $billing = self::create([
-            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'user_id' => $request->user_id === 'null' ? Auth::user()->id : $request->user_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -184,7 +184,7 @@ class Billing extends Model
         $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
-            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'user_id' => $request->user_id === 'null' ?  Auth::user()->id : $request->user_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -230,7 +230,7 @@ class Billing extends Model
             $supplier = Supplier::with(['billings'])->where('user_id', Auth::user()->id)->first();
             $invoice_id = count($supplier->billings) + 1;
         } else {
-            $invoice_id = self::whereNull('supplier_id')->count() + 1;
+            $invoice_id = self::whereNull('user_id')->count() + 1;
         }
 
         $array = json_decode($billing->detail, true);
@@ -245,7 +245,7 @@ class Billing extends Model
         }
 
         $billing = self::create([
-            'supplier_id' => $billing->supplier_id,
+            'user_id' => $billing->user_id,
             'client_id' =>  $billing->client_id,
             'state_id' => 9,
             'invoice_id' =>  $invoice_id,

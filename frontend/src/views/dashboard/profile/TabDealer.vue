@@ -28,7 +28,6 @@ const logoCropped = ref(null)
 const logoOld = ref(null)
 const filename = ref([])
 
-const supplier = ref(null)
 const form = ref({
     company: '',
     organization_number: '',
@@ -72,55 +71,28 @@ async function fetchData() {
     data.value = await authStores.company()
     role.value = userData.value.roles[0].name
 
-    if(role.value === 'Supplier') {
-        supplier.value = await suppliersStores.showSupplier(Number(userData.value.supplier.id))
+    //company
+    form.value.company = userData.value.user_details.company
+    form.value.organization_number = userData.value.user_details.organization_number
+    form.value.link = userData.value.user_details.link
+    form.value.address = userData.value.user_details.address
+    form.value.street = userData.value.user_details.street
+    form.value.postal_code = userData.value.user_details.postal_code
+    form.value.phone = userData.value.user_details.phone
 
-        //company
-        form.value.company = supplier.value.company
-        form.value.organization_number = supplier.value.organization_number
-        form.value.link = supplier.value.link
-        form.value.address = supplier.value.address
-        form.value.street = supplier.value.street
-        form.value.postal_code = supplier.value.postal_code
-        form.value.phone = supplier.value.phone
+    //bank
+    form.value.bank = userData.value.user_details.bank
+    form.value.account_number = userData.value.user_details.account_number
 
-        //bank
-        form.value.bank = supplier.value.bank
-        form.value.account_number = supplier.value.account_number
+    form.value.iban = userData.value.user_details.iban
+    form.value.iban_number = userData.value.user_details.iban_number
+    form.value.bic = userData.value.user_details.bic
+    form.value.plus_spin = userData.value.user_details.plus_spin
+    form.value.swish = userData.value.user_details.swish
+    form.value.vat = userData.value.user_details.vat
 
-        form.value.iban = supplier.value.iban
-        form.value.iban_number = supplier.value.iban_number
-        form.value.bic = supplier.value.bic
-        form.value.plus_spin = supplier.value.plus_spin
-        form.value.swish = supplier.value.swish
-        form.value.vat = supplier.value.vat
-
-        logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
-        logoCropped.value = (data.value.supplier.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + data.value.supplier.logo) : logo_ 
-    } else {
-        //company
-        form.value.company = userData.value.user_details.company
-        form.value.organization_number = userData.value.user_details.organization_number
-        form.value.link = userData.value.user_details.link
-        form.value.address = userData.value.user_details.address
-        form.value.street = userData.value.user_details.street
-        form.value.postal_code = userData.value.user_details.postal_code
-        form.value.phone = userData.value.user_details.phone
-
-        //bank
-        form.value.bank = userData.value.user_details.bank
-        form.value.account_number = userData.value.user_details.account_number
-
-        form.value.iban = userData.value.user_details.iban
-        form.value.iban_number = userData.value.user_details.iban_number
-        form.value.bic = userData.value.user_details.bic
-        form.value.plus_spin = userData.value.user_details.plus_spin
-        form.value.swish = userData.value.user_details.swish
-        form.value.vat = userData.value.user_details.vat
-
-        logo.value = (userData.value.user_details.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_details.logo : logo_ 
-        logoCropped.value = (userData.value.user_details.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_details.logo) : logo_ 
-    }
+    logo.value = (userData.value.user_details.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_details.logo : logo_ 
+    logoCropped.value = (userData.value.user_details.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_details.logo) : logo_ 
 
     setTimeout(() => {
         emit('window', false)

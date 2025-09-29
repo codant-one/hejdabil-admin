@@ -297,22 +297,22 @@ const downloadCSV = async () => {
                 <td class="text-wrap">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      :variant="supplier.logo ? 'outlined' : 'tonal'"
+                      :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
                       size="38"
                       >
                       <VImg
-                        v-if="supplier.logo"
+                        v-if="supplier.user.user_detail.logo"
                         style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.logo"
+                        :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
                       />
-                        <span v-else>{{ avatarText(supplier.company) }}</span>
+                        <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
-                        {{ supplier.company }}
+                        {{ supplier.user.user_detail.company }}
                       </span>
                       <span class="text-sm text-disabled">
-                        Organisationsnummer: {{ supplier.organization_number }}
+                        Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
                       </span>
                     </div>
                   </div>

@@ -260,15 +260,20 @@ const selectSupplier = async() => {
     var selected = suppliers.value.filter(element => element.id === invoice.value.supplier_id)[0]
 
     if(selected) {
-        supplier.value = selected
-        invoice.value.id = supplier.value.billings.length + 1
+        if (selected.user.user_detail) {
+            selected.user.user_details = selected.user.user_detail
+            delete selected.user.user_detail
+        }
+        
+        supplier.value = selected.user
+        invoice.value.id = selected.billings.length + 1
         
         clients.value = clients.value.filter(item => item.supplier_id === invoice.value.supplier_id)
     } else {
-        supplier.value = []
+        supplier.value = props.supplier
         invoice.value.id = props.invoice_id + 1
         clients.value = props.clients
-    } 
+    }
     
     invoice.value.client_id = null 
 
@@ -406,9 +411,9 @@ const handleBlur = (element) => {
                         />
                     <div v-else>
                         <img
-                            v-if="supplier.logo" 
+                            v-if="supplier.user_details.logo" 
                             :width="isMobile ? '200' : '200'"
-                            :src="themeConfig.settings.urlStorage + supplier.logo"
+                            :src="themeConfig.settings.urlStorage + supplier.user_details.logo"
                         />
                         <img
                             v-else
@@ -853,81 +858,70 @@ const handleBlur = (element) => {
                     <span class="me-2 text-h6">
                         Adress
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0">
-                        Abrahamsbergsvägen 47 <br>
-                        16830 BROMMA <br>
-                        Hejdå Bil AB
-                    </span>
-                    <span v-else class="d-flex flex-column">
-                        <span class="text-footer">{{ supplier.address }}</span>
-                        <span class="text-footer">{{ supplier.postal_code }}</span>
-                        <span class="text-footer">{{ supplier.street }}</span>
-                        <span class="text-footer">{{ supplier.phone }}</span>
+                    <span class="d-flex flex-column">
+                        <span class="text-footer">{{ supplier.user_details.address }}</span>
+                        <span class="text-footer">{{ supplier.user_details.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.user_details.street }}</span>
+                        <span class="text-footer">{{ supplier.user_details.phone }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Bolagets säte
                     </span>
                     <span class="text-footer"> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.swish">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.swish">
                         Swish
                     </span>
-                    <span class="text-footer" v-if="supplier.swish"> {{ supplier.swish }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.swish"> {{ supplier.user_details.swish }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Org.nr.
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 559374-0268 </span>
-                    <span class="text-footer" v-else> {{ supplier.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.vat || supplier.length === 0">
+                    <span class="text-footer"> {{ supplier.user_details.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.vat">
                         Vat
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> SE559374026801 </span>
-                    <span class="text-footer" v-else> {{ supplier.vat }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.bic">
+                    <span class="text-footer"> {{ supplier.user_details.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.bic">
                         BIC
                     </span>
-                    <span class="text-footer" v-if="supplier?.bic"> {{ supplier.bic }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.bic"> {{ supplier.user_details.bic }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.plus_spin">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.plus_spin">
                         Plusgiro
                     </span>
-                    <span class="text-footer" v-if="supplier?.plus_spin"> {{ supplier.plus_spin }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.plus_spin"> {{ supplier.user_details.plus_spin }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Webbplats
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> www.hejdabil.se </span>
-                    <span class="text-footer" v-else> {{ supplier.link }} </span>
+                    <span class="text-footer"> {{ supplier.user_details.link }} </span>
                     <span class="me-2 text-h6 mt-2">
                         Företagets e-post
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> info@hejdabil.se </span>
-                    <span class="text-footer" v-else> {{ supplier.user.email }} </span>
+                    <span class="text-footer"> {{ supplier.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6" v-if="supplier?.bank">
+                    <span class="me-2 text-h6" v-if="supplier.user_details.bank">
                       Bank
                     </span>
-                    <span class="text-footer" v-if="supplier?.bank"> {{ supplier.bank }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.bank"> {{ supplier.user_details.bank }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.iban || supplier.length === 0">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban">
                         Bankgiro
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 5886-4976 </span>
-                    <span class="text-footer" v-else> {{ supplier.iban }} </span>
+                    <span class="text-footer"> {{ supplier.user_details.iban }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.account_number || supplier.length === 0">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.account_number">
                         Kontonummer
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
-                    <span class="text-footer" v-else> {{ supplier.account_number }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.account_number"> {{ supplier.user_details.account_number }} </span>
                     
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.iban_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban_number">
                       Iban nummer
                     </span>
-                    <span class="text-footer" v-if="supplier?.iban_number"> {{ supplier.iban_number }} </span>
+                    <span class="text-footer" v-if="supplier.user_details.iban_number"> {{ supplier.user_details.iban_number }} </span>
 
                 </VCol>
             </VRow>
