@@ -71,28 +71,35 @@ async function fetchData() {
     data.value = await authStores.company()
     role.value = userData.value.roles[0].name
 
+    //console.log('boss.company', userData.value.supplier.boss.user.user_detail.company)
     //company
-    form.value.company = userData.value.user_details.company
-    form.value.organization_number = userData.value.user_details.organization_number
-    form.value.link = userData.value.user_details.link
-    form.value.address = userData.value.user_details.address
-    form.value.street = userData.value.user_details.street
-    form.value.postal_code = userData.value.user_details.postal_code
-    form.value.phone = userData.value.user_details.phone
+    form.value.company = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.company : userData.value.user_details.company
+    form.value.organization_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.organization_number : userData.value.user_details.organization_number
+    form.value.link = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.link : userData.value.user_details.link
+    form.value.address = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.address : userData.value.user_details.address
+    form.value.street = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.street : userData.value.user_details.street
+    form.value.postal_code = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.postal_code :  userData.value.user_details.postal_code
+    form.value.phone = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.phone : userData.value.user_details.phone
 
     //bank
-    form.value.bank = userData.value.user_details.bank
-    form.value.account_number = userData.value.user_details.account_number
+    form.value.bank = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bank : userData.value.user_details.bank
+    form.value.account_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.account_number : userData.value.user_details.account_number
 
-    form.value.iban = userData.value.user_details.iban
-    form.value.iban_number = userData.value.user_details.iban_number
-    form.value.bic = userData.value.user_details.bic
-    form.value.plus_spin = userData.value.user_details.plus_spin
-    form.value.swish = userData.value.user_details.swish
-    form.value.vat = userData.value.user_details.vat
+    form.value.iban = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban : userData.value.user_details.iban
+    form.value.iban_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban_number : userData.value.user_details.iban_number
+    form.value.bic = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bic : userData.value.user_details.bic
+    form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : userData.value.user_details.plus_spin
+    form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : userData.value.user_details.swish
+    form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : userData.value.user_details.vat
 
-    logo.value = (userData.value.user_details.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_details.logo : logo_ 
-    logoCropped.value = (userData.value.user_details.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_details.logo) : logo_ 
+    logo.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo : logo_  :
+        (userData.value.user_details.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_details.logo : logo_ 
+    logoCropped.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo) : logo_  :
+        (userData.value.user_details.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_details.logo) : logo_ 
 
     setTimeout(() => {
         emit('window', false)
@@ -344,15 +351,17 @@ const onSubmit = () => {
                     <VRow no-gutters>
                         <VCol cols="12" md="12" class="d-flex col-logo">
                             <div class="logo-store">
-                             <VBadge 
-                                @click="isConfirmChangeLogoVisible = true"
-                                class="cursor-pointer"
-                                color="success">
-                                <template #badge>
-                                    <VIcon icon="tabler-pencil" />
-                                </template>
-                                    <VImg :src="logo" class="logo-store-img" contain/>
-                            </VBadge>
+                                <VImg v-if="role === 'User'" :src="logo" class="logo-store-img" contain/>
+                                <VBadge 
+                                    v-else
+                                    @click="isConfirmChangeLogoVisible = true"
+                                    class="cursor-pointer"
+                                    color="success">
+                                    <template #badge>
+                                        <VIcon icon="tabler-pencil" />
+                                    </template>
+                                        <VImg :src="logo" class="logo-store-img" contain/>
+                                </VBadge>
                             </div>
                         </VCol>
                         <VCol cols="12" md="12" class="py-0 info-logo-store">
@@ -384,6 +393,7 @@ const onSubmit = () => {
                         <VRow>
                             <VCol cols="12" md="8">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.company"
                                     label="Företagsnamn"
                                     :rules="[requiredValidator]"
@@ -393,7 +403,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :disabled="role === 'Supplier'"
+                                    :disabled="role === 'Supplier' || role === 'User'"
                                     :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                                     minLength="11"
                                     maxlength="11"
@@ -402,6 +412,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="12">
                                 <VTextarea
+                                    :disabled="role === 'User'"
                                     v-model="form.address"
                                     rows="3"
                                     :rules="[requiredValidator]"
@@ -410,6 +421,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.postal_code"
                                     :rules="[requiredValidator]"
                                     label="Postnummer"
@@ -417,6 +429,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.street"
                                     :rules="[requiredValidator]"
                                     label="Stad"
@@ -424,6 +437,7 @@ const onSubmit = () => {
                             </VCol>                            
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.phone"
                                     :rules="[requiredValidator, phoneValidator]"
                                     label="Telefon"
@@ -431,6 +445,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.link"
                                     :rules="[urlValidator]"
                                     label="Hemsida"
@@ -438,6 +453,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.bank"
                                     :rules="[requiredValidator]"
                                     label="Bank"
@@ -445,12 +461,14 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.iban"
                                     label="Bankgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.account_number"
                                     :rules="[requiredValidator]"
                                     label="Kontonummer"
@@ -458,24 +476,28 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.iban_number"
                                     label="Iban nummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.bic"
                                     label="BIC"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.plus_spin"
                                     label="Plusgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.swish"
                                     label="Swish"
                                     :rules="[phoneValidator]"
@@ -483,11 +505,12 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.vat"
                                     label="Vat"
                                 />
                             </VCol>
-                            <VCol cols="12">
+                            <VCol cols="12" v-if="role !== 'User'">
                                 <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
                                 </VBtn>

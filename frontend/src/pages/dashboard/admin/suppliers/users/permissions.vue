@@ -204,6 +204,35 @@ const closeModal = function(){
                                 </div>
                             </div>
                         </VCardText>
+                        <VLabel style="font-weight: bold;">
+                            Avtal
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view agreements"
+                                value="view agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create agreements"
+                                value="create agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit agreements"
+                                value="edit agreements"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete agreements"
+                                value="delete agreements"
+                                :readonly="readonly"
+                            />
+                        </div>
                     </div>
                 </VCardText>
             </VCardText>
