@@ -382,14 +382,14 @@ const onSubmit = () => {
                         ref="refVForm"
                         @submit.prevent="onSubmit">
                         <VRow>
-                            <VCol cols="12" md="9">
+                            <VCol cols="12" md="8">
                                 <VTextField
                                     v-model="form.company"
                                     label="Företagsnamn"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="3">
+                            <VCol cols="12" md="4">
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"

@@ -36,6 +36,7 @@ const phone = ref('')
 const fullname = ref('')
 const email = ref('')
 const reference = ref('')
+const comments = ref('')
 const isEdit = ref(false)
 const userData = ref(null)
 const role = ref(null)
@@ -63,6 +64,7 @@ watchEffect(async() => {
       fullname.value = props.client.fullname 
       email.value = props.client.email
       reference.value = props.client.reference
+      comments.value = props.client.comments
     }
   }
 })
@@ -82,6 +84,7 @@ const closeNavigationDrawer = () => {
     fullname.value = null
     email.value = null
     reference.value = null
+    comments.value = null
     
     isEdit.value = false 
     id.value = 0
@@ -112,6 +115,7 @@ const onSubmit = () => {
       formData.append('postal_code', postal_code.value)
       formData.append('phone', phone.value)
       formData.append('reference', reference.value)
+      formData.append('comments', comments.value)
 
       emit('clientData', { data: formData, id: id.value }, isEdit.value ? 'update' : 'create')
 
@@ -241,21 +245,31 @@ const handleDrawerModelValueUpdate = val => {
                     label="Vår referens"
                 />
             </VCol>
+            <VCol
+              cols="12"
+              md="12"
+            >
+              <VTextarea
+                v-model="comments"
+                rows="3"
+                label="Beskrivning"
+              />
+            </VCol>
               <!-- 👉 Submit and Cancel -->
               <VCol cols="12">
-                <VBtn
-                  type="submit"
-                  class="me-3"
-                >
-                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
-                </VBtn>
                 <VBtn
                   type="reset"
                   variant="tonal"
                   color="secondary"
+                  class="me-3"
                   @click="closeNavigationDrawer"
                 >
                   Avbryt
+                </VBtn>
+                <VBtn
+                  type="submit"
+                >
+                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
                 </VBtn>
               </VCol>
             </VRow>

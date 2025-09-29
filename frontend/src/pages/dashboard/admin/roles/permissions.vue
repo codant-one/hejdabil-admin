@@ -17,11 +17,15 @@ const emit = defineEmits([
 ])
 
 const assignedPermissions =  ref([])
+const userData = ref(null)
+const role_ = ref(null)
 
 watchEffect(() => {
     if (props.isDrawerOpen && props.role) {
 
         if (!(Object.entries(props.role).length === 0) && props.role.constructor === Object) {
+            userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+            role_.value = userData.value.roles[0].name
             assignedPermissions.value = props.role.assignedPermissions
         }
     } else{
@@ -49,23 +53,6 @@ const closeModal = function(){
             <VDivider class="mt-4"/>
             <VCardText class="py-0">
                 <VCardTitle>
-                    Verkställande direktör  
-                </VCardTitle>
-                <VCardText class="py-0">
-                    <div class="ml-5">
-                        <VLabel style="font-weight: bold;">
-                            Administratör
-                        </VLabel>
-                        <div class="demo-space-x ml-5">
-                            <VCheckbox
-                                v-model="assignedPermissions"
-                                label="administrator"
-                                value="administrator"
-                            />
-                        </div>
-                    </div>
-                </VCardText>
-                <VCardTitle>
                     Profil  
                 </VCardTitle>
                 <VCardText class="py-0">
@@ -90,6 +77,7 @@ const closeModal = function(){
                                 value="edit roles"
                             />
                             <VCheckbox
+                                :disabled="role_ !== 'SuperAdmin'"
                                 v-model="assignedPermissions"
                                 label="delete roles"
                                 value="delete roles"

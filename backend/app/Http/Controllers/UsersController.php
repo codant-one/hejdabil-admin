@@ -91,7 +91,7 @@ class UsersController extends Controller
             );
 
             $email = $user->email;
-            $subject = 'Välkommen till HejdåBil';
+            $subject = 'Välkommen till Billogg';
     
             $data = [
                 'title' => 'Konto skapat framgångsrikt!!!',

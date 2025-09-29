@@ -34,6 +34,7 @@ const phone = ref('')
 const fullname = ref('')
 const email = ref('')
 const reference = ref('')
+const comments = ref('')
 const valueCount = ref(null)
 const valueText = ref(null)
 const icon = ref('tabler-shopping-cart')
@@ -60,6 +61,8 @@ async function fetchData() {
     street.value = props.customerData.street
     postal_code.value = props.customerData.postal_code
     phone.value = props.customerData.phone
+    reference.value = props.customerData.reference
+    comments.value = props.customerData.comments
 
   } else {
     valueCount.value = props.customerData.product_count ?? 0
@@ -75,7 +78,7 @@ async function fetchData() {
     await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
     suppliers.value = toRaw(suppliersStores.getSuppliers)
 
-    supplier_id.value = props.customerData.supplier?.id
+    supplier_id.value = props.customerData.supplier?.id ?? null
   }
 }
 
@@ -102,6 +105,7 @@ const onSubmit = () => {
       formData.append('postal_code', postal_code.value)
       formData.append('phone', phone.value)
       formData.append('reference', reference.value)
+      formData.append('comments', comments.value)
       formData.append('_method', 'PUT')
 
       emit('update', { data: formData, id: props.customerData.id} )
@@ -267,6 +271,14 @@ const onSubmit = () => {
                   </span>
                 </h6>
               </VListItemTitle>
+              <VListItemTitle>
+                <h6 class="text-base font-weight-semibold">
+                  Beskrivning:
+                  <span class="text-body-2">
+                    {{ props.customerData.comments }}
+                  </span>
+                </h6>
+              </VListItemTitle>
               <VListItemTitle v-if="role !== 'Supplier' && route.name.includes('clients-id') && suppliers.length > 0 && props.customerData.supplier_id !== null">
                 <h6 class="text-base font-weight-semibold">
                   Leverantör:
@@ -374,6 +386,16 @@ const onSubmit = () => {
                 <VTextField
                     v-model="reference"
                     label="Vår referens"
+                />
+              </VCol>
+              <VCol
+                cols="12"
+                md="12"
+              >
+                <VTextarea
+                  v-model="comments"
+                  rows="3"
+                  label="Beskrivning"
                 />
               </VCol>
               <!-- 👉 Form Actions -->

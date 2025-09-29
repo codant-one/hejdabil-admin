@@ -336,6 +336,7 @@ const downloadCSV = async () => {
                 <th scope="col"> TELEFON </th>
                 <th scope="col"> ADRESS </th>
                 <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+                <th scope="col"> SKAPAD AV </th>
                 <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
               </tr>
             </thead>
@@ -388,6 +389,27 @@ const downloadCSV = async () => {
                         {{ client.supplier.user.name }} {{ client.supplier.user.last_name ?? '' }} 
                       </span>
                       <span class="text-sm text-disabled">{{ client.supplier.user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="client.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="client.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + client.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(client.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ client.user.name }} {{ client.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ client.user.email }}</span>
                     </div>
                   </div>
                 </td>

@@ -342,11 +342,11 @@ const blobToBase64 = blob => {
                   cols="12" md="12"
                   class="d-flex flex-wrap gap-4 justify-buttons"
                 >
+                  <VBtn variant="tonal" @click="logout">
+                    Logga ut
+                  </VBtn>
                   <VBtn type="submit">
                     Spara ändringar
-                  </VBtn>
-                  <VBtn @click="logout">
-                    Logga ut
                   </VBtn>
                 </VCol>
               </VRow>

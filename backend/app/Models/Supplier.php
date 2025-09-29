@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class Supplier extends Model
 {
@@ -16,6 +17,10 @@ class Supplier extends Model
     /**** Relationship ****/
     public function user() {
         return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
+    }
+
+    public function creator() {
+        return $this->belongsTo(User::class, 'creator_id', 'id')->withTrashed();
     }
 
     public function clients() {
@@ -100,6 +105,7 @@ class Supplier extends Model
 
         $supplier = self::create([
             'user_id' => $user->id,
+            'creator_id' => Auth::user()->id,
             'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
             'order_id' => ( $request->has('order_id') ) ? $request->order_id : null
         ]);

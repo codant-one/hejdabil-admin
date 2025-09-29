@@ -188,7 +188,7 @@
                                     @if($agreement->supplier)
                                         {{ $agreement->supplier->company }} 
                                     @else
-                                        Hejdåbil AB
+                                    Billogg
                                     @endif
                                 </div>
                             </td>
@@ -202,7 +202,7 @@
                                         {{ $user->name }} {{ $user->last_name }}
                                     @else
                                         {{-- Si es un Admin, puedes poner un nombre genérico o el de la empresa --}}
-                                        Hejdåbil Försäljning
+                                        Billogg Försäljning
                                     @endif
                                 </div>
                             </td>

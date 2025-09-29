@@ -39,18 +39,22 @@ class SupplierController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Supplier::with(['user.userDetail', 'state'])
-                             ->withTrashed()
-                             ->clientsCount()
-                             ->whereNull('boss_id')
-                             ->applyFilters(
-                                $request->only([
-                                    'search',
-                                    'orderByField',
-                                    'orderBy',
-                                    'state_id'
-                                ])
-                            );
+            $query = Supplier::with([
+                        'user.userDetail',
+                        'creator.userDetail',
+                        'state'
+                    ])
+                    ->withTrashed()
+                    ->clientsCount()
+                    ->whereNull('boss_id')
+                    ->applyFilters(
+                    $request->only([
+                        'search',
+                        'orderByField',
+                        'orderBy',
+                        'state_id'
+                    ])
+                );
 
             $count = $query->count();
 
@@ -91,7 +95,7 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till HejdåBil';
+            $subject = 'Välkommen till Billogg';
             
             $data = [
                 'title' => 'Konto skapat framgångsrikt!!!',
@@ -177,7 +181,7 @@ class SupplierController extends Controller
     {
         try {
 
-            $supplier = Supplier::with(['user.userDetail'])->find($id);
+            $supplier = Supplier::with(['user.userDetail', 'creator.userDetail'])->find($id);
         
             if (!$supplier)
                 return response()->json([
@@ -349,7 +353,7 @@ class SupplierController extends Controller
             $user->givePermissionTo('view dashboard');
 
             $email = $user->email;
-            $subject = 'Välkommen till HejdåBil';
+            $subject = 'Välkommen till Billogg';
     
             $data = [
                 'title' => 'Konto skapat framgångsrikt!!!',

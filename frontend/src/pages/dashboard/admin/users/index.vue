@@ -501,7 +501,7 @@ const downloadCSV = async () => {
 
   @media(min-width: 991px){
     .search {
-      width: 30rem;
+      width: 18rem;
     }
 
     .user-list-filter {
