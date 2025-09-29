@@ -200,9 +200,15 @@
                         <tr>
                             <td>
                                 <div class="label">Namn</div>
-                                <div class="value">
-                                    {{ $user->name }} {{ $user->last_name }} 
-                                </div>
+                                @if($user)
+                                    <div class="value">
+                                        {{ $user->name }} {{ $user->last_name }} 
+                                    </div>
+                                @else
+                                    <div class="value">
+                                        Admin Billogg
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                         <tr>
@@ -220,13 +226,21 @@
                         <tr>
                             <td>
                                 <div class="label">E-post</div>
-                                <div class="value">{{ $user->email }}</div>
+                                @if($user)
+                                    <div class="value">{{ $user->email }}</div>
+                                @else
+                                    <div class="value">admin@billogg.se</div>
+                                @endif
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">Telefon</div>
-                                <div class="value">{{ $user->userDetail->phone }}</div>
+                                @if($user)
+                                    <div class="value">{{ $user->userDetail->phone }}</div>
+                                @else
+                                    <div class="value">+57 313 209 8455</div>
+                                @endif
                             </td>
                         </tr>
                     </table>
@@ -307,9 +321,19 @@
                     <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
                     <table class="signatures-table">
                         <tr>
+                            @if(isset($signature_url))
+                                <div style="margin-top: 50px; padding-top: 10px; border-top: 1px solid #ccc;">
+                                    <p style="margin-bottom: 5px;"><strong>Firma Electrónica del Cliente:</strong></p>
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 250px; height: auto;">
+                                </div>
+                            @endif
                             <td style="width: 50%; padding-right: 20px;">
                                 <div class="signature-box">(Köparens underskrift)</div>
+                                @if($user)
                                 <div style="padding-top: 5px; font-size: 10px;">{{ $user->name }} {{ $user->last_name }}</div>
+                                @else
+                                <div style="padding-top: 5px; font-size: 10px;">Admin Billogg</div>
+                                @endif
                             </td>
                             <td style="width: 50%;"></td> <!-- Espacio en blanco a la derecha -->
                         </tr>

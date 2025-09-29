@@ -34,7 +34,8 @@ use App\Http\Controllers\{
     VehicleDocumentController,
     NoteController,
     AgreementController,
-    CurrencyController
+    CurrencyController,
+    SignatureController
 };
 
 use App\Http\Controllers\Services\{
@@ -144,6 +145,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Suppliers
     Route::group(['prefix' => 'suppliers'], function () {
         Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+        Route::get('supplier/users', [SupplierController::class, 'users']);
+        Route::post('supplier/adduser', [SupplierController::class, 'addRelatedUser']);
+        Route::get('supplier/deleteuser/{id}', [SupplierController::class, 'deleteRelatedUser']);
+        Route::post('supplier/updateuser/{id}', [SupplierController::class, 'updateRelatedUser']);
+        Route::post('supplier/permissions/{id}', [SupplierController::class, 'permissionsRelatedUser']);
     });
 
     //Tasks
@@ -170,6 +176,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'agreements'], function () {
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
+        Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
     });
 
 });
@@ -181,6 +188,11 @@ Route::get('pdfs', [TestingController::class , 'pdfs'])->name('pdfs');
 Route::get('documents', [TestingController::class , 'documents'])->name('documents');
 Route::get('vehicle', [TestingController::class , 'vehicle'])->name('vehicle');
 Route::get('agreement', [TestingController::class , 'agreement'])->name('agreement');
+
+// Public Signature Endpoints
+Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
+    Route::post('/submit/{token}', [SignatureController::class, 'storeSignature'])->name('signatures.store');
+});
 
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);

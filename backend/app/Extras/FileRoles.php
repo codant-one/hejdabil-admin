@@ -31,7 +31,7 @@
     if (!function_exists('getPermissionsByRole')) {
         function getPermissionsByRole($user){
 
-            $permissions = $user->getPermissionsViaRoles();
+            $permissions = $user->getAllPermissions();
             $abilites = [];
 
             array_push($abilites, array('action' => 'view', 'subject' => 'Auth'));
@@ -45,6 +45,8 @@
                     array_push($abilites, array('action' => $values[0], 'subject' => $values[1]));
                 }
             }
+
+
 
             return $abilites;
         }

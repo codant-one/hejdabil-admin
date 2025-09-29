@@ -192,14 +192,21 @@
                     <tr>
                         <td>
                             <div class="label">Namn</div>
+                            @if($user)
                             <div class="value">
                                 {{ $user->name }} {{ $user->last_name }} 
                             </div>
+                            @else
+                            <div class="value">
+                                Admin Billogg
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Adress</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->address }} 
@@ -207,11 +214,17 @@
                                     {{ $agreement->supplier?->address }} 
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                Abrahamsbergsvägen 47, 168 30 Bromma, Suecia
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Postnr. ort</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                 {{ $user->userDetail->postal_code }} {{ $user->userDetail->street }}  
@@ -219,11 +232,17 @@
                                 {{ $agreement->supplier?->postal_code }} {{ $agreement->supplier?->street }} 
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                10020
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Org/person nr.</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->organization_number }} 
@@ -231,19 +250,31 @@
                                     {{ $agreement->supplier?->organization_number }} 
                                 @endif
                             </div>
+                            @else
+                            <div class="value">
+                                1002020101
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">E-post</div>
+                            @if($user)
                             <div class="value">
                                 {{ $user->email }} 
                             </div>
+                            @else
+                            <div class="value">
+                                admin@billogg.se
+                            </div>
+                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Mobil</div>
+                            @if($user)
                             <div class="value">
                                 @if(!$agreement->supplier)
                                     {{ $user->userDetail->phone }} 
@@ -251,6 +282,11 @@
                                     {{ $agreement->supplier?->phone }} 
                                 @endif
                             </div>
+                            @else 
+                            <div class="value">
+                                073-663 11 41
+                            </div>
+                            @endif
                         </td>
                     </tr>
                 </table>
@@ -543,12 +579,37 @@
             <td colspan="2" class="footer-section">
                 <table class="signatures-table">
                     <tr>
-                        <td style="width: 50%; padding-right: 20px;"><div class="signature-box">(Köparens underskrift)</div></td>
-                        <td style="width: 50%; padding-left: 20px;"><div class="signature-box">(Säljarens underskrift)</div></td>
+                        <!-- Celda Izquierda: Firma del Comprador (Köparens) -->
+                        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+                            
+                            <!-- Contenedor para la imagen con altura mínima -->
+                            <div style="min-height: 70px;">
+                                @if(isset($signature_url))
+                                    <!-- La imagen de la firma se muestra aquí si existe -->
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto; display: block; margin-bottom: 5px; margin-left: auto; margin-right: auto;">
+                                @endif
+                            </div>
+                            
+                            <!-- La línea de firma, siempre visible -->
+                            <div class="signature-box">(Köparens underskrift)</div>
+                        </td>
+
+                        <!-- Celda Derecha: Firma del Vendedor (Säljarens) -->
+                        <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+                            
+                            <!-- Contenedor VACÍO con la MISMA altura mínima para alinear -->
+                            <div style="min-height: 70px;">
+                                <!-- Este espacio vacío garantiza la alineación vertical -->
+                            </div>
+                            
+                            <!-- La línea de firma, que se alineará con la de la izquierda -->
+                            <div class="signature-box">(Säljarens underskrift)</div>
+                        </td>
                     </tr>
                 </table>
             </td>
         </tr>
+
     </tbody>
 </table>
 </body>

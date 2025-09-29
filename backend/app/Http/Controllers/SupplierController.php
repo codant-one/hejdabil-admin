@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Requests\SupplierRequest;
+use App\Http\Requests\UserRequest;
 
 use Illuminate\Support\Str;
 
@@ -41,6 +42,7 @@ class SupplierController extends Controller
             $query = Supplier::with(['user.userDetail', 'state'])
                              ->withTrashed()
                              ->clientsCount()
+                             ->whereNull('boss_id')
                              ->applyFilters(
                                 $request->only([
                                     'search',
@@ -255,6 +257,244 @@ class SupplierController extends Controller
                 'success' => true,
                 'data' => [ 
                     'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function users(Request $request): JsonResponse
+    {
+        try {
+            $limit = $request->has('limit') ? $request->limit : 10;
+
+            $query = Supplier::with(['user.roles.permissions','user.permissions', 'user.userDetail'])
+                        //  ->whereHas('user.roles', function ($query) {
+                        //     $query->where('name', 'User');
+                        //  })
+                         ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
+                            $query->where('boss_id', Auth::user()->supplier->id);
+                         })
+                         ->applyFilters(
+                            $request->only([
+                                'search',
+                                'orderByField',
+                                'orderBy'
+                            ])
+                        );
+
+            $count = $query->count();
+
+            $users = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'users' => $users,
+                    'usersTotalCount' => $count
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     *
+     * Store a newly created resource in storage.
+     */
+    public function addRelatedUser(UserRequest $request): JsonResponse
+    {
+        try{
+            
+            // $user = User::createUser($request);
+
+            // $password = Str::random(8);
+            // $request->merge(['password' => $password]);
+
+            $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
+                                ->max('order_id');
+
+            $request->merge(['boss_id' => Auth::user()->supplier->id]);
+            $request->merge(['order_id' => $order_id + 1]);
+            $request->merge(['company' => ""]);
+            $request->merge(['organization_number' => ""]);
+            $request->merge(['address' => ""]);
+            $request->merge(['phone' => ""]);
+            $request->merge(['street' => ""]);
+            $request->merge(['postal_code' => ""]);
+            $request->merge(['bank' => ""]);
+            $request->merge(['account_number' => ""]);
+
+            $supplier = Supplier::createSupplier($request);
+
+            UserRegisterToken::updateOrCreate(
+                ['user_id' => $supplier->user_id],
+                ['token' => Str::random(60)]
+            );
+
+            $user = User::find($supplier->user_id);
+            $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
+
+            $email = $user->email;
+            $subject = 'Välkommen till HejdåBil';
+    
+            $data = [
+                'title' => 'Konto skapat framgångsrikt!!!',
+                'user' => $user->name . ' ' . $user->last_name,
+                'email'=> $email,
+                'password' => $request->password,
+                'buttonLink' => env('APP_DOMAIN'),
+                'text-url'=>'Administrative panel'
+            ];
+    
+            try {
+                \Mail::send(
+                    'emails.auth.user_created'
+                    , ['data' => $data]
+                    , function ($message) use ($email, $subject) {
+                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                        $message->to($email)->subject($subject);
+                });
+            } catch (\Exception $e) {    
+                Log::info("Failed to send email to user ". $e);
+            } 
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => Supplier::with(['user.roles', 'user.userDetail'])->find($supplier->id)
+                ]
+            ], 200);
+        
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+
+    }
+
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function deleteRelatedUser($id): JsonResponse
+    {
+        try {
+
+            $user = User::with('roles', 'userDetail')->find($id);
+        
+            if (!$user)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found ' . $id,
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+
+            $supplier = Supplier::where('user_id', $user->id)->first();
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte ' . $user->id
+                ], 404);
+            
+            $supplier->deleteSupplier($supplier->id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => $user
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function updateRelatedUser(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $user = User::with('roles', 'userDetail')->find($id);
+        
+            if (!$user)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+
+            
+            $request->merge(['roles' => [0 => "User"] ]);
+
+            $user->updateUser($request, $user); 
+            $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => $user
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function permissionsRelatedUser(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $user = User::find($id);
+        
+            if (!$user)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+
+            $user->syncPermissions($request->permissions);
+            $user->givePermissionTo('view dashboard');
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => $user
                 ]
             ], 200);
 

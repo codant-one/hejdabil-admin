@@ -71,6 +71,8 @@ trait UserHelper
         if (!request('is_client'))
             $user->syncRoles($request->roles);
 
+        $user->givePermissionTo('view dashboard');
+
         UserDetails::updateOrCreateUser($request, $user);
 
         return $user;

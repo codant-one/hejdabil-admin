@@ -1,7 +1,7 @@
 <script setup>
 
 import { useAgreementsStores } from '@/stores/useAgreements'
-import { requiredValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -19,6 +19,9 @@ const totalPages = ref(1)
 const totalAgreements = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
+const isSignatureDialogVisible = ref(false) 
+const signatureEmail = ref('')              
+const refSignatureForm = ref()              
 const isConfirmSendMailVisible = ref(false)
 const emailDefault = ref(true)
 const selectedTags = ref([])
@@ -263,6 +266,70 @@ const downloadCSV = async () => {
 
 }
 
+
+const openSignatureDialog = agreementData => {
+  selectedAgreement.value = { ...agreementData }
+  
+  // Intenta pre-rellenar el campo de email con el del cliente si existe.
+  // El ?. (optional chaining) evita errores si agreement_client es null.
+  signatureEmail.value = agreementData.agreement_client?.email || ''
+  
+  isSignatureDialogVisible.value = true
+}
+
+/**
+ * Esta función se ejecuta al hacer clic en "Skicka" dentro del diálogo.
+ * Valida el formulario y llama a la acción de Pinia con los datos correctos.
+ */
+const submitSignatureRequest = async () => {
+  // 1. Valida el formulario usando la referencia 'refSignatureForm'
+  const { valid } = await refSignatureForm.value?.validate()
+
+  // 2. Si el formulario no es válido (ej: email vacío o incorrecto), no hace nada.
+  if (!valid) return
+
+  // 3. Cierra el diálogo y muestra el spinner de carga
+  isSignatureDialogVisible.value = false
+  isRequestOngoing.value = true
+  
+  try {
+    // 4. Prepara el 'payload' que espera nuestra acción de Pinia
+    const payload = {
+      agreementId: selectedAgreement.value.id,
+      email: signatureEmail.value,
+    }
+
+    // 5. Llama a la acción de Pinia que modificamos en el paso anterior
+    const response = await agreementsStores.requestSignature(payload)
+    
+    // 6. Muestra el mensaje de éxito
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true,
+    }
+
+    // 7. Refresca los datos de la tabla para mostrar el nuevo estado de la firma
+    await fetchData() 
+    
+  } catch (error) {
+    // Maneja el error como antes
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true,
+    }
+    console.error('Error sending signature request:', error.response)
+  } finally {
+    // Limpia todo y oculta el spinner
+    isRequestOngoing.value = false
+    signatureEmail.value = '' // Limpia el email para la próxima vez
+    setTimeout(() => {
+      advisor.value = { show: false }
+    }, 3000)
+  }
+}
+
 const handleCloseModal = () => {
   isModalVisible.value = false
 }
@@ -431,7 +498,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')">
+                      <VListItem v-if="$can('edit','agreements')" @click="openSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
@@ -533,6 +600,52 @@ const openLink = function (agreementData) {
               Acceptera
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- ============================================= -->
+    <!-- MODAL PARA ENVIAR LA FIRMA -->
+    <!-- ============================================= -->
+    <VDialog
+      v-model="isSignatureDialogVisible"
+      persistent
+      class="v-dialog-sm"
+    >
+      <!-- Botón de cierre del diálogo -->
+      <DialogCloseBtn @click="isSignatureDialogVisible = !isSignatureDialogVisible" />
+
+      <!-- Contenido del Diálogo -->
+      <VCard title="Skicka signeringsförfrågan">
+        <!-- Usamos VForm para poder validar el campo de email -->
+        <VForm
+          ref="refSignatureForm"
+          @submit.prevent="submitSignatureRequest"
+        >
+          <VDivider class="mt-4"/>
+          <VCardText>
+            Ange e-postadressen dit signeringslänken ska skickas för avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>.
+          </VCardText>
+          <VCardText>
+            <VTextField
+              v-model="signatureEmail"
+              label="E-postadress"
+              placeholder="kund@exempel.com"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              @click="isSignatureDialogVisible = false">
+                Avbryt
+            </VBtn>
+            <VBtn type="submit">
+                Skicka
+            </VBtn>
+          </VCardText>
+        </VForm>
       </VCard>
     </VDialog>
 

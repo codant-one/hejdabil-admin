@@ -123,24 +123,6 @@ const closeRoleDetailDialog = function(){
                     </div>
                 </VCardText>
                 <VCardTitle>
-                    Allmänt  
-                </VCardTitle>
-                <VCardText class="py-0">
-                    <div class="ml-5">
-                        <VLabel style="font-weight: bold;">
-                            Kontrollpanelen
-                        </VLabel>
-                        <div class="demo-space-x ml-5">
-                            <VCheckbox
-                                v-model="permissions"
-                                label="view dashboard"
-                                value="view dashboard"
-                                :readonly="readonly"
-                            />
-                        </div>
-                    </div>
-                </VCardText>
-                <VCardTitle>
                     Profil  
                 </VCardTitle>
                 <VCardText class="py-0">

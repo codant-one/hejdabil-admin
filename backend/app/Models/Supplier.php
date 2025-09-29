@@ -22,6 +22,10 @@ class Supplier extends Model
         return $this->hasMany(Client::class, 'supplier_id', 'id');
     }
 
+    public function boss() {
+        return $this->belongsTo(Supplier::class, 'boss_id', 'id');
+    }
+
     public function billings() {
         return $this->hasMany(Billing::class, 'supplier_id', 'id');
     }
@@ -88,10 +92,16 @@ class Supplier extends Model
      /**** Public methods ****/
      public static function createSupplier($request) {
         $user = User::createUser($request);
-        $user->assignRole('Supplier');
+
+        if( $request->has('boss_id') )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         $supplier = self::create([
             'user_id' => $user->id,
+            'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
+            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null
         ]);
 
         $user_details = UserDetails::where('user_id', $user->id)->first();
@@ -106,9 +116,10 @@ class Supplier extends Model
 
         User::updateUser($request, $user);
         
-        $user->assignRole('Supplier');
-        $user_details = UserDetails::where('user_id', $user->id)->first();
-        $user_details->updateOrCreateUser($request, $user);
+        if( $supplier->boss_id > 0 )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         return $supplier;
     }
@@ -143,6 +154,78 @@ class Supplier extends Model
         $user = User::onlyTrashed()->where('id', $supplier->user_id)->first();
         $user->restore();
         $user->assignRole('Supplier');
+    }
+
+    public static function updateOrCreateSupplier($request, $user) {
+        $supplier = Supplier::updateOrCreate(
+            [    'user_id' => $user->id ],
+            [
+                'company' => $request->company,
+                'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
+                'link' => $request->link === 'null' ? null : $request->link,
+                'address' => $request->address === 'null' ? null : $request->address,
+                'street' => $request->street === 'null' ? null : $request->street,
+                'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
+                'phone' => $request->phone === 'null' ? null : $request->phone,
+                'bank' => $request->bank === 'null' ? null : $request->bank,
+                'account_number' => $request->account_number === 'null' ? null : $request->account_number,
+                'iban' => $request->iban === 'null' ? null : $request->iban,
+                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
+                'bic' => $request->bic === 'null' ? null : $request->bic,
+                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
+                'swish' => $request->swish === 'null' ? null : $request->swish,
+                'vat' => $request->vat === 'null' ? null : $request->vat
+            ]
+        );
+
+        return $supplier;
+    }
+
+
+    public static function createUserRelatedToSupplier($request) {
+        $user = User::createUser($request);
+        $user->assignRole('User');
+
+        $supplier = self::create([
+            'user_id' => $user->id,
+            'boss_id' => $request->boss_id,
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        return $supplier;
+    }
+
+    public static function updateUserRelatedToSupplier($request, $supplier) {
+
+        $user = User::with('userDetail')->find($supplier->user_id);
+
+        $supplier->update([
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        User::updateUser($request, $user);
+        
+        $user->assignRole('User');
+
+        return $supplier;
     }
 
     /**** attributes ****/
