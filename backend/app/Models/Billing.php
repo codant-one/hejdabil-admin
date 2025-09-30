@@ -24,11 +24,15 @@ class Billing extends Model
 
     /**** Relationship ****/
     public function user() {
-        return $this->belongsTo(Supplier::class, 'user_id', 'id')->withTrashed();
+        return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
     }
 
     public function client() {
         return $this->belongsTo(Client::class, 'client_id', 'id')->withTrashed();
+    }
+
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
     public function state() {
@@ -67,10 +71,12 @@ class Billing extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if ($filters->get('user_id') !== null) {
-            $query->where('user_id', $filters->get('user_id'));
-        } else {
-            $query->where('user_id', Auth::user()->id);
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
         if ($filters->get('search')) {
@@ -122,10 +128,18 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
         $dueDate = Carbon::parse($request->due_date);
 
         $billing = self::create([
-            'user_id' => $request->user_id === 'null' ? Auth::user()->id : $request->user_id,
+            'user_id' => Auth::user()->id, 
+            'supplier_id' => $supplier_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -143,10 +157,15 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $billing = self::with(['supplier.user'])->find($billing->id);
+        $billing = self::with(['supplier.user', 'user.userDetail'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+        $name = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->userDetail->company,
+            $isUser => Auth::user()->supplier->creator->userDetail->company,
+            $request->supplier_id === 'null' => Auth::user()->userDetail->company,
+            default => Auth::user()->userDetail->company
+        };
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -181,10 +200,10 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
         $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
-            'user_id' => $request->user_id === 'null' ?  Auth::user()->id : $request->user_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -205,7 +224,12 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+        $name = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->userDetail->company,
+            $isUser => Auth::user()->supplier->creator->userDetail->company,
+            $request->supplier_id === 'null' => Auth::user()->userDetail->company,
+            default => Auth::user()->userDetail->company
+        };
 
         foreach($details as $row)
             $invoices[] = $row;

@@ -17,6 +17,8 @@ const invoice = ref(null)
 const isRequestOngoing = ref(true)
 const file = ref(false)
 
+const supplier = ref([])
+
 const advisor = ref({
   type: '',
   message: '',
@@ -40,6 +42,8 @@ async function fetchData() {
     JSON.parse(invoice.value.detail).forEach(row => {
         invoices.value?.push(row)   
     });
+    
+    supplier.value = invoice.value.supplier_id !== null ? invoice.value.supplier.user : invoice.value.user
 
     isRequestOngoing.value = false
   }
@@ -180,7 +184,7 @@ const credit = async () => {
             <thead class="invoice-background">
               <tr>
                 <template v-for="(invoice, index) in types" :key="invoice.id">
-                    <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(types.length - 1)) }%;`">
+                    <td :style="`width: ${invoice.type_id === 1 ? '40' : (60/(types.length - 1)) }%;`" v-if="index < 4">
                         <span class="text-base font-weight-bold">
                         {{ invoice.name }}
                         </span>
@@ -246,69 +250,69 @@ const credit = async () => {
                         Adress
                     </span>
                     <span class="d-flex flex-column">
-                        <span class="text-footer">{{ supplier.user_details.address }}</span>
-                        <span class="text-footer">{{ supplier.user_details.postal_code }}</span>
-                        <span class="text-footer">{{ supplier.user_details.street }}</span>
-                        <span class="text-footer">{{ supplier.user_details.phone }}</span>
+                        <span class="text-footer">{{ supplier.user_detail.address }}</span>
+                        <span class="text-footer">{{ supplier.user_detail.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.user_detail.street }}</span>
+                        <span class="text-footer">{{ supplier.user_detail.phone }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Bolagets säte
                     </span>
                     <span class="text-footer"> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.swish">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.swish">
                         Swish
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.swish"> {{ supplier.user_details.swish }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.swish"> {{ supplier.user_detail.swish }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Org.nr.
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.vat">
+                    <span class="text-footer"> {{ supplier.user_detail.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.vat">
                         Vat
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.vat }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.bic">
+                    <span class="text-footer"> {{ supplier.user_detail.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.bic">
                         BIC
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.bic"> {{ supplier.user_details.bic }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.bic"> {{ supplier.user_detail.bic }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.plus_spin">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.plus_spin">
                         Plusgiro
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.plus_spin"> {{ supplier.user_details.plus_spin }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.plus_spin"> {{ supplier.user_detail.plus_spin }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Webbplats
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.link }} </span>
+                    <span class="text-footer"> {{ supplier.user_detail.link }} </span>
                     <span class="me-2 text-h6 mt-2">
                         Företagets e-post
                     </span>
                     <span class="text-footer"> {{ supplier.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6" v-if="supplier.user_details.bank">
+                    <span class="me-2 text-h6" v-if="supplier.user_detail.bank">
                       Bank
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.bank"> {{ supplier.user_details.bank }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.bank"> {{ supplier.user_detail.bank }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.iban">
                         Bankgiro
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.iban }} </span>
+                    <span class="text-footer"> {{ supplier.user_detail.iban }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.account_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.account_number">
                         Kontonummer
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.account_number"> {{ supplier.user_details.account_number }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.account_number"> {{ supplier.user_detail.account_number }} </span>
                     
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_detail.iban_number">
                       Iban nummer
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.iban_number"> {{ supplier.user_details.iban_number }} </span>
+                    <span class="text-footer" v-if="supplier.user_detail.iban_number"> {{ supplier.user_detail.iban_number }} </span>
 
                 </VCol>
             </VRow>

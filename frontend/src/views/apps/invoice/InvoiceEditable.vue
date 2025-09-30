@@ -120,6 +120,8 @@ watch(() => props.supplier, (val) => {
         invoice.value.id = route.path.includes('/duplicate/') ? (supplier.value.billings.length + 1) : props.billing.invoice_id
     } else if(props.role === 'Supplier' && supplier.value.billings) {
         invoice.value.id = supplier.value.billings.length + 1
+    } else if(props.role === 'User' && supplier.value.supplier.boss.billings) {
+        invoice.value.id = supplier.value.supplier.boss.billings.length + 1
     } else
         invoice.value.id = props.invoice_id + 1
 })
@@ -260,12 +262,7 @@ const selectSupplier = async() => {
     var selected = suppliers.value.filter(element => element.id === invoice.value.supplier_id)[0]
 
     if(selected) {
-        if (selected.user.user_detail) {
-            selected.user.user_details = selected.user.user_detail
-            delete selected.user.user_detail
-        }
-        
-        supplier.value = selected.user
+        supplier.value = selected
         invoice.value.id = selected.billings.length + 1
         
         clients.value = clients.value.filter(item => item.supplier_id === invoice.value.supplier_id)
@@ -404,24 +401,16 @@ const handleBlur = (element) => {
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
                     <img
-                        v-if="supplier.length === 0"
-                        :width="isMobile ? '200' : '250'"
+                        v-if="supplier.user.user_detail.logo" 
+                        :width="isMobile ? '200' : '200'"
+                        :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
+                    />
+                    <img
+                        v-else
+                        :width="isMobile ? '200' : '200'"
                         :src="logoBlack"
                         class="me-3"
-                        />
-                    <div v-else>
-                        <img
-                            v-if="supplier.user_details.logo" 
-                            :width="isMobile ? '200' : '200'"
-                            :src="themeConfig.settings.urlStorage + supplier.user_details.logo"
-                        />
-                        <img
-                            v-else
-                            :width="isMobile ? '200' : '200'"
-                            :src="logoBlack"
-                            class="me-3"
-                        />
-                    </div>
+                    />
                 </div>
                 <!-- 👉 Invoice Id -->
                 <h6 class="d-block d-md-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
@@ -640,8 +629,8 @@ const handleBlur = (element) => {
                                     @update:modelValue="$emit('edit')"
                                 />
                             </div>
-                            <div>
-                                <div class="add-products-header d-none d-md-flex px-5">
+                            <div class="w-100">
+                                <div class="add-products-header d-none d-md-flex px-5 w-100">
                                     <table class="w-100">
                                         <thead>
                                             <tr>
@@ -859,69 +848,69 @@ const handleBlur = (element) => {
                         Adress
                     </span>
                     <span class="d-flex flex-column">
-                        <span class="text-footer">{{ supplier.user_details.address }}</span>
-                        <span class="text-footer">{{ supplier.user_details.postal_code }}</span>
-                        <span class="text-footer">{{ supplier.user_details.street }}</span>
-                        <span class="text-footer">{{ supplier.user_details.phone }}</span>
+                        <span class="text-footer">{{ supplier.user.user_detail.address }}</span>
+                        <span class="text-footer">{{ supplier.user.user_detail.postal_code }}</span>
+                        <span class="text-footer">{{ supplier.user.user_detail.street }}</span>
+                        <span class="text-footer">{{ supplier.user.user_detail.phone }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Bolagets säte
                     </span>
                     <span class="text-footer"> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.swish">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.swish">
                         Swish
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.swish"> {{ supplier.user_details.swish }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.swish"> {{ supplier.user.user_detail.swish }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Org.nr.
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.vat">
+                    <span class="text-footer"> {{ supplier.user.user_detail.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.vat">
                         Vat
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.vat }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.bic">
+                    <span class="text-footer"> {{ supplier.user.user_detail.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.bic">
                         BIC
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.bic"> {{ supplier.user_details.bic }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.bic"> {{ supplier.user.user_detail.bic }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.plus_spin">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.plus_spin">
                         Plusgiro
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.plus_spin"> {{ supplier.user_details.plus_spin }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.plus_spin"> {{ supplier.user.user_detail.plus_spin }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
+                    <span class="me-2 text-h6" v-if="supplier.user.user_detail.link">
                         Webbplats
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.link }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.link"> {{ supplier.user.user_detail.link }} </span>
                     <span class="me-2 text-h6 mt-2">
                         Företagets e-post
                     </span>
-                    <span class="text-footer"> {{ supplier.email }} </span>
+                    <span class="text-footer"> {{ supplier.user.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6" v-if="supplier.user_details.bank">
+                    <span class="me-2 text-h6" v-if="supplier.user.user_detail.bank">
                       Bank
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.bank"> {{ supplier.user_details.bank }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.bank"> {{ supplier.user.user_detail.bank }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.iban">
                         Bankgiro
                     </span>
-                    <span class="text-footer"> {{ supplier.user_details.iban }} </span>
+                    <span class="text-footer"> {{ supplier.user.user_detail.iban }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.account_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.account_number">
                         Kontonummer
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.account_number"> {{ supplier.user_details.account_number }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.account_number"> {{ supplier.user.user_detail.account_number }} </span>
                     
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.user_details.iban_number">
+                    <span class="me-2 text-h6 mt-2" v-if="supplier.user.user_detail.iban_number">
                       Iban nummer
                     </span>
-                    <span class="text-footer" v-if="supplier.user_details.iban_number"> {{ supplier.user_details.iban_number }} </span>
+                    <span class="text-footer" v-if="supplier.user.user_detail.iban_number"> {{ supplier.user.user_detail.iban_number }} </span>
 
                 </VCol>
             </VRow>

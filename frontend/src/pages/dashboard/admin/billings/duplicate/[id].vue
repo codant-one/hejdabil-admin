@@ -33,7 +33,7 @@ const invoice_id = ref(0)
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
+const supplier = ref({})
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -97,7 +97,11 @@ async function fetchData() {
 
         localStorage.setItem('user_data', JSON.stringify(user_data))
 
-        supplier.value = user_data
+        if(billing.value.supplier_id === null) {
+          supplier.value.billings = response.data.data.billings
+          supplier.value.user = user_data
+        } else 
+          supplier.value = suppliers.value.filter(item => item.id === billing.value.supplier_id)[0]
 
         JSON.parse(billing.value.detail).forEach(details => {
             var item = {}
@@ -279,7 +283,7 @@ const onSubmit = () => {
         class="order-2 order-md-1"
       >
         <InvoiceEditable
-            v-if="clients.length > 0"
+            v-if="clients.length > 0 && supplier.billings"
             :data="invoiceData"
             :clients="clients"
             :suppliers="suppliers"

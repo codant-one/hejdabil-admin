@@ -42,7 +42,7 @@ class BillingController extends Controller
                                 }]);
                             }, 'client' => function($query) {
                                 $query->withTrashed();
-                            }, 'state'])
+                            }, 'state', 'user.userDetail'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -123,7 +123,8 @@ class BillingController extends Controller
                     'client' => function($query) {
                         $query->withTrashed();
                     }, 
-                    'state'
+                    'state',
+                    'user.userDetail'
                 ])->find($id);
 
             if (!$billing)
@@ -258,6 +259,10 @@ class BillingController extends Controller
                     Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
                         return $query->where('supplier_id', Auth::user()->supplier->id);
                     }
+            )->when(
+                    Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                        return $query->where('supplier_id', Auth::user()->supplier->boss_id);
+                    }
             )->get();
 
             $invoice_id = Billing::whereNull('supplier_id')->count();
@@ -265,10 +270,11 @@ class BillingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'suppliers' => Supplier::with(['user', 'billings'])->get(),
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->get(),
                     'clients' => $clients,
                     'invoices' => Invoice::all(),
-                    'invoice_id' => $invoice_id
+                    'invoice_id' => $invoice_id,
+                    'billings' => Billing::whereNull('supplier_id')->get()
                 ]
             ]);
 
@@ -435,6 +441,10 @@ class BillingController extends Controller
             $clients = Client::when(
                 Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
                     return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->when(
+                Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->boss_id);
                 }
             )->withTrashed()->get();
 

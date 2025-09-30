@@ -452,7 +452,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!clients.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' || role === 'User' ? 6 : 7"
+                  :colspan="role === 'Supplier' || role === 'User' ? 7 : 8"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

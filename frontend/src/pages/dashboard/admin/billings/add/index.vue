@@ -64,7 +64,15 @@ async function fetchData() {
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
 
-    supplier.value = user_data
+    if(role.value === 'Supplier') {
+      supplier.value = suppliers.value.filter(item => item.id === user_data.supplier.id)[0]
+    } else if(role.value === 'User') {
+      supplier.value = user_data
+      supplier.value.user = user_data.supplier.boss.user
+    } else {
+      supplier.value.billings = response.data.data.billings
+      supplier.value.user = user_data
+    }
 
     var item = {}
     invoices.value.forEach(element => {

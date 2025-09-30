@@ -560,7 +560,8 @@ const downloadCSV = async () => {
                 <th scope="col"> <span :class="textColor"> FAKTURADATUM </span> </th>
                 <th scope="col"> <span :class="textColor"> FÖRFALLER </span> </th>
                 <th class="text-center" scope="col"> <span :class="textColor"> BETALD </span> </th>
-                <th class="text-center" scope="col"> <span :class="textColor"> SKICKAD </span> </th>                
+                <th class="text-center" scope="col"> <span :class="textColor"> SKICKAD </span> </th>    
+                <th scope="col"> <span :class="textColor">SKAPAD AV </span> </th>            
                 <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
               </tr>
             </thead>
@@ -610,6 +611,27 @@ const downloadCSV = async () => {
                     :value="(billing.is_sent === 1) ? false : true"
                     @click.prevent="send(billing)"
                   />
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="billing.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="billing.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + billing.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(billing.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ billing.user.name }} {{ billing.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ billing.user.email }}</span>
+                    </div>
+                  </div>
                 </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
@@ -690,7 +712,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!billings.length">
               <tr>
                 <td
-                  :colspan="role === 'Supplier' ? 11 : 12"
+                  :colspan="role === 'Supplier' ? 12 : 13"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

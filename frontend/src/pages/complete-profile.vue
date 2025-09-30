@@ -41,10 +41,10 @@ async function fetchData() {
     email.value = data.email
     name.value = data.name
     last_name.value = data.last_name
-    phone.value = data.user_details?.phone
-    address.value = data.user_details?.address
+    phone.value = data.user_detail?.phone
+    address.value = data.user_detail?.address
 
-    avatarOld.value = data.user_details?.avatar
+    avatarOld.value = data.user_detail?.avatar
 }
 
 const logout = () => {

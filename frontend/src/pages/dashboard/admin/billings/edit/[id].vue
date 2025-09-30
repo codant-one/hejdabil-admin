@@ -69,7 +69,7 @@ async function fetchData() {
         invoice.value.tax = billing.value.tax
         discount.value = billing.value.discount
         rabattApplied.value = billing.value.rabatt
-        amount_discount.value = billing.value.amount_discoun
+        amount_discount.value = billing.value.amount_discount
 
         invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
             const detailObject = {};
@@ -97,7 +97,11 @@ async function fetchData() {
 
         localStorage.setItem('user_data', JSON.stringify(user_data))
 
-        supplier.value = user_data
+        if(billing.value.supplier_id === null) {
+          supplier.value.billings = response.data.data.billings
+          supplier.value.user = user_data
+        } else 
+          supplier.value = suppliers.value.filter(item => item.id === billing.value.supplier_id)[0]
 
         JSON.parse(billing.value.detail).forEach(details => {
             var item = {}

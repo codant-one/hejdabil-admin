@@ -194,7 +194,15 @@ class AuthController extends Controller
         if($user->password === $hash){
 
             $permissions = getPermissionsByRole(Auth::user());
-            $userData = getUserData(Auth::user()->load(['userDetail', 'supplier.boss.user.userDetail', 'supplier.billings', 'supplier.agreements', 'offers', 'commissions']));
+            $userData = getUserData(Auth::user()->load([
+                'userDetail', 
+                'supplier.boss.user.userDetail', 
+                'supplier.boss.billings', 
+                'supplier.billings', 
+                'supplier.agreements', 
+                'offers', 
+                'commissions'
+            ]));
 
             return response()->json([
                 'success' => true,
@@ -315,7 +323,15 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         $permissions = getPermissionsByRole(Auth::user());
-        $userData = getUserData(Auth::user()->load(['userDetail', 'supplier.boss.user.userDetail', 'supplier.billings', 'supplier.agreements', 'offers', 'commissions']));
+        $userData = getUserData(Auth::user()->load([
+            'userDetail', 
+            'supplier.boss.user.userDetail',
+            'supplier.boss.billings',  
+            'supplier.billings', 
+            'supplier.agreements', 
+            'offers', 
+            'commissions'
+        ]));
 
         return [
             'accessToken' => $token,

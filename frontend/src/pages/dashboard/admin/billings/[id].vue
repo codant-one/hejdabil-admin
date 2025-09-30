@@ -102,7 +102,7 @@ const printInvoice = async() => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
     const blob = await response.blob();
-    
+
     const blobUrl = URL.createObjectURL(blob);
     
     const iframe = document.createElement('iframe');
@@ -123,16 +123,20 @@ const duplicate = () => {
   router.push({ name : 'dashboard-admin-billings-duplicate-id', params: { id: Number(route.params.id) } })
 }
 
+const editBilling = () => {
+  router.push({ name : 'dashboard-admin-billings-edit-id', params: { id: Number(route.params.id) } })
+}
+
 const download = async() => {
   try {
     const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + file.value);
     const blob = await response.blob();
-    
+
     const blobUrl = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
     a.href = blobUrl;
-    a.download = 'invoice-' + invoice.value.invoice_id + '.pdf'; 
+    a.download = file.value.split("/").pop(); 
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -180,6 +184,15 @@ const download = async() => {
       >
         <VCard>
           <VCardText>
+            <VBtn
+              block
+              prepend-icon="tabler-edit"
+              class="mb-2"
+              @click="editBilling"
+            >
+              Redigera
+            </VBtn>
+
             <VBtn
               v-if="invoice.state_id !== 9"
               block
