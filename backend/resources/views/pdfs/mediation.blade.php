@@ -710,43 +710,35 @@
                 </table>
             </td>
         </tr>
-
-        <!-- ====================================================== -->
-        <!-- =================== UNDERSKRIFTER ==================== -->
-        <!-- ====================================================== -->
-        <tr>
-            <td colspan="2" class="footer-section">
-                <table class="signatures-table">
-                    <tr>
-                        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
-                            <div style="min-height: 70px; text-align:center"> 
-                            @if(isset($signature_url))
-                                <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
-                                </div>
-                            @endif
-                            </div>
-                            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
-                                (Fordonsägarens underskrift)
-                            </div>
-                        </td>
-
-                        <!-- CELDA DE LA DERECHA (SIN FIRMA) -->
-                        <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
-                            <div style="min-height: 70px;">
-
-                            </div>
-                            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
-                                (Förmedlarens underskrift)
-                            </div>
-
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
     </tbody>
 </table>
+@if(isset($signature_url))
+    <div style="position: absolute; left: {{ $signature_x }}%; top: {{ $signature_y }}%; z-index: 100;">
+        <img src="{{ $signature_url }}" alt="Firma" style="width: 150px; height: auto;">
+    </div>
+@endif
+<table class="signatures-table" style="width: 100%;">
+    <tr>
+        <!-- CELDA DE LA IZQUIERDA (SIMPLIFICADA) -->
+        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+            <div style="min-height: 70px;">
+                <!-- El espacio para la firma está visualmente aquí, pero la imagen se superpone desde arriba -->
+            </div>
+            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
+                (Fordonsägarens underskrift)
+            </div>
+        </td>
 
+        <!-- CELDA DE LA DERECHA (SIMPLIFICADA) -->
+        <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+            <div style="min-height: 70px;">
+                <!-- El espacio para la firma está visualmente aquí -->
+            </div>
+            <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
+                (Förmedlarens underskrift)
+            </div>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

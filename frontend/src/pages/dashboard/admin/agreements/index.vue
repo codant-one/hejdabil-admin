@@ -295,22 +295,20 @@ const startPlacementProcess = async (agreementData) => {
 }
 
 const handleAdminPdfClick = (event) => {
-  // 1. Obtenemos el contenedor del PDF, que es el elemento con el scroll.
-  const container = pdfPlacementContainer.value;
+  const container = event.currentTarget; 
   if (!container) return;
 
-  // 2. Obtenemos las dimensiones y posición del contenedor relativas a la ventana.
   const rect = container.getBoundingClientRect();
 
-  // 3. Calculamos las coordenadas X e Y, ahora incluyendo el desplazamiento del scroll.
+  // --- VOLVEMOS A CALCULAR PÍXELES ---
   const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top + container.scrollTop; // <-- ¡ESTE ES EL CAMBIO CLAVE!
+  const y = event.clientY - rect.top + container.scrollTop;
 
-  // 4. Actualizamos el estado con las nuevas coordenadas correctas.
   signaturePlacement.value = {
+    // Guardamos los píxeles, como antes
     x: x,
     y: y,
-    page: 1, // Mantenemos la página 1 por ahora
+    page: 1,
     visible: true,
   }
 }
@@ -339,12 +337,21 @@ const submitSignatureRequest = async () => {
   isRequestOngoing.value = true
   
   try {
+
+    const container = pdfPlacementContainer.value;
+    if (!container) {
+      throw new Error("No se pudo encontrar la referencia del contenedor del PDF.");
+    }
+
+    // Convertimos los píxeles guardados a porcentajes
+    const x_percent = (signaturePlacement.value.x / container.offsetWidth) * 100;
+    const y_percent = (signaturePlacement.value.y / container.scrollHeight) * 100;
     // 4. Prepara el 'payload' que espera nuestra acción de Pinia
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
-      x: signaturePlacement.value.x,
-      y: signaturePlacement.value.y,
+      x: x_percent.toFixed(2),
+      y: y_percent.toFixed(2),
       page: signaturePlacement.value.page,
     }
 
@@ -867,8 +874,11 @@ const openLink = function (agreementData) {
               class="signature-placeholder-admin"
               :style="{ left: signaturePlacement.x + 'px', top: signaturePlacement.y + 'px' }"
             >
-              <VIcon icon="mdi-draw" />
-              <span>Signera här</span>
+              <span class="signature-placeholder-content">
+                <VIcon icon="mdi-draw" />
+                <span>Signera här</span>
+              </span>
+              
             </div>
           </div>
         </VCardText>
@@ -902,21 +912,23 @@ const openLink = function (agreementData) {
 /* --- FIN DE NUEVA REGLA --- */
 
 :deep(.signature-placeholder-admin) {
-  position: absolute;
-  width: fit-content!important;    
-  white-space: nowrap!important;
-  border: 2px dashed #ffc107;
-  background-color: rgba(255, 193, 7, 0.2);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: #ffc107;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  z-index: 10;
-  pointer-events: none;
-}
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  :deep(.signature-placeholder-content) {
+    display: inline-flex; /* Asegura que el tamaño se ajuste al contenido */
+    align-items: center;
+    gap: 8px;
+    border: 2px dashed #ffc107;
+    background-color: rgba(255, 193, 7, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffc107;
+    font-weight: 600;
+    white-space: nowrap;
+  }
   @media(min-width: 991px){
       .search {
           width: 20rem;

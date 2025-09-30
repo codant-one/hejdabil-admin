@@ -108,7 +108,7 @@ class SignatureController extends Controller
         // 4. Regenerar el PDF, esta vez pasando la URL de la firma.
         $signedPdfPath = $this->regeneratePdfWithSignature(
             $agreement,
-            Storage::disk('public')->url($signaturePath),
+            $signaturePath,
             $token->placement_x,
             $token->placement_y
         );
@@ -151,7 +151,7 @@ class SignatureController extends Controller
             'agreement_client', 'vehicle_client.vehicle.model.brand',
             'vehicle_client.vehicle.fuel', 'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types', 
-            'supplier.user.userDetail' // <-- CARGAMOS LA RELACIÓN COMPLETA
+            'supplier.user.userDetail'
         ]);
 
         // 2. Determinar quién es el usuario creador.
@@ -160,12 +160,14 @@ class SignatureController extends Controller
             $creatorUser = $agreement->supplier->user;
         }
         // Si no hay proveedor, podrías añadir lógica para buscar un usuario admin aquí si fuera necesario.
-
+        $fullPath = Storage::disk('public')->path($signatureUrl);
+        $imageData = base64_encode(file_get_contents($fullPath));
+        $signatureImageSrc = 'data:image/png;base64,' . $imageData;
         // 3. Preparar los datos para la vista, incluyendo el usuario y la firma.
         $data = [
             'agreement'     => $agreement,
             'user'          => $creatorUser,
-            'signature_url' => $signatureUrl,
+            'signature_url' => $signatureImageSrc,
             'signature_x'   => $x,
             'signature_y'   => $y,
         ];

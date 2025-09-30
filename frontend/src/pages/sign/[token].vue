@@ -4,54 +4,76 @@ import { ref, onMounted, nextTick } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import axios from '@/plugins/axios'
+import { useTheme } from 'vuetify'
+import { themeConfig } from '@themeConfig'
 
-const props = defineProps({ token: { type: String, required: true } })
+const props = defineProps({
+  token: {
+    type: String,
+    required: true,
+  },
+})
 
-// Refs de estado
-const isLoadingPdf = ref(true)
+// --- Refs de Estado (Ahora más simples) ---
+const isLoading = ref(true)
 const pdfSource = ref(null)
-const signatureBox = ref({ x: 0, y: 0, visible: false })
-const signatureData = ref({ img: null, x: 0, y: 0, page: 1 })
+const signaturePlacement = ref({ x: 0, y: 0, visible: false }) // Coordenadas fijas del admin
 const isSignatureModalVisible = ref(false)
 const signaturePad = ref(null)
 const finalState = ref(null)
 const isSubmitting = ref(false)
 
-// Refs de elementos del DOM
+// --- Refs de Elementos del DOM ---
 const signatureCanvas = ref(null)
-const pdfContainer = ref(null)
 
-// --- Lógica Principal ---
-const fetchUnsignedPdf = async () => {
+// --- Lógica del Tema (para el lienzo de firma) ---
+const { global } = useTheme()
+
+// --- Funciones del Componente (Refactorizadas) ---
+
+// Carga tanto el PDF como los detalles de la firma
+const loadSignatureData = async () => {
+  isLoading.value = true
   try {
-    const response = await axios.get(`/signatures/${props.token}/get-unsigned-pdf`, {
-      responseType: 'blob',
-    });
-    pdfSource.value = URL.createObjectURL(response.data);
+    // Usamos Promise.all para hacer ambas peticiones en paralelo
+    const [detailsResponse, pdfResponse] = await Promise.all([
+      axios.get(`/signatures/${props.token}/details`),
+      axios.get(`/signatures/${props.token}/get-unsigned-pdf`, { responseType: 'blob' })
+    ]);
+
+    // Guardamos las coordenadas que el admin eligió
+    signaturePlacement.value = {
+      x: detailsResponse.data.placement_x,
+      y: detailsResponse.data.placement_y,
+      visible: true,
+    }
+
+    // Creamos la URL del PDF y la guardamos
+    pdfSource.value = URL.createObjectURL(pdfResponse.data);
+
   } catch (error) {
-    console.error("Kunde inte ladda PDF:", error);
-    // ...
+    console.error("Kunde inte ladda signeringsdata:", error);
+    finalState.value = {
+      type: 'error',
+      icon: 'mdi-alert-circle-outline',
+      title: 'Fel',
+      message: 'Kunde inte ladda dokumentet. Länken kan vara ogiltig eller ha löpt ut.',
+    }
   } finally {
-    isLoadingPdf.value = false;
+    isLoading.value = false;
   }
 }
 
-const handlePdfClick = (event) => {
-  if (signatureData.value.img) return; // No hacer nada si ya se firmó
-  const rect = pdfContainer.value.getBoundingClientRect();
-  signatureBox.value = {
-    x: event.clientX - rect.left - 50, // Centrar el recuadro
-    y: event.clientY - rect.top - 25,
-    visible: true,
-  }
-}
-
+// Abre el diálogo para que el cliente dibuje su firma
 const openSignatureModal = () => {
   isSignatureModalVisible.value = true
   nextTick(() => {
-    const canvas = signatureCanvas.value
+    const canvas = signatureCanvas.value;
     if (canvas) {
-      signaturePad.value = new SignaturePad(canvas, { backgroundColor: 'rgb(255, 255, 255)' });
+      signaturePad.value = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(0, 0, 0, 0)',
+        penColor: global.name.value === 'dark' ? 'rgb(220, 220, 240)' : 'rgb(0, 0, 0)',
+      });
       const ratio = Math.max(window.devicePixelRatio || 1, 1);
       canvas.width = canvas.offsetWidth * ratio;
       canvas.height = canvas.offsetHeight * ratio;
@@ -61,86 +83,92 @@ const openSignatureModal = () => {
   });
 }
 
+// Cierra el diálogo y procesa la firma
 const closeSignatureModal = (accepted) => {
-  if (accepted && !signaturePad.value.isEmpty()) {
-    signatureData.value = {
-      img: signaturePad.value.toDataURL('image/png'),
-      x: signatureBox.value.x,
-      y: signatureBox.value.y,
-      page: 1, // Asumimos página 1 por ahora
-    }
-    signatureBox.value.visible = false;
-  }
   isSignatureModalVisible.value = false;
+  if (accepted && signaturePad.value && !signaturePad.value.isEmpty()) {
+    submitFinalSignature(signaturePad.value.toDataURL('image/png'));
+  }
 }
 
-const submitFinalSignature = async () => {
+// Envía la firma al backend (AHORA NO ENVÍA COORDENADAS)
+const submitFinalSignature = async (signatureImage) => {
+  if (isSubmitting.value) return;
   isSubmitting.value = true;
   try {
     const payload = {
-      signature: signatureData.value.img,
-      x: signatureData.value.x,
-      y: signatureData.value.y,
-      page: signatureData.value.page,
+      signature: signatureImage, // Solo la imagen de la firma
     };
     const response = await axios.post(`/signatures/submit/${props.token}`, payload);
-    // ... tu lógica de estado final ...
+
+    finalState.value = {
+      type: 'success',
+      icon: 'mdi-check-circle-outline',
+      title: 'Signering slutförd!',
+      message: response.data.message,
+      downloadUrl: response.data.download_url,
+    };
   } catch (error) {
-    // ... tu lógica de error ...
+    finalState.value = {
+      type: 'error',
+      icon: 'mdi-alert-circle-outline',
+      title: 'Ett fel uppstod',
+      message: error.response?.data?.message || 'Kunde inte slutföra signeringen.',
+    };
   } finally {
     isSubmitting.value = false;
   }
 }
 
-onMounted(fetchUnsignedPdf)
+onMounted(loadSignatureData);
 </script>
+
 <template>
   <div class="signing-container">
-    <VCard v-if="!finalState" class="signing-card">
-      <VCardTitle class="text-h6">
-        Signera Dokument
-        <VSpacer />
-        <VBtn
-          color="primary"
-          :disabled="!signatureData.img"
-          :loading="isSubmitting"
-          @click="submitFinalSignature"
-        >
-          Slutför och skicka
+    <!-- Estado de carga y final -->
+    <VCard v-if="isLoading || finalState" class="pa-8 text-center" max-width="500">
+      <VProgressCircular v-if="isLoading" indeterminate color="primary" size="64" />
+      <div v-if="finalState">
+        <VIcon :icon="finalState.icon" :color="finalState.type" size="64" class="mb-4" />
+        <VCardTitle class="text-h5">{{ finalState.title }}</VCardTitle>
+        <VCardText>{{ finalState.message }}</VCardText>
+        <VBtn v-if="finalState.downloadUrl" :href="finalState.downloadUrl" target="_blank" color="success" class="mt-4" prepend-icon="mdi-cloud-download-outline">
+          Ladda ner signerat avtal
         </VBtn>
-      </VCardTitle>
-      <VDivider />
-
-      <VProgressLinear v-if="isLoadingPdf" indeterminate color="primary" />
-      
-      <div v-if="!isLoadingPdf" ref="pdfContainer" class="pdf-container" @click="handlePdfClick">
-        <!-- Capa para el PDF renderizado -->
-        <vue-pdf-embed :source="pdfSource" ref="pdfEmbed" />
-
-        <!-- Recuadro movible para la firma -->
-        <div 
-          v-if="signatureBox.visible"
-          class="signature-placeholder"
-          :style="{ left: signatureBox.x + 'px', top: signatureBox.y + 'px' }"
-          @click.stop="openSignatureModal"
-        >
-          <VIcon icon="mdi-draw" />
-          <span>Signera här</span>
-        </div>
-
-        <!-- La firma ya colocada -->
-        <img 
-          v-if="signatureData.img"
-          :src="signatureData.img"
-          class="placed-signature"
-          :style="{ left: signatureData.x + 'px', top: signatureData.y + 'px' }"
-        />
       </div>
     </VCard>
 
-    <!-- Estado final (éxito o error) -->
-    <VCard v-if="finalState" class="pa-8 text-center" max-width="500">
-        <!-- ... tu código de estado final existente ... -->
+    <!-- Visor de PDF cuando la carga ha finalizado -->
+    <VCard v-if="!isLoading && !finalState" class="signing-card">
+      <VToolbar density="compact" color="surface">
+        <VToolbarTitle class="text-subtitle-1">
+          Vänligen signera dokumentet
+        </VToolbarTitle>
+      </VToolbar>
+      <VDivider />
+      
+      <div class="pdf-container">
+
+      <!-- ESTE ES EL NUEVO DIV WRAPPER -->
+      <!-- Se encarga del posicionamiento. Su altura se ajustará al contenido del PDF -->
+      <div style="position: relative;">
+
+          <vue-pdf-embed :source="pdfSource" />
+
+          <!-- Ahora, este placeholder se posiciona relativo al nuevo wrapper, que tiene la altura total del PDF -->
+          <div 
+            v-if="signaturePlacement.visible"
+            class="signature-placeholder"
+            :style="{left: signaturePlacement.x + '%', 
+                    top: signaturePlacement.y + '%'}"
+            @click.stop="openSignatureModal"
+          >
+            <VIcon icon="mdi-draw" />
+            <span>Signera här</span>
+          </div>
+
+      </div>
+      </div>
     </VCard>
 
     <!-- Diálogo para firmar (el lienzo) -->
@@ -155,32 +183,57 @@ onMounted(fetchUnsignedPdf)
         <VCardActions>
           <VSpacer />
           <VBtn color="secondary" @click="closeSignatureModal(false)">Avbryt</VBtn>
-          <VBtn color="primary" @click="closeSignatureModal(true)">Acceptera</VBtn>
+          <VBtn color="primary" @click="closeSignatureModal(true)" :disabled="isSubmitting" :loading="isSubmitting">Acceptera</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>
   </div>
 </template>
+
 <style scoped>
-.signing-container { display: flex; justify-content: center; align-items: flex-start; padding-top: 2rem; min-height: 100vh; background-color: #f0f2f5; }
-.signing-card { width: 90%; max-width: 850px; }
-.pdf-container { position: relative; cursor: pointer; }
+.signing-container {
+  display: flex;
+  justify-content: center;
+  align-items: center; /* Centrado vertical y horizontal */
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: rgb(var(--v-theme-surface-variant));
+}
+.signing-card {
+  width: 100%;
+  max-width: 900px;
+  height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.pdf-container {
+  position: relative;
+  flex-grow: 1;
+  overflow: auto; /* Permite scroll en el PDF */
+}
 .signature-placeholder {
   position: absolute;
-  border: 2px dashed #007bff;
-  background-color: rgba(0, 123, 255, 0.1);
+  border: 2px dashed rgb(var(--v-theme-primary));
+  background-color: rgba(var(--v-theme-primary), 0.1);
   border-radius: 8px;
   padding: 8px 12px;
-  color: #007bff;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  color: rgb(var(--v-theme-primary));
   font-weight: 600;
   z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
-.placed-signature { position: absolute; width: 200px; z-index: 5; }
-.signature-pad-wrapper { border: 1px solid #ccc; }
-canvas { width: 100%; height: 200px; }
+.signature-pad-wrapper {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 4px;
+}
+canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+}
 </style>
 
 <route lang="yaml">
