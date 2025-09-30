@@ -239,6 +239,6 @@ canvas {
 <route lang="yaml">
   meta:
     layout: blank
-      redirectIfLoggedIn: false
-      public: true    # opcional, claro indicador de que es pública
-  </route>
+    redirectIfLoggedIn: false
+    public: true    # opcional, claro indicador de que es pública
+</route>
