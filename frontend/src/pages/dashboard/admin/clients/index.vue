@@ -370,7 +370,7 @@ const truncateText = (text, length = 15) => {
             <thead>
               <tr>
                 <th scope="col">#ID</th>
-                <th scope="col" class="w-30">Kontakt</th>
+                <th scope="col" class="w-25">Kontakt</th>
                 <th scope="col" class="text-center"> Organisationsnummer </th>
                 <th scope="col" class="text-center">Telefon</th>
                 <th scope="col" class="text-center">Adress</th>
