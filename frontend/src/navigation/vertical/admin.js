@@ -29,6 +29,8 @@ export default [
   {
     title: 'Hjälp',
     icon: { icon:'custom-help' },
-    class: 'help-button'
+    class: 'help-button',
+    action: 'view' , 
+    subject: 'dashboard'
   }
 ]
