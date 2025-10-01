@@ -373,8 +373,8 @@ const truncateText = (text, length = 15) => {
                 <th scope="col" class="w-30">Kontakt</th>
                 <th scope="col" class="text-center"> Organisationsnummer </th>
                 <th scope="col" class="text-center">Telefon</th>
-                <th scope="col">Adress</th>
-                <th scope="col" v-if="role !== 'Supplier'"> Leverantör</th>
+                <th scope="col" class="text-center">Adress</th>
+                <th scope="col" class="text-center" v-if="role !== 'Supplier'"> Leverantör</th>
                 <th
                   scope="col"
                   v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -413,7 +413,7 @@ const truncateText = (text, length = 15) => {
                     {{ client.phone ?? "" }}
                   </span>
                 </td>
-                <td class="text-wrap">
+                <td class="text-wrap text-center">
                   <span class="">
                     <VTooltip location="bottom">
                       <template #activator="{ props }">
@@ -425,7 +425,7 @@ const truncateText = (text, length = 15) => {
                     </VTooltip>
                   </span>
                 </td>
-                <td class="text-wrap" v-if="role !== 'Supplier'">
+                <td class="text-wrap text-center" v-if="role !== 'Supplier'">
                   <div
                     class="d-flex align-center gap-x-3"
                     v-if="client.supplier"
