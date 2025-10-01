@@ -369,14 +369,14 @@ const truncateText = (text, length = 15) => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col" style="width: 58px">#ID</th>
+                <th scope="col">#ID</th>
                 <th scope="col" style="width: 30%">Kontakt</th>
-                <th scope="col" style="width: 221.25px" class="text-center">
+                <th scope="col" class="text-center">
                   Organisationsnummer
                 </th>
-                <th scope="col" style="width: 221.25px">Telefon</th>
-                <th scope="col" style="width: 221.25px">Adress</th>
-                <th scope="col" style="width: 48px" v-if="role !== 'Supplier'">
+                <th scope="col">Telefon</th>
+                <th scope="col">Adress</th>
+                <th scope="col" v-if="role !== 'Supplier'">
                   Leverantör
                 </th>
                 <th
