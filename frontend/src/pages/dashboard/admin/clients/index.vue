@@ -370,15 +370,11 @@ const truncateText = (text, length = 15) => {
             <thead>
               <tr>
                 <th scope="col">#ID</th>
-                <th scope="col" style="width: 30%">Kontakt</th>
-                <th scope="col" class="text-center">
-                  Organisationsnummer
-                </th>
-                <th scope="col">Telefon</th>
+                <th scope="col" class="w-30">Kontakt</th>
+                <th scope="col" class="text-center"> Organisationsnummer </th>
+                <th scope="col" class="text-center">Telefon</th>
                 <th scope="col">Adress</th>
-                <th scope="col" v-if="role !== 'Supplier'">
-                  Leverantör
-                </th>
+                <th scope="col" v-if="role !== 'Supplier'"> Leverantör</th>
                 <th
                   scope="col"
                   v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -412,7 +408,7 @@ const truncateText = (text, length = 15) => {
                     {{ client.organization_number ?? "" }}
                   </span>
                 </td>
-                <td class="text-wrap">
+                <td class="text-wrap text-center">
                   <span class="">
                     {{ client.phone ?? "" }}
                   </span>
