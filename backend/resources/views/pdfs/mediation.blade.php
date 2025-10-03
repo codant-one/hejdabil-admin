@@ -712,7 +712,7 @@
         </tr>
     </tbody>
 </table>
-@if(isset($signature_url))
+@if(isset($signature_url) && isset($signature_x) && isset($signature_y))
     <div style="position: absolute; left: {{ $signature_x }}%; top: {{ $signature_y }}%; z-index: 100;">
         <img src="{{ $signature_url }}" alt="Firma" style="width: 150px; height: auto;">
     </div>
@@ -720,9 +720,12 @@
 <table class="signatures-table" style="width: 100%;">
     <tr>
         <!-- CELDA DE LA IZQUIERDA (SIMPLIFICADA) -->
-        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+        <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
             <div style="min-height: 70px;">
                 <!-- El espacio para la firma está visualmente aquí, pero la imagen se superpone desde arriba -->
+                @if(isset($signature_url) && !isset($signature_x))   
+                    <img src="{{ $signature_url }}" alt="Firma" style="width: 150px; height: auto;">
+                @endif
             </div>
             <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
                 (Fordonsägarens underskrift)

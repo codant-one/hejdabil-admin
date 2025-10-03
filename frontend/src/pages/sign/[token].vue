@@ -17,7 +17,7 @@ const props = defineProps({
 // --- Refs de Estado (Ahora más simples) ---
 const isLoading = ref(true)
 const pdfSource = ref(null)
-const signaturePlacement = ref({ x: 0, y: 0, visible: false }) // Coordenadas fijas del admin
+const signaturePlacement = ref({ x: null, y: null, isStatic: false, visible: false, alignment: 'left' }) // Coordenadas fijas del admin
 const isSignatureModalVisible = ref(false)
 const signaturePad = ref(null)
 const finalState = ref(null)
@@ -42,10 +42,34 @@ const loadSignatureData = async () => {
     ]);
 
     // Guardamos las coordenadas que el admin eligió
-    signaturePlacement.value = {
-      x: detailsResponse.data.placement_x,
-      y: detailsResponse.data.placement_y,
-      visible: true,
+    //signaturePlacement.value = {
+      //x: detailsResponse.data.placement_x,
+      //y: detailsResponse.data.placement_y,
+      //visible: true,
+    //}
+
+    
+
+    const { placement_x, placement_y, signature_alignment } = detailsResponse.data;
+
+    if (placement_x !== null && placement_y !== null) {
+      // --- Escenario 1: Firma DINÁMICA ---
+      signaturePlacement.value = {
+        x: placement_x,
+        y: placement_y,
+        isStatic: false,
+        visible: true,
+        alignment: signature_alignment || 'left',
+      };
+    } else {
+      // --- Escenario 2: Firma ESTÁTICA ---
+      signaturePlacement.value = {
+        x: null, 
+        y: null,
+        isStatic: true,
+        visible: true,
+        alignment: signature_alignment || 'left',
+      };
     }
 
     // Creamos la URL del PDF y la guardamos
@@ -159,8 +183,13 @@ onMounted(loadSignatureData);
           <div 
             v-if="signaturePlacement.visible"
             class="signature-placeholder"
-            :style="{left: signaturePlacement.x + '%', 
-                    top: signaturePlacement.y + '%'}"
+            :class="{ 'static-signature-position': signaturePlacement.isStatic,
+                      'align-left': signaturePlacement.isStatic && signaturePlacement.alignment === 'left',
+                      'align-right': signaturePlacement.isStatic && signaturePlacement.alignment === 'right'}"
+            :style="!signaturePlacement.isStatic ? {
+              left: signaturePlacement.x + '%', 
+              top: signaturePlacement.y + '%'
+            } : {}"
             @click.stop="openSignatureModal"
           >
             <VIcon icon="mdi-draw" />
@@ -225,6 +254,27 @@ onMounted(loadSignatureData);
   gap: 8px;
   cursor: pointer;
 }
+
+.signature-placeholder:not(.static-signature-position) {
+    transform: translate(-50%, -50%);
+}
+
+
+/* Posicionamiento para la firma estática (con clases) */
+.static-signature-position.align-left {
+  bottom: 6%;
+  left: 25%;
+  top: auto;
+  transform: translate(-50%, -50%);
+}
+
+.static-signature-position.align-right {
+  bottom: 13%;
+  left: 75%;
+  top: auto;
+  transform: translate(-50%, -50%);
+}
+
 .signature-pad-wrapper {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 4px;

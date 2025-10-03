@@ -7,11 +7,13 @@ use App\Models\Token;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SignatureRequestMail; // Lo crearemos en el siguiente paso
+use App\Mail\SignatureRequestMail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth; // Necesario para regenerar el PDF
-use PDF; // Tu modelo ya usa el Facade 'PDF', así que lo usamos también
+use Illuminate\Support\Facades\Auth;
+use PDF;
 use Illuminate\Support\Facades\Response;
+use App\Mail\SignedDocumentMail; 
+use Illuminate\Support\Facades\Log;
 class SignatureController extends Controller
 {
     /**
@@ -51,6 +53,43 @@ class SignatureController extends Controller
         ]);
 
         // 5. Enviar el email al cliente con el enlace de firma.
+        Mail::to($validated['email'])->send(new SignatureRequestMail($token));
+        
+        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+    }
+
+    //Firmar con posición fija.
+    public function sendStaticSignatureRequest(Agreement $agreement, Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        // 1. Verificar si el contrato ya tiene un PDF generado.
+        if (!$agreement->file) {
+            return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
+        }
+
+        // 2. Obtener el cliente asociado al contrato.
+        $agreementClient = $agreement->agreement_client;
+        if (!$agreementClient || !$agreementClient->email) {
+            return response()->json(['message' => 'El contrato no tiene un cliente con email asociado.'], 422);
+        }
+
+        // 3. Generar un token único.
+        $signingToken = Str::uuid()->toString();
+        
+        // 4. Crear el registro en 'tokens' SIN coordenadas.
+        $token = $agreement->tokens()->create([
+            'signing_token' => $signingToken,
+            'token_expires_at'    => now()->addDays(7),
+            'signature_status'        => 'sent',
+            'placement_x'   => null, // Guardamos null para identificar que es una firma estática
+            'placement_y'   => null,
+            'placement_page'=> 1,    // Asumimos página 1 por defecto
+        ]);
+
+        // 5. Enviar el email al cliente.
         Mail::to($validated['email'])->send(new SignatureRequestMail($token));
         
         return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
@@ -127,6 +166,16 @@ class SignatureController extends Controller
         // 6. Opcional pero recomendado: Actualizar el campo 'file' del Agreement con la nueva ruta.
         $agreement->file = $signedPdfPath;
         $agreement->save();
+
+        try {
+            $clientEmail = $token->agreement->agreement_client->email;
+            if ($clientEmail) {
+                $pdfFullPath = storage_path('app/public/' . $signedPdfPath);
+                Mail::to($clientEmail)->send(new SignedDocumentMail($agreement, $pdfFullPath));
+            }
+        } catch (\Exception $e) {
+            Log::error('Kunde inte skicka signerat PDF via e-post för avtal #' . $agreement->id . ': ' . $e->getMessage());
+        }
         
         // 7. Devolver una respuesta exitosa a Vue.
         return response()->json([
@@ -139,7 +188,7 @@ class SignatureController extends Controller
      * Helper privado para regenerar el PDF con la firma.
      * Esta función adapta la lógica de tu método Agreement::generatePdf().
      */
-    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, float $x, float $y)
+    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, ?float $x, ?float $y)
     {
         // 1. Cargar todas las relaciones necesarias.
         $agreement->load([
@@ -230,10 +279,23 @@ class SignatureController extends Controller
     {
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
 
+        // Lógica para determinar la alineación de la firma
+        $alignment = 'left'; // Por defecto, la firma va a la izquierda
+        $agreementTypeId = $token->agreement->agreement_type_id;
+
+        // Para el contrato de Compra (Purchase), el cliente es el vendedor,
+        // por lo que su firma va a la DERECHA.
+        if ($agreementTypeId == 2) { // 2 = Purchase
+            $alignment = 'right';
+        }
+        // Para los demás (Sales, Mediation), la firma del cliente va a la izquierda.
+        // No necesitamos más condiciones, el valor por defecto 'left' ya funciona para ellos.
+
         return response()->json([
             'placement_x' => $token->placement_x,
             'placement_y' => $token->placement_y,
             'placement_page' => $token->placement_page,
+            'signature_alignment' => $alignment,
         ]);
     }
 }

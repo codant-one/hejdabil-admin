@@ -28,6 +28,7 @@ const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
 const selectedAgreement = ref({})
+const isStaticSignatureFlow = ref(false)
 
 const agreementTypes = ref([])
 
@@ -319,12 +320,18 @@ const openSignatureDialog = (agreementData) => {
   isSignatureDialogVisible.value = true
 }
 
+const openStaticSignatureDialog = (agreementData) => {
+  selectedAgreement.value = { ...agreementData }; // Aseguramos que el agreement está seleccionado
+  isStaticSignatureFlow.value = true // ¡Importante! Indicamos que es el flujo estático
+  signatureEmail.value = agreementData.agreement_client?.email || ''
+  isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
+}
 
 /**
  * Esta función se ejecuta al hacer clic en "Skicka" dentro del diálogo.
  * Valida el formulario y llama a la acción de Pinia con los datos correctos.
  */
-const submitSignatureRequest = async () => {
+const submitPlacementSignatureRequest  = async () => {
   // 1. Valida el formulario usando la referencia 'refSignatureForm'
   const { valid } = await refSignatureForm.value?.validate()
 
@@ -385,6 +392,59 @@ const submitSignatureRequest = async () => {
     }, 3000)
   }
 }
+
+const submitStaticSignatureRequest = async () => {
+  // 1. Valida el formulario
+  const { valid } = await refSignatureForm.value?.validate();
+  if (!valid) return;
+
+  // 2. Cierra modal y activa spinner
+  isSignatureDialogVisible.value = false;
+  isRequestOngoing.value = true;
+
+  try {
+    // 3. Prepara un payload más simple, sin coordenadas
+    const payload = {
+      agreementId: selectedAgreement.value.id,
+      email: signatureEmail.value,
+    };
+
+    // 4. Llama a una NUEVA acción en el store de Pinia
+    const response = await agreementsStores.requestStaticSignature(payload);
+
+    // 5. Muestra mensaje de éxito
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true,
+    };
+    await fetchData();
+
+  } catch (error) {
+    // Manejo de errores
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true,
+    };
+  } finally {
+    // Limpieza
+    isRequestOngoing.value = false;
+    signatureEmail.value = '';
+    setTimeout(() => {
+      advisor.value = { show: false };
+    }, 3000);
+  }
+};
+
+const handleSignatureSubmit = async () => {
+  if (isStaticSignatureFlow.value) {
+    await submitStaticSignatureRequest();
+  } else {
+    // Asegúrate de que el nombre aquí coincida con cómo renombraste la función original
+    await submitPlacementSignatureRequest(); 
+  }
+};
 
 const handlePlacementModalClose = (value) => {
   if (!value) {
@@ -563,7 +623,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')" @click="startPlacementProcess(agreement)">
+                      <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
@@ -684,7 +744,7 @@ const openLink = function (agreementData) {
         <!-- Usamos VForm para poder validar el campo de email -->
         <VForm
           ref="refSignatureForm"
-          @submit.prevent="submitSignatureRequest"
+          @submit.prevent="handleSignatureSubmit"
         >
           <VDivider class="mt-4"/>
           <VCardText>
