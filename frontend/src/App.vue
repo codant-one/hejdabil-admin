@@ -56,40 +56,8 @@ me()
     <VLocaleProvider :rtl="isAppRtl">
       <!-- ℹ️ This is required to set the background color of active nav link based on currently active global theme's primary -->
       <VApp :style="`--v-global-theme-primary: ${hexToRgb(global.current.value.colors.primary)}`">
-        <div class="sticky-container d-none d-md-flex">
-          <div class="d-flex gap-x-3 buttons-center">
-            <VBtn
-              class="btn-blue px-6"
-              @click="redirectTo('dashboard-admin-stock')"
-            >
-              Köp
-              <VIcon icon="custom-car-close" size="24" />
-            </VBtn>
-            <VBtn
-              class="btn-green px-6"
-              @click="redirectTo('dashboard-admin-sold')"
-            >
-              Sälj
-              <VIcon icon="custom-car-open" size="24" />
-            </VBtn>
-          </div>
-        </div>
         <RouterView :key="$route.fullPath"/>
       </VApp>
     </VLocaleProvider>
   </section>
 </template>
-
-<style>
-  .sticky-container {
-    position: sticky;
-    top: 2.5%;      
-    z-index: 9999;
-  }
-
-  .buttons-center {
-    position: absolute;
-    left: 50%;                 
-    transform: translateX(-50%);
-  }
-</style>
