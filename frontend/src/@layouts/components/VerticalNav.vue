@@ -100,6 +100,15 @@ const closeAll = () => {
     ]"
   >
     <!-- 👉 Header -->
+    <div class="nav-header-logo">
+      <RouterLink
+        to="/info"
+        :class="hideTitleAndIcon ? 'justify-center' : ''"
+        class="d-flex h-100 app-logo align-center gap-x-1 app-title-wrapper"
+      >
+        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" />
+      </RouterLink>
+    </div>
     <div class="nav-header">
       <slot name="nav-header">
         <!-- <RouterLink
@@ -179,9 +188,7 @@ const closeAll = () => {
 // 👉 Vertical Nav
 .layout-vertical-nav {
   position: fixed;
-  z-index: 1;
-  margin-top: 0 !important;
-  padding-top: 114px;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
   block-size: 100%;
@@ -189,12 +196,15 @@ const closeAll = () => {
   inset-block-start: 0;
   inset-inline-start: 0;
   will-change: transform, inline-size;
-  margin-top: 114px;
   background-color: transparent !important;
   box-shadow: none !important;
 
+  .nav-header-logo {
+    margin: 30px 24px 0 24px;
+  }
+
   .nav-header {
-    margin: 0px 24px 24px 24px;
+    margin: 30px 24px 24px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;

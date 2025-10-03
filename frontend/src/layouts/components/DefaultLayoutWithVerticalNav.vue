@@ -1,4 +1,5 @@
 <script setup>
+
 import router from "@/router";
 import Footer from "@/layouts/components/Footer.vue";
 import navItems from "@/navigation/vertical";
@@ -22,11 +23,6 @@ import settingsIcon from "@/assets/images/icons/figma/settings.svg";
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
 
-const redirectTo = (path) => {
-  router.push({
-    name: path,
-  });
-};
 </script>
 
 <template>
@@ -46,28 +42,9 @@ const redirectTo = (path) => {
           <VIcon icon="tabler-menu-2" size="24" />
         </VBtn> -->
 
-        <RouterLink to="/" class="d-flex align-center md-ms-3 header-logo">
+        <RouterLink to="/" class="d-flex d-md-none align-center md-ms-3 header-logo">
           <VNodeRenderer :nodes="themeConfig.app.logoFull" />
         </RouterLink>
-
-        <VSpacer />
-
-        <div class="align-center gap-x-3 d-none d-md-flex">
-          <VBtn
-            class="btn-blue px-6"
-            @click="redirectTo('dashboard-admin-stock')"
-          >
-            Köp
-            <VIcon icon="custom-car-close" size="24" />
-          </VBtn>
-          <VBtn
-            class="btn-green px-6"
-            @click="redirectTo('dashboard-admin-sold')"
-          >
-            Sälj
-            <VIcon icon="custom-car-open" size="24" />
-          </VBtn>
-        </div>
 
         <VSpacer />
 

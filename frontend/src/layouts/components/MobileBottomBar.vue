@@ -8,7 +8,7 @@ import router from "@/router";
 
 const showMenu = ref(false);
 const { width } = useWindowSize();
-const MOBILE_BREAKPOINT = 768; // px
+const MOBILE_BREAKPOINT = 992; // px
 
 const props = defineProps({
   navItems: {
