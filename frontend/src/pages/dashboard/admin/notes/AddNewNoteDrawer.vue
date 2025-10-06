@@ -185,18 +185,18 @@ const handleDrawerModelValueUpdate = val => {
               <!-- 👉 Submit and Cancel -->
               <VCol cols="12">
                 <VBtn
-                  type="submit"
-                  class="me-3"
-                >
-                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
-                </VBtn>
-                <VBtn
                   type="reset"
                   variant="tonal"
                   color="secondary"
+                  class="me-3"
                   @click="closeNavigationDrawer"
                 >
                   Avbryt
+                </VBtn>
+                <VBtn
+                  type="submit"
+                >
+                  {{ isEdit ? 'Uppdatering': 'Lägg till' }}
                 </VBtn>
               </VCol>
             </VRow>

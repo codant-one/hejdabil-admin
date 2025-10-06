@@ -17,6 +17,10 @@ class Note extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('reg_num', 'LIKE', '%' . $search . '%')
@@ -33,6 +37,14 @@ class Note extends Model
 
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
+
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
+        }
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
@@ -56,8 +68,18 @@ class Note extends Model
     /**** Public methods ****/
     public static function createNote($request) {
 
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
+
         $note = self::create([
             'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
             'reg_num' => $request->reg_num,
             'note' => $request->note === 'null' ? null : $request->note,
             'name' => $request->name === 'null' ? null : $request->name,

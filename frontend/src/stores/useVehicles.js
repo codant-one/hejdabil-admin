@@ -7,6 +7,7 @@ export const useVehiclesStores = defineStore('vehicles', {
         brands: {},
         models: {},
         gearboxes: {},
+        suppliers: {},
         loading: false,
         last_page: 1,
         vehiclesTotalCount: 6
@@ -23,6 +24,9 @@ export const useVehiclesStores = defineStore('vehicles', {
         },
         getGearboxes(){
             return this.gearboxes
+        },
+        getSuppliers(){
+            return this.suppliers
         }
     },
     actions: {
@@ -37,6 +41,7 @@ export const useVehiclesStores = defineStore('vehicles', {
                     this.brands = response.data.data.brands
                     this.models = response.data.data.models
                     this.gearboxes = response.data.data.gearboxes
+                    this.suppliers = response.data.data.suppliers
                     this.vehicles = response.data.data.vehicles.data
                     this.last_page = response.data.data.vehicles.last_page
                     this.vehiclesTotalCount = response.data.data.vehiclesTotalCount

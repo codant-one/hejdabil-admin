@@ -24,6 +24,7 @@ use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\Identification;
 use App\Models\Currency;
+use App\Models\Supplier;
 
 class VehicleController extends Controller
 {
@@ -45,6 +46,10 @@ class VehicleController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Vehicle::with([
+                        'supplier' => function ($q) {
+                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                        },
+                        'user.userDetail',
                         'model.brand', 
                         'state', 
                         'iva_purchase',
@@ -67,9 +72,10 @@ class VehicleController extends Controller
                             'brand_id',
                             'model_id',
                             'year',
-                            'gearbox_id'
+                            'gearbox_id',
+                            'supplier_id'
                         ])
-                    )->where('user_id', Auth::user()->id);
+                    );
 
             $count = $query->count();
 
@@ -82,7 +88,8 @@ class VehicleController extends Controller
                     'vehiclesTotalCount' => $count,
                     'brands' => Brand::all(),
                     'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all()
+                    'gearboxes' => Gearbox::all(),
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
                 ]
             ]);
 

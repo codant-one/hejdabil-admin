@@ -12,6 +12,11 @@ import router from '@/router'
 const vehiclesStores = useVehiclesStores()
 const emitter = inject("emitter")
 
+const userData = ref(null)
+const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
+
 const vehicles = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
@@ -66,6 +71,7 @@ async function fetchData(cleanFilters = false) {
     model_id.value = null
     year.value = null
     gearbox_id.value = null
+    supplier_id.value = null
   }
 
   let data = {
@@ -79,7 +85,8 @@ async function fetchData(cleanFilters = false) {
     brand_id: brand_id.value,
     model_id: model_id.value,
     year: year.value,
-    gearbox_id: gearbox_id.value
+    gearbox_id: gearbox_id.value,
+    supplier_id: supplier_id.value
   }
 
   isRequestOngoing.value = 
@@ -95,6 +102,13 @@ async function fetchData(cleanFilters = false) {
   vehicles.value = vehiclesStores.getVehicles
   totalPages.value = vehiclesStores.last_page
   totalVehicles.value = vehiclesStores.vehiclesTotalCount
+
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = vehiclesStores.getSuppliers
+  }
 
   isRequestOngoing.value = false
 
@@ -317,7 +331,18 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
+            <VAutocomplete
+                v-if="role === 'SuperAdmin' || role === 'Administrator'"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
+            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">   
               <!-- 👉 Search  -->
               <div class="search">
                 <VTextField
@@ -343,6 +368,8 @@ const downloadCSV = async () => {
                 <th scope="col" class="text-end"> Försäljningspris </th>
                 <th scope="col" class="text-end"> Vinst </th>
                 <th scope="col"> Köparen </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+                <th scope="col"> SKAPAD AV </th>  
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -395,7 +422,33 @@ const downloadCSV = async () => {
                     </span>
                     <span class="text-sm text-disabled">{{ vehicle.client_sale.phone }}</span>
                   </div>
-                </td>                
+                </td>           
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                  <span class="font-weight-medium"  v-if="vehicle.supplier">
+                    {{ vehicle.supplier.user.name }} {{ vehicle.supplier.user.last_name ?? '' }} 
+                  </span>
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="vehicle.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="vehicle.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + vehicle.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(vehicle.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ vehicle.user.name }} {{ vehicle.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ vehicle.user.email }}</span>
+                    </div>
+                  </div>
+                </td>     
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
@@ -438,7 +491,7 @@ const downloadCSV = async () => {
             <tfoot v-show="!vehicles.length">
               <tr>
                 <td
-                  colspan="8"
+                  colspan="10"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

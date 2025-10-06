@@ -57,6 +57,10 @@ class Vehicle extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
+
     public function state(){
         return $this->belongsTo(State::class, 'state_id', 'id');
     }
@@ -104,6 +108,14 @@ class Vehicle extends Model
 
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
+
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
+        }
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
@@ -153,8 +165,18 @@ class Vehicle extends Model
     /**** Public methods ****/
     public static function createVehicle($request) {
 
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
+
         $vehicle = self::create([
             'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
             'reg_num' => $request->reg_num,
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
             'year' => $request->year === 'null' ? null : $request->year,
