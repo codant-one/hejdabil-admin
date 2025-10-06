@@ -108,9 +108,8 @@ async function fetchData() {
     await configsStores.getFeature('logo')
     logoData.value = configsStores.getFeaturedConfig('logo')
 
-    console.log('logoData.value', logoData.value)
-    logo.value = (logoData.value.logo !== null) ? themeConfig.settings.urlStorage + logoData.value.logo : logo_ 
-    logoCropped.value = (logoData.value.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + logoData.value.logo) : logo_ 
+    logo.value = (logoData.value && logoData.value.logo) ? themeConfig.settings.urlStorage + logoData.value.logo : logo_ 
+    logoCropped.value = (logoData.value && logoData.value.logo) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + logoData.value.logo) : logo_ 
 
     setTimeout(() => {
         showWindow(false)
