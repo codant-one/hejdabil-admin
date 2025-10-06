@@ -35,7 +35,8 @@ use App\Http\Controllers\{
     NoteController,
     AgreementController,
     CurrencyController,
-    SignatureController
+    SignatureController,
+    ConfigController
 };
 
 use App\Http\Controllers\Services\{
@@ -179,6 +180,10 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
     });
 
+    //Configs
+    Route::get('featured/{slug}', [ConfigController::class, 'featured']);
+    Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
+    Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
 });
 
 //Public Endpoints

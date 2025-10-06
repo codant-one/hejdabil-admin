@@ -172,6 +172,19 @@ const logout = async () => {
             <VListItemTitle>Mitt team</VListItemTitle>
           </VListItem>
 
+          <!--  👉 Company -->
+          <VListItem :to="{ name: 'dashboard-company' }" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="tabler-building-store"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Företag</VListItemTitle>
+          </VListItem>
+
           <!--  👉 Profile -->
           <VListItem :to="{ name: 'dashboard-profile' }">
             <template #prepend>

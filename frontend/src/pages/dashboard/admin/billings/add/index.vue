@@ -3,9 +3,11 @@
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
+import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
 
+const configsStores = useConfigsStores()
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
 const ability = useAppAbility()
@@ -31,7 +33,7 @@ const invoice_id = ref(0)
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
+const company = ref([])
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -65,13 +67,20 @@ async function fetchData() {
     localStorage.setItem('user_data', JSON.stringify(user_data))
 
     if(role.value === 'Supplier') {
-      supplier.value = suppliers.value.filter(item => item.id === user_data.supplier.id)[0]
+      company.value = user_data.user_detail
+      company.value.email = user_data.email
+      company.value.billings = user_data.supplier.billings
     } else if(role.value === 'User') {
-      supplier.value = user_data
-      supplier.value.user = user_data.supplier.boss.user
+      company.value = user_data.supplier.boss.user.user_detail
+      company.value.email = user_data.supplier.boss.user.email
+      company.value.billings = user_data.supplier.boss.billings
     } else {
-      supplier.value.billings = response.data.data.billings
-      supplier.value.user = user_data
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
+
+      company.value = configsStores.getFeaturedConfig('company')
+      company.value.billings = response.data.data.billings
+      company.value.logo = configsStores.getFeaturedConfig('logo').logo
     }
 
     var item = {}
@@ -257,7 +266,7 @@ const onSubmit = () => {
             :invoice_id="invoice_id"
             :userData="userData"
             :role="role"
-            :supplier="supplier"
+            :company="company"
             :total="total"
             :amount_discount="amount_discount"
             :isCreated="true"

@@ -1,26 +1,32 @@
 <script setup>
 
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
-import { useProfileStores } from '@/stores/useProfile'
-import { useAuthStores } from '@/stores/useAuth'
+import { useConfigsStores } from '@/stores/useConfigs'
 import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
 import 'vue-advanced-cropper/dist/style.css'
 
-const authStores = useAuthStores()
-const profileStores = useProfileStores()
+const configsStores = useConfigsStores()
 
+const avatar = ref('')
+const avatarOld = ref('')
+const userData = ref(null)
+const role = ref(null)
+const isRequestOngoing = ref(false)
+const isFormEdited = ref(false);
+const dialog = ref(false);
+let nextRoute = null;
+
+const company = ref(null)
 const refVForm = ref()
-const isRequestOngoing = ref(true)
 
 const isConfirmChangeLogoVisible = ref(false)
 const cropper = ref()
 
 const data = ref(null)
-const userData = ref(null)
-const role = ref(null)
+const logoData = ref(null)
 const logo = ref(null)
 const logoCropped = ref(null)
 const logoOld = ref(null)
@@ -28,6 +34,7 @@ const filename = ref([])
 
 const form = ref({
     company: '',
+    email: '',
     organization_number: '',
     address: '',
     street: '',
@@ -45,66 +52,87 @@ const form = ref({
 })
 
 const advisor = ref({
-    message: '',
-    show: false,  
-    type: '',
+  type: '',
+  message: '',
+  show: false
 })
 
-const emit = defineEmits([
-  'window',
-  'alert'
-])
+onBeforeRouteLeave((to, from, next) => {
+  if (isFormEdited.value) {
+    dialog.value = true;
+    nextRoute = next;
+  } else {
+    next();
+  }
+});
 
 watch(form.value, () => {
-  emit('window', true);
+    showWindow(true)
 }, { deep: true });
 
 watchEffect(fetchData)
 
-async function fetchData() {
+async function fetchData() { 
 
     isRequestOngoing.value = true
-
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-    data.value = await authStores.company()
+
+    avatarOld.value = userData.value.avatar
+    avatar.value = userData.value.avatar
     role.value = userData.value.roles[0].name
 
-    //console.log('boss.company', userData.value.supplier.boss.user.user_detail.company)
+    await configsStores.getFeature('company')
+    data.value = configsStores.getFeaturedConfig('company')
+    
     //company
-    form.value.company = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.company : userData.value.user_detail.company
-    form.value.organization_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.organization_number : userData.value.user_detail.organization_number
-    form.value.link = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.link : userData.value.user_detail.link
-    form.value.address = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.address : userData.value.user_detail.address
-    form.value.street = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.street : userData.value.user_detail.street
-    form.value.postal_code = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.postal_code :  userData.value.user_detail.postal_code
-    form.value.phone = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.phone : userData.value.user_detail.phone
+    form.value.company = data.value.company
+    form.value.email = data.value.email
+    form.value.organization_number = data.value.organization_number
+    form.value.link = data.value.link
+    form.value.address = data.value.address
+    form.value.street = data.value.street
+    form.value.postal_code = data.value.postal_code
+    form.value.phone = data.value.phone
 
     //bank
-    form.value.bank = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bank : userData.value.user_detail.bank
-    form.value.account_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.account_number : userData.value.user_detail.account_number
+    form.value.bank = data.value.bank
+    form.value.account_number = data.value.account_number
 
-    form.value.iban = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban : userData.value.user_detail.iban
-    form.value.iban_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban_number : userData.value.user_detail.iban_number
-    form.value.bic = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bic : userData.value.user_detail.bic
-    form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : userData.value.user_detail.plus_spin
-    form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : userData.value.user_detail.swish
-    form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : userData.value.user_detail.vat
+    form.value.iban = data.value.iban
+    form.value.iban_number = data.value.iban_number
+    form.value.bic = data.value.bic
+    form.value.plus_spin = data.value.plus_spin
+    form.value.swish = data.value.swish
+    form.value.vat = data.value.vat
 
-    logo.value = 
-        role.value === 'User' ?
-        (userData.value.supplier.boss.user.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo : logo_  :
-        (userData.value.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.logo : logo_ 
-    logoCropped.value = 
-        role.value === 'User' ?
-        (userData.value.supplier.boss.user.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo) : logo_  :
-        (userData.value.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.logo) : logo_ 
+    await configsStores.getFeature('logo')
+    logoData.value = configsStores.getFeaturedConfig('logo')
+
+    logo.value = (logoData.value.logo !== null) ? themeConfig.settings.urlStorage + logoData.value.logo : logo_ 
+    logoCropped.value = (logoData.value.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + logoData.value.logo) : logo_ 
 
     setTimeout(() => {
-        emit('window', false)
+        showWindow(false)
     }, 500)
 
     isRequestOngoing.value = false
+
 }
+
+const showWindow = function(data) {
+  isFormEdited.value = data
+}
+
+const confirmLeave = () => {
+  dialog.value = false;
+  nextRoute();
+};
+
+const cancelLeave = () => {
+  dialog.value = false;
+  nextRoute(false);
+};
+
 
 const fetchImageAsBlob = async (url) => {
   const response = await  fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + url);
@@ -215,13 +243,17 @@ const cropImage = async () => {
         isConfirmChangeLogoVisible.value = false
         isRequestOngoing.value = true
 
-        profileStores.updateLogo(formData)
+        let data = {
+            key: 'logo',
+            params: formData
+        }
+
+        configsStores.postLogo(data)
             .then(async response => {    
 
                 window.scrollTo(0, 0)
                 
-                isRequestOngoing.value = false
-                localStorage.setItem('user_data', JSON.stringify(response.user_data))     
+                isRequestOngoing.value = false 
 
                 let r = await blobToBase64(blob)
                 logo.value = 'data:image/jpeg;base64,' + r
@@ -232,12 +264,10 @@ const cropImage = async () => {
                 advisor.value.type = 'error'
                 advisor.value.show = true
                 advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
-                emit('alert', advisor)
 
                 setTimeout(() => {
-                    advisor.value.show = false,
+                    advisor.value.show = false
                     advisor.value.message = ''
-                    emit('alert', advisor)
                 }, 5000) 
             })           
 
@@ -260,31 +290,36 @@ const formatOrgNumber = () => {
 const onSubmit = () => {
     
     refVForm.value?.validate().then(({ valid: isValid }) => {
-        if (isValid) {
-
-            let formData = new FormData()
-
-            formData.append('logo', logoOld.value)
-            
-            formData.append('company', form.value.company)
-            formData.append('organization_number', form.value.organization_number)
-            formData.append('address', form.value.address)
-            formData.append('street', form.value.street)
-            formData.append('postal_code', form.value.postal_code)
-            formData.append('phone', form.value.phone)
-            formData.append('link', form.value.link)
-            formData.append('bank', form.value.bank)
-            formData.append('iban', form.value.iban)
-            formData.append('account_number', form.value.account_number)       
-            formData.append('iban_number', form.value.iban_number)
-            formData.append('bic', form.value.bic)
-            formData.append('plus_spin', form.value.plus_spin)
-            formData.append('swish', form.value.swish)
-            formData.append('vat', form.value.vat)
+        if (isValid) {       
 
             isRequestOngoing.value = true 
 
-            profileStores.updateCompany(formData)
+            let data = {
+                key: 'company',
+                params: {
+                    value: {
+                        logo: logoOld.value,
+                        company: form.value.company,
+                        email: form.value.email,
+                        organization_number: form.value.organization_number,
+                        address: form.value.address,
+                        street: form.value.street,
+                        postal_code: form.value.postal_code,
+                        phone: form.value.phone,
+                        link: form.value.link,
+                        bank: form.value.bank,
+                        iban: form.value.iban,
+                        account_number: form.value.account_number,
+                        iban_number: form.value.iban_number,
+                        bic: form.value.bic,
+                        plus_spin: form.value.plus_spin,
+                        swish: form.value.swish,
+                        vat: form.value.vat
+                    }
+                }
+            }
+
+            configsStores.postFeature(data)
                 .then(response => {    
 
                     window.scrollTo(0, 0)
@@ -292,19 +327,14 @@ const onSubmit = () => {
                     isRequestOngoing.value = false
 
                     advisor.value.type = 'success'
-                    advisor.value.message = 'Personlig information uppdaterad. Sidan laddas om automatiskt för att se effekterna...!'
+                    advisor.value.message = 'Uppdaterad företagsinformation'
                     advisor.value.show = true
-                    emit('alert', advisor)
-
-                    localStorage.setItem('user_data', JSON.stringify(response.user_data))
                     
                     fetchData()
 
                     setTimeout(() => {
-                        advisor.value.show = false,
+                        advisor.value.show = false
                         advisor.value.message = ''
-                        emit('alert', advisor)
-                        location.reload()
                     }, 5000)
 
                 }).catch(error => {
@@ -313,12 +343,10 @@ const onSubmit = () => {
                     advisor.value.type = 'error'
                     advisor.value.show = true
                     advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
-                    emit('alert', advisor)
 
                     setTimeout(() => {
-                        advisor.value.show = false,
+                        advisor.value.show = false
                         advisor.value.message = ''
-                        emit('alert', advisor)
                     }, 5000) 
                 })
             }
@@ -337,6 +365,13 @@ const onSubmit = () => {
             color="primary"
             class="mb-0"/>
     </VDialog>
+
+    <VAlert
+      v-if="advisor.show"
+      :type="advisor.type"
+      class="mb-6">
+        {{ advisor.message }}
+    </VAlert>
 
     <VRow>
         <VCol cols="12">
@@ -389,11 +424,17 @@ const onSubmit = () => {
                         ref="refVForm"
                         @submit.prevent="onSubmit">
                         <VRow>
-                            <VCol cols="12" md="8">
+                            <VCol cols="12" md="12">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.company"
                                     label="Företagsnamn"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="8">
+                                <VTextField
+                                    v-model="form.email"
+                                    label="E-post"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -580,8 +621,38 @@ const onSubmit = () => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Confirm Delete -->
+    <VDialog
+      v-model="dialog"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="cancelLeave" />
+
+      <!-- Dialog Content -->
+      <VCard title="Avsluta utan att spara">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          <strong>Du har osparade ändringar.</strong> Är du säker på att du vill lämna sidan?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="cancelLeave">
+              Avbryt
+          </VBtn>
+          <VBtn @click="confirmLeave">
+              Ja, fortsätt
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
+
 <style scoped>
 
     :deep(.vue-simple-handler) {
@@ -695,3 +766,9 @@ const onSubmit = () => {
         }
     }
 </style>
+
+<route lang="yaml">
+  meta:
+    action: view
+    subject: dashboard
+</route>

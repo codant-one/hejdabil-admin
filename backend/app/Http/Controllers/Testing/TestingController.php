@@ -14,6 +14,8 @@ use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Models\Agreement;
+use App\Models\UserDetails;
+use App\Models\Config;
 
 class TestingController extends Controller
 {
@@ -66,15 +68,77 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(5);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(1);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-//dd($billing->supplier->user->userDetail->address);
+
+        /*if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $company = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company->email = Auth::user()->email;
+
+            $user = UserDetails::with(['user'])->find(3);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        }
+        */
+
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+        
+        // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
+  
         foreach($details as $row)
             $invoices[] = $row;
 
         return view('pdfs.invoice', 
             compact(
+                'company',
                 'billing',
                 'types',
                 'invoices'
