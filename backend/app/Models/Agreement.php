@@ -57,6 +57,10 @@ class Agreement extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_interchange_id', 'id');
     }
 
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+    
     public function supplier() {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
     }
@@ -99,12 +103,16 @@ class Agreement extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $query->where('supplier_id', Auth::user()->supplier->id);
-        } elseif ($filters->get('supplier_id') !== null) {
+        if ($filters->get('supplier_id') !== null) {
             $query->where('supplier_id', $filters->get('supplier_id'));
-        } elseif ($filters->get('supplier_id') === null) {
-            $query->whereNull('supplier_id');
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
+        }
+
+        if ($filters->get('agreement_type_id') !== null) {
+            $query->where('agreement_type_id', $filters->get('agreement_type_id'));
         }
 
         if ($filters->get('search')) {
@@ -145,10 +153,18 @@ class Agreement extends Model
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
 
         $agreement = self::create([
+            'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
             'agreement_id' => $request->agreement_id,
-            'supplier_id' => $isSupplier ? Auth::user()->supplier->id : null,
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,

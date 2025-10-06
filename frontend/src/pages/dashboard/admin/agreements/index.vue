@@ -30,6 +30,7 @@ const isValid = ref(false)
 const selectedAgreement = ref({})
 
 const agreementTypes = ref([])
+const agreement_type_id_select = ref(null)
 
 // Modal select type contract
 const isModalVisible = ref(false)
@@ -38,6 +39,8 @@ const refVForm = ref()
 
 const userData = ref(null)
 const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -72,6 +75,8 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
+    supplier_id.value = null
+    agreement_type_id_select.value = null
   }
 
   let data = {
@@ -79,7 +84,9 @@ async function fetchData(cleanFilters = false) {
     orderByField: 'created_at',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    supplier_id: supplier_id.value,
+    agreement_type_id: agreement_type_id_select.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -92,6 +99,10 @@ async function fetchData(cleanFilters = false) {
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
+
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = agreementsStores.getSuppliers
+  }
   
   isRequestOngoing.value = false
 
@@ -411,6 +422,27 @@ const openLink = function (agreementData) {
 
             <VSpacer class="d-md-block"/>
 
+            <VAutocomplete
+                v-model="agreement_type_id_select"
+                placeholder="Typ av avtal"
+                :items="agreementTypes"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
+            <VAutocomplete
+                v-if="role === 'SuperAdmin' || role === 'Administrator'"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
               <!-- 👉 Search  -->
               <div class="search">
@@ -445,6 +477,7 @@ const openLink = function (agreementData) {
                 <th scope="col"> TYP </th>
                 <th scope="col"> SKAPAD </th>
                 <th scope="col"> SKAPAD AV </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
                 <th scope="col"> SIGNERA STATUS </th>
                 <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
               </tr>
@@ -482,6 +515,11 @@ const openLink = function (agreementData) {
                     agreement.supplier.user.name + ' ' + agreement.supplier.user.last_name : 
                     userData.name + ' ' + userData.last_name
                    }}
+                </td>
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                  <span class="font-weight-medium"  v-if="agreement.supplier">
+                    {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
+                  </span>
                 </td>
                 <td></td>
                 <!-- 👉 Acciones -->

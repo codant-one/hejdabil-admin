@@ -26,11 +26,15 @@ export const useAgreementsStores = defineStore('agreements', {
         agreement_id: 0,
         loading: false,
         last_page: 1,
-        agreementsTotalCount: 6
+        agreementsTotalCount: 6,
+        suppliers: {}
     }),
     getters:{
         getAgreements(){
             return this.agreements
+        },
+        getSuppliers(){
+            return this.suppliers
         }
     },
     actions: {
@@ -43,6 +47,7 @@ export const useAgreementsStores = defineStore('agreements', {
             return Agreements.get(params)
                 .then((response) => {
                     this.agreements = response.data.data.agreements.data
+                    this.suppliers = response.data.data.suppliers
                     this.last_page = response.data.data.agreements.last_page
                     this.agreementsTotalCount = response.data.data.agreementsTotalCount
                 })

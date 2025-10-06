@@ -34,6 +34,7 @@ use App\Models\PaymentType;
 use App\Models\Identification;
 use App\Models\Advance;
 use App\Models\CommissionType;
+use App\Models\Supplier;
 
 class AgreementController extends Controller
 {
@@ -61,12 +62,17 @@ class AgreementController extends Controller
                         'agreement_client',
                         'vehicle_interchange',
                         'vehicle_client.vehicle',
-                        'supplier.user'
+                        'supplier' => function ($q) {
+                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                        },
+                        'user.userDetail'
                     ])->applyFilters(
                         $request->only([
                             'search',
                             'orderByField',
-                            'orderBy'
+                            'orderBy',
+                            'supplier_id',
+                            'agreement_type_id'
                         ])
                     );
 
@@ -78,7 +84,9 @@ class AgreementController extends Controller
                 'success' => true,
                 'data' => [
                     'agreements' => $agreements,
-                    'agreementsTotalCount' => $count
+                    'agreementsTotalCount' => $count,
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get(),
+                    'agreementTypes' => AgreementType::all()
                 ]
             ]);
 
