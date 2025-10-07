@@ -24,6 +24,8 @@ export const useAgreementsStores = defineStore('agreements', {
         advances: {},
         commission_types: {},
         agreement_id: 0,
+        commission_id: 0,
+        offer_id: 0,
         loading: false,
         last_page: 1,
         agreementsTotalCount: 6,
@@ -130,6 +132,8 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.agreementTypes = response.data.data.agreementTypes
                     this.vehicles = response.data.data.vehicles
                     this.agreement_id = response.data.data.agreement_id
+                    this.commission_id = response.data.data.commission_id
+                    this.offer_id = response.data.data.offer_id
                     this.clients = response.data.data.clients
                     this.client_types = response.data.data.client_types
                     this.identifications = response.data.data.identifications

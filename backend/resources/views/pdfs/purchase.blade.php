@@ -162,14 +162,10 @@
                     <tr>
                         <td style="vertical-align:top;width:160px;">
                             <div class="header-logo">
-                                @if(!$agreement->supplier)
-                                    <img src="{{ asset('/logos/logo_black.png') }}" width="200" alt="logo-main">  
+                                @if($company->logo)
+                                    <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                 @else
-                                    @if($agreement->supplier->logo)
-                                        <img src="{{ asset('storage/'.$agreement->supplier->logo) }}" width="200" alt="logo-main">
-                                    @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                    @endif
+                                    <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                 @endif
                             </div>
                         </td>
@@ -192,101 +188,50 @@
                     <tr>
                         <td>
                             <div class="label">Namn</div>
-                            @if($user)
                             <div class="value">
-                                {{ $user->name }} {{ $user->last_name }} 
+                                {{ $company->name }} {{ $company->last_name }} 
                             </div>
-                            @else
-                            <div class="value">
-                                Admin Billogg
-                            </div>
-                            @endif
+
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Adress</div>
-                            @if($user)
                             <div class="value">
-                                @if(!$agreement->supplier)
-                                    {{ $user->userDetail->address }} 
-                                @else
-                                    {{ $agreement->supplier?->address }} 
-                                @endif
+                                {{ $company->address }} 
                             </div>
-                            @else 
-                            <div class="value">
-                                Abrahamsbergsvägen 47, 168 30 Bromma, Suecia
-                            </div>
-                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Postnr. ort</div>
-                            @if($user)
                             <div class="value">
-                                @if(!$agreement->supplier)
-                                {{ $user->userDetail->postal_code }} {{ $user->userDetail->street }}  
-                                @else
-                                {{ $agreement->supplier?->postal_code }} {{ $agreement->supplier?->street }} 
-                                @endif
+                                {{ $company->postal_code }} {{ $company->street }}  
                             </div>
-                            @else 
-                            <div class="value">
-                                10020
-                            </div>
-                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Org/person nr.</div>
-                            @if($user)
                             <div class="value">
-                                @if(!$agreement->supplier)
-                                    {{ $user->userDetail->organization_number }} 
-                                @else
-                                    {{ $agreement->supplier?->organization_number }} 
-                                @endif
+                                {{ $company->organization_number }} 
                             </div>
-                            @else
-                            <div class="value">
-                                1002020101
-                            </div>
-                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">E-post</div>
-                            @if($user)
                             <div class="value">
-                                {{ $user->email }} 
+                                {{ $company->email }} 
                             </div>
-                            @else
-                            <div class="value">
-                                admin@billogg.se
-                            </div>
-                            @endif
                         </td>
                     </tr>
                     <tr>
                         <td>
                             <div class="label">Mobil</div>
-                            @if($user)
-                            <div class="value">
-                                @if(!$agreement->supplier)
-                                    {{ $user->userDetail->phone }} 
-                                @else
-                                    {{ $agreement->supplier?->phone }} 
-                                @endif
+                                <div class="value">
+                                {{ $company->phone }}
                             </div>
-                            @else 
-                            <div class="value">
-                                073-663 11 41
-                            </div>
-                            @endif
                         </td>
                     </tr>
                 </table>

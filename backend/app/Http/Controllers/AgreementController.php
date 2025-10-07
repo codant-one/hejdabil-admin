@@ -35,6 +35,8 @@ use App\Models\Identification;
 use App\Models\Advance;
 use App\Models\CommissionType;
 use App\Models\Supplier;
+use App\Models\Commission;
+use App\Models\Offer;
 
 class AgreementController extends Controller
 {
@@ -251,13 +253,19 @@ class AgreementController extends Controller
 
         try {
 
-            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
-            } else {
-                $clients = Client::all();
-            }
+            $clients = Client::when(
+                Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->when(
+                Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->boss_id);
+                }
+            )->withTrashed()->get();
 
             $agreement_id = Agreement::whereNull('supplier_id')->count();
+            $commission_id = Commission::whereNull('supplier_id')->count();
+            $offer_id = Offer::whereNull('supplier_id')->count();
             $vehicles = 
                 Vehicle::with(['model.brand'])
                        ->where([
@@ -281,7 +289,9 @@ class AgreementController extends Controller
                     'paymentTypes'  => PaymentType::all(),
                     'agreementTypes' => AgreementType::all(),
                     'agreement_id' => $agreement_id,
-                    'vehicles' => $vehicles,
+                    'commission_id' => $commission_id,
+                    'offer_id' => $offer_id,
+                    'vehicles' => $vehicles,    
                     'clients' => $clients,
                     'client_types' => ClientType::all(),
                     'identifications' => Identification::all(),

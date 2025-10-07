@@ -510,11 +510,26 @@ const openLink = function (agreementData) {
                       hour12: false
                   }) }}
                 </td>
-                <td> 
-                  {{ agreement.supplier ? 
-                    agreement.supplier.user.name + ' ' + agreement.supplier.user.last_name : 
-                    userData.name + ' ' + userData.last_name
-                   }}
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="agreement.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + agreement.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ agreement.user.email }}</span>
+                    </div>
+                  </div>
                 </td>
                 <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
                   <span class="font-weight-medium"  v-if="agreement.supplier">

@@ -20,6 +20,7 @@ const isRequestOngoing = ref(false)
 const refForm = ref()
 
 const userData = ref(null)
+const role = ref(null)
 const currencies = ref([])
 const currency_id = ref(1)
 
@@ -42,7 +43,8 @@ watchEffect(async () => {
     await agreementsStores.info()
 
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  
+    role.value = userData.value.roles[0].name
+
     const { user_data, userAbilities } = await authStores.me(userData.value)
 
     localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
@@ -51,7 +53,13 @@ watchEffect(async () => {
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
 
-    offer_id.value = user_data.offers.length + 1
+    if(role.value === 'Supplier') {
+      offer_id.value = user_data.supplier.user.offers.length + 1
+    } else if(role.value === 'User') {
+      offer_id.value = user_data.supplier.boss.user.offers.length + 1
+    } else {
+      offer_id.value = agreementsStores.offer_id + 1
+    }
 
     brands.value = agreementsStores.brands
     models.value = agreementsStores.models 

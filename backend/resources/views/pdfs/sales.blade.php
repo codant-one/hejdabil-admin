@@ -144,14 +144,10 @@
                         <tr>
                             <td style="vertical-align: top;">
                                 <div class="header-logo">
-                                    @if(!$agreement->supplier)
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="200" alt="logo-main">  
+                                    @if($company->logo)
+                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                     @else
-                                        @if($agreement->supplier->logo)
-                                            <img src="{{ asset('storage/'.$agreement->supplier->logo) }}" width="200" alt="logo-main">
-                                        @else
-                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                        @endif
+                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                     @endif
                                 </div>
                             </td>
@@ -159,15 +155,7 @@
                                 <h1>Försäljningsavtal</h1>
                                 <div class="contract-details">
                                     Avtalsnummer: {{ $agreement->agreement_id}} <br>
-                                    <!-- INICIO DEL CAMBIO 1 -->
-                                    @if($agreement->supplier)
-                                        {{-- Si es un Supplier, usa la dirección del Supplier --}}
-                                        {{ strtoupper($agreement->supplier->address) }}, {{ strtoupper($agreement->supplier->postal_code) }} {{ strtoupper($agreement->supplier->street) }} 
-                                    @else
-                                        {{-- Si es un Admin, usa un valor por defecto (tu empresa) --}}
-                                        FÖRETAGSGATAN 1, 123 45 STADEN
-                                    @endif
-                                    <!-- FIN DEL CAMBIO 1 -->
+                                    {{ strtoupper($company->address) }}, {{ strtoupper($company->postal_code) }} {{ strtoupper($company->street) }} 
                                 </div>
                             </td>
                         </tr>
@@ -185,25 +173,15 @@
                             <td>
                                 <div class="label">Bilhandlare</div>
                                 <div class="value">
-                                    @if($agreement->supplier)
-                                        {{ $agreement->supplier->company }} 
-                                    @else
-                                    Billogg
-                                    @endif
+                                        {{ $company->company }} 
                                 </div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">Försäljare</div>
-                                <div class="value">
-                                    @if($user)
-                                        {{-- Solo muestra el nombre del vendedor si existe (es un Supplier) --}}
-                                        {{ $user->name }} {{ $user->last_name }}
-                                    @else
-                                        {{-- Si es un Admin, puedes poner un nombre genérico o el de la empresa --}}
-                                        Billogg Försäljning
-                                    @endif
+                                <div class="value"> 
+                                    {{ $company->name }} {{ $company->last_name }}
                                 </div>
                             </td>
                         </tr>
@@ -211,11 +189,7 @@
                             <td>
                                 <div class="label">Organisationsnr</div>
                                 <div class="value">
-                                    @if($agreement->supplier)
-                                        {{ $agreement->supplier->organization_number }}
-                                    @else
-                                        556677-8899
-                                    @endif
+                                    {{ $company->organization_number }}
                                 </div>
                             </td>
                         </tr>
@@ -223,11 +197,7 @@
                             <td>
                                 <div class="label">E-post</div>
                                 <div class="value">
-                                    @if($user)
-                                        {{ $user->email }}
-                                    @else
-                                        info@hejdabil.se
-                                    @endif
+                                    {{ $company->email }}
                                 </div>
                             </td>
                         </tr>
@@ -235,11 +205,7 @@
                             <td>
                                 <div class="label">Mobiltelefon</div>
                                 <div class="value">
-                                    @if($agreement->supplier)
-                                        {{ $agreement->supplier->phone }}
-                                    @else
-                                        08-123 456 78
-                                    @endif
+                                    {{ $company->phone }}
                                 </div>
                             </td>
                         </tr>
@@ -557,13 +523,7 @@
                                         <td>
                                             <div class="label">Plusgiro</div>
                                             <div class="value">
-                                                <!-- INICIO DEL CAMBIO 3 -->
-                                                @if($agreement->supplier)
-                                                    {{ $agreement->supplier->plus_spin }} 
-                                                @else
-                                                    123 45 67-8
-                                                @endif
-                                                <!-- FIN DEL CAMBIO 3 -->
+                                                {{ $company->plus_spin }}
                                             </div>
                                         </td>
                                     </tr>
@@ -583,13 +543,7 @@
                                         <td>
                                             <div class="label">Bank för inbetalning</div>
                                             <div class="value">
-                                                <!-- INICIO DEL CAMBIO 4 -->
-                                                @if($agreement->supplier)
-                                                    {{ $agreement->supplier->bank }}
-                                                @else
-                                                    Banken AB
-                                                @endif
-                                                <!-- FIN DEL CAMBIO 4 --> 
+                                                {{ $company->bank }}
                                             </div>
                                         </td>
                                     </tr>
@@ -597,13 +551,7 @@
                                         <td>
                                             <div class="label">Kontonummer</div>
                                             <div class="value">
-                                               <!-- INICIO DEL CAMBIO 5 -->
-                                               @if($agreement->supplier)
-                                                    {{ $agreement->supplier->account_number }}
-                                                @else
-                                                    9999, 12 345 678-9
-                                                @endif
-                                               <!-- FIN DEL CAMBIO 5 -->
+                                                {{ $company->account_number }}
                                             </div>
                                         </td>
                                     </tr>

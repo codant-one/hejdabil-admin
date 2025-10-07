@@ -1,6 +1,6 @@
 <script setup>
 
-import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator, emailValidator } from '@/@core/utils/validators'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
@@ -35,6 +35,8 @@ const filename = ref([])
 const form = ref({
     company: '',
     email: '',
+    name: '',
+    last_name: '',
     organization_number: '',
     address: '',
     street: '',
@@ -86,7 +88,9 @@ async function fetchData() {
     
     //company
     form.value.company = data.value.company
-    form.value.email = data.value.email
+    form.value.email = data.value.email     
+    form.value.name = data.value.name
+    form.value.last_name = data.value.last_name
     form.value.organization_number = data.value.organization_number
     form.value.link = data.value.link
     form.value.address = data.value.address
@@ -301,6 +305,8 @@ const onSubmit = () => {
                         logo: logoOld.value,
                         company: form.value.company,
                         email: form.value.email,
+                        name: form.value.name,
+                        last_name: form.value.last_name,
                         organization_number: form.value.organization_number,
                         address: form.value.address,
                         street: form.value.street,
@@ -435,7 +441,7 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.email"
                                     label="E-post"
-                                    :rules="[requiredValidator]"
+                                    :rules="[emailValidator, requiredValidator]"
                                 />
                             </VCol>
                             <VCol cols="12" md="4">
@@ -447,6 +453,20 @@ const onSubmit = () => {
                                     minLength="11"
                                     maxlength="11"
                                     @input="formatOrgNumber()"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="form.name"
+                                    label="Namn"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="form.last_name"
+                                    label="Efternamn"
+                                    :rules="[requiredValidator]"
                                 />
                             </VCol>
                             <VCol cols="12" md="12">

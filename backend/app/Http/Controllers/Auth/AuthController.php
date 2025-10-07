@@ -196,10 +196,15 @@ class AuthController extends Controller
             $permissions = getPermissionsByRole(Auth::user());
             $userData = getUserData(Auth::user()->load([
                 'userDetail', 
-                'supplier.boss.user.userDetail', 
+                'supplier.boss.user.userDetail',
+                'supplier.boss.user.commissions',  
+                'supplier.boss.user.offers',  
                 'supplier.boss.billings', 
+                'supplier.boss.agreements',  
                 'supplier.billings', 
                 'supplier.agreements', 
+                'supplier.user.commissions', 
+                'supplier.user.offers', 
                 'offers', 
                 'commissions'
             ]));
@@ -326,9 +331,14 @@ class AuthController extends Controller
         $userData = getUserData(Auth::user()->load([
             'userDetail', 
             'supplier.boss.user.userDetail',
-            'supplier.boss.billings',  
+            'supplier.boss.user.commissions',  
+            'supplier.boss.user.offers',  
+            'supplier.boss.billings', 
+            'supplier.boss.agreements',  
             'supplier.billings', 
             'supplier.agreements', 
+            'supplier.user.commissions', 
+            'supplier.user.offers', 
             'offers', 
             'commissions'
         ]));
