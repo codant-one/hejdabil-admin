@@ -538,7 +538,7 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','billing') && clients.length > 0"
+                v-if="$can('create','billing')"
                 prepend-icon="tabler-plus"
                 class="w-100 w-md-auto"
                 @click="addInvoice">

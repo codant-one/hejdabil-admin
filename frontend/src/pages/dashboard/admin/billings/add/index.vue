@@ -258,7 +258,7 @@ const onSubmit = () => {
         class="order-2 order-md-1"
       >
         <InvoiceEditable
-            v-if="clients.length > 0"
+            v-if="userData"
             :data="invoiceData"
             :clients="clients"
             :suppliers="suppliers"
