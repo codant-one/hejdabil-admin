@@ -4,6 +4,7 @@ import { useBillingsStores } from '@/stores/useBillings'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
+import { avatarText } from '@/@core/utils/formatters'
 import router from '@/router'
 import Toaster from "@/components/common/Toaster.vue";
 

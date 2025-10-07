@@ -5,6 +5,7 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
+import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'

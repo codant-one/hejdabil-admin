@@ -5,6 +5,7 @@ import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
+import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
