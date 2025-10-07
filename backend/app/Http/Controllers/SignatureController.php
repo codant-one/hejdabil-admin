@@ -284,15 +284,16 @@ class SignatureController extends Controller
         $fullPath = Storage::disk('public')->path($signatureUrl);
         $imageData = base64_encode(file_get_contents($fullPath));
         $signatureImageSrc = 'data:image/png;base64,' . $imageData;
+
         // 3. Preparar los datos para la vista, incluyendo el usuario y la firma.
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+        if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
+            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+        } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
             $company->name = $user->supplier->boss->user->name;
@@ -338,7 +339,7 @@ class SignatureController extends Controller
             'signature_x'   => $x,
             'signature_y'   => $y,
         ];
-        $user = $creatorUser;
+
         // 4. Determinar la vista y el nombre del archivo (esta parte ya estaba bien).
         $viewName = '';
         $fileName = '';
