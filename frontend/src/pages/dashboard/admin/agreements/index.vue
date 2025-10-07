@@ -284,6 +284,15 @@ const downloadCSV = async () => {
 
 }
 
+const resolveStatus = state => {
+  if (state === 'signed')
+    return { color: 'info' }
+  if (state === 'pending')
+    return { color: 'warning' } 
+  if (state === 'sent')
+    return { color: 'success' } 
+}
+
 const startPlacementProcess = async (agreementData) => {
   selectedAgreement.value = { ...agreementData };
   isPlacementModalVisible.value = true;
@@ -661,7 +670,14 @@ const openLink = function (agreementData) {
                     {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
-                <td></td>
+                <td>
+                  <VChip
+                    label
+                    :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
+                  >
+                    {{ agreement.token?.signature_status ?? 'pending' }}
+                  </VChip>
+                </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
                   <VMenu>

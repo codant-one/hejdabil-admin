@@ -58,6 +58,7 @@ class AgreementController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Agreement::with([
+                        'token',
                         'offer',
                         'commission.vehicle',
                         'agreement_type',

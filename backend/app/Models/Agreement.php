@@ -103,6 +103,10 @@ class Agreement extends Model
         $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
     }
 
+    public function token(){
+        return $this->hasOne(Token::class, 'agreement_id', 'id');
+    }
+
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
