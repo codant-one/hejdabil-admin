@@ -196,6 +196,8 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::post('/submit/{token}', [SignatureController::class, 'storeSignature'])->name('signatures.store');
     Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
     Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
+    Route::get('/{token}/status', [SignatureController::class, 'getTokenStatus'])->name('signatures.status');
+    Route::get('/{token}/get-signed-pdf', [SignatureController::class, 'getSignedPdf'])->name('signatures.getSignedPdf');
 });
 
 //PROXY

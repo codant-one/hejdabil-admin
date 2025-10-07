@@ -103,18 +103,85 @@ class SignatureController extends Controller
     {
         // Validar que el token es correcto, está pendiente y no ha expirado.
         $token = Token::where('signing_token', $tokenString)
-                      ->where('signature_status', 'sent')
-                      ->where('token_expires_at', '>', now())
-                      ->first();
+                  ->where('token_expires_at', '>', now())
+                  ->first();
 
         if (!$token) {
-            // Si el token no es válido, mostramos un error.
-            abort(404, 'Enlace de firma no válido, expirado o ya utilizado.');
+            abort(404, 'Enlace de firma no válido o expirado');
+        }
+
+        // Verificar si el token ya fue usado para firmar
+        if ($token->signature_status === 'signed') {
+            return view('welcome');
+        }
+
+        // Si el token está en estado 'sent', procedemos normalmente
+        if ($token->signature_status === 'sent') {
+            return view('welcome');
         }
         
-        // Carga la vista principal de Blade que monta tu aplicación de Vue.
-        // Vue Router se encargará de mostrar el componente 'SigningPage'.
-        return view('welcome');
+        // Para cualquier otro estado no contemplado
+        abort(404, 'Estado de firma no válido.');
+    }
+
+    /**
+     * Obtener el PDF firmado si el token corresponde a un documento ya firmado
+     * URL: GET /api/signatures/{token}/get-signed-pdf
+     */
+    public function getSignedPdf($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)
+                    ->where('signature_status', 'signed')
+                    ->firstOrFail();
+        
+        $agreement = $token->agreement;
+        
+        // Usar el PDF firmado guardado en el token o en el agreement
+        $pdfPath = $token->signed_pdf_path ?? $agreement->file;
+        
+        if ($pdfPath && Storage::disk('public')->exists($pdfPath)) {
+            $path = storage_path('app/public/' . $pdfPath);
+            return response()->file($path);
+        }
+        
+        abort(404, 'Archivo PDF firmado no encontrado.');
+    }
+
+    /**
+     * Obtener el estado del token y detalles adicionales
+     * URL: GET /api/signatures/{token}/status
+     */
+    public function getTokenStatus($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->first();
+        
+        if (!$token) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Token no válido'
+            ], 404);
+        }
+        
+        if ($token->token_expires_at < now() && $token->signature_status !== 'signed') {
+            return response()->json([
+                'status' => 'expired',
+                'message' => 'El enlace de firma ha expirado'
+            ], 410);
+        }
+        
+        $response = [
+            'status' => $token->signature_status,
+            'signed_at' => $token->signed_at,
+            'agreement_id' => $token->agreement->agreement_id
+        ];
+        
+        if ($token->signature_status === 'signed') {
+            $response['message'] = 'Este documento ya fue firmado';
+            $response['signed_date_formatted'] = $token->signed_at ? 
+                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : null;
+        }
+        
+        return response()->json($response);
     }
 
     /**
