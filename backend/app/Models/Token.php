@@ -17,6 +17,9 @@ class Token extends Model
         'signed_at',
         'signature_image_path',
         'signed_pdf_path',
+        'placement_x', 
+        'placement_y', 
+        'placement_page',
     ];
 
 

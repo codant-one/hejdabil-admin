@@ -604,34 +604,30 @@
             <tr>
                 <td colspan="2" class="footer-section">
                     <div class="consent-text"><p style="margin: 0;">Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.</p></div>
-                    <tr>
-                        <td colspan="2" class="footer-section">
-                            <div class="consent-text"><p style="margin: 0;">Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.</p></div>
+                    
+                    <table class="signatures-table" style="width: 100%;">
+                        <tr>
+                            <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->
+                            <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
+                                <div style="min-height: 70px;">
+                                    {{-- Lógica para la firma estática del cliente (comprador) --}}
+                                    @if(isset($signature_url) && $signature_x === null)  
+                                        <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                    @endif
+                                </div>
+                                <div class="signature-box">(Köparens underskrift)</div>
+                            </td>
                             
-                            <table class="signatures-table" style="width: 100%;">
-                                <tr>
-                                    <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
-                                        
-                                        <div style="min-height: 70px;">
-                                            @if(isset($signature_url))
-                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; max-height: 70; display: block; margin-bottom: 5px;">
-                                            @endif
-                                        </div>
-                                        <div class="signature-box">(Köparens underskrift)</div>
-                                    </td>
-                                    <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
-                                        <div style="min-height: 70px;">
-                                            <!-- Este espacio asegura que la línea de abajo se alinee con la de la izquierda -->
-                                        </div>
-
-                                        <!-- 2. La línea de firma, siempre visible -->
-                                        <div class="signature-box">(Säljföretagets underskrift)</div>
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </td>
+                            <!-- Celda Derecha: Firma del Vendedor (Säljföretagets) - VACÍA -->
+                            <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+                                <div style="min-height: 70px;">
+                                    <!-- Este espacio se deja para el vendedor (la empresa) -->
+                                </div>
+                                <div class="signature-box">(Säljföretagets underskrift)</div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>                                       
             </tr>
         </tbody>
     </table>

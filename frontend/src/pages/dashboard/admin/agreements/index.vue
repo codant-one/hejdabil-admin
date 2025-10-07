@@ -7,7 +7,7 @@ import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
-
+import VuePdfEmbed from 'vue-pdf-embed'
 const agreementsStores = useAgreementsStores()
 const emitter = inject("emitter")
 
@@ -28,9 +28,16 @@ const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
 const selectedAgreement = ref({})
+const isStaticSignatureFlow = ref(false)
 
 const agreementTypes = ref([])
 const agreement_type_id_select = ref(null)
+
+const isPlacementModalVisible = ref(false) // Controla el modal del PDF
+const placementPdfSource = ref(null)      // Almacena la URL del PDF a mostrar
+const isLoadingPlacementPdf = ref(false)  // Muestra un spinner mientras carga el PDF
+const signaturePlacement = ref({ x: 0, y: 0, page: 1, visible: false }) // Coordenadas elegidas
+const pdfPlacementContainer = ref(null) // Ref para el contenedor del PDF
 
 // Modal select type contract
 const isModalVisible = ref(false)
@@ -277,22 +284,65 @@ const downloadCSV = async () => {
 
 }
 
+const startPlacementProcess = async (agreementData) => {
+  selectedAgreement.value = { ...agreementData };
+  isPlacementModalVisible.value = true;
+  isLoadingPlacementPdf.value = true;
+  signaturePlacement.value.visible = false; // Resetea la posición
 
-const openSignatureDialog = agreementData => {
-  selectedAgreement.value = { ...agreementData }
-  
-  // Intenta pre-rellenar el campo de email con el del cliente si existe.
-  // El ?. (optional chaining) evita errores si agreement_client es null.
+  try {
+    // Usamos el endpoint que ya teníamos para obtener el PDF
+    const response = await axios.get(`/agreements/${agreementData.id}/get-admin-preview-pdf`, {
+        responseType: 'blob',
+    })
+    placementPdfSource.value = URL.createObjectURL(response.data);
+  } catch (error) {
+    // Si falla (ej. PDF no existe), mostramos un error y cerramos el modal
+    advisor.value = { type: 'error', message: 'Kunde inte ladda PDF-dokumentet.', show: true };
+    isPlacementModalVisible.value = false;
+    setTimeout(() => { advisor.value.show = false }, 3000);
+  } finally {
+    isLoadingPlacementPdf.value = false;
+  }
+}
+
+const handleAdminPdfClick = (event) => {
+  const container = event.currentTarget; 
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+
+  // --- VOLVEMOS A CALCULAR PÍXELES ---
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top + container.scrollTop;
+
+  signaturePlacement.value = {
+    // Guardamos los píxeles, como antes
+    x: x,
+    y: y,
+    page: 1,
+    visible: true,
+  }
+}
+
+const openSignatureDialog = (agreementData) => {
+  // Ahora selectedAgreement ya está seteado.
   signatureEmail.value = agreementData.agreement_client?.email || ''
-  
   isSignatureDialogVisible.value = true
+}
+
+const openStaticSignatureDialog = (agreementData) => {
+  selectedAgreement.value = { ...agreementData }; // Aseguramos que el agreement está seleccionado
+  isStaticSignatureFlow.value = true // ¡Importante! Indicamos que es el flujo estático
+  signatureEmail.value = agreementData.agreement_client?.email || ''
+  isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
 }
 
 /**
  * Esta función se ejecuta al hacer clic en "Skicka" dentro del diálogo.
  * Valida el formulario y llama a la acción de Pinia con los datos correctos.
  */
-const submitSignatureRequest = async () => {
+const submitPlacementSignatureRequest  = async () => {
   // 1. Valida el formulario usando la referencia 'refSignatureForm'
   const { valid } = await refSignatureForm.value?.validate()
 
@@ -301,13 +351,26 @@ const submitSignatureRequest = async () => {
 
   // 3. Cierra el diálogo y muestra el spinner de carga
   isSignatureDialogVisible.value = false
+  isPlacementModalVisible.value = false
   isRequestOngoing.value = true
   
   try {
+
+    const container = pdfPlacementContainer.value;
+    if (!container) {
+      throw new Error("No se pudo encontrar la referencia del contenedor del PDF.");
+    }
+
+    // Convertimos los píxeles guardados a porcentajes
+    const x_percent = (signaturePlacement.value.x / container.offsetWidth) * 100;
+    const y_percent = (signaturePlacement.value.y / container.scrollHeight) * 100;
     // 4. Prepara el 'payload' que espera nuestra acción de Pinia
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
+      x: x_percent.toFixed(2),
+      y: y_percent.toFixed(2),
+      page: signaturePlacement.value.page,
     }
 
     // 5. Llama a la acción de Pinia que modificamos en el paso anterior
@@ -338,6 +401,68 @@ const submitSignatureRequest = async () => {
     setTimeout(() => {
       advisor.value = { show: false }
     }, 3000)
+  }
+}
+
+const submitStaticSignatureRequest = async () => {
+  // 1. Valida el formulario
+  const { valid } = await refSignatureForm.value?.validate();
+  if (!valid) return;
+
+  // 2. Cierra modal y activa spinner
+  isSignatureDialogVisible.value = false;
+  isRequestOngoing.value = true;
+
+  try {
+    // 3. Prepara un payload más simple, sin coordenadas
+    const payload = {
+      agreementId: selectedAgreement.value.id,
+      email: signatureEmail.value,
+    };
+
+    // 4. Llama a una NUEVA acción en el store de Pinia
+    const response = await agreementsStores.requestStaticSignature(payload);
+
+    // 5. Muestra mensaje de éxito
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true,
+    };
+    await fetchData();
+
+  } catch (error) {
+    // Manejo de errores
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true,
+    };
+  } finally {
+    // Limpieza
+    isRequestOngoing.value = false;
+    signatureEmail.value = '';
+    setTimeout(() => {
+      advisor.value = { show: false };
+    }, 3000);
+  }
+};
+
+const handleSignatureSubmit = async () => {
+  if (isStaticSignatureFlow.value) {
+    await submitStaticSignatureRequest();
+  } else {
+    // Asegúrate de que el nombre aquí coincida con cómo renombraste la función original
+    await submitPlacementSignatureRequest(); 
+  }
+};
+
+const handlePlacementModalClose = (value) => {
+  if (!value) {
+    if (placementPdfSource.value) {
+      URL.revokeObjectURL(placementPdfSource.value);
+    }
+    placementPdfSource.value = null;
   }
 }
 
@@ -551,7 +676,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')" @click="openSignatureDialog(agreement)">
+                      <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
@@ -672,7 +797,7 @@ const openLink = function (agreementData) {
         <!-- Usamos VForm para poder validar el campo de email -->
         <VForm
           ref="refSignatureForm"
-          @submit.prevent="submitSignatureRequest"
+          @submit.prevent="handleSignatureSubmit"
         >
           <VDivider class="mt-4"/>
           <VCardText>
@@ -808,14 +933,115 @@ const openLink = function (agreementData) {
       </VCard>
     </VDialog>
 
+      <!-- ======================================================= -->
+    <!-- INICIO DEL NUEVO DIÁLOGO DE POSICIONAMIENTO PARA EL ADMIN -->
+    <!-- ======================================================= -->
+    <VDialog
+      v-model="isPlacementModalVisible"
+      fullscreen
+      :scrim="false"
+      transition="dialog-bottom-transition"
+      @update:modelValue="handlePlacementModalClose"
+    >
+      <VCard>
+        <VToolbar
+          dark
+          color="primary"
+        >
+          <VBtn
+            icon
+            dark
+            @click="isPlacementModalVisible = false"
+          >
+            <VIcon>mdi-close</VIcon>
+          </VBtn>
+          <VToolbarTitle>Placera signatur för Avtal #{{ selectedAgreement.agreement_id }}</VToolbarTitle>
+          <VSpacer />
+          <VToolbarItems>
+            <VBtn
+              variant="text"
+              :disabled="!signaturePlacement.visible"
+              @click="openSignatureDialog(selectedAgreement)"
+            >
+              Bekräfta och skicka
+            </VBtn>
+          </VToolbarItems>
+        </VToolbar>
+        
+        <VCardText class="pa-0 d-flex justify-center align-center" style="background-color: #525659; height: calc(100vh - 64px);">
+          <VProgressCircular
+            v-if="isLoadingPlacementPdf"
+            indeterminate
+            color="white"
+          />
+          <div 
+            v-show="!isLoadingPlacementPdf"
+            ref="pdfPlacementContainer" 
+            class="pdf-container-admin" 
+            @click="handleAdminPdfClick"
+          >
+            <vue-pdf-embed :source="placementPdfSource" />
+
+            <div 
+              v-if="signaturePlacement.visible"
+              class="signature-placeholder-admin"
+              :style="{ left: signaturePlacement.x + 'px', top: signaturePlacement.y + 'px' }"
+            >
+              <span class="signature-placeholder-content">
+                <VIcon icon="mdi-draw" />
+                <span>Signera här</span>
+              </span>
+              
+            </div>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+    <!-- ======================================================= -->
+    <!-- FIN DEL DIÁLOGO DE POSICIONAMIENTO -->
+    <!-- ======================================================= -->  
   </section>
 </template>
 
-<style scope>
+<style scoped>
   .search {
       width: 100%;
   }
 
+  :deep(.pdf-container-admin) {
+  position: relative;
+  cursor: crosshair;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  width: 90%;
+  max-width: 800px; /* Ancho máximo para pantallas grandes */
+  height: 95%;     /* Usa casi todo el alto del VCardText */
+  overflow-y: auto; /* Permite hacer scroll si el PDF es muy largo */
+  
+}
+
+:deep(.pdf-container-admin > div){
+  width: 100% !important;
+}
+/* --- FIN DE NUEVA REGLA --- */
+
+:deep(.signature-placeholder-admin) {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  :deep(.signature-placeholder-content) {
+    display: inline-flex; /* Asegura que el tamaño se ajuste al contenido */
+    align-items: center;
+    gap: 8px;
+    border: 2px dashed #ffc107;
+    background-color: rgba(255, 193, 7, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffc107;
+    font-weight: 600;
+    white-space: nowrap;
+  }
   @media(min-width: 991px){
       .search {
           width: 20rem;

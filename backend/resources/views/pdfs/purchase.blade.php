@@ -521,38 +521,29 @@
         </tr>
         <!-- === FOOTER === -->
         <tr>
-            <td colspan="2" class="footer-section">
-                <table class="signatures-table">
-                    <tr>
-                        <!-- Celda Izquierda: Firma del Comprador (Köparens) -->
-                        <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
-                            
-                            <!-- Contenedor para la imagen con altura mínima -->
-                            <div style="min-height: 70px;">
-                                @if(isset($signature_url))
-                                    <!-- La imagen de la firma se muestra aquí si existe -->
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto; display: block; margin-bottom: 5px; margin-left: auto; margin-right: auto;">
-                                @endif
-                            </div>
-                            
-                            <!-- La línea de firma, siempre visible -->
-                            <div class="signature-box">(Köparens underskrift)</div>
-                        </td>
+        <td colspan="2" class="footer-section">
+        <table class="signatures-table">
+            <tr>
+                <!-- Celda Izquierda: Firma del Comprador (Köparens) - VACÍA -->
+                <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
+                    <div style="min-height: 70px;">
+                        <!-- Este espacio se deja para el comprador (la empresa) -->
+                    </div>
+                    <div class="signature-box">(Köparens underskrift)</div>
+                </td>
 
-                        <!-- Celda Derecha: Firma del Vendedor (Säljarens) -->
-                        <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
-                            
-                            <!-- Contenedor VACÍO con la MISMA altura mínima para alinear -->
-                            <div style="min-height: 70px;">
-                                <!-- Este espacio vacío garantiza la alineación vertical -->
-                            </div>
-                            
-                            <!-- La línea de firma, que se alineará con la de la izquierda -->
-                            <div class="signature-box">(Säljarens underskrift)</div>
-                        </td>
-                    </tr>
-                </table>
-            </td>
+                <!-- Celda Derecha: Firma del Vendedor (Säljarens) - CON LA FIRMA DEL CLIENTE -->
+                <td style="width: 50%; padding-left: 20px; vertical-align: bottom; position: relative;">
+                    <div style="min-height: 70px;">
+                        @if(isset($signature_url) && $signature_x === null)
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                        @endif
+                    </div>
+                    <div class="signature-box">(Säljarens underskrift)</div>
+                </td>
+            </tr>
+        </table>
+    </td>
         </tr>
 
     </tbody>
