@@ -621,7 +621,9 @@
                             <!-- Celda Derecha: Firma del Vendedor (Säljföretagets) - VACÍA -->
                             <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
                                 <div style="min-height: 70px;">
-                                    <!-- Este espacio se deja para el vendedor (la empresa) -->
+                                    @if($company->img_signature)
+                                        <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                    @endif
                                 </div>
                                 <div class="signature-box">(Säljföretagets underskrift)</div>
                             </td>

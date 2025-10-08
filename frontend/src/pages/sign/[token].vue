@@ -26,7 +26,7 @@ const isAlreadySigned = ref(false)
 const signedInfo = ref(null)
 // --- Refs de Elementos del DOM ---
 const signatureCanvas = ref(null)
-
+const isRequestOngoing = ref(false)
 // --- Lógica del Tema (para el lienzo de firma) ---
 const { global } = useTheme()
 
@@ -191,6 +191,7 @@ const closeSignatureModal = (accepted) => {
 
 // Enviar la firma al backend
 const submitFinalSignature = async (signatureImage) => {
+  isRequestOngoing.value = true
   if (isSubmitting.value) return
   isSubmitting.value = true
   
@@ -216,6 +217,7 @@ const submitFinalSignature = async (signatureImage) => {
     }
   } finally {
     isSubmitting.value = false
+    isRequestOngoing.value = false
   }
 }
 
@@ -352,6 +354,16 @@ onMounted(loadSignatureData);
         </VCardActions>
       </VCard>
     </VDialog>
+
+    <VDialog
+        v-model="isRequestOngoing"
+        width="auto"
+        persistent>
+        <VProgressCircular
+          indeterminate
+          color="primary"
+          class="mb-0"/>
+    </VDialog>
   </div>
 </template>
 
@@ -420,7 +432,7 @@ onMounted(loadSignatureData);
 
 /* Posicionamiento para la firma estática */
 .static-signature-position.align-left {
-  bottom: 9%;
+  bottom: 11%;
   left: 25%;
   top: auto;
   transform: translate(-50%, -50%);

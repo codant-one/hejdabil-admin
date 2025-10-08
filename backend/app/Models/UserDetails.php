@@ -28,7 +28,8 @@ class UserDetails extends Model
         'plus_spin',
         'swish',
         'vat',
-        'logo'
+        'logo',
+        'img_signature'
     ];
 
     /**** Relationship ****/

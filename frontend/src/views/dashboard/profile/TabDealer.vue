@@ -26,6 +26,13 @@ const logoCropped = ref(null)
 const logoOld = ref(null)
 const filename = ref([])
 
+const isConfirmChangeSignatureVisible = ref(false) // Para el diálogo de la firma
+const cropperSignature = ref() // Referencia para el nuevo cropper de la firma
+const signature = ref(null) // URL de la firma actual
+const signatureCropped = ref(null) // Imagen de la firma para el cropper
+const signatureOld = ref(null) // Blob de la firma recortada, lista para enviar
+const signatureFilename = ref([]) // Para el v-model del nuevo VFileInput
+
 const form = ref({
     company: '',
     organization_number: '',
@@ -99,6 +106,15 @@ async function fetchData() {
         (userData.value.supplier.boss.user.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo) : logo_  :
         (userData.value.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.logo) : logo_ 
 
+    signature.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature : logo_  :
+        (userData.value.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.img_signature : logo_ 
+    signatureCropped.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature) : logo_  :
+        (userData.value.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.img_signature) : logo_
+        
     setTimeout(() => {
         emit('window', false)
     }, 500)
@@ -241,6 +257,74 @@ const cropImage = async () => {
                 }, 5000) 
             })           
 
+    }
+}
+
+const resetSignature = () => {
+  signatureCropped.value = null
+  signatureOld.value = null
+}
+
+const onSignatureImageSelected = event => {
+  const file = event.target.files[0]
+
+  if (!file) return
+
+  URL.createObjectURL(file)
+
+  resizeImage(file, 1200, 1200, 1) // Reutilizamos tu función resizeImage
+    .then(async blob => {
+        let r = await blobToBase64(blob)
+        signatureCropped.value = 'data:image/jpeg;base64,' + r // Actualizamos la variable de la firma
+    })
+}
+
+
+const cropSignatureImage = async () => {
+    if (cropperSignature.value) { // Usamos la nueva referencia del cropper
+        const result = cropperSignature.value.getResult({
+            mime: 'image/png',
+            quality: 1,
+            fillColor: 'transparent'
+        });
+        const blob = dataURLtoBlob(result.canvas.toDataURL("image/png"));
+
+        signatureOld.value = blob // Guardamos el blob en la variable de la firma
+
+        let formData = new FormData()
+
+        formData.append('img_signature', signatureOld.value) // La clave debe ser 'img_signature'
+        
+        isConfirmChangeSignatureVisible.value = false
+        isRequestOngoing.value = true
+
+        // IMPORTANTE: Asumo que tendrás una nueva acción en tu store llamada 'updateSignature'
+        // Deberás crearla en tu store de Pinia, similar a 'updateLogo'.
+        profileStores.updateSignature(formData)
+            .then(async response => {    
+
+                window.scrollTo(0, 0)
+                
+                isRequestOngoing.value = false
+                localStorage.setItem('user_data', JSON.stringify(response.user_data))     
+
+                let r = await blobToBase64(blob)
+                signature.value = 'data:image/jpeg;base64,' + r // Actualizamos la imagen visible
+
+            }).catch(error => {
+                isRequestOngoing.value = false
+                console.log('error', error)
+                advisor.value.type = 'error'
+                advisor.value.show = true
+                advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                emit('alert', advisor)
+
+                setTimeout(() => {
+                    advisor.value.show = false,
+                    advisor.value.message = ''
+                    emit('alert', advisor)
+                }, 5000) 
+            })           
     }
 }
 
@@ -508,6 +592,18 @@ const onSubmit = () => {
                                     label="Vat"
                                 />
                             </VCol>
+                            <VCol cols="12" md="6" v-if="role !== 'User'">
+                                <VLabel class="mb-2">Signatur</VLabel>
+                                <div class="d-flex align-center gap-4">
+                                    <VImg :src="signature" width="200" aspect-ratio="16/9" class="border rounded" />
+                                    <VBtn 
+                                        color="primary"
+                                        @click="isConfirmChangeSignatureVisible = true">
+                                        <VIcon icon="tabler-pencil" class="mr-2" />
+                                        Signatur
+                                    </VBtn>
+                                </div>
+                            </VCol>
                             <VCol cols="12" v-if="role !== 'User'">
                                 <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
@@ -574,6 +670,64 @@ const onSubmit = () => {
               Avbryt 
           </VBtn>
           <VBtn @click="cropImage"> 
+              Spara
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm change Signature -->
+    <VDialog
+      v-model="isConfirmChangeSignatureVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Byt firma">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Firma du väljer kommer att visas på dina kontrakt.
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+             <VRow>
+                <VCol cols="12" md="12">
+                    <Cropper
+                        v-if="signatureCropped"
+                        :ref="el => cropperSignature = el"
+                        class="cropper-container"
+                        preview-class="cropper-preview"
+                        background-class="cropper-background"
+                        :src="signatureCropped"
+                        :stencil-props="{
+                            aspectRatio: 16/9  // Puedes ajustar el aspect ratio si lo necesitas
+                        }"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                     <VFileInput 
+                        v-model="signatureFilename"
+                        label="Firma"
+                        class="mb-2"
+                        accept="image/png, image/jpeg, image/bmp, image/webp"
+                        prepend-icon="tabler-camera"
+                        @change="onSignatureImageSelected"
+                        @click:clear="resetSignature"
+                    />
+                </VCol>
+            </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmChangeSignatureVisible = false">
+              Avbryt 
+          </VBtn>
+          <VBtn @click="cropSignatureImage"> 
               Spara
           </VBtn>
         </VCardText>

@@ -392,6 +392,17 @@ class UsersController extends Controller
                 $user_details->logo = $file_data['filePath'];
                 $user_details->update();
             }
+
+            if($request->hasFile('img_signature')){
+                $image = $request->file('img_signature');
+
+                $path = 'img_signatures/';
+
+                $file_data = uploadFile($image, $path, $user_details->img_signature);
+
+                $user_details->img_signature = $file_data['filePath'];
+                $user_details->update();
+            }
             
             $userData = getUserData($user->load(['userDetail']));
 
@@ -431,6 +442,47 @@ class UsersController extends Controller
                 $user_details->update();
             } else {
                 $user_details->logo = null;
+                $user_details->update();
+            }
+
+            $userData = getUserData($user->load(['userDetail']));
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user_data' => $userData
+                ]
+            ], 200);
+
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateSignature(Request $request): JsonResponse
+    {
+
+        try {
+
+            $user = Auth::user()->load(['userDetail']);
+            $user_details = UserDetails::where('user_id', $user->id)->first();
+
+            if ($request->hasFile('img_signature')) {
+                $image = $request->file('img_signature');
+
+                $path = 'img_signatures/';
+
+                $file_data = uploadFile($image, $path, $user_details->img_signature);
+
+                $user_details->img_signature = $file_data['filePath'];
+                $user_details->update();
+            } else {
+                $user_details->img_signature = null;
                 $user_details->update();
             }
 

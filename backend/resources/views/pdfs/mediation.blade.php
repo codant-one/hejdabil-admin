@@ -638,7 +638,7 @@
             <div style="min-height: 70px;">
                 <!-- El espacio para la firma está visualmente aquí, pero la imagen se superpone desde arriba -->
                 @if(isset($signature_url) && !isset($signature_x))   
-                    <img src="{{ $signature_url }}" alt="Firma" style="width: 150px; height: auto;">
+                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
                 @endif
             </div>
             <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
@@ -649,7 +649,9 @@
         <!-- CELDA DE LA DERECHA (SIMPLIFICADA) -->
         <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
             <div style="min-height: 70px;">
-                <!-- El espacio para la firma está visualmente aquí -->
+                @if($company->img_signature)
+                    <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                @endif
             </div>
             <div class="signature-box" style="border-top: 1px solid #ccc; padding-top: 5px;">
                 (Förmedlarens underskrift)

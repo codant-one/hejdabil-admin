@@ -114,6 +114,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('user/profile',  [UsersController::class, 'getProfile']);
         Route::post('update/company', [UsersController::class, 'updateCompany']);
         Route::post('update/company/logo', [UsersController::class, 'updateLogo']);
+        Route::post('update/company/signature', [UsersController::class, 'updateSignature']);
     });
 
     //Roles

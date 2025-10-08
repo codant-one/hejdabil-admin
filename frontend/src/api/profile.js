@@ -18,6 +18,10 @@ class Profile {
         return axios.post('users/update/company/logo', data)
     }
 
+    updateSignature(data) {
+        return axios.post('users/update/company/signature', data)
+    }
+
 }
 
 const profile = new Profile();
