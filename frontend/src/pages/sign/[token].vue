@@ -432,7 +432,7 @@ onMounted(loadSignatureData);
 
 /* Posicionamiento para la firma estática */
 .static-signature-position.align-left {
-  bottom: 11%;
+  bottom: 9%;
   left: 25%;
   top: auto;
   transform: translate(-50%, -50%);
@@ -469,7 +469,7 @@ canvas {
 
   .signature-placeholder {
     padding: 4px 8px;
-    font-size: 0.875rem;
+    font-size: 0.5rem!important;
     gap: 4px;
     border-radius: 4px;
   }
@@ -479,7 +479,7 @@ canvas {
   }
 
   .static-signature-position.align-left {
-    bottom: 7%;
+    bottom: 6%;
   }
 
   .static-signature-position.align-right {

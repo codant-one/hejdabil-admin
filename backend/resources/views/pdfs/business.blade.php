@@ -295,13 +295,12 @@
                     <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
                     <table class="signatures-table">
                         <tr>
-                            @if(isset($signature_url))
-                                {{-- Este div posicionará la firma en el lugar exacto --}}
-                                <div style="position: absolute; left: {{ $signature_x }}px; top: {{ $signature_y }}px; z-index: 100;">
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 200px; height: auto;">
-                                </div>
-                            @endif
                             <td style="width: 50%; padding-right: 20px;">
+                                <div style="min-height: 70px;">
+                                    @if($company->img_signature)
+                                        <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                    @endif
+                                </div>
                                 <div class="signature-box">(Köparens underskrift)</div>
                                 <div style="padding-top: 5px; font-size: 10px;">{{ $company->name }} {{ $company->last_name }}</div>
                             </td>
