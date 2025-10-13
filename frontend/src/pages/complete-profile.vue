@@ -265,6 +265,10 @@ const formatOrgNumber = () => {
   form.value.organization_number = numbers
 }
 
+const resetLogo = () => {
+  logoCropped.value = null
+  logoOld.value = null
+}
 
 const resetAvatar = () => {
   avatar.value = null
@@ -399,6 +403,21 @@ const onImageSelected = event => {
       avatarOld.value = blob
       let r = await blobToBase64(blob)
       avatar.value = 'data:image/jpeg;base64,' + r
+    })
+}
+
+const onLogoSelected = event => {
+  const file = event.target.files[0]
+
+  if (!file) return
+  // logoOld.value = file
+
+  URL.createObjectURL(file)
+
+  resizeImage(file, 1200, 1200, 1)
+    .then(async blob => {
+        let r = await blobToBase64(blob)
+        logoCropped.value = 'data:image/jpeg;base64,' + r
     })
 }
 
@@ -1184,8 +1203,8 @@ const dataURLtoBlob = (dataURL) => {
                       class="mb-2"
                       accept="image/png, image/jpeg, image/bmp, image/webp"
                       prepend-icon="tabler-camera"
-                      @change="onImageSelected"
-                      @click:clear="resetAvatar"
+                      @change="onLogoSelected"
+                      @click:clear="resetLogo"
                   />
               </VCol>
           </VRow>
