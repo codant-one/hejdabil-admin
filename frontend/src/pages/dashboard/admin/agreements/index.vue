@@ -672,7 +672,11 @@ const openLink = function (agreementData) {
                   </span>
                 </td>
                 <td>
+                  <span v-if="agreement.agreement_type_id === 4">
+                    NO APLICA
+                  </span>
                   <VChip
+                    v-else
                     label
                     :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
                   >
