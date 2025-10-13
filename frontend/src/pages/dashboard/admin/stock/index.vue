@@ -60,6 +60,73 @@ const advisor = ref({
   show: false
 })
 
+// 👉 Column visibility state
+const isColumnsDialogVisible = ref(false)
+const visibleColumns = ref([])
+const didInitVisibleColumns = ref(false)
+
+const columnOptions = [
+  { id: 'purchase_date', label: 'Inköpsdatum' },
+  { id: 'info', label: 'Bilinfo' },
+  { id: 'reg_num', label: 'Regnr' },
+  { id: 'purchase_price', label: 'Inköpspris' },
+  { id: 'mileage', label: 'Miltal' },
+  { id: 'comments', label: 'Anteckningar' },
+  { id: 'state', label: 'Status' },
+  { id: 'vat', label: 'VAT' },
+  { id: 'control_inspection', label: 'Besiktigas' },
+  { id: 'seller', label: 'Säljaren' },
+  { id: 'supplier', label: 'Leverantör' },
+  { id: 'created_by', label: 'Skapad av' },
+]
+
+const availableColumnOptions = computed(() => {
+  const canSeeSupplier = role.value === 'SuperAdmin' || role.value === 'Administrator'
+  return canSeeSupplier
+    ? columnOptions
+    : columnOptions.filter(opt => opt.id !== 'supplier')
+})
+
+const defaultColumns = computed(() => availableColumnOptions.value.slice(0, 5).map(opt => opt.id))
+
+watch(
+  () => role.value,
+  () => {
+    if (!didInitVisibleColumns.value && role.value) {
+      const saved = localStorage.getItem('stock_visible_columns')
+      const allowed = new Set(availableColumnOptions.value.map(o => o.id))
+      const initial = saved ? JSON.parse(saved).filter((id) => allowed.has(id)) : defaultColumns.value
+      visibleColumns.value = initial
+      didInitVisibleColumns.value = true
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => visibleColumns.value,
+  (val) => {
+    if (didInitVisibleColumns.value) {
+      localStorage.setItem('stock_visible_columns', JSON.stringify(val))
+    }
+  },
+  { deep: true }
+)
+
+const isColVisible = (id) => visibleColumns.value.includes(id)
+
+const selectAllColumns = () => {
+  visibleColumns.value = availableColumnOptions.value.map(o => o.id)
+}
+
+const selectDefaultColumns = () => {
+  visibleColumns.value = defaultColumns.value
+}
+
+const clearColumns = () => {
+  visibleColumns.value = []
+}
+
 // 👉 Computing pagination data
 const paginationData = computed(() => {
   const firstIndex = vehicles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
@@ -448,7 +515,14 @@ const truncateText = (text, length = 15) => {
                 autocomplete="off"
                 clearable
                 clear-icon="tabler-x"/>
-
+            <VBtn
+              variant="tonal"
+              color="primary"
+              prepend-icon="tabler-columns-3"
+              class="w-100 w-md-auto"
+              @click="isColumnsDialogVisible = true">
+              Kolumner
+            </VBtn>
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
          
               <!-- 👉 Add user button -->
@@ -468,18 +542,18 @@ const truncateText = (text, length = 15) => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> Inköpsdatum </th>
-                <th scope="col"> Bilinfo</th>
-                <th scope="col"> Regnr </th>
-                <th scope="col" class="text-end"> Inköpspris </th>
-                <th scope="col" class="text-end"> Miltal </th>
-                <th scope="col"> Anteckningar </th>
-                <th scope="col"> Status </th>
-                <th scope="col"> VAT </th>
-                <th scope="col"> Besiktigas </th>
-                <th scope="col"> Säljaren </th>
-                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
-                <th scope="col"> SKAPAD AV </th>  
+                <th scope="col" v-if="isColVisible('purchase_date')"> Inköpsdatum </th>
+                <th scope="col" v-if="isColVisible('info')"> Bilinfo</th>
+                <th scope="col" v-if="isColVisible('reg_num')"> Regnr </th>
+                <th scope="col" class="text-end" v-if="isColVisible('purchase_price')"> Inköpspris </th>
+                <th scope="col" class="text-end" v-if="isColVisible('mileage')"> Miltal </th>
+                <th scope="col" v-if="isColVisible('comments')"> Anteckningar </th>
+                <th scope="col" v-if="isColVisible('state')"> Status </th>
+                <th scope="col" v-if="isColVisible('vat')"> VAT </th>
+                <th scope="col" v-if="isColVisible('control_inspection')"> Besiktigas </th>
+                <th scope="col" v-if="isColVisible('seller')"> Säljaren </th>
+                <th scope="col" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')"> LEVERANTÖR </th>
+                <th scope="col" v-if="isColVisible('created_by')"> SKAPAD AV </th>  
                 <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
               </tr>
             </thead>
@@ -489,8 +563,8 @@ const truncateText = (text, length = 15) => {
                 v-for="vehicle in vehicles"
                 :key="vehicle.id"
                 style="height: 3rem;">
-                <td> {{ vehicle.purchase_date }} </td>
-                <td class="cursor-pointer" @click="showVehicle(vehicle.id)">
+                <td v-if="isColVisible('purchase_date')"> {{ vehicle.purchase_date }} </td>
+                <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id)">
                   <div class="d-flex align-center gap-x-3"> 
                     <VAvatar
                       v-if="vehicle.model?.brand?.logo"
@@ -518,10 +592,10 @@ const truncateText = (text, length = 15) => {
                     </div>
                   </div>
                 </td>   
-                <td> {{ vehicle.reg_num }} </td>             
-                <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
-                <td class="text-end"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
-                <td class="cursor-pointer">
+                <td v-if="isColVisible('reg_num')"> {{ vehicle.reg_num }} </td>             
+                <td class="text-end" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
+                <td class="text-end" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
+                <td class="cursor-pointer" v-if="isColVisible('comments')">
                   <VTooltip location="bottom">
                     <template #activator="{ props }">
                       <span v-bind="props" v-if="vehicle.comments">
@@ -531,10 +605,10 @@ const truncateText = (text, length = 15) => {
                     <span>{{ vehicle.comments }}</span>
                   </VTooltip>
                 </td>
-                <td> {{ vehicle.state.name }} </td>
-                <td> {{ vehicle.iva_purchase?.name }} </td>
-                <td> {{ vehicle.control_inspection }} </td>
-                <td class="text-wrap">
+                <td v-if="isColVisible('state')"> {{ vehicle.state.name }} </td>
+                <td v-if="isColVisible('vat')"> {{ vehicle.iva_purchase?.name }} </td>
+                <td v-if="isColVisible('control_inspection')"> {{ vehicle.control_inspection }} </td>
+                <td class="text-wrap" v-if="isColVisible('seller')">
                   <div class="d-flex flex-column">
                     <span v-if="vehicle.client_purchase?.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_purchase?.client)">
                       {{ vehicle.client_purchase?.fullname }} 
@@ -545,12 +619,12 @@ const truncateText = (text, length = 15) => {
                     <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone }}</span>
                   </div>
                 </td> 
-                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
                   <span class="font-weight-medium"  v-if="vehicle.supplier">
                     {{ vehicle.supplier.user.name }} {{ vehicle.supplier.user.last_name ?? '' }} 
                   </span>
                 </td>
-                <td class="text-wrap">
+                <td class="text-wrap" v-if="isColVisible('created_by')">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
                       :variant="vehicle.user.avatar ? 'outlined' : 'tonal'"
@@ -654,6 +728,41 @@ const truncateText = (text, length = 15) => {
     </VRow>
 
   <!-- 👉 Confirm create -->
+  <VDialog
+      v-model="isColumnsDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <DialogCloseBtn @click="isColumnsDialogVisible = !isColumnsDialogVisible" />
+      <VCard title="Välj kolumner">
+        <VDivider />
+        <VCardText>
+          <VRow>
+            <VCol cols="12">
+              <div class="d-flex gap-3 mb-4 flex-wrap">
+                <VBtn size="small" @click="selectAllColumns">Alla</VBtn>
+                <VBtn size="small" variant="tonal" @click="selectDefaultColumns">Standard (5)</VBtn>
+                <VBtn size="small" color="secondary" variant="tonal" @click="clearColumns">Rensa</VBtn>
+              </div>
+            </VCol>
+            <VCol cols="12">
+              <VCheckbox
+                v-for="opt in availableColumnOptions"
+                :key="opt.id"
+                :label="opt.label"
+                :value="opt.id"
+                v-model="visibleColumns"
+                density="comfortable"
+                hide-details
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn color="secondary" variant="tonal" @click="isColumnsDialogVisible = false">Stäng</VBtn>
+        </VCardText>
+      </VCard>
+  </VDialog>
+
   <VDialog
       v-model="isConfirmCreateDialogVisible"
       persistent

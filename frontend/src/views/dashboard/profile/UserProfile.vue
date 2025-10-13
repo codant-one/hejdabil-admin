@@ -65,8 +65,8 @@ async function fetchData() {
   email.value = userData.value.email
   name.value = userData.value.name
   last_name.value = userData.value.last_name ?? ''
-  phone.value = userData.value.user_details?.phone
-  address.value = userData.value.user_details?.address
+  phone.value = userData.value.user_detail?.personal_phone
+  address.value = userData.value.user_detail?.personal_address
 }
 
 const resetAvatar = () => {
@@ -83,8 +83,8 @@ const onSubmit = () => {
       formData.append('email', email.value)
       formData.append('name', name.value)
       formData.append('last_name', last_name.value)
-      formData.append('phone', phone.value)
-      formData.append('address', address.value)
+      formData.append('personal_phone', phone.value)
+      formData.append('personal_address', address.value)
       formData.append('image', avatarOld.value)
 
       isRequestOngoing.value = true
