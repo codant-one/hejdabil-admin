@@ -337,7 +337,7 @@ class Agreement extends Model
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
-            
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
                 if (is_array($cfg)) 
@@ -349,7 +349,8 @@ class Agreement extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
-            
+            $signatureRaw    = $getValue($configSignature);
+
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
 
@@ -364,8 +365,10 @@ class Agreement extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
-            
+            $signatureObj    = $decodeSafe($signatureRaw);
+
             $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
         }
 
         switch ($request->agreement_type_id) {

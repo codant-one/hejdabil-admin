@@ -302,7 +302,8 @@ class SignatureController extends Controller
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
-            
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
                 if (is_array($cfg)) 
@@ -314,7 +315,8 @@ class SignatureController extends Controller
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
-            
+            $signatureRaw    = $getValue($configSignature);
+
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
 
@@ -329,8 +331,10 @@ class SignatureController extends Controller
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
+            $signatureObj    = $decodeSafe($signatureRaw);
             
             $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
         }
 
         $data = [
