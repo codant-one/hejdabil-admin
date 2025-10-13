@@ -13,6 +13,10 @@ class Configs {
     postLogo(data) {
         return axios.post(`featured/${data.key}/logo`, data.params)
     }
+
+    postSignature(data) {
+        return axios.post(`featured/${data.key}/signature`, data.params)
+    }
     
 }
 

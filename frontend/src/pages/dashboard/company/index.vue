@@ -7,6 +7,8 @@ import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
 import 'vue-advanced-cropper/dist/style.css'
+import SignaturePad from 'signature_pad';
+import { nextTick } from 'vue';
 
 const configsStores = useConfigsStores()
 
@@ -24,6 +26,18 @@ const refVForm = ref()
 
 const isConfirmChangeLogoVisible = ref(false)
 const cropper = ref()
+
+const signatureData = ref(null) // Para guardar los datos de la firma
+const isConfirmChangeSignatureVisible = ref(false)
+const cropperSignature = ref()
+const signature = ref(null)
+const signatureCropped = ref(null)
+const signatureOld = ref(null)
+const signatureFilename = ref([])
+
+const isSignaturePadDialogVisible = ref(false)
+const signaturePadCanvas = ref(null)
+const signaturePadInstance = ref(null)
 
 const data = ref(null)
 const logoData = ref(null)
@@ -114,7 +128,18 @@ async function fetchData() {
 
     logo.value = (logoData.value && logoData.value.logo) ? themeConfig.settings.urlStorage + logoData.value.logo : logo_ 
     logoCropped.value = (logoData.value && logoData.value.logo) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + logoData.value.logo) : logo_ 
+    
+    await configsStores.getFeature('signature')
+    signatureData.value = configsStores.getFeaturedConfig('signature')
 
+    signature.value = (signatureData.value && signatureData.value.img_signature) 
+        ? themeConfig.settings.urlStorage + signatureData.value.img_signature 
+        : logo_
+        
+    signatureCropped.value = (signatureData.value && signatureData.value.img_signature) 
+        ? await fetchImageAsBlob(themeConfig.settings.urlStorage + signatureData.value.img_signature) 
+        : logo_
+    
     setTimeout(() => {
         showWindow(false)
     }, 500)
@@ -122,6 +147,172 @@ async function fetchData() {
     isRequestOngoing.value = false
 
 }
+
+const resetSignature = () => {
+  signatureCropped.value = null
+  signatureOld.value = null
+  signatureFilename.value = [] // Limpia también el v-model del input
+}
+
+// Se ejecuta cuando el admin selecciona un archivo de imagen para la firma
+const onSignatureImageSelected = event => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  URL.createObjectURL(file)
+
+  // Usamos la función resizeImage que ya tienes en el componente
+  resizeImage(file, 1200, 1200, 1)
+    .then(async blob => {
+        let r = await blobToBase64(blob)
+        signatureCropped.value = 'data:image/jpeg;base64,' + r
+    })
+}
+
+// Se ejecuta al guardar la imagen desde el cropper (después de subir un archivo)
+const cropSignatureImage = async () => {
+    if (cropperSignature.value) {
+        const result = cropperSignature.value.getResult({
+            mime: 'image/png',
+            quality: 1,
+            fillColor: 'transparent'
+        });
+        
+        // Usamos la función dataURLtoBlob que ya tienes para convertir a archivo
+        const blob = dataURLtoBlob(result.canvas.toDataURL("image/png"));
+
+        // Preparamos los datos para enviar al backend
+        let formData = new FormData()
+        formData.append('img_signature', blob, 'signature.png'); // Clave 'img_signature' y nombre de archivo
+        
+        isConfirmChangeSignatureVisible.value = false
+        isRequestOngoing.value = true
+
+        // Creamos el payload que espera la acción del store del admin
+        let data = {
+            key: 'signature', // Este es el 'slug' que usaremos
+            params: formData
+        }
+
+        // --- ¡ACCIÓN CLAVE! ---
+        // Llamamos a la acción 'postSignature' en el store de CONFIGS
+        configsStores.postSignature(data)
+            .then(async response => {    
+                window.scrollTo(0, 0)
+                
+                // Actualizamos la imagen visible en la página con la nueva firma
+                let r = await blobToBase64(blob)
+                signature.value = 'data:image/jpeg;base64,' + r
+
+                advisor.value.type = 'success'
+                advisor.value.message = 'Signatur uppdaterad'
+                advisor.value.show = true
+
+                setTimeout(() => {
+                    advisor.value.show = false
+                    advisor.value.message = ''
+                }, 3000)
+
+            }).catch(error => {
+                console.log('error', error)
+                advisor.value.type = 'error'
+                advisor.value.show = true
+                advisor.value.message = 'Ett fel har inträffat vid uppdatering av signaturen! (Serverfel)'
+
+                setTimeout(() => {
+                    advisor.value.show = false,
+                    advisor.value.message = ''
+                }, 5000) 
+            }).finally(() => {
+                isRequestOngoing.value = false;
+            });           
+    }
+}
+
+
+// Abre el diálogo del lienzo para dibujar
+const openSignaturePadDialog = () => {
+  isSignaturePadDialogVisible.value = true;
+  nextTick(() => {
+    const canvas = signaturePadCanvas.value;
+    if (canvas) {
+      signaturePadInstance.value = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'rgb(0, 0, 0)',
+      });
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+      signaturePadInstance.value.clear();
+    }
+  });
+};
+
+// Limpia el contenido del lienzo de dibujo
+const clearSignaturePad = () => {
+  if (signaturePadInstance.value) {
+    signaturePadInstance.value.clear();
+  }
+};
+
+// Guarda la firma dibujada en el lienzo
+const saveSignatureFromPad = async () => {
+  if (signaturePadInstance.value && !signaturePadInstance.value.isEmpty()) {
+    const signatureDataUrl = signaturePadInstance.value.toDataURL('image/png');
+    
+    // Convertimos el dibujo en un archivo (Blob)
+    const blob = dataURLtoBlob(signatureDataUrl);
+
+    const formData = new FormData();
+    formData.append('img_signature', blob, 'signature.png');
+
+    isSignaturePadDialogVisible.value = false;
+    isRequestOngoing.value = true;
+
+    // Preparamos el payload para el store del admin
+    let data = {
+        key: 'signature',
+        params: formData
+    }
+    
+    // --- ¡ACCIÓN CLAVE! ---
+    // Llamamos a la misma acción 'postSignature' en el store de CONFIGS
+    configsStores.postSignature(data)
+      .then(async response => {    
+        window.scrollTo(0, 0);
+        
+        // Actualizamos la imagen visible con el dibujo
+        signature.value = signatureDataUrl;
+
+        advisor.value.type = 'success'
+        advisor.value.message = 'Signatur uppdaterad'
+        advisor.value.show = true
+
+        setTimeout(() => {
+            advisor.value.show = false
+            advisor.value.message = ''
+        }, 3000)
+        
+      })
+      .catch(error => {
+        console.log('error', error);
+        advisor.value.type = 'error';
+        advisor.value.show = true;
+        advisor.value.message = 'Ett fel har inträffat vid uppdatering av signaturen! (Serverfel)';
+        setTimeout(() => {
+            advisor.value.show = false;
+            advisor.value.message = '';
+        }, 5000); 
+      })
+      .finally(() => {
+        isRequestOngoing.value = false;
+      });
+  } else {
+    // Si no se dibujó nada, solo se cierra el diálogo
+    isSignaturePadDialogVisible.value = false;
+  }
+};
 
 const showWindow = function(data) {
   isFormEdited.value = data
@@ -569,6 +760,27 @@ const onSubmit = () => {
                                     label="Vat"
                                 />
                             </VCol>
+                            <VCol cols="12" md="6">
+                                <VLabel class="mb-2">Signatur</VLabel>
+                                <div class="d-flex align-center gap-4">
+                                    <VImg :src="signature" width="200" height="112.5" aspect-ratio="16/9" class="border rounded" />
+                                    <div class="d-flex flex-column gap-2">
+                                        <VBtn 
+                                            color="primary"
+                                            @click="isConfirmChangeSignatureVisible = true">
+                                            <VIcon icon="tabler-upload" class="mr-2" />
+                                            Ladda upp fil
+                                        </VBtn>
+                                        <VBtn 
+                                            color="secondary"
+                                            variant="tonal"
+                                            @click="openSignaturePadDialog">
+                                            <VIcon icon="tabler-pencil" class="mr-2" />
+                                            Rita signatur
+                                        </VBtn>
+                                    </div>
+                                </div>
+                            </VCol>
                             <VCol cols="12" v-if="role !== 'User'">
                                 <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
@@ -670,6 +882,84 @@ const onSubmit = () => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Confirm change Signature -->
+    <VDialog
+      v-model="isConfirmChangeSignatureVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Byt firma">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Firma du väljer kommer att visas på dina kontrakt.
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+             <VRow>
+                <VCol cols="12" md="12">
+                    <Cropper
+                        v-if="signatureCropped"
+                        :ref="el => cropperSignature = el"
+                        class="cropper-container"
+                        preview-class="cropper-preview"
+                        background-class="cropper-background"
+                        :src="signatureCropped"
+                        :stencil-props="{
+                            aspectRatio: 16/9  // Puedes ajustar el aspect ratio si lo necesitas
+                        }"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                     <VFileInput 
+                        v-model="signatureFilename"
+                        label="Firma"
+                        class="mb-2"
+                        accept="image/png, image/jpeg, image/bmp, image/webp"
+                        prepend-icon="tabler-camera"
+                        @change="onSignatureImageSelected"
+                        @click:clear="resetSignature"
+                    />
+                </VCol>
+            </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmChangeSignatureVisible = false">
+              Avbryt 
+          </VBtn>
+          <VBtn @click="cropSignatureImage"> 
+              Spara
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- ======================================================= -->
+    <!-- MODAL PARA DIBUJAR LA FIRMA DEL SUPPLIER -->
+    <!-- ======================================================= -->
+    <VDialog v-model="isSignaturePadDialogVisible" persistent max-width="500">
+    <VCard>
+        <VCardTitle>Rita din signatur</VCardTitle>
+        <VCardText>
+        <div class="signature-pad-wrapper">
+            <canvas ref="signaturePadCanvas"></canvas>
+        </div>
+        </VCardText>
+        <VCardActions>
+        <VSpacer />
+        <VBtn color="secondary" variant="tonal" @click="isSignaturePadDialogVisible = false">Avbryt</VBtn>
+        <VBtn @click="clearSignaturePad">Rensa</VBtn>
+        <VBtn color="primary" @click="saveSignatureFromPad">Acceptera & Spara</VBtn>
+        </VCardActions>
+    </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -754,6 +1044,19 @@ const onSubmit = () => {
         line-height: 16px;
         color: white;
         margin-inline-start: 20px;
+    }
+
+    .signature-pad-wrapper {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 4px;
+    background-color: #fff; /* Fondo blanco para el lienzo */
+    }
+
+    .signature-pad-wrapper canvas {
+    width: 100%;
+    height: 200px;
+    display: block;
+    cursor: crosshair;
     }
 
     @media (max-width: 776px) {

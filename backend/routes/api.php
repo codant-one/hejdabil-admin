@@ -187,6 +187,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::get('featured/{slug}', [ConfigController::class, 'featured']);
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
     Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
+    Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
 });
 
 //Public Endpoints

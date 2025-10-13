@@ -55,6 +55,18 @@ export const useConfigsStores = defineStore('configs', {
                 .finally(() => {
                     this.setLoading(false)
                 })
+        },
+        postSignature(data) {
+            this.setLoading(true)
+            
+            return Configs.postSignature(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
         }
     }
 })
