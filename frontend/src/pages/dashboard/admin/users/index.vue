@@ -201,7 +201,7 @@ const downloadCSV = async () => {
       EFTERNAMN: (element.last_name ?? ''),
       E_POST: element.email,
       ROLL: element.roles.map(e => e['name']).join(','),
-      TELEFON: element.user_detail.phone ?? ''
+      TELEFON: element.user_detail.personal_phone ?? ''
     }
         
     dataArray.push(data)
@@ -364,7 +364,7 @@ const downloadCSV = async () => {
 
                 <!-- 👉 phone -->
                   <td>
-                  {{ user.user_detail?.phone ?? '----' }}
+                  {{ user.user_detail?.personal_phone ?? '----' }}
                 </td>
                 <!-- 👉 acciones -->
                 <td style="width: 3rem;">

@@ -43,9 +43,9 @@ watchEffect(() => {
             password.value = props.user.password
             name.value = props.user.name
             last_name.value = props.user.last_name
-            phone.value = props.user.user_detail?.phone ?? '----'
-            isPhone.value = (props.user.user_detail?.phone === null) ? true : false
-            address.value = props.user.user_detail?.address ?? '----'
+            phone.value = props.user.user_detail?.personal_phone ?? '----'
+            isPhone.value = (props.user.user_detail?.personal_phone === null) ? true : false
+            address.value = props.user.user_detail?.personal_address ?? '----'
             isAddress.value = (props.user.user_detail?.address === null) ? true : false
         }
 
