@@ -12,6 +12,7 @@ class Token extends Model
     protected $fillable = [
         'agreement_id',
         'signature_status',
+        'recipient_email',
         'signing_token',
         'token_expires_at',
         'signed_at',

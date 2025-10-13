@@ -693,7 +693,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
+                      <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>

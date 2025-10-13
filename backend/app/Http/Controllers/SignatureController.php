@@ -50,6 +50,7 @@ class SignatureController extends Controller
         // 4. Crear el registro en la tabla 'tokens'.
         $token = $agreement->tokens()->create([
             'signing_token' => $signingToken,
+            'recipient_email'     => $validated['email'],
             'token_expires_at'    => now()->addDays(7),
             'signature_status'        => 'sent',
             'placement_x'   => $validated['x'],
@@ -69,7 +70,6 @@ class SignatureController extends Controller
         $validated = $request->validate([
             'email' => 'required|email',
         ]);
-
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
             return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
@@ -87,6 +87,7 @@ class SignatureController extends Controller
         // 4. Crear el registro en 'tokens' SIN coordenadas.
         $token = $agreement->tokens()->create([
             'signing_token' => $signingToken,
+            'recipient_email'     => $validated['email'],
             'token_expires_at'    => now()->addDays(7),
             'signature_status'        => 'sent',
             'placement_x'   => null, // Guardamos null para identificar que es una firma estática
@@ -240,10 +241,10 @@ class SignatureController extends Controller
         $agreement->save();
 
         try {
-            $clientEmail = $token->agreement->agreement_client->email;
-            if ($clientEmail) {
+            $recipientEmail = $token->recipient_email ?? $token->agreement->agreement_client->email;
+            if ($recipientEmail) {
                 $pdfFullPath = storage_path('app/public/' . $signedPdfPath);
-                Mail::to($clientEmail)->send(new SignedDocumentMail($agreement, $pdfFullPath));
+                Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $pdfFullPath));
             }
         } catch (\Exception $e) {
             Log::error('Kunde inte skicka signerat PDF via e-post för avtal #' . $agreement->id . ': ' . $e->getMessage());
