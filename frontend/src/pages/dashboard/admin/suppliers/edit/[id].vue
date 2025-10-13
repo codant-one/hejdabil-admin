@@ -100,6 +100,7 @@ const onSubmit = () => {
             formData.append('_method', 'PUT')
 
             //company
+            formData.append('logo',  supplier.value.user.user_detail?.logo)
             formData.append('company', company.value)
             formData.append('organization_number', organization_number.value)
             formData.append('link', link.value)
@@ -107,7 +108,15 @@ const onSubmit = () => {
             formData.append('street', street.value)
             formData.append('postal_code', postal_code.value)
             formData.append('phone', phone.value)
-            formData.append('swish', swish.value)
+            formData.append('swish', swish.value)            
+            formData.append('iban', supplier.value.user.user_detail?.iban)     
+            formData.append('iban_number', supplier.value.user.user_detail?.iban_number)
+            formData.append('bic', supplier.value.user.user_detail?.bic)
+            formData.append('plus_spin', supplier.value.user.user_detail?.plus_spin)
+            formData.append('swish', supplier.value.user.user_detail?.swish)
+            formData.append('vat', supplier.value.user.user_detail?.vat)
+            formData.append('personal_phone', supplier.value.user.user_detail?.personal_phone)
+            formData.append('personal_address', supplier.value.user.user_detail?.personal_address)
 
             //bank
             formData.append('bank', bank.value)

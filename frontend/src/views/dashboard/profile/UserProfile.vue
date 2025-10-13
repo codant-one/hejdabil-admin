@@ -87,6 +87,23 @@ const onSubmit = () => {
       formData.append('personal_address', address.value)
       formData.append('image', avatarOld.value)
 
+      formData.append('logo',  userData.value.user_detail?.logo)
+      formData.append('company', userData.value.user_detail?.company)
+      formData.append('organization_number', userData.value.user_detail?.organization_number)
+      formData.append('address', userData.value.user_detail?.address)
+      formData.append('street', userData.value.user_detail?.street)
+      formData.append('postal_code', userData.value.user_detail?.postal_code)
+      formData.append('phone', userData.value.user_detail?.phone)
+      formData.append('link', userData.value.user_detail?.link)
+      formData.append('bank', userData.value.user_detail?.bank)
+      formData.append('iban', userData.value.user_detail?.iban)
+      formData.append('account_number', userData.value.user_detail?.account_number)       
+      formData.append('iban_number', userData.value.user_detail?.iban_number)
+      formData.append('bic', userData.value.user_detail?.bic)
+      formData.append('plus_spin', userData.value.user_detail?.plus_spin)
+      formData.append('swish', userData.value.user_detail?.swish)
+      formData.append('vat', userData.value.user_detail?.vat)
+
       isRequestOngoing.value = true
 
       profileStores.updateData(formData)

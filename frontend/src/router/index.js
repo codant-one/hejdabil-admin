@@ -29,31 +29,31 @@ const router = createRouter({
       name: 'info',
       redirect: () => {
         const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-        if (userData) {
-          if (!userData.full_profile) {            
+       // if (userData) {
+         // if (!userData.full_profile) {            
             return { name: 'complete-profile' }
-          } else {            
-            return { name: 'dashboard-panel' }
-          }
-        }
+          //} else {            
+          //  return { name: 'dashboard-panel' }
+         // }
+        //}
 
-        return { name: 'login' }
+       // return { name: 'login' }
       },
     },
     {
       path: '/complete-profile',
       name: 'complete-profile-redirect',
       redirect: () => {
-        const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-        if (userData) {
-          if (!userData.full_profile) {            
+       // const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+       // //if (userData) {
+          //if (!userData.full_profile) {            
             return { name: 'complete-profile' }
-          } else {            
-            return { name: 'dashboard-panel' }
-          }
-        }
+         // } else {            
+          //  return { name: 'dashboard-panel' }
+        //  }
+      //  }
 
-        return { name: 'login' }
+       // return { name: 'login' }
       },
     },
     ...setupLayouts(routes),
