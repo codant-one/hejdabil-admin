@@ -62,7 +62,17 @@ class Billing extends Model
                         });
                   });
             })
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
             ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
+            ->orWhere('invoice_date', 'LIKE', '%' . $search . '%')
+            ->orWhere('due_date', 'LIKE', '%' . $search . '%')
             ->orWhere('detail', 'LIKE', '%' . $search . '%');
         });
     }

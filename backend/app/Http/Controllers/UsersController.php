@@ -50,7 +50,8 @@ class UsersController extends Controller
                             $request->only([
                                 'search',
                                 'orderByField',
-                                'orderBy'
+                                'orderBy',
+                                'role_name'
                             ])
                         );
 

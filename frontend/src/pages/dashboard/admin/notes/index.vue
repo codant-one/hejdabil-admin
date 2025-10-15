@@ -322,7 +322,6 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> Skapad av </th>
                 <th scope="col"> Reg nr </th>
                 <th scope="col"> Egen värdering  </th>
                 <th scope="col"> Info </th>
@@ -340,28 +339,6 @@ const downloadCSV = async () => {
                 v-for="note in notes"
                 :key="note.id"
                 style="height: 3rem;">
-
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="note.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="note.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + note.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(note.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ note.user.name }} {{ note.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ note.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
                 <td> {{ note.reg_num }} </td>
                 <td> {{ note.note }} </td>
                 <td> 

@@ -24,6 +24,7 @@ const totalPages = ref(1)
 const totalUsers = ref(0)
 
 const selectedRows = ref([])
+const role_name = ref(null)
 
 const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
@@ -96,7 +97,8 @@ async function fetchData() {
     orderByField: 'id',
     orderBy: 'asc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    role_name: role_name.value
   }
 
   await usersStores.fetchUsers(data)
@@ -269,12 +271,14 @@ const downloadCSV = async () => {
               <!-- 👉 Select status -->
               <div class="user-list-filter">
                 <VSelect
-                  v-model="searchQuery"
+                  v-model="role_name"
                   label="Filtrera efter roll"
                   clearable
                   clear-icon="tabler-x"
                   single-line
                   :items="rolesList"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
                   class="w-100 w-md-auto"
                 />
               </div>

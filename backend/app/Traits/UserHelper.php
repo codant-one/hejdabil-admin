@@ -126,15 +126,18 @@ trait UserHelper
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        foreach (explode(' ', $search) as $term) {
-            $query->whereHas('roles', function ($q) use ($term) {
-                $q->where(function ($query) use ($term) {
-                    $query->where('name', 'LIKE', '%' . $term . '%');
+        $query->where('name', 'LIKE', '%' . $search . '%')
+            ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+            ->orWhere('email', 'LIKE', '%' . $search . '%')
+            ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%'])
+            ->orWhereHas('roles', function ($q) use ($search) {
+                $q->where(function ($query) use ($search) {
+                    $query->where('name', 'LIKE', '%' . $search . '%');
                 });
             })
-            ->orWhere('name', 'LIKE', '%' . $term . '%')
-            ->orWhere('email', 'LIKE', '%' . $term . '%');
-        }
+            ->orWhereHas('userDetail', function ($dq) use ($search) {
+                $dq->where('personal_phone', 'LIKE', '%' . $search . '%');
+            });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -146,6 +149,12 @@ trait UserHelper
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('role_name')) {
+            $query->whereHas('roles', function ($q) use ($filters) {
+                $q->where('name', $filters->get('role_name'));
+            });
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {

@@ -32,8 +32,21 @@ class Client extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('fullname', 'LIKE', '%' . $search . '%')
-              ->orWhere('email', 'LIKE', '%' . $search . '%');
+        $query->where(function ($q) use ($search) {
+            $q->where('fullname', 'LIKE', '%' . $search . '%')
+                ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                ->orWhere('address', 'LIKE', '%' . $search . '%')
+                ->orWhere('email', 'LIKE', '%' . $search . '%')
+                ->orWhereHas('user', function ($uq) use ($search) {
+                    $uq->where(function ($inner) use ($search) {
+                        $inner->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('email', 'LIKE', '%' . $search . '%')
+                            ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                    });
+                });
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {

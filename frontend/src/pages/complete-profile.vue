@@ -75,10 +75,6 @@ const controlledTab = computed({
 const validateTab0 = async () => {
     const results = []
 
-    // Avatar is required only when there is no existing or newly selected avatar
-    if (!avatarOld.value && !avatar.value) {
-        results.push(requiredValidator(avatar.value))
-    }
     results.push(requiredValidator(name.value))
     results.push(requiredValidator(last_name.value))
     results.push(requiredValidator(email.value))
@@ -769,7 +765,6 @@ const dataURLtoBlob = (dataURL) => {
                         prepend-icon="tabler-camera"
                         @change="onImageSelected"
                         @click:clear="resetAvatar"
-                        :rules="[(!avatarOld && !avatar) ? requiredValidator : () => true]"
                       />
                     </div>
                     <p class="text-body-1 mb-0">
@@ -1072,7 +1067,6 @@ const dataURLtoBlob = (dataURL) => {
                     prepend-icon="tabler-camera"
                     @change="onImageSelected"
                     @click:clear="resetAvatar"
-                    :rules="[(!avatarOld && !avatar) ? requiredValidator : () => true]"
                   />
                 </div>
                 <p class="text-body-1 mb-0">

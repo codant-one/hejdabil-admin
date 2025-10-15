@@ -96,7 +96,41 @@ class Agreement extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('id', $search);
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('offer', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('commission.vehicle', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('vehicle_client.vehicle', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('vehicle_interchange', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('agreement_type', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhere('installment_amount', $search); 
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {

@@ -55,13 +55,28 @@ class Supplier extends Model
     }
 
     public function scopeWhereSearch($query, $search) {
-        $query->whereHas('user', function ($q) use ($search) {
-            $q->where(function ($query) use ($search) {
-                $query->where('name', 'LIKE', '%' . $search . '%')
-                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
-                      ->orWhere('email', 'LIKE', '%' . $search . '%');
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
+            ->orWhereHas('user.userDetail', function ($dq) use ($search) {
+                $dq->where('company', 'LIKE', '%' . $search . '%')
+                   ->orWhere('organization_number', 'LIKE', '%' . $search . '%');
+            })
+            ->orWhereHas('creator', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
             });
-        })->orWhere('company', 'LIKE', '%' . $search . '%');
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -161,32 +176,6 @@ class Supplier extends Model
         $user->restore();
         $user->assignRole('Supplier');
     }
-
-    public static function updateOrCreateSupplier($request, $user) {
-        $supplier = Supplier::updateOrCreate(
-            [    'user_id' => $user->id ],
-            [
-                'company' => $request->company,
-                'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
-                'link' => $request->link === 'null' ? null : $request->link,
-                'address' => $request->address === 'null' ? null : $request->address,
-                'street' => $request->street === 'null' ? null : $request->street,
-                'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
-                'phone' => $request->phone === 'null' ? null : $request->phone,
-                'bank' => $request->bank === 'null' ? null : $request->bank,
-                'account_number' => $request->account_number === 'null' ? null : $request->account_number,
-                'iban' => $request->iban === 'null' ? null : $request->iban,
-                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
-                'bic' => $request->bic === 'null' ? null : $request->bic,
-                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
-                'swish' => $request->swish === 'null' ? null : $request->swish,
-                'vat' => $request->vat === 'null' ? null : $request->vat
-            ]
-        );
-
-        return $supplier;
-    }
-
 
     public static function createUserRelatedToSupplier($request) {
         $user = User::createUser($request);

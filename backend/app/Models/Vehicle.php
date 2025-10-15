@@ -95,7 +95,41 @@ class Vehicle extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('reg_num', 'LIKE', '%' . $search . '%');
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('model.brand', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('model', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
+            ->orWhereHas('client_sale', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('fullname', 'LIKE', '%' . $search . '%')
+                         ->orWhere('phone', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('client_purchase', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('fullname', 'LIKE', '%' . $search . '%')
+                         ->orWhere('phone', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhere('reg_num', 'LIKE', '%' . $search . '%')
+            ->orWhere('color', 'LIKE', '%' . $search . '%')
+            ->orWhere('year', 'LIKE', '%' . $search . '%');
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
