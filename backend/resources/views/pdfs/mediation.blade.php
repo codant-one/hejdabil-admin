@@ -187,35 +187,44 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>
-                            <div class="label">Postnummer / Ort</div>
-                            <div class="value">
-                                {{ $agreement->commission->client->postal_code }}  {{ $agreement->commission->client->street }}
-                            </div>
+                        <td style="padding:0;">
+                            <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">Postnummer / Ort</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->client->postal_code }}  {{ $agreement->commission->client->street }}
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Telefon</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->client->phone }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
+                    <!-- Fila combinada para E-post y Tipo de cliente -->
                     <tr>
-                        <td>
-                            <div class="label">Telefon</div>
-                            <div class="value">
-                                {{ $agreement->commission->client->phone }}
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="label">E-post</div>
-                            <div class="value">
-                                {{ $agreement->commission->client->email }}
-                            </div>
-                        </td>
-                        </tr>
-                    <tr>
-                        <td>
-                            <div class="label">Fordonsägaren är:</div>
-                            <div class="value">
-                                {{ $agreement->commission->client->client_type->name }}
-                            </div>
+                        <td style="padding:0;">
+                            <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">E-post</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->client->email }}
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Fordonsägaren är:</div>
+                                        <div class="value">
+                                            {{ $agreement->commission->client->client_type->name }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
@@ -248,35 +257,44 @@
                         </td>
                     </tr>
                     <tr>
-                        <td>
-                            <div class="label">Postnummer / Ort</div>
-                            <div class="value">
-                                {{ $company->postal_code }} {{ $company->street }} 
-                            </div>
+                        <td style="padding:0;">
+                            <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">Postnummer / Ort</div>
+                                        <div class="value">
+                                            {{ $company->postal_code }} {{ $company->street }} 
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Telefon</div>
+                                        <div class="value">
+                                            {{ $company->phone }} 
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
+                    <!-- Fila combinada para E-post y Bilfirma -->
                     <tr>
-                        <td>
-                            <div class="label">Telefon</div>
-                            <div class="value">
-                                {{ $company->phone }} 
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="label">E-post</div>
-                            <div class="value">
-                                {{ $company->email }} 
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="label">Bilfirma</div>
-                            <div class="value">
-                                {{ $company->company }} 
-                            </div>
+                        <td style="padding:0;">
+                             <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">E-post</div>
+                                        <div class="value">
+                                            {{ $company->email }} 
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Bilfirma</div>
+                                        <div class="value">
+                                            {{ $company->company }} 
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
                 </table>
