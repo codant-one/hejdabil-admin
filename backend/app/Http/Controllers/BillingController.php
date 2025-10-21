@@ -36,29 +36,30 @@ class BillingController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Billing::with(['supplier' => function($query) {
-                                $query->withTrashed()->with(['user' => function($query) {
-                                    $query->withTrashed();
-                                }]);
-                            }, 'client' => function($query) {
-                                $query->withTrashed();
-                            }, 'state'])
-                           ->applyFilters(
-                                $request->only([
-                                    'search',
-                                    'orderByField',
-                                    'orderBy',
-                                    'supplier_id',
-                                    'client_id',
-                                    'state_id'
-                                ])
-                            );
+            $query = Billing::with([
+                'supplier' => function ($q) {
+                    $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                },
+                'client' => fn($q) => $q->withTrashed(),
+                'state',
+                'user.userDetail'
+            ])->applyFilters(
+                $request->only([
+                    'search',
+                    'orderByField',
+                    'orderBy',
+                    'supplier_id',
+                    'client_id',
+                    'state_id'
+                ])
+            );
 
-            $count = $query->count();
             $totalSum =  number_format($query->sum(DB::raw('total + amount_discount')), 2);
             $totalTax =  number_format($query->sum('amount_tax'), 2);
             $totalNeto = number_format($query->sum('subtotal'), 2);
-             
+            
+            $count = $query->count();
+
             $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
           
             return response()->json([
@@ -123,7 +124,8 @@ class BillingController extends Controller
                     'client' => function($query) {
                         $query->withTrashed();
                     }, 
-                    'state'
+                    'state',
+                    'user.userDetail'
                 ])->find($id);
 
             if (!$billing)
@@ -258,6 +260,10 @@ class BillingController extends Controller
                     Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
                         return $query->where('supplier_id', Auth::user()->supplier->id);
                     }
+            )->when(
+                    Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                        return $query->where('supplier_id', Auth::user()->supplier->boss_id);
+                    }
             )->get();
 
             $invoice_id = Billing::whereNull('supplier_id')->count();
@@ -265,10 +271,11 @@ class BillingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'suppliers' => Supplier::with(['user', 'billings'])->get(),
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get(),
                     'clients' => $clients,
                     'invoices' => Invoice::all(),
-                    'invoice_id' => $invoice_id
+                    'invoice_id' => $invoice_id,
+                    'billings' => Billing::whereNull('supplier_id')->get()
                 ]
             ]);
 
@@ -429,12 +436,18 @@ class BillingController extends Controller
 
         try {
 
-            $suppliers = Supplier::with(['user' => function($query) {
-                $query->withTrashed();
-            }])->withTrashed()->get();
+            $suppliers = Supplier::with(['user' => fn($q) => $q->withTrashed()])
+            ->whereNull('boss_id')
+            ->withTrashed()
+            ->get();
+        
             $clients = Client::when(
                 Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
                     return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->when(
+                Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->boss_id);
                 }
             )->withTrashed()->get();
 

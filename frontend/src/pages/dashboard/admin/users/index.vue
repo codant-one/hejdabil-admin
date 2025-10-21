@@ -24,6 +24,7 @@ const totalPages = ref(1)
 const totalUsers = ref(0)
 
 const selectedRows = ref([])
+const role_name = ref(null)
 
 const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
@@ -66,7 +67,7 @@ const onlineList = () => {
 
 const searchRoles = () => {
   rolesStores.allRoles().then(response => {
-    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier');
+    rolesList.value = response.roles.filter(role => role !== 'SuperAdmin' && role !== 'Supplier' && role !== 'User');
   }).catch(error => { })
 };
 
@@ -96,7 +97,8 @@ async function fetchData() {
     orderByField: 'id',
     orderBy: 'asc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    role_name: role_name.value
   }
 
   await usersStores.fetchUsers(data)
@@ -201,7 +203,7 @@ const downloadCSV = async () => {
       EFTERNAMN: (element.last_name ?? ''),
       E_POST: element.email,
       ROLL: element.roles.map(e => e['name']).join(','),
-      TELEFON: element.user_detail.phone ?? ''
+      TELEFON: element.user_detail.personal_phone ?? ''
     }
         
     dataArray.push(data)
@@ -269,12 +271,14 @@ const downloadCSV = async () => {
               <!-- 👉 Select status -->
               <div class="user-list-filter">
                 <VSelect
-                  v-model="searchQuery"
+                  v-model="role_name"
                   label="Filtrera efter roll"
                   clearable
                   clear-icon="tabler-x"
                   single-line
                   :items="rolesList"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
                   class="w-100 w-md-auto"
                 />
               </div>
@@ -364,7 +368,7 @@ const downloadCSV = async () => {
 
                 <!-- 👉 phone -->
                   <td>
-                  {{ user.user_detail?.phone ?? '----' }}
+                  {{ user.user_detail?.personal_phone ?? '----' }}
                 </td>
                 <!-- 👉 acciones -->
                 <td style="width: 3rem;">
@@ -501,7 +505,7 @@ const downloadCSV = async () => {
 
   @media(min-width: 991px){
     .search {
-      width: 30rem;
+      width: 18rem;
     }
 
     .user-list-filter {

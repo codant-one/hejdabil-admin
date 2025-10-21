@@ -158,14 +158,10 @@
                             <tr>
                                 <td width="35%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
-                                        @if(!$billing->supplier)
-                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">  
+                                        @if($company->logo)
+                                            <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
-                                            @if($billing->supplier->logo)
-                                                <img src="{{ asset('storage/'.$billing->supplier->logo) }}" width="150" alt="logo-main">
-                                            @else
-                                                <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                            @endif
+                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                         @endif
                                     </div>
                                 </td>
@@ -382,20 +378,12 @@
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Adress
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <p class="m-0">Abrahamsbergsvägen 47</p>
-                                    <p class="m-0">16830 BROMMA</p>
-                                    <p>Hejdå Bil AB</p>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <p class="m-0">{{ $billing->supplier->address }}</p>
-                                    <p class="m-0">{{ $billing->supplier->postal_code }}</p>
-                                    <p class="m-0">{{ $billing->supplier->street }}</p>
-                                    <p class="m-0">{{ $billing->supplier->phone }}</p>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <p class="m-0">{{ $company->address }}</p>
+                                <p class="m-0">{{ $company->postal_code }}</p>
+                                <p class="m-0">{{ $company->street }}</p>
+                                <p class="m-0">{{ $company->phone }}</p>
+                            </span>
                         </p>
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
@@ -405,147 +393,116 @@
                                 <span>Stockholm, Sweden</span>
                             </span>
                         </p>
-                        @if($billing->supplier && !is_null($billing->supplier->swish))
+                        @if(!is_null($company->swish))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Swish
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $billing->supplier->swish }}</span>
+                                <span>{{ $company->swish }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
+                        @if(!is_null($company->organization_number))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Org.nr.
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>559374-0268</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->organization_number }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->organization_number }}</span>
+                            </span>
                         </p>
-                        @if(($billing->supplier && !is_null($billing->supplier->vat)) || !$billing->supplier)
+                        @endif
+                        @if(!is_null($company->vat))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Vat
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>SE559374026801</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->vat }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->vat }}</span>
+                            </span>
                         </p>
                         @endif
-                        @if(($billing->supplier && !is_null($billing->supplier->bic)))
+                        @if(!is_null($company->bic))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 BIC
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $billing->supplier->bic }}</span>
+                                <span>{{ $company->bic }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(($billing->supplier && !is_null($billing->supplier->plus_spin)))
+                        @if(!is_null($company->plus_spin))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Plusgiro
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $billing->supplier->plus_spin }}</span>
+                                <span>{{ $company->plus_spin }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
+                        @if(!is_null($company->link))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Webbplats
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>www.hejdabil.se</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->link }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->link }}</span>
+                            </span>
                         </p>
+                        @endif
+                        
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Företagets e-post
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>info@hejdabil.se</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->user->email }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->email }}</span>
+                            </span>
                         </p>
                     </td>
                     <td width="25%">
-                        @if(($billing->supplier && !is_null($billing->supplier->bank)))
+                        @if(!is_null($company->bank))
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0">
+                            <h4 class="font-weight-medium m-0 mt-10">
                                 Bank
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $billing->supplier->bank }}</span>
+                                <span>{{ $company->bank }}</span>
                             </span>
                         </p>
                         @endif
-                         @if(($billing->supplier && !is_null($billing->supplier->iban)) || !$billing->supplier)
+                        @if(!is_null($company->iban))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Bankgiro
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>5886-4976</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->iban }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->iban }}</span>
+                            </span>
                         </p>
                         @endif
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Kontonummer
                             </h4>
-                            @if(!$billing->supplier)
-                                <span class="info-supplier">
-                                    <span>9960 1821054721</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $billing->supplier->account_number }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->account_number }}</span>
+                            </span>
                         </p>
-                        @if(($billing->supplier && !is_null($billing->supplier->iban_number)))
+                        @if(!is_null($company->iban_number))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Iban nummer
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $billing->supplier->iban_number }}</span>
+                                <span>{{ $company->iban_number }}</span>
                             </span>
                         </p>
                         @endif

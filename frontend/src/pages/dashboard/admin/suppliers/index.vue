@@ -283,6 +283,7 @@ const downloadCSV = async () => {
                 <th scope="col"> KONTAKT </th>
                 <th scope="col"> STATUS </th>
                 <th scope="col"> # KUNDER </th>
+                <th scope="col"> SKAPAD AV </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
               </tr>
             </thead>
@@ -297,22 +298,22 @@ const downloadCSV = async () => {
                 <td class="text-wrap">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      :variant="supplier.logo ? 'outlined' : 'tonal'"
+                      :variant="supplier.user.user_detail.logo ? 'outlined' : 'tonal'"
                       size="38"
                       >
                       <VImg
-                        v-if="supplier.logo"
+                        v-if="supplier.user.user_detail.logo"
                         style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + supplier.logo"
+                        :src="themeConfig.settings.urlStorage + supplier.user.user_detail.logo"
                       />
-                        <span v-else>{{ avatarText(supplier.company) }}</span>
+                        <span v-else>{{ avatarText(supplier.user.user_detail.company) }}</span>
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="font-weight-medium cursor-pointer text-primary" @click="seeSupplier(supplier)">
-                        {{ supplier.company }}
+                        {{ supplier.user.user_detail.company }}
                       </span>
                       <span class="text-sm text-disabled">
-                        Organisationsnummer: {{ supplier.organization_number }}
+                        Organisationsnummer: {{ supplier.user.user_detail.organization_number }}
                       </span>
                     </div>
                   </div>
@@ -348,6 +349,27 @@ const downloadCSV = async () => {
                 </td>
                 <td class="text-wrap w-15">
                   {{ supplier.client_count }}
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="supplier.creator.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="supplier.creator.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + supplier.creator.avatar"
+                      />
+                        <span v-else>{{ avatarText(supplier.creator.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ supplier.creator.name }} {{ supplier.creator.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ supplier.creator.email }}</span>
+                    </div>
+                  </div>
                 </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      

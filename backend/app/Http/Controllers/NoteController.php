@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Note;
+use App\Models\Supplier;
 
 class NoteController extends Controller
 {
@@ -31,12 +32,18 @@ class NoteController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Note::with(['user'])
+            $query = Note::with([
+                           'supplier' => function ($q) {
+                                $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            },
+                            'user.userDetail',
+                        ])
                          ->applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
-                                    'orderBy'
+                                    'orderBy',
+                                    'supplier_id'
                                 ])
                             );
 
@@ -48,7 +55,8 @@ class NoteController extends Controller
                 'success' => true,
                 'data' => [
                     'notes' => $notes,
-                    'notesTotalCount' => $count
+                    'notesTotalCount' => $count,
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
                 ]
             ]);
 

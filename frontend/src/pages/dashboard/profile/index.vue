@@ -178,37 +178,40 @@ const onImageSelected = event => {
         md="7"
         lg="8"
       >
-        <VTabs
-          v-model="userTab"
-          class="v-tabs-pill"
-        >
-          <VTab
-            v-for="tab in tabs"
-            :key="tab.icon"
+        <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
+          <VTabs
+            v-model="userTab"
+            class="v-tabs-pill"
           >
-            <VIcon
-              :size="18"
-              :icon="tab.icon"
-              class="me-1"
-            />
-            <span>{{ tab.title }}</span>
-          </VTab>
-        </VTabs>
+            <VTab
+              v-for="tab in tabs"
+              :key="tab.icon"
+            >
+              <VIcon
+                :size="18"
+                :icon="tab.icon"
+                class="me-1"
+              />
+              <span>{{ tab.title }}</span>
+            </VTab>
+          </VTabs>
 
-        <VWindow
-          v-model="userTab"
-          class="disable-tab-transition mt-3"
-          :touch="false"
-        >
-          <VWindowItem>
-            <TabSecurity @alert="showAlert"/>
-          </VWindowItem>
-          <VWindowItem>
-            <TabDealer 
-              @alert="showAlert"
-              @window="showWindow"/>
-          </VWindowItem>
-        </VWindow>
+          <VWindow
+            v-model="userTab"
+            class="disable-tab-transition mt-3"
+            :touch="false"
+          >
+            <VWindowItem>
+              <TabSecurity @alert="showAlert"/>
+            </VWindowItem>
+            <VWindowItem>
+              <TabDealer 
+                @alert="showAlert"
+                @window="showWindow"/>
+            </VWindowItem>
+          </VWindow>
+        </div>
+        <TabSecurity @alert="showAlert" v-else/>
       </VCol>
     </VRow>
      <!-- 👉 Confirm Delete -->

@@ -1337,7 +1337,7 @@ const getFlag = (currency_id) => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Org/personummer:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.organization_number : userData.user_details.organization_number }}
+                                                                    {{ role === 'Supplier' ? supplier.organization_number : userData.user_detail.organization_number }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1345,7 +1345,7 @@ const getFlag = (currency_id) => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Adress:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.address : userData.user_details.address }}
+                                                                    {{ role === 'Supplier' ? supplier.address : userData.user_detail.address }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1356,7 +1356,7 @@ const getFlag = (currency_id) => {
                                                                     {{ 
                                                                         role === 'Supplier' ? 
                                                                         supplier.street + ' ' +  supplier.postal_code : 
-                                                                        userData.user_details.street  + ' ' +  userData.user_details.postal_code
+                                                                        userData.user_detail.street  + ' ' +  userData.user_detail.postal_code
                                                                     }}
                                                                 </span>
                                                             </h6>
@@ -1365,7 +1365,7 @@ const getFlag = (currency_id) => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Telefon:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.phone : userData.user_details.phone }}
+                                                                    {{ role === 'Supplier' ? supplier.phone : userData.user_detail.phone }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -1381,7 +1381,7 @@ const getFlag = (currency_id) => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Bilfirma:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.company : userData.user_details.company }}
+                                                                    {{ role === 'Supplier' ? supplier.company : userData.user_detail.company }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>

@@ -3,9 +3,11 @@
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
+import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
 
+const configsStores = useConfigsStores()
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
 const ability = useAppAbility()
@@ -31,7 +33,7 @@ const invoice_id = ref(0)
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
+const company = ref([])
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -56,16 +58,29 @@ async function fetchData() {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value.roles[0].name
 
+    const { user_data, userAbilities } = await authStores.me(userData.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+    ability.update(userAbilities)
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
     if(role.value === 'Supplier') {
-      const { user_data, userAbilities } = await authStores.me(userData.value)
+      company.value = user_data.user_detail
+      company.value.email = user_data.email
+      company.value.billings = user_data.supplier.billings
+    } else if(role.value === 'User') {
+      company.value = user_data.supplier.boss.user.user_detail
+      company.value.email = user_data.supplier.boss.user.email
+      company.value.billings = user_data.supplier.boss.billings
+    } else {
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
 
-      localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
-
-      ability.update(userAbilities)
-
-      localStorage.setItem('user_data', JSON.stringify(user_data))
-
-      supplier.value = user_data.supplier
+      company.value = configsStores.getFeaturedConfig('company')
+      company.value.billings = response.data.data.billings
+      company.value.logo = configsStores.getFeaturedConfig('logo').logo
     }
 
     var item = {}
@@ -243,7 +258,7 @@ const onSubmit = () => {
         class="order-2 order-md-1"
       >
         <InvoiceEditable
-            v-if="clients.length > 0"
+            v-if="userData"
             :data="invoiceData"
             :clients="clients"
             :suppliers="suppliers"
@@ -251,7 +266,7 @@ const onSubmit = () => {
             :invoice_id="invoice_id"
             :userData="userData"
             :role="role"
-            :supplier="supplier"
+            :company="company"
             :total="total"
             :amount_discount="amount_discount"
             :isCreated="true"

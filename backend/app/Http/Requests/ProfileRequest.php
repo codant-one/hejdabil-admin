@@ -25,10 +25,10 @@ class ProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'phone' => [
+            'personal_phone' => [
                 'required'
             ],
-            'address' => [
+            'personal_address' => [
                 'required'
             ],
             'last_name' => [
@@ -44,8 +44,8 @@ class ProfileRequest extends FormRequest
     public function messages()
     {
         return [
-            'phone.required' => 'Telefon krävs.',
-            'address.required' => 'Adress krävs.',
+            'personal_phone.required' => 'Telefon krävs.',
+            'personal_address.required' => 'Adress krävs.',
             'last_name.required' => 'Efternamn krävs.',
             'image.required' => 'Bild krävs.',
         ];

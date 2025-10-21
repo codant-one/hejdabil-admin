@@ -19,6 +19,10 @@ class Offer extends Model
     public function user(){
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+    
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
+    }
 
     public function model(){
         return $this->belongsTo(CarModel::class, 'model_id', 'id');
@@ -69,8 +73,18 @@ class Offer extends Model
         } else 
             $model_id = $request->model_id === 'null' ? null : $request->model_id;
 
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
+
         $offer = self::create([
             'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
             'model_id' => $model_id,
             'offer_id' => $request->offerId === 'null' ? null : $request->offerId,
             'reg_num' => $request->reg_num === 'null' ? null : $request->reg_num,

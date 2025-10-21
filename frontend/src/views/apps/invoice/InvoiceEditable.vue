@@ -36,7 +36,7 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    supplier: {
+    company: {
         type: Object,
         required: true,
     },
@@ -77,7 +77,7 @@ const route = useRoute()
 const clients = ref(props.clients)
 const client = ref(null)
 const suppliers = ref(props.suppliers)
-const supplier = ref(props.supplier)
+const company = ref(props.company)
 const subtotal = ref(props.total)
 const total = ref('0.00')
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
@@ -113,13 +113,15 @@ const extractDaysFromNetTermSplit = term => {
     return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
 
-watch(() => props.supplier, (val) => {
-    supplier.value = val
+watch(() => props.company, (val) => {
+    company.value = val
 
     if(props.billing) {
-        invoice.value.id = route.path.includes('/duplicate/') ? (supplier.value.billings.length + 1) : props.billing.invoice_id
-    } else if(props.role === 'Supplier' && supplier.value.billings) {
-        invoice.value.id = supplier.value.billings.length + 1
+        invoice.value.id = route.path.includes('/duplicate/') ? (company.value.billings.length + 1) : props.billing.invoice_id
+    } else if(props.role === 'Supplier' && company.value.billings) {
+        invoice.value.id = company.value.billings.length + 1
+    } else if(props.role === 'User' && company.value.billings) {
+        invoice.value.id = company.value.billings.length + 1
     } else
         invoice.value.id = props.invoice_id + 1
 })
@@ -178,7 +180,7 @@ const checkIfMobile = () => {
 async function fetchData() {
 
     if(props.billing) {
-        invoice.value.id = route.path.includes('/duplicate/') ? (supplier.value?.billings?.length + 1) : props.billing.invoice_id
+        invoice.value.id = route.path.includes('/duplicate/') ? (company.value?.billings?.length + 1) : props.billing.invoice_id
         invoice.value.reference = props.billing.reference
         invoice.value.invoice_date = props.billing.invoice_date
         invoice.value.due_date = props.billing.due_date
@@ -202,8 +204,8 @@ async function fetchData() {
 
         invoice.value.invoice_date = `${year}-${month}-${day}`
 
-        if(props.role === 'Supplier' && supplier.value.billings) {
-            invoice.value.id = supplier.value.billings.length + 1
+        if(props.role === 'Supplier' && company.value.billings) {
+            invoice.value.id = company.value.billings.length + 1
         } else
             invoice.value.id = props.invoice_id + 1
     }
@@ -260,15 +262,16 @@ const selectSupplier = async() => {
     var selected = suppliers.value.filter(element => element.id === invoice.value.supplier_id)[0]
 
     if(selected) {
-        supplier.value = selected
-        invoice.value.id = supplier.value.billings.length + 1
-        
-        clients.value = clients.value.filter(item => item.supplier_id === invoice.value.supplier_id)
+        company.value = selected.user.user_detail
+        company.value.email = selected.user.email
+        company.value.billings = selected.billings
+        invoice.value.id = selected.billings.length + 1
+        clients.value = props.clients.filter(item => item.supplier_id === invoice.value.supplier_id)
     } else {
-        supplier.value = []
+        company.value = props.company
         invoice.value.id = props.invoice_id + 1
         clients.value = props.clients
-    } 
+    }
     
     invoice.value.client_id = null 
 
@@ -399,24 +402,16 @@ const handleBlur = (element) => {
                 <div class="d-flex align-center mb-6">
                     <!-- 👉 Logo -->
                     <img
-                        v-if="supplier.length === 0"
-                        :width="isMobile ? '200' : '250'"
+                        v-if="company.logo" 
+                        :width="isMobile ? '200' : '200'"
+                        :src="themeConfig.settings.urlStorage + company.logo"
+                    />
+                    <img
+                        v-else
+                        :width="isMobile ? '200' : '200'"
                         :src="logoBlack"
                         class="me-3"
-                        />
-                    <div v-else>
-                        <img
-                            v-if="supplier.logo" 
-                            :width="isMobile ? '200' : '200'"
-                            :src="themeConfig.settings.urlStorage + supplier.logo"
-                        />
-                        <img
-                            v-else
-                            :width="isMobile ? '200' : '200'"
-                            :src="logoBlack"
-                            class="me-3"
-                        />
-                    </div>
+                    />
                 </div>
                 <!-- 👉 Invoice Id -->
                 <h6 class="d-block d-md-flex align-center font-weight-medium justify-sm-start text-xl mb-1">
@@ -553,11 +548,11 @@ const handleBlur = (element) => {
 
         <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row gap-y-5 gap-4 p-0 w-100 w-md-auto">
             <div class="my-sm-4 w-100">
-                <h6 class="text-h6 font-weight-medium" v-if="props.role !== 'Supplier'">
+                <h6 class="text-h6 font-weight-medium" v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'">
                     Leverantörer
                 </h6>
                 <VAutocomplete
-                    v-if="props.role !== 'Supplier'"
+                    v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'"
                     v-model="invoice.supplier_id"
                     :items="suppliers"
                     :item-title="item => item.full_name"
@@ -635,8 +630,8 @@ const handleBlur = (element) => {
                                     @update:modelValue="$emit('edit')"
                                 />
                             </div>
-                            <div>
-                                <div class="add-products-header d-none d-md-flex px-5">
+                            <div class="w-100">
+                                <div class="add-products-header d-none d-md-flex px-5 w-100">
                                     <table class="w-100">
                                         <thead>
                                             <tr>
@@ -853,81 +848,70 @@ const handleBlur = (element) => {
                     <span class="me-2 text-h6">
                         Adress
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0">
-                        Abrahamsbergsvägen 47 <br>
-                        16830 BROMMA <br>
-                        Hejdå Bil AB
-                    </span>
-                    <span v-else class="d-flex flex-column">
-                        <span class="text-footer">{{ supplier.address }}</span>
-                        <span class="text-footer">{{ supplier.postal_code }}</span>
-                        <span class="text-footer">{{ supplier.street }}</span>
-                        <span class="text-footer">{{ supplier.phone }}</span>
+                    <span class="d-flex flex-column">
+                        <span class="text-footer">{{ company.address }}</span>
+                        <span class="text-footer">{{ company.postal_code }}</span>
+                        <span class="text-footer">{{ company.street }}</span>
+                        <span class="text-footer">{{ company.phone }}</span>
                     </span>
                     <span class="me-2 text-h6 mt-2">
                         Bolagets säte
                     </span>
                     <span class="text-footer"> Stockholm, Sweden </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.swish">
+                    <span class="me-2 text-h6 mt-2" v-if="company.swish">
                         Swish
                     </span>
-                    <span class="text-footer" v-if="supplier.swish"> {{ supplier.swish }} </span>
+                    <span class="text-footer" v-if="company.swish"> {{ company.swish }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
                     <span class="me-2 text-h6">
                         Org.nr.
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 559374-0268 </span>
-                    <span class="text-footer" v-else> {{ supplier.organization_number }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.vat || supplier.length === 0">
+                    <span class="text-footer"> {{ company.organization_number }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="company.vat">
                         Vat
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> SE559374026801 </span>
-                    <span class="text-footer" v-else> {{ supplier.vat }} </span>
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.bic">
+                    <span class="text-footer"> {{ company.vat }} </span>
+                    <span class="me-2 text-h6 mt-2" v-if="company.bic">
                         BIC
                     </span>
-                    <span class="text-footer" v-if="supplier?.bic"> {{ supplier.bic }} </span>
+                    <span class="text-footer" v-if="company.bic"> {{ company.bic }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.plus_spin">
+                    <span class="me-2 text-h6 mt-2" v-if="company.plus_spin">
                         Plusgiro
                     </span>
-                    <span class="text-footer" v-if="supplier?.plus_spin"> {{ supplier.plus_spin }} </span>
+                    <span class="text-footer" v-if="company.plus_spin"> {{ company.plus_spin }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6">
+                    <span class="me-2 text-h6" v-if="company.link">
                         Webbplats
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> www.hejdabil.se </span>
-                    <span class="text-footer" v-else> {{ supplier.link }} </span>
+                    <span class="text-footer" v-if="company.link"> {{ company.link }} </span>
                     <span class="me-2 text-h6 mt-2">
                         Företagets e-post
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> info@hejdabil.se </span>
-                    <span class="text-footer" v-else> {{ supplier.user.email }} </span>
+                    <span class="text-footer"> {{ company.email }} </span>
                 </VCol>
                 <VCol cols="12" md="3" class="d-flex flex-column">
-                    <span class="me-2 text-h6" v-if="supplier?.bank">
+                    <span class="me-2 text-h6" v-if="company.bank">
                       Bank
                     </span>
-                    <span class="text-footer" v-if="supplier?.bank"> {{ supplier.bank }} </span>
+                    <span class="text-footer" v-if="company.bank"> {{ company.bank }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.iban || supplier.length === 0">
+                    <span class="me-2 text-h6 mt-2" v-if="company.iban">
                         Bankgiro
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 5886-4976 </span>
-                    <span class="text-footer" v-else> {{ supplier.iban }} </span>
+                    <span class="text-footer"> {{ company.iban }} </span>
 
-                    <span class="me-2 text-h6 mt-2" v-if="supplier.account_number || supplier.length === 0">
+                    <span class="me-2 text-h6 mt-2" v-if="company.account_number">
                         Kontonummer
                     </span>
-                    <span class="text-footer" v-if="supplier.length === 0"> 9960 1821054721 </span>
-                    <span class="text-footer" v-else> {{ supplier.account_number }} </span>
+                    <span class="text-footer" v-if="company.account_number"> {{ company.account_number }} </span>
                     
-                    <span class="me-2 text-h6 mt-2" v-if="supplier?.iban_number">
+                    <span class="me-2 text-h6 mt-2" v-if="company.iban_number">
                       Iban nummer
                     </span>
-                    <span class="text-footer" v-if="supplier?.iban_number"> {{ supplier.iban_number }} </span>
+                    <span class="text-footer" v-if="company.iban_number"> {{ company.iban_number }} </span>
 
                 </VCol>
             </VRow>

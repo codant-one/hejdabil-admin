@@ -27,23 +27,24 @@ const emit = defineEmits(["update"]);
 const route = useRoute();
 const suppliersStores = useSuppliersStores();
 
-const suppliers = ref([]);
-const supplier_id = ref(null);
-const organization_number = ref("");
-const address = ref("");
-const street = ref("");
-const postal_code = ref("");
-const phone = ref("");
-const fullname = ref("");
-const email = ref("");
-const reference = ref("");
-const valueCount = ref(null);
-const valueText = ref(null);
-const icon = ref("tabler-shopping-cart");
-const sales = ref(null);
-const userData = ref(null);
-const role = ref(null);
-const refForm = ref();
+const suppliers = ref([])
+const supplier_id = ref(null)
+const organization_number = ref('')
+const address = ref('')
+const street = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
+const reference = ref('')
+const comments = ref('')
+const valueCount = ref(null)
+const valueText = ref(null)
+const icon = ref('tabler-shopping-cart')
+const sales = ref(null)
+const userData = ref(null)
+const role = ref(null)
+const refForm = ref()
 
 const isUserEditDialog = ref(false);
 
@@ -52,10 +53,20 @@ watchEffect(fetchData);
 async function fetchData() {
   if (!props.customerData) return; // <-- Add this line
 
-  if (route.name.includes("clients")) {
-    // valueCount.value = props.customerData.orders_count ?? 0;
-    valueText.value = "Beställningar";
-    icon.value = "tabler-shopping-cart";
+  if (route.name.includes('clients')) {
+    valueCount.value = props.customerData.orders_count ?? 0
+    valueText.value = 'Beställningar'
+    icon.value = 'tabler-shopping-cart'
+
+    fullname.value = props.customerData.fullname
+    email.value = props.customerData.email
+    organization_number.value = props.customerData.organization_number
+    address.value = props.customerData.address
+    street.value = props.customerData.street
+    postal_code.value = props.customerData.postal_code
+    phone.value = props.customerData.phone
+    reference.value = props.customerData.reference
+    comments.value = props.customerData.comments
 
     fullname.value = props.customerData.fullname ?? "";
     email.value = props.customerData.email;
@@ -74,11 +85,11 @@ async function fetchData() {
   userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
   role.value = userData.value.roles[0].name;
 
-  if (role.value !== "Supplier" && route.name.includes("clients-id")) {
-    await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
-    suppliers.value = toRaw(suppliersStores.getSuppliers);
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator' && route.name.includes('clients-id')) {
+    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
+    suppliers.value = toRaw(suppliersStores.getSuppliers)
 
-    supplier_id.value = props.customerData.supplier?.id;
+    supplier_id.value = props.customerData.supplier?.id ?? null
   }
 }
 
@@ -95,17 +106,18 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData();
 
-      formData.append("supplier_id", supplier_id.value);
-      formData.append("supplier_id", supplier_id.value);
-      formData.append("email", email.value);
-      formData.append("fullname", fullname.value);
-      formData.append("organization_number", organization_number.value);
-      formData.append("address", address.value);
-      formData.append("street", street.value);
-      formData.append("postal_code", postal_code.value);
-      formData.append("phone", phone.value);
-      formData.append("reference", reference.value);
-      formData.append("_method", "PUT");
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('email', email.value)
+      formData.append('fullname', fullname.value)
+      formData.append('organization_number', organization_number.value)
+      formData.append('address', address.value)
+      formData.append('street', street.value)
+      formData.append('postal_code', postal_code.value)
+      formData.append('phone', phone.value)
+      formData.append('reference', reference.value)
+      formData.append('comments', comments.value)
+      formData.append('_method', 'PUT')
 
       emit("update", { data: formData, id: props.customerData.id });
 
@@ -233,7 +245,7 @@ const onSubmit = () => {
             <VListItemTitle>Produktbeskrivning</VListItemTitle>
             <VListItemSubtitle>
               {{
-                props.customerData.product ??
+                props.customerData.comments ??
                 "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin mattis, nibh ac vulputate pharetra, massa tellus finibus justo, id rhoncus leo ante at nisi. Quisque quis leo maximus, consequat odio ac, vehicula orci. Sed eget dignissim eros. Nam volutpat arcu faucibus elementum scelerisque. Curabitur molestie purus non malesuada vulputate."
               }}
             </VListItemSubtitle>
@@ -395,9 +407,8 @@ const onSubmit = () => {
         <VForm ref="refForm" @submit.prevent="onSubmit">
           <VCardText class="pt-2 mt-6">
             <VRow>
-              <VCol cols="12" md="12">
-                <VSelect
-                  v-if="role !== 'Supplier'"
+              <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                <VSelect                  
                   v-model="supplier_id"
                   placeholder="Leverantörer"
                   :items="suppliers"

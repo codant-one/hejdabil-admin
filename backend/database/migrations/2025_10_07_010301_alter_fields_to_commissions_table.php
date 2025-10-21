@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            $table->softDeletes();
+        Schema::table('commissions', function (Blueprint $table) {
+            $table->unsignedBigInteger('supplier_id')->nullable()->after('user_id');
+
+            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
         });
     }
 
@@ -21,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            $table->dropSoftDeletes();
+        Schema::table('commissions', function (Blueprint $table) {
+            $table->dropColumn('supplier_id');
         });
     }
 };

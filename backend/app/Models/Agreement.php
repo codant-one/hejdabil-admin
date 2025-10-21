@@ -20,6 +20,9 @@ use App\Models\VehiclePayment;
 use App\Models\AgreementClient;
 use App\Models\Offer;
 use App\Models\Commission;
+use App\Models\User;
+use App\Models\UserDetails;
+use App\Models\Config;
 
 class Agreement extends Model
 {
@@ -57,6 +60,10 @@ class Agreement extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_interchange_id', 'id');
     }
 
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+    
     public function supplier() {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
     }
@@ -89,22 +96,64 @@ class Agreement extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('id', $search);
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('offer', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('commission.vehicle', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('vehicle_client.vehicle', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('vehicle_interchange', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('reg_num', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('agreement_type', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhere('installment_amount', $search); 
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
         $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
     }
 
+    public function token(){
+        return $this->hasOne(Token::class, 'agreement_id', 'id');
+    }
+
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $query->where('supplier_id', Auth::user()->supplier->id);
-        } elseif ($filters->get('supplier_id') !== null) {
+        if ($filters->get('supplier_id') !== null) {
             $query->where('supplier_id', $filters->get('supplier_id'));
-        } elseif ($filters->get('supplier_id') === null) {
-            $query->whereNull('supplier_id');
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
+        }
+
+        if ($filters->get('agreement_type_id') !== null) {
+            $query->where('agreement_type_id', $filters->get('agreement_type_id'));
         }
 
         if ($filters->get('search')) {
@@ -145,10 +194,18 @@ class Agreement extends Model
         }
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
 
         $agreement = self::create([
+            'user_id' => Auth::user()->id,
+            'supplier_id' => $supplier_id,
             'agreement_id' => $request->agreement_id,
-            'supplier_id' => $isSupplier ? Auth::user()->supplier->id : null,
             'agreement_type_id' => $request->agreement_type_id,
             'vehicle_client_id' => $request->vehicle_client_id === 'null' ? null : $request->vehicle_client_id,
             'vehicle_interchange_id' => $request->vehicle_interchange_id === 'null' ? null : $request->vehicle_interchange_id,
@@ -299,23 +356,70 @@ class Agreement extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        $user = Auth::user()->load(['userDetail']);
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            $signatureRaw    = $getValue($configSignature);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            $signatureObj    = $decodeSafe($signatureRaw);
+
+            $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
+        }
 
         switch ($request->agreement_type_id) {
             case 1:
-                PDF::loadView('pdfs.sales', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.sales', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 2:
-                PDF::loadView('pdfs.purchase', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.purchase', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 3:
-                PDF::loadView('pdfs.mediation', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                PDF::loadView('pdfs.mediation', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 4:
-                PDF::loadView('pdfs.business', compact('agreement', 'user'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
+                PDF::loadView('pdfs.business', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
                 $agreement->file = 'pdfs/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf';
                 break;
         }

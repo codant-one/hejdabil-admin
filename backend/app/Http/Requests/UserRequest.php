@@ -53,7 +53,7 @@ class UserRequest extends FormRequest
             'last_name.required' => 'Efternamnet är obligatoriskt.',
             'email.required' => 'E-postadressen är obligatorisk.',
             'email.email' => 'E-postformatet är inte tillåtet.',
-            'email. unique' => 'En användare med den angivna e-postadressen finns redan.',
+            'email.unique' => 'En användare med den angivna e-postadressen finns redan.',
             'password.required' => 'Lösenordet är obligatoriskt.',
             'roles.required' => 'Rollen är obligatorisk.',
             'roles.array' => 'Rollformatet är inte tillåtet.',

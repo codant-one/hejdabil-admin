@@ -61,8 +61,13 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-  role.value = userData.value.roles[0].name;
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+  
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
+    suppliers.value = toRaw(suppliersStores.getSuppliers)
+  }
 
   if (role.value !== "Supplier") {
     await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
@@ -374,7 +379,8 @@ const truncateText = (text, length = 15) => {
                 <th scope="col" class="text-center"> Organisationsnummer </th>
                 <th scope="col" class="text-center">Telefon</th>
                 <th scope="col" class="text-center">Adress</th>
-                <th scope="col" class="text-center" v-if="role !== 'Supplier'"> Leverantör</th>
+                <th scope="col" v-if="role !== 'Supplier'"> Leverantör</th>
+                <th scope="col"> Skapad av </th>
                 <th
                   scope="col"
                   v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -425,7 +431,7 @@ const truncateText = (text, length = 15) => {
                     </VTooltip>
                   </span>
                 </td>
-                <td class="text-wrap text-center" v-if="role !== 'Supplier'">
+                <td class="text-wrap" v-if="role !== 'Supplier'">
                   <div
                     class="d-flex align-center gap-x-3"
                     v-if="client.supplier"
@@ -454,6 +460,27 @@ const truncateText = (text, length = 15) => {
                         {{ client.supplier.user.last_name ?? "" }}
                       </span>
                       <span class="">{{ client.supplier.user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="client.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="client.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + client.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(client.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ client.user.name }} {{ client.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ client.user.email }}</span>
                     </div>
                   </div>
                 </td>
@@ -511,7 +538,9 @@ const truncateText = (text, length = 15) => {
             <!-- 👉 table footer  -->
             <tfoot v-show="!clients.length">
               <tr>
-                <td :colspan="role === 'Supplier' ? 6 : 7" class="text-center">
+                <td
+                  :colspan="role === 'Supplier' || role === 'User' ? 7 : 8"
+                  class="text-center">
                   Uppgifter ej tillgängliga
                 </td>
               </tr>

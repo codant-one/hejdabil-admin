@@ -35,7 +35,8 @@ use App\Http\Controllers\{
     NoteController,
     AgreementController,
     CurrencyController,
-    SignatureController
+    SignatureController,
+    ConfigController
 };
 
 use App\Http\Controllers\Services\{
@@ -113,6 +114,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('user/profile',  [UsersController::class, 'getProfile']);
         Route::post('update/company', [UsersController::class, 'updateCompany']);
         Route::post('update/company/logo', [UsersController::class, 'updateLogo']);
+        Route::post('update/company/signature', [UsersController::class, 'updateSignature']);
     });
 
     //Roles
@@ -145,6 +147,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Suppliers
     Route::group(['prefix' => 'suppliers'], function () {
         Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+        Route::get('supplier/users', [SupplierController::class, 'users']);
+        Route::post('supplier/adduser', [SupplierController::class, 'addRelatedUser']);
+        Route::get('supplier/deleteuser/{id}', [SupplierController::class, 'deleteRelatedUser']);
+        Route::post('supplier/updateuser/{id}', [SupplierController::class, 'updateRelatedUser']);
+        Route::post('supplier/permissions/{id}', [SupplierController::class, 'permissionsRelatedUser']);
     });
 
     //Tasks
@@ -172,8 +179,15 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
+        Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
+        Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
     });
 
+    //Configs
+    Route::get('featured/{slug}', [ConfigController::class, 'featured']);
+    Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
+    Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
+    Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
 });
 
 //Public Endpoints
@@ -187,6 +201,10 @@ Route::get('agreement', [TestingController::class , 'agreement'])->name('agreeme
 // Public Signature Endpoints
 Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::post('/submit/{token}', [SignatureController::class, 'storeSignature'])->name('signatures.store');
+    Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
+    Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
+    Route::get('/{token}/status', [SignatureController::class, 'getTokenStatus'])->name('signatures.status');
+    Route::get('/{token}/get-signed-pdf', [SignatureController::class, 'getSignedPdf'])->name('signatures.getSignedPdf');
 });
 
 //PROXY

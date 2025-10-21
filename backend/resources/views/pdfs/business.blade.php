@@ -157,14 +157,10 @@
                         <tr>
                             <td style="vertical-align: top;">
                                 <div class="header-logo">
-                                    @if(!$agreement->supplier)
-                                        <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">  
+                                    @if($company->logo)
+                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                     @else
-                                        @if($agreement->supplier->logo)
-                                            <img src="{{ asset('storage/'.$agreement->supplier->logo) }}" alt="logo-main">
-                                        @else
-                                            <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">
-                                        @endif
+                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                     @endif
                                 </div>
                             </td>
@@ -189,58 +185,36 @@
                             <td>
                                 <div class="label">Företag</div>
                                 <div class="value">
-                                    @if(!$agreement->supplier)
-                                        {{ $user->userDetail->company }} 
-                                    @else
-                                        {{ $agreement->supplier?->company }} 
-                                    @endif
+                                    {{ $company->company }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">Namn</div>
-                                @if($user)
-                                    <div class="value">
-                                        {{ $user->name }} {{ $user->last_name }} 
-                                    </div>
-                                @else
-                                    <div class="value">
-                                        Admin Billogg
-                                    </div>
-                                @endif
+                                <div class="value">
+                                    {{ $company->name }} {{ $company->last_name }} 
+                                </div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">Adress</div>
                                 <div class="value">
-                                    @if(!$agreement->supplier)
-                                        {{ $user->userDetail->address }}
-                                    @else
-                                        {{ $agreement->supplier?->address }}
-                                    @endif
+                                    {{ $company->address }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">E-post</div>
-                                @if($user)
-                                    <div class="value">{{ $user->email }}</div>
-                                @else
-                                    <div class="value">admin@billogg.se</div>
-                                @endif
+                                <div class="value">{{ $company->email }}</div>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <div class="label">Telefon</div>
-                                @if($user)
-                                    <div class="value">{{ $user->userDetail->phone }}</div>
-                                @else
-                                    <div class="value">+57 313 209 8455</div>
-                                @endif
+                                <div class="value">{{ $company->phone }}</div>
                             </td>
                         </tr>
                     </table>
@@ -321,19 +295,14 @@
                     <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
                     <table class="signatures-table">
                         <tr>
-                            @if(isset($signature_url))
-                                <div style="margin-top: 50px; padding-top: 10px; border-top: 1px solid #ccc;">
-                                    <p style="margin-bottom: 5px;"><strong>Firma Electrónica del Cliente:</strong></p>
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: 250px; height: auto;">
-                                </div>
-                            @endif
                             <td style="width: 50%; padding-right: 20px;">
+                                <div style="min-height: 70px;">
+                                    @if($company->img_signature)
+                                        <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                    @endif
+                                </div>
                                 <div class="signature-box">(Köparens underskrift)</div>
-                                @if($user)
-                                <div style="padding-top: 5px; font-size: 10px;">{{ $user->name }} {{ $user->last_name }}</div>
-                                @else
-                                <div style="padding-top: 5px; font-size: 10px;">Admin Billogg</div>
-                                @endif
+                                <div style="padding-top: 5px; font-size: 10px;">{{ $company->name }} {{ $company->last_name }}</div>
                             </td>
                             <td style="width: 50%;"></td> <!-- Espacio en blanco a la derecha -->
                         </tr>

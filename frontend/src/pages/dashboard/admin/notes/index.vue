@@ -23,6 +23,9 @@ const isConfirmDeleteDialogVisible = ref(false)
 const selectedNote = ref({})
 
 const userData = ref(null)
+const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -55,6 +58,7 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
+    supplier_id.value = null
   }
 
   let data = {
@@ -62,7 +66,8 @@ async function fetchData(cleanFilters = false) {
     orderByField: 'id',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    supplier_id: supplier_id.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -74,6 +79,11 @@ async function fetchData(cleanFilters = false) {
   totalNotes.value = notesStores.notesTotalCount
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = notesStores.getSuppliers
+  }
 
   isRequestOngoing.value = false
 }
@@ -272,6 +282,17 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
+            <VAutocomplete
+                v-if="role === 'SuperAdmin' || role === 'Administrator'"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
 
               <!-- 👉 Search  -->
@@ -301,13 +322,14 @@ const downloadCSV = async () => {
             <!-- 👉 table head -->
             <thead>
               <tr>
-                <th scope="col"> Skapad av </th>
                 <th scope="col"> Reg nr </th>
                 <th scope="col"> Egen värdering  </th>
                 <th scope="col"> Info </th>
                 <th scope="col"> E-post</th>
                 <th scope="col"> Kommentar </th>
                 <th scope="col"> Datum </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+                <th scope="col"> SKAPAD AV </th> 
                 <th scope="col" v-if="$can('edit', 'notes') || $can('delete', 'notes')"></th>
               </tr>
             </thead>
@@ -317,28 +339,6 @@ const downloadCSV = async () => {
                 v-for="note in notes"
                 :key="note.id"
                 style="height: 3rem;">
-
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="note.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="note.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + note.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(note.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ note.user.name }} {{ note.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ note.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
                 <td> {{ note.reg_num }} </td>
                 <td> {{ note.note }} </td>
                 <td> 
@@ -365,7 +365,32 @@ const downloadCSV = async () => {
                         hour12: false
                     }) }} 
                 </td>               
-                
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                  <span class="font-weight-medium"  v-if="note.supplier">
+                    {{ note.supplier.user.name }} {{ note.supplier.user.last_name ?? '' }} 
+                  </span>
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="note.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="note.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + note.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(note.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ note.user.name }} {{ note.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ note.user.email }}</span>
+                    </div>
+                  </div>
+                </td>     
                 <!-- 👉 Acciones -->
                 <td 
                   class="text-center" 

@@ -3,11 +3,13 @@
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
+import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
 
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
+const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 const route = useRoute()
@@ -33,7 +35,7 @@ const invoice_id = ref(0)
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
+const company = ref([])
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -69,7 +71,7 @@ async function fetchData() {
         invoice.value.tax = billing.value.tax
         discount.value = billing.value.discount
         rabattApplied.value = billing.value.rabatt
-        amount_discount.value = billing.value.amount_discoun
+        amount_discount.value = billing.value.amount_discount
 
         invoice.value.details = JSON.parse(billing.value.detail).map((element) => {
             const detailObject = {};
@@ -89,18 +91,29 @@ async function fetchData() {
         userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
         role.value = userData.value.roles[0].name
 
-        if(role.value === 'Supplier') {
-            const { user_data, userAbilities } = await authStores.me(userData.value)
+        const { user_data, userAbilities } = await authStores.me(userData.value)
 
-            localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+        localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
 
-            ability.update(userAbilities)
+        ability.update(userAbilities)
 
-            localStorage.setItem('user_data', JSON.stringify(user_data))
+        localStorage.setItem('user_data', JSON.stringify(user_data))
 
-            supplier.value = user_data.supplier
-        } else {
-          supplier.value = billing.value.supplier ?? []
+        if(billing.value.supplier_id === null) {//admin
+          await configsStores.getFeature('company')
+          await configsStores.getFeature('logo')
+
+          company.value = configsStores.getFeaturedConfig('company')
+          company.value.billings = response.data.data.billings
+          company.value.logo = configsStores.getFeaturedConfig('logo').logo
+        } else if(role.value === 'Supplier') {//supplier
+          company.value = user_data.user_detail
+          company.value.email = user_data.email
+          company.value.billings = user_data.supplier.billings
+        } else {//user
+          company.value = user_data.supplier.boss.user.user_detail
+          company.value.email = user_data.supplier.boss.user.email
+          company.value.billings = user_data.supplier.boss.billings
         }
 
         JSON.parse(billing.value.detail).forEach(details => {
@@ -298,7 +311,7 @@ const onSubmit = () => {
             :invoice_id="invoice_id"
             :userData="userData"
             :role="role"
-            :supplier="supplier"
+            :company="company"
             :total="total"
             :amount_discount="amount_discount"
             :billing="billing"

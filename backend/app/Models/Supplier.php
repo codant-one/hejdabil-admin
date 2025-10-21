@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class Supplier extends Model
 {
@@ -18,8 +19,16 @@ class Supplier extends Model
         return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
     }
 
+    public function creator() {
+        return $this->belongsTo(User::class, 'creator_id', 'id')->withTrashed();
+    }
+
     public function clients() {
         return $this->hasMany(Client::class, 'supplier_id', 'id');
+    }
+
+    public function boss() {
+        return $this->belongsTo(Supplier::class, 'boss_id', 'id');
     }
 
     public function billings() {
@@ -46,13 +55,28 @@ class Supplier extends Model
     }
 
     public function scopeWhereSearch($query, $search) {
-        $query->whereHas('user', function ($q) use ($search) {
-            $q->where(function ($query) use ($search) {
-                $query->where('name', 'LIKE', '%' . $search . '%')
-                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
-                      ->orWhere('email', 'LIKE', '%' . $search . '%');
+        $query->where(function ($q) use ($search) {
+            $q->whereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
+            ->orWhereHas('user.userDetail', function ($dq) use ($search) {
+                $dq->where('company', 'LIKE', '%' . $search . '%')
+                   ->orWhere('organization_number', 'LIKE', '%' . $search . '%');
+            })
+            ->orWhereHas('creator', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
             });
-        })->orWhere('company', 'LIKE', '%' . $search . '%');
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -88,21 +112,21 @@ class Supplier extends Model
      /**** Public methods ****/
      public static function createSupplier($request) {
         $user = User::createUser($request);
-        $user->assignRole('Supplier');
+
+        if( $request->has('boss_id') )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         $supplier = self::create([
             'user_id' => $user->id,
-            'company' => $request->company,
-            'organization_number' => $request->organization_number,
-            'link' => $request->link,
-            'address' => $request->address,
-            'street' => $request->street,
-            'postal_code' => $request->postal_code,
-            'phone' => $request->phone,
-            'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'swish' => $request->swish === 'null' ? null : $request->swish
+            'creator_id' => Auth::user()->id,
+            'boss_id' => ( $request->has('boss_id') ) ? $request->boss_id : null,
+            'order_id' => ( $request->has('order_id') ) ? $request->order_id : null
         ]);
+
+        $user_details = UserDetails::where('user_id', $user->id)->first();
+        $user_details->updateOrCreateUser($request, $user);
 
         return $supplier;
     }
@@ -111,22 +135,12 @@ class Supplier extends Model
 
         $user = User::with('userDetail')->find($supplier->user_id);
 
-        $supplier->update([
-            'company' => $request->company,
-            'organization_number' => $request->organization_number,
-            'link' => $request->link,
-            'address' => $request->address,
-            'street' => $request->street,
-            'postal_code' => $request->postal_code,
-            'phone' => $request->phone,
-            'bank' => $request->bank,
-            'account_number' => $request->account_number,
-            'swish' => $request->swish === 'null' ? null : $request->swish
-        ]);
-
         User::updateUser($request, $user);
         
-        $user->assignRole('Supplier');
+        if( $supplier->boss_id > 0 )
+            $user->assignRole('User');
+        else
+            $user->assignRole('Supplier');
 
         return $supplier;
     }
@@ -163,27 +177,48 @@ class Supplier extends Model
         $user->assignRole('Supplier');
     }
 
-    public static function updateOrCreateSupplier($request, $user) {
-        $supplier = Supplier::updateOrCreate(
-            [    'user_id' => $user->id ],
-            [
-                'company' => $request->company,
-                'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
-                'link' => $request->link === 'null' ? null : $request->link,
-                'address' => $request->address === 'null' ? null : $request->address,
-                'street' => $request->street === 'null' ? null : $request->street,
-                'postal_code' => $request->postal_code === 'null' ? null : $request->postal_code,
-                'phone' => $request->phone === 'null' ? null : $request->phone,
-                'bank' => $request->bank === 'null' ? null : $request->bank,
-                'account_number' => $request->account_number === 'null' ? null : $request->account_number,
-                'iban' => $request->iban === 'null' ? null : $request->iban,
-                'iban_number' => $request->iban_number === 'null' ? null : $request->iban_number,
-                'bic' => $request->bic === 'null' ? null : $request->bic,
-                'plus_spin' => $request->plus_spin === 'null' ? null : $request->plus_spin,
-                'swish' => $request->swish === 'null' ? null : $request->swish,
-                'vat' => $request->vat === 'null' ? null : $request->vat
-            ]
-        );
+    public static function createUserRelatedToSupplier($request) {
+        $user = User::createUser($request);
+        $user->assignRole('User');
+
+        $supplier = self::create([
+            'user_id' => $user->id,
+            'boss_id' => $request->boss_id,
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        return $supplier;
+    }
+
+    public static function updateUserRelatedToSupplier($request, $supplier) {
+
+        $user = User::with('userDetail')->find($supplier->user_id);
+
+        $supplier->update([
+            'company' => $request->company,
+            'organization_number' => $request->organization_number,
+            'link' => $request->link,
+            'address' => $request->address,
+            'street' => $request->street,
+            'postal_code' => $request->postal_code,
+            'phone' => $request->phone,
+            'bank' => $request->bank,
+            'account_number' => $request->account_number,
+            'swish' => $request->swish === 'null' ? null : $request->swish
+        ]);
+
+        User::updateUser($request, $user);
+        
+        $user->assignRole('User');
 
         return $supplier;
     }
@@ -192,7 +227,7 @@ class Supplier extends Model
     public function getFullNameAttribute()
     {
         if ($this->user)
-            return "{$this->user->name} {$this->user->last_name} - {$this->company}";
+            return "{$this->user->name} {$this->user->last_name} - {$this->user->userDetail->company}";
         else
             return "";
     }

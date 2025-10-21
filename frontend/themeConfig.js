@@ -16,7 +16,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     logo: h('div', { innerHTML: logo, style: 'line-height:0; color: rgb(var(--v-global-theme-primary))' }),
     logoFull: h('img', { src: logoFull }),
     logoBlack: h('img', { src: logoBlack, style: 'width: 200px' }),
-    logoWhite: h('img', { src: logoWhite, style: 'width: 40px' }),
+    logoWhite: h('img', { src: logoWhite, style: 'width: 35px' }),
     contentWidth: ContentWidth.Boxed,
     contentLayoutNav: AppContentLayoutNav.Vertical,
     overlayNavFromBreakpoint: breakpointsVuetify.md + 16,

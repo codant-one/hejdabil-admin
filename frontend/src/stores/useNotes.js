@@ -4,6 +4,7 @@ import Notes from '@/api/notes'
 export const useNotesStores = defineStore('notes', {
     state: () => ({
         notes: {},
+        suppliers: {},
         loading: false,
         last_page: 1,
         notesTotalCount: 6
@@ -11,18 +12,22 @@ export const useNotesStores = defineStore('notes', {
     getters:{
         getNotes(){
             return this.notes
+        },
+        getSuppliers(){
+            return this.suppliers
         }
     },
     actions: {
         setLoading(payload){
             this.loading = payload
-        },
+        },      
         fetchNotes(params) {
             this.setLoading(true)
             
             return Notes.get(params)
                 .then((response) => {
                     this.notes = response.data.data.notes.data
+                    this.suppliers = response.data.data.suppliers
                     this.last_page = response.data.data.notes.last_page
                     this.notesTotalCount = response.data.data.notesTotalCount
                 })

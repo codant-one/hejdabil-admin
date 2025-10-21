@@ -6,10 +6,12 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { useConfigsStores } from '@/stores/useConfigs'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
 const carInfoStores = useCarInfoStores()
+const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -22,7 +24,7 @@ const isMobile = ref(false)
 
 const userData = ref(null)
 const role = ref(null)
-const supplier = ref([])
+const company = ref([])
 
 const vehicles = ref([])
 const vehicle_id = ref(null)
@@ -158,18 +160,33 @@ async function fetchData() {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value.roles[0].name
 
+    const { user_data, userAbilities } = await authStores.me(userData.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+    ability.update(userAbilities)
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
     if(role.value === 'Supplier') {
-        const { user_data, userAbilities } = await authStores.me(userData.value)
-
-        localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
-
-        ability.update(userAbilities)
-
-        localStorage.setItem('user_data', JSON.stringify(user_data))
-
-        supplier.value = user_data.supplier
-        agreement_id.value = supplier.value.agreements.length + 1
+        company.value = user_data.user_detail
+        company.value.email = user_data.email
+        company.value.name = user_data.name
+        company.value.last_name = user_data.last_name
+        agreement_id.value = user_data.supplier.agreements.length + 1
+    } else if(role.value === 'User') {
+        company.value = user_data.supplier.boss.user.user_detail
+        company.value.email = user_data.supplier.boss.user.email
+        company.value.name = user_data.supplier.boss.user.name
+        company.value.last_name = user_data.supplier.boss.user.last_name
+        agreement_id.value = user_data.supplier.boss.agreements.length + 1
     } else {
+        await configsStores.getFeature('company')
+        await configsStores.getFeature('logo')
+
+        company.value = configsStores.getFeaturedConfig('company')
+        company.value.logo = configsStores.getFeaturedConfig('logo').logo
+
         agreement_id.value = agreementsStores.agreement_id + 1
     }
 
@@ -809,7 +826,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Namn:
                                                                 <span class="text-body-2">
-                                                                    {{ userData.name }} {{ userData.last_name }}
+                                                                    {{ company.name }} {{ company.last_name }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -817,7 +834,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Org/personummer:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.organization_number : userData.user_details.organization_number }}
+                                                                    {{ company.organization_number }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -825,7 +842,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Adress:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.address : userData.user_details.address }}
+                                                                    {{ company.address }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -833,11 +850,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Postnr. ort:
                                                                 <span class="text-body-2">
-                                                                    {{ 
-                                                                        role === 'Supplier' ? 
-                                                                        supplier.street + ' ' +  supplier.postal_code : 
-                                                                        userData.user_details.street  + ' ' +  userData.user_details.postal_code
-                                                                    }}
+                                                                    {{ company.street + ' ' +  company.postal_code }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -845,7 +858,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Telefon:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.phone : userData.user_details.phone }}
+                                                                    {{ company.phone }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -853,7 +866,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 E-post
                                                                 <span class="text-body-2">
-                                                                    {{ userData.email }}
+                                                                    {{ company.email }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>
@@ -861,7 +874,7 @@ const onSubmit = () => {
                                                             <h6 class="text-base font-weight-semibold">
                                                                 Bilfirma:
                                                                 <span class="text-body-2">
-                                                                    {{ role === 'Supplier' ? supplier.company : userData.user_details.company }}
+                                                                    {{ company.company }}
                                                                 </span>
                                                             </h6>
                                                         </VListItemTitle>

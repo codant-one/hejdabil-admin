@@ -56,8 +56,8 @@ async function fetchData() {
       email.value = props.user.email
       name.value = props.user.name
       last_name.value = props.user.last_name
-      phone.value = props.user.user_detail?.phone
-      address.value = props.user.user_detail?.address
+      phone.value = props.user.user_detail?.personal_phone
+      address.value = props.user.user_detail?.personal_address
 
       assignedRoles.value = props.user.assignedRoles
 
@@ -78,8 +78,8 @@ const onSubmitEdit = () =>{
           name: name.value,
           email: email.value,
           last_name: last_name.value,
-          phone: phone.value,
-          address: address.value,
+          personal_phone: phone.value,
+          personal_address: address.value,
           roles: assignedRoles.value
         }
 

@@ -15,6 +15,9 @@ use PDF;
 
 use App\Models\Invoice;
 use App\Models\Supplier;
+use App\Models\UserDetails;
+use App\Models\User;
+use App\Models\Config;
 
 class Billing extends Model
 {
@@ -23,12 +26,16 @@ class Billing extends Model
     protected $guarded = [];
 
     /**** Relationship ****/
-    public function supplier() {
-        return $this->belongsTo(Supplier::class, 'supplier_id', 'id')->withTrashed();
+    public function user() {
+        return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
     }
 
     public function client() {
         return $this->belongsTo(Client::class, 'client_id', 'id')->withTrashed();
+    }
+
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
     public function state() {
@@ -55,7 +62,17 @@ class Billing extends Model
                         });
                   });
             })
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                });
+            })
             ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
+            ->orWhere('invoice_date', 'LIKE', '%' . $search . '%')
+            ->orWhere('due_date', 'LIKE', '%' . $search . '%')
             ->orWhere('detail', 'LIKE', '%' . $search . '%');
         });
     }
@@ -67,10 +84,12 @@ class Billing extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $query->where('supplier_id', Auth::user()->supplier->id);
-        } elseif ($filters->get('supplier_id') !== null) {
+        if ($filters->get('supplier_id') !== null) {
             $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
         if ($filters->get('search')) {
@@ -122,10 +141,18 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
         $dueDate = Carbon::parse($request->due_date);
 
         $billing = self::create([
-            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
+            'user_id' => Auth::user()->id, 
+            'supplier_id' => $supplier_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -143,10 +170,51 @@ class Billing extends Model
             'detail' => json_encode($details, true),
         ]);
 
-        $billing = self::with(['supplier.user'])->find($billing->id);
+        $billing = self::with(['supplier.user', 'user.userDetail'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -155,9 +223,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -181,10 +249,10 @@ class Billing extends Model
         }, $request->details);
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
         $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
-            'supplier_id' => $request->supplier_id === 'null' ? ($isSupplier ? Auth::user()->supplier->id : null) : $request->supplier_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -205,7 +273,48 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -214,9 +323,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($name).'-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -230,7 +339,7 @@ class Billing extends Model
             $supplier = Supplier::with(['billings'])->where('user_id', Auth::user()->id)->first();
             $invoice_id = count($supplier->billings) + 1;
         } else {
-            $invoice_id = self::whereNull('supplier_id')->count() + 1;
+            $invoice_id = self::whereNull('user_id')->count() + 1;
         }
 
         $array = json_decode($billing->detail, true);
@@ -245,6 +354,7 @@ class Billing extends Model
         }
 
         $billing = self::create([
+            'user_id' => $billing->user_id,
             'supplier_id' => $billing->supplier_id,
             'client_id' =>  $billing->client_id,
             'state_id' => 9,
@@ -253,16 +363,61 @@ class Billing extends Model
             'due_date' =>  now(),
             'payment_terms' =>  '0 dagar netto',
             'reference' => $billing->reference,
+            'rabatt' =>  $billing->rabatt,
+            'discount' =>  $billing->discount,
+            'amount_discount' =>  $billing->amount_discount,
+            'amount_tax' => $billing->amount_tax,
             'subtotal' => '-' . $billing->subtotal,
             'tax' =>  '-' . $billing->tax,
             'total' =>  '-' . $billing->total,
             'detail' => json_encode($array, true)
-        ]);
+        ]);    
 
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -271,9 +426,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->file = 'pdfs/'.Str::slug($name).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->file = 'pdfs/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         return $billing;
@@ -284,7 +439,48 @@ class Billing extends Model
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-        $name = $billing->supplier->company;
+        
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
 
         foreach($details as $row)
             $invoices[] = $row;
@@ -293,9 +489,9 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+        PDF::loadView('pdfs.reminder', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
 
-        $billing->reminder = 'pdfs/'.Str::slug($name).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf';
+        $billing->reminder = 'pdfs/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
         self::sendMail($billing);

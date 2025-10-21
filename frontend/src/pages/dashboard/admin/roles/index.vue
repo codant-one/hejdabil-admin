@@ -59,7 +59,7 @@ async function fetchData() {
   let data = {
     search: searchQuery.value,
     orderByField: 'id',
-    orderBy: 'asc',
+    orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value
   }
@@ -210,9 +210,6 @@ const downloadCSV = async () => {
             <!-- 👉 Table head -->
             <thead class="text-uppercase">
               <tr>
-                <th scope="col">
-                  #ID
-                </th>
 
                 <th scope="col">
                   ROLL
@@ -229,10 +226,6 @@ const downloadCSV = async () => {
                 :key="rol.id"
                 style="height: 3rem;"
               >
-                <!-- 👉 Id -->
-                <td>
-                  #{{ rol.id }}
-                </td>
 
                 <!-- 👉 nombre -->
                 <td>

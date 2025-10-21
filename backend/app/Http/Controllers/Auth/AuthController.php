@@ -194,7 +194,20 @@ class AuthController extends Controller
         if($user->password === $hash){
 
             $permissions = getPermissionsByRole(Auth::user());
-            $userData = getUserData(Auth::user()->load(['userDetail', 'supplier.billings', 'supplier.agreements', 'offers', 'commissions']));
+            $userData = getUserData(Auth::user()->load([
+                'userDetail', 
+                'supplier.boss.user.userDetail',
+                'supplier.boss.user.commissions',  
+                'supplier.boss.user.offers',  
+                'supplier.boss.billings', 
+                'supplier.boss.agreements',  
+                'supplier.billings', 
+                'supplier.agreements', 
+                'supplier.user.commissions', 
+                'supplier.user.offers', 
+                'offers', 
+                'commissions'
+            ]));
 
             return response()->json([
                 'success' => true,
@@ -315,7 +328,20 @@ class AuthController extends Controller
     protected function respondWithToken($token)
     {
         $permissions = getPermissionsByRole(Auth::user());
-        $userData = getUserData(Auth::user()->load(['userDetail', 'supplier.billings', 'supplier.agreements', 'offers', 'commissions']));
+        $userData = getUserData(Auth::user()->load([
+            'userDetail', 
+            'supplier.boss.user.userDetail',
+            'supplier.boss.user.commissions',  
+            'supplier.boss.user.offers',  
+            'supplier.boss.billings', 
+            'supplier.boss.agreements',  
+            'supplier.billings', 
+            'supplier.agreements', 
+            'supplier.user.commissions', 
+            'supplier.user.offers', 
+            'offers', 
+            'commissions'
+        ]));
 
         return [
             'accessToken' => $token,

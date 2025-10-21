@@ -5,9 +5,10 @@ import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
+import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
-
+import VuePdfEmbed from 'vue-pdf-embed'
 const agreementsStores = useAgreementsStores()
 const emitter = inject("emitter")
 
@@ -28,8 +29,16 @@ const selectedTags = ref([])
 const existingTags = ref([])
 const isValid = ref(false)
 const selectedAgreement = ref({})
+const isStaticSignatureFlow = ref(false)
 
 const agreementTypes = ref([])
+const agreement_type_id_select = ref(null)
+
+const isPlacementModalVisible = ref(false) // Controla el modal del PDF
+const placementPdfSource = ref(null)      // Almacena la URL del PDF a mostrar
+const isLoadingPlacementPdf = ref(false)  // Muestra un spinner mientras carga el PDF
+const signaturePlacement = ref({ x: 0, y: 0, page: 1, visible: false }) // Coordenadas elegidas
+const pdfPlacementContainer = ref(null) // Ref para el contenedor del PDF
 
 // Modal select type contract
 const isModalVisible = ref(false)
@@ -38,6 +47,8 @@ const refVForm = ref()
 
 const userData = ref(null)
 const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -72,6 +83,8 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
+    supplier_id.value = null
+    agreement_type_id_select.value = null
   }
 
   let data = {
@@ -79,7 +92,9 @@ async function fetchData(cleanFilters = false) {
     orderByField: 'created_at',
     orderBy: 'desc',
     limit: rowPerPage.value,
-    page: currentPage.value
+    page: currentPage.value,
+    supplier_id: supplier_id.value,
+    agreement_type_id: agreement_type_id_select.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -92,6 +107,10 @@ async function fetchData(cleanFilters = false) {
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
+
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = agreementsStores.getSuppliers
+  }
   
   isRequestOngoing.value = false
 
@@ -266,22 +285,74 @@ const downloadCSV = async () => {
 
 }
 
+const resolveStatus = state => {
+  if (state === 'signed')
+    return { color: 'info' }
+  if (state === 'pending')
+    return { color: 'warning' } 
+  if (state === 'sent')
+    return { color: 'success' } 
+}
 
-const openSignatureDialog = agreementData => {
-  selectedAgreement.value = { ...agreementData }
-  
-  // Intenta pre-rellenar el campo de email con el del cliente si existe.
-  // El ?. (optional chaining) evita errores si agreement_client es null.
+const startPlacementProcess = async (agreementData) => {
+  selectedAgreement.value = { ...agreementData };
+  isPlacementModalVisible.value = true;
+  isLoadingPlacementPdf.value = true;
+  signaturePlacement.value.visible = false; // Resetea la posición
+
+  try {
+    // Usamos el endpoint que ya teníamos para obtener el PDF
+    const response = await axios.get(`/agreements/${agreementData.id}/get-admin-preview-pdf`, {
+        responseType: 'blob',
+    })
+    placementPdfSource.value = URL.createObjectURL(response.data);
+  } catch (error) {
+    // Si falla (ej. PDF no existe), mostramos un error y cerramos el modal
+    advisor.value = { type: 'error', message: 'Kunde inte ladda PDF-dokumentet.', show: true };
+    isPlacementModalVisible.value = false;
+    setTimeout(() => { advisor.value.show = false }, 3000);
+  } finally {
+    isLoadingPlacementPdf.value = false;
+  }
+}
+
+const handleAdminPdfClick = (event) => {
+  const container = event.currentTarget; 
+  if (!container) return;
+
+  const rect = container.getBoundingClientRect();
+
+  // --- VOLVEMOS A CALCULAR PÍXELES ---
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top + container.scrollTop;
+
+  signaturePlacement.value = {
+    // Guardamos los píxeles, como antes
+    x: x,
+    y: y,
+    page: 1,
+    visible: true,
+  }
+}
+
+const openSignatureDialog = (agreementData) => {
+  // Ahora selectedAgreement ya está seteado.
   signatureEmail.value = agreementData.agreement_client?.email || ''
-  
   isSignatureDialogVisible.value = true
+}
+
+const openStaticSignatureDialog = (agreementData) => {
+  selectedAgreement.value = { ...agreementData }; // Aseguramos que el agreement está seleccionado
+  isStaticSignatureFlow.value = true // ¡Importante! Indicamos que es el flujo estático
+  signatureEmail.value = agreementData.agreement_client?.email || ''
+  isSignatureDialogVisible.value = true // Abrimos el mismo modal de siempre
 }
 
 /**
  * Esta función se ejecuta al hacer clic en "Skicka" dentro del diálogo.
  * Valida el formulario y llama a la acción de Pinia con los datos correctos.
  */
-const submitSignatureRequest = async () => {
+const submitPlacementSignatureRequest  = async () => {
   // 1. Valida el formulario usando la referencia 'refSignatureForm'
   const { valid } = await refSignatureForm.value?.validate()
 
@@ -290,13 +361,26 @@ const submitSignatureRequest = async () => {
 
   // 3. Cierra el diálogo y muestra el spinner de carga
   isSignatureDialogVisible.value = false
+  isPlacementModalVisible.value = false
   isRequestOngoing.value = true
   
   try {
+
+    const container = pdfPlacementContainer.value;
+    if (!container) {
+      throw new Error("No se pudo encontrar la referencia del contenedor del PDF.");
+    }
+
+    // Convertimos los píxeles guardados a porcentajes
+    const x_percent = (signaturePlacement.value.x / container.offsetWidth) * 100;
+    const y_percent = (signaturePlacement.value.y / container.scrollHeight) * 100;
     // 4. Prepara el 'payload' que espera nuestra acción de Pinia
     const payload = {
       agreementId: selectedAgreement.value.id,
       email: signatureEmail.value,
+      x: x_percent.toFixed(2),
+      y: y_percent.toFixed(2),
+      page: signaturePlacement.value.page,
     }
 
     // 5. Llama a la acción de Pinia que modificamos en el paso anterior
@@ -327,6 +411,68 @@ const submitSignatureRequest = async () => {
     setTimeout(() => {
       advisor.value = { show: false }
     }, 3000)
+  }
+}
+
+const submitStaticSignatureRequest = async () => {
+  // 1. Valida el formulario
+  const { valid } = await refSignatureForm.value?.validate();
+  if (!valid) return;
+
+  // 2. Cierra modal y activa spinner
+  isSignatureDialogVisible.value = false;
+  isRequestOngoing.value = true;
+
+  try {
+    // 3. Prepara un payload más simple, sin coordenadas
+    const payload = {
+      agreementId: selectedAgreement.value.id,
+      email: signatureEmail.value,
+    };
+
+    // 4. Llama a una NUEVA acción en el store de Pinia
+    const response = await agreementsStores.requestStaticSignature(payload);
+
+    // 5. Muestra mensaje de éxito
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true,
+    };
+    await fetchData();
+
+  } catch (error) {
+    // Manejo de errores
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true,
+    };
+  } finally {
+    // Limpieza
+    isRequestOngoing.value = false;
+    signatureEmail.value = '';
+    setTimeout(() => {
+      advisor.value = { show: false };
+    }, 3000);
+  }
+};
+
+const handleSignatureSubmit = async () => {
+  if (isStaticSignatureFlow.value) {
+    await submitStaticSignatureRequest();
+  } else {
+    // Asegúrate de que el nombre aquí coincida con cómo renombraste la función original
+    await submitPlacementSignatureRequest(); 
+  }
+};
+
+const handlePlacementModalClose = (value) => {
+  if (!value) {
+    if (placementPdfSource.value) {
+      URL.revokeObjectURL(placementPdfSource.value);
+    }
+    placementPdfSource.value = null;
   }
 }
 
@@ -411,6 +557,27 @@ const openLink = function (agreementData) {
 
             <VSpacer class="d-md-block"/>
 
+            <VAutocomplete
+                v-model="agreement_type_id_select"
+                placeholder="Typ av avtal"
+                :items="agreementTypes"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
+            <VAutocomplete
+                v-if="role === 'SuperAdmin' || role === 'Administrator'"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
               <!-- 👉 Search  -->
               <div class="search">
@@ -445,6 +612,7 @@ const openLink = function (agreementData) {
                 <th scope="col"> TYP </th>
                 <th scope="col"> SKAPAD </th>
                 <th scope="col"> SKAPAD AV </th>
+                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
                 <th scope="col"> SIGNERA STATUS </th>
                 <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
               </tr>
@@ -477,13 +645,44 @@ const openLink = function (agreementData) {
                       hour12: false
                   }) }}
                 </td>
-                <td> 
-                  {{ agreement.supplier ? 
-                    agreement.supplier.user.name + ' ' + agreement.supplier.user.last_name : 
-                    userData.name + ' ' + userData.last_name
-                   }}
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="agreement.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + agreement.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ agreement.user.email }}</span>
+                    </div>
+                  </div>
                 </td>
-                <td></td>
+                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                  <span class="font-weight-medium"  v-if="agreement.supplier">
+                    {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
+                  </span>
+                </td>
+                <td>
+                  <span v-if="agreement.agreement_type_id === 4">
+                    NO APLICA
+                  </span>
+                  <VChip
+                    v-else
+                    label
+                    :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
+                  >
+                    {{ agreement.token?.signature_status ?? 'pending' }}
+                  </VChip>
+                </td>
                 <!-- 👉 Acciones -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
                   <VMenu>
@@ -498,7 +697,7 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','agreements')" @click="openSignatureDialog(agreement)">
+                      <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
@@ -619,7 +818,7 @@ const openLink = function (agreementData) {
         <!-- Usamos VForm para poder validar el campo de email -->
         <VForm
           ref="refSignatureForm"
-          @submit.prevent="submitSignatureRequest"
+          @submit.prevent="handleSignatureSubmit"
         >
           <VDivider class="mt-4"/>
           <VCardText>
@@ -755,14 +954,115 @@ const openLink = function (agreementData) {
       </VCard>
     </VDialog>
 
+      <!-- ======================================================= -->
+    <!-- INICIO DEL NUEVO DIÁLOGO DE POSICIONAMIENTO PARA EL ADMIN -->
+    <!-- ======================================================= -->
+    <VDialog
+      v-model="isPlacementModalVisible"
+      fullscreen
+      :scrim="false"
+      transition="dialog-bottom-transition"
+      @update:modelValue="handlePlacementModalClose"
+    >
+      <VCard>
+        <VToolbar
+          dark
+          color="primary"
+        >
+          <VBtn
+            icon
+            dark
+            @click="isPlacementModalVisible = false"
+          >
+            <VIcon>mdi-close</VIcon>
+          </VBtn>
+          <VToolbarTitle>Placera signatur för Avtal #{{ selectedAgreement.agreement_id }}</VToolbarTitle>
+          <VSpacer />
+          <VToolbarItems>
+            <VBtn
+              variant="text"
+              :disabled="!signaturePlacement.visible"
+              @click="openSignatureDialog(selectedAgreement)"
+            >
+              Bekräfta och skicka
+            </VBtn>
+          </VToolbarItems>
+        </VToolbar>
+        
+        <VCardText class="pa-0 d-flex justify-center align-center" style="background-color: #525659; height: calc(100vh - 64px);">
+          <VProgressCircular
+            v-if="isLoadingPlacementPdf"
+            indeterminate
+            color="white"
+          />
+          <div 
+            v-show="!isLoadingPlacementPdf"
+            ref="pdfPlacementContainer" 
+            class="pdf-container-admin" 
+            @click="handleAdminPdfClick"
+          >
+            <vue-pdf-embed :source="placementPdfSource" />
+
+            <div 
+              v-if="signaturePlacement.visible"
+              class="signature-placeholder-admin"
+              :style="{ left: signaturePlacement.x + 'px', top: signaturePlacement.y + 'px' }"
+            >
+              <span class="signature-placeholder-content">
+                <VIcon icon="mdi-draw" />
+                <span>Signera här</span>
+              </span>
+              
+            </div>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+    <!-- ======================================================= -->
+    <!-- FIN DEL DIÁLOGO DE POSICIONAMIENTO -->
+    <!-- ======================================================= -->  
   </section>
 </template>
 
-<style scope>
+<style scoped>
   .search {
       width: 100%;
   }
 
+  :deep(.pdf-container-admin) {
+  position: relative;
+  cursor: crosshair;
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+  width: 90%;
+  max-width: 800px; /* Ancho máximo para pantallas grandes */
+  height: 95%;     /* Usa casi todo el alto del VCardText */
+  overflow-y: auto; /* Permite hacer scroll si el PDF es muy largo */
+  
+}
+
+:deep(.pdf-container-admin > div){
+  width: 100% !important;
+}
+/* --- FIN DE NUEVA REGLA --- */
+
+:deep(.signature-placeholder-admin) {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  :deep(.signature-placeholder-content) {
+    display: inline-flex; /* Asegura que el tamaño se ajuste al contenido */
+    align-items: center;
+    gap: 8px;
+    border: 2px dashed #ffc107;
+    background-color: rgba(255, 193, 7, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: #ffc107;
+    font-weight: 600;
+    white-space: nowrap;
+  }
   @media(min-width: 991px){
       .search {
           width: 20rem;

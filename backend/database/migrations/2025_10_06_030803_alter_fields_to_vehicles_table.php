@@ -11,10 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            $table->unsignedBigInteger('state_id')->default(2)->after('user_id');
+        Schema::table('vehicles', function (Blueprint $table) {
+            $table->unsignedBigInteger('supplier_id')->nullable()->after('user_id');
 
-            $table->foreign('state_id')->references('id')->on('states')->onDelete('cascade');
+            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
         });
     }
 
@@ -23,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('suppliers', function (Blueprint $table) {
-            $table->dropColumn('state_id');
+        Schema::table('vehicles', function (Blueprint $table) {
+            $table->dropColumn('supplier_id');
         });
     }
 };

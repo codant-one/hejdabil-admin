@@ -34,7 +34,7 @@ class ClientController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Client::with(['supplier.user'])
+            $query = Client::with(['supplier.user', 'user.userDetail'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -86,7 +86,7 @@ class ClientController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'client' => Client::with(['supplier.user'])->find($client->id)
+                    'client' => Client::with(['supplier.user', 'user.userDetail'])->find($client->id)
                 ]
             ]);
 
@@ -137,7 +137,7 @@ class ClientController extends Controller
     public function update(ClientRequest $request, $id): JsonResponse
     {
         try {
-            $client = Client::with(['supplier.user'])->find($id);
+            $client = Client::with(['supplier.user', 'user.userDetail'])->find($id);
         
             if (!$client)
                 return response()->json([

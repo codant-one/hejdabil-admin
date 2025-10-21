@@ -24,13 +24,19 @@ export const useAgreementsStores = defineStore('agreements', {
         advances: {},
         commission_types: {},
         agreement_id: 0,
+        commission_id: 0,
+        offer_id: 0,
         loading: false,
         last_page: 1,
-        agreementsTotalCount: 6
+        agreementsTotalCount: 6,
+        suppliers: {}
     }),
     getters:{
         getAgreements(){
             return this.agreements
+        },
+        getSuppliers(){
+            return this.suppliers
         }
     },
     actions: {
@@ -43,6 +49,7 @@ export const useAgreementsStores = defineStore('agreements', {
             return Agreements.get(params)
                 .then((response) => {
                     this.agreements = response.data.data.agreements.data
+                    this.suppliers = response.data.data.suppliers
                     this.last_page = response.data.data.agreements.last_page
                     this.agreementsTotalCount = response.data.data.agreementsTotalCount
                 })
@@ -125,6 +132,8 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.agreementTypes = response.data.data.agreementTypes
                     this.vehicles = response.data.data.vehicles
                     this.agreement_id = response.data.data.agreement_id
+                    this.commission_id = response.data.data.commission_id
+                    this.offer_id = response.data.data.offer_id
                     this.clients = response.data.data.clients
                     this.client_types = response.data.data.client_types
                     this.identifications = response.data.data.identifications
@@ -156,10 +165,22 @@ export const useAgreementsStores = defineStore('agreements', {
               // El segundo argumento de axios.post es el objeto de datos que se enviará.
               axios.post(
                 `/agreements/${payload.agreementId}/send-signature-request`, 
-                { email: payload.email } // <-- ¡ESTE ES EL CAMBIO CLAVE!
+                { email: payload.email,
+                    x: payload.x,
+                    y: payload.y,
+                    page: payload.page
+                 }
               )
               .then(response => resolve(response))
               .catch(error => reject(error))
+            })
+          },
+
+          requestStaticSignature(payload) {
+            return new Promise((resolve, reject) => {
+              axios.post(`/agreements/${payload.agreementId}/send-static-signature-request`, payload)
+                .then(response => resolve(response))
+                .catch(error => reject(error))
             })
           },
     }

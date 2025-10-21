@@ -14,6 +14,8 @@ use App\Models\Invoice;
 use App\Models\Vehicle;
 use App\Models\VehicleDocument;
 use App\Models\Agreement;
+use App\Models\UserDetails;
+use App\Models\Config;
 
 class TestingController extends Controller
 {
@@ -66,15 +68,77 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user', 'state'])->find(1);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(1);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
+        /*if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $company = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company->email = Auth::user()->email;
+
+            $user = UserDetails::with(['user'])->find(3);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        }
+        */
+
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+        
+        // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
+  
         foreach($details as $row)
             $invoices[] = $row;
 
         return view('pdfs.invoice', 
             compact(
+                'company',
                 'billing',
                 'types',
                 'invoices'
@@ -175,9 +239,9 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(22);
+        ])->find(1);
 
-        $user = User::with(['userDetail'])->find(1);
+        $user = User::with(['userDetail','roles'])->find(1);
  
         switch ($agreement->agreement_type_id) {
             case 1:
@@ -194,10 +258,60 @@ class TestingController extends Controller
                 break;
         }
 
+        if ($user->roles[0]->name === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+        } else if ($user->roles[0]->name === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            $signatureRaw    = $getValue($configSignature);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            $signatureObj    = $decodeSafe($signatureRaw);
+
+            $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
+        }
+
         return view($pdf, 
             compact(
                 'agreement',
-                'user'
+                'user',
+                'company'
             )
         );
     }

@@ -14,6 +14,10 @@ class Client extends Model
     protected $guarded = [];
 
     /**** Relationship ****/
+    public function user() {
+        return $this->belongsTo(User::class, 'user_id', 'id')->withTrashed();
+    }
+    
     public function supplier() {
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
@@ -28,8 +32,21 @@ class Client extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
-        $query->where('fullname', 'LIKE', '%' . $search . '%')
-              ->orWhere('email', 'LIKE', '%' . $search . '%');
+        $query->where(function ($q) use ($search) {
+            $q->where('fullname', 'LIKE', '%' . $search . '%')
+                ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                ->orWhere('phone', 'LIKE', '%' . $search . '%')
+                ->orWhere('address', 'LIKE', '%' . $search . '%')
+                ->orWhere('email', 'LIKE', '%' . $search . '%')
+                ->orWhereHas('user', function ($uq) use ($search) {
+                    $uq->where(function ($inner) use ($search) {
+                        $inner->where('name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                            ->orWhere('email', 'LIKE', '%' . $search . '%')
+                            ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                    });
+                });
+        });
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
@@ -41,6 +58,8 @@ class Client extends Model
 
         if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
             $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
         if ($filters->get('search')) {
@@ -70,9 +89,17 @@ class Client extends Model
     public static function createClient($request) {
 
         $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
 
         $client = self::create([
-            'supplier_id' => $request->supplier_id === 'null' && $isSupplier ? Auth::user()->supplier->id : ($request->supplier_id === 'null' ? null : $request->supplier_id),
+            'user_id' => Auth::user()->id, 
+            'supplier_id' =>  $supplier_id,
             'email' => $request->email,
             'fullname' => $request->fullname,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
@@ -80,7 +107,8 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
-            'reference' => $request->reference === 'null' ? null : $request->reference
+            'reference' => $request->reference === 'null' ? null : $request->reference,
+            'comments' =>  $request->comments === 'null' ? null : $request->comments
         ]);
         
         return $client;
@@ -98,7 +126,8 @@ class Client extends Model
             'street' => $request->street,
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
-            'reference' => $request->reference === 'null' ? null : $request->reference
+            'reference' => $request->reference === 'null' ? null : $request->reference,
+            'comments' =>  $request->comments === 'null' ? null : $request->comments
         ]);
 
         return $client;

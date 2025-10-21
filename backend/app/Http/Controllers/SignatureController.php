@@ -7,10 +7,17 @@ use App\Models\Token;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SignatureRequestMail; // Lo crearemos en el siguiente paso
+use App\Mail\SignatureRequestMail;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Auth; // Necesario para regenerar el PDF
-use PDF; // Tu modelo ya usa el Facade 'PDF', así que lo usamos también
+use Illuminate\Support\Facades\Auth;
+use PDF;
+use Illuminate\Support\Facades\Response;
+use App\Mail\SignedDocumentMail; 
+use Illuminate\Support\Facades\Log;
+
+use App\Models\UserDetails;
+use App\Models\User;
+use App\Models\Config;
 
 class SignatureController extends Controller
 {
@@ -22,6 +29,9 @@ class SignatureController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email',
+            'x' => 'required|numeric',
+            'y' => 'required|numeric',
+            'page' => 'required|integer',
         ]);
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
@@ -40,11 +50,52 @@ class SignatureController extends Controller
         // 4. Crear el registro en la tabla 'tokens'.
         $token = $agreement->tokens()->create([
             'signing_token' => $signingToken,
+            'recipient_email'     => $validated['email'],
             'token_expires_at'    => now()->addDays(7),
             'signature_status'        => 'sent',
+            'placement_x'   => $validated['x'],
+            'placement_y'   => $validated['y'],
+            'placement_page'=> $validated['page'],
         ]);
 
         // 5. Enviar el email al cliente con el enlace de firma.
+        Mail::to($validated['email'])->send(new SignatureRequestMail($token));
+        
+        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+    }
+
+    //Firmar con posición fija.
+    public function sendStaticSignatureRequest(Agreement $agreement, Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+        // 1. Verificar si el contrato ya tiene un PDF generado.
+        if (!$agreement->file) {
+            return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
+        }
+
+        // 2. Obtener el cliente asociado al contrato.
+        $agreementClient = $agreement->agreement_client;
+        if (!$agreementClient || !$agreementClient->email) {
+            return response()->json(['message' => 'El contrato no tiene un cliente con email asociado.'], 422);
+        }
+
+        // 3. Generar un token único.
+        $signingToken = Str::uuid()->toString();
+        
+        // 4. Crear el registro en 'tokens' SIN coordenadas.
+        $token = $agreement->tokens()->create([
+            'signing_token' => $signingToken,
+            'recipient_email'     => $validated['email'],
+            'token_expires_at'    => now()->addDays(7),
+            'signature_status'        => 'sent',
+            'placement_x'   => null, // Guardamos null para identificar que es una firma estática
+            'placement_y'   => null,
+            'placement_page'=> 1,    // Asumimos página 1 por defecto
+        ]);
+
+        // 5. Enviar el email al cliente.
         Mail::to($validated['email'])->send(new SignatureRequestMail($token));
         
         return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
@@ -58,18 +109,85 @@ class SignatureController extends Controller
     {
         // Validar que el token es correcto, está pendiente y no ha expirado.
         $token = Token::where('signing_token', $tokenString)
-                      ->where('signature_status', 'sent')
-                      ->where('token_expires_at', '>', now())
-                      ->first();
+                  ->where('token_expires_at', '>', now())
+                  ->first();
 
         if (!$token) {
-            // Si el token no es válido, mostramos un error.
-            abort(404, 'Enlace de firma no válido, expirado o ya utilizado.');
+            abort(404, 'Enlace de firma no válido o expirado');
+        }
+
+        // Verificar si el token ya fue usado para firmar
+        if ($token->signature_status === 'signed') {
+            return view('welcome');
+        }
+
+        // Si el token está en estado 'sent', procedemos normalmente
+        if ($token->signature_status === 'sent') {
+            return view('welcome');
         }
         
-        // Carga la vista principal de Blade que monta tu aplicación de Vue.
-        // Vue Router se encargará de mostrar el componente 'SigningPage'.
-        return view('welcome');
+        // Para cualquier otro estado no contemplado
+        abort(404, 'Estado de firma no válido.');
+    }
+
+    /**
+     * Obtener el PDF firmado si el token corresponde a un documento ya firmado
+     * URL: GET /api/signatures/{token}/get-signed-pdf
+     */
+    public function getSignedPdf($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)
+                    ->where('signature_status', 'signed')
+                    ->firstOrFail();
+        
+        $agreement = $token->agreement;
+        
+        // Usar el PDF firmado guardado en el token o en el agreement
+        $pdfPath = $token->signed_pdf_path ?? $agreement->file;
+        
+        if ($pdfPath && Storage::disk('public')->exists($pdfPath)) {
+            $path = storage_path('app/public/' . $pdfPath);
+            return response()->file($path);
+        }
+        
+        abort(404, 'Archivo PDF firmado no encontrado.');
+    }
+
+    /**
+     * Obtener el estado del token y detalles adicionales
+     * URL: GET /api/signatures/{token}/status
+     */
+    public function getTokenStatus($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->first();
+        
+        if (!$token) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Token no válido'
+            ], 404);
+        }
+        
+        if ($token->token_expires_at < now() && $token->signature_status !== 'signed') {
+            return response()->json([
+                'status' => 'expired',
+                'message' => 'El enlace de firma ha expirado'
+            ], 410);
+        }
+        
+        $response = [
+            'status' => $token->signature_status,
+            'signed_at' => $token->signed_at,
+            'agreement_id' => $token->agreement->agreement_id
+        ];
+        
+        if ($token->signature_status === 'signed') {
+            $response['message'] = 'Este documento ya fue firmado';
+            $response['signed_date_formatted'] = $token->signed_at ? 
+                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : null;
+        }
+        
+        return response()->json($response);
     }
 
     /**
@@ -82,10 +200,14 @@ class SignatureController extends Controller
         $token = Token::where('signing_token', $tokenString)
                       ->where('signature_status', 'sent')
                       ->where('token_expires_at', '>', now())
-                      ->firstOrFail(); // Lanza un 404 si no se encuentra.
+                      ->firstOrFail();
 
         // 2. Validar que la firma viene en la petición.
         $request->validate(['signature' => 'required|string']);
+
+        $validated = $request->validate([
+            'signature' => 'required|string'
+        ]);
 
         // 3. Decodificar y guardar la imagen de la firma.
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->signature));
@@ -96,10 +218,13 @@ class SignatureController extends Controller
 
         // --- LÓGICA DE REGENERACIÓN DEL PDF ADAPTADA A TU MODELO ---
         // 4. Regenerar el PDF, esta vez pasando la URL de la firma.
-        $signedPdfPath = $this->regeneratePdfWithSignature($agreement, Storage::disk('public')->url($signaturePath));
-
+        $signedPdfPath = $this->regeneratePdfWithSignature(
+            $agreement,
+            $signaturePath,
+            $token->placement_x,
+            $token->placement_y
+        );
         if (!$signedPdfPath) {
-            // Manejar un posible error durante la generación del PDF.
             return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
         }
 
@@ -114,6 +239,16 @@ class SignatureController extends Controller
         // 6. Opcional pero recomendado: Actualizar el campo 'file' del Agreement con la nueva ruta.
         $agreement->file = $signedPdfPath;
         $agreement->save();
+
+        try {
+            $recipientEmail = $token->recipient_email ?? $token->agreement->agreement_client->email;
+            if ($recipientEmail) {
+                $pdfFullPath = storage_path('app/public/' . $signedPdfPath);
+                Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $pdfFullPath));
+            }
+        } catch (\Exception $e) {
+            Log::error('Kunde inte skicka signerat PDF via e-post för avtal #' . $agreement->id . ': ' . $e->getMessage());
+        }
         
         // 7. Devolver una respuesta exitosa a Vue.
         return response()->json([
@@ -126,7 +261,7 @@ class SignatureController extends Controller
      * Helper privado para regenerar el PDF con la firma.
      * Esta función adapta la lógica de tu método Agreement::generatePdf().
      */
-    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl)
+    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, ?float $x, ?float $y)
     {
         // 1. Cargar todas las relaciones necesarias.
         $agreement->load([
@@ -138,7 +273,7 @@ class SignatureController extends Controller
             'agreement_client', 'vehicle_client.vehicle.model.brand',
             'vehicle_client.vehicle.fuel', 'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types', 
-            'supplier.user.userDetail' // <-- CARGAMOS LA RELACIÓN COMPLETA
+            'supplier.user.userDetail'
         ]);
 
         // 2. Determinar quién es el usuario creador.
@@ -147,14 +282,69 @@ class SignatureController extends Controller
             $creatorUser = $agreement->supplier->user;
         }
         // Si no hay proveedor, podrías añadir lógica para buscar un usuario admin aquí si fuera necesario.
+        $fullPath = Storage::disk('public')->path($signatureUrl);
+        $imageData = base64_encode(file_get_contents($fullPath));
+        $signatureImageSrc = 'data:image/png;base64,' . $imageData;
 
         // 3. Preparar los datos para la vista, incluyendo el usuario y la firma.
+        if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
+            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+        } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            $signatureRaw    = $getValue($configSignature);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            $signatureObj    = $decodeSafe($signatureRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
+        }
+
         $data = [
             'agreement'     => $agreement,
-            'user'          => $creatorUser, // Pasamos el usuario que encontramos
-            'signature_url' => $signatureUrl
+            'company'       => $company,
+            'signature_url' => $signatureImageSrc,
+            'signature_x'   => $x,
+            'signature_y'   => $y,
         ];
-        $user = $creatorUser;
+
         // 4. Determinar la vista y el nombre del archivo (esta parte ya estaba bien).
         $viewName = '';
         $fileName = '';
@@ -184,5 +374,52 @@ class SignatureController extends Controller
         PDF::loadView($viewName, $data)->save(storage_path('app/public/' . $filePath));
         
         return $filePath;
+    }
+
+    public function getUnsignedPdf($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->firstOrFail();
+        $agreement = $token->agreement;
+    
+        if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
+            $path = storage_path('app/public/' . $agreement->file);
+            return response()->file($path);
+        }
+        abort(404, 'Archivo PDF no encontrado.');
+    }
+
+    public function getAdminPreviewPdf(Agreement $agreement)
+    {
+        
+        if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
+            $path = storage_path('app/public/' . $agreement->file);
+            return response()->file($path);
+        }
+
+        abort(404, 'Archivo PDF no encontrado para este contrato.');
+    }
+
+    public function getSignatureDetails($tokenString)
+    {
+        $token = Token::where('signing_token', $tokenString)->firstOrFail();
+
+        // Lógica para determinar la alineación de la firma
+        $alignment = 'left'; // Por defecto, la firma va a la izquierda
+        $agreementTypeId = $token->agreement->agreement_type_id;
+
+        // Para el contrato de Compra (Purchase), el cliente es el vendedor,
+        // por lo que su firma va a la DERECHA.
+        if ($agreementTypeId == 2) { // 2 = Purchase
+            $alignment = 'right';
+        }
+        // Para los demás (Sales, Mediation), la firma del cliente va a la izquierda.
+        // No necesitamos más condiciones, el valor por defecto 'left' ya funciona para ellos.
+
+        return response()->json([
+            'placement_x' => $token->placement_x,
+            'placement_y' => $token->placement_y,
+            'placement_page' => $token->placement_page,
+            'signature_alignment' => $alignment,
+        ]);
     }
 }

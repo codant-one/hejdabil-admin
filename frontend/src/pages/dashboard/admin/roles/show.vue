@@ -26,11 +26,15 @@ const id =  ref([])
 const name =  ref([])
 const readonly =  ref([])
 const permissions =  ref([])
+const userData = ref(null)
+const role_ = ref(null)
 
 watchEffect(() => {
     if (props.isDrawerOpen) {
 
         if (!(Object.entries(props.role).length === 0) && props.role.constructor === Object) {
+            userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+            role_.value = userData.value.roles[0].name
             permissions.value = props.role.assignedPermissions
             id.value = props.role.id
             name.value = props.role.name
@@ -105,42 +109,6 @@ const closeRoleDetailDialog = function(){
             <VDivider class="mt-4"/>
             <VCardText class="py-0">
                 <VCardTitle>
-                    Verkställande direktör
-                </VCardTitle>
-                <VCardText class="py-0">
-                    <div class="ml-5">
-                        <VLabel style="font-weight: bold;">
-                            Administratör
-                        </VLabel>
-                        <div class="demo-space-x ml-5">
-                            <VCheckbox
-                                v-model="permissions"
-                                label="administrator"
-                                value="administrator"
-                                :readonly="readonly"
-                            />
-                        </div>
-                    </div>
-                </VCardText>
-                <VCardTitle>
-                    Allmänt  
-                </VCardTitle>
-                <VCardText class="py-0">
-                    <div class="ml-5">
-                        <VLabel style="font-weight: bold;">
-                            Kontrollpanelen
-                        </VLabel>
-                        <div class="demo-space-x ml-5">
-                            <VCheckbox
-                                v-model="permissions"
-                                label="view dashboard"
-                                value="view dashboard"
-                                :readonly="readonly"
-                            />
-                        </div>
-                    </div>
-                </VCardText>
-                <VCardTitle>
                     Profil  
                 </VCardTitle>
                 <VCardText class="py-0">
@@ -168,6 +136,7 @@ const closeRoleDetailDialog = function(){
                                 :readonly="readonly"
                             />
                             <VCheckbox
+                                :disabled="role_ !== 'SuperAdmin'"
                                 v-model="permissions"
                                 label="delete roles"
                                 value="delete roles"

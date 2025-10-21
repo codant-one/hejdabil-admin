@@ -41,6 +41,18 @@ export const useProfileStores = defineStore('profile', {
                     }).catch(error => {
                         console.error(error.response.data)
                     })         
+        },
+
+        updateSignature(data) {
+
+            return Profile.updateSignature(data)
+                    .then((response) => {
+                        return Promise.resolve(response.data.data)
+                    }).catch(error => {
+                        console.error(error.response.data)
+                    })         
         }
+
+
   },
 })

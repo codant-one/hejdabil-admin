@@ -2,17 +2,16 @@
 
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
-import { useSuppliersStores } from '@/stores/useSuppliers'
 import { useAuthStores } from '@/stores/useAuth'
 import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
 import 'vue-advanced-cropper/dist/style.css'
-
+import SignaturePad from 'signature_pad';
+import { nextTick } from 'vue'; // nextTick para asegurar que el DOM esté listo
 const authStores = useAuthStores()
 const profileStores = useProfileStores()
-const suppliersStores = useSuppliersStores()
 
 const refVForm = ref()
 const isRequestOngoing = ref(true)
@@ -28,7 +27,17 @@ const logoCropped = ref(null)
 const logoOld = ref(null)
 const filename = ref([])
 
-const supplier = ref(null)
+const isConfirmChangeSignatureVisible = ref(false) // Para el diálogo de la firma
+const cropperSignature = ref() // Referencia para el nuevo cropper de la firma
+const signature = ref(null) // URL de la firma actual
+const signatureCropped = ref(null) // Imagen de la firma para el cropper
+const signatureOld = ref(null) // Blob de la firma recortada, lista para enviar
+const signatureFilename = ref([]) // Para el v-model del nuevo VFileInput
+
+const isSignaturePadDialogVisible = ref(false)
+const signaturePadCanvas = ref(null)
+const signaturePadInstance = ref(null)
+
 const form = ref({
     company: '',
     organization_number: '',
@@ -72,56 +81,45 @@ async function fetchData() {
     data.value = await authStores.company()
     role.value = userData.value.roles[0].name
 
-    if(role.value === 'Supplier') {
-        supplier.value = await suppliersStores.showSupplier(Number(userData.value.supplier.id))
+    //console.log('boss.company', userData.value.supplier.boss.user.user_detail.company)
+    //company
+    form.value.company = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.company : userData.value.user_detail.company
+    form.value.organization_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.organization_number : userData.value.user_detail.organization_number
+    form.value.link = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.link : userData.value.user_detail.link
+    form.value.address = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.address : userData.value.user_detail.address
+    form.value.street = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.street : userData.value.user_detail.street
+    form.value.postal_code = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.postal_code :  userData.value.user_detail.postal_code
+    form.value.phone = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.phone : userData.value.user_detail.phone
 
-        //company
-        form.value.company = supplier.value.company
-        form.value.organization_number = supplier.value.organization_number
-        form.value.link = supplier.value.link
-        form.value.address = supplier.value.address
-        form.value.street = supplier.value.street
-        form.value.postal_code = supplier.value.postal_code
-        form.value.phone = supplier.value.phone
+    //bank
+    form.value.bank = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bank : userData.value.user_detail.bank
+    form.value.account_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.account_number : userData.value.user_detail.account_number
 
-        //bank
-        form.value.bank = supplier.value.bank
-        form.value.account_number = supplier.value.account_number
+    form.value.iban = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban : userData.value.user_detail.iban
+    form.value.iban_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban_number : userData.value.user_detail.iban_number
+    form.value.bic = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bic : userData.value.user_detail.bic
+    form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : userData.value.user_detail.plus_spin
+    form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : userData.value.user_detail.swish
+    form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : userData.value.user_detail.vat
 
-        form.value.iban = supplier.value.iban
-        form.value.iban_number = supplier.value.iban_number
-        form.value.bic = supplier.value.bic
-        form.value.plus_spin = supplier.value.plus_spin
-        form.value.swish = supplier.value.swish
-        form.value.vat = supplier.value.vat
+    logo.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo : logo_  :
+        (userData.value.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.logo : logo_ 
+    logoCropped.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo) : logo_  :
+        (userData.value.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.logo) : logo_ 
 
-        logo.value = (data.value.supplier.logo !== null) ? themeConfig.settings.urlStorage + data.value.supplier.logo : logo_ 
-        logoCropped.value = (data.value.supplier.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + data.value.supplier.logo) : logo_ 
-    } else {
-        //company
-        form.value.company = userData.value.user_details.company
-        form.value.organization_number = userData.value.user_details.organization_number
-        form.value.link = userData.value.user_details.link
-        form.value.address = userData.value.user_details.address
-        form.value.street = userData.value.user_details.street
-        form.value.postal_code = userData.value.user_details.postal_code
-        form.value.phone = userData.value.user_details.phone
-
-        //bank
-        form.value.bank = userData.value.user_details.bank
-        form.value.account_number = userData.value.user_details.account_number
-
-        form.value.iban = userData.value.user_details.iban
-        form.value.iban_number = userData.value.user_details.iban_number
-        form.value.bic = userData.value.user_details.bic
-        form.value.plus_spin = userData.value.user_details.plus_spin
-        form.value.swish = userData.value.user_details.swish
-        form.value.vat = userData.value.user_details.vat
-
-        logo.value = (userData.value.user_details.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_details.logo : logo_ 
-        logoCropped.value = (userData.value.user_details.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_details.logo) : logo_ 
-    }
-
+    signature.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature : logo_  :
+        (userData.value.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.img_signature : logo_ 
+    signatureCropped.value = 
+        role.value === 'User' ?
+        (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature) : logo_  :
+        (userData.value.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.img_signature) : logo_
+        
     setTimeout(() => {
         emit('window', false)
     }, 500)
@@ -267,6 +265,149 @@ const cropImage = async () => {
     }
 }
 
+const resetSignature = () => {
+  signatureCropped.value = null
+  signatureOld.value = null
+}
+
+const onSignatureImageSelected = event => {
+  const file = event.target.files[0]
+
+  if (!file) return
+
+  URL.createObjectURL(file)
+
+  resizeImage(file, 1200, 1200, 1) // Reutilizamos tu función resizeImage
+    .then(async blob => {
+        let r = await blobToBase64(blob)
+        signatureCropped.value = 'data:image/jpeg;base64,' + r // Actualizamos la variable de la firma
+    })
+}
+
+
+const cropSignatureImage = async () => {
+    if (cropperSignature.value) { // Usamos la nueva referencia del cropper
+        const result = cropperSignature.value.getResult({
+            mime: 'image/png',
+            quality: 1,
+            fillColor: 'transparent'
+        });
+        const blob = dataURLtoBlob(result.canvas.toDataURL("image/png"));
+
+        signatureOld.value = blob // Guardamos el blob en la variable de la firma
+
+        let formData = new FormData()
+
+        formData.append('img_signature', signatureOld.value) // La clave debe ser 'img_signature'
+        
+        isConfirmChangeSignatureVisible.value = false
+        isRequestOngoing.value = true
+
+        // IMPORTANTE: Asumo que tendrás una nueva acción en tu store llamada 'updateSignature'
+        // Deberás crearla en tu store de Pinia, similar a 'updateLogo'.
+        profileStores.updateSignature(formData)
+            .then(async response => {    
+
+                window.scrollTo(0, 0)
+                
+                isRequestOngoing.value = false
+                localStorage.setItem('user_data', JSON.stringify(response.user_data))     
+
+                let r = await blobToBase64(blob)
+                signature.value = 'data:image/jpeg;base64,' + r // Actualizamos la imagen visible
+
+            }).catch(error => {
+                isRequestOngoing.value = false
+                console.log('error', error)
+                advisor.value.type = 'error'
+                advisor.value.show = true
+                advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                emit('alert', advisor)
+
+                setTimeout(() => {
+                    advisor.value.show = false,
+                    advisor.value.message = ''
+                    emit('alert', advisor)
+                }, 5000) 
+            })           
+    }
+}
+
+// Función para abrir el diálogo y preparar el lienzo
+const openSignaturePadDialog = () => {
+  isSignaturePadDialogVisible.value = true;
+  nextTick(() => {
+    const canvas = signaturePadCanvas.value;
+    if (canvas) {
+      signaturePadInstance.value = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)', // Fondo transparente
+        penColor: 'rgb(0, 0, 0)',
+      });
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext("2d").scale(ratio, ratio);
+      signaturePadInstance.value.clear();
+    }
+  });
+};
+
+// Función para limpiar el lienzo
+const clearSignaturePad = () => {
+  if (signaturePadInstance.value) {
+    signaturePadInstance.value.clear();
+  }
+};
+
+// Función para guardar la firma dibujada
+const saveSignatureFromPad = async () => {
+  if (signaturePadInstance.value && !signaturePadInstance.value.isEmpty()) {
+    // Obtener la firma como imagen PNG con fondo transparente
+    const signatureDataUrl = signaturePadInstance.value.toDataURL('image/png');
+    
+    // Convertir la DataURL a un Blob (archivo en memoria)
+    const blob = dataURLtoBlob(signatureDataUrl); // Reutilizamos tu función existente!
+
+    // Crear FormData y añadir el blob como si fuera un archivo subido
+    const formData = new FormData();
+    formData.append('img_signature', blob, 'signature.png'); // El backend lo recibirá como un archivo
+
+    // Cerramos el diálogo y mostramos el spinner
+    isSignaturePadDialogVisible.value = false;
+    isRequestOngoing.value = true;
+
+    // Llamamos a la misma acción de Pinia que usa la subida de archivo
+    profileStores.updateSignature(formData)
+      .then(async response => {    
+        window.scrollTo(0, 0);
+        localStorage.setItem('user_data', JSON.stringify(response.user_data));
+        
+        // Actualizamos la imagen visible en la página con la nueva firma
+        signature.value = signatureDataUrl;
+        
+        // Opcional: mostrar un mensaje de éxito
+      })
+      .catch(error => {
+        console.log('error', error);
+        advisor.value.type = 'error';
+        advisor.value.show = true;
+        advisor.value.message = 'Ett fel har inträffat...! (Serverfel)';
+        emit('alert', advisor);
+        setTimeout(() => {
+            advisor.value.show = false;
+            advisor.value.message = '';
+            emit('alert', advisor);
+        }, 5000); 
+      })
+      .finally(() => {
+        isRequestOngoing.value = false;
+      });
+  } else {
+    // Si el lienzo está vacío, simplemente cierra el diálogo
+    isSignaturePadDialogVisible.value = false;
+  }
+};
+
 const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
@@ -372,15 +513,17 @@ const onSubmit = () => {
                     <VRow no-gutters>
                         <VCol cols="12" md="12" class="d-flex col-logo">
                             <div class="logo-store">
-                             <VBadge 
-                                @click="isConfirmChangeLogoVisible = true"
-                                class="cursor-pointer"
-                                color="success">
-                                <template #badge>
-                                    <VIcon icon="tabler-pencil" />
-                                </template>
-                                    <VImg :src="logo" class="logo-store-img" contain/>
-                            </VBadge>
+                                <VImg v-if="role === 'User'" :src="logo" class="logo-store-img" contain/>
+                                <VBadge 
+                                    v-else
+                                    @click="isConfirmChangeLogoVisible = true"
+                                    class="cursor-pointer"
+                                    color="success">
+                                    <template #badge>
+                                        <VIcon icon="tabler-pencil" />
+                                    </template>
+                                        <VImg :src="logo" class="logo-store-img" contain/>
+                                </VBadge>
                             </div>
                         </VCol>
                         <VCol cols="12" md="12" class="py-0 info-logo-store">
@@ -410,18 +553,19 @@ const onSubmit = () => {
                         ref="refVForm"
                         @submit.prevent="onSubmit">
                         <VRow>
-                            <VCol cols="12" md="9">
+                            <VCol cols="12" md="8">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.company"
                                     label="Företagsnamn"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="3">
+                            <VCol cols="12" md="4">
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :disabled="role === 'Supplier'"
+                                    :disabled="role === 'Supplier' || role === 'User'"
                                     :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                                     minLength="11"
                                     maxlength="11"
@@ -430,6 +574,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="12">
                                 <VTextarea
+                                    :disabled="role === 'User'"
                                     v-model="form.address"
                                     rows="3"
                                     :rules="[requiredValidator]"
@@ -438,6 +583,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.postal_code"
                                     :rules="[requiredValidator]"
                                     label="Postnummer"
@@ -445,6 +591,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.street"
                                     :rules="[requiredValidator]"
                                     label="Stad"
@@ -452,6 +599,7 @@ const onSubmit = () => {
                             </VCol>                            
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.phone"
                                     :rules="[requiredValidator, phoneValidator]"
                                     label="Telefon"
@@ -459,6 +607,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.link"
                                     :rules="[urlValidator]"
                                     label="Hemsida"
@@ -466,6 +615,7 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.bank"
                                     :rules="[requiredValidator]"
                                     label="Bank"
@@ -473,12 +623,14 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.iban"
                                     label="Bankgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.account_number"
                                     :rules="[requiredValidator]"
                                     label="Kontonummer"
@@ -486,24 +638,28 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.iban_number"
                                     label="Iban nummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.bic"
                                     label="BIC"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.plus_spin"
                                     label="Plusgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.swish"
                                     label="Swish"
                                     :rules="[phoneValidator]"
@@ -511,11 +667,33 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
+                                    :disabled="role === 'User'"
                                     v-model="form.vat"
                                     label="Vat"
                                 />
                             </VCol>
-                            <VCol cols="12">
+                            <VCol cols="12" md="6" v-if="role !== 'User'">
+                                <VLabel class="mb-2">Signatur</VLabel>
+                                <div class="d-flex align-center gap-4">
+                                    <VImg :src="signature" width="200" height="112.5" aspect-ratio="16/9" class="border rounded" />
+                                    <div class="d-flex flex-column gap-2">
+                                        <VBtn 
+                                            color="primary"
+                                            @click="isConfirmChangeSignatureVisible = true">
+                                            <VIcon icon="tabler-upload" class="mr-2" />
+                                            Ladda upp fil
+                                        </VBtn>
+                                        <VBtn 
+                                            color="secondary"
+                                            variant="tonal"
+                                            @click="openSignaturePadDialog">
+                                            <VIcon icon="tabler-pencil" class="mr-2" />
+                                            Rita signatur
+                                        </VBtn>
+                                    </div>
+                                </div>
+                            </VCol>
+                            <VCol cols="12" v-if="role !== 'User'">
                                 <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
                                 </VBtn>
@@ -585,6 +763,84 @@ const onSubmit = () => {
           </VBtn>
         </VCardText>
       </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm change Signature -->
+    <VDialog
+      v-model="isConfirmChangeSignatureVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Byt firma">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Firma du väljer kommer att visas på dina kontrakt.
+        </VCardText>
+        <VCardText class="d-flex flex-column gap-2">
+             <VRow>
+                <VCol cols="12" md="12">
+                    <Cropper
+                        v-if="signatureCropped"
+                        :ref="el => cropperSignature = el"
+                        class="cropper-container"
+                        preview-class="cropper-preview"
+                        background-class="cropper-background"
+                        :src="signatureCropped"
+                        :stencil-props="{
+                            aspectRatio: 16/9  // Puedes ajustar el aspect ratio si lo necesitas
+                        }"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                     <VFileInput 
+                        v-model="signatureFilename"
+                        label="Firma"
+                        class="mb-2"
+                        accept="image/png, image/jpeg, image/bmp, image/webp"
+                        prepend-icon="tabler-camera"
+                        @change="onSignatureImageSelected"
+                        @click:clear="resetSignature"
+                    />
+                </VCol>
+            </VRow>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmChangeSignatureVisible = false">
+              Avbryt 
+          </VBtn>
+          <VBtn @click="cropSignatureImage"> 
+              Spara
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- ======================================================= -->
+    <!-- DIÁLOGO PARA DIBUJAR LA FIRMA DEL SUPPLIER -->
+    <!-- ======================================================= -->
+    <VDialog v-model="isSignaturePadDialogVisible" persistent max-width="500">
+    <VCard>
+        <VCardTitle>Rita din signatur</VCardTitle>
+        <VCardText>
+        <div class="signature-pad-wrapper">
+            <canvas ref="signaturePadCanvas"></canvas>
+        </div>
+        </VCardText>
+        <VCardActions>
+        <VSpacer />
+        <VBtn color="secondary" variant="tonal" @click="isSignaturePadDialogVisible = false">Avbryt</VBtn>
+        <VBtn @click="clearSignaturePad">Rensa</VBtn>
+        <VBtn color="primary" @click="saveSignatureFromPad">Acceptera & Spara</VBtn>
+        </VCardActions>
+    </VCard>
     </VDialog>
 
   </section>
@@ -671,7 +927,18 @@ const onSubmit = () => {
         color: white;
         margin-inline-start: 20px;
     }
+    .signature-pad-wrapper {
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 4px;
+    background-color: #fff; /* Fondo blanco para el lienzo */
+    }
 
+    .signature-pad-wrapper canvas {
+    width: 100%;
+    height: 200px;
+    display: block;
+    cursor: crosshair;
+    }
     @media (max-width: 776px) {
 
         .cropper-container {

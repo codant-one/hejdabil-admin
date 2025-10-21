@@ -27,19 +27,20 @@ const emit = defineEmits(["update:isDrawerOpen", "clientData"]);
 const isFormValid = ref(false);
 const refForm = ref();
 
-const id = ref(0);
-const supplier_id = ref(null);
-const organization_number = ref("");
-const address = ref("");
-const street = ref("");
-const postal_code = ref("");
-const phone = ref("");
-const fullname = ref("");
-const email = ref("");
-const reference = ref("");
-const isEdit = ref(false);
-const userData = ref(null);
-const role = ref(null);
+const id = ref(0)
+const supplier_id = ref(null)
+const organization_number = ref('')
+const address = ref('')
+const street = ref('')
+const postal_code = ref('')
+const phone = ref('')
+const fullname = ref('')
+const email = ref('')
+const reference = ref('')
+const comments = ref('')
+const isEdit = ref(false)
+const userData = ref(null)
+const role = ref(null)
 
 const getTitle = computed(() => {
   return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
@@ -50,21 +51,23 @@ watchEffect(async () => {
     userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
     role.value = userData.value.roles[0].name;
 
-    if (
-      !(Object.entries(props.client).length === 0) &&
-      props.client.constructor === Object
-    ) {
-      isEdit.value = true;
-      id.value = props.client.id;
-      supplier_id.value = props.client.supplier_id;
-      organization_number.value = props.client.organization_number;
-      address.value = props.client.address;
-      street.value = props.client.street;
-      postal_code.value = props.client.postal_code;
-      phone.value = props.client.phone;
-      fullname.value = props.client.fullname;
-      email.value = props.client.email;
-      reference.value = props.client.reference;
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    role.value = userData.value.roles[0].name
+
+    if (!(Object.entries(props.client).length === 0) && props.client.constructor === Object) {
+
+      isEdit.value = true
+      id.value = props.client.id
+      supplier_id.value = props.client.supplier_id
+      organization_number.value = props.client.organization_number
+      address.value = props.client.address
+      street.value = props.client.street
+      postal_code.value = props.client.postal_code
+      phone.value = props.client.phone
+      fullname.value = props.client.fullname 
+      email.value = props.client.email
+      reference.value = props.client.reference
+      comments.value = props.client.comments
     }
   }
 });
@@ -76,19 +79,20 @@ const closeNavigationDrawer = () => {
     refForm.value?.reset();
     refForm.value?.resetValidation();
 
-    organization_number.value = null;
-    address.value = null;
-    street.value = null;
-    postal_code.value = null;
-    phone.value = null;
-    fullname.value = null;
-    email.value = null;
-    reference.value = null;
-
-    isEdit.value = false;
-    id.value = 0;
-  });
-};
+    organization_number.value = null
+    address.value = null
+    street.value = null
+    postal_code.value = null
+    phone.value = null
+    fullname.value = null
+    email.value = null
+    reference.value = null
+    comments.value = null
+    
+    isEdit.value = false 
+    id.value = 0
+  })
+}
 
 const formatOrgNumber = () => {
   let numbers = organization_number.value.replace(/\D/g, "");
@@ -103,16 +107,17 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData();
 
-      formData.append("supplier_id", supplier_id.value);
-      formData.append("supplier_id", supplier_id.value);
-      formData.append("email", email.value);
-      formData.append("fullname", fullname.value);
-      formData.append("organization_number", organization_number.value);
-      formData.append("address", address.value);
-      formData.append("street", street.value);
-      formData.append("postal_code", postal_code.value);
-      formData.append("phone", phone.value);
-      formData.append("reference", reference.value);
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('supplier_id', supplier_id.value)
+      formData.append('email', email.value)
+      formData.append('fullname', fullname.value)
+      formData.append('organization_number', organization_number.value)
+      formData.append('address', address.value)
+      formData.append('street', street.value)
+      formData.append('postal_code', postal_code.value)
+      formData.append('phone', phone.value)
+      formData.append('reference', reference.value)
+      formData.append('comments', comments.value)
 
       emit(
         "clientData",
@@ -234,6 +239,13 @@ const handleDrawerModelValueUpdate = (val) => {
               <VCol cols="12" md="6">
                 <VTextField v-model="reference" label="Vår referens" />
               </VCol>
+              <VCol cols="12" md="12">
+                <VTextarea 
+                  v-model="comments"
+                  label="Beskrivning"
+                />
+              </VCol>
+            
               <!-- 👉 Submit and Cancel -->
               <VCol cols="12">
                 <VBtn
