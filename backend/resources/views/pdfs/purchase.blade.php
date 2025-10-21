@@ -189,7 +189,7 @@
                         <td>
                             <div class="label">Namn</div>
                             <div class="value">
-                                {{ $company->name }} {{ $company->last_name }} 
+                                {{ $company->company }} 
                             </div>
 
                         </td>
