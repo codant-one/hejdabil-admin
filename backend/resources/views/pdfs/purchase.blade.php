@@ -187,12 +187,24 @@
                 <table class="info-table">
                     <tr>
                         <td>
-                            <div class="label">Namn</div>
-                            <div class="value">
-                                {{ $company->company }} 
-                            </div>
-
+                            <table class="info-table">
+                                <tr>
+                                    <td class="column-cell column-cell-left-2">
+                                        <div class="label">Företag</div>
+                                        <div class="value">
+                                            {{ $company->company }} 
+                                        </div>
+                                    </td>
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Namn</div>
+                                        <div class="value">
+                                            {{ $company->name }} {{ $company->last_name }}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
+
                     </tr>
                     <tr>
                         <td>
