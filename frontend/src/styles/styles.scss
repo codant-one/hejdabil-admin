@@ -134,8 +134,8 @@ body .v-dialog .v-dialog-close-btn {
 }
 
 .v-btn--icon.v-btn--density-comfortable {
-  width: 48px !important;
-  height: 48px !important;
+  width: 38px !important;
+  height: 38px !important;
 }
 
 .layout-nav-type-vertical
@@ -449,8 +449,8 @@ body {
       text-align: center;
 
       svg {
-        width: 24px;
-        height: 24px;
+        width: 22px!important;
+        height: 22px!important;
       }
     }
   }
@@ -537,7 +537,7 @@ body {
   padding-left: 16px;
   border: 1px solid #e7e7e7;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 15px;
   color: #454545;
 
   .v-input {
