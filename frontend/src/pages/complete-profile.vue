@@ -198,46 +198,46 @@ async function fetchData() {
     email.value = userData.value.email
     name.value = userData.value. name
     last_name.value = userData.value.last_name
-    phone.value = userData.value.user_detail.personal_phone
-    address.value = userData.value.user_detail.personal_address
+    phone.value = userData.value.user_detail ? userData.value.user_detail.personal_phone : ""
+    address.value = userData.value.user_detail ? userData.value.user_detail.personal_address : ""
 
      //company
-    form.value.company = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.company : userData.value.user_detail.company
-    form.value.organization_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.organization_number : userData.value.user_detail.organization_number
-    form.value.link = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.link : userData.value.user_detail.link
-    form.value.address = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.address : userData.value.user_detail.address
-    form.value.street = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.street : userData.value.user_detail.street
-    form.value.postal_code = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.postal_code :  userData.value.user_detail.postal_code
-    form.value.phone = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.phone : userData.value.user_detail.phone
+    form.value.company = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.company : (userData.value.user_detail ? userData.value.user_detail.company : "")
+    form.value.organization_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.organization_number : (userData.value.user_detail ? userData.value.user_detail.organization_number : "")
+    form.value.link = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.link : (userData.value.user_detail ? userData.value.user_detail.link : "")
+    form.value.address = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.address : (userData.value.user_detail ? userData.value.user_detail.address : "")
+    form.value.street = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.street : (userData.value.user_detail ? userData.value.user_detail.street : "")
+    form.value.postal_code = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.postal_code :  (userData.value.user_detail ? userData.value.user_detail.postal_code : "")
+    form.value.phone = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.phone : (userData.value.user_detail ? userData.value.user_detail.phone : "")
 
     //bank
-    form.value.bank = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bank : userData.value.user_detail.bank
-    form.value.account_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.account_number : userData.value.user_detail.account_number
+    form.value.bank = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bank : (userData.value.user_detail ? userData.value.user_detail.bank : "")
+    form.value.account_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.account_number : (userData.value.user_detail ? userData.value.user_detail.account_number : "")
 
-    form.value.iban = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban : userData.value.user_detail.iban
-    form.value.iban_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban_number : userData.value.user_detail.iban_number
-    form.value.bic = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bic : userData.value.user_detail.bic
-    form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : userData.value.user_detail.plus_spin
-    form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : userData.value.user_detail.swish
-    form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : userData.value.user_detail.vat
+    form.value.iban = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban : (userData.value.user_detail ? userData.value.user_detail.iban : "")
+    form.value.iban_number = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.iban_number : (userData.value.user_detail ? userData.value.user_detail.iban_number : "")
+    form.value.bic = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.bic : (userData.value.user_detail ? userData.value.user_detail.bic : "")
+    form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : (userData.value.user_detail ? userData.value.user_detail.plus_spin : "")
+    form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : (userData.value.user_detail ? userData.value.user_detail.swish : "")
+    form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : (userData.value.user_detail ? userData.value.user_detail.vat : "")
 
     logo.value = 
         role.value === 'User' ?
         (userData.value.supplier.boss.user.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo : logo_  :
-        (userData.value.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.logo : logo_ 
+        (userData.value.user_detail && userData.value.user_detail.logo !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.logo : logo_ 
     logoCropped.value = 
         role.value === 'User' ?
         (userData.value.supplier.boss.user.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.logo) : logo_  :
-        (userData.value.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.logo) : logo_ 
+        (userData.value.user_detail && userData.value.user_detail.logo !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.logo) : logo_ 
 
     signature.value = 
         role.value === 'User' ?
         (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature : logo_  :
-        (userData.value.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.img_signature : logo_ 
+        (userData.value.user_detail &&  userData.value.user_detail.img_signature !== null) ? themeConfig.settings.urlStorage + userData.value.user_detail.img_signature : logo_ 
     signatureCropped.value = 
         role.value === 'User' ?
         (userData.value.supplier.boss.user.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.supplier.boss.user.user_detail.img_signature) : logo_  :
-        (userData.value.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.img_signature) : logo_
+        (userData.value.user_detail && userData.value.user_detail.img_signature !== null) ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userData.value.user_detail.img_signature) : logo_
         
     avatarOld.value = userData.value.avatar
     avatar.value = userData.value.avatar
