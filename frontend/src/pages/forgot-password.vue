@@ -1,202 +1,163 @@
 <script setup>
+import { useAuthStores } from "@/stores/useAuth";
+import { emailValidator, requiredValidator } from "@validators";
+const authStores = useAuthStores();
+const router = useRouter();
 
-import { useAuthStores } from '@/stores/useAuth'
-import { emailValidator, requiredValidator } from '@validators'
-import authV1BottomShape from '@images/pages/block-1.png'
-import authV1TopShape from '@images/pages/block-1.png'
-const authStores = useAuthStores()
-const router = useRouter()
+import logo from "@images/logos/billogg-logo.svg";
 
-const email = ref('')
-const load = ref(false)
-const refVForm = ref()
+const email = ref("");
+const load = ref(false);
+const refVForm = ref();
 
 const advisor = ref({
-  type: '',
-  message: '',
-  show: false
-})
+  type: "",
+  message: "",
+  show: false,
+});
 
-const errors = ref()
+const errors = ref();
 
 const onSubmit = () => {
-
   refVForm.value?.validate().then(({ valid: isValid }) => {
     if (isValid) {
-      load.value = true
+      load.value = true;
 
-      // ENVIA CONTRASE#A PARA VALIDAR 
-      let data = { email: email.value }
+      // ENVIA CONTRASE#A PARA VALIDAR
+      let data = { email: email.value };
 
-      authStores.forgot_password(data)
-        .then(response => {
+      authStores
+        .forgot_password(data)
+        .then((response) => {
+          advisor.value.show = true;
+          advisor.value.type = response.success ? "success" : "error";
+          advisor.value.message = response.data.register_success;
 
-          advisor.value.show = true
-          advisor.value.type = response.success ? 'success' : 'error'
-          advisor.value.message = response.data.register_success
-    
           setTimeout(() => {
-            advisor.value.show = false
-            advisor.value.type = ''
-            advisor.value.message = ''
-            router.push({ name: 'login' })
-          }, 5000)
+            advisor.value.show = false;
+            advisor.value.type = "";
+            advisor.value.message = "";
+            router.push({ name: "login" });
+          }, 5000);
 
-          load.value = false
+          load.value = false;
+        })
+        .catch((err) => {
+          load.value = false;
 
-        }).catch(err => {
-
-          load.value = false
-
-          if(err.message === 'error') {
-            advisor.value.show = true
-            advisor.value.type = 'error'
-            advisor.value.message = err.data.register_success
-          } else if(err.message === 'not_found'){
-            advisor.value.show = true
-            advisor.value.type = 'error'
-            advisor.value.message = err.errors
+          if (err.message === "error") {
+            advisor.value.show = true;
+            advisor.value.type = "error";
+            advisor.value.message = err.data.register_success;
+          } else if (err.message === "not_found") {
+            advisor.value.show = true;
+            advisor.value.type = "error";
+            advisor.value.message = err.errors;
           } else {
-            advisor.value.show = true
-            advisor.value.type = 'error'
-            advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+            advisor.value.show = true;
+            advisor.value.type = "error";
+            advisor.value.message = "Ett fel har inträffat...! (Serverfel)";
           }
 
           setTimeout(() => {
-            advisor.value.show = false
-            advisor.value.type = ''
-            advisor.value.message = ''
-          }, 5000)
+            advisor.value.show = false;
+            advisor.value.type = "";
+            advisor.value.message = "";
+          }, 5000);
 
-          console.error(err.message)
-        })
-      }
-    })
-}
-
+          console.error(err.message);
+        });
+    }
+  });
+};
 </script>
 
 <template>
-  <div class="auth-wrapper-2fa d-flex align-center justify-center pa-4">
-    <div class="position-relative my-sm-16">
-      <!-- 👉 Top shape -->
-      <VImg
-        :src="authV1TopShape"
-        class="auth-v1-top-shape d-none d-sm-block"
-      />
+  <div class="v-application__wrap bg-gradient d-flex justify-center pa-6">
+    <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
+      {{ advisor.message }}
+    </VAlert>
 
-      <!-- 👉 Bottom shape -->
-      <VImg
-        :src="authV1BottomShape"
-        class="auth-v1-bottom-shape d-none d-sm-block"
-      />
+    <div class="d-flex logo-box">
+      <img :src="logo" width="121" height="40" />
+    </div>
 
-      <VAlert
-        v-if="advisor.show"
-        :type="advisor.type"
-        class="mb-6"
-      >
-        {{ advisor.message }}
-      </VAlert>
+    <div class="d-flex flex-column align-center">
+      <VIcon icon="custom-f-forgot-password" size="120" class="mx-auto mb-6"></VIcon>
 
-      <div class="d-block">
-        <!-- 👉 Auth card -->
-        <VCard
-          class="auth-card auth pa-4"
-          max-width="448"
-        >
-          <VCardText class="pt-2 px-2 px-md-6">
-            <h5 class="text-h5 font-weight-semibold mb-1">
-              Har du glömt ditt lösenord? 🔒
-            </h5>
-            <p class="mb-0 letter">
-              Ange din e-postadress så skickar vi en länk till dig för att återställa ditt lösenord.
-            </p>
-          </VCardText>
+      <h2 class="login-title mb-6">Glömt lösenord</h2>
 
-          <VCardText class="px-2 px-md-6 pb-5">
-            <VForm 
-              ref="refVForm"
-              @submit.prevent="onSubmit">
-              <VRow>
-                <!-- email -->
-                <VCol cols="12">
-                  <VTextField
-                    v-model="email"
-                    label="E-post"
-                    type="email"
-                    :rules="[requiredValidator, emailValidator]"
-                    :error-messages="errors"
-                  />
-                </VCol>
+      <p class="mb-6 letter">
+        Oroa dig inte, vi skickar instruktionerna till din e-postadress.
+      </p>
+      <VForm ref="refVForm" @submit.prevent="onSubmit" style="max-width: 442px; width: 100%;">
+        <!-- email -->
+        <div class="form-field d-flex flex-column gap-4 mb-6">
+          <label>E-post</label>
+          <VTextField
+            v-model="email"
+            placeholder="billogg@gmail.com"
+            type="email"
+            :rules="[requiredValidator, emailValidator]"
+            :error-messages="errors"
+          />
+        </div>
 
-                <!-- reset password -->
-                <VCol cols="12">
-                  <VBtn
-                    block
-                    type="submit"
-                  >
-                    Skicka
-                    <VProgressCircular
-                      v-if="load"
-                      indeterminate
-                      color="#fff"
-                    />
-                  </VBtn>
-                </VCol>
+        <!-- reset password -->
+        <VBtn class="btn-gradient w-100 mb-6" type="submit">
+          Skicka återställningslänk
+        </VBtn>
 
-                <!-- back to login -->
-                <VCol cols="12">
-                  <RouterLink
-                    class="d-flex align-center justify-center"
-                    :to="{ name: 'login' }"
-                  >
-                    <VIcon
-                      icon="tabler-chevron-left"
-                      class="flip-in-rtl"
-                    />
-                    <span>Tillbaka till inloggning</span>
-                  </RouterLink>
-                </VCol>
-              </VRow>
-            </VForm>
-          </VCardText>
-        </VCard>
-      </div>
+        <!-- back to login -->
+
+        <div class="d-flex justify-between gap-4">
+          <RouterLink
+            class="d-flex align-center justify-center gray-link gap-2"
+            :to="{ name: 'login' }"
+          >
+            <VIcon icon="custom-arrow-left" />
+            <span>Återgå till inloggningen</span>
+          </RouterLink>
+
+          <RouterLink
+            class="d-flex align-center justify-center green-link"
+            :to="{ name: 'login' }"
+          >
+            <span>Vidarebefordra</span>
+          </RouterLink>
+        </div>
+      </VForm>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-    @use "@core/scss/template/pages/page-auth.scss";
+@use "@core/scss/template/pages/page-auth.scss";
 
-    .auth .v-card-item__prepend {
-        padding-inline-end: 0 !important;
-    }
+.login-title {
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 100%;
+  text-align: center;
+  color: #454545;
+}
 
-    .auth .v-card-item {
-        padding: 0 24px !important;
-    }
+.letter {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #878787;
+}
 
-    @media(max-width: 991px){
-      .auth .v-card--variant-elevated {
-        box-shadow: none !important;
-      }
-
-      .text-h5 {
-        font-size: 1.2rem !important;
-      }
-      
-      .letter, .v-selection-control--inline .v-label {
-        font-size: 11.5px !important;
-      }
-    }
+@media (max-width: 991px) {
+}
 </style>
 
 <route lang="yaml">
-    meta:
-      layout: blank
-      action: view
-      subject: Auth
-      redirectIfLoggedIn: false
+meta:
+  layout: blank
+  action: view
+  subject: Auth
+  redirectIfLoggedIn: false
 </route>

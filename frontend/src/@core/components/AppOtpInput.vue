@@ -19,7 +19,7 @@ const refOtpComp = ref(null)
 
 digits.value = props.default.split('')
 
-const defaultStyle = { style: 'max-width: 54px; text-align: center;' }
+const defaultStyle = { style: 'max-width: 40px; text-align: center;' }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
 const handleKeyDown = (event, index) => {
@@ -48,17 +48,16 @@ const handleKeyDown = (event, index) => {
 
 <template>
   <div>
-    <h6 class="text-base font-weight-bold mb-3 d-none d-md-block">
-      Ange din 6-siffriga säkerhetskod
-    </h6>
+    <label class="text-base font-weight-bold mb-4 d-none d-md-block">
+      Verifieringskod
+    </label>
     <div
       ref="refOtpComp"
-      class="d-flex align-center gap-2"
+      class="d-flex align-center justify-center gap-2"
     >
       <VTextField
         v-for="i in props.totalInput"
-        type="tel"
-        class="digits"
+        type="password"
         :key="i"
         :model-value="digits[i - 1]"
         v-bind="defaultStyle"
@@ -70,9 +69,4 @@ const handleKeyDown = (event, index) => {
 </template>
 
 <style lang="scss">
-  .digits input {
-    padding: 0.6rem;
-    font-size: 1.25rem;
-    text-align: center
-  }
 </style>

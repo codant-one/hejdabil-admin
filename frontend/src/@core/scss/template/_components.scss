@@ -123,6 +123,12 @@ $alert-prepend-icon-font-size: 1.125rem !important;
   }
 }
 
+// Background 
+
+.bg-gradient {
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+}
+
 // 👉 Button
 // Above map but opacity values as key and variant as value
 $btn-active-overlay-opacity: (
@@ -421,6 +427,16 @@ body .v-btn {
       }
     }
   }
+
+  &.upload-avatar-btn {
+  height: auto !important;
+  border-radius: 120px !important;
+  border: 1px solid #E7E7E7;
+
+  background-color: #F6F6F6;
+  .avatar-box {
+  }
+}
 
   // &.v-btn--icon {
   //   width: 48px !important;
@@ -945,7 +961,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   .v-selection-control__input {
     transform: translateX(-5px);
 
-    --v-selection-control-size: 1.125rem;
+    --v-selection-control-size: 24px;
 
     .v-switch__thumb {
       background: rgba(var(--v-theme-on-surface), var(--v-switch-opacity));
