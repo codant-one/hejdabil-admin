@@ -788,7 +788,7 @@ const dataURLtoBlob = (dataURL) => {
         </VTab>
       </VTabs>
 
-      <VForm ref="refVForm" @submit.prevent="handleSubmit" class="auth-form">
+      <VForm ref="refVForm" @submit.prevent="handleSubmit" class="auth-form mx-auto">
         <template
           v-if="role === 'Supplier' || role === 'User' || role === 'SuperAdmin'"
         >
@@ -984,10 +984,7 @@ const dataURLtoBlob = (dataURL) => {
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Bankgiro</label>
-                <VTextField
-                  :disabled="role === 'User'"
-                  v-model="form.iban"
-                />
+                <VTextField :disabled="role === 'User'" v-model="form.iban" />
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Namn</label>
@@ -1007,10 +1004,7 @@ const dataURLtoBlob = (dataURL) => {
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>BIC</label>
-                <VTextField
-                  :disabled="role === 'User'"
-                  v-model="form.bic"
-                />
+                <VTextField :disabled="role === 'User'" v-model="form.bic" />
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Plusgiro</label>
@@ -1029,10 +1023,7 @@ const dataURLtoBlob = (dataURL) => {
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Vat</label>
-                <VTextField
-                  :disabled="role === 'User'"
-                  v-model="form.vat"
-                />
+                <VTextField :disabled="role === 'User'" v-model="form.vat" />
               </div>
               <div
                 class="form-field d-flex flex-column gap-4 mb-6"
@@ -1074,18 +1065,28 @@ const dataURLtoBlob = (dataURL) => {
           </div>
         </template>
         <template v-else>
-          <VAvatar
-            rounded
-            size="100"
-            class="me-6"
-            :color="avatar ? 'default' : 'primary'"
-            variant="tonal"
-          >
-            <VImg v-if="avatar" style="border-radius: 6px" :src="avatar" />
-            <span v-else class="text-5xl font-weight-semibold">
-              {{ avatarText(name) }}
-            </span>
-          </VAvatar>
+          <div class="d-flex flex-column align-center justify-center">
+            <VBtn
+              class="upload-avatar-btn"
+              @click="$refs.avatarInput.click()"
+              style="padding: 0; min-width: auto"
+            >
+              <VAvatar class="avatar-box" size="128">
+                <VImg v-if="avatar" :src="avatar" />
+                <template v-else>
+                  <VIcon icon="custom-upload" size="40" />
+                </template>
+              </VAvatar>
+            </VBtn>
+
+            <input
+              ref="avatarInput"
+              type="file"
+              accept="image/png, image/jpeg, image/bmp"
+              @change="onImageSelected"
+              style="display: none"
+            />
+          </div>
 
           <!-- 👉 Upload Photo -->
           <div class="d-flex flex-column justify-center gap-4 mt-4">
