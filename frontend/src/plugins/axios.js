@@ -30,7 +30,7 @@ axiosIns.interceptors.response.use(response => {
     localStorage.removeItem('userAbilities')
     localStorage.removeItem('accessToken')
 
-    alertStore.setAlert('Your session has expired or was closed from another window, please log in', 'error')
+    alertStore.setAlert('Din session har gått ut eller stängts från ett annat fönster.<br> Logga in igen.', 'error')
     
     router.push({ name: 'login' } )
     

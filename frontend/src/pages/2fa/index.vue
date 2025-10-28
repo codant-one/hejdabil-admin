@@ -1,5 +1,5 @@
 <script setup>
-import { themeConfig } from "@themeConfig";
+
 import { useAuthStores } from "@/stores/useAuth";
 
 import logo from "@images/logos/billogg-logo.svg";
@@ -59,36 +59,52 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <div class="v-application__wrap bg-gradient d-flex justify-center pa-6">
-    <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
-      {{ advisor.message }}
+  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
+    <VAlert 
+      v-if="advisor.message" 
+      border="start" 
+      :border-color="advisor.type === 'error' ? 'error' : 'success'"
+      class="mb-5 flex-grow-0">
+      <div v-html="advisor.message"></div>
     </VAlert>
 
-    <div class="d-flex logo-box">
-      <img :src="logo" width="121" height="40" />
+    <div class="d-flex logo-box mt-2 mt-md-0">
+      <RouterLink to="/login">
+        <img :src="logo" width="121" height="40" />
+      </RouterLink>
     </div>
 
-    <div class="d-flex flex-column align-center text-center box-2fa">
+    <div class="d-flex flex-column align-center text-center box-2fa gap-3">
       <VIcon
         icon="custom-f-two-factor-auth"
         size="120"
-        class="mx-auto mb-6"
+        class="mx-auto"
       ></VIcon>
 
-      <h2 class="login-title mb-6">Google Authenticator</h2>
+      <h2 class="login-title">Autentiserare</h2>
 
-      <p class="mb-6 letter">Lorem ipsum dolor sit amet, consectetur adipiscing elit. In blandit vitae magna et consectetur.</p>
+      <p class="letter">Ange din 6-siffriga säkerhetskod</p>
 
-      <VForm @submit.prevent="onSubmit" class="auth-form">
-        <div class="form-field form-field-2fa d-flex flex-column gap-4 mb-8">
+      <VForm @submit.prevent="onSubmit" class="auth-form d-flex flex-column gap-6">
+        <div class="form-field form-field-2fa d-flex flex-column gap-4">
           <AppOtpInput @updateOtp="handleOtp" />
         </div>
 
         <!-- reset password -->
-        <VBtn class="btn-gradient w-100 mb-6" type="submit">Verifiera identitet</VBtn>
+        <VBtn 
+          class="btn-gradient w-100" 
+          type="submit"
+          :loading="load"
+          >Skicka
+            <VProgressCircular
+              v-if="load"
+              indeterminate
+              color="#fff"
+            />
+        </VBtn>
 
         <!-- back to login -->
-        <div class="d-flex justify-center">
+        <div class="d-none justify-center">
           <RouterLink
             class="gray-link d-flex align-center justify-center gap-2"
             :to="{ name: 'login' }"
@@ -120,6 +136,13 @@ const onSubmit = () => {
 }
 
 @media (max-width: 991px) {
+  .logo-box {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
 }
 </style>
 

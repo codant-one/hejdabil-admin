@@ -1,8 +1,9 @@
 <script setup>
+
 import { useAuthStores } from '@/stores/useAuth'
-import authV1BottomShape from '@images/pages/block-1.png'
-import authV1TopShape from '@images/pages/block-1.png'
 import QRCode from 'qrcode-generator';
+
+import logo from "@images/logos/billogg-logo.svg";
 
 const authStores = useAuthStores()
 const route = useRoute()
@@ -71,74 +72,57 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <div class="auth-wrapper-2fa d-flex align-center justify-center pa-4">
-    <div class="position-relative my-sm-16">
-      <!-- 👉 Top shape -->
-      <VImg
-        :src="authV1TopShape"
-        class="auth-v1-top-shape d-none d-sm-block"
-      />
+  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
+    <VAlert 
+      v-if="advisor.message" 
+      border="start" 
+      :border-color="advisor.type === 'error' ? 'error' : 'success'"
+      class="mb-5 flex-grow-0">
+      <div v-html="advisor.message"></div>
+    </VAlert>
 
-      <!-- 👉 Bottom shape -->
-      <VImg
-        :src="authV1BottomShape"
-        class="auth-v1-bottom-shape d-none d-sm-block"
-      />
+    <div class="d-flex logo-box mt-2 mt-md-0">
+      <RouterLink to="/login">
+        <img :src="logo" width="121" height="40" />
+      </RouterLink>
+    </div>
 
-      <VAlert
-        v-if="advisor.show"
-        :type="advisor.type"
-        class="mb-6"
-      >
-        {{ advisor.message }}
-      </VAlert>
+    <div class="d-flex flex-column align-center text-center box-2fa gap-3">
+       <img :src="qrCodeDataUrl"  width="200" height="200" class="mx-auto"/>
+         
+       <h2 class="login-title">
+        Skanna QR-koden
+       </h2>
+      <p class="letter">
+        Alternativt kan du använda koden <strong>{{ token }}</strong>.
+      </p>
 
-      <div class="d-block">
-        <!-- 👉 Auth card -->
-        <VCard
-          class="auth-card auth pa-4"
-          max-width="448"
-        >
-          <VCardText class="px-2 px-md-6 pb-5">
-              <span class="d-flex justify-center"> 
-                  <img :src="qrCodeDataUrl"/>
-              </span>
-            <h5 class="text-h5 font-weight-semibold mb-1">
-              Scan the QR code 💬
-            </h5>
-            <p class="mb-1 letter">
-              Alternatively, you can use the code <strong>{{ token }}</strong>.
-            </p>
-          </VCardText>
+      <VForm
+        class="auth-form d-flex flex-column gap-6"
+        @submit.prevent="onSubmit">
+        <VRow>
+          <!-- email -->
+          <VCol cols="12">
+            <AppOtpInput @updateOtp="handleOtp"/>
+          </VCol>
 
-          <VCardText class="px-2 px-md-6">
-            <VForm
-              @submit.prevent="onSubmit">
-              <VRow>
-                <!-- email -->
-                <VCol cols="12">
-                  <AppOtpInput @updateOtp="handleOtp"/>
-                </VCol>
-
-                <!-- reset password -->
-                <VCol cols="12">
-                  <VBtn
-                    block
-                    type="submit"
-                  >
-                    Send
-                    <VProgressCircular
-                      v-if="load"
-                      indeterminate
-                      color="#fff"
-                    />
-                  </VBtn>
-                </VCol>
-              </VRow>
-            </VForm>
-          </VCardText>
-        </VCard>
-      </div>
+          <!-- reset password -->
+          <VCol cols="12">
+            <VBtn
+              block
+              type="submit"
+              class="btn-gradient w-100"
+            >
+              Send
+              <VProgressCircular
+                v-if="load"
+                indeterminate
+                color="#fff"
+              />
+            </VBtn>
+          </VCol>
+        </VRow>
+      </VForm>
     </div>
   </div>
 </template>

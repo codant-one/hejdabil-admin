@@ -111,19 +111,25 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <div class="d-flex flex-column">
+  <div class="v-application__wrap login-page d-flex flex-column">
     <VRow no-gutters>
       <VCol
         cols="12"
         md="6"
-        class="d-flex flex-column flex-row-md align-center justify-center px-6 bg-white"
+        class="d-flex flex-column flex-row-md align-center justify-md-center px-6 bg-white"
       >
         <div class="d-flex logo-box">
-          <img :src="logo" width="121" height="40" />
+          <RouterLink to="/login">
+            <img :src="logo" width="121" height="40" />
+          </RouterLink>
         </div>
         <div class="d-block">
-          <VAlert v-if="alertStore.message" :type="alertStore.type">
-            {{ alertStore.message }}
+          <VAlert 
+            v-if="alertStore.message" 
+            border="start" 
+            :border-color="alertStore.type === 'error' ? 'error' : 'success'"
+            class="mb-5 flex-grow-0">
+            <div v-html="alertStore.message"></div>
           </VAlert>
           <VCardText class="p-0">
             <h2 class="login-title mb-6">Välkommen till din panel!</h2>
@@ -181,6 +187,11 @@ const onSubmit = () => {
 
               <VBtn class="btn-gradient w-100" type="submit">
                 Logga in
+                <VProgressCircular
+                  v-if="load"
+                  indeterminate
+                  color="#fff"
+                />
               </VBtn>
             </VForm>
           </VCardText>
@@ -193,8 +204,13 @@ const onSubmit = () => {
   </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 @use "@core/scss/template/pages/page-auth.scss";
+
+.login-page {
+  background: #fff;
+  min-height: 100vh;
+}
 
 .login-title {
   font-weight: 700;
@@ -215,8 +231,8 @@ const onSubmit = () => {
     position: relative;
     top: auto;
     left: auto;
-    margin-top: 84px;
-    margin-bottom: 41px;
+    margin-top: 32px;
+    margin-bottom: 32px;
   }
 
   .login-title {
@@ -225,8 +241,6 @@ const onSubmit = () => {
   }
 
   .form-field {
-    label {
-    }
     .v-input {
       &.v-text-field {
         min-width: auto;

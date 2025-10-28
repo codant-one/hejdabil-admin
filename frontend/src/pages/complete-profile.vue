@@ -822,7 +822,7 @@ const dataURLtoBlob = (dataURL) => {
             <VWindowItem>
               <div class="d-flex flex-column align-center justify-center">
                 <VBtn
-                  class="upload-avatar-btn"
+                  class="upload-avatar-btn mt-5"
                   @click="$refs.avatarInput.click()"
                   style="padding: 0; min-width: auto"
                 >
@@ -909,7 +909,7 @@ const dataURLtoBlob = (dataURL) => {
 
               <div class="d-flex flex-column align-center justify-center">
                 <VBtn
-                  class="upload-avatar-btn"
+                  class="upload-avatar-btn mt-5"
                   @click="isConfirmChangeLogoVisible = true"
                   style="padding: 0; min-width: auto"
                 >
@@ -1116,7 +1116,7 @@ const dataURLtoBlob = (dataURL) => {
         <template v-else>
           <div class="d-flex flex-column align-center justify-center">
             <VBtn
-              class="upload-avatar-btn"
+              class="upload-avatar-btn mt-5"
               @click="$refs.avatarInput.click()"
               style="padding: 0; min-width: auto"
             >
@@ -1142,7 +1142,7 @@ const dataURLtoBlob = (dataURL) => {
           </p>
 
           <!-- 👉 Upload Photo -->
-          <div class="d-flex flex-column justify-center gap-4 mt-4">
+          <div class="d-none flex-column justify-center gap-4 mt-4">
             <div class="d-flex flex-wrap gap-2">
               <VFileInput
                 label="Avatar"
