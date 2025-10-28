@@ -130,6 +130,8 @@ const validateTab1 = async () => {
 
   if (form.value.swish) results.push(phoneValidator(form.value.swish));
 
+  results.push(requiredValidator(acceptPrivacy.value));
+
   const isValid = results.every((r) => r === true);
   return isValid;
 };
@@ -174,6 +176,9 @@ const form = ref({
   swish: "",
   vat: "",
 });
+
+// Nuevo: checkbox required
+const acceptPrivacy = ref(false);
 
 const tabs = [
   {
@@ -777,12 +782,11 @@ const dataURLtoBlob = (dataURL) => {
     </VCol>
 
     <VCol cols="12" md="6" class="d-flex flex-column pa-md-8 pa-0 bg-white">
-
       <div class="sticky-form">
         <div class="black-logo-box">
           <img :src="logo_gradient" width="121" height="40" />
         </div>
-       
+
         <div
           class="d-flex flex-column align-center justify-center pa-md-0 px-10 py-6 pb-md-8 profile-title-box"
         >
@@ -795,17 +799,17 @@ const dataURLtoBlob = (dataURL) => {
           <h2 class="profile-title">Kom igång - fyll i din profil</h2>
         </div>
         <VTabs
-            v-if="role === 'Supplier' || role === 'User'"
-            v-model="controlledTab"
-            grow
-            :show-arrows="false"
-            class="ma-md-0 mx-6 profile-tabs"
-          >
-            <VTab v-for="tab in tabs" :key="tab.icon">
-              <VIcon size="24" :icon="tab.icon" />
-              <span>{{ tab.title }}</span>
-            </VTab>
-          </VTabs>
+          v-if="role === 'Supplier' || role === 'User'"
+          v-model="controlledTab"
+          grow
+          :show-arrows="false"
+          class="ma-md-0 mx-6 profile-tabs"
+        >
+          <VTab v-for="tab in tabs" :key="tab.icon">
+            <VIcon size="24" :icon="tab.icon" />
+            <span>{{ tab.title }}</span>
+          </VTab>
+        </VTabs>
       </div>
 
       <VForm
@@ -850,17 +854,11 @@ const dataURLtoBlob = (dataURL) => {
               </p>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Namn</label>
-                <VTextField 
-                  v-model="name" 
-                  :rules="[requiredValidator]" 
-                />
+                <VTextField v-model="name" :rules="[requiredValidator]" />
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Efternamn</label>
-                <VTextField 
-                  v-model="last_name"  
-                  :rules="[requiredValidator]"
-                />
+                <VTextField v-model="last_name" :rules="[requiredValidator]" />
               </div>
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>E-post</label>
@@ -891,7 +889,6 @@ const dataURLtoBlob = (dataURL) => {
             </VWindowItem>
 
             <VWindowItem>
-
               <div class="d-flex flex-column align-center justify-center">
                 <VBtn
                   class="upload-avatar-btn"
@@ -916,7 +913,10 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
 
-              <p class="text-center mt-4 label-upload-input"   v-if="role === 'Supplier'">
+              <p
+                class="text-center mt-4 label-upload-input"
+                v-if="role === 'Supplier'"
+              >
                 Ladda upp ditt företags logotyp
               </p>
 
@@ -1035,6 +1035,12 @@ const dataURLtoBlob = (dataURL) => {
                 class="form-field form-field-checkbox d-flex align-center gap-2 mb-6"
               >
                 <VCheckbox
+                  v-model="acceptPrivacy"
+                  :rules="[
+                    (v) =>
+                      !!v ||
+                      'Du måste godkänna sekretesspolicyn och databehandlingen.',
+                  ]"
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
                 />
@@ -1071,7 +1077,7 @@ const dataURLtoBlob = (dataURL) => {
             </VBtn>
           </div>
         </template>
-        <template v-else>          
+        <template v-else>
           <div class="d-flex flex-column align-center justify-center">
             <VBtn
               class="upload-avatar-btn"
@@ -1113,22 +1119,16 @@ const dataURLtoBlob = (dataURL) => {
             </div>
             <p class="text-body-1 mb-0">Tillåtna format JPG, GIF, PNG.</p>
           </div>
-          
+
           <div class="form-field d-flex flex-column gap-4 mb-6">
             <label>Namn</label>
-            <VTextField 
-              v-model="name" 
-              :rules="[requiredValidator]" 
-            />
+            <VTextField v-model="name" :rules="[requiredValidator]" />
           </div>
           <div class="form-field d-flex flex-column gap-4 mb-6">
             <label>Efternamn</label>
-            <VTextField 
-              v-model="last_name" 
-              :rules="[requiredValidator]" 
-              />
+            <VTextField v-model="last_name" :rules="[requiredValidator]" />
           </div>
-          
+
           <div class="form-field d-flex flex-column gap-4 mb-6">
             <label>E-post</label>
             <VTextField
@@ -1289,33 +1289,35 @@ const dataURLtoBlob = (dataURL) => {
   <!-- ======================================================= -->
   <!-- DIÁLOGO PARA DIBUJAR LA FIRMA DEL SUPPLIER -->
   <!-- ======================================================= -->
-  <VDialog v-model="isSignaturePadDialogVisible" persistent max-width="500">
+  <VDialog
+    v-model="isSignaturePadDialogVisible"
+    persistent
+    class="signature-dialog"
+  >
     <VCard>
-      <VCardTitle>Rita din signatur</VCardTitle>
-      <VCardText>
+      <VCardText class="without-padding v-card-custom-title">
+        <VIcon icon="custom-signature" class="mr-4" size="32"></VIcon>Rita din
+        signatur
+      </VCardText>
+      <VCardText class="without-padding">
         <div class="signature-pad-wrapper">
           <canvas ref="signaturePadCanvas"></canvas>
         </div>
       </VCardText>
-      <VCardActions>
-        <VSpacer />
-        <VBtn
-          color="secondary"
-          variant="tonal"
-          @click="isSignaturePadDialogVisible = false"
-          >Avbryt</VBtn
-        >
-        <VBtn @click="clearSignaturePad">Rensa</VBtn>
-        <VBtn color="primary" @click="saveSignatureFromPad"
+      <VCardText class="d-flex justify-end gap-4 btn-box">
+        <VBtn class="btn-ghost" @click="isSignaturePadDialogVisible = false">
+          Avbryt
+        </VBtn>
+        <VBtn class="btn-light" @click="clearSignaturePad">Rensa</VBtn>
+        <VBtn class="btn-gradient" @click="saveSignatureFromPad"
           >Acceptera & Spara</VBtn
         >
-      </VCardActions>
+      </VCardText>
     </VCard>
   </VDialog>
 </template>
 
 <style lang="scss">
-
 .individual-scroll {
   overflow-y: auto;
   height: 100vh;
@@ -1552,14 +1554,14 @@ const dataURLtoBlob = (dataURL) => {
 }
 
 .signature-pad-wrapper {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 4px;
-  background-color: #fff; /* Fondo blanco para el lienzo */
+  border: 1px solid #e7e7e7;
+  border-radius: 8px;
+  background-color: #f6f6f6;
 }
 
 .signature-pad-wrapper canvas {
   width: 100%;
-  height: 200px;
+  height: 232px;
   display: block;
   cursor: crosshair;
 }
@@ -1575,7 +1577,7 @@ const dataURLtoBlob = (dataURL) => {
       }
     }
   }
-  
+
   .cropper-container {
     height: 250px;
   }
