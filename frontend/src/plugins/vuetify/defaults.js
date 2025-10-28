@@ -32,7 +32,7 @@ export default {
     color: 'primary',
     density: 'comfortable',
     VSlideGroup: {
-      showArrows: true,
+      showArrows: 'always',
     },
   },
   VTooltip: {

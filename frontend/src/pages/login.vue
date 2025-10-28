@@ -128,7 +128,7 @@ const onSubmit = () => {
             v-if="alertStore.message" 
             border="start" 
             :border-color="alertStore.type === 'error' ? 'error' : 'success'"
-            class="mb-5 flex-grow-0">
+             class="mb-5 flex-grow-0">
             <div v-html="alertStore.message"></div>
           </VAlert>
           <VCardText class="p-0">
@@ -245,9 +245,20 @@ const onSubmit = () => {
       &.v-text-field {
         min-width: auto;
         max-width: 345px;
+
+        .v-field {
+          height: 48px;
+        }
       }
+
+      &.v-textarea {
+        .v-field {
+          --v-textarea-control-height: var(--v-input-control-height) !important;
+          height: auto !important;
+        }
+      }
+
       .v-field {
-        height: 48px;
         border-radius: 8px;
         background-color: #f6f6f6;
         border: solid 1px #e7e7e7;

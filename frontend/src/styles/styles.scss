@@ -841,9 +841,19 @@ body {
   .v-input {
     &.v-text-field {
       min-width: 422px;
+      .v-field {
+        height: 48px;
+      }
     }
+
+    &.v-textarea {
+      .v-field {
+        --v-textarea-control-height: var(--v-input-control-height) !important;
+        height: auto !important;
+      }
+    }
+
     .v-field {
-      height: 48px;
       border-radius: 8px;
       background-color: #f6f6f6;
       border: solid 1px #e7e7e7;
@@ -903,9 +913,19 @@ body {
       &.v-text-field {
         min-width: auto;
         max-width: 345px;
+        .v-field {
+          height: 48px;
+        }
       }
+
+      &.v-textarea {
+        .v-field {
+          --v-textarea-control-height: var(--v-input-control-height) !important;
+          height: auto !important;
+        }
+      }
+
       .v-field {
-        height: 48px;
         border-radius: 8px;
         background-color: #f6f6f6;
         border: solid 1px #e7e7e7;
@@ -927,7 +947,7 @@ body {
     }
   }
 
-  .form-field-checkbox {
+  -checkbox {
     label {
       font-weight: 400;
       font-size: 16px;

@@ -36,6 +36,10 @@ const refNav = ref();
 const { width: windowWidth } = useWindowSize();
 const titleAPP = ref(import.meta.env.VITE_APP_TITLE);
 
+// Provide hover state so children can inject it
+const isHovered = ref(false)
+provide(injectionKeyIsVerticalNavHovered, isHovered)
+
 const {
   isVerticalNavCollapsed: isCollapsed,
   isLessThanOverlayNavBreakpoint,
@@ -43,7 +47,7 @@ const {
   isAppRtl,
 } = useLayouts();
 
-const hideTitleAndIcon = isVerticalNavMini(windowWidth);
+const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered);
 
 // const wasCollapsed = ref(isCollapsed.value);
 
@@ -96,8 +100,11 @@ const closeAll = () => {
         'overlay-nav': isLessThanOverlayNavBreakpoint(windowWidth),
         visible: isOverlayNavActive,
         scrolled: isVerticalNavScrolled,
+        hovered: isHovered,
       },
     ]"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
     <!-- 👉 Header -->
     <div class="nav-header-logo">
