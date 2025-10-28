@@ -760,38 +760,57 @@ const dataURLtoBlob = (dataURL) => {
     </VDialog>
 
     <VCol cols="12" md="6" class="d-none d-lg-flex p-0">
-      <img :src="background" class="w-100 login-background" />
-      <div class="d-flex logo-box">
-        <img :src="logo_gradient" width="121" height="40" />
+      <div
+        style="
+          position: sticky;
+          top: 0;
+          height: 100vh;
+          width: 100%;
+          overflow: hidden;
+        "
+      >
+        <img :src="background" class="w-100 login-background" />
+        <div class="d-flex logo-box">
+          <img :src="logo_gradient" width="121" height="40" />
+        </div>
       </div>
     </VCol>
 
-    <VCol cols="12" md="6" class="d-flex flex-column pa-8 bg-white">
+    <VCol cols="12" md="6" class="d-flex flex-column pa-md-8 pa-0 bg-white">
       <div class="black-logo-box">
         <img :src="logo_gradient" width="121" height="40" />
       </div>
 
-      <div class="d-flex flex-column align-center">
+      <div
+        class="d-flex flex-column align-center pa-md-0 pa-6 pb-md-8 profile-title-box"
+      >
         <VIcon
           icon="custom-f-upload-picture"
           size="88"
           class="mx-auto mb-6"
         ></VIcon>
+
+        <h2 class="profile-title">Kom igång - fyll i din profil</h2>
       </div>
 
-      <h2 class="profile-title mb-8">Kom igång - fyll i din profil</h2>
-
-      <VTabs v-model="controlledTab" grow>
+      <VTabs
+        v-model="controlledTab"
+        grow
+        show-arrows="false"
+        class="ma-md-0 mx-6 profile-tabs"
+      >
         <VTab v-for="tab in tabs" :key="tab.icon">
           <VIcon size="24" :icon="tab.icon" />
           <span>{{ tab.title }}</span>
         </VTab>
       </VTabs>
 
-      <VForm ref="refVForm" @submit.prevent="handleSubmit" class="auth-form mx-auto">
-        <template
-          v-if="role === 'Supplier' || role === 'User' || role === 'SuperAdmin'"
-        >
+      <VForm
+        ref="refVForm"
+        @submit.prevent="handleSubmit"
+        class="auth-form mx-auto"
+      >
+        <template v-if="role === 'Supplier' || role === 'User'">
           <VAlert v-if="alert.show" :type="alert.type">
             {{ alert.message }}
           </VAlert>
@@ -810,7 +829,7 @@ const dataURLtoBlob = (dataURL) => {
                   <VAvatar class="avatar-box" size="128">
                     <VImg v-if="avatar" :src="avatar" />
                     <template v-else>
-                      <VIcon icon="custom-upload" size="40" />
+                      <VIcon icon="custom-upload" color="#1C2925" size="40" />
                     </template>
                   </VAvatar>
                 </VBtn>
@@ -824,7 +843,9 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
 
-              <p class="text-center mt-2 mb-0">Ladda upp ett foto</p>
+              <p class="text-center mt-4 mb-4 label-upload-input">
+                Ladda upp ett foto
+              </p>
 
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Namn</label>
@@ -864,7 +885,7 @@ const dataURLtoBlob = (dataURL) => {
             </VWindowItem>
 
             <VWindowItem>
-              <VCol cols="12" md="12" class="d-flex col-logo">
+              <!-- <VCol cols="12" md="12" class="d-flex col-logo">
                 <div class="logo-store">
                   <VImg
                     v-if="role === 'User'"
@@ -884,8 +905,31 @@ const dataURLtoBlob = (dataURL) => {
                     <VImg :src="logo" class="logo-store-img" contain />
                   </VBadge>
                 </div>
-              </VCol>
-              <div cols="12" md="12" class="py-0 info-logo-store">
+              </VCol> -->
+
+              <div class="d-flex flex-column align-center justify-center">
+                <VBtn
+                  class="upload-avatar-btn"
+                  @click="isConfirmChangeLogoVisible = true"
+                  style="padding: 0; min-width: auto"
+                >
+                  <VAvatar class="avatar-box" size="128">
+                    <VImg v-if="logo" :src="logo" />
+                    <template v-else>
+                      <VIcon icon="custom-upload" color="#1C2925" size="40" />
+                    </template>
+                  </VAvatar>
+                </VBtn>
+
+                <input
+                  ref="avatarInput"
+                  type="file"
+                  accept="image/png, image/jpeg, image/bmp"
+                  @change="onImageSelected"
+                  style="display: none"
+                />
+              </div>
+              <!-- <div cols="12" md="12" class="py-0 info-logo-store">
                 <VCardItem class="info-store">
                   <span class="store-name pb-3">{{ form.company }}</span>
                 </VCardItem>
@@ -912,7 +956,11 @@ const dataURLtoBlob = (dataURL) => {
                     >
                   </span>
                 </VCardItem>
-              </div>
+              </div> -->
+
+              <p class="text-center mt-4 mb-4 label-upload-input">
+                Ladda upp ditt företags logotyp
+              </p>
 
               <div class="form-field d-flex flex-column gap-4 mb-6">
                 <label>Företagsnamn</label>
@@ -1026,31 +1074,32 @@ const dataURLtoBlob = (dataURL) => {
                 <VTextField :disabled="role === 'User'" v-model="form.vat" />
               </div>
               <div
+                class="form-field form-field-checkbox d-flex align-center gap-2 mb-6"
+              >
+                <VCheckbox
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+                />
+                <label
+                  >Jag godkänner sekretesspolicyn och databehandlingen.</label
+                >
+              </div>
+              <div
                 class="form-field d-flex flex-column gap-4 mb-6"
                 v-if="role !== 'User'"
               >
                 <div class="d-flex align-center gap-4">
-                  <VImg
-                    :src="signature"
-                    width="200"
-                    height="112.5"
-                    aspect-ratio="16/9"
-                    class="border rounded"
-                  />
-                  <div class="d-flex flex-column gap-2">
+                  <VImg :src="signature" class="signature-image" />
+                  <div class="d-flex flex-column gap-2 flex-1">
                     <VBtn
-                      color="primary"
+                      class="btn-light"
                       @click="isConfirmChangeSignatureVisible = true"
                     >
-                      <VIcon icon="tabler-upload" class="mr-2" />
+                      <VIcon icon="custom-upload" size="24" />
                       Ladda upp fil
                     </VBtn>
-                    <VBtn
-                      color="secondary"
-                      variant="tonal"
-                      @click="openSignaturePadDialog"
-                    >
-                      <VIcon icon="tabler-pencil" class="mr-2" />
+                    <VBtn class="btn-ghost" @click="openSignaturePadDialog">
+                      <VIcon icon="custom-pencil" size="24" />
                       Rita signatur
                     </VBtn>
                   </div>
@@ -1074,7 +1123,7 @@ const dataURLtoBlob = (dataURL) => {
               <VAvatar class="avatar-box" size="128">
                 <VImg v-if="avatar" :src="avatar" />
                 <template v-else>
-                  <VIcon icon="custom-upload" size="40" />
+                  <VIcon icon="custom-upload" color="#1C2925" size="40" />
                 </template>
               </VAvatar>
             </VBtn>
@@ -1087,6 +1136,10 @@ const dataURLtoBlob = (dataURL) => {
               style="display: none"
             />
           </div>
+
+          <p class="text-center mt-4 mb-4 label-upload-input">
+            Ladda upp ett foto
+          </p>
 
           <!-- 👉 Upload Photo -->
           <div class="d-flex flex-column justify-center gap-4 mt-4">
@@ -1147,7 +1200,11 @@ const dataURLtoBlob = (dataURL) => {
   </VRow>
 
   <!-- 👉 Confirm change logo -->
-  <VDialog v-model="isConfirmChangeLogoVisible" persistent class="v-dialog-sm">
+  <VDialog
+    v-model="isConfirmChangeLogoVisible"
+    persistent
+    class="signature-dialog"
+  >
     <!-- Dialog close btn -->
 
     <DialogCloseBtn
@@ -1155,12 +1212,11 @@ const dataURLtoBlob = (dataURL) => {
     />
 
     <!-- Dialog Content -->
-    <VCard title="Byt logotyp">
-      <VDivider class="mt-4" />
-      <VCardText>
-        Logotypen du väljer kommer att visas på din faktura och dina kontrakt.
+    <VCard>
+      <VCardText class="without-padding v-card-custom-title">
+        Byt logotyp
       </VCardText>
-      <VCardText class="d-flex flex-column gap-2">
+      <VCardText class="d-flex flex-column gap-2 without-padding">
         <VRow>
           <VCol cols="12" md="12">
             <Cropper
@@ -1177,28 +1233,25 @@ const dataURLtoBlob = (dataURL) => {
             />
           </VCol>
           <VCol cols="12" md="12">
-            <VFileInput
-              v-model="filename"
-              label="Logotyp"
-              class="mb-2"
-              accept="image/png, image/jpeg, image/bmp, image/webp"
-              prepend-icon="tabler-camera"
-              @change="onLogoSelected"
-              @click:clear="resetLogo"
-            />
+            <div class="form-field d-flex flex-column gap-4 mb-2">
+              <label>Logotyp</label>
+              <VFileInput
+                v-model="filename"
+                accept="image/png, image/jpeg, image/bmp, image/webp"
+                @change="onLogoSelected"
+                @click:clear="resetLogo"
+                prepend-icon=""
+              />
+            </div>
           </VCol>
         </VRow>
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
-        <VBtn
-          color="secondary"
-          variant="tonal"
-          @click="isConfirmChangeLogoVisible = false"
-        >
+      <VCardText class="d-flex justify-end gap-4 btn-box">
+        <VBtn class="btn-ghost" @click="isConfirmChangeLogoVisible = false">
           Avbryt
         </VBtn>
-        <VBtn @click="cropImage"> Spara </VBtn>
+        <VBtn class="btn-gradient" @click="cropImage">Acceptera & Spara</VBtn>
       </VCardText>
     </VCard>
   </VDialog>
@@ -1207,7 +1260,7 @@ const dataURLtoBlob = (dataURL) => {
   <VDialog
     v-model="isConfirmChangeSignatureVisible"
     persistent
-    class="v-dialog-sm"
+    class="signature-dialog"
   >
     <!-- Dialog close btn -->
 
@@ -1216,14 +1269,13 @@ const dataURLtoBlob = (dataURL) => {
         isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible
       "
     />
-
     <!-- Dialog Content -->
-    <VCard title="Byt firma">
-      <VDivider class="mt-4" />
-      <VCardText>
-        Firma du väljer kommer att visas på dina kontrakt.
+    <VCard>
+      <VCardText class="without-padding v-card-custom-title">
+        <VIcon icon="custom-signature" class="mr-4" size="32"></VIcon>Rita din
+        signatur
       </VCardText>
-      <VCardText class="d-flex flex-column gap-2">
+      <VCardText class="d-flex flex-column gap-2 without-padding">
         <VRow>
           <VCol cols="12" md="12">
             <Cropper
@@ -1239,28 +1291,32 @@ const dataURLtoBlob = (dataURL) => {
             />
           </VCol>
           <VCol cols="12" md="12">
-            <VFileInput
-              v-model="signatureFilename"
-              label="Firma"
-              class="mb-2"
-              accept="image/png, image/jpeg, image/bmp, image/webp"
-              prepend-icon="tabler-camera"
-              @change="onSignatureImageSelected"
-              @click:clear="resetSignature"
-            />
+            <div class="form-field d-flex flex-column gap-4">
+              <label>Firm</label>
+              <VFileInput
+                v-model="signatureFilename"
+                class="mb-2"
+                accept="image/png, image/jpeg, image/bmp, image/webp"
+                prepend-icon=""
+                @change="onSignatureImageSelected"
+                @click:clear="resetSignature"
+              />
+            </div>
           </VCol>
         </VRow>
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
+      <VCardText class="d-flex justify-end gap-4 btn-box">
         <VBtn
-          color="secondary"
-          variant="tonal"
+          class="btn-ghost"
           @click="isConfirmChangeSignatureVisible = false"
         >
           Avbryt
         </VBtn>
-        <VBtn @click="cropSignatureImage"> Spara </VBtn>
+        <VBtn class="btn-light">Rensa</VBtn>
+        <VBtn class="btn-gradient" @click="cropSignatureImage"
+          >Acceptera & Spara</VBtn
+        >
       </VCardText>
     </VCard>
   </VDialog>
@@ -1321,17 +1377,127 @@ const dataURLtoBlob = (dataURL) => {
   margin: 0;
 }
 
+@media (max-width: 991px) {
+  .profile-title-box {
+    flex-direction: row !important;
+    gap: 24px !important;
+    padding-bottom: 16px !important;
+
+    .v-icon {
+      margin: 0 !important;
+      flex: none !important;
+    }
+    .profile-title {
+      font-weight: 700;
+      font-size: 32px;
+      line-height: 100%;
+      text-align: left;
+    }
+  }
+}
+
 .profile-title {
   font-weight: 700;
-  font-style: Bold;
   font-size: 32px;
   line-height: 100%;
   text-align: center;
   color: #454545;
 }
 
+.label-upload-input {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #878787;
+}
+
 .profile-tabs.v-tabs.v-tabs--horizontal:not(.v-tabs-pill) .v-btn {
   min-width: 50% !important;
+}
+
+.signature-image {
+  flex: 1 1;
+  width: 200px;
+  height: 104px;
+  border-radius: 8px;
+  border: solid 1px #e7e7e7;
+  background-color: #f6f6f6;
+}
+
+.v-tabs.profile-tabs {
+  .v-btn {
+    .v-btn__content {
+      font-size: 14px !important;
+      color: #454545;
+    }
+  }
+}
+
+@media (max-width: 991px) {
+  .auth-form {
+    margin-bottom: 32px !important;
+  }
+
+  .v-tabs.profile-tabs {
+    .v-icon {
+      display: none !important;
+    }
+    .v-btn {
+      .v-btn__content {
+        white-space: break-spaces;
+      }
+    }
+  }
+}
+
+.signature-dialog {
+  max-width: 500px;
+  border-radius: 16px;
+  gap: 32px;
+  padding: 24px;
+
+  .v-overlay__content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0;
+
+    .v-dialog-close-btn {
+      top: 16px !important;
+      right: 24px;
+      transform: none !important;
+      height: 16px !important;
+      width: 16px !important;
+      padding: 0px !important;
+    }
+
+    .v-card {
+      .v-card-text {
+        padding: 24px 24px 24px !important;
+
+        &.without-padding {
+          padding: 24px 24px 0px !important;
+        }
+
+        &.v-card-custom-title {
+          font-weight: 600;
+          font-size: 24px;
+          line-height: 100%;
+          color: #5d5d5d;
+
+          .v-icon {
+          }
+        }
+
+        @media (max-width: 991px) {
+          &.btn-box {
+            flex-direction: column-reverse;
+            gap: 8px;
+          }
+        }
+      }
+    }
+  }
 }
 
 .justify-buttons {
@@ -1357,10 +1523,11 @@ const dataURLtoBlob = (dataURL) => {
 
 .cropper-container {
   width: 100%;
-  height: 250px;
-  background-color: #f5f5f5;
+  height: 232px;
+  background-color: #f6f6f6;
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid #e7e7e7;
 }
 
 .cropper-preview {
