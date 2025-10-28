@@ -103,8 +103,6 @@ const closeAll = () => {
         hovered: isHovered,
       },
     ]"
-    @mouseenter="isHovered = true"
-    @mouseleave="isHovered = false"
   >
     <!-- 👉 Header -->
     <div class="nav-header-logo">
