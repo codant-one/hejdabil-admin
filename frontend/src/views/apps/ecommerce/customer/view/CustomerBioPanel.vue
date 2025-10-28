@@ -500,6 +500,7 @@ const onSubmit = () => {
   gap: 16px;
   padding: 24px;
   border: 1px solid #e7e7e7;
+  width: 100%;
 
   .v-list {
     flex: 1 1;
@@ -557,7 +558,6 @@ const onSubmit = () => {
     .third-bio {
       flex-basis: 100%;
       width: 100%;
-      margin-top: 16px;
 
       .v-list-item-subtitle {
         font-size: 12px;

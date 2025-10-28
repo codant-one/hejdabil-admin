@@ -20,19 +20,22 @@ export default [
                 title: 'I Lager', 
                 to: 'dashboard-admin-stock', 
                 action: 'view', 
-                subject: 'stock', 
+                subject: 'stock',
+                icon: {icon:'custom-lager'}, 
             },
                 { 
                 title: 'Sålda Fordon', 
                 to: 'dashboard-admin-sold', 
                 action: 'view', 
                 subject: 'sold', 
+                icon: {icon: 'custom-sold'},
             },
                 { 
                 title: 'Mina Värderingar', 
                 to: 'dashboard-admin-notes', 
                 action: 'view', 
-                subject: 'notes', 
+                subject: 'notes',
+                icon: {icon: 'custom-cash'}, 
             }
         ]
     },
