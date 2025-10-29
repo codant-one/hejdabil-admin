@@ -15,11 +15,15 @@ import fakturorIcon from "@/assets/images/icons/figma/fakturor.svg";
 import receiptDeclinedIcon from "@/assets/images/icons/figma/receiptDeclined.svg";
 import deleteReceiptIcon from "@/assets/images/icons/figma/deleteReceipt.svg";
 
+defineProps({
+  id: [String, Number],
+});
+
 const route = useRoute();
 const clientsStores = useClientsStores();
 
 const client = ref(null);
-const online = ref(null);
+const sectionEl = ref(null)
 
 const isRequestOngoing = ref(true);
 
@@ -118,81 +122,69 @@ const update = (clientData) => {
     };
   }, 3000);
 };
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value
+  if (!el) return
+
+  const rect = el.getBoundingClientRect()
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25)
+  el.style.minHeight = `${remaining}px`
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport()
+  window.addEventListener('resize', resizeSectionToRemainingViewport)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', resizeSectionToRemainingViewport)
+})
 </script>
 
 <template>
-  <VCard class="client-slug" title="">
-    <VCardText
-      class="d-flex flex-column pa-4 gap-4"
-      :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
-    >
-      <CustomerBioPanel
-        :customer-data="client"
-        :is-supplier="false"
-        @update="update"
-      />
-      <div class="w-100 d-block d-md-none">Svep för att se mer</div>
-      <div class="d-flex gap-4 billing-items">
-        <div
-          v-for="item in cardItems"
-          class="billing-item"
-          :class="item.bgCustomColor"
-        >
-          <img :src="item.icon" alt="icon" style="width: 24px; height: 24px" />
-          <div class="billing-item-title">{{ item.title }}</div>
-          <div class="billing-item-text">{{ item.value }}</div>
-        </div>
-      </div>
-      <CustomerBillingTable
-        :client_id="Number(route.params.id)"
-        @alert="showAlert"
-        @loading="showLoading"
-      />
-    </VCardText>
-  </VCard>
-  <div>
-    <VRow>
-      <VDialog v-model="isRequestOngoing" width="auto" persistent>
-        <VProgressCircular indeterminate color="primary" class="mb-0" />
-      </VDialog>
+  <section class="page-section" ref="sectionEl">
+    <VDialog v-model="isRequestOngoing" width="auto" persistent>
+      <VProgressCircular indeterminate color="primary" class="mb-0" />
+    </VDialog>
 
-      <VCol cols="12">
-        <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
-          {{ advisor.message }}
-        </VAlert>
-        <Toaster />
-      </VCol>
-    </VRow>
+    <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
+      {{ advisor.message }}
+    </VAlert>
+      
+    <Toaster />
 
-    <!-- 👉 Header  -->
-    <div
-      v-if="client"
-      class="-block d-md-flex justify-space-between align-center flex-wrap gap-y-4 mb-6"
-    >
-      <div>
-        <div>
-          <span class="text-body-1" v-if="online">
-            {{
-              format(parseISO(online), "MMMM d, yyyy, H:mm", {
-                locale: es,
-              }).replace(/(^|\s)\S/g, (char) => char.toUpperCase())
-            }}
-            <span class="text-xs"> (Sista anslutningen) </span>
-          </span>
+    <VCard class="client-slug rounded-0 card-fill">
+      <VCardText
+        class="d-flex flex-column pa-4 gap-4"
+        :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
+      >
+        <CustomerBioPanel
+          v-if="client && id"
+          :customer-data="client"
+          :is-supplier="false"
+          @update="update"
+        />
+        <div class="w-100 d-block d-md-none">Svep för att se mer</div>
+        <div class="d-flex gap-4 billing-items">
+          <div
+            v-for="item in cardItems"
+            class="billing-item"
+            :class="item.bgCustomColor"
+          >
+            <img :src="item.icon" alt="icon" style="width: 24px; height: 24px" />
+            <div class="billing-item-title">{{ item.title }}</div>
+            <div class="billing-item-text">{{ item.value }}</div>
+          </div>
         </div>
-      </div>
-      <!-- <div class="d-flex gap-4">
-        <VBtn
-          variant="tonal"
-          color="secondary"
-          class="mb-2 w-100 w-md-auto"
-          :to="{ name: 'dashboard-admin-clients' }"
-        >
-          Tillbaka
-        </VBtn>
-      </div> -->
-    </div>
-  </div>
+        <CustomerBillingTable
+          :client_id="Number(route.params.id)"
+          @alert="showAlert"
+          @loading="showLoading"
+        />
+      </VCardText>
+    </VCard>
+  </section>
 </template>
 
 <route lang="yaml">
@@ -202,8 +194,25 @@ meta:
 </route>
 
 <style lang="scss" scoped>
+
+.page-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-fill {
+  flex: 1 1 auto;
+  padding-bottom: 0;
+
+  @media (max-width: 768px) {
+    padding-bottom: 60px;
+  }
+}
+
 .client-slug {
-  border-radius: 0px !important;
+  @media (max-width: 768px) {
+    border-radius: 0px !important;
+  }
 }
 
 .billing-items {

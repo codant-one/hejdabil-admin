@@ -114,7 +114,7 @@
 
       > :first-child {
         @extend %vertical-nav-item;
-        height: 48px;
+        height: 44px;
         padding: 8px;
         margin: 0 20px !important;
         gap: 8px;
@@ -166,6 +166,10 @@
         // Adds before psudo element to style hover state
         @include mixins.before-pseudo;
 
+        svg {
+          width: 22px !important;
+          height: 22px !important;
+        }
         // Adds vuetify states
 
         &:not(.router-link-active, .router-link-exact-active) {
@@ -363,6 +367,16 @@
 
       &:not(.router-link-active, .router-link-exact-active) {
         @include vuetifyStates.states($active: false);
+      }
+
+      &.help-button {
+        border: 1px solid #6e9383;
+        border-radius: 56px;
+
+        &:hover {
+          border: 1px solid #416054;
+          background-color: transparent;
+        }
       }
     }
   }

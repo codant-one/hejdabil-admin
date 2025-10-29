@@ -88,10 +88,10 @@ const { width: windowWidth } = useWindowSize();
       </Transition>
     </RouterView>
 
-    <!--  👉 Footer -->
+    <!--  👉 Footer
     <template #footer>
       <Footer />
-    </template>
+    </template> -->
 
     <!-- 👉 Customizer -->
     <!-- <TheCustomizer /> -->

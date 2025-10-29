@@ -17,7 +17,7 @@ export const config = {
     type: ref(NavbarType.Sticky),
     navbarBlur: ref(true),
   },
-  footer: { type: ref(FooterType.Static) },
+  footer: { type: ref(FooterType.Hidden) },
   verticalNav: {
     isVerticalNavCollapsed: ref(false),
     defaultNavItemIconProps: { icon: 'custom-point' },

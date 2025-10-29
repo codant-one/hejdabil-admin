@@ -66,12 +66,12 @@ const {
       </template>
     </main>
 
-    <!-- 👉 Footer -->
+    <!-- 👉 Footer 
     <footer class="layout-footer">
       <div class="footer-content-container">
         <slot name="footer" />
       </div>
-    </footer>
+    </footer>-->
   </div>
 </template>
 

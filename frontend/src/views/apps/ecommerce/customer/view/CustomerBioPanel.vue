@@ -192,65 +192,46 @@ const onSubmit = () => {
       > -->
 
       <div class="user-bio">
-        <VList class="first-bio">
-          <VListItem>
-            <VListItemTitle>E-post</VListItemTitle>
-            <VListItemSubtitle>
-              {{
-                props.isSupplier
-                  ? props.customerData.user.email
-                  : props.customerData.email
-              }}
-            </VListItemSubtitle>
-          </VListItem>
-          <VListItem>
-            <VListItemTitle>Telefon</VListItemTitle>
-            <VListItemSubtitle>
-              {{
-                props.isSupplier
-                  ? props.customerData.user.user_detail.phone
-                  : props.customerData.phone
-              }}
-            </VListItemSubtitle>
-          </VListItem>
-          <VListItem>
-            <VListItemTitle>Adress</VListItemTitle>
-            <VListItemSubtitle>
-              {{ props.customerData.address }}
-            </VListItemSubtitle>
-          </VListItem>
-        </VList>
-        <VList class="second-bio">
-          <VListItem>
-            <VListItemTitle>Postnummer</VListItemTitle>
-            <VListItemSubtitle>
-              {{ props.customerData.postal_code }}
-            </VListItemSubtitle>
-          </VListItem>
-          <VListItem>
-            <VListItemTitle>Stad</VListItemTitle>
-            <VListItemSubtitle>
-              {{ props.customerData.street }}
-            </VListItemSubtitle>
-          </VListItem>
-          <VListItem>
-            <VListItemTitle>Organisationsnummer</VListItemTitle>
-            <VListItemSubtitle>
-              {{ props.customerData.organization_number }}
-            </VListItemSubtitle>
-          </VListItem>
-        </VList>
-        <VList class="third-bio">
-          <VListItem>
-            <VListItemTitle>Produktbeskrivning</VListItemTitle>
-            <VListItemSubtitle>
-              {{
-                props.customerData.comments ??
-                "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin mattis, nibh ac vulputate pharetra, massa tellus finibus justo, id rhoncus leo ante at nisi. Quisque quis leo maximus, consequat odio ac, vehicula orci. Sed eget dignissim eros. Nam volutpat arcu faucibus elementum scelerisque. Curabitur molestie purus non malesuada vulputate."
-              }}
-            </VListItemSubtitle>
-          </VListItem>
-        </VList>
+        <VRow no-gutters class="user-bio-row w-100">
+          <VCol cols="12" md="4" class="first-bio">
+            <div class="bio-item">
+              <div class="bio-label">E-post</div>
+              <div class="bio-value">
+                {{ props.isSupplier ? props.customerData.user.email : props.customerData.email }}
+              </div>
+            </div>
+            <div class="bio-item">
+              <div class="bio-label">Telefon</div>
+              <div class="bio-value">
+                {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
+              </div>
+            </div>
+            <div class="bio-item">
+              <div class="bio-label">Adress</div>
+              <div class="bio-value">{{ props.customerData.address }}</div>
+            </div>
+          </VCol>
+          <VCol cols="12" md="4" class="second-bio">
+            <div class="bio-item">
+              <div class="bio-label">Postnummer</div>
+              <div class="bio-value">{{ props.customerData.postal_code }}</div>
+            </div>
+            <div class="bio-item">
+              <div class="bio-label">Stad</div>
+              <div class="bio-value">{{ props.customerData.street }}</div>
+            </div>
+            <div class="bio-item">
+              <div class="bio-label">Organisationsnummer</div>
+              <div class="bio-value">{{ props.customerData.organization_number }}</div>
+            </div>
+          </VCol>
+          <VCol cols="12" md="4" class="third-bio">
+            <div class="bio-item">
+              <div class="bio-label">Produktbeskrivning</div>
+              <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
+            </div>
+          </VCol>
+        </VRow>
       </div>
 
       <!-- <div class="d-flex justify-center gap-x-5 mt-6">
@@ -502,29 +483,26 @@ const onSubmit = () => {
   border: 1px solid #e7e7e7;
   width: 100%;
 
-  .v-list {
-    flex: 1 1;
-    padding: 0px;
+  .bio-item {
+    padding: 0;
+    margin-bottom: 16px;
+    line-clamp: initial;
+    -webkit-line-clamp: initial;
+  }
 
-    .v-list-item {
-      padding: 0;
-      margin-bottom: 16px;
-      -webkit-line-clamp: initial;
-    }
+  .bio-label {
+    margin-bottom: 8px;
+    font-weight: 400;
+    font-size: 14px;
+    color: #878787;
+  }
 
-    .v-list-item-title {
-      margin-bottom: 8px;
-      font-weight: 400;
-      font-size: 14px;
-      color: #878787;
-    }
-
-    .v-list-item-subtitle {
-      font-weight: 400;
-      font-size: 14px;
-      color: #454545;
-      -webkit-line-clamp: initial;
-    }
+  .bio-value {
+    font-weight: 400;
+    font-size: 14px;
+    color: #454545;
+    line-clamp: initial;
+    -webkit-line-clamp: initial;
   }
 }
 
@@ -559,7 +537,7 @@ const onSubmit = () => {
       flex-basis: 100%;
       width: 100%;
 
-      .v-list-item-subtitle {
+      .bio-value {
         font-size: 12px;
       }
     }

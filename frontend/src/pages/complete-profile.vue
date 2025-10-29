@@ -1074,6 +1074,11 @@ const dataURLtoBlob = (dataURL) => {
           <div>
             <VBtn type="submit" class="btn-gradient w-100">
               {{ currentTab === 1 ? "Kom igång" : " Nästa" }}
+              <VProgressCircular
+                  v-if="isRequestOngoing"
+                  indeterminate
+                  color="#fff"
+                />
             </VBtn>
           </div>
         </template>
@@ -1157,7 +1162,13 @@ const dataURLtoBlob = (dataURL) => {
           </div>
           <!-- 👉 Form Actions -->
           <div>
-            <VBtn type="submit" class="btn-gradient w-100"> Kom igång </VBtn>
+            <VBtn type="submit" class="btn-gradient w-100"> Kom igång 
+              <VProgressCircular
+                  v-if="isRequestOngoing"
+                  indeterminate
+                  color="#fff"
+                />
+            </VBtn>
           </div>
         </template>
       </VForm>

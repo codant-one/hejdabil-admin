@@ -242,6 +242,8 @@ body .v-btn {
 
   &.btn-white {
     background-color: #fff !important;
+    width: 38px !important;
+    height: 38px !important;
 
     &:hover {
       background-color: #f6f6f6 !important;
@@ -671,6 +673,8 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       padding-left: 16px;
       border-radius: 16px !important;
       background-color: #f6f6f6 !important;
+      border-bottom-left-radius: 16px !important; 
+      border-bottom-right-radius: 16px !important;
 
       .v-expansion-panel__shadow {
         display: none;
@@ -1089,7 +1093,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           height: 56px !important;
           border-bottom: solid 1px #e7e7e7;
           color: #454545 !important;
-          font-size: 15px !important;
+          font-size: 14px !important;
           font-weight: 400 !important;
         }
       }

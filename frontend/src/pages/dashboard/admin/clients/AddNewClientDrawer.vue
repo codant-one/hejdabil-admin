@@ -41,6 +41,7 @@ const comments = ref('')
 const isEdit = ref(false)
 const userData = ref(null)
 const role = ref(null)
+const isRequestOngoing = ref(false)
 
 const getTitle = computed(() => {
   return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
@@ -124,8 +125,11 @@ const onSubmit = () => {
         { data: formData, id: id.value },
         isEdit.value ? "update" : "create"
       );
-
-      closeNavigationDrawer();
+      isRequestOngoing.value = true
+      setTimeout(() => {
+        isRequestOngoing.value = false
+        closeNavigationDrawer();
+      }, 1000)
     }
   });
 };
@@ -257,6 +261,11 @@ const handleDrawerModelValueUpdate = (val) => {
                 </VBtn>
                 <VBtn type="submit" class="btn-gradient">
                   {{ isEdit ? "Uppdatering" : "Lägg till" }}
+                  <VProgressCircular
+                    v-if="isRequestOngoing"
+                    indeterminate
+                    color="#fff"
+                  />
                 </VBtn>
               </VCol>
             </VRow>

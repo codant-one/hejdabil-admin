@@ -98,7 +98,7 @@ export default defineComponent({
         h('div', { class: 'layout-content-wrapper' }, [
           navbar,
           main,
-          footer,
+          //footer,
         ]),
         layoutOverlay,
       ])
@@ -198,7 +198,7 @@ export default defineComponent({
   }
 
   &.layout-vertical-nav-collapsed .nav-link > :first-child {
-    margin: 0 24px !important;
+    margin: 0 26px !important;
   }
 
   // 👉 Content height fixed

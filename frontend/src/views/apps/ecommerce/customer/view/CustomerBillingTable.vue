@@ -265,7 +265,7 @@ const sendMails = async () => {
 
       <VCardText class="d-flex flex-column pa-0 gap-6">
         <div class="d-flex filter-bar">
-          <VTabs v-model="tabBilling" class="billing-tabs" show-arrows="false">
+          <VTabs v-model="tabBilling" class="billing-tabs" :show-arrows="false">
             <VTab value="fakturor">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
