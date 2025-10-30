@@ -226,6 +226,45 @@ body .v-btn {
   &:not(.v-btn--icon).v-btn--size-x-large {
     border-radius: 10px;
   }
+
+  &.btn-custom-notifications {
+    width: 79px !important;
+    min-width: auto !important;
+    height: 48px !important;
+    border-radius: 64px;
+    background-color: #fff !important;
+    padding-right: 16px;
+    padding-left: 16px;
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content {
+      gap: 8px;
+
+      font-weight: 500;
+      font-size: 15px;
+      color: #1c2925 !important;
+      letter-spacing: 0;
+
+      .v-icon {
+        width: 20px !important;
+      }
+    }
+
+    &:hover {
+      background-color: #f6f6f6 !important;
+    }
+
+    &:active {
+      background-color: #454545 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
+  }
 }
 
 // 👉 Badge

@@ -9,6 +9,7 @@ import UserProfile from '@/layouts/components/UserProfile.vue'
 
 // @layouts plugin
 import { VerticalNavLayout } from '@layouts'
+import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig()
 const { width: windowWidth } = useWindowSize()
@@ -40,7 +41,18 @@ const { width: windowWidth } = useWindowSize()
 
         <VSpacer />
 
-        <UserProfile />
+        <div class="d-flex align-center gap-x-2">
+          <NavBarNotifications />
+          <!-- <VBtn
+            variant="flat"
+            class="btn-white-3 d-none d-md-flex"
+            height="48"
+            width="48"
+          >
+            <VIcon icon="custom-settings" size="24" />
+          </VBtn> -->
+          <UserProfile />
+        </div>
       </div>
     </template>
 
