@@ -41,30 +41,8 @@ window.Echo = new Echo({
 
 console.log('Laravel Echo configurado y conectado.'); // Para verificar en la consola
 
-// ----------------------------------------------------------------------
-// CÓDIGO DE PRUEBA: Suscripción a un canal y escucha de un evento
-// ----------------------------------------------------------------------
-
-// 1. Suscribirse al canal definido en el backend ('prueba-canal')
-window.Echo.channel('prueba-canal') 
-    // 2. Escuchar el nombre del evento definido en broadcastAs() ('mi.mensaje.prueba')
-    .listen('.mi.mensaje.prueba', (data) => {
-        
-        console.log('¡Evento WebSocket recibido! Datos:', data);
-        
-        // 3. Mostrar una notificación simple con el mensaje recibido
-        alert(`¡Notificación recibida!\nContenido: ${data.mensaje}`);
-
-        // Opcional: Si usas Vue, puedes usar algo como:
-        // this.$root.notificaciones.push(data.mensaje); 
-    })
-    .error((error) => {
-        // En caso de error de conexión
-        console.error('Error al escuchar el canal de prueba:', error);
-    });
-
-console.log('Escuchando el canal "prueba-canal"...');
-
+// La suscripción al canal de prueba se movió a @core/components/Notifications.vue
+// para que el componente gestione su propia escucha y emita eventos al padre.
 // ----------------------------------------------------------------------
 
 loadFonts()

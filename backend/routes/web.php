@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SignatureController;
 
 use Illuminate\Support\Facades\Event;
-use App\Events\PruebaWebsocketEvent;
+use App\Events\NotificationsWebsocketEvent;
 
 
 /*
@@ -24,17 +24,36 @@ Route::get('/', function () {
 Route::get('/sign/{token}', [SignatureController::class, 'showSigningPage'])->name('contracts.sign');
 
 Route::get('/prueba-websocket', function () {
-    $mensaje = '¡Hola desde la ruta de prueba!';
+    // $message = '¡Hola desde la ruta de prueba!';
+    // $message = (object) [
+    //     'title' => 'Prueba de notificación',
+    //     'subtitle' => '¡Hola usuario!',
+    //     'time' => now()->format('H:i:s'),
+    //     //'img' => 'https://via.placeholder.com/150',
+    //     'color' => 'primary',
+    //     'icon' => 'tabler-bell',
+    //     'text' => '¡Desde la ruta de prueba!',
+    // ];
+
+    $message = (object) [
+        'title' => 'Aviseringstest',
+        'subtitle' => '¡Hej användare!',
+        'time' => now()->format('H:i:s'),
+        //'img' => 'https://via.placeholder.com/150',
+        'color' => 'primary',
+        'icon' => 'tabler-bell',
+        'text' => '¡Från testvägen!',
+    ];
     
     // Log para debug
-    \Log::info('Disparando evento websocket: ' . $mensaje);
+    // \Log::info('Disparando evento websocket: ' . $message->text);
     
     // Disparar el evento
-    $evento = new PruebaWebsocketEvent($mensaje);
+    $evento = new NotificationsWebsocketEvent($message);
     Event::dispatch($evento);
     
     // Verificar si el evento se está enviando
-    \Log::info('Evento disparado, verificando broadcasting...');
+    // \Log::info('Evento disparado, verificando broadcasting...');
     
-    return 'Evento disparado: ' . $mensaje . '. Revisa tu navegador y la terminal de websockets.';
+    return 'Evento disparado: ' . $message->text . '. Revisa tu navegador y la terminal de websockets.';
 });

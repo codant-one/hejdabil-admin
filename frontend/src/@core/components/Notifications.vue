@@ -29,19 +29,10 @@ const emit = defineEmits(['click:readAllNotifications'])
     <VBtn
       icon
       variant="text"
-      color="default"
-      size="small"
+      class="btn-custom-notifications"
     >
-      <VBadge
-        :model-value="!!props.notifications.length"
-        color="error"
-        content="4"
-      >
-        <VIcon
-          icon="tabler-bell"
-          size="24"
-        />
-      </VBadge>
+      <VIcon icon="tabler-bell" size="24" />
+      <span>+{{ props.notifications.length }}</span>  
 
       <VMenu
         activator="parent"
@@ -52,7 +43,7 @@ const emit = defineEmits(['click:readAllNotifications'])
         <VList class="py-0">
           <!-- 👉 Header -->
           <VListItem
-            title="Notifications"
+            title="Aviseringar"
             class="notification-section"
             height="48px"
           >
@@ -62,7 +53,7 @@ const emit = defineEmits(['click:readAllNotifications'])
                 color="primary"
                 size="small"
               >
-                {{ props.notifications.length }} New
+                {{ props.notifications.length }} Ny
               </VChip>
             </template>
           </VListItem>
@@ -110,7 +101,7 @@ const emit = defineEmits(['click:readAllNotifications'])
               block
               @click="$emit('click:readAllNotifications')"
             >
-              READ ALL NOTIFICATIONS
+              Läs alla aviseringar
             </VBtn>
           </VListItem>
         </VList>
