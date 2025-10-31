@@ -96,9 +96,9 @@ const onSubmit = () => {
       <p class="mb-6 letter">
         Oroa dig inte, vi skickar instruktionerna till din e-postadress.
       </p>
-      <VForm ref="refVForm" @submit.prevent="onSubmit" style="max-width: 442px; width: 100%;">
+      <VForm ref="refVForm" @submit.prevent="onSubmit" class="d-flex flex-column gap-4" style="max-width: 442px; width: 100%;">
         <!-- email -->
-        <div class="form-field d-flex flex-column gap-4 mb-6">
+        <div class="form-field d-flex flex-column gap-2">
           <label>E-post</label>
           <VTextField
             v-model="email"
@@ -110,7 +110,7 @@ const onSubmit = () => {
         </div>
 
         <!-- reset password -->
-        <VBtn class="btn-gradient w-100 mb-6" type="submit">
+        <VBtn class="btn-gradient w-100" type="submit">
           Skicka återställningslänk
           <VProgressCircular
               v-if="load"

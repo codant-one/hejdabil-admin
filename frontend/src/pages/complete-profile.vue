@@ -850,15 +850,15 @@ const dataURLtoBlob = (dataURL) => {
               <p class="text-center label-upload-input mb-0">
                 Ladda upp ett foto
               </p>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Namn*</label>
                 <VTextField v-model="name" :rules="[requiredValidator]" />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Efternamn*</label>
                 <VTextField v-model="last_name" :rules="[requiredValidator]" />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>E-post</label>
                 <VTextField
                   v-model="email"
@@ -867,7 +867,7 @@ const dataURLtoBlob = (dataURL) => {
                   disabled
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Telefon*</label>
                 <VTextField
                   v-model="phone"
@@ -876,7 +876,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[phoneValidator, requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Adress*</label>
                 <VTextField
                   v-model="address"
@@ -917,7 +917,7 @@ const dataURLtoBlob = (dataURL) => {
                 Ladda upp ditt företags logotyp
               </p>
 
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Företagsnamn*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -925,7 +925,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Organisationsnummer*</label>
                 <VTextField
                   v-model="form.organization_number"
@@ -936,7 +936,7 @@ const dataURLtoBlob = (dataURL) => {
                   @input="formatOrgNumber()"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Adress*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -944,7 +944,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Postnummer*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -952,7 +952,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Stad*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -960,7 +960,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Telefon*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -968,7 +968,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator, phoneValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Hemsida*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -976,7 +976,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[urlValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Bank*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -984,11 +984,11 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Bankgiro</label>
                 <VTextField :disabled="role === 'User'" v-model="form.iban" />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Namn*</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -997,25 +997,25 @@ const dataURLtoBlob = (dataURL) => {
                   label="Kontonummer"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Iban nummer</label>
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.iban_number"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>BIC</label>
                 <VTextField :disabled="role === 'User'" v-model="form.bic" />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Plusgiro</label>
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.plus_spin"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Swish</label>
                 <VTextField
                   :disabled="role === 'User'"
@@ -1023,7 +1023,7 @@ const dataURLtoBlob = (dataURL) => {
                   :rules="[phoneValidator]"
                 />
               </div>
-              <div class="form-field d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Vat</label>
                 <VTextField :disabled="role === 'User'" v-model="form.vat" />
               </div>
@@ -1045,7 +1045,7 @@ const dataURLtoBlob = (dataURL) => {
                 >
               </div>
               <div
-                class="form-field d-flex flex-column gap-4"
+                class="form-field d-flex flex-column gap-2"
                 v-if="role !== 'User'"
               >
                 <div class="d-flex align-center gap-4">
@@ -1121,16 +1121,16 @@ const dataURLtoBlob = (dataURL) => {
             <p class="text-body-1 mb-0">Tillåtna format JPG, GIF, PNG.</p>
           </div>
 
-          <div class="form-field d-flex flex-column gap-4">
+          <div class="form-field d-flex flex-column gap-2">
             <label>Namn*</label>
             <VTextField v-model="name" :rules="[requiredValidator]" />
           </div>
-          <div class="form-field d-flex flex-column gap-4">
+          <div class="form-field d-flex flex-column gap-2">
             <label>Efternamn*</label>
             <VTextField v-model="last_name" :rules="[requiredValidator]" />
           </div>
 
-          <div class="form-field d-flex flex-column gap-4">
+          <div class="form-field d-flex flex-column gap-2">
             <label>E-post*</label>
             <VTextField
               v-model="email"
@@ -1139,7 +1139,7 @@ const dataURLtoBlob = (dataURL) => {
               disabled
             />
           </div>
-          <div class="form-field d-flex flex-column gap-4">
+          <div class="form-field d-flex flex-column gap-2">
             <label>Telefon*</label>
             <VTextField
               v-model="phone"
@@ -1148,7 +1148,7 @@ const dataURLtoBlob = (dataURL) => {
               :rules="[phoneValidator, requiredValidator]"
             />
           </div>
-          <div class="form-field d-flex flex-column gap-4">
+          <div class="form-field d-flex flex-column gap-2">
             <label>Adress*</label>
             <VTextField
               v-model="address"
@@ -1204,7 +1204,7 @@ const dataURLtoBlob = (dataURL) => {
             />
           </VCol>
           <VCol cols="12" md="12">
-            <div class="form-field d-flex flex-column gap-4 mb-2">
+            <div class="form-field d-flex flex-column gap-2 mb-2">
               <label>Logotyp</label>
               <VFileInput
                 v-model="filename"

@@ -5,7 +5,7 @@ import { VForm } from "vuetify/components";
 import { emailValidator, requiredValidator } from "@validators";
 import { useAuthStores } from "@/stores/useAuth";
 
-import people from "@images/pages/login/login_image.jpg";
+import people from "@images/pages/login/login_image.png";
 import logo from "@images/logos/billogg-logo.svg";
 
 const alertStore = useAlertStore();
@@ -113,17 +113,15 @@ const onSubmit = () => {
 <template>
   <div class="v-application__wrap login-page d-flex flex-column">
     <VRow no-gutters>
-      <VCol
-        cols="12"
-        md="6"
-        class="d-flex flex-column flex-row-md align-center justify-md-center px-6 bg-white"
+      <div
+        class="d-flex flex-column flex-row-md align-center justify-md-center px-6 bg-white flex-1"
       >
         <div class="d-flex logo-box">
           <RouterLink to="/login">
             <img :src="logo" width="121" height="40" />
           </RouterLink>
         </div>
-        <div class="d-block">
+        <div class="d-block w-100 w-md-auto">
           <VAlert 
             v-if="alertStore.message" 
             border="start" 
@@ -131,10 +129,10 @@ const onSubmit = () => {
              class="mb-5 flex-grow-0">
             <div v-html="alertStore.message"></div>
           </VAlert>
-          <VCardText class="p-0">
+          <div class="p-0">
             <h2 class="login-title mb-6">Välkommen till din panel!</h2>
-            <VForm ref="refVForm" @submit.prevent="onSubmit" class="auth-form">
-              <div class="form-field d-flex flex-column gap-4 mb-6">
+            <VForm ref="refVForm" @submit.prevent="onSubmit" max-width="100%" class="d-flex flex-column gap-4">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>E-post</label>
                 <VTextField
                   class="login"
@@ -147,7 +145,7 @@ const onSubmit = () => {
                 />
               </div>
 
-              <div class="form-field d-flex flex-column gap-4 mb-6">
+              <div class="form-field d-flex flex-column gap-2">
                 <label>Lösenord</label>
                 <VTextField
                   class="login"
@@ -157,14 +155,14 @@ const onSubmit = () => {
                   :rules="[requiredValidator]"
                   :type="isPasswordVisible ? 'text' : 'password'"
                   :append-inner-icon="
-                    isPasswordVisible ? 'custom-eye' : 'custom-eye'
+                    isPasswordVisible ? 'custom-eye' : 'custom-eye-off'
                   "
                   @input="inputChange()"
                   @click:append-inner="isPasswordVisible = !isPasswordVisible"
                 />
               </div>
               <div
-                class="d-flex align-center flex-wrap justify-space-between mb-6 gap-6"
+                class="d-flex flex-column flex-md-row align-md-center flex-wrap justify-space-between gap-4 w-100"
               >
                 <div
                   class="form-field form-field-checkbox d-flex align-center gap-2"
@@ -185,7 +183,7 @@ const onSubmit = () => {
                 </RouterLink>
               </div>
 
-              <VBtn class="btn-gradient w-100" type="submit">
+              <VBtn block class="btn-gradient w-100" type="submit">
                 Logga in
                 <VProgressCircular
                   v-if="load"
@@ -194,12 +192,12 @@ const onSubmit = () => {
                 />
               </VBtn>
             </VForm>
-          </VCardText>
+          </div>
         </div>
-      </VCol>
-      <VCol cols="12" md="6" class="d-none d-lg-flex">
-        <img :src="people" class="w-100 login-background" />
-      </VCol>
+      </div>
+      <div class="d-none d-lg-flex">
+        <img :src="people" class="login-background" />
+      </div>
     </VRow>
   </div>
 </template>
@@ -223,7 +221,8 @@ const onSubmit = () => {
 
 .login-background {
   height: 100vh;
-  object-fit: cover;
+  width: auto;
+  object-fit: contain;
 }
 
 @media (max-width: 991px) {
@@ -283,7 +282,7 @@ const onSubmit = () => {
   .form-field-checkbox {
     label {
       font-weight: 400;
-      font-size: 16px;
+      font-size: 14px;
       line-height: 24px;
     }
 
@@ -302,7 +301,7 @@ const onSubmit = () => {
 
   .login-background {
     height: 100vh;
-    object-fit: cover;
+    object-fit: contain;
   }
 }
 </style>

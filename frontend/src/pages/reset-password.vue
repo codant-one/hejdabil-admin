@@ -129,16 +129,16 @@ const onSubmit = () => {
 
       <h2 class="login-title mb-6">Återställ lösenord</h2>
 
-      <VForm ref="refVForm" @submit.prevent="onSubmit" class="auth-form">
+      <VForm ref="refVForm" @submit.prevent="onSubmit" class="d-flex flex-column gap-4" style="max-width: 442px; width: 100%;">
         <!-- Password -->
-        <div class="form-field d-flex flex-column gap-4 mb-6">
+        <div class="form-field d-flex flex-column gap-2">
           <label>Nytt lösenord</label>
           <VTextField
             v-model="password"
             placeholder="Nytt lösenord"
             :type="isNewPasswordVisible ? 'text' : 'password'"
             :rules="[requiredValidator, passwordValidator]"
-            :append-inner-icon="isNewPasswordVisible ? 'custom-eye' : 'custom-eye'"
+            :append-inner-icon="isNewPasswordVisible ? 'custom-eye' : 'custom-eye-off'"
             @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
           >
             <!-- <template #append-inner>
@@ -152,7 +152,7 @@ const onSubmit = () => {
         </div>
 
         <!-- Confirm Password -->
-        <div class="form-field d-flex flex-column gap-4 mb-6">
+        <div class="form-field d-flex flex-column gap-2">
           <label>Skriv in lösenordet igen</label>
           <VTextField
             v-model="passwordConfirmation"
@@ -165,7 +165,7 @@ const onSubmit = () => {
             @click:append-inner="
               isConfirmPasswordVisible = !isConfirmPasswordVisible
             "
-            :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye' : 'custom-eye'"
+            :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye' : 'custom-eye-off'"
           >
             <!-- <template #append-inner>
               <VIcon
@@ -178,7 +178,7 @@ const onSubmit = () => {
         </div>
 
         <!-- reset password -->
-        <VBtn class="btn-gradient w-100 mb-6" type="submit">
+        <VBtn class="btn-gradient w-100" type="submit">
           Uppdatera lösenord
           <VProgressCircular
               v-if="load"
