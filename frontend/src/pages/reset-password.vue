@@ -131,7 +131,7 @@ const onSubmit = () => {
 
       <VForm ref="refVForm" @submit.prevent="onSubmit" class="d-flex flex-column gap-4" style="max-width: 442px; width: 100%;">
         <!-- Password -->
-        <div class="form-field d-flex flex-column gap-2">
+        <div class="form-field d-flex flex-column gap-1">
           <label>Nytt lösenord</label>
           <VTextField
             v-model="password"
@@ -152,7 +152,7 @@ const onSubmit = () => {
         </div>
 
         <!-- Confirm Password -->
-        <div class="form-field d-flex flex-column gap-2">
+        <div class="form-field d-flex flex-column gap-1">
           <label>Skriv in lösenordet igen</label>
           <VTextField
             v-model="passwordConfirmation"

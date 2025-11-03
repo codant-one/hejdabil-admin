@@ -132,7 +132,7 @@ const onSubmit = () => {
           <div class="p-0">
             <h2 class="login-title mb-6">Välkommen till din panel!</h2>
             <VForm ref="refVForm" @submit.prevent="onSubmit" max-width="100%" class="d-flex flex-column gap-4">
-              <div class="form-field d-flex flex-column gap-2">
+              <div class="form-field d-flex flex-column gap-1">
                 <label>E-post</label>
                 <VTextField
                   class="login"
@@ -145,7 +145,7 @@ const onSubmit = () => {
                 />
               </div>
 
-              <div class="form-field d-flex flex-column gap-2">
+              <div class="form-field d-flex flex-column gap-1">
                 <label>Lösenord</label>
                 <VTextField
                   class="login"
@@ -242,11 +242,9 @@ const onSubmit = () => {
   .form-field {
     .v-input {
       &.v-text-field {
-        min-width: auto;
-        max-width: 345px;
 
         .v-field {
-          height: 48px;
+          height: 38px;
         }
       }
 

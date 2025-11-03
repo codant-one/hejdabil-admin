@@ -159,7 +159,6 @@ const onSubmit = () => {
         v-else
         rounded
         :size="250"
-        color="primary"
         class="position-relative"
       >
         <VImg :src="avatarImg" />
@@ -192,46 +191,44 @@ const onSubmit = () => {
       > -->
 
       <div class="user-bio">
-        <VRow no-gutters class="user-bio-row w-100">
-          <VCol cols="12" md="4" class="first-bio">
-            <div class="bio-item">
-              <div class="bio-label">E-post</div>
-              <div class="bio-value">
-                {{ props.isSupplier ? props.customerData.user.email : props.customerData.email }}
+        <div class="bio-grid">
+          <div class="bio-left">
+            <div class="bio-fields">
+              <div class="bio-item">
+                <div class="bio-label">E-post</div>
+                <div class="bio-value">
+                  {{ props.isSupplier ? props.customerData.user.email : props.customerData.email }}
+                </div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Postnummer</div>
+                <div class="bio-value">{{ props.customerData.postal_code }}</div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Telefon</div>
+                <div class="bio-value">
+                  {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
+                </div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Stad</div>
+                <div class="bio-value">{{ props.customerData.street }}</div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Adress</div>
+                <div class="bio-value">{{ props.customerData.address }}</div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Organisationsnummer</div>
+                <div class="bio-value">{{ props.customerData.organization_number }}</div>
               </div>
             </div>
-            <div class="bio-item">
-              <div class="bio-label">Telefon</div>
-              <div class="bio-value">
-                {{ props.isSupplier ? props.customerData.user.user_detail.phone : props.customerData.phone }}
-              </div>
-            </div>
-            <div class="bio-item">
-              <div class="bio-label">Adress</div>
-              <div class="bio-value">{{ props.customerData.address }}</div>
-            </div>
-          </VCol>
-          <VCol cols="12" md="4" class="second-bio">
-            <div class="bio-item">
-              <div class="bio-label">Postnummer</div>
-              <div class="bio-value">{{ props.customerData.postal_code }}</div>
-            </div>
-            <div class="bio-item">
-              <div class="bio-label">Stad</div>
-              <div class="bio-value">{{ props.customerData.street }}</div>
-            </div>
-            <div class="bio-item">
-              <div class="bio-label">Organisationsnummer</div>
-              <div class="bio-value">{{ props.customerData.organization_number }}</div>
-            </div>
-          </VCol>
-          <VCol cols="12" md="4" class="third-bio">
-            <div class="bio-item">
-              <div class="bio-label">Produktbeskrivning</div>
-              <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
-            </div>
-          </VCol>
-        </VRow>
+          </div>
+          <div class="bio-right">
+            <div class="bio-label">Produktbeskrivning</div>
+            <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
+          </div>
+        </div>
       </div>
 
       <!-- <div class="d-flex justify-center gap-x-5 mt-6">
@@ -483,15 +480,26 @@ const onSubmit = () => {
   border: 1px solid #e7e7e7;
   width: 100%;
 
+  .bio-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; // left 8/12, right 4/12 approximately
+    gap: 16px;
+    width: 100%;
+  }
+
+  .bio-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
   .bio-item {
-    padding: 0;
-    margin-bottom: 16px;
-    line-clamp: initial;
-    -webkit-line-clamp: initial;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .bio-label {
-    margin-bottom: 8px;
     font-weight: 400;
     font-size: 14px;
     color: #878787;
@@ -501,8 +509,14 @@ const onSubmit = () => {
     font-weight: 400;
     font-size: 14px;
     color: #454545;
-    line-clamp: initial;
-    -webkit-line-clamp: initial;
+  }
+}
+
+@media (max-width: 960px) {
+  .user-bio {
+    .bio-grid {
+      grid-template-columns: 1fr;
+    }
   }
 }
 
@@ -529,18 +543,6 @@ const onSubmit = () => {
       height: 170px !important;
     }
 
-    .first-bio,
-    .second-bio {
-      flex: 1 1;
-    }
-    .third-bio {
-      flex-basis: 100%;
-      width: 100%;
-
-      .bio-value {
-        font-size: 12px;
-      }
-    }
     .user-bio {
       flex-wrap: wrap;
       padding: 16px !important;

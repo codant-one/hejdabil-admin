@@ -71,7 +71,7 @@ onMounted(async () => {
     suppliers.value = toRaw(suppliersStores.getSuppliers)
   }
 
-  if (role.value !== "Supplier") {
+  if (role.value !== "Supplier" && role.value !== "User") {
     await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
     suppliers.value = toRaw(suppliersStores.getSuppliers);
   }
@@ -291,7 +291,7 @@ onBeforeUnmount(() => {
       {{ advisor.message }}
     </VAlert>
 
-    <VCard class="rounded-0 card-fill">
+    <VCard class="card-fill">
       <VCardTitle
         class="d-flex justify-space-between"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
@@ -397,7 +397,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center"> Organisationsnummer </th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" v-if="role !== 'Supplier'"> Leverantör</th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Leverantör</th>
             <th scope="col"> Skapad av </th>
             <th
               scope="col"
@@ -449,7 +449,7 @@ onBeforeUnmount(() => {
                 </VTooltip>
               </span>
             </td>
-            <td class="text-wrap" v-if="role !== 'Supplier'">
+            <td class="text-wrap" v-if="role !== 'Supplier' && role !== 'User'">
               <div
                 class="d-flex align-center gap-x-3"
                 v-if="client.supplier"
@@ -720,6 +720,12 @@ onBeforeUnmount(() => {
 
   .card-fill {
     padding-bottom: 0;
+  }
+}
+
+@media (max-width: 991px) {
+  .card-fill {
+    border-radius: 0 !important;
   }
 }
 

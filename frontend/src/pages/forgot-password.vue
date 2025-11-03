@@ -98,7 +98,7 @@ const onSubmit = () => {
       </p>
       <VForm ref="refVForm" @submit.prevent="onSubmit" class="d-flex flex-column gap-4" style="max-width: 442px; width: 100%;">
         <!-- email -->
-        <div class="form-field d-flex flex-column gap-2">
+        <div class="form-field d-flex flex-column gap-1">
           <label>E-post</label>
           <VTextField
             v-model="email"

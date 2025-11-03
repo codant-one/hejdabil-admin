@@ -428,7 +428,7 @@ const sendMails = async () => {
                   <th scope="col">Kund</th>
                   <th scope="col" class="text-center">Summa</th>
                   <th scope="col" class="text-center">Fakturadatum</th>
-                  <th scope="col" class="text-center">FÖrfaller</th>
+                  <th scope="col" class="text-center">Förfaller</th>
                   <th scope="col" class="text-center">Status</th>
                   <!-- <th class="text-center" scope="col">Betald</th>
                   <th class="text-center" scope="col">Skickad</th> -->

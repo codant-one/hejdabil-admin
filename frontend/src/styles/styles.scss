@@ -123,7 +123,7 @@ body .v-dialog .v-dialog-close-btn {
 }
 
 .v-card {
-  border-radius: 24px !important;
+  border-radius: 24px;
   box-shadow: none !important;
 }
 
@@ -543,14 +543,14 @@ body {
 
 .gray-link {
   font-weight: 400;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 24px;
   color: #454545;
 }
 
 .green-link {
   font-weight: 400;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 24px;
   color: #0d6e2d;
 }
@@ -568,11 +568,6 @@ body {
 
     .v-field__outline {
       border: none !important;
-
-      .v-field__outline__start {
-      }
-      .v-field__outline__end {
-      }
     }
   }
 }
@@ -841,9 +836,8 @@ body {
   }
   .v-input {
     &.v-text-field {
-      min-width: 422px;
       .v-field {
-        height: 48px;
+        height: 38px;
       }
     }
 
@@ -896,7 +890,7 @@ body {
 .form-field-checkbox {
   label {
     font-weight: 400;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 24px;
   }
 
@@ -908,14 +902,10 @@ body {
 
 @media (max-width: 991px) {
   .form-field {
-    label {
-    }
     .v-input {
       &.v-text-field {
-        min-width: auto;
-        max-width: 345px;
         .v-field {
-          height: 48px;
+          height: 38px;
         }
       }
 

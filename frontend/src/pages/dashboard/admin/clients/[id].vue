@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
       
     <Toaster />
 
-    <VCard class="client-slug rounded-0 card-fill">
+    <VCard class="client-slug card-fill">
       <VCardText
         class="d-flex flex-column pa-4 gap-4"
         :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"
@@ -206,6 +206,7 @@ meta:
 
   @media (max-width: 768px) {
     padding-bottom: 60px;
+    border-radius: 0 !important;
   }
 }
 

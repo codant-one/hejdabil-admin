@@ -33,7 +33,7 @@ const redirectTo = (path) => {
 
 <template>
   <VBottomNavigation
-    v-if="width < MOBILE_BREAKPOINT"
+    v-show="width < MOBILE_BREAKPOINT"
     height="88"
     class="mobile-bottom-bar"
   >
@@ -189,6 +189,22 @@ const redirectTo = (path) => {
 </template>
 
 <style lang="scss" scoped>
+.mobile-bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  /* Safe area for devices with notches (iOS Safari) */
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* Prevent jumping/flicker on mobile browsers */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
 .mobile-menu-title {
   font-family: DM Sans;
   font-weight: 500;
