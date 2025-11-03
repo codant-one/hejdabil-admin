@@ -39,9 +39,8 @@ window.Echo = new Echo({
   encrypted: false, // Debe ser 'true' si usas SSL (https)
 });
 
-console.log('Laravel Echo configurado y conectado.'); // Para verificar en la consola
 
-// La suscripción al canal de prueba se movió a @core/components/Notifications.vue
+// La suscripción al canal se movió a @core/components/Notifications.vue
 // para que el componente gestione su propia escucha y emita eventos al padre.
 // ----------------------------------------------------------------------
 

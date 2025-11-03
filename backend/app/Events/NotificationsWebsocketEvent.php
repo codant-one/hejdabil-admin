@@ -47,7 +47,7 @@ class NotificationsWebsocketEvent implements ShouldBroadcastNow
     public function broadcastOn(): array
     {
         return [
-            new Channel('prueba-canal')
+            new Channel('notifications-channel')
         ];
     }
 
@@ -57,6 +57,6 @@ class NotificationsWebsocketEvent implements ShouldBroadcastNow
      */
     public function broadcastAs()
     {
-        return 'mi.mensaje.prueba';
+        return 'notifications-channel';
     }
 }

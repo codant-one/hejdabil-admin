@@ -26,8 +26,9 @@ export const useNotificationsStore = defineStore('notifications', {
       // Suscribirse a eventos en tiempo real
       try {
         if (window && window.Echo) {
-          window.Echo.channel('prueba-canal')
-            .listen('.mi.mensaje.prueba', data => {
+          window.Echo.channel('notifications-channel')
+            .listen('.notifications-channel', data => {
+              console.log('Received notification:', data)
               this.addFromBackend(data.message)
             })
             .error(error => {
@@ -35,7 +36,7 @@ export const useNotificationsStore = defineStore('notifications', {
               console.error('Error in notification channel:', error)
             })
           // eslint-disable-next-line no-console
-          console.log('Subscribed to notification channel: prueba-canal')
+          //console.log('Subscribed to notification channel: notifications-channel')
         } else {
           // eslint-disable-next-line no-console
           console.warn('Echo not available. Please check initialization in notifications.js')

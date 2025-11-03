@@ -67,7 +67,7 @@ const emit = defineEmits(['click:readAllNotifications'])
           >
             <VListItem
               :title="notification.title"
-              :subtitle="notification.subtitle"
+              :subtitle="notification.text"
               link
               lines="one"
               min-height="66px"
