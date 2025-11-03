@@ -32,11 +32,11 @@ window.Echo = new Echo({
   wsHost: import.meta.env.VITE_PUSHER_HOST ?? 'billogg', // Usar 'billogg' en lugar de localhost
   wsPort: import.meta.env.VITE_PUSHER_PORT ?? 6001, // El puerto 6001 por defecto
   wssPort: import.meta.env.VITE_PUSHER_PORT ?? 6001, // El puerto 6001 por defecto si usas SSL
-  forceTLS: false, // Debe ser 'true' si usas SSL (https)
+  forceTLS: import.meta.env.VITE_PUSHER_SSL === 'true' ? true : false, // Debe ser 'true' si usas SSL (https)
   disableStats: true, // Deshabilita el envío de estadísticas a Pusher
   enabledTransports: ['ws', 'wss'], // Permite conexiones WebSocket (ws)
   cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER, // 'mt1' por defecto
-  encrypted: false, // Debe ser 'true' si usas SSL (https)
+  encrypted: import.meta.env.VITE_PUSHER_SSL === 'true' ? true : false, // Debe ser 'true' si usas SSL (https)
 });
 
 
