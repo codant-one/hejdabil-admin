@@ -26,17 +26,21 @@ window.Pusher = Pusher;
 // Configuración de Laravel Echo
 // ----------------------------------------------------------------------
 
+const useTLS = import.meta.env.VITE_PUSHER_SSL === 'true';
+const host = import.meta.env.VITE_PUSHER_HOST || window.location.hostname;
+const port = Number(import.meta.env.VITE_PUSHER_PORT) || (useTLS ? 443 : 6001);
+
 window.Echo = new Echo({
   broadcaster: 'pusher',
-  key: import.meta.env.VITE_PUSHER_APP_KEY, // Usa la clave de tu .env
-  wsHost: import.meta.env.VITE_PUSHER_HOST ?? 'billogg', // Usar 'billogg' en lugar de localhost
-  wsPort: import.meta.env.VITE_PUSHER_PORT ?? 6001, // El puerto 6001 por defecto
-  wssPort: import.meta.env.VITE_PUSHER_PORT ?? 6001, // El puerto 6001 por defecto si usas SSL
-  forceTLS: import.meta.env.VITE_PUSHER_SSL === 'true' ? true : false, // Debe ser 'true' si usas SSL (https)
-  disableStats: true, // Deshabilita el envío de estadísticas a Pusher
-  enabledTransports: ['ws', 'wss'], // Permite conexiones WebSocket (ws)
-  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER, // 'mt1' por defecto
-  encrypted: import.meta.env.VITE_PUSHER_SSL === 'true' ? true : false, // Debe ser 'true' si usas SSL (https)
+  key: import.meta.env.VITE_PUSHER_APP_KEY,
+  wsHost: host,
+  wsPort: useTLS ? undefined : port,
+  wssPort: useTLS ? port : undefined,
+  forceTLS: useTLS,
+  encrypted: useTLS,
+  disableStats: true,
+  enabledTransports: useTLS ? ['wss'] : ['ws'],
+  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
 });
 
 

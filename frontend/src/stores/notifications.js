@@ -28,7 +28,7 @@ export const useNotificationsStore = defineStore('notifications', {
         if (window && window.Echo) {
           window.Echo.channel('notifications-channel')
             .listen('.notifications-channel', data => {
-              console.log('Received notification:', data)
+              //console.log('Received notification:', data)
               this.addFromBackend(data.message)
             })
             .error(error => {
