@@ -3,6 +3,20 @@
 $customPusherHost = env('PUSHER_HOST');
 $hasCustomPusher = !empty($customPusherHost);
 
+$pusherOptions = [
+    'cluster' => env('PUSHER_APP_CLUSTER'),
+    // TLS por defecto (Pusher Cloud)
+    'encrypted' => env('PUSHER_ENCRYPTED', true),
+    'useTLS' => env('PUSHER_USE_TLS', true),
+];
+
+if ($hasCustomPusher) {
+    // Solo añadir estas claves si realmente hay host custom (self-host)
+    $pusherOptions['host'] = $customPusherHost;
+    $pusherOptions['port'] = env('PUSHER_PORT', 6001);
+    $pusherOptions['scheme'] = env('PUSHER_SCHEME', 'http');
+}
+
 return [
 
     /*
@@ -38,17 +52,7 @@ return [
             'key' => env('PUSHER_APP_KEY'),
             'secret' => env('PUSHER_APP_SECRET'),
             'app_id' => env('PUSHER_APP_ID'),
-            'options' => [
-                'cluster' => env('PUSHER_APP_CLUSTER'),
-                // Para Pusher Cloud, NO definas host/port/scheme en .env.
-                // Solo si defines PUSHER_HOST, se aplicarán host/port/scheme.
-                'host' => $hasCustomPusher ? $customPusherHost : null,
-                'port' => $hasCustomPusher ? env('PUSHER_PORT', 6001) : null,
-                'scheme' => $hasCustomPusher ? env('PUSHER_SCHEME', 'http') : null,
-                // TLS por defecto (Pusher Cloud requiere TLS). Puedes sobreescribir con PUSHER_ENCRYPTED/PUSHER_USE_TLS si necesitas.
-                'encrypted' => env('PUSHER_ENCRYPTED', true),
-                'useTLS' => env('PUSHER_USE_TLS', true),
-            ],
+            'options' => $pusherOptions,
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
             ],
