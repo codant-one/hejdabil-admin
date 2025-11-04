@@ -1,5 +1,8 @@
 <?php
 
+$customPusherHost = env('PUSHER_HOST');
+$hasCustomPusher = !empty($customPusherHost);
+
 return [
 
     /*
@@ -37,11 +40,11 @@ return [
             'app_id' => env('PUSHER_APP_ID'),
             'options' => [
                 'cluster' => env('PUSHER_APP_CLUSTER'),
-                // Para Pusher Cloud, NO definas host/port/scheme en .env (quedarán null y el SDK usará sus endpoints).
-                // Para self-host, define PUSHER_HOST/PUSHER_PORT/PUSHER_SCHEME en .env y se usarán aquí.
-                'host' => env('PUSHER_HOST') ?: null,
-                'port' => env('PUSHER_PORT') ?: null,
-                'scheme' => env('PUSHER_SCHEME') ?: null,
+                // Para Pusher Cloud, NO definas host/port/scheme en .env.
+                // Solo si defines PUSHER_HOST, se aplicarán host/port/scheme.
+                'host' => $hasCustomPusher ? $customPusherHost : null,
+                'port' => $hasCustomPusher ? env('PUSHER_PORT', 6001) : null,
+                'scheme' => $hasCustomPusher ? env('PUSHER_SCHEME', 'http') : null,
                 // TLS por defecto (Pusher Cloud requiere TLS). Puedes sobreescribir con PUSHER_ENCRYPTED/PUSHER_USE_TLS si necesitas.
                 'encrypted' => env('PUSHER_ENCRYPTED', true),
                 'useTLS' => env('PUSHER_USE_TLS', true),
