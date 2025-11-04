@@ -6,9 +6,10 @@
 @use "@styles/variables/vuetify";
 
 // 👉 Autocomplete
+.v-input--density-compact,
 .v-input--density-compact .v-field--variant-plain,
 .v-input--density-compact .v-field--variant-underlined {
-  --v-input-control-height: 40px !important;
+  --v-input-control-height: 38px !important;
 }
 
 // 👉 Body
@@ -1373,6 +1374,7 @@ body {
         }
 
         &.v-input--density-compact {
+          --v-input-control-height: 38px !important;
           .v-field__input {
             padding-inline-start: 0.5rem;
           }

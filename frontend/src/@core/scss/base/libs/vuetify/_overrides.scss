@@ -89,6 +89,7 @@ body,
 }
 
 .v-selection-control--density-comfortable {
+  --v-selection-control-size: 24px;
   &.v-checkbox-btn,
   &.v-radio,
   &.v-radio-btn {

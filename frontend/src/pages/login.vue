@@ -167,7 +167,7 @@ const onSubmit = () => {
                 <div
                   class="form-field form-field-checkbox d-flex align-center gap-2"
                 >
-                  <label>Kom ihåg mig</label>
+                  <label class="me-2">Kom ihåg mig</label>
                   <VCheckbox
                     v-model="remember_me"
                     true-icon="custom-checked-checkbox"
@@ -207,7 +207,7 @@ const onSubmit = () => {
 
 .login-page {
   background: #fff;
-  min-height: 100vh;
+  //min-height: 100vh;
 }
 
 .login-title {
