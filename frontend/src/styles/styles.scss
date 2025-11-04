@@ -706,10 +706,24 @@ body {
   @media (max-width: 768px) {
     justify-content: space-between;
     .search {
-      max-width: 225px;
+      max-width: 236px;
     }
   }
 }
+
+.v-expansion-panel:not(:first-child)::after {
+  border: none !important;
+}
+
+.v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active),
+.v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active),
+.v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :last-child:not(:first-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+  border-bottom-left-radius: 16px !important;
+  border-bottom-right-radius: 16px !important;
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+}
+
 
 .text-pagination-results {
   font-weight: 400;
