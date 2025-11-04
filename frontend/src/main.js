@@ -26,22 +26,29 @@ window.Pusher = Pusher;
 // Configuración de Laravel Echo
 // ----------------------------------------------------------------------
 
-const useTLS = import.meta.env.VITE_PUSHER_SSL === 'true';
-const host = import.meta.env.VITE_PUSHER_HOST || window.location.hostname;
+const hasCustomHost = !!import.meta.env.VITE_PUSHER_HOST;
+const useTLS = import.meta.env.VITE_PUSHER_SSL === 'true' || !hasCustomHost;
 const port = Number(import.meta.env.VITE_PUSHER_PORT) || (useTLS ? 443 : 6001);
 
-window.Echo = new Echo({
+const baseEchoConfig = {
   broadcaster: 'pusher',
   key: import.meta.env.VITE_PUSHER_APP_KEY,
-  wsHost: host,
-  wsPort: useTLS ? undefined : port,
-  wssPort: useTLS ? port : undefined,
+  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
   forceTLS: useTLS,
   encrypted: useTLS,
   disableStats: true,
-  enabledTransports: useTLS ? ['wss'] : ['ws'],
-  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-});
+};
+
+const transportConfig = hasCustomHost
+  ? {
+      wsHost: import.meta.env.VITE_PUSHER_HOST,
+      wsPort: useTLS ? undefined : port,
+      wssPort: useTLS ? port : undefined,
+      enabledTransports: useTLS ? ['wss'] : ['ws'],
+    }
+  : {};
+
+window.Echo = new Echo({ ...baseEchoConfig, ...transportConfig });
 
 
 // La suscripción al canal se movió a @core/components/Notifications.vue
