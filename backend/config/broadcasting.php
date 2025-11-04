@@ -40,8 +40,9 @@ return [
                 'host' => env('PUSHER_HOST', '127.0.0.1'),
                 'port' => env('PUSHER_PORT', 6001),
                 'scheme' => env('PUSHER_SCHEME', 'http'),
-                'encrypted' => false,
-                'useTLS' => false,
+                // Auto TLS según esquema; opcionalmente puedes forzar con PUSHER_ENCRYPTED / PUSHER_USE_TLS
+                'encrypted' => env('PUSHER_ENCRYPTED', env('PUSHER_SCHEME', 'http') === 'https'),
+                'useTLS' => env('PUSHER_USE_TLS', env('PUSHER_SCHEME', 'http') === 'https'),
             ],
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
