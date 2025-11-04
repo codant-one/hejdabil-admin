@@ -158,26 +158,28 @@ const redirectTo = (path) => {
                   </div>
 
                   <!-- Grandchildren (2nd level) -->
-                  <div v-if="child.children && child.children.length" class="nav-subchildren ps-7 py-1">
-                    <div v-for="(gchild, gIdx) in child.children" :key="gIdx" class="nav-link grandchild" v-if="can(gchild.action, gchild.subject)">
+              <div v-if="child.children && child.children.length" class="nav-subchildren ps-7 py-1">
+                <div v-for="(gchild, gIdx) in child.children" :key="gIdx">
+                  <div class="nav-link grandchild" v-if="can(gchild.action, gchild.subject)">
+                    <component
+                      :is="gchild.to ? 'RouterLink' : 'a'"
+                      v-bind="getComputedNavLinkToProp(gchild)"
+                      :class="[
+                        isNavLinkActive(gchild, $router) && 'router-link-active router-link-exact-active',
+                        gchild.class,
+                      ]"
+                      @click="showMenu = false"
+                    >
                       <component
-                        :is="gchild.to ? 'RouterLink' : 'a'"
-                        v-bind="getComputedNavLinkToProp(gchild)"
-                        :class="[
-                          isNavLinkActive(gchild, $router) && 'router-link-active router-link-exact-active',
-                          gchild.class,
-                        ]"
-                        @click="showMenu = false"
-                      >
-                        <component
-                          :is="themeConfig.app.iconRenderer || 'div'"
-                          v-bind="gchild.icon || themeConfig.verticalNav.defaultNavItemIconProps"
-                          class="nav-item-icon"
-                        />
-                        <span>{{ gchild.title }}</span>
-                      </component>
-                    </div>
+                        :is="themeConfig.app.iconRenderer || 'div'"
+                        v-bind="gchild.icon || themeConfig.verticalNav.defaultNavItemIconProps"
+                        class="nav-item-icon"
+                      />
+                      <span>{{ gchild.title }}</span>
+                    </component>
                   </div>
+                </div>
+              </div>
                 </div>
               </div>
             </div>
