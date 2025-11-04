@@ -414,7 +414,7 @@ const sendMails = async () => {
             <VTextField v-model="searchQuery" placeholder="Sök" clearable />
           </div>
 
-          <VBtn class="btn-white d-block d-md-none">
+          <VBtn class="btn-white d-block d-md-none" icon>
             <VIcon icon="custom-filter" size="24" />
           </VBtn>
         </div>
