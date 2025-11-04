@@ -378,9 +378,6 @@ body .v-btn {
       }
     }
 
-    &:active {
-
-    }
   }
 
   &.btn-custom-notifications {
@@ -655,16 +652,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           }
         }
       }
-
-      &.v-expansion-panel--active {
-        .v-expansion-panel-title__icon {
-          // transform: rotate(90deg);
-
-          // @include layoutsMixins.rtl {
-          //   transform: rotate(-90deg);
-          // }
-        }
-      }
     }
   }
 
@@ -704,9 +691,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
         .title-panel {
           padding: 0 16px;
-        }
-
-        .v-expansion-panel-title__icon {
         }
 
         &.v-expansion-panel-title--active {
@@ -847,11 +831,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         &:last-child {
           margin-block-end: 0;
         }
-      }
-
-      .v-list-item--density-default:not(
-          .v-list-item--nav
-        ).v-list-item--one-line {
       }
     }
   }
