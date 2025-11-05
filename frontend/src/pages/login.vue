@@ -114,7 +114,7 @@ const onSubmit = () => {
   <div class="v-application__wrap login-page d-flex flex-column">
     <VRow no-gutters>
       <div
-        class="d-flex flex-column flex-row-md align-center justify-md-center px-6 bg-white flex-1"
+        class="d-flex flex-column flex-row-md align-center justify-md-center px-6 bg-white flex-1 w-md-50"
       >
         <div class="d-flex logo-box">
           <RouterLink to="/login">
@@ -195,8 +195,7 @@ const onSubmit = () => {
           </div>
         </div>
       </div>
-      <div class="d-none d-lg-flex">
-        <img :src="people" class="login-background" />
+      <div class="d-none d-md-block w-50 login-background" :style="`background: url(${people});`">
       </div>
     </VRow>
   </div>
@@ -220,9 +219,9 @@ const onSubmit = () => {
 }
 
 .login-background {
-  height: 100vh;
-  width: auto;
-  object-fit: contain;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-position: bottom !important;
 }
 
 @media (max-width: 991px) {
@@ -295,11 +294,6 @@ const onSubmit = () => {
     font-size: 16px;
     line-height: 24px;
     color: #0d6e2d;
-  }
-
-  .login-background {
-    height: 100vh;
-    object-fit: contain;
   }
 }
 </style>
