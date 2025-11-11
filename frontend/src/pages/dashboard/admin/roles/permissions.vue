@@ -196,23 +196,23 @@ const closeModal = function(){
                         <div class="demo-space-x ml-5">
                             <VCheckbox
                                 v-model="assignedPermissions"
-                                label="view signed documents"
-                                value="view signed documents"
+                                label="view signed-documents"
+                                value="view signed-documents"
                             />
                             <VCheckbox
                                 v-model="assignedPermissions"
-                                label="create signed documents"
-                                value="create signed documents"
+                                label="create signed-documents"
+                                value="create signed-documents"
                             />
                             <VCheckbox
                                 v-model="assignedPermissions"
-                                label="edit signed documents"
-                                value="edit signed documents"
+                                label="edit signed-documents"
+                                value="edit signed-documents"
                             />
                             <VCheckbox
                                 v-model="assignedPermissions"
-                                label="delete signed documents"
-                                value="delete signed documents"
+                                label="delete signed-documents"
+                                value="delete signed-documents"
                             />
                         </div>
                         <VLabel style="font-weight: bold;">

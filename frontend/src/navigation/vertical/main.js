@@ -28,7 +28,7 @@ export default [
       icon: { icon: 'mdi-draw' },
       to: 'dashboard-admin-documents', 
       action: 'view', 
-      subject: 'signed documents'
+      subject: 'signed-documents'
     }
   ]
   

@@ -41,10 +41,10 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'delete invoices'],            
 
             //documents
-            ['name' => 'view signed documents'],
-            ['name' => 'create signed documents'],
-            ['name' => 'edit signed documents'],
-            ['name' => 'delete signed documents'],
+            ['name' => 'view signed-documents'],
+            ['name' => 'create signed-documents'],
+            ['name' => 'edit signed-documents'],
+            ['name' => 'delete signed-documents'],
 
         ]; 
         // Crear o actualizar permisos
