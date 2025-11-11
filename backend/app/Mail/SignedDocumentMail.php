@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Agreement;
+use App\Models\Document;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -18,44 +19,69 @@ class SignedDocumentMail extends Mailable
     /**
      * La instancia del contrato.
      *
-     * @var \App\Models\Agreement
+     * @var \App\Models\Agreement|null
      */
     public $agreement;
 
     /**
-     * La ruta completa al PDF firmado.
+     * La instancia del documento.
+     *
+     * @var \App\Models\Document|null
+     */
+    public $document;
+
+    /**
+     * La ruta completa al PDF firmado (para adjuntar).
      *
      * @var string
      */
     public $pdfPath;
 
     /**
-     * Create a new message instance.
+     * URL pública de descarga.
      *
-     * @return void
+     * @var string|null
      */
-    public function __construct(Agreement $agreement, string $pdfPath)
+    public $downloadUrl;
+
+    /**
+     * Si se adjunta el archivo o no.
+     *
+     * @var bool
+     */
+    public $attachFile;
+
+    /**
+     * Create a new message instance.
+     */
+    public function __construct(?Agreement $agreement, string $pdfPath = '', ?Document $document = null, ?string $downloadUrl = null, bool $attachFile = true)
     {
         $this->agreement = $agreement;
+        $this->document = $document;
         $this->pdfPath = $pdfPath;
+        $this->downloadUrl = $downloadUrl;
+        $this->attachFile = $attachFile;
     }
 
     /**
      * Get the message envelope.
-     *
-     * @return \Illuminate\Mail\Mailables\Envelope
      */
     public function envelope()
     {
+        $subject = 'Ditt signerade dokument';
+        if ($this->agreement) {
+            $subject = 'Ditt signerade avtal: #' . $this->agreement->agreement_id;
+        } elseif ($this->document) {
+            $subject = 'Ditt signerade dokument: ' . $this->document->title;
+        }
+        
         return new Envelope(
-            subject: 'Ditt signerade avtal: #' . $this->agreement->agreement_id,
+            subject: $subject,
         );
     }
 
     /**
      * Get the message content definition.
-     *
-     * @return \Illuminate\Mail\Mailables\Content
      */
     public function content()
     {
@@ -66,14 +92,16 @@ class SignedDocumentMail extends Mailable
 
     /**
      * Get the attachments for the message.
-     *
-     * @return array
      */
     public function attachments()
     {
+        if (!$this->attachFile || !$this->pdfPath) {
+            return [];
+        }
+
         return [
             Attachment::fromPath($this->pdfPath)
-                ->as(basename($this->pdfPath)) // El nombre que verá el cliente
+                ->as(basename($this->pdfPath))
                 ->withMime('application/pdf'),
         ];
     }

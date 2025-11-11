@@ -36,7 +36,8 @@ use App\Http\Controllers\{
     AgreementController,
     CurrencyController,
     SignatureController,
-    ConfigController
+    ConfigController,
+    DocumentController
 };
 
 use App\Http\Controllers\Services\{
@@ -159,9 +160,21 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::post('comment', [VehicleTaskController::class, 'comment']);
     });
 
-    //Documents
+    //Documents (Vehicle Documents)
     Route::group(['prefix' => 'documents'], function () {
         Route::post('send', [VehicleDocumentController::class, 'send']);
+    });
+
+    //Signable Documents (New module for signing documents)
+    Route::group(['prefix' => 'signable-documents'], function () {
+        Route::get('/', [DocumentController::class, 'index']);
+        Route::post('/', [DocumentController::class, 'store']);
+        Route::get('/{document}', [DocumentController::class, 'show']);
+        Route::post('/{document}', [DocumentController::class, 'update']);
+        Route::delete('/{document}', [DocumentController::class, 'destroy']);
+        Route::get('/{document}/get-admin-preview-pdf', [DocumentController::class, 'getAdminPreviewPdf'])->name('documents.getAdminPreviewPdf');
+        Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
+        Route::post('/{document}/send-static-signature-request', [DocumentController::class, 'sendStaticSignatureRequest']);
     });
 
     //Vehicles

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
 use Spatie\Permission\Models\Permission;
@@ -14,25 +15,60 @@ class MorePermissionSeeder extends Seeder
      */
     public function run(): void
     {
-        Permission::create(['name' => 'view suppliers']);
-        Permission::create(['name' => 'create suppliers']);
-        Permission::create(['name' => 'edit suppliers']);
-        Permission::create(['name' => 'delete suppliers']);
+        $permissions = [
+            //suppliers
+            ['name' => 'view suppliers'],
+            ['name' => 'create suppliers'],
+            ['name' => 'edit suppliers'],
+            ['name' => 'delete suppliers'],
+            
+            //clients
+            ['name' => 'view clients'],
+            ['name' => 'create clients'],
+            ['name' => 'edit clients'],
+            ['name' => 'delete clients'],
+            
+            //billing
+            ['name' => 'view billing'],
+            ['name' => 'create billing'],
+            ['name' => 'edit billing'],
+            ['name' => 'delete billing'],
+            
+            //invoices
+            ['name' => 'view invoices'],
+            ['name' => 'create invoices'],
+            ['name' => 'edit invoices'],
+            ['name' => 'delete invoices'],            
 
-        Permission::create(['name' => 'view clients']);
-        Permission::create(['name' => 'create clients']);
-        Permission::create(['name' => 'edit clients']);
-        Permission::create(['name' => 'delete clients']);
+            //documents
+            ['name' => 'view signed documents'],
+            ['name' => 'create signed documents'],
+            ['name' => 'edit signed documents'],
+            ['name' => 'delete signed documents'],
 
-        Permission::create(['name' => 'view billing']);
-        Permission::create(['name' => 'create billing']);
-        Permission::create(['name' => 'edit billing']);
-        Permission::create(['name' => 'delete billing']);
+        ]; 
+        // Crear o actualizar permisos
+        $this->createOrUpdatePermissions($permissions);
 
-        Permission::create(['name' => 'view invoices']);
-        Permission::create(['name' => 'create invoices']);
-        Permission::create(['name' => 'edit invoices']);
-        Permission::create(['name' => 'delete invoices']);
+    }
 
+    /**
+     * Create or update permissions in the database
+     *
+     * @param array $permissions
+     * @return void
+     */
+    private function createOrUpdatePermissions(array $permissions)
+    {
+        foreach ($permissions as $permissionData) {
+            Permission::updateOrCreate(
+                ['name' => $permissionData['name']], // Search by name
+                [
+                    'guard_name' => 'api',
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ]
+            );
+        }
     }
 }
