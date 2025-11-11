@@ -35,7 +35,7 @@ const supplier_id = ref(null);
 const userData = ref(null);
 const role = ref(null);
 
-const sectionEl = ref(null)
+const sectionEl = ref(null);
 
 const advisor = ref({
   type: "",
@@ -63,12 +63,12 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-  
-  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
-    await suppliersStores.fetchSuppliers({ limit: -1 , state_id: 2})
-    suppliers.value = toRaw(suppliersStores.getSuppliers)
+  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+  role.value = userData.value.roles[0].name;
+
+  if (role.value === "SuperAdmin" || role.value === "Administrator") {
+    await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
+    suppliers.value = toRaw(suppliersStores.getSuppliers);
   }
 
   if (role.value !== "Supplier" && role.value !== "User") {
@@ -263,22 +263,22 @@ const truncateText = (text, length = 15) => {
 };
 
 function resizeSectionToRemainingViewport() {
-  const el = sectionEl.value
-  if (!el) return
+  const el = sectionEl.value;
+  if (!el) return;
 
-  const rect = el.getBoundingClientRect()
-  const remaining = Math.max(0, window.innerHeight - rect.top - 25)
-  el.style.minHeight = `${remaining}px`
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
 }
 
 onMounted(() => {
-  resizeSectionToRemainingViewport()
-  window.addEventListener('resize', resizeSectionToRemainingViewport)
-})
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', resizeSectionToRemainingViewport)
-})
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
     <VDialog v-model="isRequestOngoing" width="auto" persistent>
       <VProgressCircular indeterminate color="primary" class="mb-0" />
     </VDialog>
-  
+
     <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
       {{ advisor.message }}
     </VAlert>
@@ -387,6 +387,7 @@ onBeforeUnmount(() => {
 
       <VTable
         v-if="!$vuetify.display.smAndDown"
+        v-show="clients.length"
         class="px-4 pb-6 text-no-wrap"
       >
         <!-- 👉 table head -->
@@ -394,11 +395,13 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col">#ID</th>
             <th scope="col">Kontakt</th>
-            <th scope="col" class="text-center"> Organisationsnummer </th>
+            <th scope="col" class="text-center">Organisationsnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Leverantör</th>
-            <th scope="col"> Skapad av </th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">
+              Leverantör
+            </th>
+            <th scope="col">Skapad av</th>
             <th
               scope="col"
               v-if="$can('edit', 'clients') || $can('delete', 'clients')"
@@ -450,14 +453,9 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td class="text-wrap" v-if="role !== 'Supplier' && role !== 'User'">
-              <div
-                class="d-flex align-center gap-x-3"
-                v-if="client.supplier"
-              >
+              <div class="d-flex align-center gap-x-3" v-if="client.supplier">
                 <VAvatar
-                  :variant="
-                    client.supplier.user.avatar ? 'outlined' : 'tonal'
-                  "
+                  :variant="client.supplier.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
                 >
                   <VImg
@@ -486,19 +484,21 @@ onBeforeUnmount(() => {
                 <VAvatar
                   :variant="client.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
-                  >
+                >
                   <VImg
                     v-if="client.user.avatar"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + client.user.avatar"
                   />
-                    <span v-else>{{ avatarText(client.user.name) }}</span>
+                  <span v-else>{{ avatarText(client.user.name) }}</span>
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ client.user.name }} {{ client.user.last_name ?? '' }} 
+                    {{ client.user.name }} {{ client.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ client.user.email }}</span>
+                  <span class="text-sm text-disabled">{{
+                    client.user.email
+                  }}</span>
                 </div>
               </div>
             </td>
@@ -510,12 +510,7 @@ onBeforeUnmount(() => {
             >
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn
-                    v-bind="props"
-                    icon
-                    variant="text"
-                    class="btn-white"
-                  >
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -540,11 +535,7 @@ onBeforeUnmount(() => {
                     @click="showDeleteDialog(client)"
                   >
                     <template #prepend>
-                      <img
-                        :src="wasteIcon"
-                        alt="Delete Icon"
-                        class="mr-2"
-                      />
+                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
@@ -554,17 +545,19 @@ onBeforeUnmount(() => {
           </tr>
         </tbody>
         <!-- 👉 table footer  -->
-        <tfoot v-show="!clients.length">
-          <tr>
-            <td
-              :colspan="role === 'Supplier' || role === 'User' ? 7 : 8"
-              class="text-center">
-              Uppgifter ej tillgängliga
-            </td>
-          </tr>
-        </tfoot>
       </VTable>
-
+      <div v-if="!clients.length" class="empty-state">
+        <VIcon size="120" icon="custom-f-user" />
+        <div class="empty-state-title">Du har inga kunder än</div>
+        <div class="empty-state-text">
+          Lägg till dina kunder här för att snabbt skapa fakturor och hålla
+          ordning på dina kontakter.
+        </div>
+        <VBtn class="btn-ghost">
+          Lägg till ny kund
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
         v-if="clients.length && $vuetify.display.smAndDown"
@@ -579,9 +572,7 @@ onBeforeUnmount(() => {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">
-                Organisationsnummer:
-              </div>
+              <div class="expansion-panel-item-label">Organisationsnummer:</div>
               <div class="expansion-panel-item-value">
                 {{ client.organization_number ?? "" }}
               </div>
@@ -630,6 +621,7 @@ onBeforeUnmount(() => {
       </VExpansionPanels>
 
       <VCardText
+        v-if="clients.length"
         class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
       >
         <span class="text-pagination-results">
@@ -648,7 +640,7 @@ onBeforeUnmount(() => {
         />
       </VCardText>
     </VCard>
-      
+
     <!-- 👉 Add New Client -->
     <AddNewClientDrawer
       v-model:isDrawerOpen="isAddNewClientDrawerVisible"
@@ -661,32 +653,39 @@ onBeforeUnmount(() => {
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
       persistent
-      class="v-dialog-sm"
+      class="action-dialog"
     >
       <!-- Dialog close btn -->
 
-      <DialogCloseBtn
+      <VBtn
+        icon
+        class="btn-white close-btn"
         @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
-      />
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort klient">
-        <VDivider class="mt-4" />
-        <VCardText>
-          Är du säker att du vill ta bort klienten
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Är du säker på att du vill radera kunden?
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          <!-- Är du säker att du vill ta bort klienten
           <strong>{{ selectedClient.fullname }}</strong
-          >?
+          >? -->
+          Du är på väg att permanent radera "{{ selectedClient.fullname }}". All
+          associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmDeleteDialogVisible = false"
-          >
+          <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
             Avbryt
           </VBtn>
-          <VBtn @click="removeClient"> Acceptera </VBtn>
+          <VBtn class="btn-gradient" @click="removeClient"> Ja, radera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -694,7 +693,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
-
 .page-section {
   display: flex;
   flex-direction: column;

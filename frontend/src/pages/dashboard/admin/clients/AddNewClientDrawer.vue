@@ -144,7 +144,7 @@ const handleDrawerModelValueUpdate = (val) => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content right-drawer"
+    class="scrollable-content right-drawer rounded-4"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
@@ -291,6 +291,6 @@ const handleDrawerModelValueUpdate = (val) => {
   padding: 10px;
 }
 .right-drawer {
-  border-radius: 16px 0 0 16px;
+  border-radius: 16px !important;
 }
 </style>
