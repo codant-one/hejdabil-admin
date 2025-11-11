@@ -173,25 +173,34 @@ const handleAdminPdfClick = (event) => {
   const container = pdfPlacementContainer.value; 
   if (!container) return;
 
-  // Lista de páginas (canvas/svg/img) renderizadas por vue-pdf-embed
   const pages = Array.from(container.querySelectorAll('canvas, svg, img'))
-  // Elemento base para el click
   const pageEl = event.target.closest('canvas, svg, img') || pages[0]
   if (!pageEl) return
 
-  const rect = pageEl.getBoundingClientRect();
-  const localX = event.clientX - rect.left;
-  const localY = event.clientY - rect.top;
+  const pageRect = pageEl.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+
+  // Coordenadas locales dentro de la página (para guardar en porcentaje)
+  const localX = event.clientX - pageRect.left;
+  const localY = event.clientY - pageRect.top;
+
+  // Coordenadas absolutas dentro del contenedor (para mostrar el placeholder correctamente en páginas > 1)
+  const absoluteX = (pageRect.left - containerRect.left) + localX + (container.scrollLeft || 0);
+  const absoluteY = (pageRect.top - containerRect.top) + localY + (container.scrollTop || 0);
 
   const pageIndex = Math.max(0, pages.indexOf(pageEl))
 
   signaturePlacement.value = {
+    // Locales a la página para convertir a porcentaje
     x: localX,
     y: localY,
+    // Absolutas para mostrar el placeholder correctamente
+    absoluteX,
+    absoluteY,
     page: pageIndex + 1,
     visible: true,
-    pageWidth: rect.width,
-    pageHeight: rect.height,
+    pageWidth: pageRect.width,
+    pageHeight: pageRect.height,
   }
 }
 
@@ -232,8 +241,8 @@ const submitPlacementSignatureRequest = async () => {
     const payload = {
       documentId: selectedDocument.value.id,
       email: signatureEmail.value,
-      x: x_percent.toFixed(2),
-      y: y_percent.toFixed(2),
+      x: x_percent.toFixed(4),
+      y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
       alignment: 'left',
     }
@@ -783,7 +792,7 @@ const resolveStatus = state => {
             <div 
               v-if="signaturePlacement.visible"
               class="signature-placeholder-admin"
-              :style="{ left: signaturePlacement.x + 'px', top: signaturePlacement.y + 'px' }"
+              :style="{ left: signaturePlacement.absoluteX + 'px', top: signaturePlacement.absoluteY + 'px' }"
             >
               <span class="signature-placeholder-content">
                 <VIcon icon="mdi-draw" />

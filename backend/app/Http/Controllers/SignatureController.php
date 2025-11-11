@@ -580,9 +580,9 @@ class SignatureController extends Controller
                     $sigHeight = $sigWidth * 0.4;
                 }
 
-                // Centrar la firma respecto al punto clicado
-                $xDraw = $xPoint - ($sigWidth / 2);
-                $yDraw = $yPoint - ($sigHeight / 2);
+                // Dibujar usando el punto clicado como esquina superior izquierda
+                $xDraw = $xPoint;
+                $yDraw = $yPoint;
 
                 // Limitar para que no se salga de la página
                 $xDraw = max(0, min($size['width'] - $sigWidth, $xDraw));
@@ -636,9 +636,9 @@ class SignatureController extends Controller
         $xPixel = ($x / 100.0) * $pageWidth;
         $yPixel = ($y / 100.0) * $pageHeight;
         
-        // Centrar en el punto clicado
-        $xDraw = (int) round($xPixel - ($sigWidthPx / 2));
-        $yDraw = (int) round($yPixel - ($sigHeightPx / 2));
+        // Usar el punto clicado como esquina superior izquierda
+        $xDraw = (int) round($xPixel);
+        $yDraw = (int) round($yPixel);
 
         // Limitar para no salir de la página
         $xDraw = max(0, min($pageWidth - $sigWidthPx, $xDraw));

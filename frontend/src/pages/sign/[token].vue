@@ -17,13 +17,15 @@ const props = defineProps({
 // --- Refs de Estado (Ahora más simples) ---
 const isLoading = ref(true)
 const pdfSource = ref(null)
-const signaturePlacement = ref({ x: null, y: null, isStatic: false, visible: false, alignment: 'left' }) // Coordenadas fijas del admin
+const signaturePlacement = ref({ x: null, y: null, page: 1, isStatic: false, visible: false, alignment: 'left' })
 const isSignatureModalVisible = ref(false)
 const signaturePad = ref(null)
 const finalState = ref(null)
 const isSubmitting = ref(false)
 const isAlreadySigned = ref(false)
 const signedInfo = ref(null)
+const pdfContainer = ref(null)
+const computedPlacement = ref({ left: null, top: null })
 // --- Refs de Elementos del DOM ---
 const signatureCanvas = ref(null)
 const isRequestOngoing = ref(false)
@@ -99,12 +101,13 @@ const loadSignatureDetails = async () => {
   try {
     const response = await axios.get(`/signatures/${props.token}/details`)
     
-    const { placement_x, placement_y, signature_alignment } = response.data
+    const { placement_x, placement_y, placement_page, signature_alignment } = response.data
 
     if (placement_x !== null && placement_y !== null) {
       signaturePlacement.value = {
         x: placement_x,
         y: placement_y,
+        page: placement_page || 1,
         isStatic: false,
         visible: true,
         alignment: signature_alignment || 'left',
@@ -113,6 +116,7 @@ const loadSignatureDetails = async () => {
       signaturePlacement.value = {
         x: null, 
         y: null,
+        page: 1,
         isStatic: true,
         visible: true,
         alignment: signature_alignment || 'left',
@@ -122,6 +126,50 @@ const loadSignatureDetails = async () => {
     console.error("Kunde inte ladda signeringsdetaljer:", error)
     throw error
   }
+}
+
+// Calcula la posición del placeholder considerando múltiples páginas
+const calculatePlaceholderPosition = () => {
+  if (signaturePlacement.value.isStatic || !signaturePlacement.value.visible) {
+    return
+  }
+
+  const container = pdfContainer.value
+  if (!container) {
+    // Reintentar después de un momento
+    setTimeout(calculatePlaceholderPosition, 100)
+    return
+  }
+
+  const pages = Array.from(container.querySelectorAll('canvas, svg, img'))
+  if (pages.length === 0) {
+    // Reintentar después de un momento
+    setTimeout(calculatePlaceholderPosition, 100)
+    return
+  }
+
+  const targetPageIndex = (signaturePlacement.value.page || 1) - 1
+  const targetPage = pages[targetPageIndex] || pages[0]
+
+  // Calcular la suma de alturas de todas las páginas anteriores
+  let accumulatedHeight = 0
+  for (let i = 0; i < targetPageIndex && i < pages.length; i++) {
+    accumulatedHeight += pages[i].offsetHeight
+  }
+
+  // Obtener dimensiones de la página objetivo
+  const pageWidth = targetPage.offsetWidth
+  const pageHeight = targetPage.offsetHeight
+
+  // Convertir porcentajes a píxeles en la página objetivo
+  const xPx = (signaturePlacement.value.x / 100) * pageWidth
+  const yPx = (signaturePlacement.value.y / 100) * pageHeight
+
+  // Calcular posición absoluta en el contenedor (anclado arriba/izquierda, sin centrar)
+  const left = xPx
+  const top = accumulatedHeight + yPx
+
+  computedPlacement.value = { left, top }
 }
 
 // Carga tanto el PDF como los detalles de la firma
@@ -143,6 +191,13 @@ const loadSignatureData = async () => {
     // Solo cargar detalles de firma si no está firmado
     if (!isAlreadySigned.value) {
       await loadSignatureDetails()
+      
+      // Esperar a que el PDF se renderice y calcular posición
+      await nextTick()
+      calculatePlaceholderPosition()
+      
+      // Recalcular al redimensionar
+      window.addEventListener('resize', calculatePlaceholderPosition)
     }
     
   } catch (error) {
@@ -306,22 +361,31 @@ onMounted(loadSignatureData);
       <VDivider />
       
       <div class="pdf-container">
-        <div style="position: relative;">
+        <div ref="pdfContainer" style="position: relative;">
           <vue-pdf-embed :source="pdfSource" />
           
-          <!-- Placeholder de firma clickeable -->
+          <!-- Placeholder de firma clickeable (posición dinámica) -->
           <div 
-            v-if="signaturePlacement.visible"
+            v-if="signaturePlacement.visible && !signaturePlacement.isStatic && computedPlacement.left !== null"
             class="signature-placeholder"
-            :class="{ 
-              'static-signature-position': signaturePlacement.isStatic,
-              'align-left': signaturePlacement.isStatic && signaturePlacement.alignment === 'left',
-              'align-right': signaturePlacement.isStatic && signaturePlacement.alignment === 'right'
+            :style="{
+              left: computedPlacement.left + 'px', 
+              top: computedPlacement.top + 'px'
             }"
-            :style="!signaturePlacement.isStatic ? {
-              left: signaturePlacement.x + '%', 
-              top: signaturePlacement.y + '%'
-            } : {}"
+            @click.stop="openSignatureModal"
+          >
+            <VIcon icon="mdi-draw" />
+            <span>Signera här</span>
+          </div>
+          
+          <!-- Placeholder de firma estática -->
+          <div 
+            v-if="signaturePlacement.visible && signaturePlacement.isStatic"
+            class="signature-placeholder static-signature-position"
+            :class="{ 
+              'align-left': signaturePlacement.alignment === 'left',
+              'align-right': signaturePlacement.alignment === 'right'
+            }"
             @click.stop="openSignatureModal"
           >
             <VIcon icon="mdi-draw" />
@@ -420,14 +484,6 @@ onMounted(loadSignatureData);
 .signature-placeholder:hover {
   background-color: rgba(var(--v-theme-primary), 0.2);
   transform: scale(1.05);
-}
-
-.signature-placeholder:not(.static-signature-position) {
-  transform: translate(-50%, -50%);
-}
-
-.signature-placeholder:not(.static-signature-position):hover {
-  transform: translate(-50%, -50%) scale(1.05);
 }
 
 /* Posicionamiento para la firma estática */
