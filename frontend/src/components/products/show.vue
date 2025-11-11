@@ -10,7 +10,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/free-mode';
 import 'swiper/css/thumbs';
 import 'swiper/css/scrollbar';
-import 'vue3-carousel/dist/carousel.css'
+import '@/styles/vendor/vue3-carousel.css'
 
 const props = defineProps({
   isDrawerOpen: {

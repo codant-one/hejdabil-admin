@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agreement;
+use App\Models\Document;
 use App\Models\Token;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -140,10 +141,18 @@ class SignatureController extends Controller
                     ->where('signature_status', 'signed')
                     ->firstOrFail();
         
-        $agreement = $token->agreement;
+        // Support both agreements and documents
+        $pdfPath = $token->signed_pdf_path;
         
-        // Usar el PDF firmado guardado en el token o en el agreement
-        $pdfPath = $token->signed_pdf_path ?? $agreement->file;
+        if (!$pdfPath) {
+            if ($token->agreement_id) {
+                $agreement = $token->agreement;
+                $pdfPath = $agreement->file;
+            } elseif ($token->document_id) {
+                $document = $token->document;
+                $pdfPath = $document->file;
+            }
+        }
         
         if ($pdfPath && Storage::disk('public')->exists($pdfPath)) {
             $path = storage_path('app/public/' . $pdfPath);
@@ -178,8 +187,15 @@ class SignatureController extends Controller
         $response = [
             'status' => $token->signature_status,
             'signed_at' => $token->signed_at,
-            'agreement_id' => $token->agreement->agreement_id
         ];
+        
+        // Support both agreements and documents
+        if ($token->agreement_id) {
+            $response['agreement_id'] = $token->agreement->agreement_id;
+        } elseif ($token->document_id) {
+            $response['document_id'] = $token->document->id;
+            $response['document_title'] = $token->document->title;
+        }
         
         if ($token->signature_status === 'signed') {
             $response['message'] = 'Este documento ya fue firmado';
@@ -211,43 +227,82 @@ class SignatureController extends Controller
 
         // 3. Decodificar y guardar la imagen de la firma.
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->signature));
-        $agreement = $token->agreement;
-        $imageName = 'signature_' . $agreement->id . '_' . time() . '.png';
+        
+        // Support both agreements and documents
+        $entityId = $token->agreement_id ?? $token->document_id;
+        $entityType = $token->agreement_id ? 'agreement' : 'document';
+        
+        $imageName = 'signature_' . $entityType . '_' . $entityId . '_' . time() . '.png';
         $signaturePath = 'signatures/' . $imageName;
         Storage::disk('public')->put($signaturePath, $imageData);
 
-        // --- LÓGICA DE REGENERACIÓN DEL PDF ADAPTADA A TU MODELO ---
-        // 4. Regenerar el PDF, esta vez pasando la URL de la firma.
-        $signedPdfPath = $this->regeneratePdfWithSignature(
-            $agreement,
-            $signaturePath,
-            $token->placement_x,
-            $token->placement_y
-        );
-        if (!$signedPdfPath) {
-            return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
+        // 4. Regenerar el PDF con la firma
+        $signedPdfPath = null;
+        if ($token->agreement_id) {
+            $agreement = $token->agreement;
+            $signedPdfPath = $this->regeneratePdfWithSignature(
+                $agreement,
+                $signaturePath,
+                $token->placement_x,
+                $token->placement_y
+            );
+            if (!$signedPdfPath) {
+                return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
+            }
+            $agreement->file = $signedPdfPath;
+            $agreement->save();
+        } elseif ($token->document_id) {
+            $document = $token->document;
+            $signedPdfPath = $this->regenerateDocumentPdfWithSignature(
+                $document,
+                $signaturePath,
+                $token->placement_x,
+                $token->placement_y,
+                $token->placement_page ?? 1
+            );
+            if (!$signedPdfPath) {
+                return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
+            }
+            $document->file = $signedPdfPath;
+            $document->save();
         }
 
         // 5. Actualizar el registro del token con el estado 'signed' y las rutas de los archivos.
         $token->update([
-            'signature_status'                 => 'signed',
-            'signed_at'              => now(),
-            'signature_image_path'   => $signaturePath,
-            'signed_pdf_path'        => $signedPdfPath, // Guardamos la ruta del nuevo PDF firmado
+            'signature_status' => 'signed',
+            'signed_at' => now(),
+            'signature_image_path' => $signaturePath,
+            'signed_pdf_path' => $signedPdfPath,
         ]);
 
-        // 6. Opcional pero recomendado: Actualizar el campo 'file' del Agreement con la nueva ruta.
-        $agreement->file = $signedPdfPath;
-        $agreement->save();
-
+        // 6. Enviar email con el PDF firmado (adjuntar sólo si el archivo es pequeño)
         try {
-            $recipientEmail = $token->recipient_email ?? $token->agreement->agreement_client->email;
-            if ($recipientEmail) {
+            $recipientEmail = $token->recipient_email;
+            if ($recipientEmail && $signedPdfPath) {
                 $pdfFullPath = storage_path('app/public/' . $signedPdfPath);
-                Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $pdfFullPath));
+                $downloadUrl = Storage::disk('public')->url($signedPdfPath);
+                $attachFile = true;
+                try {
+                    $sizeBytes = Storage::disk('public')->size($signedPdfPath);
+                    // adjuntar sólo si < 4.5MB para evitar límites de 5MB
+                    if ($sizeBytes !== null && $sizeBytes > 4500000) {
+                        $attachFile = false;
+                    }
+                } catch (\Throwable $t) {
+                    // si falla size, intentamos adjuntar
+                    $attachFile = true;
+                }
+
+                if ($token->agreement_id) {
+                    $agreement = $token->agreement;
+                    Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $attachFile ? $pdfFullPath : '', null, $downloadUrl, $attachFile));
+                } elseif ($token->document_id) {
+                    $document = $token->document;
+                    Mail::to($recipientEmail)->send(new SignedDocumentMail(null, $attachFile ? $pdfFullPath : '', $document, $downloadUrl, $attachFile));
+                }
             }
         } catch (\Exception $e) {
-            Log::error('Kunde inte skicka signerat PDF via e-post för avtal #' . $agreement->id . ': ' . $e->getMessage());
+            Log::error('Kunde inte skicka signerat PDF via e-post: ' . $e->getMessage());
         }
         
         // 7. Devolver una respuesta exitosa a Vue.
@@ -379,12 +434,22 @@ class SignatureController extends Controller
     public function getUnsignedPdf($tokenString)
     {
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
-        $agreement = $token->agreement;
-    
-        if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
-            $path = storage_path('app/public/' . $agreement->file);
-            return response()->file($path);
+        
+        // Support both agreements and documents
+        if ($token->agreement_id) {
+            $agreement = $token->agreement;
+            if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
+                $path = storage_path('app/public/' . $agreement->file);
+                return response()->file($path);
+            }
+        } elseif ($token->document_id) {
+            $document = $token->document;
+            if ($document && $document->file && Storage::disk('public')->exists($document->file)) {
+                $path = storage_path('app/public/' . $document->file);
+                return response()->file($path);
+            }
         }
+        
         abort(404, 'Archivo PDF no encontrado.');
     }
 
@@ -404,16 +469,15 @@ class SignatureController extends Controller
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
 
         // Lógica para determinar la alineación de la firma
-        $alignment = 'left'; // Por defecto, la firma va a la izquierda
-        $agreementTypeId = $token->agreement->agreement_type_id;
-
-        // Para el contrato de Compra (Purchase), el cliente es el vendedor,
-        // por lo que su firma va a la DERECHA.
-        if ($agreementTypeId == 2) { // 2 = Purchase
-            $alignment = 'right';
+        $alignment = $token->signature_alignment ?? 'left'; // Usar el valor guardado o 'left' por defecto
+        
+        // Si es un agreement, usar la lógica original
+        if ($token->agreement_id && $token->agreement) {
+            $agreementTypeId = $token->agreement->agreement_type_id;
+            if ($agreementTypeId == 2) { // 2 = Purchase
+                $alignment = 'right';
+            }
         }
-        // Para los demás (Sales, Mediation), la firma del cliente va a la izquierda.
-        // No necesitamos más condiciones, el valor por defecto 'left' ya funciona para ellos.
 
         return response()->json([
             'placement_x' => $token->placement_x,
@@ -421,5 +485,177 @@ class SignatureController extends Controller
             'placement_page' => $token->placement_page,
             'signature_alignment' => $alignment,
         ]);
+    }
+    
+    /**
+     * Helper privado para regenerar el PDF de un documento con la firma.
+     * Usa FPDI para agregar la imagen de la firma al PDF existente.
+     */
+    private function regenerateDocumentPdfWithSignature(Document $document, string $signatureUrl, ?float $x, ?float $y, int $targetPage = 1)
+    {
+        // Leer el PDF original
+        $originalPdfPath = storage_path('app/public/' . $document->file);
+        
+        if (!file_exists($originalPdfPath)) {
+            return null;
+        }
+
+        // Asegurar que el directorio existe
+        $signedDir = storage_path('app/public/documents/signed');
+        if (!file_exists($signedDir)) {
+            Storage::disk('public')->makeDirectory('documents/signed');
+        }
+
+        // Ruta de la imagen de la firma
+        $signatureImagePath = Storage::disk('public')->path($signatureUrl);
+        
+        if (!file_exists($signatureImagePath)) {
+            return null;
+        }
+
+        // Nombre del archivo firmado
+        $fileName = 'document-' . $document->id . '-signed-' . time() . '.pdf';
+        $filePath = 'documents/signed/' . $fileName;
+        $destinationPath = storage_path('app/public/' . $filePath);
+
+        try {
+            // Intentar usar FPDI si está disponible
+            if (class_exists('\\setasign\\Fpdi\\Fpdi')) {
+                return $this->addSignatureWithFPDI($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage);
+            }
+            
+            // Si FPDI no está disponible, intentar usar Imagick como alternativa
+            // Solo si está realmente disponible (no solo cargado en php.ini)
+            if (extension_loaded('imagick') && class_exists('Imagick')) {
+                return $this->addSignatureWithImagick($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage);
+            }
+            
+            // Si ninguna librería está disponible, lanzar excepción
+            throw new \Exception('FPDI es requerido para agregar firmas a PDFs. Por favor instala setasign/fpdi ejecutando: composer require setasign/fpdi');
+            
+        } catch (\Exception $e) {
+            Log::error('Error al agregar firma al PDF: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Agrega la firma usando FPDI
+     */
+    private function addSignatureWithFPDI($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1)
+    {
+        $pdf = new \setasign\Fpdi\Fpdi();
+        
+        // Obtener el número de páginas del PDF original
+        $pageCount = $pdf->setSourceFile($pdfPath);
+        
+        // Procesar todas las páginas
+        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+            // Importar la página
+            $pageId = $pdf->importPage($pageNo);
+            $size = $pdf->getTemplateSize($pageId);
+            
+            // Agregar la página
+            $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+            $pdf->useTemplate($pageId);
+            
+            // Agregar la firma en la página objetivo
+            if ($pageNo === $targetPage) {
+                // Convertir coordenadas de porcentaje a la unidad del PDF (mm por defecto)
+                $xPoint = ($x / 100) * $size['width'];
+                $yPoint = ($y / 100) * $size['height'];
+
+                // Calcular tamaño de firma: 20% del ancho de página, manteniendo proporción real de la imagen
+                $sigWidth = max(5, $size['width'] * 0.20);
+                $sigHeight = 0; // se calculará por proporción
+                if (function_exists('getimagesize')) {
+                    $imgSize = @getimagesize($signaturePath);
+                    if (is_array($imgSize) && !empty($imgSize[0]) && !empty($imgSize[1]) && $imgSize[0] > 0) {
+                        $ratio = $imgSize[1] / $imgSize[0];
+                        $sigHeight = $sigWidth * $ratio;
+                    }
+                }
+                if ($sigHeight === 0) {
+                    // fallback a una altura aproximada si no se pudo leer la imagen
+                    $sigHeight = $sigWidth * 0.4;
+                }
+
+                // Dibujar usando el punto clicado como esquina superior izquierda
+                $xDraw = $xPoint;
+                $yDraw = $yPoint;
+
+                // Limitar para que no se salga de la página
+                $xDraw = max(0, min($size['width'] - $sigWidth, $xDraw));
+                $yDraw = max(0, min($size['height'] - $sigHeight, $yDraw));
+                
+                // Dibujar imagen
+                $pdf->Image($signaturePath, $xDraw, $yDraw, $sigWidth, $sigHeight);
+            }
+        }
+        
+        // Guardar el PDF
+        $pdf->Output('F', $outputPath);
+        
+        return $filePath;
+    }
+
+    /**
+     * Agrega la firma usando Imagick (alternativa si FPDI no está disponible)
+     */
+    private function addSignatureWithImagick($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1)
+    {
+        // Leer el PDF con Imagick
+        $pdf = new \Imagick();
+        $pdf->setResolution(150, 150);
+        $pdf->readImage($pdfPath);
+        
+        // Obtener la página objetivo (0-index)
+        $index = max(0, $targetPage - 1);
+        $pdf->setIteratorIndex($index);
+        $page = $pdf->getImage();
+        
+        // Leer la imagen de la firma
+        $signature = new \Imagick($signaturePath);
+
+        // Obtener dimensiones de la página
+        $pageWidth = $page->getImageWidth();
+        $pageHeight = $page->getImageHeight();
+
+        // Calcular tamaño de firma: 20% del ancho de página, mantener proporción real
+        $sigWidthPx = (int) max(30, $pageWidth * 0.20);
+        $sigRatio = 0.4;
+        try {
+            $sigRatio = $signature->getImageHeight() > 0 ? ($signature->getImageHeight() / $signature->getImageWidth()) : 0.4;
+        } catch (\Exception $e) {
+            $sigRatio = 0.4;
+        }
+        $sigHeightPx = (int) max(15, $sigWidthPx * $sigRatio);
+        $signature->resizeImage($sigWidthPx, $sigHeightPx, \Imagick::FILTER_LANCZOS, 1);
+        
+        // Convertir coordenadas de porcentaje a píxeles
+        $xPixel = ($x / 100.0) * $pageWidth;
+        $yPixel = ($y / 100.0) * $pageHeight;
+        
+        // Usar el punto clicado como esquina superior izquierda
+        $xDraw = (int) round($xPixel);
+        $yDraw = (int) round($yPixel);
+
+        // Limitar para no salir de la página
+        $xDraw = max(0, min($pageWidth - $sigWidthPx, $xDraw));
+        $yDraw = max(0, min($pageHeight - $sigHeightPx, $yDraw));
+        
+        // Componer la firma sobre la página
+        $page->compositeImage($signature, \Imagick::COMPOSITE_OVER, $xDraw, $yDraw);
+        
+        // Volver a colocar la página modificada
+        $pdf->setImage($page);
+        $pdf->writeImages($outputPath, true);
+        
+        // Limpiar
+        $signature->destroy();
+        $page->destroy();
+        $pdf->destroy();
+        
+        return $filePath;
     }
 }

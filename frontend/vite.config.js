@@ -12,6 +12,18 @@ import pluginSvgVue from '@vuetter/vite-plugin-vue-svg';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  css: {
+    preprocessorOptions: {
+      scss: {
+        quietDeps: true,
+        silenceDeprecations: ['global-builtin'],
+      },
+      sass: {
+        quietDeps: true,
+        silenceDeprecations: ['global-builtin'],
+      },
+    },
+  },
   plugins: [
     vue(),
     pluginSvgVue(),

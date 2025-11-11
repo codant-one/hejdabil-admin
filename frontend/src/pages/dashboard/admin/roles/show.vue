@@ -267,6 +267,35 @@ const closeRoleDetailDialog = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
+                            Signera dokument
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view signed-documents"
+                                value="view signed-documents"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create signed-documents"
+                                value="create signed-documents"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit signed-documents"
+                                value="edit signed-documents"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete signed-documents"
+                                value="delete signed-documents"     
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
                             Mina fordon
                         </VLabel>
                         <VCardText class="pt-2 pb-0">
