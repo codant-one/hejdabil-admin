@@ -568,7 +568,12 @@ onBeforeUnmount(() => {
             expand-icon="custom-chevron-down"
           >
             <span class="order-id">{{ client.order_id }}</span>
-            <span class="title-panel">{{ client.fullname }}</span>
+            <div class="order-title-box">
+              <span class="title-panel">{{ client.fullname }}</span>
+              <div class="title-organization"
+                >Org.Nr. <div class="text-black">{{ client.organization_number }}</div></div
+              >
+            </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6">
@@ -681,7 +686,7 @@ onBeforeUnmount(() => {
           associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
           <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
             Avbryt
           </VBtn>

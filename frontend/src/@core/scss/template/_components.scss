@@ -620,6 +620,12 @@ body .v-dialog {
         align-items: center;
         gap: 15px;
         padding-bottom: 16px;
+
+        @media (max-width: 991px) {
+          flex-direction: column;
+          align-items: start;
+        }
+
         .dialog-title {
           font-weight: 600;
           font-size: 24px;
@@ -634,6 +640,13 @@ body .v-dialog {
       .dialog-text {
         padding-top: 0px;
         padding-bottom: 0px;
+      }
+      .dialog-actions {
+        @media (max-width: 991px) {
+          flex-direction: column-reverse;
+          padding: 24px 14px;
+          gap: 8px;
+        }
       }
     }
   }
@@ -698,7 +711,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       }
 
       .v-expansion-panel-title {
-        height: 56px;
+        height: 66px;
         padding: 0 16px 0 0;
         border-radius: 0px;
 
@@ -708,7 +721,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         color: #008c91;
 
         .order-id {
-          width: 58px;
+          width: 50px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -718,8 +731,22 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           line-height: 24px;
         }
 
+        .order-title-box {
+          display: flex;
+          flex-direction: column;
+          padding: 0 8px;
+          gap: 2px;
+        }
+
         .title-panel {
-          padding: 0 16px;
+        }
+        .title-organization {
+          display: flex;
+          gap: 8px;
+          color: #878787;
+          .text-black {
+            color: #454545;
+          }
         }
 
         &.v-expansion-panel-title--active {
