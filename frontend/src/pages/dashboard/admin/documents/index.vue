@@ -470,7 +470,7 @@ const resolveStatus = state => {
 
               <!-- 👉 Add document button -->
               <VBtn
-                v-if="$can('create','documents')"
+                v-if="$can('create','signed documents')"
                 class="w-100 w-md-auto"
                 prepend-icon="tabler-plus"
                 @click="openUploadModal">
@@ -489,7 +489,7 @@ const resolveStatus = state => {
                 <th scope="col"> BESKRIVNING </th>
                 <th scope="col"> SKAPAD </th>
                 <th scope="col"> SIGNERA STATUS </th>
-                <th scope="col" v-if="$can('edit', 'documents') || $can('delete', 'documents')"></th>
+                <th scope="col" v-if="$can('edit', 'signed documents') || $can('delete', 'signed documents')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
@@ -531,7 +531,7 @@ const resolveStatus = state => {
                   </VChip>
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'documents') || $can('delete', 'documents')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'signed documents') || $can('delete', 'signed documents')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -544,27 +544,27 @@ const resolveStatus = state => {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','documents')" @click="startPlacementProcess(document)">
+                      <VListItem v-if="$can('edit','signed documents')" @click="startPlacementProcess(document)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
                         <VListItemTitle>Signera</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('view', 'documents')"
+                         v-if="$can('view', ' signed documents')"
                          @click="openLink(document)">
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
                         </template>
                         <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('view','documents')" @click="download(document)">
+                      <VListItem v-if="$can('view',' signed documents')" @click="download(document)">
                         <template #prepend>
                           <VIcon icon="mdi-cloud-download-outline"/>
                         </template>
                         <VListItemTitle>Ladda ner</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('delete','documents')" @click="showDeleteDialog(document)">
+                      <VListItem v-if="$can('delete',' signed documents')" @click="showDeleteDialog(document)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
@@ -852,5 +852,5 @@ const resolveStatus = state => {
 <route lang="yaml">
   meta:
     action: view
-    subject: documents
+    subject: signed documents
 </route>
