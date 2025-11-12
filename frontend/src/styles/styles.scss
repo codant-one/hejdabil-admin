@@ -44,6 +44,7 @@ div.v-avatar {
 
 .layout-wrapper.layout-nav-type-vertical .layout-navbar.navbar-blur::after {
   background: none !important;
+  backdrop-filter: none !important;
 }
 
 .layout-content-width-boxed.layout-wrapper.layout-nav-type-vertical
@@ -593,6 +594,10 @@ body {
     .v-field__append-inner {
       align-items: center;
       padding-top: 0px !important;
+
+      .v-icon {
+        margin-inline-start: 12px !important;
+      }
     }
 
     .v-field__input {
@@ -705,9 +710,6 @@ body {
 .filter-bar {
   @media (max-width: 768px) {
     justify-content: space-between;
-    .search {
-      max-width: 236px;
-    }
   }
 }
 

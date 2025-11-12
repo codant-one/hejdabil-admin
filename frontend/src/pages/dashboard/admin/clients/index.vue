@@ -297,7 +297,7 @@ onBeforeUnmount(() => {
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <div class="d-flex align-center w-100 w-md-auto font-blauer">
-          <h2>Kunder</h2>
+          <h2>Kunder ({{ clients.length }})</h2>
         </div>
 
         <div class="d-flex gap-4 title-action-buttons">
@@ -330,9 +330,10 @@ onBeforeUnmount(() => {
           >
             <VCard>
               <AddNewClientMobile
+                v-model:isDrawerOpen="isDialogOpen"
                 :client="selectedClient"
                 :suppliers="suppliers"
-                @client-data="handleClientData"
+                @client-data="submitForm"
                 @close="isDialogOpen = false"
               />
             </VCard>
@@ -343,10 +344,9 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center flex-wrap gap-4 filter-bar"
+        class="d-flex align-center justify-space-between gap-4 filter-bar"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
-        <!-- <div class="d-flex align-center flex-wrap gap-4"> -->
         <!-- 👉 Search  -->
         <div class="search">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
@@ -365,21 +365,20 @@ onBeforeUnmount(() => {
             style="width: 200px"
             :menu-props="{ maxHeight: '300px' }"
           /> -->
-        <!-- </div> -->
 
-        <VSpacer class="d-none d-md-block" />
-        <VBtn class="btn-white-2">
+        <VBtn class="btn-white-2" v-if="role !== 'Supplier' && role !== 'User'">
           <VIcon icon="custom-filter" size="24" />
           <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
+
         <div
           v-if="!$vuetify.display.smAndDown"
-          class="d-flex align-center w-100 w-md-auto visa-select"
+          class="d-flex align-center visa-select"
         >
           <span class="text-no-wrap pr-4">Visa:</span>
           <VSelect
             v-model="rowPerPage"
-            class="w-100 custom-select-hover"
+            class="custom-select-hover"
             :items="[10, 20, 30, 50]"
           />
         </div>
@@ -546,12 +545,19 @@ onBeforeUnmount(() => {
         </tbody>
         <!-- 👉 table footer  -->
       </VTable>
-      <div v-if="!clients.length" class="empty-state">
-        <VIcon size="120" icon="custom-f-user" />
-        <div class="empty-state-title">Du har inga kunder än</div>
-        <div class="empty-state-text">
-          Lägg till dina kunder här för att snabbt skapa fakturor och hålla
-          ordning på dina kontakter.
+      <div 
+        v-if="!clients.length" 
+        class="empty-state" 
+        :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
+        @click="isAddNewClientDrawerVisible = true"
+        >
+        <VIcon :size="$vuetify.display.smAndDown ? 80 : 120" icon="custom-f-user" />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Du har inga kunder än</div>
+          <div class="empty-state-text">
+            Lägg till dina kunder här för att snabbt skapa fakturor och hålla
+            ordning på dina kontakter.
+          </div>
         </div>
         <VBtn class="btn-ghost">
           Lägg till ny kund
@@ -717,10 +723,6 @@ onBeforeUnmount(() => {
 }
 
 @media (min-width: 991px) {
-  .search {
-    max-width: 36rem !important;
-  }
-
   .card-fill {
     padding-bottom: 0;
   }

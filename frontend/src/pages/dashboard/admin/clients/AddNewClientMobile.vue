@@ -8,6 +8,10 @@ import {
 } from "@/@core/utils/validators";
 
 const props = defineProps({
+  isDrawerOpen: {
+    type: Boolean,
+    required: true,
+  },
   client: {
     type: Object,
     required: false,
@@ -33,6 +37,7 @@ const phone = ref("");
 const fullname = ref("");
 const email = ref("");
 const reference = ref("");
+const comments = ref('')
 const isEdit = ref(false);
 const userData = ref(null);
 const role = ref(null);
@@ -61,6 +66,7 @@ watchEffect(async () => {
       fullname.value = props.client.fullname;
       email.value = props.client.email;
       reference.value = props.client.reference;
+      comments.value = props.client.comments;
     }
   }
 });
@@ -80,6 +86,7 @@ const closeNavigationDrawer = () => {
     fullname.value = null;
     email.value = null;
     reference.value = null;
+    comments.value = null;
 
     isEdit.value = false;
     id.value = 0;
@@ -109,6 +116,7 @@ const onSubmit = () => {
       formData.append("postal_code", postal_code.value);
       formData.append("phone", phone.value);
       formData.append("reference", reference.value);
+      formData.append("comments", comments.value);
 
       emit(
         "clientData",
@@ -120,7 +128,6 @@ const onSubmit = () => {
     }
   });
 };
-
 </script>
 
 
@@ -128,9 +135,8 @@ const onSubmit = () => {
   <!-- 👉 Form -->
   <VForm class="card-client" ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
     <VList>
-      <VListItem>
-        <VSelect
-          v-if="role !== 'Supplier'"
+      <VListItem v-if="role !== 'Supplier' && role !== 'User'">
+        <VSelect          
           v-model="supplier_id"
           placeholder="Leverantörer"
           :items="suppliers"
@@ -197,6 +203,12 @@ const onSubmit = () => {
       <VListItem>
         <VTextField v-model="reference" label="Vår referens" />
       </VListItem>
+      <VListItem>
+        <VTextarea 
+          v-model="comments"
+          label="Beskrivning"
+        />
+      </VListItem>
     </VList>
     <VRow class="px-9">
     <!-- 👉 Submit and Cancel -->
@@ -211,7 +223,7 @@ const onSubmit = () => {
         </VBtn>
       </VCol>
       <VCol cols="6">
-        <VBtn type="submit" class="btn-gradient">
+        <VBtn type="submit" class="btn-gradient" @click="emit('update:isDrawerOpen', false)">
           {{ isEdit ? "Uppdatering" : "Lägg till" }}
         </VBtn>
       </VCol>

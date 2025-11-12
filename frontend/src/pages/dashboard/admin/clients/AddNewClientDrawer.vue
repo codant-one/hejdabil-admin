@@ -174,9 +174,8 @@ const handleDrawerModelValueUpdate = (val) => {
           <!-- 👉 Form -->
           <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
             <VRow>
-              <VCol cols="12" md="12">
-                <VSelect
-                  v-if="role !== 'Supplier'"
+              <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
+                <VSelect                 
                   v-model="supplier_id"
                   placeholder="Leverantörer"
                   :items="suppliers"

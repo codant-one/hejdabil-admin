@@ -672,9 +672,6 @@ body .v-dialog {
           letter-spacing: 0%;
           color: #5d5d5d;
         }
-
-        .action-icon {
-        }
       }
       .dialog-text {
         padding-top: 0px;
@@ -776,9 +773,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           flex-direction: column;
           padding: 0 8px;
           gap: 2px;
-        }
-
-        .title-panel {
         }
         .title-organization {
           display: flex;
@@ -1601,15 +1595,20 @@ body {
 // Empty list message
 
 .empty-state {
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 24px;
   align-items: center;
-  padding-top: 60px;
+  
+  .empty-state-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 40%;
+  }
 
   .empty-state-title {
-    margin-top: 24px;
     font-weight: 700;
     font-size: 32px;
     line-height: 100%;
@@ -1619,7 +1618,6 @@ body {
   }
 
   .empty-state-text {
-    margin-bottom: 24px;
     font-weight: 400;
     font-size: 16px;
     line-height: 24px;
@@ -1627,7 +1625,16 @@ body {
     text-align: center;
     color: #878787;
   }
+
   @media (max-width: 991px) {
-    padding: 30px 20px;
+    padding: 0;
+    gap: 8px;
+
+  .empty-state-content {
+    width: 100%;
+  }
+    .empty-state-title {  
+      font-size: 24px;
+    }
   }
 }

@@ -54,7 +54,7 @@ onBeforeUnmount(() => {
         class="mb-0"/>
     </VDialog>
 
-    <VCard title="" class="rounded-0 card-fill">
+    <VCard title="" class="card-fill">
       <VRow class="py-6 px-md-6 px-2">
         <VCol
           cols="12"
@@ -99,6 +99,12 @@ onBeforeUnmount(() => {
 
   .card-fill {
     flex: 1 1 auto;
+  }
+
+  @media (max-width: 991px) {
+    .card-fill {
+      border-radius: 0 !important;
+    }
   }
 </style>
 
