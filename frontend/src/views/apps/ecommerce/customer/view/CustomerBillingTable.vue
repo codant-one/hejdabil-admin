@@ -764,7 +764,7 @@ const sendMails = async () => {
             </VExpansionPanels>
 
             <div
-              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-4"
+              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-1"
             >
               <span class="text-pagination-results">
                 {{ paginationData }}
@@ -986,7 +986,7 @@ const sendMails = async () => {
             </VExpansionPanels>
 
             <div
-              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-4"
+              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-1"
             >
               <span class="text-pagination-results">
                 {{ paginationData }}
