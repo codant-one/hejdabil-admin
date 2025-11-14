@@ -9,7 +9,7 @@
 .v-input--density-compact,
 .v-input--density-compact .v-field--variant-plain,
 .v-input--density-compact .v-field--variant-underlined {
-  --v-input-control-height: 38px !important;
+  --v-input-control-height: 48px !important;
 }
 
 // 👉 Body
@@ -169,6 +169,10 @@ body .v-btn {
   padding: 0 16px;
   gap: 0px !important;
 
+  .v-btn__overlay {
+    display: none !important;
+  }
+
   .v-btn__content {
     font-style: Regular;
     font-size: 15px;
@@ -190,7 +194,7 @@ body .v-btn {
     ) !important;
     color: #416054 !important;
 
-    &:hover {
+    &:hover, &:focus {
       background: #0fd84e !important;
     }
 
@@ -216,7 +220,7 @@ body .v-btn {
       color: #6e9383 !important;
     }
 
-    &:hover {
+    &:hover, &:focus {
       border: solid 1px #416054 !important;
       background-color: transparent !important;
       .v-btn__overlay {
@@ -244,7 +248,7 @@ body .v-btn {
   &.btn-white {
     background-color: #fff !important;
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -273,7 +277,7 @@ body .v-btn {
       color: #454545 !important;
     }
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -298,7 +302,7 @@ body .v-btn {
       color: #1c2925 !important;
     }
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -314,7 +318,7 @@ body .v-btn {
   &.btn-blue {
     background-color: #3af8ff !important;
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #00e1e2 !important;
     }
 
@@ -330,7 +334,7 @@ body .v-btn {
   &.btn-green {
     background-color: #79fca2 !important;
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #0fd84e !important;
     }
 
@@ -369,7 +373,7 @@ body .v-btn {
       gap: 8px;
     }
 
-    &:hover {
+    &:hover, &:focus {
       .v-btn__content,
       .v-btn__prepend {
         color: #454545 !important;
@@ -403,7 +407,7 @@ body .v-btn {
       }
     }
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -557,7 +561,7 @@ body .v-btn {
       }
     }
 
-    &:hover {
+    &:hover, &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -649,7 +653,7 @@ body .v-dialog {
       right: 8px !important;
       z-index: 1;
 
-      &:hover {
+      &:hover, &:focus {
         background-color: #fff !important;
       }
     }
@@ -748,7 +752,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
       .v-expansion-panel-title {
         height: 66px;
-        padding: 0 16px 0 0;
+        padding: 0 8px 0 0;
         border-radius: 0px;
 
         font-weight: 400;
@@ -1443,7 +1447,7 @@ body {
         }
 
         &.v-input--density-compact {
-          --v-input-control-height: 38px !important;
+          --v-input-control-height: 48px !important;
           .v-field__input {
             padding-inline-start: 0.5rem;
           }
@@ -1584,8 +1588,8 @@ body {
       .v-field {
         background-color: #f6f6f6;
         .v-field__outline {
-          color: #416054 !important;
-          border-color: #416054 !important;
+          color: #E7E7E7 !important;
+          border-color: #E7E7E7 !important;
         }
       }
     }
@@ -1629,6 +1633,7 @@ body {
   @media (max-width: 991px) {
     padding: 0;
     gap: 8px;
+    margin-top: 100px;
 
   .empty-state-content {
     width: 100%;

@@ -545,13 +545,15 @@ onBeforeUnmount(() => {
         </tbody>
         <!-- 👉 table footer  -->
       </VTable>
-      <div 
-        v-if="!clients.length" 
-        class="empty-state" 
+      <div
+        v-if="!clients.length"
+        class="empty-state"
         :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
-        @click="isAddNewClientDrawerVisible = true"
-        >
-        <VIcon :size="$vuetify.display.smAndDown ? 80 : 120" icon="custom-f-user" />
+      >
+        <VIcon
+          :size="$vuetify.display.smAndDown ? 80 : 120"
+          icon="custom-f-user"
+        />
         <div class="empty-state-content">
           <div class="empty-state-title">Du har inga kunder än</div>
           <div class="empty-state-text">
@@ -559,7 +561,20 @@ onBeforeUnmount(() => {
             ordning på dina kontakter.
           </div>
         </div>
-        <VBtn class="btn-ghost">
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
+          @click="isAddNewClientDrawerVisible = true"
+        >
+          Lägg till ny kund
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
+          @click="isDialogOpen = true"
+        >
           Lägg till ny kund
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
@@ -576,9 +591,10 @@ onBeforeUnmount(() => {
             <span class="order-id">{{ client.order_id }}</span>
             <div class="order-title-box">
               <span class="title-panel">{{ client.fullname }}</span>
-              <div class="title-organization"
-                >Org.Nr. <div class="text-black">{{ client.organization_number }}</div></div
-              >
+              <div class="title-organization">
+                Org.Nr.
+                <div class="text-black">{{ client.organization_number }}</div>
+              </div>
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>

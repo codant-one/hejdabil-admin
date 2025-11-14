@@ -37,7 +37,7 @@ const phone = ref("");
 const fullname = ref("");
 const email = ref("");
 const reference = ref("");
-const comments = ref('')
+const comments = ref("");
 const isEdit = ref(false);
 const userData = ref(null);
 const role = ref(null);
@@ -130,13 +130,17 @@ const onSubmit = () => {
 };
 </script>
 
-
 <template>
   <!-- 👉 Form -->
-  <VForm class="card-client" ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+  <VForm
+    class="card-client"
+    ref="refForm"
+    v-model="isFormValid"
+    @submit.prevent="onSubmit"
+  >
     <VList>
       <VListItem v-if="role !== 'Supplier' && role !== 'User'">
-        <VSelect          
+        <VSelect
           v-model="supplier_id"
           placeholder="Leverantörer"
           :items="suppliers"
@@ -204,14 +208,11 @@ const onSubmit = () => {
         <VTextField v-model="reference" label="Vår referens" />
       </VListItem>
       <VListItem>
-        <VTextarea 
-          v-model="comments"
-          label="Beskrivning"
-        />
+        <VTextarea v-model="comments" label="Beskrivning" />
       </VListItem>
     </VList>
     <VRow class="px-9">
-    <!-- 👉 Submit and Cancel -->
+      <!-- 👉 Submit and Cancel -->
       <VCol cols="6">
         <VBtn
           type="reset"
@@ -223,7 +224,11 @@ const onSubmit = () => {
         </VBtn>
       </VCol>
       <VCol cols="6">
-        <VBtn type="submit" class="btn-gradient" @click="emit('update:isDrawerOpen', false)">
+        <VBtn
+          type="submit"
+          class="btn-gradient"
+          @click="emit('update:isDrawerOpen', false)"
+        >
           {{ isEdit ? "Uppdatering" : "Lägg till" }}
         </VBtn>
       </VCol>
@@ -244,19 +249,62 @@ const onSubmit = () => {
 }
 
 .v-btn {
-    width: 100%;
+  width: 100%;
 }
-
 </style>
 
 <style lang="scss">
 .card-client {
-    & .v-input {
-        & .v-input__control {
-            .v-field {
-                background-color: #f6f6f6;
-            }
+  .v-list {
+    padding: 28px 24px 40px !important;
+
+    .v-list-item {
+      margin-bottom: 0px;
+      padding: 0px !important;
+      gap: 0px !important;
+
+      .v-input--density-compact {
+        --v-input-control-height: 48px !important;
+      }
+
+      .v-select .v-field {
+        .v-field__input > input {
+          top: 0px;
+          left: 0px;
         }
+
+        .v-field__append-inner {
+          align-items: center;
+          padding-top: 0px;
+        }
+      }
+
+      .v-text-field {
+        .v-input__control {
+          padding-top: 16px;
+          .v-label {
+          }
+          input {
+            min-height: 48px;
+            padding: 12px 16px;
+          }
+        }
+      }
     }
+  }
+  & .v-input {
+    & .v-input__control {
+      .v-field {
+        background-color: #f6f6f6;
+        .v-field-label {
+          top: 12px !important;
+        }
+      }
+    }
+  }
+}
+
+.v-dialog .v-overlay__content {
+  max-height: calc(100dvh - 48px) !important;
 }
 </style>

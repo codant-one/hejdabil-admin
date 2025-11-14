@@ -193,7 +193,7 @@ const closeAll = () => {
 // 👉 Vertical Nav
 .layout-vertical-nav {
   position: fixed;
-  z-index: 9999;
+  z-index: 999;
   display: flex;
   flex-direction: column;
   block-size: 100%;
