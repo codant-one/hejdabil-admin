@@ -118,6 +118,11 @@ const editClient = (clientData) => {
   selectedClient.value = { ...clientData };
 };
 
+const editClientMobile = (clientData) => {
+  isDialogOpen.value = true;
+  selectedClient.value = { ...clientData };
+};
+
 const showDeleteDialog = (clientData) => {
   isConfirmDeleteDialogVisible.value = true;
   selectedClient.value = { ...clientData };
@@ -620,7 +625,7 @@ onBeforeUnmount(() => {
               <VBtn
                 v-if="$can('edit', 'clients')"
                 class="btn-light"
-                @click="editClient(client)"
+                @click="editClientMobile(client)"
               >
                 <VIcon icon="custom-pencil" size="24" />
                 Redigera

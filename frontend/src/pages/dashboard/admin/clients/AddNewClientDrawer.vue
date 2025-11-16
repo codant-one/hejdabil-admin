@@ -144,7 +144,7 @@ const handleDrawerModelValueUpdate = (val) => {
     temporary
     :width="550"
     location="end"
-    class="scrollable-content right-drawer rounded-4"
+    class="scrollable-content right-drawer rounded-left-4"
     :model-value="props.isDrawerOpen"
     @update:model-value="handleDrawerModelValueUpdate"
   >
@@ -168,7 +168,7 @@ const handleDrawerModelValueUpdate = (val) => {
 
     <VDivider class="mt-4" />
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }">
+    <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
       <VCard flat class="card-client">
         <VCardText>
           <!-- 👉 Form -->
@@ -291,5 +291,30 @@ const handleDrawerModelValueUpdate = (val) => {
 }
 .right-drawer {
   border-radius: 16px !important;
+}
+
+:deep(.right-drawer.v-navigation-drawer) {
+  border-color: transparent !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  box-shadow: none !important;
+}
+
+:deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
+  border: none !important;
+}
+</style>
+
+<style>
+.right-drawer.v-navigation-drawer {
+  border: none !important;
+  border-color: transparent !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  box-shadow: none !important;
+}
+
+.right-drawer.v-navigation-drawer .v-navigation-drawer__content {
+  border: none !important;
 }
 </style>
