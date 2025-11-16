@@ -37,12 +37,14 @@ div.v-avatar {
   .nav-item-icon {
   font-size: 24px;
 }
-
 .layout-content-width-boxed .layout-page-content {
   max-inline-size: 1800px;
 }
 
 .layout-wrapper.layout-nav-type-vertical .layout-navbar.navbar-blur::after {
+}
+.snackbar-alert .v-snackbar__wrapper.bg-error::before {
+  background-image: url('/src/assets/images/icons/alerts/alert-error-icon.svg');
   background: none !important;
   backdrop-filter: none !important;
 }
@@ -857,21 +859,35 @@ body {
 
 // 👉 Global snackbar alert style
 .snackbar-alert {
-
   .v-snackbar__content {
     padding: 0 !important;
-    color: #5D5D5D !important;
+    color: #5d5d5d !important;
     font-size: 16px;
     line-height: 16px;
     letter-spacing: 0%;
   }
-  
+
   .v-snackbar__wrapper {
     border-radius: 8px !important;
-    background-color: white !important;
+    background-color: #ffffff !important;
     box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.15);
     padding: 16px !important;
     border-left: 3px solid transparent;
+    display: flex;
+    align-items: center; // Centro vertical de icono y texto
+    gap: 8px; // Espacio horizontal solicitado
+  }
+
+  // Base icon placeholder
+  .v-snackbar__wrapper::before {
+    content: "";
+    display: block;
+    width: 21px; // Tamaño de icono solicitado
+    height: 21px;
+    flex: 0 0 21px;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
   }
 }
 
@@ -879,20 +895,32 @@ body {
 .snackbar-alert .v-snackbar__wrapper.bg-success {
   border-left-color: #00EEB0;
 }
+.snackbar-alert .v-snackbar__wrapper.bg-success::before {
+  background-image: url('/src/assets/images/icons/alerts/alert-check-icon.svg');
+}
 
 // Info (blue)
 .snackbar-alert .v-snackbar__wrapper.bg-info {
   border-left-color: #1890FF;
+}
+.snackbar-alert .v-snackbar__wrapper.bg-info::before {
+  background-image: url('/src/assets/images/icons/alerts/alert-info-icon.svg');
 }
 
 // Warning (orange)
 .snackbar-alert .v-snackbar__wrapper.bg-warning {
   border-left-color: #FAAD14;
 }
+.snackbar-alert .v-snackbar__wrapper.bg-warning::before {
+  background-image: url('/src/assets/images/icons/alerts/alert-warning-icon.svg');
+}
 
 // Error (red)
 .snackbar-alert .v-snackbar__wrapper.bg-error {
   border-left-color: #FF4D4F;
+}
+.snackbar-alert .v-snackbar__wrapper.bg-error::before {
+  background-image: url('/src/assets/images/icons/alerts/alert-error-icon.svg');
 }
 
 // Extra bottom space for mobile snackbars (location bottom)
