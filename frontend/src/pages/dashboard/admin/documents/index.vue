@@ -1,10 +1,10 @@
 <script setup>
+
 import { inject } from 'vue'
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import Toaster from "@/components/common/Toaster.vue";
-import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
 
@@ -23,7 +23,6 @@ const isSignatureDialogVisible = ref(false)
 const signatureEmail = ref('')              
 const refSignatureForm = ref()              
 const isStaticSignatureFlow = ref(false)
-const isValid = ref(false)
 const selectedDocument = ref({})
 
 const isPlacementModalVisible = ref(false)
@@ -209,13 +208,6 @@ const openSignatureDialog = (documentData) => {
   isSignatureDialogVisible.value = true
 }
 
-const openStaticSignatureDialog = (documentData) => {
-  selectedDocument.value = { ...documentData };
-  isStaticSignatureFlow.value = true
-  signatureEmail.value = ''
-  isSignatureDialogVisible.value = true
-}
-
 const submitPlacementSignatureRequest = async () => {
   const { valid } = await refSignatureForm.value?.validate()
 
@@ -228,7 +220,7 @@ const submitPlacementSignatureRequest = async () => {
   try {
     const container = pdfPlacementContainer.value;
     if (!container) {
-      throw new Error("No se pudo encontrar la referencia del contenedor del PDF.");
+      throw new Error("Referensen till PDF-filen kunde inte hittas.");
     }
 
     // Usar las dimensiones reales de la página capturadas en el click
@@ -488,6 +480,7 @@ const resolveStatus = state => {
                 <th scope="col"> TITEL </th>
                 <th scope="col"> BESKRIVNING </th>
                 <th scope="col"> SKAPAD </th>
+                <th scope="col"> SKAPAD AV </th>
                 <th scope="col"> SIGNERA STATUS </th>
                 <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
               </tr>
@@ -513,6 +506,27 @@ const resolveStatus = state => {
                       minute: '2-digit',
                       hour12: false
                   }) }}
+                </td>
+                <td class="text-wrap">
+                  <div class="d-flex align-center gap-x-3">
+                    <VAvatar
+                      :variant="document.user.avatar ? 'outlined' : 'tonal'"
+                      size="38"
+                      >
+                      <VImg
+                        v-if="document.user.avatar"
+                        style="border-radius: 50%;"
+                        :src="themeConfig.settings.urlStorage + document.user.avatar"
+                      />
+                        <span v-else>{{ avatarText(document.user.name) }}</span>
+                    </VAvatar>
+                    <div class="d-flex flex-column">
+                      <span class="font-weight-medium">
+                        {{ document.user.name }} {{ document.user.last_name ?? '' }} 
+                      </span>
+                      <span class="text-sm text-disabled">{{ document.user.email }}</span>
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <VChip
@@ -579,7 +593,7 @@ const resolveStatus = state => {
             <tfoot v-show="!documents.length">
               <tr>
                 <td
-                  colspan="5"
+                  colspan="6"
                   class="text-center">
                   Uppgifter ej tillgängliga
                 </td>

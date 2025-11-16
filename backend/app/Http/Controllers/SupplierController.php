@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Requests\SupplierRequest;
 use App\Http\Requests\UserRequest;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Str;
 

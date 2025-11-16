@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Document extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
+    protected $fillable = [ 
+        'user_id',
         'title',
         'file',
         'description',
@@ -26,10 +28,15 @@ class Document extends Model
         return $this->hasMany(Token::class, 'document_id');
     }
 
+    public function user(){
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
     /**** Public methods ****/
     public static function createDocument($request)
     {
         $document = self::create([
+            'user_id' => Auth::user()->id,
             'title' => $request->title ?? 'Untitled Document',
             'description' => $request->description ?? null,
         ]);

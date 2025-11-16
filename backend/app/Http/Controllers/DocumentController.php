@@ -17,7 +17,7 @@ class DocumentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Document::with(['tokens']);
+        $query = Document::with(['tokens', 'user']);
 
         // Search
         if ($request->has('search') && $request->search) {

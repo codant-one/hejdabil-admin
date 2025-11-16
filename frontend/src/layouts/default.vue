@@ -21,17 +21,7 @@ const getNavItems = ()=>{
         }
       })
     }
-  })  
-  axios.get('menu').then(resp=>{
-    if(resp.data.menus)
-      openGroups.value = resp.data.menus.split(',')
-    else
-      openGroups.value = []
-  }).catch(error=>{
-    openGroups.value = menus.value
-    axios.post('menu/add',{ menus:menus.value.join(',') })
-    
-  })
+  }) 
 }
 
 getNavItems()

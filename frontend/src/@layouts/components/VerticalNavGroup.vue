@@ -71,14 +71,12 @@ watch(isGroupOpen, val => {
   // // If group is opened => Add it to `openGroups` array
   if (val && grpIndex === -1) {
     openGroups.value.push(props.item.title)
-    axios.post('menu/update',{ menus: openGroups.value.join(',') })
     if(autoHideMenu.value){
       isGroupOpen.value = false
     }
   } else if (!val && grpIndex !== -1 && !autoHideMenu.value) {
     openGroups.value.splice(grpIndex, 1)
     collapseChildren(props.item.children)
-    axios.post('menu/update',{ menus: openGroups.value.join(',') })
   }
 }, { immediate: true })
 watch(openGroups, val => {
