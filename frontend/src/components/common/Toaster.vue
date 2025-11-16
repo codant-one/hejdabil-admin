@@ -1,8 +1,11 @@
 <script setup>
 
 import { useToastsStores } from '@/stores/useToasts'
-
+import { useDisplay } from "vuetify";
 const toastsStores = useToastsStores()
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const toast = ref({
   type: '',
@@ -37,11 +40,14 @@ watchEffect(() => {
 
 <template>
   <section>
-    <VAlert
-        v-if="toast.show"
-        :type="toast.type"
-        class="mb-6">
-        {{ toast.message }}
-    </VAlert>
+    <VSnackbar
+      v-model="toast.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="toast.type"
+      class="snackbar-alert"
+    >
+      {{ toast.message }}
+    </VSnackbar> 
   </section>
 </template>

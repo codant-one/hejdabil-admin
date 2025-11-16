@@ -1,14 +1,15 @@
 <script setup>
+
 import { toRaw } from "vue";
+import { useDisplay } from "vuetify";
 import { useSuppliersStores } from "@/stores/useSuppliers";
 import { useClientsStores } from "@/stores/useClients";
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { avatarText, formatNumber } from "@/@core/utils/formatters";
+import { avatarText } from "@/@core/utils/formatters";
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
 import router from "@/router";
 
-import searchIcon from "@/assets/images/icons/figma/searchIcon.svg";
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
@@ -42,6 +43,9 @@ const advisor = ref({
   message: "",
   show: false,
 });
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -121,6 +125,11 @@ const editClient = (clientData) => {
 const editClientMobile = (clientData) => {
   isDialogOpen.value = true;
   selectedClient.value = { ...clientData };
+};
+
+const openAddNewClientDrawerMobile = () => {
+  isDialogOpen.value = true;
+  selectedClient.value = {};
 };
 
 const showDeleteDialog = (clientData) => {
@@ -292,9 +301,15 @@ onBeforeUnmount(() => {
       <VProgressCircular indeterminate color="primary" class="mb-0" />
     </VDialog>
 
-    <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert"
+    >
       {{ advisor.message }}
-    </VAlert>
+    </VSnackbar>      
 
     <VCard class="card-fill">
       <VCardTitle
@@ -323,7 +338,7 @@ onBeforeUnmount(() => {
           <VBtn
             v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
             class="btn-gradient w-100 w-md-auto"
-            @click="isDialogOpen = true"
+            @click="openAddNewClientDrawerMobile"
           >
             <VIcon icon="custom-plus" size="24" />
             Ny kund

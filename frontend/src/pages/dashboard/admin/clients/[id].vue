@@ -1,9 +1,7 @@
 <script setup>
-import { themeConfig } from "@themeConfig";
+
 import { useClientsStores } from "@/stores/useClients";
-import { format, parseISO } from "date-fns";
-import { bg, es } from "date-fns/locale";
-import { useClipboard } from "@vueuse/core";
+import { useDisplay } from "vuetify";
 
 import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from "@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue";
@@ -24,6 +22,9 @@ const clientsStores = useClientsStores();
 
 const client = ref(null);
 const sectionEl = ref(null)
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const isRequestOngoing = ref(true);
 
@@ -148,9 +149,15 @@ onBeforeUnmount(() => {
       <VProgressCircular indeterminate color="primary" class="mb-0" />
     </VDialog>
 
-    <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert"
+    >
       {{ advisor.message }}
-    </VAlert>
+    </VSnackbar> 
       
     <Toaster />
 
