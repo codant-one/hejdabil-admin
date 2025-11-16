@@ -1,9 +1,11 @@
 <script setup>
+
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAlertStore } from "@/stores/useAlerts.js";
 import { VForm } from "vuetify/components";
 import { emailValidator, requiredValidator } from "@validators";
 import { useAuthStores } from "@/stores/useAuth";
+import { useDisplay } from "vuetify";
 
 import people from "@images/pages/login/login_image.png";
 import logo from "@images/logos/billogg-logo.svg";
@@ -20,6 +22,9 @@ const errors = ref({
   email: undefined,
   password: undefined,
 });
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const refVForm = ref();
 const email = ref("");
@@ -111,6 +116,16 @@ const onSubmit = () => {
 </script>
 
 <template>
+   <VSnackbar
+      v-model="alertStore.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="alertStore.type"
+      class="snackbar-alert"
+    >
+      {{ alertStore.message }}
+    </VSnackbar> 
+
   <div class="v-application__wrap login-page d-flex flex-column">
     <VRow no-gutters>
       <div
@@ -122,13 +137,6 @@ const onSubmit = () => {
           </RouterLink>
         </div>
         <div class="d-block w-100 w-md-auto">
-          <VAlert 
-            v-if="alertStore.message" 
-            border="start" 
-            :border-color="alertStore.type === 'error' ? 'error' : 'success'"
-             class="mb-5 flex-grow-0">
-            <div v-html="alertStore.message"></div>
-          </VAlert>
           <div class="p-0">
             <h2 class="login-title mb-6">Välkommen till din panel!</h2>
             <VForm ref="refVForm" @submit.prevent="onSubmit" max-width="100%" class="d-flex flex-column gap-4">

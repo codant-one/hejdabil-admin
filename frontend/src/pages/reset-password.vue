@@ -5,12 +5,15 @@ import {
   requiredValidator,
 } from "@/@core/utils/validators";
 import { useAuthStores } from "@/stores/useAuth";
-
+import { useDisplay } from "vuetify";
 import logo from "@images/logos/billogg-logo.svg";
 
 const route = useRoute();
 const router = useRouter();
 const authStores = useAuthStores();
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const user = route.query.user;
 
@@ -105,15 +108,17 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
-    <VAlert 
-      v-if="advisor.message" 
-      border="start" 
-      :border-color="advisor.type === 'error' ? 'error' : 'success'"
-      class="mb-5 flex-grow-0">
-      <div v-html="advisor.message"></div>
-    </VAlert>
+   <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert"
+    >
+      {{ advisor.message }}
+    </VSnackbar> 
 
+  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
     <div class="d-flex logo-box mt-2 mt-md-0">
       <RouterLink to="/login">
         <img :src="logo" width="121" height="40" />

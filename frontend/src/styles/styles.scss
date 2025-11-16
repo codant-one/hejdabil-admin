@@ -897,7 +897,13 @@ body {
 
 // Extra bottom space for mobile snackbars (location bottom)
 @media (max-width: 991px) {
-  .v-snackbar__wrapper {
+  // Default for auth / public pages
+  .snackbar-alert.v-snackbar--location-bottom .v-snackbar__wrapper {
+    margin-bottom: 15px !important;
+  }
+
+  // Logged-in/dashboard pages -> use extra space from bottom
+  .snackbar-dashboard .v-snackbar__wrapper {
     margin-bottom: 100px !important;
   }
 }

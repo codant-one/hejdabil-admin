@@ -45,7 +45,7 @@ watchEffect(() => {
       transition="scroll-y-reverse-transition"
       :location="snackbarLocation"
       :color="toast.type"
-      class="snackbar-alert"
+      class="snackbar-alert snackbar-dashboard"
     >
       {{ toast.message }}
     </VSnackbar> 

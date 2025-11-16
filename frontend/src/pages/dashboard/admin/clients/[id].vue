@@ -154,7 +154,7 @@ onBeforeUnmount(() => {
       transition="scroll-y-reverse-transition"
       :location="snackbarLocation"
       :color="advisor.type"
-      class="snackbar-alert"
+      class="snackbar-alert snackbar-dashboard"
     >
       {{ advisor.message }}
     </VSnackbar> 

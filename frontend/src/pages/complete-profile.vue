@@ -1,5 +1,5 @@
 <script setup>
-import { avatarText } from "@/@core/utils/formatters";
+import { useDisplay } from "vuetify";
 import {
   emailValidator,
   requiredValidator,
@@ -12,14 +12,15 @@ import { useProfileStores } from "@/stores/useProfile";
 import { Cropper } from "vue-advanced-cropper";
 import { themeConfig } from "@themeConfig";
 
-import logo_ from "@images/logos/favicon@2x.png";
-import banner from "@images/logos/banner.jpeg";
 import background from "@images/pages/complete-profile/complete-profile-background.jpg";
 import logo_gradient from "@images/logo.svg";
 
 import "vue-advanced-cropper/dist/style.css";
 import SignaturePad from "signature_pad";
 import { nextTick } from "vue";
+
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const authStores = useAuthStores();
 const profileStores = useProfileStores();
@@ -759,6 +760,15 @@ const dataURLtoBlob = (dataURL) => {
 </script>
 
 <template>
+  <VSnackbar
+    v-model="alert.show"
+    transition="scroll-y-reverse-transition"
+    :location="snackbarLocation"
+    :color="alert.type"
+    class="snackbar-alert"
+  >
+    {{ alert.message }}
+  </VSnackbar> 
   <VDialog v-model="isRequestOngoing" width="auto" persistent>
     <VProgressCircular indeterminate color="primary" class="mb-0" />
   </VDialog>
@@ -816,9 +826,6 @@ const dataURLtoBlob = (dataURL) => {
         class="auth-form mx-auto d-flex flex-column gap-4"
       >
         <template v-if="role === 'Supplier' || role === 'User'">
-          <VAlert v-if="alert.show" :type="alert.type">
-            {{ alert.message }}
-          </VAlert>
           <VWindow
             v-model="controlledTab"
             class="disable-tab-transition"
