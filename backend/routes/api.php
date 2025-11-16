@@ -14,7 +14,6 @@ use App\Http\Controllers\{
     UsersController,
     RoleController,
     PermissionController,
-    UserMenuController,
     ProxyController,
     DashboardController,
     SupplierController,
@@ -126,13 +125,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Permissions
     Route::group(['prefix' => 'permissions'], function () {
         Route::get('permission/all', [PermissionController::class, 'all']);
-    });
-
-    //Menu
-    Route::group(['prefix' => 'menu'], function () {
-        Route::get('/', [UserMenuController::class, 'index']);
-        Route::post('/add', [UserMenuController::class, 'store']);
-        Route::post('/update', [UserMenuController::class, 'update']);
     });
 
     //Billing

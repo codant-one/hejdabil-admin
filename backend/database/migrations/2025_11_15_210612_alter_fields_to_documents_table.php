@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_menus', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id')->nullable();
-            $table->text('menus')->nullable();
-            $table->timestamps();
-            
+        Schema::table('documents', function (Blueprint $table) {
+            $table->unsignedBigInteger('user_id')->after('id');
+
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
@@ -26,6 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_menus');
+        Schema::table('documents', function (Blueprint $table) {
+            $table->dropColumn('user_id');
+        });
     }
 };

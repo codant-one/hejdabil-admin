@@ -74,10 +74,6 @@ const handleNavScroll = evt => {
   isVerticalNavScrolled.value = evt.target.scrollTop > 0
 }
 
-const closeAll = () =>{
-  openGroups.value = []
-  axios.post('menu/update',{ menus: openGroups.value.join(',') })
-}
 </script>
 
 <template>
@@ -112,13 +108,6 @@ const closeAll = () =>{
             </h4>
           </Transition> -->
         </RouterLink>
-        <!-- Show toggle collapsible in >md and close button in <md -->
-        <VIcon
-          icon="tabler-arrows-minimize"
-          size="small"
-          class="me-2"
-          @click="closeAll"
-        />
 
         <!-- 👉 Vertical nav actions -->
         <!-- Show toggle collapsible in >md and close button in <md -->

@@ -8,7 +8,6 @@ use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 use App\Models\UserDetails;
-use App\Models\UserMenu;
 use App\Models\Supplier;
 use App\Models\Offer;
 use App\Models\Commission;
@@ -19,10 +18,6 @@ use App\Models\Commission;
 trait UserHelper
 {
     /**** Relationship ****/
-    public function menu(){
-        return $this->hasOne(UserMenu::class, 'user_id');
-    }
-
     public function userDetail() {
         return $this->hasOne(UserDetails::class, 'user_id', 'id');
     }
