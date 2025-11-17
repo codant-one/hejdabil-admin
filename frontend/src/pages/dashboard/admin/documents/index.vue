@@ -605,20 +605,20 @@ const resolveStatus = state => {
                         <VListItemTitle>Vidarebefordra</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('view', ' signed-documents')"
+                         v-if="$can('view', 'signed-documents')"
                          @click="openLink(document)">
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
                         </template>
                         <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('view',' signed-documents')" @click="download(document)">
+                      <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
                         <template #prepend>
                           <VIcon icon="mdi-cloud-download-outline"/>
                         </template>
                         <VListItemTitle>Ladda ner</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('delete',' signed-documents')" @click="showDeleteDialog(document)">
+                      <VListItem v-if="$can('delete','signed-documents')" @click="showDeleteDialog(document)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
