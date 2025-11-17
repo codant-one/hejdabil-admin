@@ -2,7 +2,7 @@
 
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { excelParser } from '@/plugins/csv/excelParser'
-import { yearValidator, requiredValidator } from '@/@core/utils/validators'
+import { yearValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'

@@ -9,10 +9,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
+use App\Models\Billing;
+use App\Models\VehicleClient;
 use App\Models\Client;
 
 class ClientController extends Controller
@@ -108,12 +111,47 @@ class ClientController extends Controller
 
             $client = Client::with(['supplier.user'])->find($id);
 
+            // Total de sale_price de los vehículos vendidos (type = 1) a este cliente
+            $carsForSale = VehicleClient::where('client_id', $id)
+                ->where('type', 1)
+                ->join('vehicles', 'vehicle_clients.vehicle_id', '=', 'vehicles.id')
+                ->sum('vehicles.sale_price');
+
+            // Cantidad de vehículos comprados (se mantiene como conteo)
+            $carsPurchased = VehicleClient::where('client_id', $id)
+                ->where('type', 2)
+                ->count();
+
+            $totalBilling = number_format(
+                Billing::whereNotNull('id')
+                        ->applyFilters(['client_id' => $id])
+                        ->sum(DB::raw('total + amount_discount')),
+            2);
+
+            $totalPending = number_format(
+                Billing::where('state_id', 4)
+                        ->applyFilters(['client_id' => $id])
+                        ->sum(DB::raw('total + amount_discount')),
+            2);
+
+            $totalExpired = number_format(
+                Billing::where('state_id', 8)
+                        ->applyFilters(['client_id' => $id])
+                        ->sum(DB::raw('total + amount_discount')),
+            2);
+
             if (!$client)
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
                     'message' => 'Klienten hittades inte'
                 ], 404);
+
+            $client->carsForSale = $carsForSale;
+            $client->carsPurchased = $carsPurchased;
+            $client->totalBilling = $totalBilling;
+            $client->totalPending = $totalPending;
+            $client->totalExpired = $totalExpired;
 
             return response()->json([
                 'success' => true,

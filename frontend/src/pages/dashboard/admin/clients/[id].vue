@@ -2,6 +2,7 @@
 
 import { useClientsStores } from "@/stores/useClients";
 import { useDisplay } from "vuetify";
+import { formatNumber } from '@/@core/utils/formatters'
 
 import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from "@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue";
@@ -34,7 +35,7 @@ const advisor = ref({
   show: false,
 });
 
-const cardItems = [
+const cardItems = ref([
   {
     title: "Beställningar",
     value: "238",
@@ -65,7 +66,7 @@ const cardItems = [
     icon: deleteReceiptIcon,
     bgCustomColor: "bg-forfallna",
   },
-];
+])
 
 watchEffect(fetchData);
 
@@ -74,6 +75,12 @@ async function fetchData() {
 
   if (Number(route.params.id) && route.name === "dashboard-admin-clients-id") {
     client.value = await clientsStores.showClient(Number(route.params.id));
+
+    cardItems.value[0].value = client.value.carsPurchased;
+    cardItems.value[1].value = formatNumber(client.value.carsForSale) + " Kr"
+    cardItems.value[2].value = formatNumber(client.value.totalBilling) + " Kr"
+    cardItems.value[3].value = formatNumber(client.value.totalPending) + " Kr"
+    cardItems.value[4].value = formatNumber(client.value.totalExpired) + " Kr"
   }
 
   isRequestOngoing.value = false;
