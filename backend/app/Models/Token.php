@@ -21,6 +21,7 @@ class Token extends Model
         'signing_token',
         'token_expires_at',
         'signed_at',
+        'viewed_at',
         'signature_image_path',
         'signed_pdf_path',
         'placement_x', 
@@ -33,6 +34,7 @@ class Token extends Model
     protected $casts = [
         'token_expires_at' => 'datetime',
         'signed_at' => 'datetime',
+        'viewed_at' => 'datetime',
     ];
 
     public function agreement(): BelongsTo
