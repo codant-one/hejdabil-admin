@@ -8,6 +8,7 @@ import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
 import { avatarText } from "@/@core/utils/formatters";
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from "@/router";
 
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
@@ -31,6 +32,11 @@ const isAddNewClientDrawerVisible = ref(false);
 const isConfirmDeleteDialogVisible = ref(false);
 const selectedClient = ref({});
 const isDialogOpen = ref(false);
+const hasLoaded = ref(false);
+const isClientFormEdited = ref(false);
+const isConfirmLeaveVisible = ref(false);
+let nextRoute = null;
+const leaveContext = ref(null); // 'mobile' | 'route' | null
 
 const supplier_id = ref(null);
 const userData = ref(null);
@@ -100,14 +106,15 @@ async function fetchData(cleanFilters = false) {
     supplier_id: supplier_id.value,
   };
 
-  isRequestOngoing.value = searchQuery.value !== "" ? false : true;
+  // Ensure loader is shown during fetch to prevent empty-state flicker
+  isRequestOngoing.value = true;
 
   await clientsStores.fetchClients(data);
 
   clients.value = clientsStores.getClients;
   totalPages.value = clientsStores.last_page;
   totalClients.value = clientsStores.clientsTotalCount;
-
+  hasLoaded.value = true;
   isRequestOngoing.value = false;
 }
 
@@ -116,6 +123,61 @@ watchEffect(registerEvents);
 function registerEvents() {
   emitter.on("cleanFilters", fetchData);
 }
+
+// Guard route changes if client creation form has unsaved changes
+onBeforeRouteLeave((to, from, next) => {
+  if (isClientFormEdited.value && (isAddNewClientDrawerVisible.value || isDialogOpen.value)) {
+    isConfirmLeaveVisible.value = true;
+    nextRoute = next;
+    leaveContext.value = 'route';
+  } else {
+    next();
+  }
+});
+
+const onClientFormEdited = (val) => {
+  isClientFormEdited.value = !!val;
+};
+
+// Intercept mobile dialog outside-click close
+const handleMobileDialogUpdate = (val) => {
+  if (val === false && isClientFormEdited.value) {
+    // keep dialog open and show confirm
+    isDialogOpen.value = true;
+    isConfirmLeaveVisible.value = true;
+    leaveContext.value = 'mobile';
+    return;
+  }
+  isDialogOpen.value = val;
+};
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  if (leaveContext.value === 'route' && nextRoute) {
+    isAddNewClientDrawerVisible.value = false;
+    isDialogOpen.value = false;
+    isClientFormEdited.value = false;
+    const go = nextRoute;
+    nextRoute = null;
+    leaveContext.value = null;
+    go();
+    return;
+  }
+  if (leaveContext.value === 'mobile') {
+    isDialogOpen.value = false;
+    isClientFormEdited.value = false;
+  }
+  leaveContext.value = null;
+};
+
+const cancelLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  if (leaveContext.value === 'route' && nextRoute) {
+    nextRoute(false);
+    nextRoute = null;
+  }
+  leaveContext.value = null;
+};
 
 const editClient = (clientData) => {
   isAddNewClientDrawerVisible.value = true;
@@ -347,6 +409,7 @@ onBeforeUnmount(() => {
             v-model="isDialogOpen"
             transition="dialog-bottom-transition"
             content-class="dialog-bottom-full-width"
+            @update:model-value="handleMobileDialogUpdate"
           >
             <VCard>
               <AddNewClientMobile
@@ -354,7 +417,7 @@ onBeforeUnmount(() => {
                 :client="selectedClient"
                 :suppliers="suppliers"
                 @client-data="submitForm"
-                @close="isDialogOpen = false"
+                @edited="onClientFormEdited"
               />
             </VCard>
           </VDialog>
@@ -566,7 +629,7 @@ onBeforeUnmount(() => {
         <!-- 👉 table footer  -->
       </VTable>
       <div
-        v-if="!clients.length"
+        v-if="!isRequestOngoing && hasLoaded && !clients.length"
         class="empty-state"
         :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
       >
@@ -694,6 +757,7 @@ onBeforeUnmount(() => {
       :client="selectedClient"
       :suppliers="suppliers"
       @client-data="submitForm"
+      @edited="onClientFormEdited"
     />
 
     <!-- 👉 Confirm Delete -->
@@ -733,6 +797,34 @@ onBeforeUnmount(() => {
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="removeClient"> Ja, radera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+    
+    <!-- Confirm leave without saving (parent-level for mobile outside-click and route change) -->
+    <VDialog
+      v-model="isConfirmLeaveVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="cancelLeave"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Avsluta utan att spara?</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="cancelLeave">Avbryt</VBtn>
+          <VBtn class="btn-gradient" @click="confirmLeave">Ja, fortsätt</VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -788,3 +880,4 @@ meta:
   action: view
   subject: clients
 </route>
+

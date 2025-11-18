@@ -1,5 +1,6 @@
 <script setup>
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import {
   emailValidator,
   requiredValidator,
@@ -22,7 +23,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:isDrawerOpen", "clientData"]);
+const emit = defineEmits(["update:isDrawerOpen", "clientData", "edited"]);
 
 const isFormValid = ref(false);
 const refForm = ref();
@@ -41,6 +42,29 @@ const comments = ref("");
 const isEdit = ref(false);
 const userData = ref(null);
 const role = ref(null);
+const isConfirmLeaveVisible = ref(false);
+
+const initialData = ref(null);
+const currentData = computed(() => ({
+  supplier_id: supplier_id.value,
+  organization_number: organization_number.value,
+  address: address.value,
+  street: street.value,
+  postal_code: postal_code.value,
+  phone: phone.value,
+  fullname: fullname.value,
+  email: email.value,
+  reference: reference.value,
+  comments: comments.value,
+}))
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
 
 const getTitle = computed(() => {
   return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
@@ -68,11 +92,17 @@ watchEffect(async () => {
       reference.value = props.client.reference;
       comments.value = props.client.comments;
     }
+
+    // snapshot initial state after fields are populated
+    nextTick(() => {
+      initialData.value = { ...currentData.value }
+      emit('edited', false)
+    })
   }
 });
 
 // 👉 drawer close
-const closeNavigationDrawer = () => {
+const reallyCloseAndReset = () => {
   emit("update:isDrawerOpen", false);
   nextTick(() => {
     refForm.value?.reset();
@@ -90,7 +120,17 @@ const closeNavigationDrawer = () => {
 
     isEdit.value = false;
     id.value = 0;
+    initialData.value = null
+    emit('edited', false)
   });
+}
+
+const closeNavigationDrawer = () => {
+  if (isDirty.value) {
+    isConfirmLeaveVisible.value = true
+    return
+  }
+  reallyCloseAndReset()
 };
 
 const formatOrgNumber = () => {
@@ -124,10 +164,16 @@ const onSubmit = () => {
         isEdit.value ? "update" : "create"
       );
 
-      closeNavigationDrawer();
+      // After successful submit, close without confirmation
+      reallyCloseAndReset();
     }
   });
 };
+
+watch(currentData, () => {
+  if (!initialData.value) return
+  emit('edited', isDirty.value)
+}, { deep: true })
 </script>
 
 <template>
@@ -227,13 +273,40 @@ const onSubmit = () => {
         <VBtn
           type="submit"
           class="btn-gradient"
-          @click="emit('update:isDrawerOpen', false)"
         >
           {{ isEdit ? "Uppdatering" : "Lägg till" }}
         </VBtn>
       </VCol>
     </VRow>
   </VForm>
+
+  <!-- Confirm leave without saving (mobile) -->
+  <VDialog
+    v-model="isConfirmLeaveVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmLeaveVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+        <div class="dialog-title">Avsluta utan att spara?</div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Avbryt</VBtn>
+        <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Ja, fortsätt</VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>

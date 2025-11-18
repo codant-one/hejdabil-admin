@@ -414,9 +414,7 @@ const sendMails = async () => {
             <VTextField v-model="searchQuery" placeholder="Sök" clearable />
           </div>
 
-          <VBtn class="btn-white d-block d-md-none" icon>
-            <VIcon icon="custom-filter" size="24" />
-          </VBtn>
+          <!-- Mobile filter button hidden per requirement -->
         </div>
         <VWindow v-model="tabBilling">
           <VWindowItem value="fakturor">

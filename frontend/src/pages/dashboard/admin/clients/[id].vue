@@ -37,25 +37,25 @@ const advisor = ref({
 
 const cardItems = ref([
   {
-    title: "Beställningar",
+    title: "Inköpta fordon",
     value: "238",
     icon: bestallningarIcon,
     bgCustomColor: "bg-netto",
   },
   {
-    title: "Total försäljning",
+    title: "Sålda fordon",
     value: "120.000 Kr",
     icon: forsaljningIcon,
     bgCustomColor: "bg-moms",
   },
   {
-    title: "Totalt i fakturor",
+    title: "Totalt fakturor",
     value: "120.000 Kr",
     icon: fakturorIcon,
     bgCustomColor: "bg-summa",
   },
   {
-    title: "Utestående fakturor",
+    title: "Obetalda fakturor",
     value: "120.000 Kr",
     icon: receiptDeclinedIcon,
     bgCustomColor: "bg-fakturor",
