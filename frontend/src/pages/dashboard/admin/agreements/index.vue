@@ -509,6 +509,11 @@ const addAgreements = () => {
 const openLink = function (agreementData) {
   window.open(themeConfig.settings.urlStorage + agreementData.file)
 }
+
+// Navigate to agreement tracker (timeline)
+const goToTracker = (agreementData) => {
+  router.push(`/dashboard/admin/agreements/${agreementData.id}/sparare`)
+}
 </script>
 
 <template>
@@ -697,6 +702,14 @@ const openLink = function (agreementData) {
                       </VBtn>
                     </template>
                     <VList>
+                      <VListItem
+                        v-if="$can('view','agreements')"
+                        @click="goToTracker(agreement)">
+                        <template #prepend>
+                          <VIcon icon="tabler-timeline" />
+                        </template>
+                        <VListItemTitle>Spårare</VListItemTitle>
+                      </VListItem>
                       <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
