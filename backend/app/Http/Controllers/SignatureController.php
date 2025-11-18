@@ -434,6 +434,12 @@ class SignatureController extends Controller
     public function getUnsignedPdf($tokenString)
     {
         $token = Token::where('signing_token', $tokenString)->firstOrFail();
+
+        // Marcar visualización si aún no se registró
+        if (is_null($token->viewed_at)) {
+            $token->viewed_at = now();
+            try { $token->save(); } catch (\Throwable $e) { /* log suave si quieres */ }
+        }
         
         // Support both agreements and documents
         if ($token->agreement_id) {

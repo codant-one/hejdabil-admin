@@ -170,6 +170,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/{document}/get-admin-preview-pdf', [DocumentController::class, 'getAdminPreviewPdf'])->name('documents.getAdminPreviewPdf');
         Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
         Route::post('/{document}/send-static-signature-request', [DocumentController::class, 'sendStaticSignatureRequest']);
+        Route::post('/{document}/resend-signature-request', [DocumentController::class, 'resendSignatureRequest'])->name('documents.resendSignatureRequest');
     });
 
     //Vehicles
