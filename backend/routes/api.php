@@ -36,11 +36,13 @@ use App\Http\Controllers\{
     CurrencyController,
     SignatureController,
     ConfigController,
-    DocumentController
+    DocumentController,
+    PayoutController
 };
 
 use App\Http\Controllers\Services\{
-    CarInfoController
+    CarInfoController,
+    SwishPayoutController
 };
 
 /*
@@ -101,6 +103,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::apiResource('notes', NoteController::class);
     Route::apiResource('agreements', AgreementController::class);
     Route::apiResource('currencies', CurrencyController::class);
+    Route::apiResource('payouts', PayoutController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -193,6 +196,9 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
     Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
     Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
+
+    //Swish Payout
+    Route::post('/swish/payout', [SwishPayoutController::class, 'store']);
 });
 
 //Public Endpoints
@@ -215,5 +221,8 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
 //PROXY
 Route::get('/proxy-image',[ProxyController::class, 'getImage']);
 
-//SERVICES
+//CAR INFO
 Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLicensePlate']);
+
+//Swish Payout
+Route::post('/swish/payout/callback', [SwishPayoutController::class, 'handle']);

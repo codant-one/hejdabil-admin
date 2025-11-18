@@ -296,6 +296,35 @@ const closeRoleDetailDialog = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
+                            Betalningar
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view payouts"
+                                value="view payouts"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create payouts"
+                                value="create payouts"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit payouts"
+                                value="edit payouts"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete payouts"
+                                value="delete payouts"     
+                                :readonly="readonly"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
                             Mina fordon
                         </VLabel>
                         <VCardText class="pt-2 pb-0">
