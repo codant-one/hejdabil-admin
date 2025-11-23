@@ -5,7 +5,7 @@
                 <td width="560" align="center" valign="top">
                     <table cellpadding="0" cellspacing="0" width="100%">
                         <tr>
-                            <td align="center"><p style="color: #9966ff"><strong>LÄS MER OM OSS</strong></p></td>
+                            <td align="center"><p style="color: #57F287"><strong>LÄS MER OM OSS</strong></p></td>
                         </tr>
                         <tr>
                             <td align="center" class="es-p20" style="font-size: 0px; padding-bottom: 0px;">

@@ -83,9 +83,9 @@
 
         .faktura {
             font-size: 24px;
-            color: #9966FF;
-            border-top: 2px solid #9966FF;
-            border-bottom: 2px solid #9966FF;
+            color: #57F287;
+            border-top: 2px solid #57F287;
+            border-bottom: 2px solid #57F287;
         }
 
         .table-main {

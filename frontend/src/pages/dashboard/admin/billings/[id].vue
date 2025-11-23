@@ -308,9 +308,9 @@ const download = async() => {
 
   .faktura {
     font-size: 32px;
-    color: #9966FF;
-    border-top: 2px solid #9966FF;
-    border-bottom: 2px solid #9966FF;
+    color: #57F287;
+    border-top: 2px solid #57F287;
+    border-bottom: 2px solid #57F287;
   }
 
   .invoice-preview-table {
