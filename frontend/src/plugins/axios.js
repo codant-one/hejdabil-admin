@@ -30,7 +30,7 @@ axiosIns.interceptors.response.use(response => {
     localStorage.removeItem('userAbilities')
     localStorage.removeItem('accessToken')
 
-    alertStore.setAlert('Din session har gått ut eller stängts från ett annat fönster. Logga in igen.', 'error')
+    alertStore.setAlert('Du har loggats ut av säkerhetsskäl. Logga in igen för att fortsätta.', 'error')
     
     router.push({ name: 'login' } )
     

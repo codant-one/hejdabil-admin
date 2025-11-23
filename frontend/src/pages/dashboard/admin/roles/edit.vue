@@ -118,7 +118,7 @@ const onSubmitEdit = () =>{
                     else if(error.message.hasOwnProperty('permissions'))
                         advisor.value.message = error.message.permissions[0]
                 } else {
-                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                    advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
                 }
 
                 emit('alert', advisor)

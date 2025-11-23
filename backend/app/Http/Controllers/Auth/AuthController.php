@@ -60,7 +60,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'invalid_credentials',
-                'errors' => 'Ogiltigt användarnamn eller lösenord'
+                'errors' => 'Fel e-postadress eller lösenord. Försök igen.'
             ], 400);
         }
 
@@ -136,7 +136,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'invalid_code',
-            'errors' => 'Felaktig verifieringskod'
+            'errors' => 'Fel kod. Försök igen.'
         ], 400);
     }
 
@@ -174,7 +174,7 @@ class AuthController extends Controller
         return response()->json([
             'success' => false,
             'message' => 'invalid_code',
-            'errors' => 'Felaktig verifieringskod'
+            'errors' => 'Fel kod. Försök igen.'
         ], 400);
     }
 
@@ -221,7 +221,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'params_validation_failed',
-                'error' => 'Data stämmer inte överens'
+                'error' => 'Ogiltig data'
             ], 400);
         }
 
@@ -238,7 +238,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logga ut framgångsrikt'
+            'message' => 'Du är nu utloggad.'
         ], 200);
     }
 
@@ -306,7 +306,7 @@ class AuthController extends Controller
             
             return response()->json([
                 'success' => true,
-                'message' => 'Din begäran har behandlats framgångsrikt. E-post verifierad. Vänligen logga in.',
+                'message' => 'Återställningslänk har skickats till din e-post.',
             ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -401,7 +401,7 @@ class AuthController extends Controller
                     $message->to($email)->subject($subject);
             });
 
-            return "Din begäran har behandlats framgångsrikt. E-post verifierad. Vänligen logga in.";
+            return "Återställningslänk har skickats till din e-post.";
         } catch (\Exception $e){
             return "Fel vid sändning av e-post. ".$e;
         }        

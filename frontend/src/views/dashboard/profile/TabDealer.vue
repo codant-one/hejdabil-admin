@@ -252,7 +252,7 @@ const cropImage = async () => {
                 console.log('error', error)
                 advisor.value.type = 'error'
                 advisor.value.show = true
-                advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
                 emit('alert', advisor)
 
                 setTimeout(() => {
@@ -321,7 +321,7 @@ const cropSignatureImage = async () => {
                 console.log('error', error)
                 advisor.value.type = 'error'
                 advisor.value.show = true
-                advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
                 emit('alert', advisor)
 
                 setTimeout(() => {
@@ -391,7 +391,7 @@ const saveSignatureFromPad = async () => {
         console.log('error', error);
         advisor.value.type = 'error';
         advisor.value.show = true;
-        advisor.value.message = 'Ett fel har inträffat...! (Serverfel)';
+        advisor.value.message = 'Ett serverfel uppstod. Försök igen.';
         emit('alert', advisor);
         setTimeout(() => {
             advisor.value.show = false;
@@ -476,7 +476,7 @@ const onSubmit = () => {
 
                     advisor.value.type = 'error'
                     advisor.value.show = true
-                    advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                    advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
                     emit('alert', advisor)
 
                     setTimeout(() => {

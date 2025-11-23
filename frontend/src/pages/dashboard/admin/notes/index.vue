@@ -148,7 +148,7 @@ const submitCreate = noteData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Kund skapad! ',
+                    message: 'Kunden har lagts till! ',
                     show: true
                 }
                 fetchData()

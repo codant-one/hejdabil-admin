@@ -115,7 +115,7 @@ const onSubmitEdit = () =>{
                   if(error.message.hasOwnProperty('email'))
                     advisor.value.message = error.message.email[0]
                 } else {
-                  advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+                  advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
                 }
 
                 emit('alert', advisor)

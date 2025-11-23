@@ -56,7 +56,7 @@ const update = clientData => {
             if (res.data.success) {
                 advisor.value = {
                     type: 'success',
-                    message: 'Klienten uppdaterad!',
+                    message: 'Ändringarna har sparats!',
                     show: true
                 }
                 
