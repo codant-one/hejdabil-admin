@@ -43,6 +43,10 @@ class SignableDocuments {
     sendStaticSignatureRequest(documentId, payload) {
         return axios.post(`/signable-documents/${documentId}/send-static-signature-request`, payload)
     }
+
+    resendSignatureRequest(documentId) {
+        return axios.post(`/signable-documents/${documentId}/resend-signature-request`)
+    }
 }
 
 const signableDocuments = new SignableDocuments();

@@ -112,7 +112,7 @@ const onSubmit = () => {
           window.scrollTo(0, 0)
                     
           alert.value.type = 'success'
-          alert.value.message = 'Personlig information uppdaterad. Sidan kommer automatiskt att laddas om för att observera ändringarna...!'
+          alert.value.message = 'Uppgifterna har sparats. Sidan laddas om automatiskt för att visa ändringarna.'
           alert.value.show = true
                     
           localStorage.setItem('user_data', JSON.stringify(response.user_data))
@@ -130,7 +130,7 @@ const onSubmit = () => {
         }).catch(error => {
           alert.value.type = 'error'
           alert.value.show = true
-          alert.value.message = 'Ett fel har inträffat...! (Serverfel)'
+          alert.value.message = 'Ett serverfel uppstod. Försök igen.'
                     
           setTimeout(() => {
             alert.value.show = false,

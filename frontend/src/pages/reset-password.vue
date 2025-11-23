@@ -91,7 +91,7 @@ const onSubmit = () => {
           } else {
             advisor.value.show = true;
             advisor.value.type = "error";
-            advisor.value.message = "Ett fel har inträffat...! (Serverfel)";
+            advisor.value.message = "Ett serverfel uppstod. Försök igen.git a";
           }
 
           setTimeout(() => {

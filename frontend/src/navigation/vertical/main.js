@@ -29,6 +29,13 @@ export default [
       to: 'dashboard-admin-documents', 
       action: 'view', 
       subject: 'signed-documents'
+    },
+    { 
+      title: 'Betalningar', 
+      icon: { icon: 'mdi-payment' },
+      to: 'dashboard-admin-payouts', 
+      action: 'view', 
+      subject: 'payouts'
     }
   ]
   

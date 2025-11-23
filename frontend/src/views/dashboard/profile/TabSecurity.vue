@@ -139,7 +139,7 @@ const onSubmit = () => {
           window.scrollTo(0, 0)
 
           advisor.value.show = true
-          advisor.value.message = 'Ett fel har inträffat...! (Serverfel)'
+          advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
           advisor.value.type = 'error'
                 
           emit('alert', advisor)

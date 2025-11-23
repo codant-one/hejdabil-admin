@@ -31,7 +31,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'E-post inte registrerad'
+                'errors' => 'E-postadressen är inte registrerad.'
             ], 404);
 
         $passwordReset = PasswordReset::updateOrCreate(
@@ -101,7 +101,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'E-post inte registrerad'
+                'errors' => 'E-postadressen är inte registrerad.'
             ], 404);
 
         $user->password = Hash::make($request->password);
@@ -119,7 +119,7 @@ class PasswordResetController extends Controller
         return response()->json([
             'success' => $responseMail['success'],
             'message' => 'reset_password',
-            'data' => 'Lösenordet har uppdaterats'
+            'data' => 'Lösenordet har ändrats'
         ], 200);
 
     }
@@ -147,7 +147,7 @@ class PasswordResetController extends Controller
             });
 
             $response['success'] = true;
-            $response['message'] = "Din begäran har behandlats framgångsrikt.";
+            $response['message'] = "Återställningslänk har skickats till din e-post.";
         } catch (\Exception $e){
             $response['success'] = false;
             $response['message'] = "Ett fel inträffade, e-postmeddelandet kunde inte skickas. ".$e;

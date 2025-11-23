@@ -63,8 +63,7 @@ const controlledTab = computed({
         currentTab.value = nextTab;
       } else {
         alert.value.type = "error";
-        alert.value.message =
-          "Komplettera fälten på första fliken innan du fortsätter.";
+        alert.value.message = "Fyll i alla obligatoriska uppgifter innan du fortsätter.";
         alert.value.show = true;
         await refVForm.value?.validate();
         // Auto-hide after a short delay
@@ -403,8 +402,7 @@ const submitCompleteProfile = async () => {
           window.scrollTo(0, 0);
 
           alert.value.type = "success";
-          alert.value.message =
-            "Personlig information uppdaterad. Sidan kommer automatiskt att laddas om för att observera ändringarna...!";
+          alert.value.message = "Uppgifterna har sparats. Sidan laddas om automatiskt för att visa ändringarna.";
           alert.value.show = true;
 
           localStorage.setItem("user_data", JSON.stringify(response.user_data));
@@ -438,8 +436,7 @@ const onSubmit = async () => {
       currentTab.value = 1;
     } else {
       alert.value.type = "error";
-      alert.value.message =
-        "Komplettera fälten på första fliken innan du fortsätter.";
+      alert.value.message = "Fyll i alla obligatoriska uppgifter innan du fortsätter.";
       alert.value.show = true;
       await refVForm.value?.validate();
       setTimeout(() => {
@@ -460,9 +457,7 @@ const onSubmit = async () => {
       await submitCompleteProfile();
     } else {
       alert.value.type = "error";
-      alert.value.message = !isTab0Valid
-        ? "Komplettera fälten på första fliken innan du fortsätter."
-        : "Komplettera fälten på andra fliken innan du fortsätter.";
+      alert.value.message = "Fyll i alla obligatoriska uppgifter innan du fortsätter.";
       alert.value.show = true;
       setTimeout(() => {
         alert.value.show = false;
@@ -594,7 +589,7 @@ const cropImage = async () => {
         console.log("error", error);
         advisor.value.type = "error";
         advisor.value.show = true;
-        advisor.value.message = "Ett fel har inträffat...! (Serverfel)";
+        advisor.value.message = "Ett serverfel uppstod. Försök igen.";
         emit("alert", advisor);
 
         setTimeout(() => {
@@ -642,7 +637,7 @@ const cropSignatureImage = async () => {
         console.log("error", error);
         advisor.value.type = "error";
         advisor.value.show = true;
-        advisor.value.message = "Ett fel har inträffat...! (Serverfel)";
+        advisor.value.message = "Ett serverfel uppstod. Försök igen.";
         emit("alert", advisor);
 
         setTimeout(() => {
@@ -703,7 +698,7 @@ const saveSignatureFromPad = async () => {
         console.log("error", error);
         advisor.value.type = "error";
         advisor.value.show = true;
-        advisor.value.message = "Ett fel har inträffat...! (Serverfel)";
+        advisor.value.message = "Ett serverfel uppstod. Försök igen.";
         emit("alert", advisor);
         setTimeout(() => {
           advisor.value.show = false;

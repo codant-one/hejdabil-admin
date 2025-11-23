@@ -107,6 +107,13 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
                 .catch(error => reject(error))
             })
         },
+        resendSignature(documentId) {
+            return new Promise((resolve, reject) => {
+                SignableDocuments.resendSignatureRequest(documentId)
+                    .then(response => resolve(response))
+                    .catch(error => reject(error))
+            })
+        },
     }
 })
 

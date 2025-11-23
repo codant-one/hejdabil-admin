@@ -283,5 +283,35 @@ class DocumentController extends Controller
         
         return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
     }
+
+    /**
+     * Resend the signature request using the last "sent" token (same URL and coordinates)
+     */
+    public function resendSignatureRequest(Document $document, Request $request)
+    {
+        // Find the most recent token with status 'sent' for this document
+        $token = $document->tokens()->where('signature_status', 'sent')->latest()->first();
+
+        if (!$token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No hay una solicitud de firma activa para reenviar.'
+            ], 422);
+        }
+
+        // Re-send the original email to the same recipient with the SAME token/url
+        try {
+            \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
+            return response()->json([
+                'success' => true,
+                'message' => 'El correo de firma ha sido reenviado.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se pudo reenviar el correo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

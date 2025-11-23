@@ -10,6 +10,7 @@ import axios from '@/plugins/axios'
 
 const documentsStores = useSignableDocumentsStores()
 const emitter = inject("emitter")
+const router = useRouter()
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -148,6 +149,10 @@ const openLink = function (documentData) {
   window.open(themeConfig.settings.urlStorage + documentData.file)
 }
 
+const goToTracker = (documentData) => {
+  router.push(`/dashboard/admin/documents/${documentData.id}/sparare`)
+}
+
 const startPlacementProcess = async (documentData) => {
   selectedDocument.value = { ...documentData };
   isPlacementModalVisible.value = true;
@@ -206,6 +211,21 @@ const handleAdminPdfClick = (event) => {
 const openSignatureDialog = (documentData) => {
   signatureEmail.value = ''
   isSignatureDialogVisible.value = true
+}
+
+// Re-send signature request using existing token (same URL)
+const openResendSignature = async (documentData) => {
+  try {
+    isRequestOngoing.value = true
+    const response = await documentsStores.resendSignature(documentData.id)
+    advisor.value = { type: 'success', message: response.data.message || 'E-postmeddelandet har skickats igen.', show: true }
+    await fetchData()
+  } catch (error) {
+    advisor.value = { type: 'error', message: error.response?.data?.message || 'Det gick inte att vidarebefordra e-postmeddelandet.', show: true }
+  } finally {
+    isRequestOngoing.value = false
+    setTimeout(() => { advisor.value = { show: false } }, 3000)
+  }
 }
 
 const submitPlacementSignatureRequest = async () => {
@@ -558,27 +578,47 @@ const resolveStatus = state => {
                       </VBtn>
                     </template>
                     <VList>
-                      <VListItem v-if="$can('edit','signed-documents')" @click="startPlacementProcess(document)">
+                      <VListItem
+                        v-if="$can('view','signed-documents')"
+                        @click="goToTracker(document)">
+                        <template #prepend>
+                          <VIcon icon="tabler-timeline" />
+                        </template>
+                        <VListItemTitle>Spårare</VListItemTitle>
+                      </VListItem>
+                      <!-- Signera available when not sent or signed -->
+                      <VListItem
+                        v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
+                        @click="startPlacementProcess(document)">
                         <template #prepend>
                           <VIcon icon="mdi-draw" />
                         </template>
                         <VListItemTitle>Signera</VListItemTitle>
                       </VListItem>
+                      <!-- Resend option when already sent -->
                       <VListItem
-                         v-if="$can('view', ' signed-documents')"
+                        v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
+                        @click="openResendSignature(document)">
+                        <template #prepend>
+                          <VIcon icon="mdi-email-fast-outline" />
+                        </template>
+                        <VListItemTitle>Vidarebefordra</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                         v-if="$can('view', 'signed-documents')"
                          @click="openLink(document)">
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
                         </template>
                         <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('view',' signed-documents')" @click="download(document)">
+                      <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
                         <template #prepend>
                           <VIcon icon="mdi-cloud-download-outline"/>
                         </template>
                         <VListItemTitle>Ladda ner</VListItemTitle>
                       </VListItem>
-                      <VListItem v-if="$can('delete',' signed-documents')" @click="showDeleteDialog(document)">
+                      <VListItem v-if="$can('delete','signed-documents')" @click="showDeleteDialog(document)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>

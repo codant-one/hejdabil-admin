@@ -216,6 +216,31 @@ const closeModal = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
+                            Betalningar
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view payouts"
+                                value="view payouts"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create payouts"
+                                value="create payouts"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit payouts"
+                                value="edit payouts"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete payouts"
+                                value="delete payouts"
+                            />
+                        </div>
+                        <VLabel style="font-weight: bold;">
                             Mina fordon
                         </VLabel>
                         <VCardText class="pt-2 pb-0">

@@ -144,7 +144,7 @@ class ClientController extends Controller
                 return response()->json([
                     'sucess' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Klienten hittades inte'
+                    'message' => 'Kunden hittades inte'
                 ], 404);
 
             $client->carsForSale = $carsForSale;
@@ -181,7 +181,7 @@ class ClientController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Klienten hittades inte'
+                    'message' => 'Kunden hittades inte'
                 ], 404);
 
             $client->updateClient($request, $client); 
@@ -215,7 +215,7 @@ class ClientController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Klienten hittades inte'
+                    'message' => 'Kunden hittades inte'
                 ], 404);
             
             $client->deleteClient($id);

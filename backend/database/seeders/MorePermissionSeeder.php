@@ -46,6 +46,12 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'edit signed-documents'],
             ['name' => 'delete signed-documents'],
 
+            //payouts
+            ['name' => 'view payouts'],
+            ['name' => 'create payouts'],
+            ['name' => 'edit payouts'],
+            ['name' => 'delete payouts'],
+
         ]; 
         // Crear o actualizar permisos
         $this->createOrUpdatePermissions($permissions);

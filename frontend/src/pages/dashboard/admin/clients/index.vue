@@ -213,7 +213,7 @@ const removeClient = async () => {
 
   advisor.value = {
     type: res.data.success ? "success" : "error",
-    message: res.data.success ? "Klient raderad!" : res.data.message,
+    message: res.data.success ? "Kunden har tagits bort!" : res.data.message,
     show: true,
   };
 
@@ -249,7 +249,7 @@ const submitCreate = (clientData) => {
       if (res.data.success) {
         advisor.value = {
           type: "success",
-          message: "Kund skapad! ",
+          message: "Kunden har lagts till!",
           show: true,
         };
         fetchData();
@@ -281,7 +281,7 @@ const submitUpdate = (clientData) => {
       if (res.data.success) {
         advisor.value = {
           type: "success",
-          message: "Klienten uppdaterad!",
+          message: "Ändringarna har sparats!",
           show: true,
         };
         fetchData();
