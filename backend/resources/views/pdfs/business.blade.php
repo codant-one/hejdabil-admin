@@ -304,7 +304,14 @@
                                 <div class="signature-box">(Köparens underskrift)</div>
                                 <div style="padding-top: 5px; font-size: 10px;">{{ $company->name }} {{ $company->last_name }}</div>
                             </td>
-                            <td style="width: 50%;"></td> <!-- Espacio en blanco a la derecha -->
+                            <td style="width: 50%; padding-left: 20px; vertical-align: bottom; position: relative;">
+                                <div style="min-height: 70px;">
+                                    @if(isset($signature_url) && $signature_x === null)
+                                        <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                    @endif
+                                </div>
+                                <div class="signature-box">(Säljarens underskrift)</div>
+                            </td>
                         </tr>
                     </table>
                 </td>
