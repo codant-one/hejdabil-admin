@@ -467,12 +467,14 @@ const handleBlur = (element) => {
           >
             <span class="me-2 text-start w-40 text-black">Faktura nr</span>
             <span>
-              <VTextField
-                v-model="invoice.id"
-                disabled
-                prefix="#"
-                style="inline-size: 10.5rem"
-              />
+              <div class="form-field">
+                <VTextField
+                  v-model="invoice.id"
+                  disabled
+                  prefix="#"
+                  style="inline-size: 10.5rem"
+                />
+              </div>
             </span>
           </div>
           <div
@@ -481,12 +483,14 @@ const handleBlur = (element) => {
           >
             <span class="me-2 text-start w-40 text-black">Kund nr</span>
             <span>
-              <VTextField
-                v-model="client.order_id"
-                disabled
-                prefix="#"
-                style="inline-size: 10.5rem"
-              />
+              <div class="form-field">
+                <VTextField
+                  v-model="client.order_id"
+                  disabled
+                  prefix="#"
+                  style="inline-size: 10.5rem"
+                />
+              </div>
             </span>
           </div>
           <!-- 👉 Issue Date -->
@@ -496,22 +500,24 @@ const handleBlur = (element) => {
             <span class="me-2 text-start w-40 text-black">Fakturadatum</span>
 
             <span style="inline-size: 10.5rem">
-              <VTextField
-                v-if="props.isCredit"
-                v-model="invoice.invoice_date"
-                disabled
-                style="inline-size: 10.5rem"
-              />
-              <AppDateTimePicker
-                v-else
-                :key="JSON.stringify(startDateTimePickerConfig)"
-                v-model="invoice.invoice_date"
-                placeholder="YYYY-MM-DD"
-                :rules="[requiredValidator]"
-                :config="startDateTimePickerConfig"
-                @input="inputData"
-                clearable
-              />
+              <div class="form-field">
+                <VTextField
+                  v-if="props.isCredit"
+                  v-model="invoice.invoice_date"
+                  disabled
+                  style="inline-size: 10.5rem"
+                />
+                <AppDateTimePicker
+                  v-else
+                  :key="JSON.stringify(startDateTimePickerConfig)"
+                  v-model="invoice.invoice_date"
+                  placeholder="YYYY-MM-DD"
+                  :rules="[requiredValidator]"
+                  :config="startDateTimePickerConfig"
+                  @input="inputData"
+                  clearable
+                />
+              </div>
             </span>
           </div>
 
@@ -520,18 +526,20 @@ const handleBlur = (element) => {
             <span class="me-2 text-start w-40 text-black">Förfallodatum</span>
 
             <span style="min-inline-size: 10.5rem">
-              <VTextField
-                v-if="props.isCredit"
-                v-model="invoice.due_date"
-                disabled
-                style="inline-size: 10.5rem"
-              />
-              <AppDateTimePicker
-                v-else
-                v-model="invoice.due_date"
-                placeholder="YYYY-MM-DD"
-                readonly
-              />
+              <div class="form-field">
+                <VTextField
+                  v-if="props.isCredit"
+                  v-model="invoice.due_date"
+                  disabled
+                  style="inline-size: 10.5rem"
+                />
+                <AppDateTimePicker
+                  v-else
+                  v-model="invoice.due_date"
+                  placeholder="YYYY-MM-DD"
+                  readonly
+                />
+              </div>
             </span>
           </div>
 
@@ -544,13 +552,15 @@ const handleBlur = (element) => {
             </span>
 
             <span style="width: 10.5rem">
-              <VTextField
-                v-model="invoice.days"
-                type="number"
-                label="Dagar"
-                :disabled="props.isCredit"
-                :min="0"
-              />
+              <div class="form-field">
+                <VTextField
+                  v-model="invoice.days"
+                  type="number"
+                  label="Dagar"
+                  :disabled="props.isCredit"
+                  :min="0"
+                />
+              </div>
             </span>
           </div>
           <p class="mt-5 mb-0 text-sm" v-if="client">
@@ -653,7 +663,8 @@ const handleBlur = (element) => {
           @end="onEnd"
         >
           <template #item="{ element, index }">
-            <div class="draggable-item py-2 px-0 px-md-2 d-flex">
+            <div class="draggable-item">
+              <VIcon icon="custom-grabber" size="24" />
               <div class="d-flex w-100" v-if="element?.note !== undefined">
                 <VTextarea
                   v-model="element.note"
@@ -685,7 +696,7 @@ const handleBlur = (element) => {
                   />
                 </div>
                 <div class="w-100">
-                  <div class="add-products-header d-none d-md-flex px-5 w-100">
+                  <div class="add-products-header d-none d-md-flex w-100">
                     <table class="w-100">
                       <thead>
                         <tr>
@@ -698,51 +709,40 @@ const handleBlur = (element) => {
                                 invoice.type_id === 1 ? '40' : '15'
                               }%;`"
                             >
-                              <span class="text-base font-weight-bold">
+                              <span class="">
                                 {{ invoice.name }}
                               </span>
                             </td>
                           </template>
                           <td style="width: 15%">
-                            <span class="text-base font-weight-bold">
-                              Rabbat
-                            </span>
+                            <span class=""> Rabbat </span>
                           </td>
                         </tr>
                       </thead>
                     </table>
                   </div>
-                  <VCard
-                    flat
-                    border
-                    class="d-flex flex-row"
-                    style="
-                      box-shadow: none !important;
-                      border-radius: 12px !important;
-                    "
-                  >
-                    <!-- 👉 Left Form -->
-                    <div class="pa-2 pa-md-5 flex-grow-1">
-                      <table class="w-100">
-                        <thead>
-                          <tr>
-                            <template
-                              v-for="(invoice, index) in invoices"
-                              :key="invoice.id"
+                  <!-- 👉 Left Form -->
+                  <div class="add-products-form flex-grow-1">
+                    <table class="w-100">
+                      <thead>
+                        <tr>
+                          <template
+                            v-for="(invoice, index) in invoices"
+                            :key="invoice.id"
+                          >
+                            <td
+                              :style="`width: ${
+                                invoice.type_id === 1 ? '40' : '15'
+                              }%;`"
+                              class="pe-2"
+                              style="vertical-align: top"
                             >
-                              <td
-                                :style="`width: ${
-                                  invoice.type_id === 1 ? '40' : '15'
-                                }%;`"
-                                class="pe-2"
-                                style="vertical-align: top"
-                              >
+                              <div class="form-field">
                                 <VTextarea
                                   v-if="invoice.type_id === 1"
                                   v-model="element[invoice.id]"
-                                  :label="invoice.description"
                                   :placeholder="invoice.description"
-                                  rows="3"
+                                  rows="2"
                                   :readonly="element.disabled"
                                   :rules="[requiredValidator]"
                                 />
@@ -750,7 +750,6 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 2"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :label="invoice.name"
                                   :placeholder="invoice.name"
                                   :min="1"
                                   :readonly="element.disabled"
@@ -762,7 +761,6 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 3"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :label="invoice.name"
                                   :placeholder="invoice.name"
                                   :min="0"
                                   :step="0.01"
@@ -772,40 +770,39 @@ const handleBlur = (element) => {
                                   :disabled="invoice.name === 'Belopp'"
                                   @blur="() => handleBlur(element)"
                                 />
-                              </td>
-                            </template>
-                            <td
-                              style="width: 15%; vertical-align: top"
-                              class="pe-2"
-                            >
+                              </div>
+                            </td>
+                          </template>
+                          <td
+                            style="width: 15%; vertical-align: top"
+                            class="pe-2"
+                          >
+                            <div class="form-field">
                               <VTextField
                                 :disabled="selectedDiscount > 0"
                                 v-model="element[5]"
                                 append-icon="tabler-percentage"
                                 type="number"
-                                :label="invoice.name"
                                 :placeholder="invoice.name"
                                 :min="0"
                                 :readonly="element.disabled"
                                 @input="$emit('edit')"
                                 @blur="() => handleBlur(element)"
                               />
-                            </td>
-                          </tr>
-                        </thead>
-                      </table>
-                    </div>
-                    <!-- 👉 Item Actions -->
-                  </VCard>
+                            </div>
+                          </td>
+                        </tr>
+                      </thead>
+                    </table>
+                  </div>
+                  <!-- 👉 Item Actions -->
                 </div>
                 <div class="d-flex flex-column justify-space-between p-0">
                   <VBtn
                     :disabled="index === 0 ? true : false"
-                    size="x-small"
-                    icon="tabler-x"
-                    variant="text"
                     @click="deleteProduct(index)"
                   >
+                    <VIcon icon="custom-close" size="16" />
                   </VBtn>
                 </div>
               </template>
@@ -822,19 +819,19 @@ const handleBlur = (element) => {
             <VList>
               <VListItem @click="addItem">
                 <template #prepend>
-                  <VIcon icon="custom-plus" />
+                  <VIcon icon="custom-plus" size="24" />
                 </template>
                 <VListItemTitle>Ny produktrad</VListItemTitle>
               </VListItem>
               <VListItem @click="addNote">
                 <template #prepend>
-                  <VIcon icon="custom-plus" />
+                  <VIcon icon="custom-plus" size="24" />
                 </template>
                 <VListItemTitle>Ny textrad</VListItemTitle>
               </VListItem>
               <VListItem @click="discount">
                 <template #prepend>
-                  <VIcon icon="custom-plus" />
+                  <VIcon icon="custom-plus" size="24" />
                 </template>
                 <VListItemTitle>Skatteavdrag för ROT / RUT</VListItemTitle>
               </VListItem>
@@ -860,7 +857,7 @@ const handleBlur = (element) => {
               <tr>
                 <td class="pe-16">Moms:</td>
                 <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
-                  <h6 class="text-sm">
+                  <div class="form-field">
                     <VSelect
                       v-model="selectedTax"
                       :items="taxOptions"
@@ -881,7 +878,7 @@ const handleBlur = (element) => {
                       suffix="%"
                       style="width: 150px"
                     />
-                  </h6>
+                  </div>
                 </td>
               </tr>
               <tr v-if="selectedDiscount > 0">
@@ -1035,11 +1032,22 @@ const handleBlur = (element) => {
   </VDialog>
 </template>
 
-<style scoped>
-.draggable-item:hover {
-  background-color: #e9ecef;
-  cursor: move;
+<style lang="scss" scoped>
+.draggable-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   border-radius: 8px;
+  border: solid 1px #e7e7e7;
+  padding: 16px;
+}
+.draggable-item:hover {
+  cursor: move;
+}
+
+.add-products-header {
+  color: #454545;
+  font-size: 12px;
 }
 
 .invoice-panel {
@@ -1084,6 +1092,40 @@ const handleBlur = (element) => {
 @media (max-width: 767px) {
   .faktura {
     font-size: 16px;
+  }
+}
+</style>
+<style lang="css">
+.form-field {
+  .v-input {
+    &.v-text-field {
+      .v-field {
+        height: 40px;
+      }
+    }
+
+    &.v-textarea {
+      .v-field {
+        --v-textarea-control-height: var(--v-input-control-height) !important;
+        height: auto !important;
+      }
+    }
+
+    .v-field {
+      border-radius: 8px;
+      background-color: #fff !important;
+      border: solid 1px #e7e7e7;
+    }
+  }
+}
+
+.invoice-box {
+  .form-field {
+    .v-input {
+      .v-field {
+        background-color: #f6f6f6 !important;
+      }
+    }
   }
 }
 </style>
