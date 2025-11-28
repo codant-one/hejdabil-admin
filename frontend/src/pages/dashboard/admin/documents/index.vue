@@ -1,16 +1,45 @@
 <script setup>
 
 import { inject } from 'vue'
+import { useDisplay } from "vuetify";
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
+import { avatarText } from "@/@core/utils/formatters";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
 
+import eyeIcon from "@/assets/images/icons/figma/eye.svg";
+import editIcon from "@/assets/images/icons/figma/edit.svg";
+import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+
 const documentsStores = useSignableDocumentsStores()
 const emitter = inject("emitter")
 const router = useRouter()
+
+const { mdAndDown } = useDisplay();
+const sectionEl = ref(null);
+const hasLoaded = ref(false);
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -88,6 +117,7 @@ async function fetchData(cleanFilters = false) {
   totalPages.value = documentsStores.last_page
   totalDocuments.value = documentsStores.documentsTotalCount
   
+  hasLoaded.value = true
   isRequestOngoing.value = false
 }
 
@@ -433,91 +463,112 @@ const resolveStatus = state => {
 </script>
 
 <template>
-  <section>
-    <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+  <section class="page-section" ref="sectionEl">
+    <VDialog v-model="isRequestOngoing" width="auto" persistent>
+      <VProgressCircular indeterminate color="primary" class="mb-0" />
+    </VDialog>
 
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-          {{ advisor.message }}
-        </VAlert>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>      
 
-        <Toaster />
+    <Toaster />
 
-        <VCard title="">
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                variant="outlined"
-                class="w-100"
-                :items="[10, 20, 30, 50]"/>
-            </div>
+    <VCard class="card-fill">
+      <VCardTitle
+        class="d-flex justify-space-between"
+        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+      >
+        <div class="d-flex align-center w-100 w-md-auto font-blauer">
+          <h2>Dokument <span v-if="hasLoaded">({{ documents.length }})</span></h2>
+        </div>
 
-            <VSpacer class="d-md-block"/>
+        <div class="d-flex gap-4 title-action-buttons">
+          <VBtn
+            v-if="$can('create', 'signed-documents') && !$vuetify.display.smAndDown"
+            class="btn-gradient w-100 w-md-auto"
+            @click="openUploadModal"
+          >
+            <VIcon icon="custom-plus" size="24" />
+            Skapa
+          </VBtn>
 
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">           
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök"
-                  density="compact"
-                  clearable
-                />
-              </div>
+          <VBtn
+            v-if="$vuetify.display.smAndDown && $can('create', 'signed-documents')"
+            class="btn-gradient w-100 w-md-auto"
+            @click="openUploadModal"
+          >
+            <VIcon icon="custom-plus" size="24" />
+            Skapa
+          </VBtn>
+        </div>
+      </VCardTitle>
 
-              <!-- 👉 Add document button -->
-              <VBtn
-                v-if="$can('create','signed-documents')"
-                class="w-100 w-md-auto"
-                prepend-icon="tabler-plus"
-                @click="openUploadModal">
-                Skapa
-              </VBtn>
-            </div>
-          </VCardText>
+      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
-          <VDivider />
+      <VCardText
+        class="d-flex align-center justify-space-between gap-4 filter-bar"
+        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+      >
+        <!-- 👉 Search  -->
+        <div class="search">
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+        </div>
 
-          <VTable class="text-no-wrap">
-            <!-- 👉 table head -->
-            <thead>
-              <tr>
-                <th scope="col"> TITEL </th>
-                <th scope="col"> BESKRIVNING </th>
-                <th scope="col"> SKAPAD </th>
-                <th scope="col"> SKAPAD AV </th>
-                <th scope="col"> SIGNERA STATUS </th>
-                <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
-              </tr>
-            </thead>
-            <!-- 👉 table body -->
-            <tbody>
-              <tr 
-                v-for="document in documents"
-                :key="document.id"
-                style="height: 3rem;">
-                <td> 
-                  {{ document.title }}
-                </td>
-                <td> 
-                  {{ document.description || '-' }}
-                </td>
-                <td>  
+        <VBtn class="btn-white-2" v-if="!$vuetify.display.smAndDown">
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
+
+        <div
+          v-if="!$vuetify.display.smAndDown"
+          class="d-flex align-center visa-select"
+        >
+          <span class="text-no-wrap pr-4">Visa:</span>
+          <VSelect
+            v-model="rowPerPage"
+            class="custom-select-hover"
+            :items="[10, 20, 30, 50]"
+          />
+        </div>
+      </VCardText>
+
+      <VTable
+        v-if="!$vuetify.display.smAndDown"
+        v-show="documents.length"
+        class="px-4 pb-6 text-no-wrap"
+      >
+        <!-- 👉 table head -->
+        <thead>
+          <tr>
+            <th scope="col">TITEL</th>
+            <th scope="col">BESKRIVNING</th>
+            <th scope="col">SKAPAD</th>
+            <th scope="col">SKAPAD AV</th>
+            <th scope="col">SIGNERA STATUS</th>
+            <th
+              scope="col"
+              v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"
+            ></th>
+          </tr>
+        </thead>
+        <!-- 👉 table body -->
+        <tbody v-show="documents.length">
+          <tr v-for="document in documents" :key="document.id">
+            <td>
+              <span>{{ document.title }}</span>
+            </td>
+            <td>
+              <span>{{ document.description || '-' }}</span>
+            </td>
+            <td>
+              <span>
                   {{ new Date(document.created_at).toLocaleString('sv-SE', { 
                       year: 'numeric', 
                       month: '2-digit', 
@@ -526,29 +577,32 @@ const resolveStatus = state => {
                       minute: '2-digit',
                       hour12: false
                   }) }}
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="document.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="document.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + document.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(document.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ document.user.name }} {{ document.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ document.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td>
+              </span>
+            </td>
+            <td class="text-wrap">
+              <div class="d-flex align-center gap-x-3">
+                <VAvatar
+                  :variant="document.user.avatar ? 'outlined' : 'tonal'"
+                  size="38"
+                >
+                  <VImg
+                    v-if="document.user.avatar"
+                    style="border-radius: 50%"
+                    :src="themeConfig.settings.urlStorage + document.user.avatar"
+                  />
+                  <span v-else>{{ avatarText(document.user.name) }}</span>
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium">
+                    {{ document.user.name }} {{ document.user.last_name ?? "" }}
+                  </span>
+                  <span class="text-sm text-disabled">{{
+                    document.user.email
+                  }}</span>
+                </div>
+              </div>
+            </td>
+            <td>
                   <VChip
                     v-if="document.tokens && document.tokens.length > 0"
                     label
@@ -563,127 +617,215 @@ const resolveStatus = state => {
                   >
                     Ingen signering
                   </VChip>
-                </td>
-                <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')">      
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
-                      </VBtn>
+            </td>
+            <!-- 👉 Acciones -->
+            <td
+              class="text-center"
+              style="width: 3rem"
+              v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"
+            >
+              <VMenu>
+                <template #activator="{ props }">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                    <VIcon icon="custom-dots-vertical" size="22" />
+                  </VBtn>
+                </template>
+                <VList>
+                  <VListItem
+                    v-if="$can('view','signed-documents')"
+                    @click="goToTracker(document)">
+                    <template #prepend>
+                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
                     </template>
-                    <VList>
-                      <VListItem
-                        v-if="$can('view','signed-documents')"
-                        @click="goToTracker(document)">
-                        <template #prepend>
-                          <VIcon icon="tabler-timeline" />
-                        </template>
-                        <VListItemTitle>Spårare</VListItemTitle>
-                      </VListItem>
-                      <!-- Signera available when not sent or signed -->
-                      <VListItem
-                        v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
-                        @click="startPlacementProcess(document)">
-                        <template #prepend>
-                          <VIcon icon="mdi-draw" />
-                        </template>
-                        <VListItemTitle>Signera</VListItemTitle>
-                      </VListItem>
-                      <!-- Resend option when already sent -->
-                      <VListItem
-                        v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
-                        @click="openResendSignature(document)">
-                        <template #prepend>
-                          <VIcon icon="mdi-email-fast-outline" />
-                        </template>
-                        <VListItemTitle>Vidarebefordra</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('view', 'signed-documents')"
-                         @click="openLink(document)">
-                        <template #prepend>
-                          <VIcon icon="mdi-file-pdf-box" />
-                        </template>
-                        <VListItemTitle>Visa som PDF</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
-                        <template #prepend>
-                          <VIcon icon="mdi-cloud-download-outline"/>
-                        </template>
-                        <VListItemTitle>Ladda ner</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('delete','signed-documents')" @click="showDeleteDialog(document)">
-                        <template #prepend>
-                          <VIcon icon="tabler-trash" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-              </tr> 
-            </tbody>
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!documents.length">
-              <tr>
-                <td
-                  colspan="6"
-                  class="text-center">
-                  Uppgifter ej tillgängliga
-                </td>
-              </tr>
-            </tfoot>
-          </VTable>
-        
-          <VDivider />
+                    <VListItemTitle>Spårare</VListItemTitle>
+                  </VListItem>
+                  
+                  <VListItem
+                    v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
+                    @click="startPlacementProcess(document)">
+                    <template #prepend>
+                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Signera</VListItemTitle>
+                  </VListItem>
+                  
+                  <VListItem
+                    v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
+                    @click="openResendSignature(document)">
+                    <template #prepend>
+                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Vidarebefordra</VListItemTitle>
+                  </VListItem>
 
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
-            <span class="text-sm text-disabled">
-              {{ paginationData }}
-            </span>
+                  <VListItem
+                        v-if="$can('view', 'signed-documents')"
+                        @click="openLink(document)">
+                    <template #prepend>
+                        <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Visa som PDF</VListItemTitle>
+                    </VListItem>
+                    <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
+                    <template #prepend>
+                        <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ladda ner</VListItemTitle>
+                    </VListItem>
 
-            <VSpacer class="d-none d-md-block"/>
-            
-            <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="5"
-              :length="totalPages"/>
-          
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
+                  <VListItem
+                    v-if="$can('delete', 'signed-documents')"
+                    @click="showDeleteDialog(document)"
+                  >
+                    <template #prepend>
+                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </td>
+          </tr>
+        </tbody>
+      </VTable>
+      
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !documents.length"
+        class="empty-state"
+        :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.smAndDown ? 80 : 120"
+          icon="custom-f-user"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Du har inga dokument än</div>
+          <div class="empty-state-text">
+            Ladda upp dokument här för att hantera signeringar.
+          </div>
+        </div>
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'signed-documents') && !$vuetify.display.smAndDown"
+          @click="openUploadModal"
+        >
+          Ladda upp dokument
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.smAndDown && $can('create', 'signed-documents')"
+          @click="openUploadModal"
+        >
+          Ladda upp dokument
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
+
+      <VExpansionPanels
+        class="expansion-panels pb-6 px-6"
+        v-if="documents.length && $vuetify.display.smAndDown"
+      >
+        <VExpansionPanel v-for="document in documents" :key="document.id">
+          <VExpansionPanelTitle
+            collapse-icon="custom-chevron-right"
+            expand-icon="custom-chevron-down"
+          >
+            <span class="title-panel">{{ document.title }}</span>
+          </VExpansionPanelTitle>
+          <VExpansionPanelText>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Beskrivning:</div>
+              <div class="expansion-panel-item-value">
+                {{ document.description || '-' }}
+              </div>
+            </div>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Skapad:</div>
+              <div class="expansion-panel-item-value">
+                {{ new Date(document.created_at).toLocaleString('sv-SE', { 
+                      year: 'numeric', 
+                      month: '2-digit', 
+                      day: '2-digit', 
+                      hour: '2-digit', 
+                      minute: '2-digit',
+                      hour12: false
+                  }) }}
+              </div>
+            </div>
+            <div class="mb-4 row-with-buttons">
+              <VBtn
+                v-if="$can('delete', 'signed-documents')"
+                class="btn-light"
+                @click="showDeleteDialog(document)"
+              >
+                <VIcon icon="custom-waste" size="24" />
+                Ta bort
+              </VBtn>
+            </div>
+            <div>
+              <VBtn class="btn-light w-100" @click="goToTracker(document)">
+                <VIcon icon="custom-eye" size="24" />
+                Spårare
+              </VBtn>
+            </div>
+          </VExpansionPanelText>
+        </VExpansionPanel>
+      </VExpansionPanels>
+
+      <VCardText
+        v-if="documents.length"
+        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
+
+        <VSpacer class="d-none d-md-block" />
+
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="5"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
+    </VCard>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
       persistent
-      class="v-dialog-sm" >
-      <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
-      <VCard title="Ta bort dokument">
-        <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill ta bort dokumentet <strong>{{ selectedDocument.title }}</strong>?.
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Är du säker på att du vill radera dokumentet?
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Du är på väg att permanent radera "{{ selectedDocument.title }}". All
+          associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmDeleteDialogVisible = false">
-              Avbryt
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
+            Avbryt
           </VBtn>
-          <VBtn @click="removeDocument">
-              Acceptera
-          </VBtn>
+          <VBtn class="btn-gradient" @click="removeDocument"> Ja, radera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -860,12 +1002,51 @@ const resolveStatus = state => {
   </section>
 </template>
 
-<style scoped>
-  .search {
-      width: 100%;
-  }
+<style lang="scss" scoped>
+.page-section {
+  display: flex;
+  flex-direction: column;
+}
 
-  :deep(.pdf-container-admin) {
+.card-fill {
+  flex: 1 1 auto;
+  padding-bottom: 32px;
+}
+
+.search {
+  width: 100% !important;
+  .v-field__input {
+    background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+      1rem center !important;
+  }
+}
+
+@media (min-width: 991px) {
+  .card-fill {
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 991px) {
+  .card-fill {
+    border-radius: 0 !important;
+  }
+}
+
+.dialog-bottom-full-width {
+  .v-card {
+    border-radius: 24px 24px 0 0 !important;
+  }
+}
+
+.bottom-sheet-card {
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+:deep(.pdf-container-admin) {
   position: relative;
   cursor: crosshair;
   box-shadow: 0 0 20px rgba(0,0,0,0.5);
@@ -896,11 +1077,6 @@ const resolveStatus = state => {
     color: #ffc107;
     font-weight: 600;
     white-space: nowrap;
-  }
-  @media(min-width: 991px){
-      .search {
-          width: 20rem;
-      }
   }
 </style>
 <route lang="yaml">

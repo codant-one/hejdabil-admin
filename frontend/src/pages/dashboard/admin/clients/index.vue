@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <div class="d-flex align-center w-100 w-md-auto font-blauer">
-          <h2>Kunder ({{ clients.length }})</h2>
+          <h2>Kunder <span v-if="hasLoaded">({{ clients.length }})</span></h2>
         </div>
 
         <div class="d-flex gap-4 title-action-buttons">
