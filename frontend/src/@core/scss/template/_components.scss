@@ -169,6 +169,10 @@ body .v-btn {
   padding: 0 16px;
   gap: 0px !important;
 
+  &.btn-wide {
+    padding: 0 24px;
+  }
+
   .v-btn__overlay {
     display: none !important;
   }
@@ -194,7 +198,8 @@ body .v-btn {
     ) !important;
     color: #416054 !important;
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background: #0fd84e !important;
     }
 
@@ -220,7 +225,8 @@ body .v-btn {
       color: #6e9383 !important;
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       border: solid 1px #416054 !important;
       background-color: transparent !important;
       .v-btn__overlay {
@@ -248,7 +254,8 @@ body .v-btn {
   &.btn-white {
     background-color: #fff !important;
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -277,7 +284,8 @@ body .v-btn {
       color: #454545 !important;
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -302,7 +310,8 @@ body .v-btn {
       color: #1c2925 !important;
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -318,7 +327,8 @@ body .v-btn {
   &.btn-blue {
     background-color: #3af8ff !important;
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #00e1e2 !important;
     }
 
@@ -334,7 +344,8 @@ body .v-btn {
   &.btn-green {
     background-color: #79fca2 !important;
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #0fd84e !important;
     }
 
@@ -373,7 +384,8 @@ body .v-btn {
       gap: 8px;
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       .v-btn__content,
       .v-btn__prepend {
         color: #454545 !important;
@@ -407,7 +419,8 @@ body .v-btn {
       }
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -561,7 +574,8 @@ body .v-btn {
       }
     }
 
-    &:hover, &:focus {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -653,7 +667,8 @@ body .v-dialog {
       right: 8px !important;
       z-index: 1;
 
-      &:hover, &:focus {
+      &:hover,
+      &:focus {
         background-color: #fff !important;
       }
     }
@@ -1582,6 +1597,58 @@ body {
   }
 }
 
+.rouded-select {
+  width: 100% !important;
+
+  .v-input.v-text-field {
+    .v-input__control {
+      .v-field {
+        padding-right: 16px;
+        .v-field__input {
+          height: 48px;
+          opacity: 1;
+          padding-left: 24px;
+          .v-autocomplete__selection {
+            align-items: center;
+            color: #454545;
+          }
+          input {
+            height: 32px;
+            padding-left: 24px;
+          }
+        }
+        .v-field__append-inner {
+          padding-top: 0px;
+          align-items: center;
+
+          .v-icon {
+            width: 16px;
+            height: 16px;
+            color: #1c2925;
+          }
+        }
+        .v-field__outline {
+          .v-field__outline__start {
+            flex: 0 0 50px !important;
+            border-radius: 32px 0 0 32px;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-left: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+          .v-field__outline__end {
+            border-radius: 0 32px 32px 0;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-right: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
 .card-client {
   .v-input {
     .v-input__control {
@@ -1589,7 +1656,7 @@ body {
         background-color: #f6f6f6;
         .v-field__outline {
           color: #454545 !important;
-          border-color: #E7E7E7 !important;
+          border-color: #e7e7e7 !important;
         }
       }
     }
@@ -1604,7 +1671,7 @@ body {
   justify-content: center;
   gap: 24px;
   align-items: center;
-  
+
   .empty-state-content {
     display: flex;
     flex-direction: column;
@@ -1635,10 +1702,10 @@ body {
     gap: 8px;
     margin-bottom: 100px;
 
-  .empty-state-content {
-    width: 100%;
-  }
-    .empty-state-title {  
+    .empty-state-content {
+      width: 100%;
+    }
+    .empty-state-title {
       font-size: 24px;
     }
   }
