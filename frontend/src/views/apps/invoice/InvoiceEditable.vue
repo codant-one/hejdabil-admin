@@ -630,7 +630,7 @@ const handleBlur = (element) => {
             :item-value="(item) => item.id"
             :disabled="props.isCredit"
             placeholder="Kunder"
-            class="mb-2 w-100"
+            class="w-100"
             :rules="[requiredValidator]"
             @update:modelValue="selectClient"
             clearable
@@ -638,6 +638,8 @@ const handleBlur = (element) => {
           />
         </div>
       </VCardText>
+
+      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
 
       <!-- <InvoiceProductEdit
             v-else
@@ -653,9 +655,9 @@ const handleBlur = (element) => {
         /> -->
 
       <!-- 👉 Add purchased products -->
-      <VCardText class="add-products-form mt-10 pt-0 px-0">
+      <VCardText class="add-products-form mt-4 py-0 px-0">
         <draggable
-          class="my-4"
+          class="mb-4"
           v-model="invoice.details"
           tag="div"
           item-key="index"
@@ -781,7 +783,6 @@ const handleBlur = (element) => {
                               <VTextField
                                 :disabled="selectedDiscount > 0"
                                 v-model="element[5]"
-                                append-icon="tabler-percentage"
                                 type="number"
                                 :placeholder="invoice.name"
                                 :min="0"
@@ -840,69 +841,81 @@ const handleBlur = (element) => {
         </div>
       </VCardText>
 
+      <!-- <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" /> -->
+      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
+
       <!-- 👉 Total Amount -->
       <VCardText
-        class="d-flex justify-space-between flex-wrap flex-column flex-sm-row px-0"
+        class="d-flex justify-space-between flex-wrap flex-column flex-sm-row p-0"
       >
         <VSpacer />
-        <div class="my-4">
-          <table class="w-100">
+        <div class="my-0">
+          <table class="w-100 text-black">
             <tbody>
               <tr>
-                <td class="pe-16">Netto:</td>
-                <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
-                  <h6 class="text-sm">{{ formatNumber(subtotal) }} kr</h6>
+                <td class="pe-4">Netto</td>
+                <td
+                  class="text-bold"
+                  :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                >
+                  {{ formatNumber(subtotal) }} kr
                 </td>
               </tr>
               <tr>
-                <td class="pe-16">Moms:</td>
+                <td class="pe-4">Moms</td>
                 <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
-                  <div class="form-field">
-                    <VSelect
-                      v-model="selectedTax"
-                      :items="taxOptions"
-                      label="Moms"
-                      append-icon="tabler-percentage"
-                      @update:modelValue="handleTaxChange"
-                      style="width: 150px"
-                    />
+                  <div class="d-flex gap-4 align-center justify-center">
+                    <div class="form-field">
+                      <VSelect
+                        v-model="selectedTax"
+                        :items="taxOptions"
+                        label="Moms"
+                        @update:modelValue="handleTaxChange"
+                        style="width: 150px"
+                      />
 
-                    <VTextField
-                      v-if="isCustomTax"
-                      v-model.number="invoice.tax"
-                      class="mt-2"
-                      type="number"
-                      label="Customized Moms"
-                      :min="0"
-                      :step="0.01"
-                      suffix="%"
-                      style="width: 150px"
-                    />
+                      <VTextField
+                        v-if="isCustomTax"
+                        v-model.number="invoice.tax"
+                        class="mt-2"
+                        type="number"
+                        label="Customized Moms"
+                        :min="0"
+                        :step="0.01"
+                        suffix="%"
+                        style="width: 150px"
+                      />
+                    </div>
+                    %
                   </div>
                 </td>
               </tr>
               <tr v-if="selectedDiscount > 0">
-                <td class="pe-16">
+                <td class="pe-4">
                   Preliminär skattereduktion {{ selectedDiscount }}% av
                   {{ formatNumber(subtotal) }} kr:
                 </td>
-                <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
-                  <h6 class="text-sm">
-                    - {{ formatNumber(amountDiscount) }} kr
-                  </h6>
+                <td
+                  class="text-bold"
+                  :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                >
+                  - {{ formatNumber(amountDiscount) }} kr
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <VDivider class="mt-4 mb-3" />
+          <VDivider class="m-0 my-4" />
 
-          <table class="w-100">
+          <table class="w-100 text-black">
             <tbody>
               <tr>
-                <td class="pe-16">Summa:</td>
-                <td :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'">
-                  <h6 class="text-sm">{{ formatNumber(total) }} kr</h6>
+                <td class="pe-4">Summa</td>
+                <td
+                  class="text-bold"
+                  :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                >
+                  {{ formatNumber(total) }} kr
                 </td>
               </tr>
             </tbody>
@@ -910,67 +923,65 @@ const handleBlur = (element) => {
         </div>
       </VCardText>
 
-      <VCardText class="mb-sm-4 px-0">
+      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
+
+      <VCardText class="mb-sm-4 p-0 text-black">
         <VRow>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-h6"> Adress </span>
+            <span class="me-2 text-bold"> Adress </span>
             <span class="d-flex flex-column">
               <span class="text-footer">{{ company.address }}</span>
               <span class="text-footer">{{ company.postal_code }}</span>
               <span class="text-footer">{{ company.street }}</span>
               <span class="text-footer">{{ company.phone }}</span>
             </span>
-            <span class="me-2 text-h6 mt-2"> Bolagets säte </span>
+            <span class="me-2 mt-2 text-bold"> Bolagets säte </span>
             <span class="text-footer"> Stockholm, Sweden </span>
-            <span class="me-2 text-h6 mt-2" v-if="company.swish"> Swish </span>
+            <span class="me-2 mt-2 text-bold" v-if="company.swish"> Swish </span>
             <span class="text-footer" v-if="company.swish">
               {{ company.swish }}
             </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-h6"> Org.nr. </span>
+            <span class="me-2 text-bold"> Org.nr. </span>
             <span class="text-footer"> {{ company.organization_number }} </span>
-            <span class="me-2 text-h6 mt-2" v-if="company.vat"> Vat </span>
+            <span class="me-2 mt-2 text-bold" v-if="company.vat"> Vat </span>
             <span class="text-footer"> {{ company.vat }} </span>
-            <span class="me-2 text-h6 mt-2" v-if="company.bic"> BIC </span>
+            <span class="me-2 mt-2 text-bold" v-if="company.bic"> BIC </span>
             <span class="text-footer" v-if="company.bic">
               {{ company.bic }}
             </span>
 
-            <span class="me-2 text-h6 mt-2" v-if="company.plus_spin">
-              Plusgiro
-            </span>
+            <span class="me-2 mt-2 text-bold" v-if="company.plus_spin"> Plusgiro </span>
             <span class="text-footer" v-if="company.plus_spin">
               {{ company.plus_spin }}
             </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-h6" v-if="company.link"> Webbplats </span>
+            <span class="me-2 text-bold" v-if="company.link"> Webbplats </span>
             <span class="text-footer" v-if="company.link">
               {{ company.link }}
             </span>
-            <span class="me-2 text-h6 mt-2"> Företagets e-post </span>
+            <span class="me-2 mt-2 text-bold"> Företagets e-post </span>
             <span class="text-footer"> {{ company.email }} </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-h6" v-if="company.bank"> Bank </span>
+            <span class="me-2 text-bold" v-if="company.bank"> Bank </span>
             <span class="text-footer" v-if="company.bank">
               {{ company.bank }}
             </span>
 
-            <span class="me-2 text-h6 mt-2" v-if="company.iban">
-              Bankgiro
-            </span>
+            <span class="me-2 mt-2 text-bold" v-if="company.iban"> Bankgiro </span>
             <span class="text-footer"> {{ company.iban }} </span>
 
-            <span class="me-2 text-h6 mt-2" v-if="company.account_number">
+            <span class="me-2 mt-2 text-bold" v-if="company.account_number">
               Kontonummer
             </span>
             <span class="text-footer" v-if="company.account_number">
               {{ company.account_number }}
             </span>
 
-            <span class="me-2 text-h6 mt-2" v-if="company.iban_number">
+            <span class="me-2 mt-2 text-bold" v-if="company.iban_number">
               Iban nummer
             </span>
             <span class="text-footer" v-if="company.iban_number">
