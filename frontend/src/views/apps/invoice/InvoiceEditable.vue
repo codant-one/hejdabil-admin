@@ -88,6 +88,9 @@ const discountApplied = ref(false);
 const amountDiscount = ref(props.amount_discount);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 const isMobile = ref(false);
+const skapatsDialog = ref(true);
+const inteSkapatsDialog = ref(true);
+const osparadeDialog = ref(true);
 
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
@@ -668,20 +671,18 @@ const handleBlur = (element) => {
             <div class="draggable-item">
               <VIcon icon="custom-grabber" size="24" />
               <div class="d-flex w-100" v-if="element?.note !== undefined">
-                <VTextarea
-                  v-model="element.note"
-                  label="Notera"
-                  placeholder="Notera"
-                  rows="2"
-                  class="mt-1"
-                  @input="editNote"
-                />
-                <VBtn
-                  size="x-small"
-                  icon="tabler-x"
-                  variant="text"
-                  @click="removeNote(index)"
-                >
+                <div class="form-field">
+                  <VTextarea
+                    v-model="element.note"
+                    label="Notera"
+                    placeholder="Notera"
+                    rows="2"
+                    class="mt-1"
+                    @input="editNote"
+                  />
+                </div>
+                <VBtn @click="removeNote(index)">
+                  <VIcon icon="custom-close" size="16" />
                 </VBtn>
               </div>
               <template v-else>
@@ -928,31 +929,42 @@ const handleBlur = (element) => {
       <VCardText class="mb-sm-4 p-0 text-black">
         <VRow>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold"> Adress </span>
+            <span class="me-2 text-bold text-footer"> Adress </span>
             <span class="d-flex flex-column">
               <span class="text-footer">{{ company.address }}</span>
               <span class="text-footer">{{ company.postal_code }}</span>
               <span class="text-footer">{{ company.street }}</span>
               <span class="text-footer">{{ company.phone }}</span>
             </span>
-            <span class="me-2 mt-2 text-bold"> Bolagets säte </span>
+            <span class="me-2 mt-4 text-bold text-footer"> Bolagets säte </span>
             <span class="text-footer"> Stockholm, Sweden </span>
-            <span class="me-2 mt-2 text-bold" v-if="company.swish"> Swish </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.swish">
+              Swish
+            </span>
             <span class="text-footer" v-if="company.swish">
               {{ company.swish }}
             </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold"> Org.nr. </span>
+            <span class="me-2 text-bold text-footer"> Org.nr. </span>
             <span class="text-footer"> {{ company.organization_number }} </span>
-            <span class="me-2 mt-2 text-bold" v-if="company.vat"> Vat </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.vat">
+              Vat
+            </span>
             <span class="text-footer"> {{ company.vat }} </span>
-            <span class="me-2 mt-2 text-bold" v-if="company.bic"> BIC </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.bic">
+              BIC
+            </span>
             <span class="text-footer" v-if="company.bic">
               {{ company.bic }}
             </span>
 
-            <span class="me-2 mt-2 text-bold" v-if="company.plus_spin"> Plusgiro </span>
+            <span
+              class="me-2 mt-4 text-bold text-footer"
+              v-if="company.plus_spin"
+            >
+              Plusgiro
+            </span>
             <span class="text-footer" v-if="company.plus_spin">
               {{ company.plus_spin }}
             </span>
@@ -962,26 +974,38 @@ const handleBlur = (element) => {
             <span class="text-footer" v-if="company.link">
               {{ company.link }}
             </span>
-            <span class="me-2 mt-2 text-bold"> Företagets e-post </span>
+            <span class="me-2 mt-4 text-bold text-footer">
+              Företagets e-post
+            </span>
             <span class="text-footer"> {{ company.email }} </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold" v-if="company.bank"> Bank </span>
+            <span class="me-2 text-bold text-footer" v-if="company.bank">
+              Bank
+            </span>
             <span class="text-footer" v-if="company.bank">
               {{ company.bank }}
             </span>
 
-            <span class="me-2 mt-2 text-bold" v-if="company.iban"> Bankgiro </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.iban">
+              Bankgiro
+            </span>
             <span class="text-footer"> {{ company.iban }} </span>
 
-            <span class="me-2 mt-2 text-bold" v-if="company.account_number">
+            <span
+              class="me-2 mt-4 text-bold text-footer"
+              v-if="company.account_number"
+            >
               Kontonummer
             </span>
             <span class="text-footer" v-if="company.account_number">
               {{ company.account_number }}
             </span>
 
-            <span class="me-2 mt-2 text-bold" v-if="company.iban_number">
+            <span
+              class="me-2 mt-4 text-bold text-footer"
+              v-if="company.iban_number"
+            >
               Iban nummer
             </span>
             <span class="text-footer" v-if="company.iban_number">
@@ -1038,6 +1062,109 @@ const handleBlur = (element) => {
       </VCardText>
       <VCardText class="d-flex justify-end gap-3 flex-wrap">
         <VBtn @click="isAlertDiscountVisible = false"> OK </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog v-model="skapatsDialog" persistent class="action-dialog">
+    <!-- Dialog close btn -->
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="skapatsDialog = !skapatsDialog"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box justify-center pb-0">
+        <VIcon size="72" icon="custom-f-create-order" />
+      </VCardText>
+      <VCardText class="dialog-title-box justify-center">
+        <div class="dialog-title">Fakturan har skapats!</div>
+      </VCardText>
+      <VCardText class="dialog-text text-center">
+        Din nya faktura har sparats som ett utkast. Nu kan du skicka den till
+        din kund.
+      </VCardText>
+
+      <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="skapatsDialog = false">
+          Gå till fakturalistan
+        </VBtn>
+        <VBtn class="btn-gradient" @click="">
+          Skapa en ny faktura
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog v-model="inteSkapatsDialog" persistent class="action-dialog">
+    <!-- Dialog close btn -->
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="inteSkapatsDialog = !inteSkapatsDialog"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box justify-center pb-0">
+        <VIcon size="72" icon="custom-f-cancel" />
+      </VCardText>
+      <VCardText class="dialog-title-box justify-center">
+        <div class="dialog-title">Kunde inte skapa fakturan</div>
+      </VCardText>
+      <VCardText class="dialog-text text-center">
+        Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt
+        ifyllda och försök igen.
+      </VCardText>
+
+      <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="inteSkapatsDialog = false">
+          Stäng
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <VDialog
+    v-model="osparadeDialog"
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="osparadeDialog = !osparadeDialog"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-error" class="action-icon" />
+        <div class="dialog-title">
+          Du har osparade ändringar
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="osparadeDialog = false">
+          Lämna sidan
+        </VBtn>
+        <VBtn class="btn-gradient" @click="">Stanna kvar</VBtn>
       </VCardText>
     </VCard>
   </VDialog>

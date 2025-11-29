@@ -334,25 +334,26 @@ const onSubmit = () => {
         class="order-1 order-md-2"
       >
         <VCard class="mb-8">
-          <VCardText>
+          <VCardText :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'">
             <!-- 👉 Send Invoice -->
             <VBtn
-              block
-              prepend-icon="mdi-content-save"
-              class="mb-2"
+              class="btn-gradient w-100 mb-4"
               type="submit"
             >
+            <template #prepend>
+                <VIcon icon="custom-send" size="24" />
+              </template>
               Spara
             </VBtn>
 
             <!-- 👉 Preview -->
             <VBtn
-              block
-              color="default"
-              variant="tonal"
-              class="mb-2"
+              class="btn-light w-100"
               :to="{ name: 'dashboard-admin-billings' }"
             >
+              <template #prepend>
+                <VIcon icon="custom-return" size="24" />
+              </template>
               Tillbaka
             </VBtn>
           </VCardText>
