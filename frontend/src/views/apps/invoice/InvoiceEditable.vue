@@ -91,6 +91,8 @@ const isMobile = ref(false);
 const skapatsDialog = ref(true);
 const inteSkapatsDialog = ref(true);
 const osparadeDialog = ref(true);
+const controlledTab = ref("redigera");
+const actionDialog = ref(false);
 
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
@@ -435,7 +437,11 @@ const handleBlur = (element) => {
 </script>
 
 <template>
-  <VCard class="pa-0" v-if="invoice.details.length > 0">
+  <VCard
+    class="pa-0"
+    v-if="invoice.details.length > 0"
+    :class="$vuetify.display.smAndDown ? 'rounded-0' : ''"
+  >
     <VCardTitle
       class="d-flex justify-space-between"
       :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
@@ -445,9 +451,12 @@ const handleBlur = (element) => {
       </div>
     </VCardTitle>
 
-    <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
+    <VDivider :class="$vuetify.display.smAndDown ? 'd-none' : 'mt-2 mx-4'" />
 
-    <section class="invoice-panel border rounded-lg pa-4">
+    <section
+      class="invoice-panel border rounded-lg pa-4"
+      :class="$vuetify.display.smAndDown ? 'd-none' : ''"
+    >
       <VCardText class="d-flex invoice-box">
         <div class="w-100 w-md-50">
           <div class="invoice-logo-box d-flex align-center mb-6">
@@ -1015,6 +1024,1203 @@ const handleBlur = (element) => {
         </VRow>
       </VCardText>
     </section>
+
+    <section :class="$vuetify.display.smAndDown ? '' : 'd-none'">
+      <VCardText class="pt-0 px-6">
+        <VTabs v-model="controlledTab" grow :show-arrows="false">
+          <VTab value="redigera">Redigera</VTab>
+          <VTab value="forhandsgranska">Förhandsgranska</VTab>
+        </VTabs>
+      </VCardText>
+      <VCardText class="pt-0 px-6">
+        <VWindow
+          v-model="controlledTab"
+          class="disable-tab-transition"
+          :touch="false"
+        >
+          <VWindowItem class="d-flex flex-column gap-6" value="redigera">
+            <div class="w-100 invoice-box d-flex flex-column pa-6 gap-4">
+              <!-- 👉 Invoice Id -->
+              <div class="">
+                <span class="mb-2 me-2 text-start w-40 text-black"
+                  >Faktura nr</span
+                >
+                <span>
+                  <div class="form-field">
+                    <VTextField
+                      v-model="invoice.id"
+                      disabled
+                      prefix="#"
+                      style="inline-size: 10.5rem"
+                    />
+                  </div>
+                </span>
+              </div>
+              <div
+                class="d-block d-md-flex align-center justify-sm-start mb-2 text-right"
+                v-if="client"
+              >
+                <span class="mb-2 me-2 text-start w-40 text-black"
+                  >Kund nr</span
+                >
+                <span>
+                  <div class="form-field">
+                    <VTextField
+                      v-model="client.order_id"
+                      disabled
+                      prefix="#"
+                      style="inline-size: 10.5rem"
+                    />
+                  </div>
+                </span>
+              </div>
+              <!-- 👉 Issue Date -->
+              <div
+                class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
+              >
+                <span class="mb-2 me-2 text-start w-40 text-black"
+                  >Fakturadatum</span
+                >
+
+                <span style="inline-size: 10.5rem">
+                  <div class="form-field">
+                    <VTextField
+                      v-if="props.isCredit"
+                      v-model="invoice.invoice_date"
+                      disabled
+                      style="inline-size: 10.5rem"
+                    />
+                    <AppDateTimePicker
+                      v-else
+                      :key="JSON.stringify(startDateTimePickerConfig)"
+                      v-model="invoice.invoice_date"
+                      placeholder="YYYY-MM-DD"
+                      :rules="[requiredValidator]"
+                      :config="startDateTimePickerConfig"
+                      @input="inputData"
+                      clearable
+                    />
+                  </div>
+                </span>
+              </div>
+
+              <!-- 👉 Due Date -->
+              <div class="d-block d-md-flex align-center justify-sm-start mb-0">
+                <span class="mb-2 me-2 text-start w-40 text-black"
+                  >Förfallodatum</span
+                >
+
+                <span style="min-inline-size: 10.5rem">
+                  <div class="form-field">
+                    <VTextField
+                      v-if="props.isCredit"
+                      v-model="invoice.due_date"
+                      disabled
+                      style="inline-size: 10.5rem"
+                    />
+                    <AppDateTimePicker
+                      v-else
+                      v-model="invoice.due_date"
+                      placeholder="YYYY-MM-DD"
+                      readonly
+                    />
+                  </div>
+                </span>
+              </div>
+
+              <!-- 👉 Days -->
+              <div
+                class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
+              >
+                <span class="me-2 text-start w-40 text-black">
+                  Betalningsvillkor:
+                </span>
+
+                <span style="width: 10.5rem">
+                  <div class="form-field">
+                    <VTextField
+                      v-model="invoice.days"
+                      type="number"
+                      label="Dagar"
+                      :disabled="props.isCredit"
+                      :min="0"
+                    />
+                  </div>
+                </span>
+              </div>
+              <p class="mt-5 mb-0 text-sm" v-if="client">
+                Efter förfallodagen debiteras ränta enligt räntelagen.
+              </p>
+            </div>
+
+            <div class="rouded-select">
+              <VAutocomplete
+                v-if="
+                  props.role === 'SuperAdmin' || props.role === 'Administrator'
+                "
+                v-model="invoice.supplier_id"
+                :items="suppliers"
+                :item-title="(item) => item.full_name"
+                :item-value="(item) => item.id"
+                :disabled="props.isCredit"
+                placeholder="Leverantörer"
+                class="w-100"
+                @update:modelValue="selectSupplier"
+                clearable
+                menu-icon="custom-chevron-down"
+              />
+            </div>
+            <div class="rouded-select">
+              <VAutocomplete
+                v-model="invoice.client_id"
+                :items="clients"
+                :item-title="(item) => item.fullname"
+                :item-value="(item) => item.id"
+                :disabled="props.isCredit"
+                placeholder="Kunder"
+                class="w-100"
+                :rules="[requiredValidator]"
+                @update:modelValue="selectClient"
+                clearable
+                menu-icon="custom-chevron-down"
+              />
+            </div>
+            <VBtn
+              v-bind="props"
+              class="btn-gradient w-100"
+              @click="actionDialog = true"
+            >
+              Lägg till
+            </VBtn>
+            <VDialog
+              v-model="actionDialog"
+              transition="dialog-bottom-transition"
+              content-class="dialog-bottom-full-width"
+            >
+              <VCard>
+                <VList>
+                  <VListItem @click="addItem">
+                    <template #prepend>
+                      <VIcon icon="custom-plus" size="24" />
+                    </template>
+                    <VListItemTitle>Ny produktrad</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="addNote">
+                    <template #prepend>
+                      <VIcon icon="custom-plus" size="24" />
+                    </template>
+                    <VListItemTitle>Ny textrad</VListItemTitle>
+                  </VListItem>
+                  <VListItem @click="discount">
+                    <template #prepend>
+                      <VIcon icon="custom-plus" size="24" />
+                    </template>
+                    <VListItemTitle>Skatteavdrag för ROT / RUT</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VCard>
+            </VDialog>
+
+            <span class="d-flex align-center gap-1">
+              <VIcon icon="custom-circle-help" size="16" />
+              Svep åt vänster för att se allt.
+            </span>
+
+            <draggable
+              class="mb-4"
+              v-model="invoice.details"
+              tag="div"
+              item-key="index"
+              @start="onStart"
+              @end="onEnd"
+            >
+              <template #item="{ element, index }">
+                <div class="draggable-item">
+                  <VIcon icon="custom-grabber" size="24" />
+                  <div class="d-flex w-100" v-if="element?.note !== undefined">
+                    <div class="form-field">
+                      <VTextarea
+                        v-model="element.note"
+                        label="Notera"
+                        placeholder="Notera"
+                        rows="2"
+                        class="mt-1"
+                        @input="editNote"
+                      />
+                    </div>
+                    <VBtn @click="removeNote(index)">
+                      <VIcon icon="custom-close" size="16" />
+                    </VBtn>
+                  </div>
+                  <template v-else>
+                    <div
+                      class="d-flex flex-column justify-space-between p-0"
+                      v-if="selectedDiscount > 0"
+                    >
+                      <VCheckbox
+                        v-if="selectedDiscount > 0"
+                        class="pe-2"
+                        v-model="element[6]"
+                        color="primary"
+                        @update:modelValue="$emit('edit')"
+                      />
+                    </div>
+                    <div class="w-100">
+                      <div class="add-products-header d-none d-md-flex w-100">
+                        <table class="w-100">
+                          <thead>
+                            <tr>
+                              <template
+                                v-for="(invoice, index) in invoices"
+                                :key="invoice.id"
+                              >
+                                <td
+                                  :style="`width: ${
+                                    invoice.type_id === 1 ? '40' : '15'
+                                  }%;`"
+                                >
+                                  <span class="">
+                                    {{ invoice.name }}
+                                  </span>
+                                </td>
+                              </template>
+                              <td style="width: 15%">
+                                <span class=""> Rabbat </span>
+                              </td>
+                            </tr>
+                          </thead>
+                        </table>
+                      </div>
+                      <!-- 👉 Left Form -->
+                      <div class="add-products-form flex-grow-1">
+                        <table class="w-100">
+                          <thead>
+                            <tr>
+                              <template
+                                v-for="(invoice, index) in invoices"
+                                :key="invoice.id"
+                              >
+                                <td
+                                  :style="`width: ${
+                                    invoice.type_id === 1 ? '40' : '15'
+                                  }%;`"
+                                  class="pe-2"
+                                  style="vertical-align: top"
+                                >
+                                  <div class="form-field">
+                                    <VTextarea
+                                      v-if="invoice.type_id === 1"
+                                      v-model="element[invoice.id]"
+                                      :placeholder="invoice.description"
+                                      rows="2"
+                                      :readonly="element.disabled"
+                                      :rules="[requiredValidator]"
+                                    />
+                                    <VTextField
+                                      v-if="invoice.type_id === 2"
+                                      v-model="element[invoice.id]"
+                                      type="number"
+                                      :placeholder="invoice.name"
+                                      :min="1"
+                                      :readonly="element.disabled"
+                                      :rules="[requiredValidator]"
+                                      @input="$emit('edit')"
+                                      @blur="() => handleBlur(element)"
+                                    />
+                                    <VTextField
+                                      v-if="invoice.type_id === 3"
+                                      v-model="element[invoice.id]"
+                                      type="number"
+                                      :placeholder="invoice.name"
+                                      :min="0"
+                                      :step="0.01"
+                                      :readonly="element.disabled"
+                                      @input="$emit('edit')"
+                                      :rules="[requiredValidator]"
+                                      :disabled="invoice.name === 'Belopp'"
+                                      @blur="() => handleBlur(element)"
+                                    />
+                                  </div>
+                                </td>
+                              </template>
+                              <td
+                                style="width: 15%; vertical-align: top"
+                                class="pe-2"
+                              >
+                                <div class="form-field">
+                                  <VTextField
+                                    :disabled="selectedDiscount > 0"
+                                    v-model="element[5]"
+                                    type="number"
+                                    :placeholder="invoice.name"
+                                    :min="0"
+                                    :readonly="element.disabled"
+                                    @input="$emit('edit')"
+                                    @blur="() => handleBlur(element)"
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          </thead>
+                        </table>
+                      </div>
+                      <!-- 👉 Item Actions -->
+                    </div>
+                    <div class="d-flex flex-column justify-space-between p-0">
+                      <VBtn
+                        :disabled="index === 0 ? true : false"
+                        @click="deleteProduct(index)"
+                      >
+                        <VIcon icon="custom-close" size="16" />
+                      </VBtn>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </draggable>
+
+            <div class="my-0 invoice-box">
+              <table class="w-100 text-black">
+                <tbody>
+                  <tr>
+                    <td class="pe-4">Netto</td>
+                    <td
+                      class="text-bold"
+                      :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                    >
+                      {{ formatNumber(subtotal) }} kr
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="pe-4">Moms</td>
+                    <td
+                      :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                    >
+                      <div class="d-flex gap-4 align-center justify-end">
+                        <div class="form-field">
+                          <VSelect
+                            v-model="selectedTax"
+                            :items="taxOptions"
+                            label="Moms"
+                            @update:modelValue="handleTaxChange"
+                            style="width: 150px"
+                          />
+
+                          <VTextField
+                            v-if="isCustomTax"
+                            v-model.number="invoice.tax"
+                            class="mt-2"
+                            type="number"
+                            label="Customized Moms"
+                            :min="0"
+                            :step="0.01"
+                            suffix="%"
+                            style="width: 150px"
+                          />
+                        </div>
+                        %
+                      </div>
+                    </td>
+                  </tr>
+                  <tr v-if="selectedDiscount > 0">
+                    <td class="pe-4">
+                      Preliminär skattereduktion {{ selectedDiscount }}% av
+                      {{ formatNumber(subtotal) }} kr:
+                    </td>
+                    <td
+                      class="text-bold"
+                      :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                    >
+                      - {{ formatNumber(amountDiscount) }} kr
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <VDivider class="m-0 my-4" />
+
+              <table class="w-100 text-black">
+                <tbody>
+                  <tr>
+                    <td class="pe-4">Summa</td>
+                    <td
+                      class="text-bold"
+                      :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
+                    >
+                      {{ formatNumber(total) }} kr
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <VDivider class="ma-0" />
+
+            <VRow class="gap-4">
+              <VCol cols="6" class="d-flex flex-column flex-1">
+                <span class="me-2 text-bold text-footer"> Org.nr. </span>
+                <span class="text-footer">
+                  {{ company.organization_number }}
+                </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.vat"
+                >
+                  Vat
+                </span>
+
+                <span class="text-footer"> {{ company.vat }} </span>
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.bic"
+                >
+                  BIC
+                </span>
+
+                <span class="text-footer" v-if="company.bic">
+                  {{ company.bic }}
+                </span>
+
+                <span class="me-2 text-bold text-footer" v-if="company.bank">
+                  Bank
+                </span>
+                <span class="text-footer" v-if="company.bank">
+                  {{ company.bank }}
+                </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.iban"
+                >
+                  Bankgiro
+                </span>
+                <span class="text-footer"> {{ company.iban }} </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.plus_spin"
+                >
+                  Plusgiro
+                </span>
+                <span class="text-footer" v-if="company.plus_spin">
+                  {{ company.plus_spin }}
+                </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.account_number"
+                >
+                  Kontonummer
+                </span>
+                <span class="text-footer" v-if="company.account_number">
+                  {{ company.account_number }}
+                </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.iban_number"
+                >
+                  Iban nummer
+                </span>
+                <span class="text-footer" v-if="company.iban_number">
+                  {{ company.iban_number }}
+                </span>
+              </VCol>
+
+              <VCol cols="6" class="d-flex flex-column flex-1">
+                <span class="me-2 mt-4 text-bold text-footer">
+                  Bolagets säte
+                </span>
+                <span class="text-footer"> Stockholm, Sweden </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.swish"
+                >
+                  Swish
+                </span>
+                <span class="text-footer" v-if="company.swish">
+                  {{ company.swish }}
+                </span>
+
+                <span class="me-2 mt-4 text-bold" v-if="company.link">
+                  Webbplats
+                </span>
+                <span class="text-footer" v-if="company.link">
+                  {{ company.link }}
+                </span>
+
+                <span class="me-2 mt-4 text-bold text-footer">
+                  Företagets e-post
+                </span>
+                <span class="text-footer"> {{ company.email }} </span>
+              </VCol>
+            </VRow>
+          </VWindowItem>
+
+          <VWindowItem class="d-flex flex-column gap-6" value="forhandsgranska">
+            <VCard
+              class="pa-0"
+              v-if="invoice.details.length > 0"
+              :class="$vuetify.display.smAndDown ? 'rounded-0' : ''"
+            >
+              <VCardTitle
+                class="d-flex justify-space-between"
+                :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+              >
+                <div class="d-flex align-center w-100 w-md-auto font-blauer">
+                  <h2>Redigera fakturan</h2>
+                </div>
+              </VCardTitle>
+
+              <VDivider
+                :class="$vuetify.display.smAndDown ? 'd-none' : 'mt-2 mx-4'"
+              />
+
+              <section
+                class="invoice-panel border rounded-lg pa-4"
+                :class="$vuetify.display.smAndDown ? 'd-none' : ''"
+              >
+                <VCardText class="d-flex invoice-box">
+                  <div class="w-100 w-md-50">
+                    <div class="invoice-logo-box d-flex align-center mb-6">
+                      <!-- 👉 Logo -->
+                      <img
+                        v-if="company.logo"
+                        :width="isMobile ? '200' : '200'"
+                        :src="themeConfig.settings.urlStorage + company.logo"
+                      />
+                      <img
+                        v-else
+                        :width="isMobile ? '200' : '200'"
+                        :src="logoBlack"
+                        class="me-3"
+                      />
+                    </div>
+                    <!-- 👉 Invoice Id -->
+                    <div
+                      class="d-block d-md-flex align-center justify-sm-start text-right mb-2"
+                    >
+                      <span class="me-2 text-start w-40 text-black"
+                        >Faktura nr</span
+                      >
+                      <span>
+                        <div class="form-field">
+                          <VTextField
+                            v-model="invoice.id"
+                            disabled
+                            prefix="#"
+                            style="inline-size: 10.5rem"
+                          />
+                        </div>
+                      </span>
+                    </div>
+                    <div
+                      class="d-block d-md-flex align-center justify-sm-start mb-2 text-right"
+                      v-if="client"
+                    >
+                      <span class="me-2 text-start w-40 text-black"
+                        >Kund nr</span
+                      >
+                      <span>
+                        <div class="form-field">
+                          <VTextField
+                            v-model="client.order_id"
+                            disabled
+                            prefix="#"
+                            style="inline-size: 10.5rem"
+                          />
+                        </div>
+                      </span>
+                    </div>
+                    <!-- 👉 Issue Date -->
+                    <div
+                      class="d-block d-md-flex align-center justify-sm-start mb-2 md:text-right"
+                    >
+                      <span class="me-2 text-start w-40 text-black"
+                        >Fakturadatum</span
+                      >
+
+                      <span style="inline-size: 10.5rem">
+                        <div class="form-field">
+                          <VTextField
+                            v-if="props.isCredit"
+                            v-model="invoice.invoice_date"
+                            disabled
+                            style="inline-size: 10.5rem"
+                          />
+                          <AppDateTimePicker
+                            v-else
+                            :key="JSON.stringify(startDateTimePickerConfig)"
+                            v-model="invoice.invoice_date"
+                            placeholder="YYYY-MM-DD"
+                            :rules="[requiredValidator]"
+                            :config="startDateTimePickerConfig"
+                            @input="inputData"
+                            clearable
+                          />
+                        </div>
+                      </span>
+                    </div>
+
+                    <!-- 👉 Due Date -->
+                    <div
+                      class="d-block d-md-flex align-center justify-sm-start mb-0"
+                    >
+                      <span class="me-2 text-start w-40 text-black"
+                        >Förfallodatum</span
+                      >
+
+                      <span style="min-inline-size: 10.5rem">
+                        <div class="form-field">
+                          <VTextField
+                            v-if="props.isCredit"
+                            v-model="invoice.due_date"
+                            disabled
+                            style="inline-size: 10.5rem"
+                          />
+                          <AppDateTimePicker
+                            v-else
+                            v-model="invoice.due_date"
+                            placeholder="YYYY-MM-DD"
+                            readonly
+                          />
+                        </div>
+                      </span>
+                    </div>
+
+                    <!-- 👉 Days -->
+                    <div
+                      class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
+                    >
+                      <span class="me-2 text-start w-40 text-black">
+                        Betalningsvillkor:
+                      </span>
+
+                      <span style="width: 10.5rem">
+                        <div class="form-field">
+                          <VTextField
+                            v-model="invoice.days"
+                            type="number"
+                            label="Dagar"
+                            :disabled="props.isCredit"
+                            :min="0"
+                          />
+                        </div>
+                      </span>
+                    </div>
+                    <p class="mt-5 mb-0 text-sm" v-if="client">
+                      Efter förfallodagen debiteras ränta enligt räntelagen.
+                    </p>
+                  </div>
+                  <div class="text-right d-flex flex-column w-100 w-md-50 mt-4">
+                    <h1
+                      class="mt-4 mb-0 text-center faktura mt-5 mt-md-0 ml-auto"
+                    >
+                      {{
+                        invoice.state_id === 9
+                          ? "KREDIT FAKTURA"
+                          : parseInt(invoice.days) === 0
+                          ? "KONTANT FAKTURA"
+                          : "FAKTURA"
+                      }}
+                    </h1>
+                    <h3 class="mb-0 mt-2" v-if="client">
+                      {{ client.fullname }}
+                    </h3>
+                    <p class="mb-0 mt-2" v-if="client" style="min-width: 250px">
+                      <VTextField
+                        v-model="invoice.reference"
+                        label="Vår referens"
+                        :disabled="props.isCredit"
+                        @input="$emit('data', invoice)"
+                      />
+                    </p>
+                    <div
+                      class="d-flex flex-column align-center justify-sm-end mb-0 mt-auto"
+                      v-if="client"
+                    >
+                      <span class="text-h6 font-weight-medium w-100 my-3">
+                        Faktureringsadress
+                      </span>
+                      <span class="d-flex flex-column w-100">
+                        <span>{{ client.address }}</span>
+                        <span>{{ client.postal_code }}</span>
+                        <span>{{ client.street }}</span>
+                      </span>
+                    </div>
+                  </div>
+                </VCardText>
+
+                <VCardText
+                  class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 gap-y-5 gap-4 p-0 w-100"
+                >
+                  <div class="rouded-select">
+                    <VAutocomplete
+                      v-if="
+                        props.role === 'SuperAdmin' ||
+                        props.role === 'Administrator'
+                      "
+                      v-model="invoice.supplier_id"
+                      :items="suppliers"
+                      :item-title="(item) => item.full_name"
+                      :item-value="(item) => item.id"
+                      :disabled="props.isCredit"
+                      placeholder="Leverantörer"
+                      class="mb-4 w-100"
+                      @update:modelValue="selectSupplier"
+                      clearable
+                      menu-icon="custom-chevron-down"
+                    />
+                  </div>
+                  <div class="rouded-select">
+                    <VAutocomplete
+                      v-model="invoice.client_id"
+                      :items="clients"
+                      :item-title="(item) => item.fullname"
+                      :item-value="(item) => item.id"
+                      :disabled="props.isCredit"
+                      placeholder="Kunder"
+                      class="w-100"
+                      :rules="[requiredValidator]"
+                      @update:modelValue="selectClient"
+                      clearable
+                      menu-icon="custom-chevron-down"
+                    />
+                  </div>
+                </VCardText>
+
+                <VDivider
+                  :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'"
+                />
+
+                <!-- <InvoiceProductEdit
+            v-else
+            :id="index"
+            :data="element"
+            :invoices="invoices"
+            :isCreated="props.isCreated"
+            @remove-product="removeProduct"
+            @delete-product="deleteProduct"
+            @edit-product="editx"
+
+            componente dentro del draggable
+        /> -->
+
+                <!-- 👉 Add purchased products -->
+                <VCardText class="add-products-form mt-4 py-0 px-0">
+                  <draggable
+                    class="mb-4"
+                    v-model="invoice.details"
+                    tag="div"
+                    item-key="index"
+                    @start="onStart"
+                    @end="onEnd"
+                  >
+                    <template #item="{ element, index }">
+                      <div class="draggable-item">
+                        <VIcon icon="custom-grabber" size="24" />
+                        <div
+                          class="d-flex w-100"
+                          v-if="element?.note !== undefined"
+                        >
+                          <div class="form-field">
+                            <VTextarea
+                              v-model="element.note"
+                              label="Notera"
+                              placeholder="Notera"
+                              rows="2"
+                              class="mt-1"
+                              @input="editNote"
+                            />
+                          </div>
+                          <VBtn @click="removeNote(index)">
+                            <VIcon icon="custom-close" size="16" />
+                          </VBtn>
+                        </div>
+                        <template v-else>
+                          <div
+                            class="d-flex flex-column justify-space-between p-0"
+                            v-if="selectedDiscount > 0"
+                          >
+                            <VCheckbox
+                              v-if="selectedDiscount > 0"
+                              class="pe-2"
+                              v-model="element[6]"
+                              color="primary"
+                              @update:modelValue="$emit('edit')"
+                            />
+                          </div>
+                          <div class="w-100">
+                            <div
+                              class="add-products-header d-none d-md-flex w-100"
+                            >
+                              <table class="w-100">
+                                <thead>
+                                  <tr>
+                                    <template
+                                      v-for="(invoice, index) in invoices"
+                                      :key="invoice.id"
+                                    >
+                                      <td
+                                        :style="`width: ${
+                                          invoice.type_id === 1 ? '40' : '15'
+                                        }%;`"
+                                      >
+                                        <span class="">
+                                          {{ invoice.name }}
+                                        </span>
+                                      </td>
+                                    </template>
+                                    <td style="width: 15%">
+                                      <span class=""> Rabbat </span>
+                                    </td>
+                                  </tr>
+                                </thead>
+                              </table>
+                            </div>
+                            <!-- 👉 Left Form -->
+                            <div class="add-products-form flex-grow-1">
+                              <table class="w-100">
+                                <thead>
+                                  <tr>
+                                    <template
+                                      v-for="(invoice, index) in invoices"
+                                      :key="invoice.id"
+                                    >
+                                      <td
+                                        :style="`width: ${
+                                          invoice.type_id === 1 ? '40' : '15'
+                                        }%;`"
+                                        class="pe-2"
+                                        style="vertical-align: top"
+                                      >
+                                        <div class="form-field">
+                                          <VTextarea
+                                            v-if="invoice.type_id === 1"
+                                            v-model="element[invoice.id]"
+                                            :placeholder="invoice.description"
+                                            rows="2"
+                                            :readonly="element.disabled"
+                                            :rules="[requiredValidator]"
+                                          />
+                                          <VTextField
+                                            v-if="invoice.type_id === 2"
+                                            v-model="element[invoice.id]"
+                                            type="number"
+                                            :placeholder="invoice.name"
+                                            :min="1"
+                                            :readonly="element.disabled"
+                                            :rules="[requiredValidator]"
+                                            @input="$emit('edit')"
+                                            @blur="() => handleBlur(element)"
+                                          />
+                                          <VTextField
+                                            v-if="invoice.type_id === 3"
+                                            v-model="element[invoice.id]"
+                                            type="number"
+                                            :placeholder="invoice.name"
+                                            :min="0"
+                                            :step="0.01"
+                                            :readonly="element.disabled"
+                                            @input="$emit('edit')"
+                                            :rules="[requiredValidator]"
+                                            :disabled="
+                                              invoice.name === 'Belopp'
+                                            "
+                                            @blur="() => handleBlur(element)"
+                                          />
+                                        </div>
+                                      </td>
+                                    </template>
+                                    <td
+                                      style="width: 15%; vertical-align: top"
+                                      class="pe-2"
+                                    >
+                                      <div class="form-field">
+                                        <VTextField
+                                          :disabled="selectedDiscount > 0"
+                                          v-model="element[5]"
+                                          type="number"
+                                          :placeholder="invoice.name"
+                                          :min="0"
+                                          :readonly="element.disabled"
+                                          @input="$emit('edit')"
+                                          @blur="() => handleBlur(element)"
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                </thead>
+                              </table>
+                            </div>
+                            <!-- 👉 Item Actions -->
+                          </div>
+                          <div
+                            class="d-flex flex-column justify-space-between p-0"
+                          >
+                            <VBtn
+                              :disabled="index === 0 ? true : false"
+                              @click="deleteProduct(index)"
+                            >
+                              <VIcon icon="custom-close" size="16" />
+                            </VBtn>
+                          </div>
+                        </template>
+                      </div>
+                    </template>
+                  </draggable>
+                  <div class="mt-6">
+                    <VMenu>
+                      <template #activator="{ props }">
+                        <VBtn v-bind="props" class="btn-gradient btn-wide">
+                          Lägg till
+                        </VBtn>
+                      </template>
+                      <VList>
+                        <VListItem @click="addItem">
+                          <template #prepend>
+                            <VIcon icon="custom-plus" size="24" />
+                          </template>
+                          <VListItemTitle>Ny produktrad</VListItemTitle>
+                        </VListItem>
+                        <VListItem @click="addNote">
+                          <template #prepend>
+                            <VIcon icon="custom-plus" size="24" />
+                          </template>
+                          <VListItemTitle>Ny textrad</VListItemTitle>
+                        </VListItem>
+                        <VListItem @click="discount">
+                          <template #prepend>
+                            <VIcon icon="custom-plus" size="24" />
+                          </template>
+                          <VListItemTitle
+                            >Skatteavdrag för ROT / RUT</VListItemTitle
+                          >
+                        </VListItem>
+                      </VList>
+                    </VMenu>
+                  </div>
+                </VCardText>
+
+                <!-- <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" /> -->
+                <VDivider
+                  :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'"
+                />
+
+                <!-- 👉 Total Amount -->
+                <VCardText
+                  class="d-flex justify-space-between flex-wrap flex-column flex-sm-row p-0"
+                >
+                  <VSpacer />
+                  <div class="my-0">
+                    <table class="w-100 text-black">
+                      <tbody>
+                        <tr>
+                          <td class="pe-4">Netto</td>
+                          <td
+                            class="text-bold"
+                            :class="
+                              $vuetify.locale.isRtl ? 'text-start' : 'text-end'
+                            "
+                          >
+                            {{ formatNumber(subtotal) }} kr
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="pe-4">Moms</td>
+                          <td
+                            :class="
+                              $vuetify.locale.isRtl ? 'text-start' : 'text-end'
+                            "
+                          >
+                            <div
+                              class="d-flex gap-4 align-center justify-center"
+                            >
+                              <div class="form-field">
+                                <VSelect
+                                  v-model="selectedTax"
+                                  :items="taxOptions"
+                                  label="Moms"
+                                  @update:modelValue="handleTaxChange"
+                                  style="width: 150px"
+                                />
+
+                                <VTextField
+                                  v-if="isCustomTax"
+                                  v-model.number="invoice.tax"
+                                  class="mt-2"
+                                  type="number"
+                                  label="Customized Moms"
+                                  :min="0"
+                                  :step="0.01"
+                                  suffix="%"
+                                  style="width: 150px"
+                                />
+                              </div>
+                              %
+                            </div>
+                          </td>
+                        </tr>
+                        <tr v-if="selectedDiscount > 0">
+                          <td class="pe-4">
+                            Preliminär skattereduktion {{ selectedDiscount }}%
+                            av {{ formatNumber(subtotal) }} kr:
+                          </td>
+                          <td
+                            class="text-bold"
+                            :class="
+                              $vuetify.locale.isRtl ? 'text-start' : 'text-end'
+                            "
+                          >
+                            - {{ formatNumber(amountDiscount) }} kr
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <VDivider class="m-0 my-4" />
+
+                    <table class="w-100 text-black">
+                      <tbody>
+                        <tr>
+                          <td class="pe-4">Summa</td>
+                          <td
+                            class="text-bold"
+                            :class="
+                              $vuetify.locale.isRtl ? 'text-start' : 'text-end'
+                            "
+                          >
+                            {{ formatNumber(total) }} kr
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </VCardText>
+
+                <VDivider
+                  :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'"
+                />
+
+                <VCardText class="mb-sm-4 p-0 text-black">
+                  <VRow>
+                    <VCol cols="12" md="3" class="d-flex flex-column">
+                      <span class="me-2 text-bold text-footer"> Adress </span>
+                      <span class="d-flex flex-column">
+                        <span class="text-footer">{{ company.address }}</span>
+                        <span class="text-footer">{{
+                          company.postal_code
+                        }}</span>
+                        <span class="text-footer">{{ company.street }}</span>
+                        <span class="text-footer">{{ company.phone }}</span>
+                      </span>
+                      <span class="me-2 mt-4 text-bold text-footer">
+                        Bolagets säte
+                      </span>
+                      <span class="text-footer"> Stockholm, Sweden </span>
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.swish"
+                      >
+                        Swish
+                      </span>
+                      <span class="text-footer" v-if="company.swish">
+                        {{ company.swish }}
+                      </span>
+                    </VCol>
+                    <VCol cols="12" md="3" class="d-flex flex-column">
+                      <span class="me-2 text-bold text-footer"> Org.nr. </span>
+                      <span class="text-footer">
+                        {{ company.organization_number }}
+                      </span>
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.vat"
+                      >
+                        Vat
+                      </span>
+                      <span class="text-footer"> {{ company.vat }} </span>
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.bic"
+                      >
+                        BIC
+                      </span>
+                      <span class="text-footer" v-if="company.bic">
+                        {{ company.bic }}
+                      </span>
+
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.plus_spin"
+                      >
+                        Plusgiro
+                      </span>
+                      <span class="text-footer" v-if="company.plus_spin">
+                        {{ company.plus_spin }}
+                      </span>
+                    </VCol>
+                    <VCol cols="12" md="3" class="d-flex flex-column">
+                      <span class="me-2 text-bold" v-if="company.link">
+                        Webbplats
+                      </span>
+                      <span class="text-footer" v-if="company.link">
+                        {{ company.link }}
+                      </span>
+                      <span class="me-2 mt-4 text-bold text-footer">
+                        Företagets e-post
+                      </span>
+                      <span class="text-footer"> {{ company.email }} </span>
+                    </VCol>
+                    <VCol cols="12" md="3" class="d-flex flex-column">
+                      <span
+                        class="me-2 text-bold text-footer"
+                        v-if="company.bank"
+                      >
+                        Bank
+                      </span>
+                      <span class="text-footer" v-if="company.bank">
+                        {{ company.bank }}
+                      </span>
+
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.iban"
+                      >
+                        Bankgiro
+                      </span>
+                      <span class="text-footer"> {{ company.iban }} </span>
+
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.account_number"
+                      >
+                        Kontonummer
+                      </span>
+                      <span class="text-footer" v-if="company.account_number">
+                        {{ company.account_number }}
+                      </span>
+
+                      <span
+                        class="me-2 mt-4 text-bold text-footer"
+                        v-if="company.iban_number"
+                      >
+                        Iban nummer
+                      </span>
+                      <span class="text-footer" v-if="company.iban_number">
+                        {{ company.iban_number }}
+                      </span>
+                    </VCol>
+                  </VRow>
+                </VCardText>
+              </section>
+            </VCard>
+          </VWindowItem>
+        </VWindow>
+      </VCardText>
+    </section>
   </VCard>
 
   <!-- 👉 Confirm send -->
@@ -1066,7 +2272,11 @@ const handleBlur = (element) => {
     </VCard>
   </VDialog>
 
-  <VDialog v-model="skapatsDialog" persistent class="action-dialog">
+  <VDialog
+    v-model="skapatsDialog"
+    persistent
+    class="action-dialog dialog-big-icon"
+  >
     <!-- Dialog close btn -->
 
     <VBtn
@@ -1079,7 +2289,7 @@ const handleBlur = (element) => {
 
     <!-- Dialog Content -->
     <VCard>
-      <VCardText class="dialog-title-box justify-center pb-0">
+      <VCardText class="dialog-title-box big-icon justify-center pb-0">
         <VIcon size="72" icon="custom-f-create-order" />
       </VCardText>
       <VCardText class="dialog-title-box justify-center">
@@ -1094,14 +2304,16 @@ const handleBlur = (element) => {
         <VBtn class="btn-light" @click="skapatsDialog = false">
           Gå till fakturalistan
         </VBtn>
-        <VBtn class="btn-gradient" @click="">
-          Skapa en ny faktura
-        </VBtn>
+        <VBtn class="btn-gradient" @click=""> Skapa en ny faktura </VBtn>
       </VCardText>
     </VCard>
   </VDialog>
 
-  <VDialog v-model="inteSkapatsDialog" persistent class="action-dialog">
+  <VDialog
+    v-model="inteSkapatsDialog"
+    persistent
+    class="action-dialog dialog-big-icon"
+  >
     <!-- Dialog close btn -->
 
     <VBtn
@@ -1114,7 +2326,7 @@ const handleBlur = (element) => {
 
     <!-- Dialog Content -->
     <VCard>
-      <VCardText class="dialog-title-box justify-center pb-0">
+      <VCardText class="dialog-title-box big-icon justify-center pb-0">
         <VIcon size="72" icon="custom-f-cancel" />
       </VCardText>
       <VCardText class="dialog-title-box justify-center">
@@ -1133,11 +2345,7 @@ const handleBlur = (element) => {
     </VCard>
   </VDialog>
 
-  <VDialog
-    v-model="osparadeDialog"
-    persistent
-    class="action-dialog"
-  >
+  <VDialog v-model="osparadeDialog" persistent class="action-dialog">
     <!-- Dialog close btn -->
 
     <VBtn
@@ -1152,12 +2360,11 @@ const handleBlur = (element) => {
     <VCard>
       <VCardText class="dialog-title-box">
         <VIcon size="32" icon="custom-error" class="action-icon" />
-        <div class="dialog-title">
-          Du har osparade ändringar
-        </div>
+        <div class="dialog-title">Du har osparade ändringar</div>
       </VCardText>
       <VCardText class="dialog-text">
-        Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
+        Om du lämnar den här sidan nu kommer den information du har angett inte
+        att sparas.
       </VCardText>
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">

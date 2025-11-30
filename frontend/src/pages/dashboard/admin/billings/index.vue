@@ -13,7 +13,7 @@ const emitter = inject("emitter");
 const clients = ref([]);
 const suppliers = ref([]);
 const billings = ref([]);
-const billingSelector = ref('Kunder');
+const billingSelector = ref("Kunder");
 const showMobileFilters = ref(false);
 const searchQuery = ref("");
 const rowPerPage = ref(10);
@@ -793,6 +793,8 @@ const downloadCSV = async () => {
           <VDivider /> -->
 
           <VTable
+            v-if="!$vuetify.display.smAndDown"
+            v-show="billings.length"
             class="pt-2 px-4 pb-6 text-no-wrap"
             style="border-radius: 0 !important"
           >
@@ -1024,18 +1026,182 @@ const downloadCSV = async () => {
                 </td>
               </tr>
             </tbody>
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!billings.length">
-              <tr>
-                <td
-                  :colspan="role === 'Supplier' ? 12 : 13"
-                  class="text-center"
-                >
-                  Uppgifter ej tillgängliga
-                </td>
-              </tr>
-            </tfoot>
           </VTable>
+
+          <VExpansionPanels
+            class="expansion-panels pb-6 px-6"
+            v-if="billings.length && $vuetify.display.smAndDown"
+          >
+            <VExpansionPanel v-for="billing in billings" :key="billing.id">
+              <VExpansionPanelTitle
+                collapse-icon="custom-chevron-right"
+                expand-icon="custom-chevron-down"
+              >
+                <span class="order-id">{{ billing.invoice_id }}</span>
+                <div class="order-title-box">
+                  <span class="title-panel"
+                    >{{ billing.supplier.user.name }}
+                    {{ billing.supplier.user.last_name ?? "" }}</span
+                  >
+                  <div class="title-organization">
+                    Summa
+                    <div class="text-black">
+                      {{
+                        formatNumber(billing.total + billing.amount_discount) ??
+                        "0,00"
+                      }}
+                      kr
+                    </div>
+                  </div>
+                </div>
+              </VExpansionPanelTitle>
+              <VExpansionPanelText>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Fakturadatum:</div>
+                  <div class="expansion-panel-item-value">
+                    {{ billing.invoice_date }}
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Forfaller:</div>
+                  <div class="expansion-panel-item-value">
+                    {{ billing.due_date }}
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Status:</div>
+                  <div class="expansion-panel-item-value">
+                    <div
+                      :color="billing.state.color"
+                      class="billing-chip text-capitalize"
+                    >
+                      {{ billing.state.name }}
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex gap-4">
+                  <VBtn class="btn-light flex-1" @click="showBilling(billing)">
+                    <VIcon icon="custom-eye" size="24" />
+                    Se detaljer
+                  </VBtn>
+
+                  <VBtn
+                    class="btn-light"
+                    icon
+                    @click="billing.actionDialog = true"
+                  >
+                    <VIcon icon="custom-dots-vertical" size="24" />
+                  </VBtn>
+                  <VDialog
+                    v-model="billing.actionDialog"
+                    transition="dialog-bottom-transition"
+                    content-class="dialog-bottom-full-width"
+                  >
+                    <VCard>
+                      <VList>
+                        <VListItem
+                          v-if="
+                            $can('edit', 'billing') &&
+                            (billing.state_id === 4 || billing.state_id === 8)
+                          "
+                          @click="
+                            editBilling(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-pencil" size="24" />
+                          </template>
+                          <VListItemTitle>Redigera</VListItemTitle>
+                        </VListItem>
+
+                        <VListItem
+                          v-if="$can('edit', 'billing')"
+                          @click="
+                            printInvoice(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-print" size="24" />
+                          </template>
+                          <VListItemTitle>Skriv ut</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="$can('edit', 'billing')"
+                          @click="
+                            openLink(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-pdf" size="24" />
+                          </template>
+                          <VListItemTitle>Visa som PDF</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="$can('edit', 'billing')"
+                          @click="
+                            duplicate(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-duplicate" size="24" />
+                          </template>
+                          <VListItemTitle>Duplicera</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="
+                            $can('edit', 'billing') && billing.state_id === 8
+                          "
+                          @click="
+                            sendReminder(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-alarm" size="24" />
+                          </template>
+                          <VListItemTitle>Påminnelse</VListItemTitle>
+                        </VListItem>
+                        <VListItem
+                          v-if="$can('edit', 'billing')"
+                          @click="
+                            send(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-paper-plane" size="24" />
+                          </template>
+                          <VListItemTitle>Skicka</VListItemTitle>
+                        </VListItem>
+                        
+                        <VListItem
+                          v-if="
+                            $can('delete', 'billing') && billing.state_id === 7
+                          "
+                          @click="
+                            credit(billing);
+                            billing.actionDialog = false;
+                          "
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-cancel-contract" size="24" />
+                          </template>
+                          <VListItemTitle>Kreditera</VListItemTitle>
+                        </VListItem>
+                      </VList>
+                    </VCard>
+                  </VDialog>
+                </div>
+              </VExpansionPanelText>
+            </VExpansionPanel>
+            <div v-if="!clients.length" class="text-center py-4">
+              Uppgifter ej tillgängliga
+            </div>
+          </VExpansionPanels>
 
           <VCardText
             class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3"
@@ -1065,6 +1231,8 @@ const downloadCSV = async () => {
               size="small"
               :total-visible="5"
               :length="totalPages"
+              next-icon="custom-chevron-right"
+              prev-icon="custom-chevron-left"
             />
           </VCardText>
         </VCard>
@@ -1300,9 +1468,40 @@ const downloadCSV = async () => {
   color: #454545;
 }
 
-@media (min-width: 991px) {
+@media (max-width: 991px) {
+  .filter-bar {
+    padding-bottom: 0px !important;
+  }
   .search {
-    width: 30rem !important;
+    width: 150px !important;
+  }
+  .billings-pills {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .billings-pill {
+    padding: 8px 16px;
+  }
+
+  .order-title-box .title-panel {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    color: #6e9383;
+  }
+
+  .billing-chip {
+    width: fit-content;
+    border-radius: 32px;
+    padding-top: 8px;
+    padding-right: 16px;
+    padding-bottom: 8px;
+    padding-left: 16px;
+
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    text-align: center;
   }
 }
 </style>

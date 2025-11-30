@@ -684,6 +684,13 @@ body .v-dialog {
           align-items: start;
         }
 
+        &.big-icon {
+          @media (max-width: 991px) {
+            flex-direction: column;
+            align-items: center;
+          }
+        }
+
         .dialog-title {
           font-weight: 600;
           font-size: 24px;
@@ -699,8 +706,18 @@ body .v-dialog {
       .dialog-actions {
         @media (max-width: 991px) {
           flex-direction: column-reverse;
-          padding: 24px 14px;
+          padding: 24px 24px;
           gap: 8px;
+        }
+      }
+    }
+
+    &.dialog-big-icon {
+      @media (max-width: 991px) {
+        text-align: center;
+
+        .dialog-title-box {
+          align-items: center;
         }
       }
     }
@@ -754,8 +771,8 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
   &.expansion-panels {
     .v-expansion-panel {
-      padding-right: 12px;
-      padding-left: 12px;
+      padding-right: 16px;
+      padding-left: 16px;
       border-radius: 16px !important;
       background-color: #f6f6f6 !important;
       border-bottom-left-radius: 16px !important;
@@ -771,7 +788,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         border-radius: 0px;
 
         font-weight: 400;
-        font-size: 16px;
+        font-size: 14px;
         line-height: 16px;
         color: #008c91;
 
@@ -782,7 +799,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           justify-content: center;
 
           font-weight: 400;
-          font-size: 16px;
+          font-size: 14px;
           line-height: 24px;
           color: #454545;
         }

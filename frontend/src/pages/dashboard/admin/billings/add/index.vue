@@ -233,16 +233,21 @@ const onSubmit = () => {
     <VDialog v-model="isRequestOngoing" width="auto" persistent>
       <VProgressCircular indeterminate color="primary" class="mb-0" />
     </VDialog>
-    <VRow v-if="advisor.show">
+    <!-- <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
           {{ advisor.message }}
         </VAlert>
       </VCol>
-    </VRow>
-    <VRow v-if="band">
+    </VRow> -->
+    <VRow v-if="band" class="row-fill">
       <!-- 👉 InvoiceEditable -->
-      <VCol cols="12" md="9" class="order-2 order-md-1">
+      <VCol
+        cols="12"
+        md="9"
+        class="order-1"
+        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
+      >
         <InvoiceEditable
           v-if="userData"
           :data="invoiceData"
@@ -267,12 +272,20 @@ const onSubmit = () => {
       </VCol>
 
       <!-- 👉 Right Column: Invoice Action -->
-      <VCol cols="12" md="3" class="order-1 order-md-2">
+      <VCol
+        cols="12"
+        md="3"
+        class="order-1 order-md-2 mobile-gradient-card"
+        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
+      >
         <VCard>
-          <VCardText :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'">
+          <VCardText
+            :class="$vuetify.display.smAndDown ? 'pa-6 d-flex gap-4' : 'pa-4'"
+          >
             <!-- 👉 Send Invoice -->
             <VBtn
-              class="btn-gradient w-100 mb-4"
+              class="btn-gradient mb-4"
+              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
               type="submit"
             >
               <template #prepend>
@@ -283,7 +296,8 @@ const onSubmit = () => {
 
             <!-- 👉 Preview -->
             <VBtn
-              class="btn-light w-100"
+              class="btn-light"
+              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
               :to="{ name: 'dashboard-admin-billings' }"
             >
               <template #prepend>
@@ -297,6 +311,25 @@ const onSubmit = () => {
     </VRow>
   </VForm>
 </template>
+<style lang="scss" scoped>
+.row-fill {
+  @media (max-width: 768px) {
+    padding-bottom: 60px;
+    margin: 0px;
+  }
+}
+@media (max-width: 768px) {
+  .mobile-gradient-card {
+    .v-card {
+      background: none !important;
+
+      .v-card-text {
+        flex-direction: row-reverse;
+      }
+    }
+  }
+}
+</style>
 
 <route lang="yaml">
 meta:
