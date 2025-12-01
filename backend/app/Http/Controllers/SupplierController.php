@@ -274,6 +274,37 @@ class SupplierController extends Controller
         }
     }
 
+    public function swish(Request $request, $id)
+    {
+        try {
+
+            $supplier = Supplier::where('id', $id)->first();
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            
+            $supplier->swish($request, $id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function users(Request $request): JsonResponse
     {
         try {
@@ -393,7 +424,6 @@ class SupplierController extends Controller
         }
 
     }
-
 
     /**
      * Remove the specified resource from storage.

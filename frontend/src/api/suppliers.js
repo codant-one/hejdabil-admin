@@ -49,6 +49,10 @@ class Suppliers {
     getUsersOnline(params) {
         return axios.get('users/user/online', {params})
     }
+
+    swish(id, data) {
+        return axios.post(`/suppliers/swish/${id}`, data)
+    }
 }
 
 const suppliers = new Suppliers();

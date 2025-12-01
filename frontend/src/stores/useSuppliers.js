@@ -187,6 +187,18 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.setLoading(false)
                 })
          
-        }
+        },
+        swish(id, data) {
+            this.setLoading(true)
+
+            return Suppliers.swish(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
     }
 })
