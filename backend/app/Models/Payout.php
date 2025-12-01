@@ -12,6 +12,40 @@ class Payout extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'request_payload' => 'array',
+        'response_data' => 'array',
+        'amount' => 'decimal:2',
+    ];
+
+    protected $appends = ['status_label', 'status_color'];
+
+    // Accessor para el label del status
+    public function getStatusLabelAttribute()
+    {
+        $labels = [
+            'CREATED' => 'Creado',
+            'DEBITED' => 'Debitado',
+            'PAID' => 'Pagado',
+            'ERROR' => 'Error',
+            'CANCELLED' => 'Cancelado'
+        ];
+        return $labels[$this->status] ?? $this->status;
+    }
+
+    // Accessor para el color del status
+    public function getStatusColorAttribute()
+    {
+        $colors = [
+            'CREATED' => 'info',
+            'DEBITED' => 'warning',
+            'PAID' => 'success',
+            'ERROR' => 'error',
+            'CANCELLED' => 'secondary'
+        ];
+        return $colors[$this->status] ?? 'default';
+    }
+
     /**** Relationship ****/
     public function state() {
         return $this->belongsTo(PayoutState::class, 'payout_state_id', 'id');
@@ -60,12 +94,30 @@ class Payout extends Model
     public static function createPayout($request, array $data = []) {
 
         $payoutData = [
-            'user_id'        => $data['user_id'] ?? ($request->user()->id ?? Auth::user()->id),
-            'reference'      => $data['reference'] ?? $request->reference ?? null,
-            'amount'         => $data['amount'] ?? $request->amount ?? 0,
-            'payer_alias'    => $data['payer_alias'] ?? $request->payer_alias ?? null,
-            'payout_state_id'=> $data['payout_state_id'] ?? 1,
-            'swish_id'       => $data['swish_id'] ?? null,
+            'user_id'                          => $data['user_id'] ?? ($request->user()->id ?? Auth::user()->id),
+            'reference'                        => $data['reference'] ?? $request->reference ?? null,
+            'amount'                           => $data['amount'] ?? $request->amount ?? 0,
+            'currency'                         => $data['currency'] ?? $request->currency ?? 'SEK',
+            'payer_alias'                      => $data['payer_alias'] ?? $request->payer_alias ?? null,
+            'payee_alias'                      => $data['payee_alias'] ?? $request->payee_alias ?? null,
+            'payee_ssn'                        => $data['payee_ssn'] ?? $request->payee_ssn ?? null,
+            'payout_state_id'                  => $data['payout_state_id'] ?? 1,
+            'status'                           => $data['status'] ?? 'CREATED',
+            'swish_id'                         => $data['swish_id'] ?? null,
+            'payout_instruction_uuid'          => $data['payout_instruction_uuid'] ?? null,
+            'payer_payment_reference'          => $data['payer_payment_reference'] ?? null,
+            'payout_type'                      => $data['payout_type'] ?? 'PAYOUT',
+            'instruction_date'                 => $data['instruction_date'] ?? null,
+            'message'                          => $data['message'] ?? null,
+            'callback_url'                     => $data['callback_url'] ?? null,
+            'callback_identifier'              => $data['callback_identifier'] ?? null,
+            'signature'                        => $data['signature'] ?? null,
+            'signing_certificate_serial_number'=> $data['signing_certificate_serial_number'] ?? null,
+            'request_payload'                  => $data['request_payload'] ?? null,
+            'response_data'                    => $data['response_data'] ?? null,
+            'location_url'                     => $data['location_url'] ?? null,
+            'error_message'                    => $data['error_message'] ?? null,
+            'error_code'                       => $data['error_code'] ?? null,
         ];
 
         return self::create($payoutData);

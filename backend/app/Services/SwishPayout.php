@@ -49,83 +49,64 @@ class SwishPayout
     }
 
     /**
-     * Crea un payout en Swish y devuelve la Response completa para poder leer headers, body, etc.
-     * Formato basado en la documentación de Swish Payout (payload anidado + callback).
+     * Crea un payout en Swish según la documentación oficial.
+     * Estructura: { payload: {...}, signature: "...", callbackUrl: "..." }
      */
     public function createPayout(string $payeeAlias, float $amount, string $payoutRef, ?string $payeeSSN = null): \Illuminate\Http\Client\Response
     {
-        
-        // Segun la doc, el cuerpo debe tener un objeto "payload" y datos de callback al mismo nivel.
-        // Swish Payouts requiere el payoutInstructionUUID en MAYÚSCULAS y SIN guiones.
-        // Ejemplo: 16E8AFF8977F42D0BD16BF39D3B9B3C4
         $payoutInstructionUUID = strtoupper(str_replace('-', '', Str::uuid()->toString()));
 
+        // El payload contiene todos los datos del payout
         $payload = [
             'payoutInstructionUUID'          => $payoutInstructionUUID,
             'payerPaymentReference'          => $payoutRef,
-            // En Payout, el "payer" es tu empresa (alias de Swish Payout)
             'payerAlias'                     => $this->payerAlias,
-            // El "payee" es el número Swish del destinatario (tester, cliente, etc.)
             'payeeAlias'                     => $payeeAlias,
-            'amount'                         => number_format($amount, 2, '.', ''), // string con 2 decimales
+            'amount'                         => number_format($amount, 2, '.', ''),
             'currency'                       => 'SEK',
             'payoutType'                     => 'PAYOUT',
             'message'                        => 'Payout from ' . config('app.name'),
-            // Fecha/hora en UTC no futura (restamos 10s para evitar desfases de reloj)
-            'instructionDate'                => Carbon::now('UTC')->subSeconds(10)->format('Y-m-d\TH:i:s\Z'),
-            // Campos opcionales como signingCertificateSerialNumber se pueden añadir abajo si está disponible
+            'instructionDate'                => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
         ];
 
-        // Si podemos leer el serial del certificado de firma, lo incluimos (muchas integraciones lo requieren)
+        // Serial del certificado de firma
         if ($serial = $this->getSigningCertificateSerialNumber()) {
             $payload['signingCertificateSerialNumber'] = $serial;
         }
 
-        // Incluir SSN del beneficiario si es provisto (12 dígitos: YYYYMMDDXXXX)
+        // SSN obligatorio para pagos a personas naturales
         if (!empty($payeeSSN)) {
             $payload['payeeSSN'] = $payeeSSN;
         }
 
-        // Según la doc de Swish Payouts v1, a nivel raíz deben ir:
-        // - payload                     (con todos los campos del payout)
-        // - callbackUrl                 (URL pública que Swish llamará)
-        // - callbackIdentifier (opcional) identificador 32-36 [0-9A-Za-z-], se devuelve en el callback
-        // - signature                   (firma Base64 del payload, requerida)
-        // Estructura con objeto payload + datos de callback
+        // Estructura según documentación oficial: payload + signature + callbackUrl
         $body = [
             'payload'       => $payload,
             'callbackUrl'   => $this->callbackUrl,
         ];
-        if (config('services.swish_payout.use_callback_identifier', false)) {
-            // Generamos UUID sin guiones en mayúsculas (32 chars) para cumplir ^[0-9A-Za-z-]{32,36}$
-            $body['callbackIdentifier'] = strtoupper(str_replace('-', '', Str::uuid()->toString()));
-        }
 
-        // Generar la firma solo del payload, como indica la doc
+        // Firma del payload
         $signature = $this->generateSignature($payload);
         if ($signature) {
             $body['signature'] = $signature;
         }
 
-        Log::info('Swish Payout payload: ' . print_r($payload, true));
-        Log::info('Swish Payout body: ' . print_r($body, true));
+        Log::info('Swish Payout request: ' . print_r($body, true));
 
-        $response = $this->client()->post('/v1/payouts', $body); // ruta usada por sandbox
+        // CallbackIdentifier opcional - va como header HTTP, NO en el body
+        $headers = [];
+        if (config('services.swish_payout.use_callback_identifier', false)) {
+            $headers['Swish-Callback-Identifier'] = strtoupper(str_replace('-', '', Str::uuid()->toString()));
+        }
+
+        $response = $this->client()->withHeaders($headers)->post('/v1/payouts', $body);
 
         return $response;
     }
 
     /**
-     * Genera la firma Base64 del payload según la documentación de Swish Payout.
-     * 
-     * Proceso:
-     * 1. Ordenar el payload alfabéticamente por claves
-    * 2. Serializar el payload a JSON (sin espacios, sin escape de slashes)
-    * 3. Firmar el JSON con la clave privada usando RSA-SHA512 (sin pre-hash manual)
-    * 4. Codificar en Base64
-     * 
-     * @param array $payload
-     * @return string|null Base64 encoded signature (684 caracteres)
+     * Genera la firma Base64 del payload según la documentación de Swish.
+     * IMPORTANTE: JSON encode SIN ordenar alfabéticamente, luego utf8_encode, luego SHA-512.
      */
     protected function generateSignature(array $payload): ?string
     {
@@ -135,20 +116,28 @@ class SwishPayout
         }
 
         try {
-            // 1. Ordenar el payload alfabéticamente por claves (requerido por Swish)
-            ksort($payload);
-            
-            // 2. Serializar el payload a JSON sin espacios y sin escape de slashes
+            // NO ordenar el payload - usar el orden original
             $jsonPayload = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             
             if ($jsonPayload === false) {
-                Log::error('Swish Payout: Failed to encode payload to JSON', [
-                    'error' => json_last_error_msg()
-                ]);
+                Log::error('Swish Payout: Failed to encode payload to JSON');
                 return null;
             }
             
-            // 3. Cargar la clave privada del certificado de firma
+            // PASO 1: utf8_encode del JSON
+            $utf8Encoded = utf8_encode($jsonPayload);
+            
+            // PASO 2: Hash SHA-512
+            $hashedPayload = hash('sha512', $utf8Encoded, true); // true = binary output
+            
+            Log::info('Swish Payout: Payload for signing', [
+                'payload' => $payload,
+                'json' => $jsonPayload,
+                'json_length' => strlen($jsonPayload),
+                'utf8_length' => strlen($utf8Encoded),
+                'sha512_hash_hex' => bin2hex($hashedPayload)
+            ]);
+            
             $keyContent = file_get_contents($this->signingKey);
             if ($keyContent === false) {
                 Log::error('Swish Payout: Failed to read signing key file');
@@ -156,58 +145,33 @@ class SwishPayout
             }
             
             $privateKey = openssl_pkey_get_private($keyContent, $this->signingKeyPassword);
-            
             if (!$privateKey) {
-                $errors = [];
-                while (($error = openssl_error_string()) !== false) {
-                    $errors[] = $error;
-                }
-                Log::error('Swish Payout: Failed to load signing private key', [
-                    'errors' => $errors
-                ]);
+                Log::error('Swish Payout: Failed to load signing private key');
                 return null;
             }
             
-            // 4. Firmar el JSON directamente con RSA-SHA512 (openssl realiza el hash internamente)
+            // PASO 3: Firmar el hash
             $signature = '';
-            $success = openssl_sign($jsonPayload, $signature, $privateKey, OPENSSL_ALGO_SHA512);
-            
+            $success = openssl_sign($hashedPayload, $signature, $privateKey, OPENSSL_ALGO_SHA512);
             openssl_free_key($privateKey);
             
             if (!$success) {
-                $errors = [];
-                while (($error = openssl_error_string()) !== false) {
-                    $errors[] = $error;
-                }
-                Log::error('Swish Payout: Failed to sign payload', [
-                    'errors' => $errors
-                ]);
+                Log::error('Swish Payout: Failed to sign payload');
                 return null;
             }
             
-            // 5. Codificar en Base64
-            $base64Signature = base64_encode($signature);
-            
-            Log::info('Swish Payout signature generated', [
-                'signature_length' => strlen($base64Signature),
-                'json_length' => strlen($jsonPayload),
-                'expected_length' => 684
-            ]);
-            
-            return $base64Signature;
+            return base64_encode($signature);
             
         } catch (\Exception $e) {
             Log::error('Swish Payout: Exception generating signature', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'message' => $e->getMessage()
             ]);
             return null;
         }
     }
 
     /**
-     * Lee el serial (hex) del certificado de firma si está disponible.
-     * @return string|null
+     * Obtiene el serial del certificado de firma en formato hexadecimal.
      */
     protected function getSigningCertificateSerialNumber(): ?string
     {
@@ -227,16 +191,13 @@ class SwishPayout
             if ($parsed === false) {
                 return null;
             }
-            // serialNumberHex sin dos puntos y en mayúsculas (según ejemplo de documentación)
             $serialHex = $parsed['serialNumberHex'] ?? null;
             if (!$serialHex) {
                 return null;
             }
             return strtoupper($serialHex);
         } catch (\Throwable $e) {
-            Log::warning('Swish Payout: unable to read signing cert serial', [
-                'message' => $e->getMessage()
-            ]);
+            Log::warning('Swish Payout: unable to read signing cert serial');
             return null;
         }
     }

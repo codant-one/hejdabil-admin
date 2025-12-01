@@ -28,7 +28,7 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'edit clients'],
             ['name' => 'delete clients'],
             
-            //billing
+            //billings
             ['name' => 'view billings'],
             ['name' => 'create billings'],
             ['name' => 'edit billings'],

@@ -741,7 +741,7 @@ const goToTracker = (agreementData) => {
               </VChip>
             </td>
             <!-- 👉 Acciones -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
+            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -1259,7 +1259,7 @@ const goToTracker = (agreementData) => {
 .search {
   width: 100% !important;
   .v-field__input {
-    background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+    background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
       1rem center !important;
   }
 }

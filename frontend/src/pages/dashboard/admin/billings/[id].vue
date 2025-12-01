@@ -950,7 +950,7 @@ const download = async () => {
 }
 </style>
 <route lang="yaml">
-meta:
-  action: view
-  subject: billings
+  meta:
+    action: view
+    subject: billings
 </route>
