@@ -689,7 +689,7 @@ const goToTracker = (agreementData) => {
                   </VChip>
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">

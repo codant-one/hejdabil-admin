@@ -255,7 +255,7 @@ const sendMails = async () => {
                   <th scope="col"> FÖRFALLER </th>
                   <th class="text-center" scope="col"> BETALD </th>
                   <th class="text-center" scope="col"> SKICKAD </th>                
-                  <th class="text-center" scope="col" v-if="$can('edit', 'billing') || $can('delete', 'billing')"></th>
+                  <th class="text-center" scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
                 </tr>
             </thead>
             <!-- 👉 table body -->
@@ -295,7 +295,7 @@ const sendMails = async () => {
                   />
                 </td>
                 <!-- 👉 Acciones -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billing') || $can('delete', 'billing')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -309,7 +309,7 @@ const sendMails = async () => {
                     </template>
                     <VList>
                       <VListItem
-                        v-if="$can('edit', 'billing')"
+                        v-if="$can('edit', 'billings')"
                         @click="printInvoice(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-printer" />
@@ -317,7 +317,7 @@ const sendMails = async () => {
                         <VListItemTitle>Skriv ut</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('edit', 'billing')"
+                        v-if="$can('edit', 'billings')"
                         @click="openLink(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-file-pdf-box" />
@@ -325,7 +325,7 @@ const sendMails = async () => {
                         <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('edit', 'billing')"
+                        v-if="$can('edit', 'billings')"
                         @click="duplicate(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-content-copy" />
@@ -333,7 +333,7 @@ const sendMails = async () => {
                         <VListItemTitle>Duplicera</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('edit', 'billing') && billing.state_id === 8"
+                        v-if="$can('edit', 'billings') && billing.state_id === 8"
                         @click="sendReminder(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
@@ -341,7 +341,7 @@ const sendMails = async () => {
                         <VListItemTitle>Påminnelse</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('edit', 'billing')"
+                        v-if="$can('edit', 'billings')"
                         @click="send(billing)">
                         <template #prepend>
                           <VIcon icon="mdi-email-fast" />
@@ -349,7 +349,7 @@ const sendMails = async () => {
                         <VListItemTitle>Skicka</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('edit', 'billing') && (billing.state_id === 4 || billing.state_id === 8)"
+                        v-if="$can('edit', 'billings') && (billing.state_id === 4 || billing.state_id === 8)"
                         @click="editBilling(billing)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
@@ -357,7 +357,7 @@ const sendMails = async () => {
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('delete','billing') && billing.state_id === 7"
+                        v-if="$can('delete','billings') && billing.state_id === 7"
                         @click="credit(billing)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />

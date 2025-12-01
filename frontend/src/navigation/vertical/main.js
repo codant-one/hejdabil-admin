@@ -21,7 +21,7 @@ export default [
       icon: { icon: 'tabler-clipboard-list' },
       to: 'dashboard-admin-billings', 
       action: 'view', 
-      subject: 'billing'
+      subject: 'billings'
     },
     { 
       title: 'Signera dokument', 
