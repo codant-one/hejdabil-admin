@@ -1,5 +1,4 @@
 <script setup>
-
 import { useDisplay } from "vuetify";
 import { useBillingsStores } from "@/stores/useBillings";
 import { excelParser } from "@/plugins/csv/excelParser";
@@ -52,6 +51,7 @@ const expiredTax = ref(0);
 const bgColor = ref("bg-light-secondary");
 const textColor = ref("text-secondary");
 const classTab = ref("border-bottom-secondary");
+const filtreraMobile = ref(false);
 
 const sectionEl = ref(null);
 
@@ -62,7 +62,7 @@ const advisor = ref({
 });
 
 const { mdAndDown } = useDisplay();
-const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const snackbarLocation = computed(() => (mdAndDown.value ? "" : "top end"));
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -452,7 +452,7 @@ onBeforeUnmount(() => {
     <VDialog v-model="isRequestOngoing" width="auto" persistent>
       <VProgressCircular indeterminate color="primary" class="mb-0" />
     </VDialog>
-   
+
     <VSnackbar
       v-model="advisor.show"
       transition="scroll-y-reverse-transition"
@@ -461,7 +461,7 @@ onBeforeUnmount(() => {
       class="snackbar-alert snackbar-dashboard"
     >
       {{ advisor.message }}
-    </VSnackbar> 
+    </VSnackbar>
 
     <VCard class="card-fill">
       <VCardTitle
@@ -469,7 +469,9 @@ onBeforeUnmount(() => {
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <div class="d-flex align-center w-100 w-md-auto font-blauer">
-          <h2>Fakturor <span v-if="hasLoaded">({{ billings.length }})</span></h2>
+          <h2>
+            Fakturor <span v-if="hasLoaded">({{ billings.length }})</span>
+          </h2>
         </div>
 
         <div class="d-flex gap-4 title-action-buttons">
@@ -520,18 +522,69 @@ onBeforeUnmount(() => {
           prepend-icon="custom-profile"
           v-model="client_id"
           :items="clients"
-          :item-title="item => item.fullname"
-          :item-value="item => item.id"
+          :item-title="(item) => item.fullname"
+          :item-value="(item) => item.id"
           placeholder="Kunder"
           class="mb-2 billing-selector"
           autocomplete="off"
           clearable
-          clear-icon="tabler-x"/>
+          clear-icon="tabler-x"
+        />
 
-        <VBtn class="btn-white-2">
+        <VBtn
+          class="btn-white-2"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.smAndDown"
+        >
           <VIcon icon="custom-filter" size="24" />
           <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
+
+        <VMenu v-if="!$vuetify.display.smAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem>
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Betalda</VListItemTitle>
+            </VListItem>
+
+            <VListItem>
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Obetalda</VListItemTitle>
+            </VListItem>
+
+            <VListItem>
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Förfallna</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.smAndDown"
@@ -549,15 +602,7 @@ onBeforeUnmount(() => {
       <VCardText :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'">
         <div class="d-flex gap-4 billings-pills">
           <div
-            v-for="{
-              title,
-              stateId,
-              tax,
-              value,
-              icon,
-              color,
-              background,
-            } in [
+            v-for="{ title, stateId, tax, value, icon, color, background } in [
               {
                 title: 'Netto',
                 value: formatNumberInteger(sum ?? '0,00') + ' kr',
@@ -806,8 +851,7 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-end">
               {{
-                formatNumber(billing.total + billing.amount_discount) ??
-                "0,00"
+                formatNumber(billing.total + billing.amount_discount) ?? "0,00"
               }}
               kr
             </td>
@@ -822,9 +866,7 @@ onBeforeUnmount(() => {
                   <VImg
                     v-if="billing.user.avatar"
                     style="border-radius: 50%"
-                    :src="
-                      themeConfig.settings.urlStorage + billing.user.avatar
-                    "
+                    :src="themeConfig.settings.urlStorage + billing.user.avatar"
                   />
                   <span v-else>{{ avatarText(billing.user.name) }}</span>
                 </VAvatar>
@@ -856,12 +898,7 @@ onBeforeUnmount(() => {
             >
               <VMenu>
                 <template #activator="{ props }">
-                  <VBtn
-                    v-bind="props"
-                    icon
-                    variant="text"
-                    class="btn-white"
-                  >
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
                     <VIcon icon="custom-dots-vertical" size="22" />
                   </VBtn>
                 </template>
@@ -901,11 +938,7 @@ onBeforeUnmount(() => {
                     @click="duplicate(billing)"
                   >
                     <template #prepend>
-                      <VIcon
-                        icon="custom-duplicate"
-                        size="24"
-                        class="mr-2"
-                      />
+                      <VIcon icon="custom-duplicate" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Duplicera</VListItemTitle>
                   </VListItem>
@@ -923,19 +956,13 @@ onBeforeUnmount(() => {
                     @click="send(billing)"
                   >
                     <template #prepend>
-                      <VIcon
-                        icon="custom-paper-plane"
-                        size="24"
-                        class="mr-2"
-                      />
+                      <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Skicka</VListItemTitle>
                   </VListItem>
 
                   <VListItem
-                    v-if="
-                      $can('delete', 'billings') && billing.state_id === 7
-                    "
+                    v-if="$can('delete', 'billings') && billing.state_id === 7"
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -965,8 +992,8 @@ onBeforeUnmount(() => {
         <div class="empty-state-content">
           <div class="empty-state-title">Inga fakturor skapade än</div>
           <div class="empty-state-text">
-            Här kommer alla dina skapade fakturor att listas. 
-            Skapa din första för att komma igång med din försäljning.
+            Här kommer alla dina skapade fakturor att listas. Skapa din första
+            för att komma igång med din försäljning.
           </div>
         </div>
         <VBtn
@@ -1045,11 +1072,7 @@ onBeforeUnmount(() => {
                 Se detaljer
               </VBtn>
 
-              <VBtn
-                class="btn-light"
-                icon
-                @click="billing.actionDialog = true"
-              >
+              <VBtn class="btn-light" icon @click="billing.actionDialog = true">
                 <VIcon icon="custom-dots-vertical" size="24" />
               </VBtn>
               <VDialog
@@ -1112,9 +1135,7 @@ onBeforeUnmount(() => {
                       <VListItemTitle>Duplicera</VListItemTitle>
                     </VListItem>
                     <VListItem
-                      v-if="
-                        $can('edit', 'billings') && billing.state_id === 8
-                      "
+                      v-if="$can('edit', 'billings') && billing.state_id === 8"
                       @click="
                         sendReminder(billing);
                         billing.actionDialog = false;
@@ -1137,7 +1158,7 @@ onBeforeUnmount(() => {
                       </template>
                       <VListItemTitle>Skicka</VListItemTitle>
                     </VListItem>
-                    
+
                     <VListItem
                       v-if="
                         $can('delete', 'billings') && billing.state_id === 7
@@ -1183,7 +1204,7 @@ onBeforeUnmount(() => {
         />
       </VCardText>
     </VCard>
- 
+
     <!-- 👉 Confirm send -->
     <VDialog v-model="isConfirmSendMailVisible" persistent class="v-dialog-sm">
       <!-- Dialog close btn -->
@@ -1296,11 +1317,53 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem>
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Betalda</VListItemTitle>
+          </VListItem>
+
+          <VListItem>
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Obetalda</VListItemTitle>
+          </VListItem>
+
+          <VListItem>
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Förfallna</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
 <style lang="scss" scope>
-
 .page-section {
   display: flex;
   flex-direction: column;
@@ -1471,6 +1534,13 @@ onBeforeUnmount(() => {
     line-height: 16px;
     text-align: center;
   }
+}
+
+.v-checkbox-btn .v-selection-control__input .v-icon.iconify--custom {
+  block-size: 24px !important;
+  font-size: 24px !important;
+  inline-size: 24px !important;
+  color: #454545 !important;
 }
 </style>
 <route lang="yaml">
