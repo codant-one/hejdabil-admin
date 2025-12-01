@@ -793,6 +793,7 @@ const download = async () => {
   }
 }
 .draggable-item {
+  margin-top: 5px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -811,9 +812,9 @@ const download = async () => {
 
 .invoice-panel {
   margin: 24px 16px 16px;
-  border-radius: 8px;
+  border-radius: 8px !important;
   opacity: 1;
-  padding: 16px;
+  padding: 16px !important;
   border: solid 1px #e7e7e7;
 }
 

@@ -89,9 +89,9 @@ const discountApplied = ref(false);
 const amountDiscount = ref(props.amount_discount);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 const isMobile = ref(false);
-const skapatsDialog = ref(true);
-const inteSkapatsDialog = ref(true);
-const osparadeDialog = ref(true);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const osparadeDialog = ref(false);
 const controlledTab = ref("redigera");
 const actionDialog = ref(false);
 
@@ -448,7 +448,7 @@ const handleBlur = (element) => {
       :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
-        <h2>Redigera fakturan</h2>
+        <h2>Skapa fakturan</h2>
       </div>
     </VCardTitle>
 
@@ -618,7 +618,7 @@ const handleBlur = (element) => {
       </VCardText>
 
       <VCardText
-        class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 gap-y-5 gap-4 p-0 w-100"
+        class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 p-0 w-100"
       >
         <div class="rouded-select">
           <VAutocomplete
@@ -668,7 +668,7 @@ const handleBlur = (element) => {
         /> -->
 
       <!-- 👉 Add purchased products -->
-      <VCardText class="add-products-form mt-4 py-0 px-0">
+      <VCardText class="add-products-form mt-2 py-0 px-0">
         <draggable
           class="mb-4"
           v-model="invoice.details"
@@ -681,13 +681,13 @@ const handleBlur = (element) => {
             <div class="draggable-item">
               <VIcon icon="custom-grabber" size="24" />
               <div class="d-flex w-100" v-if="element?.note !== undefined">
-                <div class="form-field">
+                <div class="form-field w-100">
                   <VTextarea
                     v-model="element.note"
                     label="Notera"
                     placeholder="Notera"
                     rows="2"
-                    class="mt-1"
+                    class="mt-1 w-100"
                     @input="editNote"
                   />
                 </div>
@@ -1242,13 +1242,13 @@ const handleBlur = (element) => {
                 <div class="draggable-item">
                   <VIcon icon="custom-grabber" size="24" />
                   <div class="d-flex w-100" v-if="element?.note !== undefined">
-                    <div class="form-field">
+                    <div class="form-field w-100">
                       <VTextarea
                         v-model="element.note"
                         label="Notera"
                         placeholder="Notera"
                         rows="2"
-                        class="mt-1"
+                        class="mt-1 w-100"
                         @input="editNote"
                       />
                     </div>
@@ -1734,6 +1734,7 @@ const handleBlur = (element) => {
 
 <style lang="scss" scoped>
 .draggable-item {
+  margin-top: 5px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1752,9 +1753,9 @@ const handleBlur = (element) => {
 
 .invoice-panel {
   margin: 24px 16px 16px;
-  border-radius: 8px;
+  border-radius: 8px !important;
   opacity: 1;
-  padding: 16px;
+  padding: 16px !important;
   border: solid 1px #e7e7e7;
 }
 
