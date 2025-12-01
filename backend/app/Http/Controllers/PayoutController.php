@@ -87,10 +87,22 @@ class PayoutController extends Controller
                     'message' => 'Betalningen hittades inte'
                 ], 404);
 
+            // Agregar información adicional calculada
+            $payoutData = $payout->toArray();
+            
+            // Información de timestamps formateados
+            $payoutData['created_at_formatted'] = $payout->created_at?->format('Y-m-d H:i:s');
+            $payoutData['updated_at_formatted'] = $payout->updated_at?->format('Y-m-d H:i:s');
+            
+            // Información del estado actual
+            $payoutData['has_error'] = !empty($payout->error_message);
+            $payoutData['is_completed'] = in_array($payout->status, ['PAID', 'CANCELLED']);
+            $payoutData['is_pending'] = in_array($payout->status, ['CREATED', 'DEBITED']);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'payout' => $payout
+                    'payout' => $payoutData
                 ]
             ]);
 
@@ -108,7 +120,74 @@ class PayoutController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        //
+        try {
+            $payout = Payout::find($id);
+        
+            if (!$payout) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Betalningen hittades inte'
+                ], 404);
+            }
+
+            // Validar el estado si se proporciona
+            if ($request->has('status')) {
+                $validStatuses = ['CREATED', 'DEBITED', 'PAID', 'ERROR', 'CANCELLED'];
+                
+                if (!in_array($request->status, $validStatuses)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid status. Valid statuses: ' . implode(', ', $validStatuses)
+                    ], 422);
+                }
+                
+                $payout->status = $request->status;
+            }
+
+            // Actualizar campos específicos de Swish si se proporcionan
+            $updatableFields = [
+                'error_message',
+                'error_code',
+                'swish_id',
+                'message',
+                'response_data',
+                'location_url'
+            ];
+
+            foreach ($updatableFields as $field) {
+                if ($request->has($field)) {
+                    $payout->$field = $request->$field;
+                }
+            }
+
+            $payout->save();
+
+            // Recargar relaciones y agregar información adicional
+            $payout->load('user', 'state');
+            
+            $payoutData = $payout->toArray();
+            $payoutData['created_at_formatted'] = $payout->created_at?->format('Y-m-d H:i:s');
+            $payoutData['updated_at_formatted'] = $payout->updated_at?->format('Y-m-d H:i:s');
+            $payoutData['has_error'] = !empty($payout->error_message);
+            $payoutData['is_completed'] = in_array($payout->status, ['PAID', 'CANCELLED']);
+            $payoutData['is_pending'] = in_array($payout->status, ['CREATED', 'DEBITED']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Betalningen uppdaterades framgångsrikt',
+                'data' => [ 
+                    'payout' => $payoutData
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**

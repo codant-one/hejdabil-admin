@@ -398,5 +398,5 @@ const download = async() => {
 <route lang="yaml">
   meta:
     action: view
-    subject: billing
+    subject: billings
 </route>

@@ -320,5 +320,5 @@ const onSubmit = () => {
 <route lang="yaml">
   meta:
     action: create
-    subject: billing
+    subject: billings
 </route>

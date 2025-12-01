@@ -5,7 +5,7 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
-import router from '@/router'
+import PayoutDetailDialog from './PayoutDetailDialog.vue'
 
 const payoutsStores = usePayoutsStores()
 const emitter = inject("emitter")
@@ -18,6 +18,8 @@ const totalPages = ref(1)
 const totalPayouts = ref(0)
 const isRequestOngoing = ref(true)
 const isAddNewPayoutDrawerVisible = ref(false)
+const isPayoutDetailDialogVisible = ref(false)
+const selectedPayoutId = ref(null)
 const isConfirmDeleteDialogVisible = ref(false)
 const selectedPayout = ref({})
 
@@ -93,7 +95,30 @@ const showDeleteDialog = payoutData => {
 }
 
 const seePayout = payoutData => {
-  router.push({ name : 'dashboard-admin-payouts-id', params: { id: payoutData.id } })
+  selectedPayoutId.value = payoutData.id
+  isPayoutDetailDialogVisible.value = true
+}
+
+const handlePayoutUpdated = updatedPayout => {
+  // Actualizar el payout en la lista local
+  const index = payouts.value.findIndex(p => p.id === updatedPayout.id)
+  if (index !== -1) {
+    payouts.value[index] = { ...payouts.value[index], ...updatedPayout }
+  }
+  
+  advisor.value = {
+    type: 'success',
+    message: 'Status uppdaterad!',
+    show: true
+  }
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
 }
 
 const removePayout = async () => {
@@ -209,6 +234,13 @@ const downloadCSV = async () => {
           class="mb-0"/>
       </VDialog>
 
+      <!-- Payout Detail Dialog -->
+      <PayoutDetailDialog
+        v-model:isDialogVisible="isPayoutDetailDialogVisible"
+        :payout-id="selectedPayoutId"
+        @payout-updated="handlePayoutUpdated"
+      />
+
       <VCol cols="12">
         <VAlert
           v-if="advisor.show"
@@ -294,21 +326,21 @@ const downloadCSV = async () => {
                 <td class="text-wrap">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      :variant="payout.user.avatar ? 'outlined' : 'tonal'"
+                      :variant="payout.user?.avatar ? 'outlined' : 'tonal'"
                       size="38"
                       >
                       <VImg
-                        v-if="payout.user.avatar"
+                        v-if="payout.user?.avatar"
                         style="border-radius: 50%;"
                         :src="themeConfig.settings.urlStorage + payout.user.avatar"
                       />
-                        <span v-else>{{ avatarText(payout.user.name) }}</span>
+                        <span v-else>{{ payout.user ? avatarText(payout.user.name) : '?' }}</span>
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="font-weight-medium">
-                        {{ payout.user.name }} {{ payout.user.last_name ?? '' }} 
+                        {{ payout.user?.name }} {{ payout.user?.last_name ?? '' }} 
                       </span>
-                      <span class="text-sm text-disabled">{{ payout.user.email }}</span>
+                      <span class="text-sm text-disabled">{{ payout.user?.email }}</span>
                     </div>
                   </div>
                 </td>

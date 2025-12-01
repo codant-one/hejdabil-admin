@@ -62,6 +62,23 @@ export const usePayoutsStores = defineStore('payouts', {
                 })
             
         },
+        updatePayout(id, data) {
+            this.setLoading(true)
+
+            return Payouts.update(id, data)
+                .then((response) => {
+                    // Actualizar el payout en la lista
+                    const index = this.payouts.findIndex((item) => item.id === id)
+                    if (index !== -1 && response.data?.data?.payout) {
+                        this.payouts[index] = response.data.data.payout
+                    }
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
         deletePayout(id) {
             this.setLoading(true)
 
