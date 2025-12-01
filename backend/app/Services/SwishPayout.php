@@ -74,13 +74,7 @@ class SwishPayout
             $body['signature'] = $signature;
         }
 
-        // CallbackIdentifier opcional - va como header HTTP, NO en el body
-        $headers = [];
-        if (config('services.swish_payout.use_callback_identifier', false)) {
-            $headers['Swish-Callback-Identifier'] = strtoupper(str_replace('-', '', Str::uuid()->toString()));
-        }
-
-        $response = $this->client()->withHeaders($headers)->post('/v1/payouts', $body);
+        $response = $this->client()->post('/v1/payouts', $body);
 
         return $response;
     }

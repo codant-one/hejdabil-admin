@@ -41,8 +41,7 @@ return [
         'callback_url'=> env('SWISH_PAYOUT_CALLBACK_URL'),
         'signing_cert' => env('SWISH_PAYOUT_SIGNING_CERT'),
         'signing_key'  => env('SWISH_PAYOUT_SIGNING_KEY'),
-        'signing_key_password' => env('SWISH_PAYOUT_SIGNING_KEY_PASSWORD', 'swish'),
-        'use_callback_identifier' => env('SWISH_PAYOUT_USE_CALLBACK_IDENTIFIER', false),
+        'signing_key_password' => env('SWISH_PAYOUT_SIGNING_KEY_PASSWORD', 'swish')
     ],
 
 ];
