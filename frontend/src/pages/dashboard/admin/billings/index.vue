@@ -15,8 +15,6 @@ const emitter = inject("emitter");
 const clients = ref([]);
 const suppliers = ref([]);
 const billings = ref([]);
-const billingSelector = ref("Kunder");
-const showMobileFilters = ref(false);
 const searchQuery = ref("");
 const rowPerPage = ref(10);
 const currentPage = ref(1);
@@ -142,11 +140,6 @@ async function fetchData(cleanFilters = false) {
 }
 
 watchEffect(registerEvents);
-
-// 👉 show mobile filters when billingSelector is set
-watchEffect(() => {
-  showMobileFilters.value = billingSelector.value === "Kunder";
-});
 
 function registerEvents() {
   emitter.on("cleanFilters", fetchData);
@@ -960,7 +953,7 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.smAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-create-billing"
         />
         <div class="empty-state-content">
           <div class="empty-state-title">Inga fakturor skapade än</div>
@@ -971,19 +964,10 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
-          @click="isAddNewClientDrawerVisible = true"
+          v-if="$can('create', 'billings')"
+          @click="addInvoice"
         >
           Skapa ny faktura
-          <VIcon icon="custom-arrow-right" size="24" />
-        </VBtn>
-
-        <VBtn
-          class="btn-ghost"
-          v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
-          @click="isDialogOpen = true"
-        >
-          Lägg till ny kund
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
