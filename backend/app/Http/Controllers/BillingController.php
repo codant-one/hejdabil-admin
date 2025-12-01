@@ -21,10 +21,10 @@ class BillingController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(PermissionMiddleware::class . ':view billing|administrator')->only(['index']);
-        $this->middleware(PermissionMiddleware::class . ':create billing|administrator')->only(['store']);
-        $this->middleware(PermissionMiddleware::class . ':edit billing|administrator')->only(['update']);
-        $this->middleware(PermissionMiddleware::class . ':delete billing|administrator')->only(['destroy']);
+        $this->middleware(PermissionMiddleware::class . ':view billings|administrator')->only(['index']);
+        $this->middleware(PermissionMiddleware::class . ':create billings|administrator')->only(['store']);
+        $this->middleware(PermissionMiddleware::class . ':edit billings|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':delete billings|administrator')->only(['destroy']);
     }
 
     /**

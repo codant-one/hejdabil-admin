@@ -232,7 +232,7 @@ const download = async () => {
                 <VCard>
                   <VList>
                     <VListItem
-                      v-if="$can('edit', 'billing')"
+                      v-if="$can('edit', 'billings')"
                       @click="printInvoice()"
                     >
                       <template #prepend>
@@ -240,19 +240,19 @@ const download = async () => {
                       </template>
                       <VListItemTitle>Skriv ut</VListItemTitle>
                     </VListItem>
-                    <VListItem v-if="$can('edit', 'billing')">
+                    <VListItem v-if="$can('edit', 'billings')">
                       <template #prepend>
                         <VIcon icon="custom-pdf" size="24" />
                       </template>
                       <VListItemTitle>Visa som PDF</VListItemTitle>
                     </VListItem>
-                    <VListItem v-if="$can('edit', 'billing')">
+                    <VListItem v-if="$can('edit', 'billings')">
                       <template #prepend>
                         <VIcon icon="custom-duplicate" size="24" />
                       </template>
                       <VListItemTitle>Duplicera</VListItemTitle>
                     </VListItem>
-                    <VListItem v-if="$can('edit', 'billing')">
+                    <VListItem v-if="$can('edit', 'billings')">
                       <template #prepend>
                         <VIcon icon="custom-alarm" size="24" />
                       </template>
@@ -951,5 +951,5 @@ const download = async () => {
 <route lang="yaml">
 meta:
   action: view
-  subject: billing
+  subject: billings
 </route>

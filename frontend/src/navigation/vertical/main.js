@@ -14,7 +14,7 @@ export default [
       icon: { icon: 'custom-facture' },
       to: 'dashboard-admin-billings', 
       action: 'view', 
-      subject: 'billing'
+      subject: 'billings'
     },
     { 
       title: 'Leverantörer', 

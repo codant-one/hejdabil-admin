@@ -243,26 +243,26 @@ const closeRoleDetailDialog = function(){
                         <div class="demo-space-x ml-5">
                             <VCheckbox
                                 v-model="permissions"
-                                label="view billing"
-                                value="view billing"
+                                label="view billings"
+                                value="view billings"
                                 :readonly="readonly"
                             />
                             <VCheckbox
                                 v-model="permissions"
-                                label="create billing"
-                                value="create billing"
+                                label="create billings"
+                                value="create billings"
                                 :readonly="readonly"
                             />
                             <VCheckbox
                                 v-model="permissions"
-                                label="edit billing"
-                                value="edit billing"
+                                label="edit billings"
+                                value="edit billings"
                                 :readonly="readonly"
                             />
                             <VCheckbox
                                 v-model="permissions"
-                                label="delete billing"
-                                value="delete billing"
+                                label="delete billings"
+                                value="delete billings"
                                 :readonly="readonly"
                             />
                         </div>

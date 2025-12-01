@@ -845,7 +845,7 @@ onBeforeUnmount(() => {
 .search {
   width: 100% !important;
   .v-field__input {
-    background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+    background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
       1rem center !important;
   }
 }

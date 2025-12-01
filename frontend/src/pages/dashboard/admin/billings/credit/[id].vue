@@ -503,5 +503,5 @@ const credit = async () => {
 <route lang="yaml">
   meta:
     action: delete
-    subject: billing
+    subject: billings
 </route>
