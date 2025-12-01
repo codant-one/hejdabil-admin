@@ -28,18 +28,32 @@ const router = createRouter({
       path: '/info',
       name: 'info',
       redirect: () => {
-              
+        const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+        if (userData) {
+          if (!userData.full_profile) {            
             return { name: 'complete-profile' }
-         
+          } else {            
+            return { name: 'dashboard-panel' }
+          }
+        }
+
+        return { name: 'login' }
       },
     },
     {
       path: '/complete-profile',
       name: 'complete-profile-redirect',
       redirect: () => {
-                 
+        const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+        if (userData) {
+          if (!userData.full_profile) {            
             return { name: 'complete-profile' }
-         
+          } else {            
+            return { name: 'dashboard-panel' }
+          }
+        }
+
+        return { name: 'login' }
       },
     },
     ...setupLayouts(routes),
