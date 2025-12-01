@@ -240,6 +240,22 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+
+const openPayoutDialog = () => {  
+  if (!payer_alias.value) {
+    advisor.value = {
+      type: 'error',
+      message: 'Det går inte att skapa betalning: konfigurerat betalningsnummer saknas',
+      show: true
+    }
+    setTimeout(() => {
+      advisor.value = { type: '', message: '', show: false }
+    }, 3000)
+    return
+  }
+  
+  isAddNewPayoutDrawerVisible.value = true
+}
 </script>
 
 <template>
@@ -311,7 +327,7 @@ const downloadCSV = async () => {
                 v-if="$can('create','payouts')"
                 prepend-icon="tabler-plus"
                 class="w-100 w-md-auto"
-                @click="isAddNewPayoutDrawerVisible = true">
+                @click="openPayoutDialog">
                   Ny betalning
               </VBtn>
             </div>
