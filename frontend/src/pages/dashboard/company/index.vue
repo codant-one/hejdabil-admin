@@ -486,13 +486,20 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
-const formatOrgNumber = () => {
-
-    let numbers = form.value.organization_number.replace(/\D/g, '')
+const formatNumber = (field) => {
+    if  (field === 'organization_number') {
+        let numbers = form.value.organization_number.replace(/\D/g, '')
+        if (numbers.length > 4) {
+            numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+        }
+        form.value.organization_number = numbers
+        return
+    }
+    let numbers = form.value.payout_number.replace(/\D/g, '')
     if (numbers.length > 4) {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
-    form.value.organization_number = numbers
+    form.value.payout_number = numbers
 }
 
 const onSubmit = () => {
@@ -654,7 +661,7 @@ const onSubmit = () => {
                                     :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                                     minLength="11"
                                     maxlength="11"
-                                    @input="formatOrgNumber()"
+                                    @input="formatNumber('organization_number')"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -762,7 +769,10 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.payout_number"
                                     label="Payout number"
-                                    :rules="[phoneValidator]"
+                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                    minLength="11"
+                                    maxlength="11"
+                                    @input="formatNumber('payout_number')"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">

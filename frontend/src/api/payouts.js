@@ -7,8 +7,7 @@ class Payouts {
     }
 
     create(data) {
-        // Usa el endpoint de servicio que dispara el flujo completo de Swish Payout
-        return axios.post('/swish/payout', data)
+        return axios.post('/payouts', data)
     }
 
     show(id) {

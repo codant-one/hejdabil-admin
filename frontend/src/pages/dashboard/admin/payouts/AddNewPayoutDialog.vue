@@ -1,16 +1,16 @@
 <script setup>
 
-import { requiredValidator } from '@/@core/utils/validators'
+import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
   isDialogOpen: {
     type: Boolean,
     required: true,
   },
-  payout: {
-    type: Object,
-    required: false,
-    default: () => ({}),
+  payer_alias: {
+    type: String,
+    required: true,
+    default: '',
   },
 })
 
@@ -22,24 +22,20 @@ const emit = defineEmits([
 const isFormValid = ref(false)
 const refForm = ref()
 
-const payer_alias = ref('')
+const payer_alias = ref(props.payer_alias)
+const payee_alias = ref(null)
+const message = ref(null)
 const amount = ref(null)
-const payee_ssn = ref('')
+const payee_ssn = ref(null)
 
-const ssnValidator = value => {
-  if (!value) return true
-  const ok = /^\d{12}$/.test(value)
-  return ok || 'Ange 12 siffror: YYYYMMDDXXXX'
-}
-
-const getTitle = computed(() => 'Ny betalning')
+const getTitle = computed(() => 'Ny betalning från ' + payer_alias.value)
 
 watchEffect(() => {
   if (props.isDialogOpen) {
-    // Si en el futuro quieres soportar edición, aquí podrías precargar datos desde props.payout
-    payer_alias.value = ''
+    payee_alias.value = null
     amount.value = null
-    payee_ssn.value = ''
+    payee_ssn.value = null
+    message.value = null
   }
 })
 
@@ -49,19 +45,33 @@ const closeDialog = () => {
     refForm.value?.reset()
     refForm.value?.resetValidation()
 
-    payer_alias.value = ''
+    payee_alias.value = null
     amount.value = null
-    payee_ssn.value = ''
+    payee_ssn.value = null
+    message.value = null
   })
+}
+
+const formatNumber = (value) => {
+  
+  if  (value === 'payee_alias') {
+    let numbers = payee_alias.value.replace(/\D/g, '')
+    payee_alias.value = numbers
+    return
+  }
+
+  let numbers = payee_ssn.value.replace(/\D/g, '')
+  payee_ssn.value = numbers
 }
 
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
       const payload = {
-        payer_alias: payer_alias.value,
+        payee_alias: payee_alias.value,
         amount: amount.value,
-        payee_ssn: payee_ssn.value || undefined,
+        payee_ssn: payee_ssn.value,
+        message: message.value
       }
 
       emit('payoutData', { data: payload })
@@ -92,7 +102,7 @@ const onSubmit = () => {
         </VBtn>
       </VCardTitle>
 
-      <VDivider class="mt-2" />
+      <VDivider />
 
       <VCardText>
         <VForm
@@ -103,19 +113,23 @@ const onSubmit = () => {
           <VRow>
             <VCol cols="12">
               <VTextField
-                v-model="payer_alias"
-                label="Swish-nummer (mottagare)"
-                :rules="[requiredValidator]"
+                v-model="payee_alias"
+                label="Mobilnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(11)]"
+                minLength="11"
+                maxlength="11"
+                @input="formatNumber('payee_alias')"
               />
             </VCol>
 
             <VCol cols="12">
               <VTextField
                 v-model="payee_ssn"
-                label="Personnummer (YYYYMMDDXXXX)"
-                :rules="[ssnValidator]"
-                hint="Valfritt – krävs ibland i sandbox"
-                persistent-hint
+                label="Personnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(12)]"
+                minLength="12"
+                maxlength="12"
+                @input="formatNumber('payee_ssn')"
               />
             </VCol>
 
@@ -126,6 +140,14 @@ const onSubmit = () => {
                 label="Belopp (SEK)"
                 :rules="[requiredValidator]"
                 min="1"
+              />
+            </VCol>
+
+            <VCol cols="12">
+              <VTextarea
+                v-model="message"
+                label="Meddelande (valfritt)"
+                rows="3"
               />
             </VCol>
 

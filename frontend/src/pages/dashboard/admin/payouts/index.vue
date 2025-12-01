@@ -4,10 +4,16 @@ import { usePayoutsStores } from '@/stores/usePayouts'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
+import { useAuthStores } from '@/stores/useAuth'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { useConfigsStores } from '@/stores/useConfigs'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
 
+const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
+const configsStores = useConfigsStores()
+const ability = useAppAbility()
 const emitter = inject("emitter")
 
 const payouts = ref([])
@@ -25,6 +31,7 @@ const selectedPayout = ref({})
 
 const userData = ref(null)
 const role = ref(null)
+const payer_alias = ref(null)
 
 const advisor = ref({
   type: '',
@@ -49,11 +56,6 @@ watchEffect(() => {
         selectedPayout.value = {}
 })
 
-onMounted(async () => {
-  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
-})
-
 watchEffect(fetchData)
 
 async function fetchData(cleanFilters = false) {
@@ -76,6 +78,24 @@ async function fetchData(cleanFilters = false) {
 
   await payoutsStores.fetchPayouts(data)
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+
+  const { user_data, userAbilities } = await authStores.me(userData.value)
+
+  localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+  ability.update(userAbilities)
+
+  localStorage.setItem('user_data', JSON.stringify(user_data))
+
+  if(role.value === 'Supplier') {
+    payer_alias.value = user_data.supplier.payout_number
+  } else {
+    await configsStores.getFeature('company')
+    payer_alias.value = configsStores.getFeaturedConfig('company').payout_number
+  }
+    
   payouts.value = payoutsStores.getPayouts
   totalPages.value = payoutsStores.last_page
   totalPayouts.value = payoutsStores.payoutsTotalCount
@@ -153,41 +173,42 @@ const submitForm = async (payoutData) => {
 
 
 const submitCreate = payoutData => {
+  payoutData.payer_alias = payer_alias.value
 
-    payoutsStores.addPayout(payoutData)
-        .then((res) => {
-            if (res.data.success) {
-                advisor.value = {
-                    type: 'success',
-                    message: 'Betalning skapad! ',
-                    show: true
-                }
-                fetchData()
-            }
-            isRequestOngoing.value = false
-        })
-        .catch((err) => {
-            // Intentamos mostrar el mensaje que viene desde el backend (por ejemplo, "Incorrect ssn format")
-            const apiMessage = err.response?.data?.message
-            const apiCode = err.response?.data?.errorCode
-
+  payoutsStores.addPayout(payoutData)
+    .then((res) => {
+        if (res.data.success) {
             advisor.value = {
-                type: 'error',
-              message: apiMessage
-                ? (apiCode ? `${apiCode}: ${apiMessage}` : apiMessage)
-                : err.message,
+                type: 'success',
+                message: 'Betalning skapad!',
                 show: true
             }
-            isRequestOngoing.value = false
-        })
-
-    setTimeout(() => {
-        advisor.value = {
-            type: '',
-            message: '',
-            show: false
+            fetchData()
         }
-    }, 3000)
+        isRequestOngoing.value = false
+    })
+    .catch((err) => {
+        // Intentamos mostrar el mensaje que viene desde el backend (por ejemplo, "Incorrect ssn format")
+        const apiMessage = err.response?.data?.message
+        const apiCode = err.response?.data?.errorCode
+
+        advisor.value = {
+          type: 'error',
+          message: apiMessage
+            ? (apiCode ? `${apiCode}: ${apiMessage}` : apiMessage)
+            : err.message,
+            show: true
+        }
+        isRequestOngoing.value = false
+    })
+
+  setTimeout(() => {
+      advisor.value = {
+          type: '',
+          message: '',
+          show: false
+      }
+  }, 3000)
 }
 
 const downloadCSV = async () => {
@@ -206,7 +227,7 @@ const downloadCSV = async () => {
       ID: element.id,
       USER: element.user.name + ' ' + (element.user.last_name ?? ''),
       AMOUNT: element.amount,
-      PAYER_ALIAS: element.payer_alias,
+      PAYEE_ALIAS: element.payee_alias,
       STATE: element.state.name
     }
           
@@ -306,7 +327,7 @@ const downloadCSV = async () => {
                 <th scope="col"> SWISH ID </th>
                 <th scope="col"> REFERENCE </th>
                 <th scope="col"> AMOUNT </th>
-                <th scope="col"> PAYER ALIAS </th>
+                <th scope="col"> PAYEE ALIAS </th>
                 <th scope="col"> SKAPAD AV </th>
                 <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
               </tr>
@@ -322,7 +343,7 @@ const downloadCSV = async () => {
                 <td> {{ payout.swish_id ?? ''}} </td>
                 <td> {{ payout.reference ?? ''}} </td>
                 <td> {{ payout.amount ?? ''}} </td>
-                <td> {{ payout.payer_alias ?? ''}} </td>
+                <td> {{ payout.payee_alias ?? ''}} </td>
                 <td class="text-wrap">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
@@ -413,7 +434,9 @@ const downloadCSV = async () => {
 
     <!-- 👉 Add New Payout -->
     <AddNewPayoutDialog
+      v-if="payer_alias"
       v-model:isDialogOpen="isAddNewPayoutDrawerVisible"
+      :payer_alias="payer_alias"
       @payout-data="submitForm"
     />
 

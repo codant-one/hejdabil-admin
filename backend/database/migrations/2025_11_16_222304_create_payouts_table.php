@@ -19,6 +19,15 @@ return new class extends Migration
             $table->string('reference')->nullable();
             $table->decimal('amount', 10, 2);
             $table->string('payer_alias')->nullable();
+            $table->string('payee_alias')->nullable();
+            $table->string('payee_ssn')->nullable();
+            $table->string('currency', 3)->default('SEK');
+            $table->string('payout_type')->default('PAYOUT');
+            $table->string('instruction_date')->nullable();
+            $table->string('payout_instruction_uuid')->nullable();
+            $table->text('message')->nullable();
+            $table->string('signing_certificate_serial_number')->nullable();
+            $table->string('location_url')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

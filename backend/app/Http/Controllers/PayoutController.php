@@ -2,16 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SwishRequest;
+
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+use App\Services\SwishPayout;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Payout;
+use App\Models\PayoutState;
 
 class PayoutController extends Controller
 {
@@ -66,9 +73,110 @@ class PayoutController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+     public function store(SwishRequest $request, SwishPayout $swish)
     {
-      //
+        try {
+            // Reference for the payout
+            $ref = 'REF' . strtoupper(Str::random(9));
+
+            // Normalize Swedish MSISDN to E.164 format without ‘+’ (46...) to reduce errors ACMT17
+            $rawAlias = preg_replace('/\s+/', '', $request->payee_alias);
+            $rawAlias = ltrim($rawAlias, '+');
+            if (preg_match('/^0\d{9}$/', $rawAlias))
+                $rawAlias = '46' . substr($rawAlias, 1);
+            $payeeAlias = $rawAlias;
+
+            $payoutInstructionUUID = strtoupper(str_replace('-', '', Str::uuid()->toString()));
+
+            $request->merge([
+                'payer_alias' => str_replace('-', '', $request->payer_alias),
+                'payout_instruction_uuid' => $payoutInstructionUUID,
+                'reference' => $ref,
+                'amount' => number_format($request->amount, 2, '.', ''),
+                'currency' => 'SEK',
+                'payout_type' => 'PAYOUT',
+                'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
+                'signing_certificate_serial_number' => $swish->getSigningCertificateSerialNumber(), // Signature certificate serial number
+            ]);
+
+            // Service swish call
+            $response = $swish->createPayout(
+                $request
+            );
+
+            // Si Swish devuelve error (4xx/5xx), NO guardamos nada en la BD
+            if (!$response->successful()) {
+                $body = $response->json();
+                $errorCode = null;
+                $errorMessage = null;
+
+                if (is_array($body)) {
+                    $first = $body[0] ?? null;
+                    if (is_array($first)) {
+                        $errorCode = $first['errorCode'] ?? null;
+                        $errorMessage = $first['errorMessage'] ?? null;
+                    }
+                }
+                // Avoid logging out on the frontend: map external 401s to 422s
+                $status = $response->status();
+                if ($status === 401) {
+                    $status = 422; // Unprocessable Entity for parameter errors
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage ?? 'Swish payout error',
+                    'errorCode' => $errorCode,
+                    'errors'  => $body,
+                ], $status);
+            }
+
+            // The payout ID usually comes in the Location header: .../v1/payouts/{id}
+            $locationHeader = $response->header('Location') ?? $response->header('location');
+            $payoutId = null;
+
+            if ($locationHeader) {
+                $path = parse_url($locationHeader, PHP_URL_PATH);
+                $payoutId = $path ? basename($path) : null;
+            } else {
+                // Fallback: try to get it from the body in case Swish sends it there
+                $responseJson = $response->json();
+                if (is_array($responseJson)) {
+                    $payoutId = $responseJson['id'] ?? $responseJson['payoutId'] ?? $responseJson['paymentReference'] ?? null;
+                }
+            }
+
+            // Initial state: look for a "PENDING" state if it exists, otherwise use the default id (1)
+            $pendingStateId = PayoutState::where('label', 'pending')->value('id') ?? 1;
+
+            $request->merge([
+                'payout_state_id' => $pendingStateId,
+                'swish_id'        => $payoutId,
+                'location_url'    => $locationHeader,
+            ]);
+
+            $payout = Payout::createPayout($request);
+ 
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'payout'   => $payout,
+                    'swishRaw' => $response->json(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Swish Payout exception', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success'  => false,
+                'message'  => 'internal_error',
+                'exception'=> $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -120,74 +228,7 @@ class PayoutController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        try {
-            $payout = Payout::find($id);
-        
-            if (!$payout) {
-                return response()->json([
-                    'success' => false,
-                    'feedback' => 'not_found',
-                    'message' => 'Betalningen hittades inte'
-                ], 404);
-            }
-
-            // Validar el estado si se proporciona
-            if ($request->has('status')) {
-                $validStatuses = ['CREATED', 'DEBITED', 'PAID', 'ERROR', 'CANCELLED'];
-                
-                if (!in_array($request->status, $validStatuses)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid status. Valid statuses: ' . implode(', ', $validStatuses)
-                    ], 422);
-                }
-                
-                $payout->status = $request->status;
-            }
-
-            // Actualizar campos específicos de Swish si se proporcionan
-            $updatableFields = [
-                'error_message',
-                'error_code',
-                'swish_id',
-                'message',
-                'response_data',
-                'location_url'
-            ];
-
-            foreach ($updatableFields as $field) {
-                if ($request->has($field)) {
-                    $payout->$field = $request->$field;
-                }
-            }
-
-            $payout->save();
-
-            // Recargar relaciones y agregar información adicional
-            $payout->load('user', 'state');
-            
-            $payoutData = $payout->toArray();
-            $payoutData['created_at_formatted'] = $payout->created_at?->format('Y-m-d H:i:s');
-            $payoutData['updated_at_formatted'] = $payout->updated_at?->format('Y-m-d H:i:s');
-            $payoutData['has_error'] = !empty($payout->error_message);
-            $payoutData['is_completed'] = in_array($payout->status, ['PAID', 'CANCELLED']);
-            $payoutData['is_pending'] = in_array($payout->status, ['CREATED', 'DEBITED']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Betalningen uppdaterades framgångsrikt',
-                'data' => [ 
-                    'payout' => $payoutData
-                ]
-            ], 200);
-
-        } catch(\Illuminate\Database\QueryException $ex) {
-            return response()->json([
-                'success' => false,
-                'message' => 'database_error',
-                'exception' => $ex->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**

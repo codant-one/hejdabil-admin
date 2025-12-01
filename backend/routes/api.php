@@ -198,9 +198,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
     Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
     Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
-
-    //Swish Payout
-    Route::post('/swish/payout', [SwishPayoutController::class, 'store']);
 });
 
 //Public Endpoints

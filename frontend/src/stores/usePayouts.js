@@ -36,11 +36,7 @@ export const usePayoutsStores = defineStore('payouts', {
 
             return Payouts.create(data)
                 .then((response) => {
-                    // Agregamos el nuevo payout a la lista actual para que se vea sin necesidad de recargar
-                    if (response.data?.data?.payout) {
-                        this.payouts.push(response.data.data.payout)
-                    }
-
+                    this.payouts.push(response.data.data.payout)
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -61,23 +57,6 @@ export const usePayoutsStores = defineStore('payouts', {
                     this.setLoading(false)
                 })
             
-        },
-        updatePayout(id, data) {
-            this.setLoading(true)
-
-            return Payouts.update(id, data)
-                .then((response) => {
-                    // Actualizar el payout en la lista
-                    const index = this.payouts.findIndex((item) => item.id === id)
-                    if (index !== -1 && response.data?.data?.payout) {
-                        this.payouts[index] = response.data.data.payout
-                    }
-                    return Promise.resolve(response)
-                })
-                .catch(error => Promise.reject(error))
-                .finally(() => {
-                    this.setLoading(false)
-                })
         },
         deletePayout(id) {
             this.setLoading(true)
