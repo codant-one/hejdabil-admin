@@ -41,6 +41,10 @@ class SwishRequest extends FormRequest
                 'numeric', 
                 'min:1',
                 'regex:/^\d+(\.\d{1,2})?$/'
+            ],
+            'master_password' => [
+                'required',
+                'string'
             ]
         ];
 
@@ -57,7 +61,9 @@ class SwishRequest extends FormRequest
             'amount.required'      => 'Belopp är obligatoriskt', 
             'amount.numeric'       => 'Belopp måste vara ett numeriskt värde',
             'amount.min'           => 'Belopp måste vara minst 1',
-            'amount.regex'         => 'Belopp måste använda punkt (.) som decimaltecken med maximalt 2 decimaler'
+            'amount.regex'         => 'Belopp måste använda punkt (.) som decimaltecken med maximalt 2 decimaler',
+            'master_password.required' => 'Säkerhetslösenord är obligatoriskt',
+            'master_password.string'   => 'Säkerhetslösenord måste vara en text'
         ];
     }
 

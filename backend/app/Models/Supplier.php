@@ -186,6 +186,14 @@ class Supplier extends Model
         return $supplier;
     }
 
+    public static function masterPassword($request, $id) {
+        $supplier = self::where('id', $id)->first();
+        $supplier->master_password = $request->master_password;
+        $supplier->save();
+
+        return $supplier;
+    }  
+
     public static function createUserRelatedToSupplier($request) {
         $user = User::createUser($request);
         $user->assignRole('User');

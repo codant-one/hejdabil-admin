@@ -200,5 +200,29 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.setLoading(false)
                 })  
         },
+        masterPassword(id, data) {
+            this.setLoading(true)
+
+            return Suppliers.masterPassword(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        getMasterPassword(id) {
+            this.setLoading(true)   
+            
+            return Suppliers.getMasterPassword(id)
+                .then((response) => {
+                    return Promise.resolve(response.data.data.master_password)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        }
     }
 })

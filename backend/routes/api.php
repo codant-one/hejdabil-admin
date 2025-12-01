@@ -149,6 +149,8 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::post('supplier/updateuser/{id}', [SupplierController::class, 'updateRelatedUser']);
         Route::post('supplier/permissions/{id}', [SupplierController::class, 'permissionsRelatedUser']);
         Route::post('/swish/{id}', [SupplierController::class, 'swish']);
+        Route::post('/master-password/{id}', [SupplierController::class, 'masterPassword']);
+        Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
     });
 
     //Tasks

@@ -19,6 +19,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Payout;
 use App\Models\PayoutState;
+use App\Models\Config;
 
 class PayoutController extends Controller
 {
@@ -76,6 +77,41 @@ class PayoutController extends Controller
      public function store(SwishRequest $request, SwishPayout $swish)
     {
         try {
+            // Valide master_password
+            $user = Auth::user();
+            $role = $user->roles->first()->name ?? null;
+            $masterPasswordValid = false;
+            
+            if ($role === 'Supplier') {
+                $supplier = $user->supplier;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } else {
+                $config = Config::getByKey('setting') ?? ['value' => '[]'];
+                $configArr = json_decode($config->value, true);
+                $master_password = $configArr['master_password'];
+
+                if (!$config || !isset($configArr['master_password'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $master_password);
+            }
+
+            if (!$masterPasswordValid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Felaktigt säkerhetslösenord',
+                ], 422);
+            }
+
             // Reference for the payout
             $ref = 'REF' . strtoupper(Str::random(9));
 

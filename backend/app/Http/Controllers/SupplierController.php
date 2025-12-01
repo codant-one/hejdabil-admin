@@ -305,6 +305,64 @@ class SupplierController extends Controller
         }
     }
 
+    public function masterPassword(Request $request, $id)
+    {
+        try {
+            $supplier = Supplier::where('id', $id)->first();
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            
+            $supplier->masterPassword($request, $id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'supplier' => $supplier
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getMasterPassword($id)
+    {
+        try {
+            $supplier = Supplier::where('id', $id)->first();
+        
+            if (!$supplier)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'master_password' => $supplier->master_password
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function users(Request $request): JsonResponse
     {
         try {

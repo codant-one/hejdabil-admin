@@ -3,11 +3,15 @@
 import { confirmedValidator, passwordValidator, requiredValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
+import { useConfigsStores } from '@/stores/useConfigs'
+import { useSuppliersStores } from '@/stores/useSuppliers'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
 
 const profileStores = useProfileStores()
 const authStores = useAuthStores()
+const configsStores = useConfigsStores()
+const suppliersStores = useSuppliersStores()
 
 const refVForm = ref()
 const password = ref()
@@ -15,6 +19,15 @@ const passwordConfirmation = ref()
 const isNewPasswordVisible = ref(false)
 const isConfirmPasswordVisible = ref(false)
 const isRequestOngoing = ref(true)
+
+const refForm = ref()
+const isFormValid = ref(false)
+const isMasterPasswordVisible = ref(false)
+const masterPassword = ref('')
+const setting = ref([])
+
+const userData = ref(null)
+const role = ref(null)
 
 const isDialogVisible = ref(false)
 const is_2fa = ref(false)
@@ -54,6 +67,18 @@ async function fetchData() {
   token.value = data.value.token
   is_2fa.value = data.value.is_2fa
 
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
+
+  if(role.value === 'Supplier') {
+    masterPassword.value = await suppliersStores.getMasterPassword(userData.value.supplier.id)
+  } else {
+    await configsStores.getFeature('setting')
+    setting.value = configsStores.getFeaturedConfig('setting')
+
+    masterPassword.value = setting.value.master_password
+  }
+
   isRequestOngoing.value = false
 }
 
@@ -70,7 +95,7 @@ const chance2fa = (code) => {
   authStores.validate(data)
     .then(response => {
       advisor.value.show = true
-      advisor.value.message = 'Updated information'
+      advisor.value.message = 'Aktuell information'
       advisor.value.type = 'success' 
       
       emit('alert', advisor)
@@ -156,6 +181,66 @@ const onSubmit = () => {
 
           isRequestOngoing.value = false
         })
+    }
+  })
+}
+
+const onSubmitKey = async () => {
+  refForm.value?.validate().then(async ({ valid }) => {
+    if (valid) {
+
+      isRequestOngoing.value = true
+
+      try {
+        if (role.value === 'Supplier') {
+          // Llamar al endpoint de suppliers
+          const data = {
+            master_password: masterPassword.value
+          }
+          await suppliersStores.masterPassword(userData.value.supplier.id, data)
+        } else {
+          // Llamar al endpoint de configs
+          const data = {
+            key: 'setting',
+            params: {
+              value: {
+                master_password: masterPassword.value
+              }
+            }
+          }
+          await configsStores.postFeature(data)
+        }
+
+        await fetchData()
+
+        advisor.value.show = true
+        advisor.value.message = 'Aktuell information'
+        advisor.value.type = 'success'
+        emit('alert', advisor)
+
+        setTimeout(() => {
+          advisor.value.show = false
+          advisor.value.type = ''
+          advisor.value.message = ''
+          emit('alert', advisor)
+        }, 5000)
+      } catch (error) {
+        console.error(error)
+        advisor.value.show = true
+        advisor.value.message = 'Fel vid uppdatering av huvudlösenord'
+        advisor.value.type = 'error'
+        emit('alert', advisor)
+
+        setTimeout(() => {
+          advisor.value.show = false
+          advisor.value.type = ''
+          advisor.value.message = ''
+          emit('alert', advisor)
+        }, 5000)
+      } finally {
+        isRequestOngoing.value = false
+      }
+      
     }
   })
 }
@@ -253,6 +338,40 @@ const onSubmit = () => {
             </VTable>
           </VCardText>
         </VCard>
+
+        <VCard title="Säkerhetslösenord" class="mt-5" v-if="role !== 'User'">
+          <VForm
+              ref="refForm"
+              v-model="isFormValid"
+              @submit.prevent="onSubmitKey">
+
+              <VCardText class="pt-0">
+              <!-- 👉 Current Password -->
+              <VRow class="mb-3">
+                  <VCol
+                      cols="12"
+                      md="12"
+                  >
+                      <VTextField
+                          v-model="masterPassword"
+                          :type="isMasterPasswordVisible ? 'text' : 'password'"
+                          :append-inner-icon="isMasterPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                          :rules="[requiredValidator]"
+                          label="Säkerhetslösenord"
+                          @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
+                  />
+                  </VCol>
+                  <VCol cols="12" class="py-0">
+                      <VBtn type="submit"class="w-100 w-md-auto">
+                          Guardar
+                      </VBtn>
+                  </VCol>
+              </VRow>
+
+          
+              </VCardText>
+          </VForm>
+      </VCard>
       </VCol>
     </VRow>
 
