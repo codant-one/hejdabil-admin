@@ -92,16 +92,35 @@ class PayoutController extends Controller
                 }
                 $masterPasswordValid = ($request->master_password === $supplier->master_password);
             } else {
-                $config = Config::getByKey('setting') ?? ['value' => '[]'];
-                $configArr = json_decode($config->value, true);
-                $master_password = $configArr['master_password'];
-
-                if (!$config || !isset($configArr['master_password'])) {
+                $config = Config::getByKey('setting');
+                
+                if (!$config) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Inget säkerhetslösenord konfigurerat',
                     ], 422);
                 }
+                
+                // Manejar si $config es array u objeto
+                $configValue = is_array($config) ? ($config['value'] ?? null) : ($config->value ?? null);
+                
+                if (!$configValue) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                
+                $configArr = json_decode($configValue, true);
+                
+                if (!isset($configArr['master_password'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                
+                $master_password = $configArr['master_password'];
                 $masterPasswordValid = ($request->master_password === $master_password);
             }
 
