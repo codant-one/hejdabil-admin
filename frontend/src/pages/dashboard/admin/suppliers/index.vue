@@ -1,5 +1,6 @@
 <script setup>
 
+import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
@@ -19,8 +20,13 @@ const totalSuppliers = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
+const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const payout_number = ref(null)
+const is_payout = ref(false)
 const state_id = ref(null)
+const refForm = ref(null)
+const isFormValid = ref(false)
 
 const states = ref ([
   { id: 2, name: "Aktiv" },
@@ -101,6 +107,17 @@ const showDeleteDialog = supplierData => {
   selectedSupplier.value = { ...supplierData }
 }
 
+const showSwishDialog = supplierData => {
+  isConfirmSwishDialogVisible.value = true
+  selectedSupplier.value = { ...supplierData }
+  payout_number.value = supplierData.payout_number || ''
+  is_payout.value = supplierData.is_payout === 0 ? false : true
+
+  nextTick(() => {
+    refForm.value?.resetValidation()
+  })
+}
+
 const showActivateDialog = supplierData => {
   isConfirmActiveDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
@@ -132,6 +149,75 @@ const removeSupplier = async () => {
   }, 3000)
 
   return true
+}
+
+const formatOrgNumber = () => {
+
+    let numbers = payout_number.value.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    payout_number.value = numbers
+}
+
+const swish = () => {
+
+  refForm.value?.validate().then(({ valid }) => {
+    if(valid) {
+      isConfirmSwishDialogVisible.value = false
+      isRequestOngoing.value = true
+      
+      let data = {
+        payout_number: payout_number.value,
+        is_payout: is_payout.value ? 1 : 0
+      }
+      
+      suppliersStores.swish(selectedSupplier.value.id, data)
+        .then(async (res) => {
+            if (res.data.success) {
+              selectedSupplier.value = {}
+              payout_number.value = null
+              is_payout.value = false
+              
+              await fetchData()
+
+              advisor.value = {
+                type: 'success',
+                message: res.data.data.supplier.is_payout === 1 ? 'Swish aktiverad!' : 'Swish avaktiverad!',
+                show: true
+              }
+
+              setTimeout(() => {
+                advisor.value = {
+                  type: '',
+                  message: '',
+                  show: false
+                }
+              }, 3000)
+
+            }
+            isRequestOngoing.value = false
+        })
+        .catch((err) => {
+
+          advisor.value = {
+            type: 'error',
+            message: err.response?.data?.message || err.message,
+            show: true
+          }
+
+          setTimeout(() => {
+            advisor.value = {
+              type: '',
+              message: '',
+              show: false
+            }
+          }, 3000)
+
+          isRequestOngoing.value = false
+        })
+    }
+  })
 }
 
 const activateSupplier = async () => {
@@ -282,6 +368,7 @@ const downloadCSV = async () => {
                 <th scope="col"> FÖRETAG </th>
                 <th scope="col"> KONTAKT </th>
                 <th scope="col"> STATUS </th>
+                <th scope="col"> SWISH </th>
                 <th scope="col"> # KUNDER </th>
                 <th scope="col"> SKAPAD AV </th>
                 <th scope="col" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')"></th>
@@ -348,6 +435,11 @@ const downloadCSV = async () => {
                   </VChip>
                 </td>
                 <td class="text-wrap w-15">
+                  <span v-if="supplier.is_payout === 1">
+                    {{ supplier.payout_number ?? '' }}
+                  </span>
+                </td>
+                <td class="text-wrap w-15">
                   {{ supplier.client_count }}
                 </td>
                 <td class="text-wrap">
@@ -386,6 +478,14 @@ const downloadCSV = async () => {
                     </template>
 
                     <VList>
+                      <VListItem 
+                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1"
+                        @click="showSwishDialog(supplier)">
+                        <template #prepend>
+                          <VIcon icon="mdi-payment" />
+                        </template>
+                        <VListItemTitle>Swish</VListItemTitle>
+                      </VListItem>
                       <VListItem 
                         v-if="$can('view', 'suppliers')"
                         @click="seeSupplier(supplier)">
@@ -485,7 +585,57 @@ const downloadCSV = async () => {
       </VCard>
     </VDialog>
 
-    <!-- 👉 Confirm Delete -->
+    <!-- 👉 Confirm activate swish -->
+    <VDialog
+      v-model="isConfirmSwishDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmSwishDialogVisible = !isConfirmSwishDialogVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Swish">
+        <VDivider class="mt-4"/>
+        <VCardText class="pb-0">
+          Swish för leverantören <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>
+        </VCardText>
+        
+        <VForm
+          ref="refForm"
+          v-model="isFormValid"
+          @submit.prevent="swish">
+          <VCardText>
+            <VTextField
+              v-model="payout_number"
+              label="Utbetalningsnummer"
+              :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+              minLength="11"
+              maxlength="11"
+              @input="formatOrgNumber()"
+            />
+            <VCheckbox
+              v-model="is_payout"
+              label="Aktivera Swish utbetalningar"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+            <VBtn
+              color="secondary"
+              variant="tonal"
+              @click="isConfirmSwishDialogVisible = false">
+                Avbryt
+            </VBtn>
+            <VBtn type="submit">
+              Acceptera
+            </VBtn>
+          </VCardText>
+        </VForm>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm activate supplier -->
     <VDialog
       v-model="isConfirmActiveDialogVisible"
       persistent

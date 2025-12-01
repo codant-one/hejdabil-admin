@@ -9,14 +9,34 @@ import ability from '@/plugins/casl/ability'
  *
  * @param {String} action CASL Actions // https://casl.js.org/v4/en/guide/intro#basics
  * @param {String} subject CASL Subject // https://casl.js.org/v4/en/guide/intro#basics
+ * @param {Object} item Optional navigation item for additional checks
  */
-export const can = (action, subject) => {
+export const can = (action, subject, item = null) => {
   const vm = getCurrentInstance()
   if (!vm)
     return false
   const localCan = vm.proxy && '$can' in vm.proxy
   
-  return localCan ? vm.proxy?.$can(action, subject) : true
+  // Verificación básica de permisos CASL
+  const hasPermission = localCan ? vm.proxy?.$can(action, subject) : true
+  
+  // Si no tiene permiso básico, retornar false
+  if (!hasPermission) return false
+  
+  // Validación adicional para payouts y suppliers
+  if (subject === 'payouts') {
+    const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+    if (!userData) return false
+    
+    const userRole = userData.roles?.[0]?.name
+    
+    // Si es Supplier, debe tener is_payout === 1
+    if (userRole === 'Supplier') {
+      return userData.supplier?.is_payout === 1
+    }
+  }
+  
+  return hasPermission
 }
 
 /**

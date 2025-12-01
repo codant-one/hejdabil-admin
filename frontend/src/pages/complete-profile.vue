@@ -175,6 +175,7 @@ const form = ref({
   plus_spin: "",
   swish: "",
   vat: "",
+  payout_number: "",
 });
 
 // Nuevo: checkbox required
@@ -277,6 +278,11 @@ async function fetchData() {
     role.value === "User"
       ? userData.value.supplier.boss.user.user_detail.vat
       : userData.value.user_detail.vat;
+
+  form.value.payout_number = 
+    role.value === 'User' 
+      ? userData.value.supplier.boss?.payout_number 
+      : userData.value.supplier?.payout_number 
 
   logo.value =
     role.value === "User"
@@ -1028,6 +1034,13 @@ const dataURLtoBlob = (dataURL) => {
               <div class="form-field d-flex flex-column gap-1">
                 <label>Vat</label>
                 <VTextField :disabled="role === 'User'" v-model="form.vat" />
+              </div>
+              <div class="form-field d-flex flex-column gap-1">
+                <label>Payout Number*</label>
+                <VTextField
+                  v-model="form.payout_number"
+                  disabled
+                />
               </div>
               <div
                 class="form-field form-field-checkbox d-flex align-center gap-4"

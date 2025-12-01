@@ -1,5 +1,6 @@
 <script setup>
 
+import { nextTick } from 'vue';
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator, emailValidator } from '@/@core/utils/validators'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { themeConfig } from '@themeConfig'
@@ -8,7 +9,7 @@ import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
 import 'vue-advanced-cropper/dist/style.css'
 import SignaturePad from 'signature_pad';
-import { nextTick } from 'vue';
+import router from '@/router'
 
 const configsStores = useConfigsStores()
 
@@ -64,6 +65,7 @@ const form = ref({
     bic: '',
     plus_spin: '',
     swish: '',
+    payout_number: '',
     vat: ''
 })
 
@@ -71,6 +73,16 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+onBeforeMount(() => {
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+  const userRole = userData?.roles?.[0]?.name
+  
+  // Solo SuperAdmin y Administrator pueden acceder
+  if (userRole !== 'SuperAdmin' && userRole !== 'Administrator') {
+    router.push({ name: 'not-authorized' })
+  }
 })
 
 onBeforeRouteLeave((to, from, next) => {
@@ -121,6 +133,7 @@ async function fetchData() {
     form.value.bic = data.value.bic
     form.value.plus_spin = data.value.plus_spin
     form.value.swish = data.value.swish
+    form.value.payout_number = data.value.payout_number
     form.value.vat = data.value.vat
 
     await configsStores.getFeature('logo')
@@ -473,13 +486,20 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
-const formatOrgNumber = () => {
-
-    let numbers = form.value.organization_number.replace(/\D/g, '')
+const formatNumber = (field) => {
+    if  (field === 'organization_number') {
+        let numbers = form.value.organization_number.replace(/\D/g, '')
+        if (numbers.length > 4) {
+            numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+        }
+        form.value.organization_number = numbers
+        return
+    }
+    let numbers = form.value.payout_number.replace(/\D/g, '')
     if (numbers.length > 4) {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
-    form.value.organization_number = numbers
+    form.value.payout_number = numbers
 }
 
 const onSubmit = () => {
@@ -511,6 +531,7 @@ const onSubmit = () => {
                         bic: form.value.bic,
                         plus_spin: form.value.plus_spin,
                         swish: form.value.swish,
+                        payout_number: form.value.payout_number,
                         vat: form.value.vat
                     }
                 }
@@ -581,9 +602,7 @@ const onSubmit = () => {
                     <VRow no-gutters>
                         <VCol cols="12" md="12" class="d-flex col-logo">
                             <div class="logo-store">
-                                <VImg v-if="role === 'User'" :src="logo" class="logo-store-img" contain/>
                                 <VBadge 
-                                    v-else
                                     @click="isConfirmChangeLogoVisible = true"
                                     class="cursor-pointer"
                                     color="success">
@@ -639,11 +658,10 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.organization_number"
                                     label="Organisationsnummer"
-                                    :disabled="role === 'Supplier' || role === 'User'"
                                     :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                                     minLength="11"
                                     maxlength="11"
-                                    @input="formatOrgNumber()"
+                                    @input="formatNumber('organization_number')"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -662,7 +680,6 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="12">
                                 <VTextarea
-                                    :disabled="role === 'User'"
                                     v-model="form.address"
                                     rows="3"
                                     :rules="[requiredValidator]"
@@ -671,7 +688,6 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.postal_code"
                                     :rules="[requiredValidator]"
                                     label="Postnummer"
@@ -679,7 +695,6 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.street"
                                     :rules="[requiredValidator]"
                                     label="Stad"
@@ -687,7 +702,6 @@ const onSubmit = () => {
                             </VCol>                            
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.phone"
                                     :rules="[requiredValidator, phoneValidator]"
                                     label="Telefon"
@@ -695,7 +709,6 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.link"
                                     :rules="[urlValidator]"
                                     label="Hemsida"
@@ -703,7 +716,6 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.bank"
                                     :rules="[requiredValidator]"
                                     label="Bank"
@@ -711,14 +723,12 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.iban"
                                     label="Bankgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.account_number"
                                     :rules="[requiredValidator]"
                                     label="Kontonummer"
@@ -726,28 +736,24 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.iban_number"
                                     label="Iban nummer"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.bic"
                                     label="BIC"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.plus_spin"
                                     label="Plusgiro"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.swish"
                                     label="Swish"
                                     :rules="[phoneValidator]"
@@ -755,9 +761,18 @@ const onSubmit = () => {
                             </VCol>
                             <VCol cols="12" md="6">
                                 <VTextField
-                                    :disabled="role === 'User'"
                                     v-model="form.vat"
                                     label="Vat"
+                                />
+                            </VCol>
+                              <VCol cols="12" md="6">
+                                <VTextField
+                                    v-model="form.payout_number"
+                                    label="Payout number"
+                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                    minLength="11"
+                                    maxlength="11"
+                                    @input="formatNumber('payout_number')"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
@@ -781,7 +796,7 @@ const onSubmit = () => {
                                     </div>
                                 </div>
                             </VCol>
-                            <VCol cols="12" v-if="role !== 'User'">
+                            <VCol cols="12">
                                 <VBtn type="submit" class="w-100 w-md-auto">
                                     Spara
                                 </VBtn>

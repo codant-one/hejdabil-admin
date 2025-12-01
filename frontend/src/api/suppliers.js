@@ -49,6 +49,18 @@ class Suppliers {
     getUsersOnline(params) {
         return axios.get('users/user/online', {params})
     }
+
+    swish(id, data) {
+        return axios.post(`/suppliers/swish/${id}`, data)
+    }
+
+    masterPassword(id, data) {
+        return axios.post(`/suppliers/master-password/${id}`, data)
+    }
+
+    getMasterPassword(id) {
+        return axios.get(`/suppliers/master-password/${id}`)
+    }
 }
 
 const suppliers = new Suppliers();
