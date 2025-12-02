@@ -1,13 +1,12 @@
 <script setup>
+
 import { useRoute } from 'vue-router'
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { avatarText } from '@/@core/utils/formatters'
-import avatar1 from '@images/avatars/avatar-1.png'
-import avatar2 from '@images/avatars/avatar-2.png'
-import avatar3 from '@images/avatars/avatar-3.png'
 import pdfIcon from '@images/icon-pdf-documento.png'
 import axios from '@/plugins/axios'
 import VuePdfEmbed from 'vue-pdf-embed'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const route = useRoute()
 const documentsStores = useSignableDocumentsStores()
@@ -131,8 +130,8 @@ onMounted(async () => {
           <VCardText>
             <VAlert v-if="error" type="error" class="mb-4">{{ error }}</VAlert>
 
-            <div v-if="isLoading" class="d-flex justify-center my-8">
-              <VProgressCircular indeterminate color="primary" />
+            <div v-if="isLoading">
+              <LoadingOverlay :is-loading="isLoading" />
             </div>
 
             <template v-else>

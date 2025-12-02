@@ -4,6 +4,7 @@ import { ref, watchEffect, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { requiredValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const router = useRouter()
 const emitter = inject("emitter")
@@ -180,18 +181,7 @@ const onSubmit = () => {
 
 <template>
   <section>
-    <!-- Dialog para mostrar el estado de carga -->
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent
-    >
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"
-      />
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <VForm ref="refForm" @submit.prevent="onSubmit">
       <VRow>
         <VCol cols="12" class="py-0">

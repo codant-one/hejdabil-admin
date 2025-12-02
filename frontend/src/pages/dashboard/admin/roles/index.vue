@@ -5,6 +5,7 @@ import create from './create.vue'
 import show from './show.vue'
 import edit from './edit.vue'
 import destroy from './destroy.vue'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 import { useRolesStores } from '@/stores/useRoles'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -139,15 +140,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

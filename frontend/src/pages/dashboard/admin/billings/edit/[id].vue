@@ -6,6 +6,7 @@ import { useBillingsStores } from '@/stores/useBillings'
 import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
@@ -272,19 +273,11 @@ const onSubmit = () => {
 </script>
 
 <template>
+  <LoadingOverlay :is-loading="isRequestOngoing" />
   <VForm
     ref="validate"
     @submit.prevent="onSubmit"
     >
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
     <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert

@@ -1,6 +1,6 @@
 <script setup>
 
-import Congratulations from "@/components/dashboard/Congratulations.vue";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const userDataJ = ref('')
 const name = ref('')
@@ -44,15 +44,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="page-section" ref="sectionEl">
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VCard title="" class="card-fill">
       <VRow class="py-6 px-md-6 px-2">

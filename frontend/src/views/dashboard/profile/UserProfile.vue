@@ -3,6 +3,7 @@
 import { avatarText } from '@/@core/utils/formatters'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const props = defineProps({
   user: {
@@ -162,15 +163,7 @@ const closeUserEditDialog = ()=>{
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VCard>

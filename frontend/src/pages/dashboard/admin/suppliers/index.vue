@@ -7,6 +7,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const suppliersStores = useSuppliersStores()
 const emitter = inject("emitter")
@@ -280,15 +281,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

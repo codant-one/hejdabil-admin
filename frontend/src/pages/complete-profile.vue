@@ -1,4 +1,5 @@
 <script setup>
+
 import { useDisplay } from "vuetify";
 import {
   emailValidator,
@@ -12,6 +13,7 @@ import { useProfileStores } from "@/stores/useProfile";
 import { Cropper } from "vue-advanced-cropper";
 import { themeConfig } from "@themeConfig";
 
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import background from "@images/pages/complete-profile/complete-profile-background.jpg";
 import logo_gradient from "@images/logo.svg";
 
@@ -770,9 +772,7 @@ const dataURLtoBlob = (dataURL) => {
   >
     {{ alert.message }}
   </VSnackbar> 
-  <VDialog v-model="isRequestOngoing" width="auto" persistent>
-    <VProgressCircular indeterminate color="primary" class="mb-0" />
-  </VDialog>
+  <LoadingOverlay :is-loading="isRequestOngoing" />
   <div class="d-flex justify-center m-0 p-0 bg-white">
     <div class="d-none d-md-flex p-0">
       <div

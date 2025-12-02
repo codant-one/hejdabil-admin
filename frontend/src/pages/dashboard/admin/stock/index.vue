@@ -10,6 +10,7 @@ import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
@@ -393,15 +394,7 @@ const truncateText = (text, length = 15) => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

@@ -1,6 +1,5 @@
 <script setup>
 
-import router from '@/router'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -12,6 +11,8 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const ability = useAppAbility()
 const authStores = useAuthStores()
@@ -977,16 +978,8 @@ const getFlag = (currency_id) => {
 </script>
 
 <template>
-    <section v-if="reg_num">
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+    <section>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
         <VAlert
             v-if="advisor.show"
             :type="advisor.type"
@@ -995,6 +988,7 @@ const getFlag = (currency_id) => {
             {{ advisor.message }}
         </VAlert>
         <VForm
+            v-if="reg_num"
             ref="refForm"
             v-model="isFormValid"
             @submit.prevent="onSubmit">

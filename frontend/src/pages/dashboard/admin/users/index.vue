@@ -5,6 +5,7 @@ import show from './show.vue'
 import password from './password.vue' 
 import edit from './edit.vue'
 import destroy from './destroy.vue'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 import { avatarText } from '@/@core/utils/formatters'
 
@@ -220,15 +221,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

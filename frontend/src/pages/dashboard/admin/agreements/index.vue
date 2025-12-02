@@ -1,17 +1,16 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
-import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
-import { useDisplay } from "vuetify";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
-import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 
@@ -544,15 +543,7 @@ const goToTracker = (agreementData) => {
 
 <template>
   <section class="page-section" ref="sectionEl">
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
       v-model="advisor.show"

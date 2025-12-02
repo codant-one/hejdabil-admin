@@ -1,10 +1,11 @@
 <script setup>
+
 import { themeConfig } from "@themeConfig";
 import { useBillingsStores } from "@/stores/useBillings";
 import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
-
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import sampleFaktura from "@images/sample-faktura.jpg";
 
 const billingsStores = useBillingsStores();
@@ -160,9 +161,7 @@ const download = async () => {
 <template>
   <section>
     <Toaster />
-    <VDialog v-model="isRequestOngoing" width="auto" persistent>
-      <VProgressCircular indeterminate color="primary" class="mb-0" />
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <!-- <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
       {{ advisor.message }}
     </VAlert> -->
@@ -823,9 +822,6 @@ const download = async () => {
   padding: 16px;
   gap: 24px;
   background-color: #f6f6f6;
-}
-
-.invoice-logo-box {
 }
 
 .faktura {
