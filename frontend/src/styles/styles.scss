@@ -712,18 +712,6 @@ body {
 }
 
 // Custom CSS
-
-.title-action-buttons {
-  @media (max-width: 768px) {
-    margin-top: 24px;
-    flex-direction: row;
-
-    > * {
-      flex: 1 1;
-    }
-  }
-}
-
 .filter-bar {
   @media (max-width: 768px) {
     justify-content: space-between;

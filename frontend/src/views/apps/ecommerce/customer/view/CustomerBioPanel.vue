@@ -1,4 +1,5 @@
 <script setup>
+
 import { themeConfig } from "@themeConfig";
 import { avatarText, formatNumber } from "@/@core/utils/formatters";
 import { toRaw } from "vue";
@@ -512,7 +513,7 @@ const onSubmit = () => {
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 991px) {
   .user-bio {
     .bio-grid {
       grid-template-columns: 1fr;
@@ -533,14 +534,23 @@ const onSubmit = () => {
   color: #fff;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
+  .bio-panel {
+    .v-avatar {
+      height: 170px !important;
+    }
+
+  }
+}
+
+@media (max-width: 991px) {
   .bio-panel {
     gap: 25px;
     flex-direction: column;
 
     .v-avatar {
+      height: 250px;
       width: 100% !important;
-      height: 170px !important;
     }
 
     .user-bio {

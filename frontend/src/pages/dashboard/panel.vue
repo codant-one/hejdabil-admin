@@ -88,16 +88,6 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
   }
-
-  .card-fill {
-    flex: 1 1 auto;
-  }
-
-  @media (max-width: 991px) {
-    .card-fill {
-      border-radius: 0 !important;
-    }
-  }
 </style>
 
 <route lang="yaml">

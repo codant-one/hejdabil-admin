@@ -1002,81 +1002,64 @@ const resolveStatus = state => {
 </template>
 
 <style lang="scss" scoped>
-.page-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.card-fill {
-  flex: 1 1 auto;
-  padding-bottom: 32px;
-}
-
-.search {
-  width: 100% !important;
-  .v-field__input {
-    background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-      1rem center !important;
-  }
-}
-
-@media (min-width: 991px) {
-  .card-fill {
-    padding-bottom: 0;
-  }
-}
-
-@media (max-width: 991px) {
-  .card-fill {
-    border-radius: 0 !important;
-  }
-}
-
-.dialog-bottom-full-width {
-  .v-card {
-    border-radius: 24px 24px 0 0 !important;
-  }
-}
-
-.bottom-sheet-card {
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-height: 75vh;
-  overflow-y: auto;
-}
-
-:deep(.pdf-container-admin) {
-  position: relative;
-  cursor: crosshair;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  width: 90%;
-  max-width: 800px;
-  height: 95%;
-  overflow-y: auto;
-}
-
-:deep(.pdf-container-admin > div){
-  width: 100% !important;
-}
-
-:deep(.signature-placeholder-admin) {
-    position: absolute;
-    z-index: 10;
-    pointer-events: none;
+  .page-section {
+    display: flex;
+    flex-direction: column;
   }
 
-  :deep(.signature-placeholder-content) {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 2px dashed #ffc107;
-    background-color: rgba(255, 193, 7, 0.2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #ffc107;
-    font-weight: 600;
-    white-space: nowrap;
+  .search {
+    width: 100% !important;
+    .v-field__input {
+      background: url(~@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+        1rem center !important;
+    }
   }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
+
+  .bottom-sheet-card {
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 75vh;
+    overflow-y: auto;
+  }
+
+  :deep(.pdf-container-admin) {
+    position: relative;
+    cursor: crosshair;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 90%;
+    max-width: 800px;
+    height: 95%;
+    overflow-y: auto;
+  }
+
+  :deep(.pdf-container-admin > div){
+    width: 100% !important;
+  }
+
+  :deep(.signature-placeholder-admin) {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    :deep(.signature-placeholder-content) {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 2px dashed #ffc107;
+      background-color: rgba(255, 193, 7, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #ffc107;
+      font-weight: 600;
+      white-space: nowrap;
+    }
 </style>
 <route lang="yaml">
   meta:

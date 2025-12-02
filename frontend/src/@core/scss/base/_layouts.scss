@@ -69,22 +69,36 @@
       Add `vertical-nav-floating-navbar-top` as margin top to .layout-page-content
     */
     .layout-page-content {
-      margin-block-start: 0;
-      padding-top: 0;
-      padding-inline-start: 236px;
+      padding: 0;
 
-      @media (max-width: 1279px) {
-        padding: 0;
+      @media (min-width: 1024px) {
+        margin-block-start: 0;
+        padding-top: 0;
+        padding-inline-start: 236px;
 
-        .page-content-container section > .v-row,
+        /*.page-content-container section > .v-row,
         .page-content-container div > .v-row {
           margin: 0;
 
           .v-col {
             padding: 0;
           }
-        }
+        }*/
       }
     }
+  }
+}
+
+//card-fill adjustments
+.card-fill {
+  border-radius: 0 !important;
+  flex: 1 1 auto;
+  padding-bottom: 100px;
+}
+
+@media (min-width: 1024px) {
+  .card-fill {
+    border-radius: 16px !important;
+    padding-bottom: 0;
   }
 }

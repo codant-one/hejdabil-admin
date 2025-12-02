@@ -8,7 +8,7 @@ import router from "@/router";
 
 const showMenu = ref(false);
 const { width } = useWindowSize();
-const MOBILE_BREAKPOINT = 992; // px
+const MOBILE_BREAKPOINT = 1024; // px
 
 // Track open/closed state per top-level item index
 const openGroups = ref({})

@@ -208,69 +208,59 @@ meta:
 
 <style lang="scss" scoped>
 
-.page-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.card-fill {
-  flex: 1 1 auto;
-  padding-bottom: 0;
-
-  @media (max-width: 768px) {
-    padding-bottom: 60px;
-    border-radius: 0 !important;
-  }
-}
-
-.client-slug {
-  @media (max-width: 768px) {
-    border-radius: 0px !important;
-  }
-}
-
-.billing-items {
-  overflow: auto;
-}
-
-.billing-items::-webkit-scrollbar {
-  display: none;
-}
-
-.billing-item {
-  flex: 1 1;
-  border-radius: 8px;
-  padding: 16px;
-
-  @media (max-width: 768px) {
-    min-width: 165px;
+  .page-section {
+    display: flex;
+    flex-direction: column;
   }
 
-  img {
-    margin-bottom: 10px;    
+  .client-slug {
+    @media (max-width: 768px) {
+      border-radius: 0px !important;
+    }
   }
 
-  .billing-item-title {
-    margin-bottom: 5px;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 100%;
-    color: #0c5b27;
+  .billing-items {
+    overflow: auto;
   }
 
-  .billing-item-text {
-    font-weight: 700;
-    font-size: 20px;
-    line-height: 100%;
-    color: #04585D;
+  .billing-items::-webkit-scrollbar {
+    display: none;
   }
-}
 
-.row-with-buttons {
-  display: flex;
-  gap: 16px;
-  > * {
+  .billing-item {
     flex: 1 1;
+    border-radius: 8px;
+    padding: 16px;
+
+    @media (max-width: 768px) {
+      min-width: 165px;
+    }
+
+    img {
+      margin-bottom: 10px;    
+    }
+
+    .billing-item-title {
+      margin-bottom: 5px;
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 100%;
+      color: #0c5b27;
+    }
+
+    .billing-item-text {
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 100%;
+      color: #04585D;
+    }
   }
-}
+
+  .row-with-buttons {
+    display: flex;
+    gap: 16px;
+    > * {
+      flex: 1 1;
+    }
+  }
 </style>

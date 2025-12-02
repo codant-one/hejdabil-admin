@@ -11,4 +11,14 @@ export default createVuetify({
   defaults,
   icons,
   theme,
+  display: {
+    thresholds: {
+      xs: 0,
+      sm: 600,
+      md: 960,
+      lg: 1024,  // Cambiar lg a 1024px
+      xl: 1280,
+      xxl: 1920,
+    },
+  },
 })

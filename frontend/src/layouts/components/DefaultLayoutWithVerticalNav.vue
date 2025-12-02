@@ -1,24 +1,17 @@
 <script setup>
 
-import router from "@/router";
-import Footer from "@/layouts/components/Footer.vue";
-import navItems from "@/navigation/vertical";
 import { useThemeConfig } from "@core/composable/useThemeConfig";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
+import navItems from "@/navigation/vertical";
 
 // Components
-import NavbarThemeSwitcher from "@/layouts/components/NavbarThemeSwitcher.vue";
 import UserProfile from "@/layouts/components/UserProfile.vue";
 
 // @layouts plugin
 import { VerticalNavLayout } from "@layouts";
-import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 import { VNodeRenderer } from "@layouts/components/VNodeRenderer";
 import { themeConfig } from "@themeConfig";
-
-import kopIcon from "@/assets/images/icons/figma/car_down.svg";
-import saljIcon from "@/assets/images/icons/figma/car_up.svg";
-import settingsIcon from "@/assets/images/icons/figma/settings.svg";
+import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
@@ -29,7 +22,7 @@ const { width: windowWidth } = useWindowSize();
   <VerticalNavLayout :nav-items="navItems">
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
-      <div class="sticky-container d-none d-md-flex">
+      <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" class="sticky-container">
           <div class="d-flex gap-x-3 buttons-center">
             <VBtn
               class="btn-blue px-6"
@@ -48,19 +41,7 @@ const { width: windowWidth } = useWindowSize();
           </div>
         </div>
       <div class="d-flex h-100 align-center">
-        <!-- <VBtn
-          v-if="isLessThanOverlayNavBreakpoint(windowWidth)"
-          icon
-          variant="text"
-          color="default"
-          class="ms-n3"
-          size="small"
-          @click="toggleVerticalOverlayNavActive(true)"
-        >
-          <VIcon icon="tabler-menu-2" size="24" />
-        </VBtn> -->
-
-        <RouterLink to="/" class="d-flex d-md-none align-center md-ms-3 header-logo">
+        <RouterLink to="/" :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" class="align-center md-ms-3 header-logo">
           <VNodeRenderer :nodes="themeConfig.app.logoFull" />
         </RouterLink>
 
@@ -70,7 +51,8 @@ const { width: windowWidth } = useWindowSize();
           <NavBarNotifications />
           <VBtn
             variant="flat"
-            class="btn-white-3 d-none d-md-flex"
+            :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+            class="btn-white-3"
             height="48"
             width="48"
           >
@@ -87,14 +69,6 @@ const { width: windowWidth } = useWindowSize();
         <Component :is="Component" />
       </Transition>
     </RouterView>
-
-    <!--  👉 Footer
-    <template #footer>
-      <Footer />
-    </template> -->
-
-    <!-- 👉 Customizer -->
-    <!-- <TheCustomizer /> -->
 
     <!-- 👉 Mobile Bottom Bar -->
     <MobileBottomBar :nav-items="navItems" />
@@ -115,52 +89,52 @@ const { width: windowWidth } = useWindowSize();
   }
 </style>
 <style lang="scss" scoped>
-:deep(
+  :deep(
     .layout-wrapper.layout-nav-type-vertical
-      .layout-navbar
-      .navbar-content-container
+    .layout-navbar
+     .navbar-content-container
   ) {
-  background: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
 
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-}
-
-:deep(.layout-navbar) {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-:deep(.btn-custom) {
-  border-radius: 48px !important;
-  padding-inline: 16px !important;
-  text-transform: none;
-
-  .v-btn__content {
-    font-family: "DM Sans", sans-serif;
-    font-weight: 500;
-    font-size: 16px;
-    line-height: 16px;
-    letter-spacing: 0;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
-}
 
-:deep(.btn-custom-settings) {
-  width: 48px !important;
-  height: 48px !important;
-  min-width: auto !important;
-  border-radius: 50% !important;
-  background-color: #fff !important;
-  padding: 0 !important;
-}
+  :deep(.layout-navbar) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
 
-.navbar-actions-group {
-  background-color: #ffffff;
-  border-radius: 64px;
-  padding-inline: 16px 8px;
-  padding-block: 4px;
-  gap: 8px;
-}
+  :deep(.btn-custom) {
+    border-radius: 48px !important;
+    padding-inline: 16px !important;
+    text-transform: none;
+
+    .v-btn__content {
+      font-family: "DM Sans", sans-serif;
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 16px;
+      letter-spacing: 0;
+    }
+  }
+
+  :deep(.btn-custom-settings) {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: auto !important;
+    border-radius: 50% !important;
+    background-color: #fff !important;
+    padding: 0 !important;
+  }
+
+  .navbar-actions-group {
+    background-color: #ffffff;
+    border-radius: 64px;
+    padding-inline: 16px 8px;
+    padding-block: 4px;
+    gap: 8px;
+  }
 </style>
