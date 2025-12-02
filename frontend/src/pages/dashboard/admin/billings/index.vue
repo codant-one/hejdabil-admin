@@ -590,7 +590,7 @@ onBeforeUnmount(() => {
           v-if="!$vuetify.display.smAndDown"
           class="d-flex align-center visa-select"
         >
-          <span class="text-no-wrap pr-4">Visa:</span>
+          <span class="text-no-wrap pr-4">Visa</span>
           <VSelect
             v-model="rowPerPage"
             class="custom-select-hover"
