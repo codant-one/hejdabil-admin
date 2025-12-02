@@ -204,7 +204,7 @@ const download = async () => {
           <VCardText v-if="$vuetify.display.smAndDown" class="py-0">
             <div class="d-flex gap-4">
               <VBtn
-                class="btn-light"
+                class="btn-light flex-1"
                 :to="{ name: 'dashboard-admin-billings' }"
               >
                 <template #prepend>
@@ -213,7 +213,7 @@ const download = async () => {
                 Tillbaka
               </VBtn>
 
-              <VBtn class="btn-light" @click="editBilling">
+              <VBtn class="btn-light flex-1" @click="editBilling">
                 <template #prepend>
                   <VIcon icon="custom-pencil" size="24" />
                 </template>
@@ -730,7 +730,8 @@ const download = async () => {
           <div class="dialog-title">Fakturan kunde inte skickas</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Ett problem uppstod. Kontrollera kundens e-postadress och din internetanslutning och försök igen.
+          Ett problem uppstod. Kontrollera kundens e-postadress och din
+          internetanslutning och försök igen.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
@@ -950,7 +951,7 @@ const download = async () => {
 }
 </style>
 <route lang="yaml">
-  meta:
-    action: view
-    subject: billings
+meta:
+  action: view
+  subject: billings
 </route>

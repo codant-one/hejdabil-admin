@@ -276,7 +276,7 @@ const onSubmit = () => {
         cols="12"
         md="3"
         class="order-1 order-md-2 mobile-gradient-card"
-        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
+        :class="$vuetify.display.smAndDown ? 'p-0 fix-bottom-menu' : ''"
       >
         <VCard>
           <VCardText
@@ -312,6 +312,18 @@ const onSubmit = () => {
   </VForm>
 </template>
 <style lang="scss" scoped>
+.fix-bottom-menu {
+  position: fixed;
+  bottom: 70px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    #eafff1 0%,
+    #eafff8 50%,
+    #ecffff 100%
+  ) !important;
+  z-index: 1;
+}
 .row-fill {
   @media (max-width: 768px) {
     padding-bottom: 60px;
