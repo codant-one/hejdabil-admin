@@ -7,6 +7,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from "@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue";
 import CustomerBillingTable from "@/views/apps/ecommerce/customer/view/CustomerBillingTable.vue";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 import bestallningarIcon from "@/assets/images/icons/figma/bestallningar.svg";
 import forsaljningIcon from "@/assets/images/icons/figma/forsaljning.svg";
@@ -152,9 +153,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="page-section" ref="sectionEl">
-    <VDialog v-model="isRequestOngoing" width="auto" persistent>
-      <VProgressCircular indeterminate color="primary" class="mb-0" />
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
       v-model="advisor.show"

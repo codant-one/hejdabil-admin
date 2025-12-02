@@ -1,8 +1,9 @@
 <script setup>
 
-import router from '@/router'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useVehiclesStores } from '@/stores/useVehicles'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const vehiclesStores = useVehiclesStores()
 
@@ -295,16 +296,8 @@ const getFlag = (currency_id) => {
 </script>
 
 <template>
-    <section v-if="reg_num">
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+    <section>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
         <VAlert
             v-if="advisor.show"
             :type="advisor.type"
@@ -313,6 +306,7 @@ const getFlag = (currency_id) => {
             {{ advisor.message }}
         </VAlert>
         <VForm
+            v-if="reg_num"
             ref="refForm"
             v-model="isFormValid"
             @submit.prevent="onSubmit">

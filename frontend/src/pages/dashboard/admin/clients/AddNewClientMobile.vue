@@ -355,8 +355,6 @@ watch(currentData, () => {
       .v-text-field {
         .v-input__control {
           padding-top: 16px;
-          .v-label {
-          }
           input {
             min-height: 48px;
             padding: 12px 16px;

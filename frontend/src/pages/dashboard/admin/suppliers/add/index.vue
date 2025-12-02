@@ -1,14 +1,15 @@
 <script setup>
 
-import router from '@/router'
 import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const suppliersStores = useSuppliersStores()
 
 const emitter = inject("emitter")
 
-const isRequestOngoing = ref(false)
+const isRequestOngoing = ref(true)
 
 const isFormValid = ref(false)
 const refForm = ref()
@@ -28,6 +29,16 @@ const account_number = ref('')
 const name = ref('')
 const last_name = ref('')
 const email = ref('')
+
+
+watchEffect(fetchData);
+
+async function fetchData() {
+  setTimeout(() => {
+    isRequestOngoing.value = false;
+  }, 3000);
+  
+}
 
 onMounted(async () => {
     checkIfMobile()
@@ -118,15 +129,7 @@ const onSubmit = () => {
 <template>
     <section>
         <VRow>
-            <VDialog
-                v-model="isRequestOngoing"
-                width="auto"
-                persistent>
-                <VProgressCircular
-                indeterminate
-                color="primary"
-                class="mb-0"/>
-            </VDialog>
+            <LoadingOverlay :is-loading="isRequestOngoing" />
 
             <VCol cols="12" md="12">
                 <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">

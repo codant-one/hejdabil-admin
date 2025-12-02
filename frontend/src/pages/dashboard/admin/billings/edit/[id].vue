@@ -279,10 +279,11 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <VForm ref="validate" @submit.prevent="onSubmit">
-    <VDialog v-model="isRequestOngoing" width="auto" persistent>
-      <VProgressCircular indeterminate color="primary" class="mb-0" />
-    </VDialog>
+  <LoadingOverlay :is-loading="isRequestOngoing" />
+  <VForm
+    ref="validate"
+    @submit.prevent="onSubmit"
+    >
     <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">

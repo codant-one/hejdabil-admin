@@ -4,6 +4,7 @@ import { useTypesStores } from '@/stores/useTypes'
 import { useInvoicesStores } from '@/stores/useInvoices'
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewInvoiceDrawer from './AddNewInvoiceDrawer.vue' 
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const invoicesStores = useInvoicesStores()
 const typesStores = useTypesStores()
@@ -224,15 +225,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

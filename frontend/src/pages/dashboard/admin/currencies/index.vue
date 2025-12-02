@@ -2,10 +2,8 @@
 
 import { useCurrenciesStores } from '@/stores/useCurrencies'
 import { excelParser } from '@/plugins/csv/excelParser'
-import { themeConfig } from '@themeConfig'
-import { avatarText, formatNumber } from '@/@core/utils/formatters'
 import AddNewCurrencyDrawer from './AddNewCurrencyDrawer.vue' 
-import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const currenciesStores = useCurrenciesStores()
 const emitter = inject("emitter")
@@ -268,15 +266,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

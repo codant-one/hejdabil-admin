@@ -1,10 +1,12 @@
 <script setup>
+
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import { useBillingsStores } from "@/stores/useBillings";
 import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const configsStores = useConfigsStores();
 const authStores = useAuthStores();
@@ -230,9 +232,7 @@ const onSubmit = () => {
 
 <template>
   <VForm ref="validate" @submit.prevent="onSubmit">
-    <VDialog v-model="isRequestOngoing" width="auto" persistent>
-      <VProgressCircular indeterminate color="primary" class="mb-0" />
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <!-- <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">

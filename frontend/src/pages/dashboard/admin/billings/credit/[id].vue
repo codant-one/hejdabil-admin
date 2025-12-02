@@ -9,6 +9,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import logoBlack from '@images/logo_black.png'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const billingsStores = useBillingsStores()
 const configsStores = useConfigsStores()
@@ -123,15 +124,7 @@ const credit = async () => {
 <template>
   <section>
     <Toaster />
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <VAlert
       v-if="advisor.show"
       :type="advisor.type"

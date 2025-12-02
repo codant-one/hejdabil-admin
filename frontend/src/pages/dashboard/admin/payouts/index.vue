@@ -9,6 +9,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
@@ -261,15 +262,7 @@ const openPayoutDialog = () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <!-- Payout Detail Dialog -->
       <PayoutDetailDialog

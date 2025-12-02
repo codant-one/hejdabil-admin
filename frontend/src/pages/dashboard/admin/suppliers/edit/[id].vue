@@ -1,8 +1,9 @@
 <script setup>
 
-import router from '@/router'
 import { emailValidator, requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const suppliersStores = useSuppliersStores()
 
@@ -169,15 +170,7 @@ const onSubmit = () => {
 <template>
     <section>
         <VRow>
-            <VDialog
-                v-model="isRequestOngoing"
-                width="auto"
-                persistent>
-                <VProgressCircular
-                indeterminate
-                color="primary"
-                class="mb-0"/>
-            </VDialog>
+            <LoadingOverlay :is-loading="isRequestOngoing" />
 
             <VCol cols="12" md="12">
                 <div class="d-flex mt-5 flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">

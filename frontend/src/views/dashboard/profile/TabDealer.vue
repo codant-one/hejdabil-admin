@@ -1,5 +1,6 @@
 <script setup>
 
+import { nextTick } from 'vue'; // nextTick para asegurar que el DOM esté listo
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -7,9 +8,10 @@ import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
-import 'vue-advanced-cropper/dist/style.css'
 import SignaturePad from 'signature_pad';
-import { nextTick } from 'vue'; // nextTick para asegurar que el DOM esté listo
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import 'vue-advanced-cropper/dist/style.css'
+
 const authStores = useAuthStores()
 const profileStores = useProfileStores()
 
@@ -494,15 +496,7 @@ const onSubmit = () => {
 
 <template>
   <section>
-    <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VRow>
         <VCol cols="12">

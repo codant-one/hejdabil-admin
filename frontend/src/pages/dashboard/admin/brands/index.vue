@@ -4,6 +4,7 @@ import { themeConfig } from '@themeConfig'
 import { useBrandsStores } from '@/stores/useBrands'
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewBrandDrawer from './AddNewBrandDrawer.vue' 
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const brandsStores = useBrandsStores()
 const emitter = inject("emitter")
@@ -223,15 +224,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert

@@ -7,9 +7,10 @@ import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner.jpeg'
 import logo_ from '@images/logos/favicon@2x.png';
-import 'vue-advanced-cropper/dist/style.css'
 import SignaturePad from 'signature_pad';
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import 'vue-advanced-cropper/dist/style.css'
 
 const configsStores = useConfigsStores()
 
@@ -574,15 +575,7 @@ const onSubmit = () => {
 
 <template>
   <section>
-    <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VAlert
       v-if="advisor.show"

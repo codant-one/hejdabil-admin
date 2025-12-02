@@ -7,6 +7,7 @@ import { emailValidator, requiredValidator } from "@validators";
 import { useAuthStores } from "@/stores/useAuth";
 import { useDisplay } from "vuetify";
 
+import VideoLoader from "@/components/common/VideoLoader.vue";
 import people from "@images/pages/login/login_image.png";
 import logo from "@images/logos/billogg-logo.svg";
 
@@ -116,15 +117,17 @@ const onSubmit = () => {
 </script>
 
 <template>
-   <VSnackbar
-      v-model="alertStore.show"
-      transition="scroll-y-reverse-transition"
-      :location="snackbarLocation"
-      :color="alertStore.type"
-      class="snackbar-alert"
-    >
-      {{ alertStore.message }}
-    </VSnackbar> 
+  <VideoLoader />
+
+  <VSnackbar
+    v-model="alertStore.show"
+    transition="scroll-y-reverse-transition"
+    :location="snackbarLocation"
+    :color="alertStore.type"
+    class="snackbar-alert"
+  >
+    {{ alertStore.message }}
+  </VSnackbar> 
 
   <div class="v-application__wrap login-page d-flex flex-column">
     <VRow no-gutters>

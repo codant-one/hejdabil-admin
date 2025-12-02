@@ -165,12 +165,11 @@ const onSubmit = () => {
         { data: formData, id: id.value },
         isEdit.value ? "update" : "create"
       );
-      isRequestOngoing.value = true
+     
       setTimeout(() => {
-        isRequestOngoing.value = false
         // After successful submit, close without confirmation
         reallyCloseAndReset();
-      }, 1000)
+      }, 100)
     }
   });
 };
