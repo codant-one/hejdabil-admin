@@ -525,7 +525,7 @@ onBeforeUnmount(() => {
           :item-title="(item) => item.fullname"
           :item-value="(item) => item.id"
           placeholder="Kunder"
-          class="mb-2 billing-selector"
+          class="mb-2 selector-user"
           autocomplete="off"
           clearable
           clear-icon="tabler-x"
@@ -1408,43 +1408,6 @@ onBeforeUnmount(() => {
 
   .justify-content-center {
     justify-content: center !important;
-  }
-
-  .billing-selector {
-    max-width: 132px;
-    .v-input__prepend {
-      margin-right: 0px;
-      color: #454545;
-
-      .v-icon {
-        opacity: 1 !important;
-      }
-    }
-
-    .v-input__control {
-      width: 110px;
-      .v-field {
-        padding-right: 0px;
-
-        .v-field__input {
-          padding-inline-start: 8px;
-          opacity: 1 !important;
-          color: #454545;
-        }
-      }
-      .v-field__append-inner {
-        .v-icon {
-          opacity: 1 !important;
-          color: #454545;
-        }
-      }
-      .v-field__outline {
-        .v-field__outline__start,
-        .v-field__outline__end {
-          border: 0px !important;
-        }
-      }
-    }
   }
 
   .billings-pills > div {

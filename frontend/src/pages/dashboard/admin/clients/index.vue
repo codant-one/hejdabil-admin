@@ -38,8 +38,10 @@ const isDialogOpen = ref(false);
 const hasLoaded = ref(false);
 const isClientFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
-let nextRoute = null;
+const isFilterDialogVisible = ref(false);
 const leaveContext = ref(null); // 'mobile' | 'route' | null
+
+let nextRoute = null;
 
 const supplier_id = ref(null);
 const userData = ref(null);
@@ -110,13 +112,15 @@ async function fetchData(cleanFilters = false) {
   };
 
   // Ensure loader is shown during fetch to prevent empty-state flicker
-  isRequestOngoing.value = true;
-
+    isRequestOngoing.value = searchQuery.value !== "" ? false : true;
+  isFilterDialogVisible.value = false;
+  
   await clientsStores.fetchClients(data);
 
   clients.value = clientsStores.getClients;
   totalPages.value = clientsStores.last_page;
   totalClients.value = clientsStores.clientsTotalCount;
+  
   hasLoaded.value = true;
   isRequestOngoing.value = false;
 }
@@ -420,7 +424,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4 filter-bar"
+        class="d-flex align-center justify-space-between gap-2 filter-bar"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
@@ -428,21 +432,11 @@ onBeforeUnmount(() => {
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
-        <!-- <VAutocomplete
-            v-if="role !== 'Supplier'"
-            v-model="supplier_id"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="(item) => item.full_name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-          /> -->
-
-        <VBtn class="btn-white-2" v-if="role !== 'Supplier' && role !== 'User'">
+        <VBtn 
+          class="btn-white-2" 
+          v-if="role !== 'Supplier' && role !== 'User'"
+          @click="isFilterDialogVisible = true"
+        >
           <VIcon icon="custom-filter" size="24" />
           <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
         </VBtn>
@@ -838,6 +832,54 @@ onBeforeUnmount(() => {
           @client-data="submitForm"
           @edited="onClientFormEdited"
         />
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <VAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user"
+            :menu-props="{ maxHeight: '400px' }"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
       </VCard>
     </VDialog>
   </section>

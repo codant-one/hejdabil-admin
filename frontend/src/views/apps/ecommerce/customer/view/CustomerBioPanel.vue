@@ -471,6 +471,7 @@ const onSubmit = () => {
   font-size: 32px;
   line-height: 100%;
   color: #fff;
+  text-align: start;
 }
 
 .user-bio {
