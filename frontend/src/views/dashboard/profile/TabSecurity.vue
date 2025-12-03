@@ -356,7 +356,7 @@ const onSubmitKey = async () => {
                   </VCol>
                   <VCol cols="12" class="py-0">
                       <VBtn type="submit"class="w-100 w-md-auto">
-                          Guardar
+                          Spara
                       </VBtn>
                   </VCol>
               </VRow>

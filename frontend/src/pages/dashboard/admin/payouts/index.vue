@@ -184,8 +184,18 @@ const submitCreate = payoutData => {
                 message: 'Betalning skapad!',
                 show: true
             }
+
             fetchData()
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
         }
+
         isRequestOngoing.value = false
     })
     .catch((err) => {
@@ -201,15 +211,15 @@ const submitCreate = payoutData => {
             show: true
         }
         isRequestOngoing.value = false
-    })
 
-  setTimeout(() => {
-      advisor.value = {
-          type: '',
-          message: '',
-          show: false
-      }
-  }, 3000)
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+    })
 }
 
 const downloadCSV = async () => {
