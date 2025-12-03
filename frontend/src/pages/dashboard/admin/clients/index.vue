@@ -511,10 +511,10 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center">
               <span class="">
-                <VTooltip location="bottom" v-if="client.address && client.address.length > 20">
+                <VTooltip location="bottom" v-if="client.address && client.address.length > 15">
                   <template #activator="{ props }">
                     <span v-bind="props">
-                      {{ truncateText(client.address, 20) }}
+                      {{ truncateText(client.address, 15) }}
                     </span>
                   </template>
                   <span>{{ client.address }}</span>
