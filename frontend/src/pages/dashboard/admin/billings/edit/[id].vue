@@ -280,10 +280,7 @@ const onSubmit = () => {
 
 <template>
   <LoadingOverlay :is-loading="isRequestOngoing" />
-  <VForm
-    ref="validate"
-    @submit.prevent="onSubmit"
-    >
+  <VForm ref="validate" @submit.prevent="onSubmit">
     <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
@@ -319,20 +316,32 @@ const onSubmit = () => {
       </VCol>
 
       <!-- 👉 Right Column: Invoice Action -->
-      <VCol cols="12" md="3" class="order-1 order-md-2">
-        <VCard class="mb-8">
-          <VCardText :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'">
+      <VCol
+        cols="12"
+        md="3"
+        class="order-1 order-md-2"
+        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
+      >
+        <VCard>
+          <VCardText
+            :class="$vuetify.display.smAndDown ? 'pa-6 d-flex gap-4' : 'pa-4'"
+          >
             <!-- 👉 Send Invoice -->
-            <VBtn class="btn-gradient w-100 mb-4" type="submit">
+            <VBtn
+              class="btn-gradient mb-4"
+              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
+              type="submit"
+            >
               <template #prepend>
                 <VIcon icon="custom-send" size="24" />
               </template>
-              Spara
+              Skapa faktura
             </VBtn>
 
             <!-- 👉 Preview -->
             <VBtn
-              class="btn-light w-100"
+              class="btn-light"
+              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
               :to="{ name: 'dashboard-admin-billings' }"
             >
               <template #prepend>
@@ -346,7 +355,37 @@ const onSubmit = () => {
     </VRow>
   </VForm>
 </template>
+<style lang="scss" scoped>
+.fix-bottom-menu {
+  position: fixed;
+  bottom: 70px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    #eafff1 0%,
+    #eafff8 50%,
+    #ecffff 100%
+  ) !important;
+  z-index: 1;
+}
+.row-fill {
+  @media (max-width: 768px) {
+    padding-bottom: 60px;
+    margin: 0px;
+  }
+}
+@media (max-width: 768px) {
+  .mobile-gradient-card {
+    .v-card {
+      background: none !important;
 
+      .v-card-text {
+        flex-direction: row-reverse;
+      }
+    }
+  }
+}
+</style>
 <route lang="yaml">
 meta:
   action: edit

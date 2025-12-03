@@ -445,18 +445,27 @@ const handleBlur = (element) => {
   >
     <VCardTitle
       class="d-flex justify-space-between bg-white"
-      :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+      :class="$vuetify.display.smAndDown ? 'pa-6 pb-0 fix-header' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
         <h2>Skapa fakturan</h2>
       </div>
+      <VTabs
+        v-model="controlledTab"
+        grow
+        :show-arrows="false"
+        class="mt-6 equal-tabs"
+      >
+        <VTab value="redigera">Redigera</VTab>
+        <VTab value="forhandsgranska">Förhandsgranska</VTab>
+      </VTabs>
     </VCardTitle>
 
     <VDivider :class="$vuetify.display.smAndDown ? 'd-none' : 'mt-2 mx-4'" />
 
     <section
       class="invoice-panel border rounded-lg pa-4"
-      :class="$vuetify.display.smAndDown ? 'd-none' : ''"
+      v-if="!$vuetify.display.smAndDown"
     >
       <VCardText class="d-flex invoice-box">
         <div class="w-100 w-md-50">
@@ -1026,13 +1035,7 @@ const handleBlur = (element) => {
       </VCardText>
     </section>
 
-    <section :class="$vuetify.display.smAndDown ? '' : 'd-none'">
-      <VCardText class="py-0 px-6 bg-white">
-        <VTabs v-model="controlledTab" grow :show-arrows="false">
-          <VTab value="redigera">Redigera</VTab>
-          <VTab value="forhandsgranska">Förhandsgranska</VTab>
-        </VTabs>
-      </VCardText>
+    <section v-if="$vuetify.display.smAndDown" class="margin-top-fill">
       <VCardText class="pa-0">
         <VWindow
           v-model="controlledTab"
@@ -1189,6 +1192,7 @@ const handleBlur = (element) => {
                 menu-icon="custom-chevron-down"
               />
             </div>
+            <VDivider class="ghost-divider" />
             <VBtn
               v-bind="props"
               class="btn-gradient w-100"
@@ -1225,13 +1229,13 @@ const handleBlur = (element) => {
               </VCard>
             </VDialog>
 
-            <span class="d-flex align-center gap-1">
+            <span class="d-flex align-center gap-1 text-black">
               <VIcon icon="custom-circle-help" size="16" />
               Svep åt vänster för att se allt.
             </span>
 
             <draggable
-              class="mb-4"
+              class="draggable-mobile mb-4"
               v-model="invoice.details"
               tag="div"
               item-key="index"
@@ -1239,10 +1243,11 @@ const handleBlur = (element) => {
               @end="onEnd"
             >
               <template #item="{ element, index }">
-                <div class="draggable-item">
+                <div class="draggable-item draggable-item-mobile mb-4">
                   <VIcon icon="custom-grabber" size="24" />
                   <div class="d-flex w-100" v-if="element?.note !== undefined">
                     <div class="form-field w-100">
+                      <label class="text-sm">Notera</label>
                       <VTextarea
                         v-model="element.note"
                         label="Notera"
@@ -1270,7 +1275,7 @@ const handleBlur = (element) => {
                       />
                     </div>
                     <div class="w-100">
-                      <div class="add-products-header d-none d-md-flex w-100">
+                      <div class="add-products-header d-md-flex w-100">
                         <table class="w-100">
                           <thead>
                             <tr>
@@ -1387,9 +1392,9 @@ const handleBlur = (element) => {
               <table class="w-100 text-black">
                 <tbody>
                   <tr>
-                    <td class="pe-4">Netto</td>
+                    <td class="pe-4 pb-4">Netto</td>
                     <td
-                      class="text-bold"
+                      class="text-bold pb-4"
                       :class="$vuetify.locale.isRtl ? 'text-start' : 'text-end'"
                     >
                       {{ formatNumber(subtotal) }} kr
@@ -1407,7 +1412,7 @@ const handleBlur = (element) => {
                             :items="taxOptions"
                             label="Moms"
                             @update:modelValue="handleTaxChange"
-                            style="width: 150px"
+                            style="width: 125px"
                           />
 
                           <VTextField
@@ -1419,7 +1424,7 @@ const handleBlur = (element) => {
                             :min="0"
                             :step="0.01"
                             suffix="%"
-                            style="width: 150px"
+                            style="width: 125px"
                           />
                         </div>
                         %
@@ -1458,7 +1463,7 @@ const handleBlur = (element) => {
               </table>
             </div>
 
-            <VDivider class="ma-0" />
+            <VDivider class="ma-0 ghost-divider" />
 
             <VRow class="gap-4">
               <VCol cols="6" class="d-flex flex-column flex-1">
@@ -1746,6 +1751,15 @@ const handleBlur = (element) => {
   cursor: move;
 }
 
+.draggable-mobile {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.draggable-item-mobile {
+  width: 700px;
+}
+
 .add-products-header {
   color: #454545;
   font-size: 12px;
@@ -1797,6 +1811,17 @@ const handleBlur = (element) => {
 }
 </style>
 <style lang="css">
+.fix-header {
+  position: fixed;
+  z-index: 1;
+  width: 100%;
+}
+.margin-top-fill {
+  margin-top: 125px;
+}
+.v-tabs.v-tabs--horizontal:not(.v-tabs-pill) .v-btn {
+  flex: 1 1;
+}
 .form-field {
   .v-input {
     &.v-text-field {
@@ -1828,5 +1853,8 @@ const handleBlur = (element) => {
       }
     }
   }
+}
+.ghost-divider {
+  border-color: #f6f6f6 !important;
 }
 </style>
