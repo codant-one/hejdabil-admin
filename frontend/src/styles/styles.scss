@@ -602,12 +602,11 @@ body {
   font-weight: 400;
   font-size: 15px;
   color: #454545;
-  width: 180px;
 
   .v-input {
     border-left: 1px solid #e7e7e7 !important;
     padding-left: 8px !important;
-    padding-right: 8px !important;
+    padding-right: 0px !important;
   }
 
   .v-field {
@@ -619,7 +618,7 @@ body {
       padding-top: 0px !important;
 
       .v-icon {
-        margin-inline-start: 24px !important;
+        margin-inline-start: 16px !important;
       }
     }
 
