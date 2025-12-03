@@ -1,5 +1,4 @@
 <script setup>
-
 import { useDisplay } from "vuetify";
 import { useBillingsStores } from "@/stores/useBillings";
 import { excelParser } from "@/plugins/csv/excelParser";
@@ -1509,132 +1508,134 @@ onBeforeUnmount(() => {
   }
 
   .billings-pills {
-  .page-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .border-bottom-secondary {
-    border-bottom: 2px solid #2e0684;
-    padding-bottom: 5px;
-  }
-
-  .border-bottom-warning {
-    border-bottom: 2px solid #ffc549;
-    padding-bottom: 5px;
-  }
-
-  .border-bottom-info {
-    border-bottom: 2px solid #28c76f;
-    padding-bottom: 5px;
-  }
-
-  .border-bottom-error {
-    border-bottom: 2px solid #ea5455;
-    padding-bottom: 5px;
-  }
-
-  .v-input--disabled svg rect {
-    fill: #28c76f !important;
-  }
-
-  .v-input--disabled {
-    pointer-events: visible !important;
-    cursor: no-drop !important;
-  }
-
-  .search {
-    width: 100% !important;
-    .v-field__input {
-      background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-        1rem center !important;
-    }
-  }
-
-  .justify-content-center {
-    justify-content: center !important;
-  }
-
-  .billings-pills > div {
-    flex: 1 1;
-  }
-
-  .billings-pill {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    border-radius: 8px;
-  }
-
-  .billings-pill-title {
-    font-family: "Blauer Nue";
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 100%;
-    margin-right: 4px;
-  }
-
-  .billings-pill-value {
-    font-family: "Blauer Nue";
-    font-weight: 700;
-    font-style: Bold;
-    font-size: 16px;
-    line-height: 100%;
-  }
-
-  .billing-chip {
-    border-radius: 32px;
-    padding: 8px 16px;
-    border: solid 1px #454545;
-
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 16px;
-    text-align: center;
-    color: #454545;
-  }
-
-  @media (max-width: 991px) {
-    .filter-bar {
-      padding-bottom: 0px !important;
-    }
-
-    .billings-pills {
+    .page-section {
+      display: flex;
       flex-direction: column;
-      gap: 8px;
-    }
-    .billings-pill {
-      padding: 8px 16px;
     }
 
-    .order-title-box .title-panel {
+    .border-bottom-secondary {
+      border-bottom: 2px solid #2e0684;
+      padding-bottom: 5px;
+    }
+
+    .border-bottom-warning {
+      border-bottom: 2px solid #ffc549;
+      padding-bottom: 5px;
+    }
+
+    .border-bottom-info {
+      border-bottom: 2px solid #28c76f;
+      padding-bottom: 5px;
+    }
+
+    .border-bottom-error {
+      border-bottom: 2px solid #ea5455;
+      padding-bottom: 5px;
+    }
+
+    .v-input--disabled svg rect {
+      fill: #28c76f !important;
+    }
+
+    .v-input--disabled {
+      pointer-events: visible !important;
+      cursor: no-drop !important;
+    }
+
+    .search {
+      width: 100% !important;
+      .v-field__input {
+        background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat
+          left 1rem center !important;
+      }
+    }
+
+    .justify-content-center {
+      justify-content: center !important;
+    }
+
+    .billings-pills > div {
+      flex: 1 1;
+    }
+
+    .billings-pill {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border-radius: 8px;
+    }
+
+    .billings-pill-title {
+      font-family: "Blauer Nue";
       font-weight: 400;
-      font-size: 14px;
-      line-height: 16px;
-      color: #6e9383;
+      font-size: 16px;
+      line-height: 100%;
+      margin-right: 4px;
+    }
+
+    .billings-pill-value {
+      font-family: "Blauer Nue";
+      font-weight: 700;
+      font-style: Bold;
+      font-size: 16px;
+      line-height: 100%;
     }
 
     .billing-chip {
-      width: fit-content;
       border-radius: 32px;
-      padding-top: 8px;
-      padding-right: 16px;
-      padding-bottom: 8px;
-      padding-left: 16px;
+      padding: 8px 16px;
+      border: solid 1px #454545;
 
       font-weight: 400;
       font-size: 14px;
       line-height: 16px;
       text-align: center;
+      color: #454545;
+    }
+
+    @media (max-width: 991px) {
+      .filter-bar {
+        padding-bottom: 0px !important;
+      }
+
+      .billings-pills {
+        flex-direction: column;
+        gap: 8px;
+      }
+      .billings-pill {
+        padding: 8px 16px;
+      }
+
+      .order-title-box .title-panel {
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 16px;
+        color: #6e9383;
+      }
+
+      .billing-chip {
+        width: fit-content;
+        border-radius: 32px;
+        padding-top: 8px;
+        padding-right: 16px;
+        padding-bottom: 8px;
+        padding-left: 16px;
+
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 16px;
+        text-align: center;
+      }
+    }
+
+    .v-checkbox-btn .v-selection-control__input .v-icon.iconify--custom {
+      block-size: 24px !important;
+      font-size: 24px !important;
+      inline-size: 24px !important;
+      color: #454545 !important;
     }
   }
-
-  .v-checkbox-btn .v-selection-control__input .v-icon.iconify--custom {
-    block-size: 24px !important;
-    font-size: 24px !important;
-    inline-size: 24px !important;
-    color: #454545 !important;
-  }
+}
 </style>
 
 <route lang="yaml">
