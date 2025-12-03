@@ -511,10 +511,10 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center">
               <span class="">
-                <VTooltip location="bottom" v-if="client.address && client.address.length > 15">
+                <VTooltip location="bottom" v-if="client.address && client.address.length > 20">
                   <template #activator="{ props }">
                     <span v-bind="props">
-                      {{ truncateText(client.address, 15) }}
+                      {{ truncateText(client.address, 20) }}
                     </span>
                   </template>
                   <span>{{ client.address }}</span>
@@ -541,7 +541,17 @@ onBeforeUnmount(() => {
                   <span class="font-weight-medium">
                     {{ client.supplier.user.name }} {{ client.supplier.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ client.supplier.user.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="client.supplier.user.email && client.supplier.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(client.supplier.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ client.supplier.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ client.supplier.user.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>
@@ -562,7 +572,17 @@ onBeforeUnmount(() => {
                   <span class="font-weight-medium">
                     {{ client.user.name }} {{ client.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ client.user.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="client.user.email && client.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(client.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ client.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ client.user.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>
