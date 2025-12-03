@@ -511,18 +511,19 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center">
               <span class="">
-                <VTooltip location="bottom">
+                <VTooltip location="bottom" v-if="client.address && client.address.length > 20">
                   <template #activator="{ props }">
-                    <span v-bind="props" v-if="client.address">
-                      {{ truncateText(client.address) }}
+                    <span v-bind="props">
+                      {{ truncateText(client.address, 20) }}
                     </span>
                   </template>
                   <span>{{ client.address }}</span>
                 </VTooltip>
+                <span v-else>{{ client.address }}</span>
               </span>
             </td>
-            <td class="text-wrap" v-if="role !== 'Supplier' && role !== 'User'">
-              <div class="d-flex align-center gap-x-3" v-if="client.supplier">
+            <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
+              <div class="d-flex align-center gap-x-1" v-if="client.supplier">
                 <VAvatar
                   :variant="client.supplier.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
@@ -530,10 +531,7 @@ onBeforeUnmount(() => {
                   <VImg
                     v-if="client.supplier.user.avatar"
                     style="border-radius: 50%"
-                    :src="
-                      themeConfig.settings.urlStorage +
-                      client.supplier.user.avatar
-                    "
+                    :src="themeConfig.settings.urlStorage + client.supplier.user.avatar"
                   />
                   <span v-else>{{
                     avatarText(client.supplier.user.name)
@@ -541,15 +539,14 @@ onBeforeUnmount(() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ client.supplier.user.name }}
-                    {{ client.supplier.user.last_name ?? "" }}
+                    {{ client.supplier.user.name }} {{ client.supplier.user.last_name ?? "" }}
                   </span>
-                  <span class="">{{ client.supplier.user.email }}</span>
+                  <span class="text-sm text-disabled">{{ client.supplier.user.email }}</span>
                 </div>
               </div>
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="client.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
@@ -565,9 +562,7 @@ onBeforeUnmount(() => {
                   <span class="font-weight-medium">
                     {{ client.user.name }} {{ client.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{
-                    client.user.email
-                  }}</span>
+                  <span class="text-sm text-disabled">{{ client.user.email }}</span>
                 </div>
               </div>
             </td>
