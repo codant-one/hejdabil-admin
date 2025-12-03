@@ -275,8 +275,8 @@ const onSubmit = () => {
       <VCol
         cols="12"
         md="3"
-        class="order-1 order-md-2 mobile-gradient-card"
-        :class="$vuetify.display.smAndDown ? 'p-0 fix-bottom-menu' : ''"
+        class="order-1 order-md-2"
+        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
       >
         <VCard>
           <VCardText
@@ -289,7 +289,8 @@ const onSubmit = () => {
               type="submit"
             >
               <template #prepend>
-                <VIcon icon="custom-send" size="24" />
+                <VIcon icon="custom-send" size="24" v-if="!$vuetify.display.smAndDown" />
+                <VIcon icon="custom-send" size="24" v-if="$vuetify.display.smAndDown" />
               </template>
               Skapa faktura
             </VBtn>

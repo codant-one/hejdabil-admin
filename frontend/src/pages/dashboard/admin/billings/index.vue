@@ -514,6 +514,7 @@ onBeforeUnmount(() => {
           clear-icon="tabler-x"
           style="width: 200px"
           :menu-props="{ maxHeight: '300px' }"
+          class="billing-selector"
         />
 
         <VSpacer class="d-none d-md-block" />
@@ -1404,7 +1405,7 @@ onBeforeUnmount(() => {
 }
 
 .search {
-  width: 100% !important;
+  width: 50% !important;
   .v-field__input {
     background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
       1rem center !important;
@@ -1417,6 +1418,7 @@ onBeforeUnmount(() => {
 
 .billing-selector {
   max-width: 132px;
+  margin-bottom: 0px !important;
   .v-input__prepend {
     margin-right: 0px;
     color: #454545;
