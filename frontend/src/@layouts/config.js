@@ -1,4 +1,3 @@
-import { breakpointsVuetify } from '@vueuse/core'
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
 export const config = {
@@ -9,7 +8,7 @@ export const config = {
     // logo: () => h('img', { src: 'assets/colored-logo.png' }, null),
     contentWidth: ref(ContentWidth.Boxed),
     contentLayoutNav: ref(AppContentLayoutNav.Vertical),
-    overlayNavFromBreakpoint: breakpointsVuetify.md,
+    overlayNavFromBreakpoint: 1024, // Cambiado de md a lg (1024px)
     enableI18n: true,
     isRtl: ref(false),
   },

@@ -17,6 +17,8 @@ import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
 
+const { width: windowWidth } = useWindowSize();
+
 const clientsStores = useClientsStores();
 const suppliersStores = useSuppliersStores();
 const emitter = inject("emitter");
@@ -36,8 +38,10 @@ const isDialogOpen = ref(false);
 const hasLoaded = ref(false);
 const isClientFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
-let nextRoute = null;
+const isFilterDialogVisible = ref(false);
 const leaveContext = ref(null); // 'mobile' | 'route' | null
+
+let nextRoute = null;
 
 const supplier_id = ref(null);
 const userData = ref(null);
@@ -108,13 +112,15 @@ async function fetchData(cleanFilters = false) {
   };
 
   // Ensure loader is shown during fetch to prevent empty-state flicker
-  isRequestOngoing.value = true;
-
+    isRequestOngoing.value = searchQuery.value !== "" ? false : true;
+  isFilterDialogVisible.value = false;
+  
   await clientsStores.fetchClients(data);
 
   clients.value = clientsStores.getClients;
   totalPages.value = clientsStores.last_page;
   totalClients.value = clientsStores.clientsTotalCount;
+  
   hasLoaded.value = true;
   isRequestOngoing.value = false;
 }
@@ -374,90 +380,72 @@ onBeforeUnmount(() => {
 
     <VCard class="card-fill">
       <VCardTitle
-        class="d-flex justify-space-between"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
       >
-        <div class="d-flex align-center w-100 w-md-auto font-blauer">
+        <div class="align-center font-blauer">
           <h2>Kunder <span v-if="hasLoaded">({{ clients.length }})</span></h2>
         </div>
 
-        <div class="d-flex gap-4 title-action-buttons">
-          <VBtn class="btn-light w-100 w-md-auto" @click="downloadCSV">
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+        <div class="d-flex gap-4">
+          <VBtn 
+            class="btn-light w-auto" 
+            block
+            @click="downloadCSV">
             <VIcon icon="custom-export" size="24" />
             Exportera
           </VBtn>
-
           <VBtn
-            v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
-            class="btn-gradient w-100 w-md-auto"
+            v-if="$can('create', 'clients') && windowWidth >= 1024"
+            class="btn-gradient"
+            block
             @click="isAddNewClientDrawerVisible = true"
           >
             <VIcon icon="custom-plus" size="24" />
             Ny kund
           </VBtn>
-
           <VBtn
-            v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
-            class="btn-gradient w-100 w-md-auto"
+            v-if="windowWidth < 1024 && $can('create', 'clients')"
+            class="btn-gradient"
+            block
             @click="openAddNewClientDrawerMobile"
           >
             <VIcon icon="custom-plus" size="24" />
             Ny kund
           </VBtn>
-          <VDialog
-            v-model="isDialogOpen"
-            transition="dialog-bottom-transition"
-            content-class="dialog-bottom-full-width"
-            @update:model-value="handleMobileDialogUpdate"
-          >
-            <VCard>
-              <AddNewClientMobile
-                v-model:isDrawerOpen="isDialogOpen"
-                :client="selectedClient"
-                :suppliers="suppliers"
-                @client-data="submitForm"
-                @edited="onClientFormEdited"
-              />
-            </VCard>
-          </VDialog>
         </div>
       </VCardTitle>
 
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4 filter-bar"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex align-center justify-space-between gap-2 filter-bar"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
-        <!-- <VAutocomplete
-            v-if="role !== 'Supplier'"
-            v-model="supplier_id"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="(item) => item.full_name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-          /> -->
-
-        <VBtn class="btn-white-2" v-if="role !== 'Supplier' && role !== 'User'">
+        <VBtn 
+          class="btn-white-2" 
+          v-if="role !== 'Supplier' && role !== 'User'"
+          @click="isFilterDialogVisible = true"
+        >
           <VIcon icon="custom-filter" size="24" />
-          <span class="d-none d-md-block">Filtrera efter</span>
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
         </VBtn>
 
         <div
-          v-if="!$vuetify.display.smAndDown"
+          v-if="!$vuetify.display.mdAndDown"
           class="d-flex align-center visa-select"
         >
-          <span class="text-no-wrap pr-4">Visa:</span>
+          <span class="text-no-wrap pr-4">Visa</span>
           <VSelect
             v-model="rowPerPage"
             class="custom-select-hover"
@@ -467,7 +455,7 @@ onBeforeUnmount(() => {
       </VCardText>
 
       <VTable
-        v-if="!$vuetify.display.smAndDown"
+        v-if="!$vuetify.display.mdAndDown"
         v-show="clients.length"
         class="px-4 pb-6 text-no-wrap"
       >
@@ -630,10 +618,10 @@ onBeforeUnmount(() => {
       <div
         v-if="!isRequestOngoing && hasLoaded && !clients.length"
         class="empty-state"
-        :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
       >
         <VIcon
-          :size="$vuetify.display.smAndDown ? 80 : 120"
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
           icon="custom-f-user"
         />
         <div class="empty-state-content">
@@ -645,7 +633,7 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
+          v-if="$can('create', 'clients') && !$vuetify.display.mdAndDown"
           @click="isAddNewClientDrawerVisible = true"
         >
           Lägg till ny kund
@@ -654,7 +642,7 @@ onBeforeUnmount(() => {
 
         <VBtn
           class="btn-ghost"
-          v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
           @click="isDialogOpen = true"
         >
           Lägg till ny kund
@@ -663,7 +651,7 @@ onBeforeUnmount(() => {
       </div>
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
-        v-if="clients.length && $vuetify.display.smAndDown"
+        v-if="clients.length && $vuetify.display.mdAndDown"
       >
         <VExpansionPanel v-for="client in clients" :key="client.id">
           <VExpansionPanelTitle
@@ -731,13 +719,14 @@ onBeforeUnmount(() => {
 
       <VCardText
         v-if="clients.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
         </span>
 
-        <VSpacer class="d-none d-md-block" />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <VPagination
           v-model="currentPage"
@@ -827,52 +816,101 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Add New Client Mobile Dialog -->
+    <VDialog
+      v-model="isDialogOpen"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+      @update:model-value="handleMobileDialogUpdate"
+    >
+      <VCard>
+        <AddNewClientMobile
+          v-model:isDrawerOpen="isDialogOpen"
+          :client="selectedClient"
+          :suppliers="suppliers"
+          @client-data="submitForm"
+          @edited="onClientFormEdited"
+        />
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <VAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user"
+            :menu-props="{ maxHeight: '400px' }"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
 <style lang="scss" scoped>
-.page-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.card-fill {
-  flex: 1 1 auto;
-  padding-bottom: 32px;
-}
-
-.search {
-  width: 100% !important;
-  .v-field__input {
-    background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-      1rem center !important;
+  .page-section {
+    display: flex;
+    flex-direction: column;
   }
-}
 
-@media (min-width: 991px) {
-  .card-fill {
-    padding-bottom: 0;
+  .search {
+    width: 100% !important;
+    .v-field__input {
+      background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+        1rem center !important;
+    }
   }
-}
 
-@media (max-width: 991px) {
-  .card-fill {
-    border-radius: 0 !important;
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
   }
-}
 
-.dialog-bottom-full-width {
-  .v-card {
-    border-radius: 24px 24px 0 0 !important;
+  .bottom-sheet-card {
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 75vh;
+    overflow-y: auto;
   }
-}
-
-.bottom-sheet-card {
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-height: 75vh;
-  overflow-y: auto;
-}
 </style>
 <route lang="yaml">
 meta:

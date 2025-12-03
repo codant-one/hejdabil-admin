@@ -637,7 +637,7 @@ const goToTracker = (agreementData) => {
           v-if="!$vuetify.display.smAndDown"
           class="d-flex align-center visa-select"
         >
-          <span class="text-no-wrap pr-4">Visa:</span>
+          <span class="text-no-wrap pr-4">Visa</span>
           <VSelect
             v-model="rowPerPage"
             class="custom-select-hover"
@@ -1237,145 +1237,128 @@ const goToTracker = (agreementData) => {
 </template>
 
 <style lang="scss" scoped>
-.page-section {
-  display: flex;
-  flex-direction: column;
-}
-
-.card-fill {
-  flex: 1 1 auto;
-  padding-bottom: 32px;
-}
-
-.search {
-  width: 100% !important;
-  .v-field__input {
-    background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-      1rem center !important;
+  .page-section {
+    display: flex;
+    flex-direction: column;
   }
-}
 
-@media (min-width: 991px) {
-  .card-fill {
-    padding-bottom: 0;
+  .search {
+    width: 100% !important;
+    .v-field__input {
+      background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
+        1rem center !important;
+    }
   }
-}
 
-@media (max-width: 991px) {
-  .card-fill {
-    border-radius: 0 !important;
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
   }
-}
 
-.dialog-bottom-full-width {
-  .v-card {
-    border-radius: 24px 24px 0 0 !important;
+  .bottom-sheet-card {
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: 75vh;
+    overflow-y: auto;
   }
-}
 
-.bottom-sheet-card {
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-height: 75vh;
-  overflow-y: auto;
-}
+  /* PDF Placement Styles */
+  :deep(.pdf-container-admin) {
+    position: relative;
+    cursor: crosshair;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    width: 90%;
+    max-width: 800px;
+    height: 95%;
+    overflow-y: auto;
+  }
 
-/* PDF Placement Styles */
-:deep(.pdf-container-admin) {
-  position: relative;
-  cursor: crosshair;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
-  width: 90%;
-  max-width: 800px;
-  height: 95%;
-  overflow-y: auto;
-}
+  :deep(.pdf-container-admin > div){
+    width: 100% !important;
+  }
 
-:deep(.pdf-container-admin > div){
-  width: 100% !important;
-}
+  :deep(.signature-placeholder-admin) {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+  }
 
-:deep(.signature-placeholder-admin) {
-    position: absolute;
-    z-index: 10;
-    pointer-events: none;
-}
+  :deep(.signature-placeholder-content) {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 2px dashed #ffc107;
+      background-color: rgba(255, 193, 7, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #ffc107;
+      font-weight: 600;
+      white-space: nowrap;
+  }
 
-:deep(.signature-placeholder-content) {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    border: 2px dashed #ffc107;
-    background-color: rgba(255, 193, 7, 0.2);
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #ffc107;
-    font-weight: 600;
-    white-space: nowrap;
-}
+  /* Mobile Card Styles */
+  .mobile-card-wrapper {
+    border-radius: 12px;
+    overflow: hidden;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
 
-/* Mobile Card Styles */
-.mobile-card-wrapper {
-  border-radius: 12px;
-  overflow: hidden;
-  background-color: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
+  .card-header-type {
+    background-color: #F6F6F6;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    color: #6D788D;
+    text-align: center;
+    font-weight: 500;
+  }
 
-.card-header-type {
-  background-color: #F6F6F6;
-  padding: 8px 16px;
-  font-size: 0.875rem;
-  color: #6D788D;
-  text-align: center;
-  font-weight: 500;
-}
+  .custom-expansion-panels {
+    /* Remove default margins/shadows if needed */
+    margin-top: 0;
+  }
 
-.custom-expansion-panels {
-  /* Remove default margins/shadows if needed */
-  margin-top: 0;
-}
+  :deep(.custom-expansion-panels .v-expansion-panel) {
+    background-color: transparent !important;
+  }
 
-:deep(.custom-expansion-panels .v-expansion-panel) {
-  background-color: transparent !important;
-}
+  :deep(.custom-expansion-panels .v-expansion-panel-title) {
+    padding: 16px;
+    min-height: unset;
+  }
 
-:deep(.custom-expansion-panels .v-expansion-panel-title) {
-  padding: 16px;
-  min-height: unset;
-}
+  :deep(.custom-expansion-panels .v-expansion-panel-title__overlay) {
+    background-color: transparent;
+  }
 
-:deep(.custom-expansion-panels .v-expansion-panel-title__overlay) {
-  background-color: transparent;
-}
+  .reg-nr-text {
+    color: #008C91;
+    font-weight: 500;
+  }
 
-.reg-nr-text {
-  color: #008C91;
-  font-weight: 500;
-}
+  :deep(.custom-expansion-panels .v-expansion-panel-title__icon .v-icon) {
+    color: #008C91 !important;
+  }
 
-:deep(.custom-expansion-panels .v-expansion-panel-title__icon .v-icon) {
-  color: #008C91 !important;
-}
+  .btn-details {
+    border-color: #E0E0E0;
+    text-transform: none;
+    letter-spacing: normal;
+    font-weight: 500;
+  }
 
-.btn-details {
-  border-color: #E0E0E0;
-  text-transform: none;
-  letter-spacing: normal;
-  font-weight: 500;
-}
+  .btn-actions {
+    border-color: #E0E0E0;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+  }
 
-.btn-actions {
-  border-color: #E0E0E0;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-}
-
-.status-chip {
-  border-radius: 16px;
-  padding: 0 12px;
-}
+  .status-chip {
+    border-radius: 16px;
+    padding: 0 12px;
+  }
 </style>
 <route lang="yaml">
   meta:

@@ -374,7 +374,7 @@ body {
 .v-table > .v-table__wrapper > table > thead > tr > th,
 .v-table > .v-table__wrapper > table > tfoot > tr > td,
 .v-table > .v-table__wrapper > table > tfoot > tr > th {
-  padding: 0 16px !important;
+  padding: 0 8px !important;
 }
 
 .v-table > .v-table__wrapper > table > thead > tr > th {
@@ -596,16 +596,18 @@ body {
 
 .visa-select {
   border-radius: 64px;
-  padding-right: 16px;
+  padding-right: 8px;
   padding-left: 16px;
   border: 1px solid #e7e7e7;
   font-weight: 400;
   font-size: 15px;
   color: #454545;
+  width: 180px;
 
   .v-input {
     border-left: 1px solid #e7e7e7 !important;
-    padding-left: 16px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
 
   .v-field {
@@ -617,7 +619,7 @@ body {
       padding-top: 0px !important;
 
       .v-icon {
-        margin-inline-start: 12px !important;
+        margin-inline-start: 24px !important;
       }
     }
 
@@ -635,6 +637,59 @@ body {
     }
   }
 }
+
+//card-fill adjustments
+.card-fill {
+  border-radius: 0 !important;
+  flex: 1 1 auto;
+  padding-bottom: 80px;
+}
+
+@media (min-width: 1024px) {
+  .card-fill {
+    border-radius: 16px !important;
+    padding-bottom: 0;
+  }
+}
+
+//selector user
+.selector-user {
+  min-width: 150px;
+  .v-input__prepend {
+    margin-right: 0px;
+    color: #454545;
+
+    .v-icon {
+      opacity: 1 !important;
+    }
+  }
+
+  .v-input__control {
+    width: 100%;
+    .v-field {
+      padding-right: 0px;
+
+      .v-field__input {
+        padding-inline-start: 8px;
+        opacity: 1 !important;
+        color: #454545;
+      }
+    }
+    .v-field__append-inner {
+      .v-icon {
+        opacity: 1 !important;
+        color: #454545;
+      }
+    }
+    .v-field__outline {
+      .v-field__outline__start,
+      .v-field__outline__end {
+        border: 0px !important;
+      }
+    }
+  }
+}
+
 
 @media (min-width: 991px) {
   .w-md-auto {
@@ -716,18 +771,6 @@ body {
 }
 
 // Custom CSS
-
-.title-action-buttons {
-  @media (max-width: 768px) {
-    margin-top: 24px;
-    flex-direction: row;
-
-    > * {
-      flex: 1 1;
-    }
-  }
-}
-
 .filter-bar {
   @media (max-width: 768px) {
     justify-content: space-between;

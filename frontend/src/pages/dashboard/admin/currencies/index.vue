@@ -280,7 +280,7 @@ const downloadCSV = async () => {
         <VCard title="">
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"

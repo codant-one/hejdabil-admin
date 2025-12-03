@@ -1,4 +1,3 @@
-import { breakpointsVuetify } from '@vueuse/core'
 import { VIcon } from 'vuetify/components'
 
 // ❗ Logo SVG must be imported with ?raw suffix
@@ -19,7 +18,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     logoWhite: h('img', { src: logoWhite, style: 'width: 35px' }),
     contentWidth: ContentWidth.Boxed,
     contentLayoutNav: AppContentLayoutNav.Vertical,
-    overlayNavFromBreakpoint: breakpointsVuetify.md + 16,
+    overlayNavFromBreakpoint: 1024, // Usar valor directo en lugar de breakpointsVuetify.lg
     enableI18n: false,
     theme: 'light',
     isRtl: false,
