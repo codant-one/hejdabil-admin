@@ -76,12 +76,12 @@ class SwishPayout
 
         $response = $this->client()->post('/v1/payouts', $body);
 
-        /*Log::info('Swish Payout: Create Payout Request' . PHP_EOL . json_encode([
+        Log::info('Swish Payout: Create Payout Request' . PHP_EOL . json_encode([
             'request_body' => $body,
             'response_status' => $response->status(),
             'response_body' => $response->body(),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-        */
+        
         
         return $response;
     }
