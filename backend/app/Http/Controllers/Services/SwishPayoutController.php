@@ -70,12 +70,6 @@ class SwishPayoutController extends Controller
             Log::warning('Swish callback: State not found in payout_states', ['status' => $status]);
         }
 
-        // Guardar response_data completo para auditoría
-        $payout->response_data = array_merge(
-            $payout->response_data ?? [],
-            ['callback' => $payload, 'callback_at' => now()->toISOString()]
-        );
-
         $payout->save();
 
         Log::info('Swish callback: Payout updated successfully', [
