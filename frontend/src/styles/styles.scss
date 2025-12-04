@@ -596,17 +596,18 @@ body {
 
 .visa-select {
   border-radius: 64px;
-  padding-right: 8px;
+  padding-right: 16px;
   padding-left: 16px;
   border: 1px solid #e7e7e7;
   font-weight: 400;
   font-size: 15px;
   color: #454545;
+  width: 136px;
 
   .v-input {
     border-left: 1px solid #e7e7e7 !important;
-    padding-left: 8px !important;
-    padding-right: 0px !important;
+    padding-left: 12px !important;
+    padding-right: 0 !important;
   }
 
   .v-field {
@@ -618,7 +619,7 @@ body {
       padding-top: 0px !important;
 
       .v-icon {
-        margin-inline-start: 16px !important;
+        margin-inline-start: 0 !important;
       }
     }
 

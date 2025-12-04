@@ -432,6 +432,8 @@ onBeforeUnmount(() => {
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
         <VBtn 
           class="btn-white-2" 
           v-if="role !== 'Supplier' && role !== 'User'"
@@ -907,7 +909,7 @@ onBeforeUnmount(() => {
   }
 
   .search {
-    width: 100% !important;
+    width: 580px !important;
     .v-field__input {
       background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
         1rem center !important;
