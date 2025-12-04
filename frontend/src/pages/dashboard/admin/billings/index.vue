@@ -12,6 +12,8 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 const billingsStores = useBillingsStores();
 const emitter = inject("emitter");
 
+const { width: windowWidth } = useWindowSize();
+
 const clients = ref([]);
 const suppliers = ref([]);
 const billings = ref([]);
@@ -465,7 +467,7 @@ onBeforeUnmount(() => {
     <VCard class="card-fill">
       <VCardTitle
         class="d-flex justify-space-between"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <div class="d-flex align-center w-100 w-md-auto font-blauer">
           <h2>
@@ -490,19 +492,22 @@ onBeforeUnmount(() => {
         </div>
       </VCardTitle>
 
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4 filter-bar"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex align-center justify-space-between gap-2 filter-bar"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
         <VAutocomplete
           v-if="role !== 'Supplier'"
+          prepend-icon="custom-profile"
           v-model="supplier_id"
           placeholder="Leverantörer"
           :items="suppliers"
@@ -534,13 +539,13 @@ onBeforeUnmount(() => {
         <VBtn
           class="btn-white-2"
           @click="filtreraMobile = true"
-          v-if="$vuetify.display.smAndDown"
+          v-if="$vuetify.display.mdAndDown"
         >
           <VIcon icon="custom-filter" size="24" />
           <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
 
-        <VMenu v-if="!$vuetify.display.smAndDown">
+        <VMenu v-if="!$vuetify.display.mdAndDown">
           <template #activator="{ props }">
             <VBtn class="btn-white-2" v-bind="props">
               <VIcon icon="custom-filter" size="24" />
@@ -587,7 +592,7 @@ onBeforeUnmount(() => {
         </VMenu>
 
         <div
-          v-if="!$vuetify.display.smAndDown"
+          v-if="!$vuetify.display.mdAndDown"
           class="d-flex align-center visa-select"
         >
           <span class="text-no-wrap pr-4">Visa</span>
@@ -599,7 +604,7 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
 
-      <VCardText :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'">
+      <VCardText :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'">
         <div class="d-flex gap-4 billings-pills">
           <div
             v-for="{ title, stateId, tax, value, icon, color, background } in [
@@ -796,7 +801,7 @@ onBeforeUnmount(() => {
       </VCardText>
 
       <VTable
-        v-if="!$vuetify.display.smAndDown"
+        v-if="!$vuetify.display.mdAndDown"
         v-show="billings.length"
         class="pt-2 px-4 pb-6 text-no-wrap"
         style="border-radius: 0 !important"
@@ -983,10 +988,10 @@ onBeforeUnmount(() => {
       <div
         v-if="!isRequestOngoing && hasLoaded && !billings.length"
         class="empty-state"
-        :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
       >
         <VIcon
-          :size="$vuetify.display.smAndDown ? 80 : 120"
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
           icon="custom-f-user"
         />
         <div class="empty-state-content">
@@ -998,7 +1003,7 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'clients') && !$vuetify.display.smAndDown"
+          v-if="$can('create', 'clients') && !$vuetify.display.mdAndDown"
           @click="isAddNewClientDrawerVisible = true"
         >
           Skapa ny faktura
@@ -1007,7 +1012,7 @@ onBeforeUnmount(() => {
 
         <VBtn
           class="btn-ghost"
-          v-if="$vuetify.display.smAndDown && $can('create', 'clients')"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
           @click="isDialogOpen = true"
         >
           Lägg till ny kund
@@ -1017,7 +1022,7 @@ onBeforeUnmount(() => {
 
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
-        v-if="billings.length && $vuetify.display.smAndDown"
+        v-if="billings.length && $vuetify.display.mdAndDown"
       >
         <VExpansionPanel v-for="billing in billings" :key="billing.id">
           <VExpansionPanelTitle
@@ -1026,9 +1031,8 @@ onBeforeUnmount(() => {
           >
             <span class="order-id">{{ billing.invoice_id }}</span>
             <div class="order-title-box">
-              <span class="title-panel"
-                >{{ billing.supplier.user.name }}
-                {{ billing.supplier.user.last_name ?? "" }}</span
+              <span class="title-panel">
+                {{ billing.client.fullname ?? "" }}</span
               >
               <div class="title-organization">
                 Summa
