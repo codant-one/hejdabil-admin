@@ -424,7 +424,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2 filter-bar"
+        class="d-flex align-center justify-space-between gap-2"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
@@ -632,6 +632,7 @@ onBeforeUnmount(() => {
         </tbody>
         <!-- 👉 table footer  -->
       </VTable>
+      
       <div
         v-if="!isRequestOngoing && hasLoaded && !clients.length"
         class="empty-state"
@@ -666,6 +667,7 @@ onBeforeUnmount(() => {
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
+
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
         v-if="clients.length && $vuetify.display.mdAndDown"

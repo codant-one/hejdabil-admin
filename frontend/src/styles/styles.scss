@@ -597,12 +597,13 @@ body {
 .visa-select {
   border-radius: 64px;
   padding-right: 16px;
-  padding-left: 16px;
+  padding-left: 20px;
   border: 1px solid #e7e7e7;
   font-weight: 400;
   font-size: 15px;
   color: #454545;
   width: 136px;
+  height: 48px;
 
   .v-input {
     border-left: 1px solid #e7e7e7 !important;
@@ -753,7 +754,7 @@ body {
   border-radius: 24px 24px 0px 0px !important;
 
   .v-bottom-navigation__content {
-    gap: 24px;
+    gap: 16px;
 
     .v-btn {
       height: 72px !important;
@@ -771,12 +772,6 @@ body {
 }
 
 // Custom CSS
-.filter-bar {
-  @media (max-width: 768px) {
-    justify-content: space-between;
-  }
-}
-
 .v-expansion-panel:not(:first-child)::after {
   border: none !important;
 }

@@ -495,7 +495,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2 filter-bar"
+        class="d-flex align-center justify-space-between gap-2"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
@@ -1507,10 +1507,6 @@ onBeforeUnmount(() => {
     border-radius: 0 !important;
   }
 
-  .filter-bar {
-    padding-bottom: 0px !important;
-  }
-
   .billings-pills {
     .page-section {
       display: flex;
@@ -1598,14 +1594,11 @@ onBeforeUnmount(() => {
     }
 
     @media (max-width: 991px) {
-      .filter-bar {
-        padding-bottom: 0px !important;
-      }
-
       .billings-pills {
         flex-direction: column;
         gap: 8px;
       }
+
       .billings-pill {
         padding: 8px 16px;
       }

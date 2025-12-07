@@ -512,7 +512,7 @@ const resolveStatus = state => {
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4 filter-bar"
+        class="d-flex align-center justify-space-between gap-4"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
