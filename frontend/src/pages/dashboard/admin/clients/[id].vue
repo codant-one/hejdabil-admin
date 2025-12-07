@@ -207,12 +207,6 @@ meta:
 </route>
 
 <style lang="scss" scoped>
-
-  .page-section {
-    display: flex;
-    flex-direction: column;
-  }
-
   .client-slug {
     @media (max-width: 768px) {
       border-radius: 0px !important;

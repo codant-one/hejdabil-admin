@@ -355,15 +355,7 @@ const downloadCSV = async () => {
     }
   }
 
-  .search {
-    width: 100%;
-  }
-
   @media(min-width: 991px){
-    .search {
-      width: 30rem;
-    }
-
     #rol-list {
     .rol-list-actions {
       inline-size: 8rem;

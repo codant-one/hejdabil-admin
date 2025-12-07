@@ -490,18 +490,6 @@ const openPayoutDialog = () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100% !important;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 20rem !important;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

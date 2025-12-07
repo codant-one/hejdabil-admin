@@ -1237,19 +1237,6 @@ const goToTracker = (agreementData) => {
 </template>
 
 <style lang="scss" scoped>
-  .page-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .search {
-    width: 100% !important;
-    .v-field__input {
-      background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-        1rem center !important;
-    }
-  }
-
   .dialog-bottom-full-width {
     .v-card {
       border-radius: 24px 24px 0 0 !important;

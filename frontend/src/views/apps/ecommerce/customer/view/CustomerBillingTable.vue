@@ -1108,10 +1108,6 @@ const sendMails = async () => {
   cursor: no-drop !important;
 }
 
-.search {
-  max-width: 350px;
-}
-
 .billing-panel {
   border: 1px solid #e7e7e7 !important;
 }

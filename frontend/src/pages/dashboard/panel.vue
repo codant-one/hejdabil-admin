@@ -83,11 +83,6 @@ onBeforeUnmount(() => {
   .card-list {
     --v-card-list-gap: 30px;
   }
-  
-  .page-section {
-    display: flex;
-    flex-direction: column;
-  }
 </style>
 
 <route lang="yaml">

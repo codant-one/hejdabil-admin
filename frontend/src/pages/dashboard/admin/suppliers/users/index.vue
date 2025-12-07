@@ -458,19 +458,11 @@ const downloadCSV = async () => {
     z-index: 1999 !important;
   }
 
-  .search {
-    width: 100%;
-  }
-
   .user-list-filter {
     width: 100%;
   }
 
   @media(min-width: 991px){
-    .search {
-      width: 30rem;
-    }
-
     .user-list-filter {
       inline-size: 12rem;
     }

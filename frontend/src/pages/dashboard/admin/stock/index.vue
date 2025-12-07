@@ -847,16 +847,6 @@ const truncateText = (text, length = 15) => {
       pointer-events: visible !important;
       cursor: no-drop !important;
     }
-
-    .search {
-        width: 100%;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 20rem;
-        }
-    }
 </style>
 <route lang="yaml">
   meta:

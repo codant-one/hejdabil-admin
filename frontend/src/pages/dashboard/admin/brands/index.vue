@@ -427,18 +427,6 @@ const downloadCSV = async () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100%;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 30rem;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

@@ -90,6 +90,9 @@ onMounted(async () => {
 
   await loadData();
 
+  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+  role.value = userData.value.roles[0].name;
+
   if (role.value === "SuperAdmin" || role.value === "Administrator") {
     suppliers.value = billingsStores.suppliers;
   }
@@ -131,9 +134,6 @@ async function fetchData(cleanFilters = false) {
   totalSum.value = billingsStores.totalSum;
   totalTax.value = billingsStores.totalTax;
   totalNeto.value = billingsStores.totalNeto;
-
-  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-  role.value = userData.value.roles[0].name;
 
   billings.value.forEach((billing) => {
     billing.checked = false;
@@ -466,24 +466,33 @@ onBeforeUnmount(() => {
 
     <VCard class="card-fill">
       <VCardTitle
-        class="d-flex justify-space-between"
-        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
       >
-        <div class="d-flex align-center w-100 w-md-auto font-blauer">
+        <div class="align-center font-blauer">
           <h2>
             Fakturor <span v-if="hasLoaded">({{ billings.length }})</span>
           </h2>
         </div>
 
-        <div class="d-flex gap-4 title-action-buttons">
-          <VBtn class="btn-light w-100 w-md-auto" @click="downloadCSV">
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+        <div class="d-flex gap-4">
+          <VBtn 
+            class="btn-light w-auto" 
+            block
+            @click="downloadCSV">
             <VIcon icon="custom-export" size="24" />
             Exportera
           </VBtn>
 
           <VBtn
             v-if="$can('create', 'billings')"
-            class="btn-gradient w-100 w-md-auto"
+            class="btn-gradient"
+            block
             @click="addInvoice"
           >
             <VIcon icon="custom-plus" size="24" />
@@ -496,7 +505,7 @@ onBeforeUnmount(() => {
 
       <VCardText
         class="d-flex align-center justify-space-between gap-2"
-        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
+        :class="$vuetify.display.mdAndDown ? 'px-6 pb-2' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
@@ -505,36 +514,34 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <VAutocomplete
-          v-if="role !== 'Supplier'"
-          prepend-icon="custom-profile"
-          v-model="supplier_id"
-          placeholder="Leverantörer"
-          :items="suppliers"
-          :item-title="(item) => item.full_name"
-          :item-value="(item) => item.id"
-          autocomplete="off"
-          clearable
-          clear-icon="tabler-x"
-          style="width: 200px"
-          :menu-props="{ maxHeight: '300px' }"
-          class="billing-selector"
-        />
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">
+          <VAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
 
-        <VSpacer class="d-none d-md-block" />
-
-        <VAutocomplete
-          prepend-icon="custom-profile"
-          v-model="client_id"
-          :items="clients"
-          :item-title="(item) => item.fullname"
-          :item-value="(item) => item.id"
-          placeholder="Kunder"
-          class="mb-2 selector-user"
-          autocomplete="off"
-          clearable
-          clear-icon="tabler-x"
-        />
+          <VAutocomplete
+            prepend-icon="custom-profile"
+            v-model="client_id"
+            :items="clients"
+            :item-title="(item) => item.fullname"
+            :item-value="(item) => item.id"
+            placeholder="Kunder"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </div>
 
         <VBtn
           class="btn-white-2"
@@ -604,6 +611,38 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
 
+      <VCardText
+        class="gap-2 py-0 pa-6"
+        :class="windowWidth > 1023 ? 'd-none' : 'd-flex flex-column'"
+      >
+        <VAutocomplete
+          v-if="role !== 'Supplier'"
+          prepend-icon="custom-profile"
+          v-model="supplier_id"
+          placeholder="Leverantörer"
+          :items="suppliers"
+          :item-title="(item) => item.full_name"
+          :item-value="(item) => item.id"
+          autocomplete="off"
+          clearable
+          clear-icon="tabler-x"
+          class="selector-user selector-truncate"
+        />
+
+        <VAutocomplete
+          prepend-icon="custom-profile"
+          v-model="client_id"
+          :items="clients"
+          :item-title="(item) => item.fullname"
+          :item-value="(item) => item.id"
+          placeholder="Kunder"
+          autocomplete="off"
+          clearable
+          clear-icon="tabler-x"
+          class="selector-user selector-truncate"
+        />
+      </VCardText>
+
       <VCardText :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'">
         <div class="d-flex gap-4 billings-pills">
           <div
@@ -642,162 +681,6 @@ onBeforeUnmount(() => {
             </div>
           </div>
         </div>
-        <!-- <VRow>
-          <div class="d-flex gap-4">
-            <div
-              v-for="{ title, stateId, tax, value, icon, color } in [
-                {
-                  title: 'Alla',
-                  stateId: null,
-                  tax: formatNumberInteger(tax ?? '0,00') + ' kr',
-                  value: formatNumberInteger(sum ?? '0,00') + ' kr',
-                  icon: 'mdi-invoice-list-outline',
-                  color: 'secondary',
-                },
-                {
-                  title: 'Obetalda',
-                  stateId: 4,
-                  tax: formatNumberInteger(pendingTax ?? '0,00') + ' kr',
-                  value:
-                    formatNumberInteger(totalPending ?? '0,00') + ' kr',
-                  icon: 'mdi-invoice-text-clock',
-                  color: 'warning',
-                },
-                {
-                  title: 'Betalda',
-                  stateId: 7,
-                  tax: formatNumberInteger(paidTax ?? '0,00') + ' kr',
-                  value: formatNumberInteger(totalPaid ?? '0,00') + ' kr',
-                  icon: 'mdi-invoice-text-check',
-                  color: 'info',
-                },
-                {
-                  title: 'Förfallna',
-                  stateId: 8,
-                  tax: formatNumberInteger(expiredTax ?? '0,00') + ' kr',
-                  value:
-                    formatNumberInteger(totalExpired ?? '0,00') + ' kr',
-                  icon: 'mdi-invoice-text-remove',
-                  color: 'error',
-                },
-              ]"
-              :key="title"
-            ></div>
-          </div>
-          <VCol
-            cols="12"
-            md="10"
-            class="d-flex justify-content-between align-center"
-            :class="$vuetify.display.mdAndUp ? 'border-e' : 'border-b'"
-          >
-            <div
-              class="d-flex justify-space-between flex-wrap w-100 flex-column flex-md-row gap-3"
-            >
-              <div
-                v-for="{ title, stateId, tax, value, icon, color } in [
-                  {
-                    title: 'Alla',
-                    stateId: null,
-                    tax: formatNumberInteger(tax ?? '0,00') + ' kr',
-                    value: formatNumberInteger(sum ?? '0,00') + ' kr',
-                    icon: 'mdi-invoice-list-outline',
-                    color: 'secondary',
-                  },
-                  {
-                    title: 'Obetalda',
-                    stateId: 4,
-                    tax: formatNumberInteger(pendingTax ?? '0,00') + ' kr',
-                    value:
-                      formatNumberInteger(totalPending ?? '0,00') + ' kr',
-                    icon: 'mdi-invoice-text-clock',
-                    color: 'warning',
-                  },
-                  {
-                    title: 'Betalda',
-                    stateId: 7,
-                    tax: formatNumberInteger(paidTax ?? '0,00') + ' kr',
-                    value: formatNumberInteger(totalPaid ?? '0,00') + ' kr',
-                    icon: 'mdi-invoice-text-check',
-                    color: 'info',
-                  },
-                  {
-                    title: 'Förfallna',
-                    stateId: 8,
-                    tax: formatNumberInteger(expiredTax ?? '0,00') + ' kr',
-                    value:
-                      formatNumberInteger(totalExpired ?? '0,00') + ' kr',
-                    icon: 'mdi-invoice-text-remove',
-                    color: 'error',
-                  },
-                ]"
-                :key="title"
-              >
-                <div
-                  class="d-flex cursor-pointer"
-                  @click="updateStateId(stateId)"
-                  :class="stateId === state_id ? classTab : ''"
-                >
-                  <VAvatar
-                    variant="tonal"
-                    :color="color"
-                    rounded
-                    size="65"
-                    class="me-2"
-                  >
-                    <VIcon :icon="icon" size="45" />
-                  </VAvatar>
-                  <div>
-                    <h5
-                      class="text-h5 font-weight-medium"
-                      :class="`text-${color}`"
-                    >
-                      {{ title }}
-                    </h5>
-                    <h6 class="text-h6" :class="`text-${color}`">
-                      {{ value }}
-                    </h6>
-                    <span class="text-sm" :class="`text-${color}`">
-                      varav moms {{ tax }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </VCol>
-          <VCol cols="12" md="2" class="d-flex flex-column">
-            <VAutocomplete
-              v-model="client_id"
-              :items="clients"
-              :item-title="(item) => item.fullname"
-              :item-value="(item) => item.id"
-              placeholder="Kunder"
-              class="mb-2"
-              autocomplete="off"
-              clearable
-              clear-icon="tabler-x"
-            />
-
-            <VAutocomplete
-              v-if="role === 'SuperAdmin' || role === 'Administrator'"
-              v-model="supplier_id"
-              placeholder="Leverantörer"
-              :items="suppliers"
-              :item-title="(item) => item.full_name"
-              :item-value="(item) => item.id"
-              autocomplete="off"
-              clearable
-              clear-icon="tabler-x"
-            />
-
-            <VTextField
-              v-else
-              v-model="searchQuery"
-              placeholder="Sök"
-              density="compact"
-              clearable
-            />
-          </VCol>
-        </VRow> -->
       </VCardText>
 
       <VTable
@@ -1368,11 +1251,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scope>
-.page-section {
-  display: flex;
-  flex-direction: column;
-}
-
 .card-fill {
   flex: 1 1 auto;
   padding-bottom: 32px;
@@ -1405,14 +1283,6 @@ onBeforeUnmount(() => {
 .v-input--disabled {
   pointer-events: visible !important;
   cursor: no-drop !important;
-}
-
-.search {
-  width: 50% !important;
-  .v-field__input {
-    background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat left
-      1rem center !important;
-  }
 }
 
 .justify-content-center {
@@ -1508,11 +1378,7 @@ onBeforeUnmount(() => {
   }
 
   .billings-pills {
-    .page-section {
-      display: flex;
-      flex-direction: column;
-    }
-
+    flex-direction: column;
     .border-bottom-secondary {
       border-bottom: 2px solid #2e0684;
       padding-bottom: 5px;
@@ -1540,14 +1406,6 @@ onBeforeUnmount(() => {
     .v-input--disabled {
       pointer-events: visible !important;
       cursor: no-drop !important;
-    }
-
-    .search {
-      width: 100% !important;
-      .v-field__input {
-        background: url(@/assets/images/icons/figma/searchIcon.svg) no-repeat
-          left 1rem center !important;
-      }
     }
 
     .justify-content-center {

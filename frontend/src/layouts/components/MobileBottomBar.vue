@@ -66,7 +66,7 @@ const redirectTo = (path) => {
       <VCard>
         <div class="d-flex mobile-nav-sheet">
           <span class="mobile-menu-title">Meny</span>
-          <div v-for="(item, index) in props.navItems" :key="index" class="w-100">
+          <template v-for="(item, index) in props.navItems" :key="index">
             <!-- Leaf item -->
             <div
               v-if="(!Array.isArray(item.children) || item.children.length === 0) && can(item.action, item.subject)"
@@ -89,7 +89,6 @@ const redirectTo = (path) => {
                 <span>{{ item.title }}</span>
               </component>
             </div>
-
             <!-- Group item with children -->
             <div
               v-else-if="Array.isArray(item.children) && canViewNavMenuGroup(item)"
@@ -183,7 +182,7 @@ const redirectTo = (path) => {
                 </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </VCard>
     </VDialog>
