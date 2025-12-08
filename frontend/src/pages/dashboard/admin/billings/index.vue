@@ -853,7 +853,7 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-order"
         />
         <div class="empty-state-content">
           <div class="empty-state-title">Inga fakturor skapade än</div>
