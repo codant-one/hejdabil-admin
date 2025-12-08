@@ -469,14 +469,9 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center">Organisationsnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">
-              Leverantör
-            </th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
-            <th
-              scope="col"
-              v-if="$can('edit', 'clients') || $can('delete', 'clients')"
-            ></th>
+            <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->

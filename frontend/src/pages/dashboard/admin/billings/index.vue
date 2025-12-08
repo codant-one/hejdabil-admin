@@ -681,22 +681,13 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col"># Faktura</th>
             <th scope="col">Kund</th>
-            <th
-              scope="col"
-              v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            >
-              Leverantör
-            </th>
+            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'">Leverantör</th>
             <th class="text-end" scope="col">Summa</th>
             <th scope="col">Fakturadatum</th>
             <th scope="col">Förfaller</th>
-            <th scope="col">Skapad av</th>
             <th class="text-center" scope="col">Status</th>
-            <th
-              class="text-center"
-              scope="col"
-              v-if="$can('edit', 'billings') || $can('delete', 'billings')"
-            ></th>
+            <th scope="col">Skapad av</th>
+            <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
@@ -715,25 +706,28 @@ onBeforeUnmount(() => {
                 {{ billing.client.fullname ?? "" }}
               </span>
             </td>
-            <td
-              class="text-wrap"
-              v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            >
+            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
               <span v-if="billing.supplier">
                 {{ billing.supplier.user.name }}
                 {{ billing.supplier.user.last_name ?? "" }}
               </span>
             </td>
             <td class="text-end">
-              {{
-                formatNumber(billing.total + billing.amount_discount) ?? "0,00"
-              }}
-              kr
+              {{ formatNumber(billing.total + billing.amount_discount) ?? "0,00" }} kr
             </td>
             <td>{{ billing.invoice_date }}</td>
             <td>{{ billing.due_date }}</td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <!-- 😵 Statuses -->
+            <td class="text-center text-wrap">
+              <div
+                :color="billing.state.color"
+                class="billing-chip text-capitalize"
+              >
+                {{ billing.state.name }}
+              </div>
+            </td>
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="billing.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
@@ -747,24 +741,22 @@ onBeforeUnmount(() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ billing.user.name }}
-                    {{ billing.user.last_name ?? "" }}
+                    {{ billing.user.name }} {{ billing.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{
-                    billing.user.email
-                  }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="billing.user.email && billing.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(billing.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ billing.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ billing.user.email }}</span>
+                  </span>
                 </div>
               </div>
-            </td>
-            <!-- 😵 Statuses -->
-            <td class="text-center text-wrap">
-              <div
-                :color="billing.state.color"
-                class="billing-chip text-capitalize"
-              >
-                {{ billing.state.name }}
-              </div>
-            </td>
+            </td>            
             <!-- 👉 Acciones -->
             <td
               class="text-center"
