@@ -55,6 +55,7 @@ const bgColor = ref("bg-light-secondary");
 const textColor = ref("text-secondary");
 const classTab = ref("border-bottom-secondary");
 const filtreraMobile = ref(false);
+const isFilterDialogVisible = ref(false);
 
 const sectionEl = ref(null);
 
@@ -125,6 +126,7 @@ async function fetchData(cleanFilters = false) {
   };
 
   isRequestOngoing.value = searchQuery.value !== "" ? false : true;
+  isFilterDialogVisible.value = false;
 
   await billingsStores.fetchBillings(data);
 
@@ -504,8 +506,8 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2"
-        :class="$vuetify.display.mdAndDown ? 'px-6 pb-2' : 'pa-4'"
+        class="d-flex align-center justify-space-between"
+        :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
         <div class="search">
@@ -514,7 +516,7 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
           <VAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
@@ -544,7 +546,15 @@ onBeforeUnmount(() => {
         </div>
 
         <VBtn
-          class="btn-white-2"
+          class="btn-white-2 px-3"
+          @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-white-2 px-3"
           @click="filtreraMobile = true"
           v-if="$vuetify.display.mdAndDown"
         >
@@ -609,38 +619,6 @@ onBeforeUnmount(() => {
             :items="[10, 20, 30, 50]"
           />
         </div>
-      </VCardText>
-
-      <VCardText
-        class="gap-2 py-0 pa-6"
-        :class="windowWidth > 1023 ? 'd-none' : 'd-flex flex-column'"
-      >
-        <VAutocomplete
-          v-if="role !== 'Supplier'"
-          prepend-icon="custom-profile"
-          v-model="supplier_id"
-          placeholder="Leverantörer"
-          :items="suppliers"
-          :item-title="(item) => item.full_name"
-          :item-value="(item) => item.id"
-          autocomplete="off"
-          clearable
-          clear-icon="tabler-x"
-          class="selector-user selector-truncate"
-        />
-
-        <VAutocomplete
-          prepend-icon="custom-profile"
-          v-model="client_id"
-          :items="clients"
-          :item-title="(item) => item.fullname"
-          :item-value="(item) => item.id"
-          placeholder="Kunder"
-          autocomplete="off"
-          clearable
-          clear-icon="tabler-x"
-          class="selector-user selector-truncate"
-        />
       </VCardText>
 
       <VCardText :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'">
@@ -1205,6 +1183,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Mobile Filter Dialog -->
     <VDialog
       v-model="filtreraMobile"
       transition="dialog-bottom-transition"
@@ -1245,6 +1224,66 @@ onBeforeUnmount(() => {
             <VListItemTitle>Förfallna</VListItemTitle>
           </VListItem>
         </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <VAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate mb-3"
+          />
+
+          <VAutocomplete
+            prepend-icon="custom-profile"
+            v-model="client_id"
+            :items="clients"
+            :item-title="(item) => item.fullname"
+            :item-value="(item) => item.id"
+            placeholder="Kunder"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate w-auto"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
       </VCard>
     </VDialog>
   </section>
