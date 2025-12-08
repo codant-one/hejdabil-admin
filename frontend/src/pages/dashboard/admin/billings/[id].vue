@@ -852,10 +852,6 @@ const download = async () => {
   }
 }
 
-.justify-content-center {
-  justify-content: center !important;
-}
-
 .vertical-top {
   vertical-align: top;
 }

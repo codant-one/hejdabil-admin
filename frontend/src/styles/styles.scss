@@ -597,6 +597,44 @@ body {
   }
 }
 
+.justify-content-center {
+  justify-content: center !important;
+}
+
+// status
+.status-chip {
+  border-radius: 56px;
+  padding: 8px;
+  height: 32px !important;
+  width: fit-content;
+
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.status-chip-pending {
+  border: 1px solid #FAAD14;
+  color: #94430C;
+}
+
+.status-chip-success {
+  border: 1px solid #00EEB0;
+  color: #006D5C;
+}
+
+.status-chip-info {
+  border: 1px solid #1890FF;
+  color: #0F5CBE;
+}
+
+.status-chip-error {
+  border: 1px solid #FF4D4F;
+  color: #9B191B;
+}
+
 .visa-select {
   border-radius: 64px;
   padding-right: 16px;

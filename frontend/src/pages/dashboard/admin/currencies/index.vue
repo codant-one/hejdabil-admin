@@ -385,7 +385,7 @@ const downloadCSV = async () => {
                     {{ currency.state.name }}
                   </VChip>
                 </td> 
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')">      
                   <VMenu>
                     <template #activator="{ props }">

@@ -349,7 +349,7 @@ const downloadCSV = async () => {
                     </div>
                   </div>
                 </td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'models') || $can('delete', 'models')">      
                   <VMenu>
                     <template #activator="{ props }">

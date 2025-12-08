@@ -490,7 +490,7 @@ const sendMails = async () => {
                       @click.prevent="send(billing)"
                     />
                   </td> -->
-                  <!-- 👉 Acciones -->
+                  <!-- 👉 Actions -->
                   <td
                     class="text-center"
                     style="width: 3rem"
@@ -813,7 +813,7 @@ const sendMails = async () => {
                       {{ billing.state.name }}
                     </span>
                   </td>
-                  <!-- 👉 Acciones -->
+                  <!-- 👉 Actions -->
                   <td
                     class="text-center"
                     style="width: 3rem"
@@ -1093,10 +1093,6 @@ const sendMails = async () => {
 <style lang="scss" scope>
 .text-center {
   text-align: center !important;
-}
-
-.justify-content-center {
-  justify-content: center !important;
 }
 
 .v-input--disabled svg rect {

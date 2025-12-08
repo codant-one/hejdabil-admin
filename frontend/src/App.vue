@@ -1,6 +1,5 @@
 <script setup>
 
-import router from "@/router";
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useThemeConfig } from '@core/composable/useThemeConfig'
 import { hexToRgb } from '@layouts/utils'
@@ -22,12 +21,6 @@ const { global } = useTheme()
 // ℹ️ Sync current theme with initial loader theme
 syncInitialLoaderTheme()
 syncConfigThemeWithVuetifyTheme()
-
-const redirectTo = (path) => {
-  router.push({
-    name: path,
-  });
-};
 
 const me = async () => {
 

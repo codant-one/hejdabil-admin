@@ -3,6 +3,7 @@
 import { useThemeConfig } from "@core/composable/useThemeConfig";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
 import navItems from "@/navigation/vertical";
+import router from "@/router";
 
 // Components
 import UserProfile from "@/layouts/components/UserProfile.vue";
@@ -15,6 +16,12 @@ import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
+
+const redirectTo = (path) => {
+  router.push({
+    name: path,
+  });
+};
 
 </script>
 

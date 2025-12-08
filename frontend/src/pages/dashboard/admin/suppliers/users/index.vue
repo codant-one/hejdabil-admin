@@ -331,7 +331,7 @@ const downloadCSV = async () => {
                   <td>
                   {{ user.user.user_detail?.personal_phone ?? '----' }}
                 </td>
-                <!-- 👉 acciones -->
+                <!-- 👉 Actions -->
                 <td style="width: 3rem;">
                   <VMenu>
                     <template #activator="{ props }">

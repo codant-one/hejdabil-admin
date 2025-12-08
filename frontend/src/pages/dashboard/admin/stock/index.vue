@@ -638,7 +638,7 @@ const truncateText = (text, length = 15) => {
                     </div>
                   </div>
                 </td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                   <VMenu>
                     <template #activator="{ props }">
@@ -835,10 +835,6 @@ const truncateText = (text, length = 15) => {
 </template>
 
 <style scope>
-    .justify-content-center {
-      justify-content: center !important;
-    }
-
     .v-input--disabled svg rect {
       fill: #28C76F !important;
     }

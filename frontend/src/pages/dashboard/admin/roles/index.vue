@@ -225,7 +225,7 @@ const downloadCSV = async () => {
                   {{ rol.name }}
                 </td>
 
-                <!-- 👉 acciones -->
+                <!-- 👉 Actions -->
                 <td style="width: 3rem;">
                   <VMenu>
                     <template #activator="{ props }">

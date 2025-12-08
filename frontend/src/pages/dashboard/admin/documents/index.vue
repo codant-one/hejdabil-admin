@@ -617,7 +617,7 @@ const resolveStatus = state => {
                     Ingen signering
                   </VChip>
             </td>
-            <!-- 👉 Acciones -->
+            <!-- 👉 Actions -->
             <td
               class="text-center"
               style="width: 3rem"

@@ -1638,7 +1638,7 @@ const getFlag = (currency_id) => {
                                                     <td> {{ cost.date }} </td>
                                                     <td class="text-wrap"> {{ cost.type }} </td>
                                                     <td class="text-end"> {{ formatNumber(cost.value ?? 0) }} kr</td>
-                                                    <!-- 👉 Acciones -->
+                                                    <!-- 👉 Actions -->
                                                     <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                     <VMenu>
                                                         <template #activator="{ props }">
@@ -1755,7 +1755,7 @@ const getFlag = (currency_id) => {
                                                         }) }} 
                                                     </td>
                                                     <td> {{ document.user.name }} {{ document.user.last_name }}</td>
-                                                    <!-- 👉 Acciones -->
+                                                    <!-- 👉 Actions -->
                                                     <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
                                                         <VMenu>
                                                             <template #activator="{ props }">
@@ -2291,10 +2291,6 @@ const getFlag = (currency_id) => {
     .border-bottom-secondary {
         border-bottom: 1px solid #d9d9d9;
         padding-bottom: 10px;
-    }
-
-    .justify-content-center {
-        justify-content: center !important;
     }
 
     .justify-content-end {

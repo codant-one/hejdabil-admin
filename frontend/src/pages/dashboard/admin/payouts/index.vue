@@ -384,7 +384,7 @@ const openPayoutDialog = () => {
                     </div>
                   </div>
                 </td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')">      
                   <VMenu>
                     <template #activator="{ props }">

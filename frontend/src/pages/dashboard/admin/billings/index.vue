@@ -34,6 +34,8 @@ const selectedTags = ref([]);
 const existingTags = ref([]);
 const isValid = ref(false);
 const selectedBilling = ref({});
+const selectedBillingForAction = ref({});
+const isMobileActionDialogVisible = ref(false);
 
 const supplier_id = ref(null);
 const client_id = ref(null);
@@ -51,9 +53,6 @@ const totalExpired = ref(0);
 const pendingTax = ref(0);
 const paidTax = ref(0);
 const expiredTax = ref(0);
-const bgColor = ref("bg-light-secondary");
-const textColor = ref("text-secondary");
-const classTab = ref("border-bottom-secondary");
 const filtreraMobile = ref(false);
 const isFilterDialogVisible = ref(false);
 
@@ -109,9 +108,6 @@ async function fetchData(cleanFilters = false) {
     supplier_id.value = null;
     client_id.value = null;
     state_id.value = null;
-    bgColor.value = "bg-light-secondary";
-    textColor.value = "text-secondary";
-    classTab.value = "border-bottom-secondary";
   }
 
   let data = {
@@ -206,30 +202,16 @@ const updateStateId = (newStateId) => {
   billingsStores.setStateId(newStateId);
   state_id.value = newStateId;
   filtreraMobile.value = false;
-
-  switch (newStateId) {
-    case 4:
-      bgColor.value = "bg-light-warning";
-      textColor.value = "text-warning";
-      classTab.value = "border-bottom-warning";
-      break;
-    case 7:
-      bgColor.value = "bg-light-info";
-      textColor.value = "text-info";
-      classTab.value = "border-bottom-info";
-      break;
-    case 8:
-      bgColor.value = "bg-light-error";
-      textColor.value = "text-error";
-      classTab.value = "border-bottom-error";
-      break;
-    case null:
-      bgColor.value = "bg-light-secondary";
-      textColor.value = "text-secondary";
-      classTab.value = "border-bottom-secondary";
-      break;
-  }
 };
+
+const resolveStatus = state_id => {
+  if (state_id === 4)
+    return { class: 'pending' }
+  if (state_id === 7)
+    return { class: 'success' }   
+  if (state_id === 8)
+    return { class: 'error' }
+}
 
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false;
@@ -516,7 +498,7 @@ onBeforeUnmount(() => {
         :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
-        <div class="search">
+        <div class="search" style="width: 480px !important">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
@@ -570,7 +552,7 @@ onBeforeUnmount(() => {
 
         <VMenu v-if="!$vuetify.display.mdAndDown">
           <template #activator="{ props }">
-            <VBtn class="btn-white-2" v-bind="props">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
               <VIcon icon="custom-filter" size="24" />
               <span class="d-none d-md-block">Filtrera efter</span>
             </VBtn>
@@ -630,7 +612,7 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
 
-      <VCardText :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'">
+      <VCardText :class="$vuetify.display.mdAndDown ? 'px-6 py-4' : 'pa-4'">
         <div class="d-flex gap-4 billings-pills">
           <div
             v-for="{ title, stateId, tax, value, icon, color, background } in [
@@ -682,9 +664,9 @@ onBeforeUnmount(() => {
             <th scope="col"># Faktura</th>
             <th scope="col">Kund</th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'">Leverantör</th>
-            <th class="text-end" scope="col">Summa</th>
-            <th scope="col">Fakturadatum</th>
-            <th scope="col">Förfaller</th>
+            <th class="text-center" scope="col">Summa</th>
+            <th class="text-center" scope="col">Fakturadatum</th>
+            <th class="text-center" scope="col">Förfaller</th>
             <th class="text-center" scope="col">Status</th>
             <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
@@ -712,16 +694,16 @@ onBeforeUnmount(() => {
                 {{ billing.supplier.user.last_name ?? "" }}
               </span>
             </td>
-            <td class="text-end">
+            <td class="text-center">
               {{ formatNumber(billing.total + billing.amount_discount) ?? "0,00" }} kr
             </td>
-            <td>{{ billing.invoice_date }}</td>
-            <td>{{ billing.due_date }}</td>
+            <td class="text-center">{{ billing.invoice_date }}</td>
+            <td class="text-center">{{ billing.due_date }}</td>
             <!-- 😵 Statuses -->
-            <td class="text-center text-wrap">
+            <td class="text-center text-wrap d-flex justify-center align-center">
               <div
-                :color="billing.state.color"
-                class="billing-chip text-capitalize"
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
               >
                 {{ billing.state.name }}
               </div>
@@ -757,7 +739,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </td>            
-            <!-- 👉 Acciones -->
+            <!-- 👉 Actions -->
             <td
               class="text-center"
               style="width: 3rem"
@@ -829,7 +811,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('delete', 'billings') && billing.state_id === 7"
+                    v-if="$can('delete', 'billings')"
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -925,8 +907,8 @@ onBeforeUnmount(() => {
               <div class="expansion-panel-item-label">Status:</div>
               <div class="expansion-panel-item-value">
                 <div
-                  :color="billing.state.color"
-                  class="billing-chip text-capitalize"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
                 >
                   {{ billing.state.name }}
                 </div>
@@ -938,110 +920,9 @@ onBeforeUnmount(() => {
                 Se detaljer
               </VBtn>
 
-              <VBtn class="btn-light" icon @click="billing.actionDialog = true">
+              <VBtn class="btn-light" icon @click="selectedBillingForAction = billing; isMobileActionDialogVisible = true">
                 <VIcon icon="custom-dots-vertical" size="24" />
               </VBtn>
-              <VDialog
-                v-model="billing.actionDialog"
-                transition="dialog-bottom-transition"
-                content-class="dialog-bottom-full-width"
-              >
-                <VCard>
-                  <VList>
-                    <VListItem
-                      v-if="
-                        $can('edit', 'billings') &&
-                        (billing.state_id === 4 || billing.state_id === 8)
-                      "
-                      @click="
-                        editBilling(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-pencil" size="24" />
-                      </template>
-                      <VListItemTitle>Redigera</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem
-                      v-if="$can('edit', 'billings')"
-                      @click="
-                        printInvoice(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-print" size="24" />
-                      </template>
-                      <VListItemTitle>Skriv ut</VListItemTitle>
-                    </VListItem>
-                    <VListItem
-                      v-if="$can('edit', 'billings')"
-                      @click="
-                        openLink(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-pdf" size="24" />
-                      </template>
-                      <VListItemTitle>Visa som PDF</VListItemTitle>
-                    </VListItem>
-                    <VListItem
-                      v-if="$can('edit', 'billings')"
-                      @click="
-                        duplicate(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-duplicate" size="24" />
-                      </template>
-                      <VListItemTitle>Duplicera</VListItemTitle>
-                    </VListItem>
-                    <VListItem
-                      v-if="$can('edit', 'billings') && billing.state_id === 8"
-                      @click="
-                        sendReminder(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-alarm" size="24" />
-                      </template>
-                      <VListItemTitle>Påminnelse</VListItemTitle>
-                    </VListItem>
-                    <VListItem
-                      v-if="$can('edit', 'billings')"
-                      @click="
-                        send(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-paper-plane" size="24" />
-                      </template>
-                      <VListItemTitle>Skicka</VListItemTitle>
-                    </VListItem>
-
-                    <VListItem
-                      v-if="
-                        $can('delete', 'billings') && billing.state_id === 7
-                      "
-                      @click="
-                        credit(billing);
-                        billing.actionDialog = false;
-                      "
-                    >
-                      <template #prepend>
-                        <VIcon icon="custom-cancel-contract" size="24" />
-                      </template>
-                      <VListItemTitle>Kreditera</VListItemTitle>
-                    </VListItem>
-                  </VList>
-                </VCard>
-              </VDialog>
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
@@ -1122,6 +1003,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Confirm send reminder -->
     <VDialog v-model="isConfirmSendMailReminder" persistent class="v-dialog-sm">
       <!-- Dialog close btn -->
 
@@ -1290,240 +1172,125 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+            v-if="$can('edit', 'billings') &&  (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
+            @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+
+          <VListItem
+            v-if="$can('edit', 'billings')"
+            @click="printInvoice(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-print" size="24" />
+            </template>
+            <VListItemTitle>Skriv ut</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings')"
+            @click="openLink(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-pdf" size="24" />
+            </template>
+            <VListItemTitle>Visa som PDF</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings')"
+            @click="duplicate(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-duplicate" size="24" />
+            </template>
+            <VListItemTitle>Duplicera</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 8"
+            @click="sendReminder(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-alarm" size="24" />
+            </template>
+            <VListItemTitle>Påminnelse</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings')"
+            @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-paper-plane" size="24" />
+            </template>
+            <VListItemTitle>Skicka</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('delete', 'billings')"
+            @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-cancel-contract" size="24" />
+            </template>
+            <VListItemTitle>Kreditera</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
 <style lang="scss" scope>
-.card-fill {
-  flex: 1 1 auto;
-  padding-bottom: 32px;
-}
-
-.border-bottom-secondary {
-  border-bottom: 2px solid #2e0684;
-  padding-bottom: 5px;
-}
-
-.border-bottom-warning {
-  border-bottom: 2px solid #ffc549;
-  padding-bottom: 5px;
-}
-
-.border-bottom-info {
-  border-bottom: 2px solid #28c76f;
-  padding-bottom: 5px;
-}
-
-.border-bottom-error {
-  border-bottom: 2px solid #ea5455;
-  padding-bottom: 5px;
-}
-
-.v-input--disabled svg rect {
-  fill: #28c76f !important;
-}
-
-.v-input--disabled {
-  pointer-events: visible !important;
-  cursor: no-drop !important;
-}
-
-.justify-content-center {
-  justify-content: center !important;
-}
-
-.billing-selector {
-  max-width: 132px;
-  margin-bottom: 0px !important;
-  .v-input__prepend {
-    margin-right: 0px;
-    color: #454545;
-
-    .v-icon {
-      opacity: 1 !important;
-    }
+  .billings-pills > div {
+    flex: 1 1;
   }
 
-  .v-input__control {
-    width: 110px;
-    .v-field {
-      padding-right: 0px;
-
-      .v-field__input {
-        padding-inline-start: 8px;
-        opacity: 1 !important;
-        color: #454545;
-      }
-    }
-    .v-field__append-inner {
-      .v-icon {
-        opacity: 1 !important;
-        color: #454545;
-      }
-    }
-    .v-field__outline {
-      .v-field__outline__start,
-      .v-field__outline__end {
-        border: 0px !important;
-      }
-    }
-  }
-}
-
-.billings-pills > div {
-  flex: 1 1;
-}
-
-.billings-pill {
-  display: flex;
-  align-items: center;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.billings-pill-title {
-  font-family: "Blauer Nue";
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 100%;
-  margin-right: 4px;
-}
-
-.billings-pill-value {
-  font-family: "Blauer Nue";
-  font-weight: 700;
-  font-style: Bold;
-  font-size: 16px;
-  line-height: 100%;
-}
-
-.billing-chip {
-  border-radius: 32px;
-  padding: 8px 16px;
-  border: solid 1px #454545;
-
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 16px;
-  text-align: center;
-  color: #454545;
-}
-
-@media (min-width: 991px) {
-  .card-fill {
-    padding-bottom: 0;
-  }
-}
-
-@media (max-width: 991px) {
-  .card-fill {
-    border-radius: 0 !important;
+  .billings-pill {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-radius: 8px;
   }
 
-  .billings-pills {
-    flex-direction: column;
-    .border-bottom-secondary {
-      border-bottom: 2px solid #2e0684;
-      padding-bottom: 5px;
-    }
+  .billings-pill-title {
+    font-family: "Blauer Nue";
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    margin-right: 4px;
+  }
 
-    .border-bottom-warning {
-      border-bottom: 2px solid #ffc549;
-      padding-bottom: 5px;
-    }
+  .billings-pill-value {
+    font-family: "Blauer Nue";
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 16px;
+    line-height: 100%;
+  }
 
-    .border-bottom-info {
-      border-bottom: 2px solid #28c76f;
-      padding-bottom: 5px;
-    }
-
-    .border-bottom-error {
-      border-bottom: 2px solid #ea5455;
-      padding-bottom: 5px;
-    }
-
-    .v-input--disabled svg rect {
-      fill: #28c76f !important;
-    }
-
-    .v-input--disabled {
-      pointer-events: visible !important;
-      cursor: no-drop !important;
-    }
-
-    .justify-content-center {
-      justify-content: center !important;
-    }
-
-    .billings-pills > div {
-      flex: 1 1;
+  @media (max-width: 991px) {
+    .billings-pills {
+      flex-direction: column;
+      gap: 8px;
     }
 
     .billings-pill {
-      display: flex;
-      align-items: center;
-      padding: 16px;
-      border-radius: 8px;
-    }
-
-    .billings-pill-title {
-      font-family: "Blauer Nue";
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 100%;
-      margin-right: 4px;
-    }
-
-    .billings-pill-value {
-      font-family: "Blauer Nue";
-      font-weight: 700;
-      font-style: Bold;
-      font-size: 16px;
-      line-height: 100%;
-    }
-
-    .billing-chip {
-      border-radius: 32px;
       padding: 8px 16px;
-      border: solid 1px #454545;
-
-      font-weight: 400;
-      font-size: 14px;
-      line-height: 16px;
-      text-align: center;
-      color: #454545;
     }
 
-    @media (max-width: 991px) {
-      .billings-pills {
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .billings-pill {
-        padding: 8px 16px;
-      }
-
-      .order-title-box .title-panel {
-        font-weight: 400;
-        font-size: 14px;
-        line-height: 16px;
-        color: #6e9383;
-      }
-
-      .billing-chip {
-        width: fit-content;
-        border-radius: 32px;
-        padding-top: 8px;
-        padding-right: 16px;
-        padding-bottom: 8px;
-        padding-left: 16px;
-
-        font-weight: 400;
-        font-size: 14px;
-        line-height: 16px;
-        text-align: center;
-      }
+    .title-panel {
+      color: #6E9383 !important;
     }
 
     .v-checkbox-btn .v-selection-control__input .v-icon.iconify--custom {
@@ -1533,7 +1300,6 @@ onBeforeUnmount(() => {
       color: #454545 !important;
     }
   }
-}
 </style>
 
 <route lang="yaml">

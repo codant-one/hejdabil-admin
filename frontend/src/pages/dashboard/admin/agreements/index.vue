@@ -731,7 +731,7 @@ const goToTracker = (agreementData) => {
                 {{ agreement.token?.signature_status ?? 'pending' }}
               </VChip>
             </td>
-            <!-- 👉 Acciones -->
+            <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
               <VMenu>
                 <template #activator="{ props }">
