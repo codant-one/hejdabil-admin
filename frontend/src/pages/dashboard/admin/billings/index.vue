@@ -198,8 +198,14 @@ const editBilling = (billingData) => {
 };
 
 const updateStateId = (newStateId) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (state_id.value === newStateId) {
+    newStateId = null;
+  }
+
   billingsStores.setStateId(newStateId);
   state_id.value = newStateId;
+  filtreraMobile.value = false;
 
   switch (newStateId) {
     case 4:
@@ -570,10 +576,11 @@ onBeforeUnmount(() => {
             </VBtn>
           </template>
           <VList>
-            <VListItem>
+            <VListItem @click="updateStateId(7)">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
+                    :model-value="state_id === 7"
                     class="ml-3"
                     true-icon="custom-checked-checkbox"
                     false-icon="custom-unchecked-checkbox"
@@ -582,10 +589,11 @@ onBeforeUnmount(() => {
               <VListItemTitle>Betalda</VListItemTitle>
             </VListItem>
 
-            <VListItem>
+            <VListItem @click="updateStateId(4)">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
+                    :model-value="state_id === 4"
                     class="ml-3"
                     true-icon="custom-checked-checkbox"
                     false-icon="custom-unchecked-checkbox"
@@ -594,10 +602,11 @@ onBeforeUnmount(() => {
               <VListItemTitle>Obetalda</VListItemTitle>
             </VListItem>
 
-            <VListItem>
+            <VListItem @click="updateStateId(8)">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
+                    :model-value="state_id === 8"
                     class="ml-3"
                     true-icon="custom-checked-checkbox"
                     false-icon="custom-unchecked-checkbox"
@@ -627,21 +636,21 @@ onBeforeUnmount(() => {
             v-for="{ title, stateId, tax, value, icon, color, background } in [
               {
                 title: 'Netto',
-                value: formatNumberInteger(sum ?? '0,00') + ' kr',
+                value: formatNumberInteger(totalNeto ?? '0,00') + ' kr',
                 icon: 'custom-coins',
                 color: '#0C5B27',
                 background: '#D8FFE4',
               },
               {
                 title: 'Moms',
-                value: formatNumberInteger(totalPending ?? '0,00') + ' kr',
+                value: formatNumberInteger(totalTax ?? '0,00') + ' kr',
                 icon: 'custom-buy-cash',
                 color: '#00624E',
                 background: '#C6FFEB',
               },
               {
                 title: 'Summa',
-                value: formatNumberInteger(totalPaid ?? '0,00') + ' kr',
+                value: formatNumberInteger(totalSum ?? '0,00') + ' kr',
                 icon: 'custom-money-transfer',
                 color: '#04585D',
                 background: '#C0FEFF',
@@ -1191,10 +1200,11 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <VList>
-          <VListItem>
+          <VListItem @click="updateStateId(7)">
             <template #prepend>
               <VListItemAction>
                 <VCheckbox
+                  :model-value="state_id === 7"
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
               /></VListItemAction>
@@ -1202,10 +1212,11 @@ onBeforeUnmount(() => {
             <VListItemTitle>Betalda</VListItemTitle>
           </VListItem>
 
-          <VListItem>
+          <VListItem @click="updateStateId(4)">
             <template #prepend>
               <VListItemAction>
                 <VCheckbox
+                 :model-value="state_id === 4"
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
               /></VListItemAction>
@@ -1213,10 +1224,11 @@ onBeforeUnmount(() => {
             <VListItemTitle>Obetalda</VListItemTitle>
           </VListItem>
 
-          <VListItem>
+          <VListItem @click="updateStateId(8)">
             <template #prepend>
               <VListItemAction>
                 <VCheckbox
+                  :model-value="state_id === 8"
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
               /></VListItemAction>
