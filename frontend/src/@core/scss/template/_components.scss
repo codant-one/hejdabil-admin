@@ -601,6 +601,7 @@ body .v-btn {
   .v-label {
     // We adjusted it to vertically align the label
     line-height: 21px;
+    margin-left: 6px;
   }
 
   .v-input__details {
@@ -1395,6 +1396,11 @@ body {
       --v-field-border-width: 1px !important;
     }
 
+    // Height and density for combobox
+    .v-combobox {
+      --v-input-control-height: 48px !important;
+    }
+
     // Label
     // .v-input {
     //   line-height: 22px !important;
@@ -1503,6 +1509,61 @@ body {
   @include style-selectable-component("autocomplete");
   @include style-selectable-component("select");
   @include style-selectable-component("combobox");
+
+  // Combobox specific styles
+  .v-combobox {
+    &.v-input--density-compact {
+      --v-input-control-height: 48px !important;
+    }
+
+    .v-input__control {
+      .v-field {
+        height: 48px;
+        border-radius: 8px;
+        background-color: #f6f6f6;
+        border: solid 1px #e7e7e7;
+        
+        .v-field__field {
+          align-items: center;
+          top: 4px;
+        }
+
+        .v-field__input {
+          height: 48px;
+          min-height: 48px;
+          padding: 4px 12px 12px 12px;
+          color: #454545;
+          font-size: 14px;
+          font-weight: 400;
+        }
+
+        .v-field__outline {
+          color: #454545 !important;
+          border-color: #e7e7e7 !important;
+        }
+      }
+    }
+
+    // Chips in combobox
+    &.v-combobox--chips {
+      .v-field__input {
+        gap: 8px;
+        
+        .v-chip {
+          height: 32px;
+          border-radius: 16px;
+          background-color: #fff;
+          border: 1px solid #e7e7e7;
+          
+          .v-chip__content {
+            color: #454545;
+            font-size: 14px;
+            font-weight: 400;
+          }
+        }
+      }
+    }
+  }
 
   // AutoComplete
   @at-root {

@@ -16,6 +16,9 @@ use App\Models\Billing;
 use App\Models\Supplier;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\UserDetails;
+use App\Models\User;
+use App\Models\Config;
 
 class BillingController extends Controller
 {
@@ -354,11 +357,54 @@ class BillingController extends Controller
     {
         try {
 
-            $billing = Billing::with(['client', 'supplier.user'])->find($id);
+            $billing = Billing::with(['client', 'supplier.user.userDetail'])->find($id);
             $billing->is_sent = 1;
             $billing->save();
 
+            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+                $user = UserDetails::with(['user'])->find(Auth::user()->id);
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+            } else if (Auth::user()->getRoleNames()[0] === 'User') {
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+            } else { //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                
+                // Extraer el "value" soportando array u object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+            }
+
             $data = [
+                'company' => $company,
                 'user' => $billing->client->fullname,
                 'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
                 'billing' => $billing,

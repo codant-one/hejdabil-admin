@@ -34,13 +34,13 @@
                         </p>
                         <br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Företagsnamn:</strong> {!! $billing->supplier->company !!}
+                            <strong>Företagsnamn:</strong> {!! $company->company !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Org.nr.</strong> {!! $billing->supplier->organization_number !!}
+                            <strong>Org.nr.</strong> {!! $company->organization_number !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>E-post:</strong> {!! $billing->supplier->user->email !!}
+                            <strong>E-post:</strong> {!! $company->email !!}
                         </p><br>
                     </td>
                 </tr>

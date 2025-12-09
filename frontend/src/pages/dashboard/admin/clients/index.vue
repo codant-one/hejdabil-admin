@@ -787,9 +787,6 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          <!-- Är du säker att du vill ta bort klienten
-          <strong>{{ selectedClient.fullname }}</strong
-          >? -->
           Du är på väg att permanent radera "{{ selectedClient.fullname }}". All
           associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>

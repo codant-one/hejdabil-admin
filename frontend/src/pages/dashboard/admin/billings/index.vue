@@ -953,17 +953,29 @@ onBeforeUnmount(() => {
     </VCard>
 
     <!-- 👉 Confirm send -->
-    <VDialog v-model="isConfirmSendMailVisible" persistent class="v-dialog-sm">
+    <VDialog 
+      v-model="isConfirmSendMailVisible" 
+      persistent 
+      class="action-dialog">
       <!-- Dialog close btn -->
 
-      <DialogCloseBtn
+      <VBtn
+        icon
+        class="btn-white close-btn"
         @click="isConfirmSendMailVisible = !isConfirmSendMailVisible"
-      />
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Skicka fakturan via e-post">
-        <VDivider class="mt-4" />
-        <VCardText>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+          <div class="dialog-title">
+            Skicka fakturan via e-post
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           Är du säker på att du vill skicka fakturor till följande
           e-postadresser?
         </VCardText>
@@ -971,8 +983,9 @@ onBeforeUnmount(() => {
           <VCheckbox
             v-model="emailDefault"
             :label="selectedBilling.client.email"
+            class="ml-2"
           />
-
+          
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -990,15 +1003,11 @@ onBeforeUnmount(() => {
           >
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmSendMailVisible = false"
-          >
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
             Avbryt
           </VBtn>
-          <VBtn @click="sendMails"> Skicka </VBtn>
+          <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
