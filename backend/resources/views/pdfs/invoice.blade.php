@@ -8,6 +8,14 @@
     <style>
 
         @font-face {
+            font-family: 'DM Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: url({{ storage_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
+            font-display: swap;
+        }
+
+        @font-face {
             font-family: 'Gelion Regular';
             font-style: normal;
             font-weight: 400;
@@ -16,21 +24,18 @@
         }
 
         body {
-            background-color:#FFFFFF;
+            font-family: 'DM Sans', Arial, sans-serif !important;
+            background-color: #FFFFFF;
             padding: 0;
             margin: 0;
-            font-family: 'Gelion Regular', Arial, sans-serif !important;
             color: #33303CAD;
-            line-height: 1.5;
         }
 
         table {
-            border-radius: 6px !important;
+            border-radius: 16px !important;
             border-spacing: unset;
             font-size: 0.8rem;
             font-weight: 400;
-            letter-spacing: normal;
-            text-transform: none;
         }
 
         table thead {
@@ -38,15 +43,25 @@
         }
 
         .invoice-background {
-            background-color: #F2EFFF;
+            background-color: #F6F6F6;
+        }
+
+        .table-background-top {
+            border-bottom-left-radius: 0 !important;
+            border-bottom-right-radius: 0 !important;
+        }
+
+        .table-background-bottom {
+            border-top-left-radius: 0 !important;
+            border-top-right-radius: 0 !important;
         }
 
         .invoice-background td:first-child {
-            border-top-left-radius: 6px !important;
+            border-top-left-radius: 8px !important;
         }
 
         .invoice-background td:last-child {
-            border-top-right-radius: 6px !important;
+            border-top-right-radius: 8px !important;
         }
 
         .data-from {
@@ -82,10 +97,13 @@
         }
 
         .faktura {
-            font-size: 24px;
-            color: #57F287;
-            border-top: 2px solid #57F287;
-            border-bottom: 2px solid #57F287;
+            font-size: 32px;
+            font-weight: 600;
+            color: #454545;
+            border-top: 2px solid #454545;
+            border-bottom: 2px solid #454545;
+            padding: 4px 0;
+            display: inline-block;
         }
 
         .table-main {
@@ -108,8 +126,9 @@
         }
 
         .table-items {
+            font-family: 'Gelion Regular', Arial, sans-serif !important;
             margin-top: 10px;
-            border-radius: 6px !important;
+            border-radius: 8px !important;
             border-width: thin !important;
             border-style: solid !important;
             border-color: rgba(47,43,61, 0.16) !important;
@@ -145,6 +164,10 @@
             width: auto;
         }
 
+        .table-supplier {
+            font-family: 'Gelion Regular', Arial, sans-serif !important;
+        }
+
         .table-supplier td {
             vertical-align: top;
         }
@@ -154,7 +177,7 @@
             <tbody>
                 <tr>
                     <td>
-                        <table width="100%" class="invoice-background">
+                        <table width="100%" class="invoice-background table-background-top">
                             <tr>
                                 <td width="35%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
@@ -166,17 +189,19 @@
                                     </div>
                                 </td>
                                 <td width="65%" class="data-from pb-0">
-                                    <span class="m-0 faktura" style="display: flex; max-width: 250px; width: fit-content; margin-left: auto;">
-                                        {{ 
-                                            $billing->state_id === 9 ? 
-                                            'KREDIT FAKTURA' : 
-                                            ( 
-                                                $billing->payment_terms === '0 dagar netto' ?
-                                                'KONTANT FAKTURA' :
-                                                'FAKTURA'
-                                            )
-                                        }}
-                                    </span>
+                                    <div style="text-align: right;">
+                                        <span class="m-0 faktura">
+                                            {{ 
+                                                $billing->state_id === 9 ? 
+                                                'KREDIT FAKTURA' : 
+                                                ( 
+                                                    $billing->payment_terms === '0 dagar netto' ?
+                                                    'KONTANT FAKTURA' :
+                                                    'FAKTURA'
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
                                     <h3 class="m-0 mt-10" style="text-align: right;">
                                         {{$billing->client->fullname}}
                                     </h3> 
@@ -189,7 +214,7 @@
                                 </td>
                             </tr>
                         </table>
-                        <table width="100%" class="invoice-background">
+                        <table width="100%" class="invoice-background table-background-bottom">
                             <tr>
                                 <td width="65%" class="data-from pt-8">
                                     <table width="100%" class="invoice-background">

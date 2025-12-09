@@ -124,6 +124,7 @@ class BillingController extends Controller
                                 $query->withTrashed();
                             }]);
                     },
+                    'supplier.user.userDetail',
                     'client' => function($query) {
                         $query->withTrashed();
                     }, 

@@ -72,6 +72,7 @@ const emit = defineEmits([
   "discount",
 ]);
 
+const { width: windowWidth } = useWindowSize();
 const route = useRoute();
 
 const clients = ref(props.clients);
@@ -81,7 +82,7 @@ const company = ref(props.company);
 const subtotal = ref(props.total);
 const total = ref("0.00");
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
-const selectedTax = ref(0);
+const selectedTax = ref('0');
 const selectedDiscount = ref(0);
 const selectedDiscountTemp = ref(0);
 const discountOptions = ref([0, 20, 30, 50]);
@@ -441,11 +442,11 @@ const handleBlur = (element) => {
   <VCard
     class="pa-0"
     v-if="invoice.details.length > 0"
-    :class="$vuetify.display.smAndDown ? 'rounded-0 bg-none' : ''"
+    :class="windowWidth < 1024 ? 'rounded-0 bg-none' : ''"
   >
     <VCardTitle
       class="d-flex justify-space-between bg-white"
-      :class="$vuetify.display.smAndDown ? 'pa-6 pb-0 fix-header' : 'pa-4'"
+      :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0 fix-header' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
         <h2>Skapa fakturan</h2>
@@ -455,17 +456,18 @@ const handleBlur = (element) => {
         grow
         :show-arrows="false"
         class="mt-6 equal-tabs"
+        :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
       >
         <VTab value="redigera">Redigera</VTab>
         <VTab value="forhandsgranska">Förhandsgranska</VTab>
       </VTabs>
     </VCardTitle>
 
-    <VDivider :class="$vuetify.display.smAndDown ? 'd-none' : 'mt-2 mx-4'" />
+    <VDivider :class="windowWidth < 1024 ? 'd-none' : 'mt-2 mx-4'" />
 
     <section
       class="invoice-panel border rounded-lg pa-4"
-      v-if="!$vuetify.display.smAndDown"
+      v-if="windowWidth >= 1024"
     >
       <VCardText class="d-flex invoice-box">
         <div class="w-100 w-md-50">
@@ -661,7 +663,7 @@ const handleBlur = (element) => {
         </div>
       </VCardText>
 
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
+      <VDivider :class="windowWidth < 1024 ? 'm-0' : 'my-6 mx-0'" />
 
       <!-- <InvoiceProductEdit
             v-else
@@ -861,8 +863,7 @@ const handleBlur = (element) => {
         </div>
       </VCardText>
 
-      <!-- <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" /> -->
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
+      <VDivider :class="windowWidth < 1024 ? 'm-0' : 'my-6 mx-0'" />
 
       <!-- 👉 Total Amount -->
       <VCardText
@@ -943,7 +944,7 @@ const handleBlur = (element) => {
         </div>
       </VCardText>
 
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'my-6 mx-0'" />
+      <VDivider :class="windowWidth < 1024 ? 'm-0' : 'my-6 mx-0'" />
 
       <VCardText class="mb-sm-4 p-0 text-black">
         <VRow>
@@ -1035,7 +1036,7 @@ const handleBlur = (element) => {
       </VCardText>
     </section>
 
-    <section v-if="$vuetify.display.smAndDown" class="margin-top-fill">
+    <section v-if="windowWidth < 1024" class="margin-top-fill">
       <VCardText class="pa-0">
         <VWindow
           v-model="controlledTab"
@@ -1058,7 +1059,6 @@ const handleBlur = (element) => {
                       v-model="invoice.id"
                       disabled
                       prefix="#"
-                      style="inline-size: 10.5rem"
                     />
                   </div>
                 </span>
@@ -1575,7 +1575,7 @@ const handleBlur = (element) => {
             <img
               :src="sampleFaktura"
               class="w-100"
-              v-if="$vuetify.display.smAndDown"
+              v-if="windowWidth < 1024"
             />
           </VWindowItem>
         </VWindow>
@@ -1780,9 +1780,6 @@ const handleBlur = (element) => {
   background-color: #f6f6f6;
 }
 
-.invoice-logo-box {
-}
-
 .faktura {
   max-width: 190px;
   padding: 1px 24px;
@@ -1811,10 +1808,12 @@ const handleBlur = (element) => {
 }
 </style>
 <style lang="css">
-.fix-header {
-  position: fixed;
-  z-index: 1;
-  width: 100%;
+@media (max-width: 1024px) {
+  .fix-header {
+    position: fixed;
+    z-index: 1;
+    width: 100%;
+  }
 }
 .margin-top-fill {
   margin-top: 125px;

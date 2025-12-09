@@ -165,7 +165,7 @@ const download = async () => {
     <!-- <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
       {{ advisor.message }}
     </VAlert> -->
-    <VRow v-if="invoice" class="row-fill">
+    <VRow v-if="invoice" class="card-fill">
       <VCol
         cols="12"
         md="8"
@@ -786,12 +786,6 @@ const download = async () => {
 </style>
 
 <style lang="scss">
-.row-fill {
-  @media (max-width: 768px) {
-    padding-bottom: 60px;
-    margin: 0px;
-  }
-}
 .draggable-item {
   margin-top: 5px;
   display: flex;
@@ -861,7 +855,7 @@ const download = async () => {
 }
 
 .invoice-background {
-  background-color: #f2efff;
+  background-color: #F6F6F6;
 }
 
 .border-divider {
@@ -881,7 +875,7 @@ const download = async () => {
   .invoice-background {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    background-color: #f2efff !important;
+    background-color: #F6F6F6 !important;
   }
 
   .print-column {

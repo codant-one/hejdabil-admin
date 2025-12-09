@@ -692,7 +692,8 @@ body {
 @media (min-width: 1024px) {
   .card-fill {
     border-radius: 16px !important;
-    padding-bottom: 0;
+    padding-bottom: 0 !important;
+    margin-bottom: 24px;
   }
 
   .page-section {
