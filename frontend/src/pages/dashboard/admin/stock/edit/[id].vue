@@ -12,6 +12,8 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
+import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { useToastsStores } from '@/stores/useToasts'
 
 const ability = useAppAbility()
 const authStores = useAuthStores()
@@ -20,6 +22,8 @@ const tasksStores = useTasksStores()
 const costsStores = useCostsStores()
 const documentsStores = useDocumentsStores()
 const configsStores = useConfigsStores()
+const companyInfoStores = useCompanyInfoStores()
+const toastsStores = useToastsStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
@@ -786,6 +790,42 @@ const removeDocument = async (document) => {
     return true
 }
 
+const searchCompany = async () => {
+    if (!organization_number.value) return
+
+    try {
+        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+        
+        if (response) {
+             // Set Client Type to Företag
+            const foretagType = client_types.value.find(t => t.name === 'Företag')
+            if (foretagType) {
+                client_type_id.value = foretagType.id
+            }
+
+            // Set Name
+            if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+                fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+            } else {
+                fullname.value = ''
+            }
+
+            // Set Postal Code
+            if (response.postadressOrganisation?.postadress?.postnummer) {
+                postal_code.value = response.postadressOrganisation.postadress.postnummer
+            } else {
+                postal_code.value = ''
+            }
+        }
+
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Ingen företag hittades med det registreringsnumret',
+            type: 'error'
+        })
+    }
+}
+
 const selectCl = client => {
     if (client) {
         let _client = clients.value.find(item => item.id === client)
@@ -1274,6 +1314,8 @@ const getFlag = (currency_id) => {
                                                             variant="tonal"
                                                             color="primary"
                                                             size="x-small"
+                                                            @click="searchCompany"
+                                                            :loading="companyInfoStores.loading"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">

@@ -42,7 +42,8 @@ use App\Http\Controllers\{
 
 use App\Http\Controllers\Services\{
     CarInfoController,
-    SwishPayoutController
+    SwishPayoutController,
+    CompanyInfoController,
 };
 
 /*
@@ -227,3 +228,6 @@ Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLi
 
 //Swish Payout
 Route::post('/swish/payout/callback', [SwishPayoutController::class, 'handle']);
+
+// COMPANY INFO (Bolagsverket)
+Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'lookupByOrgNumber']);
