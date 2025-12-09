@@ -753,6 +753,15 @@ onBeforeUnmount(() => {
                 </template>
                 <VList>
                   <VListItem
+                    v-if="$can('view', 'billings')"
+                    @click="showBilling(billing)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Se detaljer</VListItemTitle>
+                  </VListItem>
+                  <VListItem
                     v-if="$can('edit', 'billings') && billing.state_id === 4"
                     @click="updateBilling(billing)"
                   >

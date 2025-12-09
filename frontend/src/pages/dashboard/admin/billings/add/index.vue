@@ -432,18 +432,17 @@ onBeforeRouteLeave((to, from, next) => {
           <VIcon size="72" icon="custom-f-create-order" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Fakturan har skapats!</div>
+          <div class="dialog-title">Fakturan är skapad!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din nya faktura har sparats som ett utkast. Nu kan du skicka den till
-          din kund.
+          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
           <VBtn class="btn-light" @click="createBilling">
             Gå till fakturalistan
           </VBtn>
-          <VBtn class="btn-gradient" @click="reloadPage"> Skapa en ny faktura </VBtn>
+          <VBtn class="btn-gradient" @click="reloadPage"> Skapa ny faktura </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -465,11 +464,10 @@ onBeforeRouteLeave((to, from, next) => {
           <VIcon size="72" icon="custom-f-cancel" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Kunde inte skapa fakturan</div>
+          <div class="dialog-title">Fakturan kunde inte skapas</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt
-          ifyllda och försök igen.
+          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
@@ -498,7 +496,7 @@ onBeforeRouteLeave((to, from, next) => {
           <div class="dialog-title">Du har osparade ändringar</div>
         </VCardText>
         <VCardText class="dialog-text">
-          Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
+          Om du lämnar sidan nu kommer dina ändringar inte att sparas.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
