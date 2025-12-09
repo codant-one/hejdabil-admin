@@ -20,15 +20,6 @@ const payoutsStores = usePayoutsStores()
 const payout = ref(null)
 const isLoading = ref(false)
 const isSaving = ref(false)
-const selectedStatus = ref(null)
-
-const statusOptions = [
-  { title: 'Created', value: 'CREATED' },
-  { title: 'Debited', value: 'DEBITED' },
-  { title: 'Paid', value: 'PAID' },
-  { title: 'Error', value: 'ERROR' },
-  { title: 'Cancelled', value: 'CANCELLED' }
-]
 
 const statusColors = {
   'CREATED': 'info',
@@ -50,34 +41,10 @@ const fetchPayout = async () => {
     isLoading.value = true
     const data = await payoutsStores.showPayout(props.payoutId)
     payout.value = data
-    selectedStatus.value = data.status
   } catch (error) {
     console.error('Error fetching payout:', error)
   } finally {
     isLoading.value = false
-  }
-}
-
-const updateStatus = async () => {
-  if (!payout.value || selectedStatus.value === payout.value.status) return
-  
-  try {
-    isSaving.value = true
-    const response = await payoutsStores.updatePayout(payout.value.id, {
-      status: selectedStatus.value
-    })
-    
-    if (response.data.success) {
-      payout.value = response.data.data.payout
-      // Emitir evento para refrescar la lista
-      emit('payoutUpdated', payout.value)
-    }
-  } catch (error) {
-    console.error('Error updating payout:', error)
-    // Revertir el estado en caso de error
-    selectedStatus.value = payout.value.status
-  } finally {
-    isSaving.value = false
   }
 }
 
@@ -127,7 +94,7 @@ const closeDialog = () => {
                 Allmän Information
               </VCardTitle>
               <VDivider />
-              <VCardText>
+             <VCardText class="pa-3">
                 <VList density="compact">
                   <VListItem>
                     <VListItemTitle class="font-weight-medium text-body-2">
@@ -179,28 +146,17 @@ const closeDialog = () => {
                       Status
                     </VListItemTitle>
                     <VListItemSubtitle>
-                      <VSelect
-                        v-model="selectedStatus"
-                        :items="statusOptions"
-                        density="compact"
-                        variant="outlined"
-                        hide-details
-                        :disabled="isSaving"
-                        class="mt-2"
-                        style="max-width: 200px;"
-                      />
+                      {{ payout.state.name }}
                     </VListItemSubtitle>
                   </VListItem>
 
-                  <VListItem v-if="selectedStatus !== payout.status">
-                    <VBtn
-                      color="primary"
-                      size="small"
-                      :loading="isSaving"
-                      @click="updateStatus"
-                    >
-                      Spara Status
-                    </VBtn>
+                   <VListItem>
+                    <VListItemTitle class="font-weight-medium text-body-2">
+                      Meddelande
+                    </VListItemTitle>
+                    <VListItemSubtitle>
+                      {{ payout.message || 'N/A' }}
+                    </VListItemSubtitle>
                   </VListItem>
                 </VList>
               </VCardText>
@@ -214,7 +170,7 @@ const closeDialog = () => {
                 Swish Detaljer
               </VCardTitle>
               <VDivider />
-              <VCardText>
+              <VCardText class="pa-3">
                 <VList density="compact">
                   <VListItem>
                     <VListItemTitle class="font-weight-medium text-body-2">
@@ -269,17 +225,7 @@ const closeDialog = () => {
                       {{ payout.instruction_date || 'N/A' }}
                     </VListItemSubtitle>
                   </VListItem>
-
-                  <VListItem>
-                    <VListItemTitle class="font-weight-medium text-body-2">
-                      Callback URL
-                    </VListItemTitle>
-                    <VListItemSubtitle class="text-body-2 text-truncate">
-                      {{ payout.callback_url || 'N/A' }}
-                    </VListItemSubtitle>
-                  </VListItem>
-
-                  <VListItem v-if="payout.location_url">
+                  <VListItem class="d-none">
                     <VListItemTitle class="font-weight-medium text-body-2">
                       Location URL
                     </VListItemTitle>
@@ -289,156 +235,12 @@ const closeDialog = () => {
                       </a>
                     </VListItemSubtitle>
                   </VListItem>
-                </VList>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Información del Usuario Creador -->
-          <VCol cols="12" md="6" v-if="payout.user">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Skapad Av
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <div class="d-flex align-center gap-4">
-                  <VAvatar
-                    :variant="payout.user.avatar ? 'outlined' : 'tonal'"
-                    size="50"
-                  >
-                    <VImg
-                      v-if="payout.user.avatar"
-                      :src="themeConfig.settings.urlStorage + payout.user.avatar"
-                    />
-                    <span v-else>{{ avatarText(payout.user.name) }}</span>
-                  </VAvatar>
-                  <div>
-                    <div class="font-weight-medium">
-                      {{ payout.user.name }} {{ payout.user.last_name || '' }}
-                    </div>
-                    <div class="text-sm text-disabled">
-                      {{ payout.user.email }}
-                    </div>
-                  </div>
-                </div>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Fechas -->
-          <VCol cols="12" md="6">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Tidsstämplar
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <VList density="compact">
-                  <VListItem>
-                    <VListItemTitle class="font-weight-medium text-body-2">
-                      Skapad
-                    </VListItemTitle>
-                    <VListItemSubtitle class="text-body-2">
-                      {{ payout.created_at }}
-                    </VListItemSubtitle>
-                  </VListItem>
-
-                  <VListItem>
-                    <VListItemTitle class="font-weight-medium text-body-2">
-                      Uppdaterad
-                    </VListItemTitle>
-                    <VListItemSubtitle class="text-body-2">
-                      {{ payout.updated_at }}
-                    </VListItemSubtitle>
-                  </VListItem>
-                </VList>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Mensaje -->
-          <VCol cols="12" v-if="payout.message">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Meddelande
-              </VCardTitle>
-              <VDivider />
-              <VCardText class="text-body-2">
-                {{ payout.message }}
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Error Message -->
-          <VCol cols="12" v-if="payout.error_message">
-            <VCard variant="outlined" color="error">
-              <VCardTitle class="text-subtitle-1 py-3 text-error">
-                <VIcon icon="tabler-alert-circle" class="me-2" />
-                Fel Meddelande
-                <VChip v-if="payout.error_code" size="small" color="error" class="ms-2">
-                  {{ payout.error_code }}
-                </VChip>
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <VAlert type="error" variant="tonal" density="compact">
-                  {{ payout.error_message }}
-                </VAlert>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Request Payload JSON -->
-          <VCol cols="12" md="6" v-if="payout.request_payload">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Request Payload
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <pre class="text-xs overflow-auto" style="max-height: 300px;">{{ JSON.stringify(payout.request_payload, null, 2) }}</pre>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Response Data JSON -->
-          <VCol cols="12" md="6" v-if="payout.response_data">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Response Data
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <pre class="text-xs overflow-auto" style="max-height: 300px;">{{ JSON.stringify(payout.response_data, null, 2) }}</pre>
-              </VCardText>
-            </VCard>
-          </VCol>
-
-          <!-- Signature Info -->
-          <VCol cols="12" v-if="payout.signature || payout.signing_certificate_serial_number">
-            <VCard variant="outlined">
-              <VCardTitle class="text-subtitle-1 py-3">
-                Signatur Information
-              </VCardTitle>
-              <VDivider />
-              <VCardText>
-                <VList density="compact">
-                  <VListItem v-if="payout.signing_certificate_serial_number">
+                    <VListItem v-if="payout.signing_certificate_serial_number">
                     <VListItemTitle class="font-weight-medium text-body-2">
                       Certificate Serial Number
                     </VListItemTitle>
                     <VListItemSubtitle class="text-body-2">
                       {{ payout.signing_certificate_serial_number }}
-                    </VListItemSubtitle>
-                  </VListItem>
-
-                  <VListItem v-if="payout.signature">
-                    <VListItemTitle class="font-weight-medium text-body-2">
-                      Signature (Base64)
-                    </VListItemTitle>
-                    <VListItemSubtitle class="text-xs text-truncate">
-                      {{ payout.signature }}
                     </VListItemSubtitle>
                   </VListItem>
                 </VList>
@@ -455,6 +257,7 @@ const closeDialog = () => {
         <VBtn
           color="secondary"
           variant="outlined"
+          class="mt-3"
           @click="closeDialog"
         >
           Stäng
@@ -465,12 +268,12 @@ const closeDialog = () => {
 </template>
 
 <style scoped>
-pre {
-  background-color: rgba(var(--v-theme-on-surface), 0.05);
-  padding: 0.75rem;
-  border-radius: 4px;
-  overflow-x: auto;
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
+  pre {
+    background-color: rgba(var(--v-theme-on-surface), 0.05);
+    padding: 0.75rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
 </style>

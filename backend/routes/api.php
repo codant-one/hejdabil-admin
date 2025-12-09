@@ -149,6 +149,9 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('supplier/deleteuser/{id}', [SupplierController::class, 'deleteRelatedUser']);
         Route::post('supplier/updateuser/{id}', [SupplierController::class, 'updateRelatedUser']);
         Route::post('supplier/permissions/{id}', [SupplierController::class, 'permissionsRelatedUser']);
+        Route::post('/swish/{id}', [SupplierController::class, 'swish']);
+        Route::post('/master-password/{id}', [SupplierController::class, 'masterPassword']);
+        Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
     });
 
     //Tasks
@@ -198,9 +201,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
     Route::post('featured/{slug}/logo', [ConfigController::class, 'featured_logo_update']);
     Route::post('featured/{slug}/signature', [ConfigController::class, 'featured_signature_update']); 
-
-    //Swish Payout
-    Route::post('/swish/payout', [SwishPayoutController::class, 'store']);
 });
 
 //Public Endpoints

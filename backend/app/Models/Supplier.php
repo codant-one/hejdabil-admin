@@ -177,6 +177,23 @@ class Supplier extends Model
         $user->assignRole('Supplier');
     }
 
+    public static function swish($request, $id) {
+        $supplier = self::where('id', $id)->first();
+        $supplier->is_payout = $request->is_payout;
+        $supplier->payout_number = $request->payout_number;
+        $supplier->save();
+
+        return $supplier;
+    }
+
+    public static function masterPassword($request, $id) {
+        $supplier = self::where('id', $id)->first();
+        $supplier->master_password = $request->master_password;
+        $supplier->save();
+
+        return $supplier;
+    }  
+
     public static function createUserRelatedToSupplier($request) {
         $user = User::createUser($request);
         $user->assignRole('User');

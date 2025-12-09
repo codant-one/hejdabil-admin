@@ -71,6 +71,12 @@ class Payout extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
+        if ($filters->get('user_id') !== null) {
+            $query->where('user_id', $filters->get('user_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] !== 'SuperAdmin' && Auth::user()->getRoleNames()[0] !== 'Administrator') {
+            $query->where('user_id', Auth::user()->id);
+        }
+
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
         }
@@ -91,37 +97,28 @@ class Payout extends Model
     }
 
     /**** Public methods ****/
-    public static function createPayout($request, array $data = []) {
+    public static function createPayout($request) {
 
-        $payoutData = [
-            'user_id'                          => $data['user_id'] ?? ($request->user()->id ?? Auth::user()->id),
-            'reference'                        => $data['reference'] ?? $request->reference ?? null,
-            'amount'                           => $data['amount'] ?? $request->amount ?? 0,
-            'currency'                         => $data['currency'] ?? $request->currency ?? 'SEK',
-            'payer_alias'                      => $data['payer_alias'] ?? $request->payer_alias ?? null,
-            'payee_alias'                      => $data['payee_alias'] ?? $request->payee_alias ?? null,
-            'payee_ssn'                        => $data['payee_ssn'] ?? $request->payee_ssn ?? null,
-            'payout_state_id'                  => $data['payout_state_id'] ?? 1,
-            'status'                           => $data['status'] ?? 'CREATED',
-            'swish_id'                         => $data['swish_id'] ?? null,
-            'payout_instruction_uuid'          => $data['payout_instruction_uuid'] ?? null,
-            'payer_payment_reference'          => $data['payer_payment_reference'] ?? null,
-            'payout_type'                      => $data['payout_type'] ?? 'PAYOUT',
-            'instruction_date'                 => $data['instruction_date'] ?? null,
-            'message'                          => $data['message'] ?? null,
-            'callback_url'                     => $data['callback_url'] ?? null,
-            'callback_identifier'              => $data['callback_identifier'] ?? null,
-            'signature'                        => $data['signature'] ?? null,
-            'signing_certificate_serial_number'=> $data['signing_certificate_serial_number'] ?? null,
-            'request_payload'                  => $data['request_payload'] ?? null,
-            'response_data'                    => $data['response_data'] ?? null,
-            'location_url'                     => $data['location_url'] ?? null,
-            'error_message'                    => $data['error_message'] ?? null,
-            'error_code'                       => $data['error_code'] ?? null,
-        ];
+        $payout = self::create([
+            'user_id'                           => Auth::user()->id,
+            'payout_state_id'                   => $request->payout_state_id ?? 1,
+            'swish_id'                          => $request->swish_id ?? null,
+            'reference'                         => $request->reference ?? null,
+            'amount'                            => $request->amount ?? 0,
+            'payer_alias'                       => $request->payer_alias ?? null,
+            'payee_alias'                       => $request->payee_alias ?? null,
+            'payee_ssn'                         => $request->payee_ssn ?? null,
+            'currency'                          => $request->currency ?? 'SEK',
+            'payout_type'                       => $request->payout_type ?? 'PAYOUT',
+            'instruction_date'                  => $request->instruction_date ?? null,
+            'payout_instruction_uuid'           => $request->payout_instruction_uuid ?? null,
+            'message'                           => $request->message ?? null,
+            'signing_certificate_serial_number' => $request->signing_certificate_serial_number ?? null,
+            'location_url'                      => $request->location_url ?? null
+        ]);
 
-        return self::create($payoutData);
-    }
+        return $payout;
+        }
 
     public static function deletePayout($id) {
         self::deletePayouts(array($id));

@@ -164,7 +164,8 @@ const form = ref({
     bic: '',
     plus_spin: '',
     swish: '',
-    vat: ''
+    vat: '',
+    payout_number: ''
 })
 
 const tabs = [
@@ -220,6 +221,7 @@ async function fetchData() {
     form.value.plus_spin = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.plus_spin : (userData.value.user_detail ? userData.value.user_detail.plus_spin : "")
     form.value.swish = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.swish : (userData.value.user_detail ? userData.value.user_detail.swish : "")
     form.value.vat = role.value === 'User' ? userData.value.supplier.boss.user.user_detail.vat : (userData.value.user_detail ? userData.value.user_detail.vat : "")
+    form.value.payout_number = role.value === 'User' ? userData.value.supplier.boss.payout_number : userData.value.supplier.payout_number 
 
     logo.value = 
         role.value === 'User' ?
@@ -995,11 +997,18 @@ const dataURLtoBlob = (dataURL) => {
                             label="Vat"
                         />
                     </VCol>
-                    <VCol cols="12" md="6" v-if="role !== 'User'">
+                    <VCol cols="12" md="6">
+                        <VTextField
+                            disabled
+                            v-model="form.payout_number"
+                            label="Payout number"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="6">
                       <VLabel class="mb-2">Signatur</VLabel>
                       <div class="d-flex align-center gap-4">
                           <VImg :src="signature" width="200" height="112.5" aspect-ratio="16/9" class="border rounded" />
-                          <div class="d-flex flex-column gap-2">
+                          <div class="d-flex flex-column gap-2" v-if="role !== 'User'">
                               <VBtn 
                                   color="primary"
                                   @click="isConfirmChangeSignatureVisible = true">
