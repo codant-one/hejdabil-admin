@@ -1,11 +1,13 @@
 <script setup>
-import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
-import draggable from "vuedraggable";
+
 import { themeConfig } from "@themeConfig";
 import { formatNumber } from "@/@core/utils/formatters";
 import { requiredValidator } from "@validators";
 import logoBlack from "@images/logo_black.png";
 import sampleFaktura from "@images/sample-faktura.jpg";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
+import draggable from "vuedraggable";
 
 const props = defineProps({
   data: {
@@ -84,15 +86,12 @@ const total = ref("0.00");
 const taxOptions = ref([0, 12, 20, 25, "Custom"]);
 const selectedTax = ref('0');
 const selectedDiscount = ref(0);
-const selectedDiscountTemp = ref(0);
+const selectedDiscountTemp = ref('0');
 const discountOptions = ref([0, 20, 30, 50]);
 const discountApplied = ref(false);
 const amountDiscount = ref(props.amount_discount);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
 const isMobile = ref(false);
-const skapatsDialog = ref(false);
-const inteSkapatsDialog = ref(false);
-const osparadeDialog = ref(false);
 const controlledTab = ref("redigera");
 const actionDialog = ref(false);
 
@@ -339,7 +338,7 @@ const selectClient = async () => {
 // 👉 Add item function
 const addItem = () => {
   var item = {};
-
+  
   props.invoices.forEach((element) => {
     var value = "";
     switch (element.type_id) {
@@ -359,10 +358,12 @@ const addItem = () => {
   item[5] = 0;
   item[6] = false;
 
+  actionDialog.value = false;
   emit("push", item);
 };
 
 const addNote = () => {
+  actionDialog.value = false;
   emit("push", { note: "" });
 };
 
@@ -395,6 +396,7 @@ const inputData = () => {
 };
 
 const discount = () => {
+  actionDialog.value = false;
   isConfirmDiscountVisible.value = true;
 };
 
@@ -435,6 +437,11 @@ const handleBlur = (element) => {
       element[i] = defaultValue;
     }
   });
+
+  // Limitar el campo de descuento (índice 5) a un máximo de 100
+  if (element[5] !== undefined && element[5] > 100) {
+    element[5] = 100;
+  }
 };
 </script>
 
@@ -808,6 +815,7 @@ const handleBlur = (element) => {
                                 type="number"
                                 :placeholder="invoice.name"
                                 :min="0"
+                                :max="100"
                                 :readonly="element.disabled"
                                 @input="$emit('edit')"
                                 @blur="() => handleBlur(element)"
@@ -1363,6 +1371,7 @@ const handleBlur = (element) => {
                                     type="number"
                                     :placeholder="invoice.name"
                                     :min="0"
+                                    :max="100"
                                     :readonly="element.disabled"
                                     @input="$emit('edit')"
                                     @blur="() => handleBlur(element)"
@@ -1583,135 +1592,16 @@ const handleBlur = (element) => {
     </section>
   </VCard>
 
-  <!-- 👉 Confirm send -->
-  <VDialog v-model="isConfirmDiscountVisible" persistent class="v-dialog-sm">
-    <!-- Dialog close btn -->
-
-    <DialogCloseBtn @click="cancelDiscount" />
-
-    <!-- Dialog Content -->
-    <VCard title="Tillämpa skatteavdrag">
-      <VDivider class="mt-4" />
-      <VCardText class="d-flex justify-content-between">
-        Välj preliminär skatteavdrag
-
-        <VSpacer />
-
-        <VSelect
-          v-model="selectedDiscountTemp"
-          :items="discountOptions"
-          label="Skattereduktion"
-          append-icon="tabler-percentage"
-        />
-      </VCardText>
-
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
-        <VBtn color="secondary" variant="tonal" @click="cancelDiscount">
-          Avbryt
-        </VBtn>
-        <VBtn @click="saveDiscount"> Spara </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <!-- 👉 Confirm discount -->
-  <VDialog v-model="isAlertDiscountVisible" persistent class="v-dialog-sm">
-    <!-- Dialog close btn -->
-
-    <DialogCloseBtn @click="isAlertDiscountVisible = false" />
-
-    <!-- Dialog Content -->
-    <VCard title="Apply discount">
-      <VDivider class="mt-4" />
-      <VCardText class="d-flex justify-content-between">
-        You cannot apply two discounts to one invoice.
-      </VCardText>
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
-        <VBtn @click="isAlertDiscountVisible = false"> OK </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <VDialog
-    v-model="skapatsDialog"
+  <!-- 👉 Cancel discount -->
+  <VDialog 
+    v-model="isConfirmDiscountVisible" 
     persistent
-    class="action-dialog dialog-big-icon"
+    class="action-dialog"
   >
-    <!-- Dialog close btn -->
-
     <VBtn
       icon
       class="btn-white close-btn"
-      @click="skapatsDialog = !skapatsDialog"
-    >
-      <VIcon size="16" icon="custom-close" />
-    </VBtn>
-
-    <!-- Dialog Content -->
-    <VCard>
-      <VCardText class="dialog-title-box big-icon justify-center pb-0">
-        <VIcon size="72" icon="custom-f-create-order" />
-      </VCardText>
-      <VCardText class="dialog-title-box justify-center">
-        <div class="dialog-title">Fakturan har skapats!</div>
-      </VCardText>
-      <VCardText class="dialog-text text-center">
-        Din nya faktura har sparats som ett utkast. Nu kan du skicka den till
-        din kund.
-      </VCardText>
-
-      <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="skapatsDialog = false">
-          Gå till fakturalistan
-        </VBtn>
-        <VBtn class="btn-gradient" @click=""> Skapa en ny faktura </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <VDialog
-    v-model="inteSkapatsDialog"
-    persistent
-    class="action-dialog dialog-big-icon"
-  >
-    <!-- Dialog close btn -->
-
-    <VBtn
-      icon
-      class="btn-white close-btn"
-      @click="inteSkapatsDialog = !inteSkapatsDialog"
-    >
-      <VIcon size="16" icon="custom-close" />
-    </VBtn>
-
-    <!-- Dialog Content -->
-    <VCard>
-      <VCardText class="dialog-title-box big-icon justify-center pb-0">
-        <VIcon size="72" icon="custom-f-cancel" />
-      </VCardText>
-      <VCardText class="dialog-title-box justify-center">
-        <div class="dialog-title">Kunde inte skapa fakturan</div>
-      </VCardText>
-      <VCardText class="dialog-text text-center">
-        Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt
-        ifyllda och försök igen.
-      </VCardText>
-
-      <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="inteSkapatsDialog = false">
-          Stäng
-        </VBtn>
-      </VCardText>
-    </VCard>
-  </VDialog>
-
-  <VDialog v-model="osparadeDialog" persistent class="action-dialog">
-    <!-- Dialog close btn -->
-
-    <VBtn
-      icon
-      class="btn-white close-btn"
-      @click="osparadeDialog = !osparadeDialog"
+      @click="cancelDiscount"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
@@ -1719,19 +1609,61 @@ const handleBlur = (element) => {
     <!-- Dialog Content -->
     <VCard>
       <VCardText class="dialog-title-box">
-        <VIcon size="32" icon="custom-error" class="action-icon" />
-        <div class="dialog-title">Du har osparade ändringar</div>
+        <VIcon size="32" icon="custom-discount-1" class="action-icon" />
+        <div class="dialog-title">
+          Tillämpa skatteavdrag
+        </div>
       </VCardText>
-      <VCardText class="dialog-text">
-        Om du lämnar den här sidan nu kommer den information du har angett inte
-        att sparas.
+      <VCardText class="dialog-text d-flex" :class="windowWidth < 1024 ? 'flex-column gap-1' : ''">
+        Välj preliminär skatteavdrag
+
+        <VSpacer />
+
+        <div class="form-field">
+          <VSelect
+            v-model="selectedDiscountTemp"
+            :items="discountOptions"
+            label="Skattereduktion"
+            append-icon="tabler-percentage"
+          />
+        </div>
       </VCardText>
 
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="osparadeDialog = false">
-          Lämna sidan
+        <VBtn class="btn-light" @click="cancelDiscount">
+          Avbryt
         </VBtn>
-        <VBtn class="btn-gradient" @click="">Stanna kvar</VBtn>
+        <VBtn class="btn-gradient" @click="saveDiscount"> Spara </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <!-- 👉 Confirm discount -->
+  <VDialog 
+    v-model="isAlertDiscountVisible"
+    persistent
+    class="action-dialog"
+  >
+    <!-- Dialog close btn -->
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isAlertDiscountVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+        <div class="dialog-title">Tillämpa rabatt</div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Du kan inte tillämpa två rabatter på en faktura.
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-gradient" @click="isAlertDiscountVisible = false"> Okej </VBtn>
       </VCardText>
     </VCard>
   </VDialog>

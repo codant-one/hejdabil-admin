@@ -1,5 +1,7 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from "vue-router";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import { useBillingsStores } from "@/stores/useBillings";
@@ -7,6 +9,7 @@ import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const configsStores = useConfigsStores();
 const authStores = useAuthStores();
@@ -21,6 +24,8 @@ const advisor = ref({
 });
 
 const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
 // 👉 Default Blank Data
@@ -35,6 +40,12 @@ const suppliers = ref([]);
 const clients = ref([]);
 const invoice_id = ref(0);
 
+const billing_id = ref(null);
+const err = ref(null);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isConfirmLeaveVisible = ref(false);
+
 const userData = ref(null);
 const role = ref(null);
 const company = ref([]);
@@ -45,6 +56,25 @@ const amount_discount = ref(0);
 
 const seeDialogRemove = ref(false);
 const selectedInvoice = ref({});
+
+const initialInvoiceData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
+
+const currentInvoiceData = computed(() => ({
+  invoice: invoice.value,
+  invoiceData: invoiceData.value,
+  discount: discount.value,
+}));
+
+const isDirty = computed(() => {
+  if (!initialInvoiceData.value) return false;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
 
 watchEffect(fetchData);
 
@@ -109,6 +139,11 @@ async function fetchData() {
   invoiceData.value?.push(item);
 
   isRequestOngoing.value = false;
+  
+  // Capture initial state
+  nextTick(() => {
+    initialInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
+  });
 }
 
 const data = (data) => {
@@ -168,6 +203,53 @@ const editProduct = () => {
   });
 };
 
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+    advisor.value.message = Object.values(err.value.response.data.errors)
+              .flat()
+              .join("<br>");
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
+const createBilling = () => {
+  let data = {
+    message: "Fakturan skapades framgångsrikt",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
+};
+
+const reloadPage = () => {
+  window.location.reload();
+};
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  allowNavigation.value = true;
+  
+  if (nextRoute.value) {
+    router.push(nextRoute.value);
+  }
+};
+
 const onSubmit = () => {
   validate.value?.validate().then(async ({ valid: isValid }) => {
     if (isValid) {
@@ -200,32 +282,14 @@ const onSubmit = () => {
       billingsStores
         .addBilling(formData)
         .then((res) => {
-          let data = {
-            message: "Fakturan skapades framgångsrikt",
-            error: false,
-          };
-
+          billing_id.value = res.data.billing.id;
           isRequestOngoing.value = false;
-
-          router.push({
-            name: "dashboard-admin-billings-id",
-            params: { id: res.data.billing.id },
-          });
-          emitter.emit("toast", data);
+          allowNavigation.value = true; // Allow navigation after success
+          skapatsDialog.value = true;
         })
-        .catch((err) => {
-          advisor.value.show = true;
-          advisor.value.type = "error";
-          advisor.value.message = Object.values(err.message)
-            .flat()
-            .join("<br>");
-
-          setTimeout(() => {
-            advisor.value.show = false;
-            advisor.value.type = "";
-            advisor.value.message = "";
-          }, 3000);
-
+        .catch((error) => {
+          err.value = error;
+          inteSkapatsDialog.value = true;
           isRequestOngoing.value = false;
         });
     }
@@ -249,11 +313,32 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
 });
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 </script>
 
 <template>
   <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
+     <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
+
     <VForm ref="validate" @submit.prevent="onSubmit">
       <VRow no-gutters v-if="band" class="card-fill w-100">
         <!-- 👉 InvoiceEditable -->
@@ -324,6 +409,104 @@ onBeforeUnmount(() => {
         </VCol>
       </VRow>
     </VForm>
+
+    <!-- 👉 Dialogs Section -->
+    <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="router.push({
+          name: 'dashboard-admin-billings-id',
+          params: { id: billing_id },
+        })"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-create-order" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Fakturan har skapats!</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Din nya faktura har sparats som ett utkast. Nu kan du skicka den till
+          din kund.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="createBilling">
+            Gå till fakturalistan
+          </VBtn>
+          <VBtn class="btn-gradient" @click="reloadPage"> Skapa en ny faktura </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="inteSkapatsDialog = !inteSkapatsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-cancel" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Kunde inte skapa fakturan</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt
+          ifyllda och försök igen.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="showError">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog 
+      v-model="isConfirmLeaveVisible" 
+      persistent 
+      class="action-dialog">
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmLeaveVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Du har osparade ändringar</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 <style lang="scss" scoped>
