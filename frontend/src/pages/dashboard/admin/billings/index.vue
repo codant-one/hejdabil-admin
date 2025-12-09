@@ -753,6 +753,15 @@ onBeforeUnmount(() => {
                 </template>
                 <VList>
                   <VListItem
+                    v-if="$can('edit', 'billings') && billing.state_id === 4"
+                    @click="updateBilling(billing)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Betala</VListItemTitle>
+                  </VListItem>
+                  <VListItem
                     v-if="
                       $can('edit', 'billings') &&
                       (billing.state_id === 4 || billing.state_id === 8)
@@ -985,7 +994,7 @@ onBeforeUnmount(() => {
             :label="selectedBilling.client.email"
             class="ml-2"
           />
-          
+
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -1046,31 +1055,35 @@ onBeforeUnmount(() => {
     <VDialog
       v-model="isConfirmStateDialogVisible"
       persistent
-      class="v-dialog-sm"
+      class="action-dialog"
     >
       <!-- Dialog close btn -->
-
-      <DialogCloseBtn
+      <VBtn
+        icon
+        class="btn-white close-btn"
         @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
-      />
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Uppdatera status">
-        <VDivider class="mt-4" />
-        <VCardText>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-money-transfer" class="action-icon" />
+          <div class="dialog-title">
+            Uppdatera status
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           Är du säker på att du vill uppdatera fakturans status
           <strong>#{{ selectedBilling.invoice_id }}</strong> till betalda?
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmStateDialogVisible = false"
-          >
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
             Avbryt
           </VBtn>
-          <VBtn @click="updateState"> Acceptera </VBtn>
+          <VBtn  class="btn-gradient" @click="updateState"> Acceptera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -1191,6 +1204,15 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 4"
+            @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-money-transfer" size="24" />
+            </template>
+            <VListItemTitle>Betala</VListItemTitle>
+          </VListItem>
+          <VListItem
             v-if="$can('edit', 'billings') &&  (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
             @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
@@ -1199,7 +1221,6 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
-
           <VListItem
             v-if="$can('edit', 'billings')"
             @click="printInvoice(selectedBillingForAction); isMobileActionDialogVisible = false;"
