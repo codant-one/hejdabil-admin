@@ -14,6 +14,14 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 
+import iconFordon from "@/assets/images/iconify-svg/Auto-Fordon.svg";
+import iconPris from "@/assets/images/iconify-svg/Prisinformation.svg";
+import iconKund from "@/assets/images/iconify-svg/clients.svg";
+import iconInfo from "@/assets/images/iconify-svg/auto-2-ilager.svg";
+import iconAtgarder from "@/assets/images/iconify-svg/Atgarder.svg";
+import iconDokument from "@/assets/images/iconify-svg/dokument-ilager.svg";
+import editIcon from "@/assets/images/icons/figma/edit.svg";
+
 const ability = useAppAbility()
 const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
@@ -980,104 +988,124 @@ const getFlag = (currency_id) => {
 <template>
     <section>
         <LoadingOverlay :is-loading="isRequestOngoing" />
-        <VAlert
-            v-if="advisor.show"
-            :type="advisor.type"
-            class="mb-6">
-                
+        <VSnackbar
+            v-model="advisor.show"
+            transition="scroll-y-reverse-transition"
+            location="top end"
+            :color="advisor.type"
+            class="snackbar-alert snackbar-dashboard"
+        >
             {{ advisor.message }}
-        </VAlert>
+        </VSnackbar>
         <VForm
             v-if="reg_num"
             ref="refForm"
             v-model="isFormValid"
             @submit.prevent="onSubmit">
             <VRow>
-                <VCol cols="12" md="12" class="py-0">
-                    <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
-                        <div class="d-flex align-center">
-                            <VAvatar
-                                v-if="model_id === null || logo === null"
-                                size="x-large"
-                                variant="tonal"
-                                color="secondary"
-                            >
-                                <VIcon size="x-large" icon="mdi-image-outline" />                        
-                            </VAvatar>
-                            <VAvatar
-                                v-else
-                                size="x-large"
-                                variant="tonal"
-                                color="secondary"
-                                :image="themeConfig.settings.urlStorage + logo"
-                            />
-                        </div>
-                        <div class="d-flex flex-column justify-center">
-                            <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                {{ reg_num }}
-                            </h6>
-                            <span class="d-flex align-center">
-                                {{ states.filter(item => item.id === state_id)[0].name }}
-                                <VIcon icon="tabler-edit" class="ms-1" @click="isConfirmStatusDialogVisible = true"/>
-                            </span>
-                        </div>
-                        <VSpacer />
-                        <div class="d-flex flex-column flex-md-row gap-1 gap-md-4 w-100 w-md-auto">
-                            <VBtn
-                                variant="tonal"
-                                color="secondary"
-                                class="mb-2 w-100 w-md-auto"
-                                :to="{ name: state_id === 12 ? 'dashboard-admin-sold' :'dashboard-admin-stock' }"
-                                >
-                                Tillbaka
-                            </VBtn>
-
-                            <VBtn type="submit" class="w-100 w-md-auto">
-                                Spara
-                            </VBtn>
-                        </div>
-                    </div>
-                </VCol>
                 <VCol cols="12" md="12">              
                     <VCard flat class="px-2 px-md-12">
-                        <VCardText class="px-2 pt-0 pt-md-5">                
-                            <VTabs v-model="currentTab" fixed-tabs>
-                                <VTab>Fordon</VTab>
-                                <VTab>Prisinformation</VTab>
-                                <VTab>Kund</VTab>
-                                <VTab>Information om bilen</VTab>
-                                <VTab>Planerade åtgärder</VTab>
-                                <VTab>Kostnader</VTab>
-                                <VTab>Dokument</VTab>
+                        <VCardText class="px-2 pt-0 pt-md-5">
+                            <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
+                                <div class="d-flex align-center gap-4">
+                                    <div class="header-image-placeholder rounded d-flex align-center justify-center" style="width: 80px; height: 80px; background-color: #E0E0E0;">
+                                        <!-- Placeholder for car image -->
+                                    </div>
+                                    <div class="d-flex flex-column justify-center">
+                                        <h6 class="text-h4 font-weight-bold">
+                                            {{ reg_num }}
+                                        </h6>
+                                        <span class="d-flex align-center text-body-1 text-medium-emphasis">
+                                            På lager
+                                            <img :src="editIcon" alt="Edit" class="ms-2 cursor-pointer" width="20" height="20" @click="isConfirmStatusDialogVisible = true"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                <VSpacer />
+                                <div class="d-flex flex-column flex-md-row gap-1 gap-md-4 w-100 w-md-auto align-center">
+                                    <VBtn
+                                        class="btn-light w-100 w-md-auto"
+                                        :to="{ name: state_id === 12 ? 'dashboard-admin-sold' :'dashboard-admin-stock' }"
+                                        >
+                                        <VIcon icon="tabler-arrow-left" class="me-2" />
+                                        Tillbaka
+                                    </VBtn>
+
+                                    <VBtn type="submit" class="btn-gradient w-100 w-md-auto">
+                                        <VIcon icon="tabler-device-floppy" class="me-2" />
+                                        Spara
+                                    </VBtn>
+                                </div>
+                            </div>
+                
+                            <VTabs v-model="currentTab" class="v-tabs-pill mb-6" align-tabs="start">
+                                <VTab value="tab-1">
+                                    <img :src="iconFordon" alt="Fordon" class="me-2" width="24" height="24" />
+                                    Fordon
+                                </VTab>
+                                <VTab value="tab-2">
+                                    <img :src="iconPris" alt="Prisinformation" class="me-2" width="24" height="24" />
+                                    Prisinformation
+                                </VTab>
+                                <VTab value="tab-3">
+                                    <img :src="iconKund" alt="Kund" class="me-2" width="24" height="24" />
+                                    Kund
+                                </VTab>
+                                <VTab value="tab-4">
+                                    <img :src="iconInfo" alt="Information om bilen" class="me-2" width="24" height="24" />
+                                    Information om bilen
+                                </VTab>
+                                <VTab value="tab-5">
+                                    <img :src="iconAtgarder" alt="Åtgärder/Kostnader" class="me-2" width="24" height="24" />
+                                    Åtgärder/Kostnader
+                                </VTab>
+                                <VTab value="tab-6">
+                                    <img :src="iconDokument" alt="Dokument" class="me-2" width="24" height="24" />
+                                    Dokument
+                                </VTab>
                             </VTabs>
                             <VCardText class="px-2">
                                 <VWindow v-model="currentTab" class="pt-3">
                                     <!-- Fordon -->
-                                    <VWindowItem class="px-md-5">
-                                        <h6 class="text-md-h4 text-h5 font-weight-medium mb-7">
+                                    <VWindowItem value="tab-1" class="px-md-5">
+                                        <h6 class="text-h5 font-weight-bold mb-7">
                                             Grund och teknisk information
                                         </h6>
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="reg_num"
-                                                    disabled
-                                                    label="Reg nr"
-                                                />
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg Nr*" />
+                                                <div class="d-flex gap-2">
+                                                    <VTextField
+                                                        v-model="reg_num"
+                                                        placeholder="YTRFVG654436778JHYTYYG"
+                                                        variant="solo"
+                                                        flat
+                                                        bg-color="#F5F5F5"
+                                                        density="default"
+                                                    />
+                                                    <VBtn variant="outlined" color="secondary" class="px-4" style="height: 56px; border-color: #BDBDBD;">
+                                                        <VIcon icon="tabler-search" class="me-2" />
+                                                        Hämta
+                                                    </VBtn>
+                                                </div>
                                             </VCol>   
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
                                                 <VTextField
                                                     type="number"
                                                     v-model="mileage"
                                                     suffix="Mil"
-                                                    label="Miltal"
                                                     min="0"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                                 <VAutocomplete
                                                     v-model="brand_id"
-                                                    label="Märke"
                                                     :items="brands"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
@@ -1086,103 +1114,146 @@ const getFlag = (currency_id) => {
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectBrand"
                                                     @click:clear="onClearBrand"
-                                                    :menu-props="{ maxHeight: '300px' }"/>
+                                                    :menu-props="{ maxHeight: '300px' }"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
+                                                />
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
                                                 <VAutocomplete
                                                     v-model="model_id"
-                                                    label="Modell"
                                                     :items="getModels"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectModel"
-                                                    :menu-props="{ maxHeight: '300px' }"/>
+                                                    :menu-props="{ maxHeight: '300px' }"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
+                                                />
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id === 0">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
                                                 <VTextField
                                                     v-model="model"
-                                                    label="Modellens namn"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
                                                 <VTextField
                                                     v-model="generation"
-                                                    label="Generation"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                                                 <VAutocomplete
                                                     v-model="car_body_id"
-                                                    label="Kaross"
                                                     :items="carbodies"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell*" />
                                                 <VTextField
                                                     v-model="year"
                                                     :rules="[yearValidator]"
-                                                    label="Årsmodell"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
                                                 <AppDateTimePicker
                                                     :key="JSON.stringify(startDateTimePickerConfig)"
                                                     v-model="purchase_date"
-                                                    density="compact"
+                                                    density="default"
                                                     :config="startDateTimePickerConfig"
-                                                    label="Inköpsdatum"
                                                     clearable
+                                                    class="field-solo-flat"
+                                                    placeholder="Välj datum"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontrollbesiktning gäller tom" />
                                                 <AppDateTimePicker
                                                     :key="JSON.stringify(endDateTimePickerConfig)"
                                                     v-model="control_inspection"
-                                                    density="compact"
+                                                    density="default"
                                                     :config="endDateTimePickerConfig"
-                                                    label="Kontrollbesiktning gäller tom"
                                                     clearable
+                                                    class="field-solo-flat"
+                                                    placeholder="Välj datum"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
                                                 <VTextField
                                                     v-model="color"
-                                                    label="Färg"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                                                 <VAutocomplete
                                                     v-model="fuel_id"
-                                                    label="Drivmedel"
                                                     :items="fuels"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     autocomplete="off"
                                                     clearable
-                                                    clear-icon="tabler-x"/>
+                                                    clear-icon="tabler-x"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
+                                                />
                                             </VCol>
                                             <VCol cols="12" md="6">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                                                 <VAutocomplete
                                                     v-model="gearbox_id"
-                                                    label="Växellåda"
                                                     :items="gearboxes"
                                                     :item-title="item => item.name"
                                                     :item-value="item => item.id"
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
+                                                    variant="solo"
+                                                    flat
+                                                    bg-color="#F5F5F5"
+                                                    density="default"
                                                 />
                                             </VCol>
                                         </VRow>
                                     </VWindowItem>
                                     <!-- Prisinformation -->
-                                    <VWindowItem class="px-md-5">
+                                    <VWindowItem value="tab-2" class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
@@ -1237,7 +1308,7 @@ const getFlag = (currency_id) => {
                                         </VRow>
                                     </VWindowItem>
                                     <!-- Kund -->
-                                    <VWindowItem class="px-md-5">
+                                    <VWindowItem value="tab-3" class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
@@ -1407,7 +1478,7 @@ const getFlag = (currency_id) => {
                                         </VRow>
                                     </VWindowItem>
                                     <!-- Information om bilen -->
-                                    <VWindowItem class="px-md-5">
+                                    <VWindowItem value="tab-4" class="px-md-5">
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
                                                 <VTextField
@@ -1491,7 +1562,7 @@ const getFlag = (currency_id) => {
                                         </VRow>
                                     </VWindowItem>
                                     <!-- Planerade åtgärder -->
-                                    <VWindowItem class="px-md-5">
+                                    <VWindowItem value="tab-5" class="px-md-5">
                                         <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
                                             <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
                                                 Övrigt
@@ -1602,9 +1673,10 @@ const getFlag = (currency_id) => {
                                                 </VCard>
                                             </VCol>
                                         </VRow>
-                                    </VWindowItem>
-                                    <!-- Kostnader -->
-                                    <VWindowItem class="px-md-5">
+
+                                        <VDivider class="my-6" />
+
+                                        <!-- Kostnader -->
                                         <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
                                             <VSpacer class="d-none d-md-block"/>   
                                             <VBtn
@@ -1688,7 +1760,7 @@ const getFlag = (currency_id) => {
                                         </VCardText>
                                     </VWindowItem>
                                     <!-- Dokument -->
-                                    <VWindowItem class="px-md-5">
+                                    <VWindowItem value="tab-6" class="px-md-5">
                                         <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="documents.length === 0 ? 'border-bottom-secondary' : ''">           
                                             <VSpacer class="d-none d-md-block"/> 
                                             <VBtn
@@ -1811,18 +1883,28 @@ const getFlag = (currency_id) => {
         <VDialog
             v-model="isConfirmStatusDialogVisible"
             persistent
-            class="v-dialog-sm" >
-            <!-- Dialog close btn -->
-                
-            <DialogCloseBtn @click="isConfirmStatusDialogVisible = !isConfirmStatusDialogVisible" />
+            class="action-dialog" >
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmStatusDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
 
             <!-- Dialog Content -->
             <VForm
                 ref="refForm"
                 @submit.prevent="onSubmit">
-                <VCard title="Redigera status">
-                    <VDivider />
-                    <VCardText>
+                <VCard>
+                    <VCardText class="dialog-title-box">
+                        <VIcon size="32" icon="tabler-edit" class="action-icon" />
+                        <div class="dialog-title">
+                            Redigera status
+                        </div>
+                    </VCardText>
+                    <VCardText class="pt-0">
                         <VAutocomplete
                             v-model="state_idOld"
                             label="Status"
@@ -1833,14 +1915,13 @@ const getFlag = (currency_id) => {
                             :rules="[requiredValidator]"/>
                     </VCardText>
 
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
-                            color="secondary"
-                            variant="tonal"
+                            class="btn-light"
                             @click="isConfirmStatusDialogVisible = false">
                             Avbryt
                         </VBtn>
-                        <VBtn type="submit">
+                        <VBtn class="btn-gradient" type="submit">
                             Uppdatera status
                         </VBtn>
                     </VCardText>
@@ -1852,18 +1933,31 @@ const getFlag = (currency_id) => {
         <VDialog
             v-model="isConfirmTaskDialogVisible"
             persistent
-            class="v-dialog-sm" >
-            <!-- Dialog close btn -->
-                
-            <DialogCloseBtn @click="isConfirmTaskDialogVisible = !isConfirmTaskDialogVisible" />
+            class="action-dialog" >
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmTaskDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
 
             <!-- Dialog Content -->
             <VForm
                 ref="refTask"
                 @submit.prevent="createTask">
-                <VCard title="Lägg till åtgärd för fordonet" subtitle="Fyll i planerad åtgärd nedan">
-                    <VDivider />
-                    <VCardText>
+                <VCard>
+                    <VCardText class="dialog-title-box">
+                        <VIcon size="32" icon="custom-plus" class="action-icon" />
+                        <div class="dialog-title">
+                            Lägg till åtgärd för fordonet
+                        </div>
+                    </VCardText>
+                    <VCardText class="dialog-subtitle text-center mb-4">
+                        Fyll i planerad åtgärd nedan
+                    </VCardText>
+                    <VCardText class="pt-0">
                         <VRow>
                             <VCol cols="12" md="6">
                                 <VTextField
@@ -1906,14 +2000,13 @@ const getFlag = (currency_id) => {
                         
                     </VCardText>
 
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
-                            color="secondary"
-                            variant="tonal"
+                            class="btn-light"
                             @click="isConfirmTaskDialogVisible = false">
                             Avbryt
                         </VBtn>
-                        <VBtn type="submit">
+                        <VBtn class="btn-gradient" type="submit">
                             Spara
                         </VBtn>
                     </VCardText>
@@ -2148,18 +2241,28 @@ const getFlag = (currency_id) => {
         <VDialog
             v-model="isConfirmCreateCostDialogVisible"
             persistent
-            class="v-dialog-sm">
-            <!-- Dialog close btn -->
-                
-            <DialogCloseBtn @click="isConfirmCreateCostDialogVisible = !isConfirmCreateCostDialogVisible" />
+            class="action-dialog">
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmCreateCostDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
 
             <!-- Dialog Content -->
             <VForm
                 ref="refCost"
                 @submit.prevent="handleCost">
-                <VCard :title="isCreateCost ? 'Lägg till kostnader' : 'Uppdatera kostnader'">
-                    <VDivider />
-                    <VCardText style="max-height: 450px;">
+                <VCard>
+                    <VCardText class="dialog-title-box">
+                        <VIcon size="32" icon="custom-plus" class="action-icon" />
+                        <div class="dialog-title">
+                            {{ isCreateCost ? 'Lägg till kostnader' : 'Uppdatera kostnader' }}
+                        </div>
+                    </VCardText>
+                    <VCardText class="pt-0" style="max-height: 450px;">
                         <VRow>
                             <VCol cols="12" md="12">
                                 <VTextField
@@ -2199,15 +2302,13 @@ const getFlag = (currency_id) => {
                         </VRow>                        
                     </VCardText>
 
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
-                            class="mt-4"
-                            color="secondary"
-                            variant="tonal"
+                            class="btn-light"
                             @click="isConfirmCreateCostDialogVisible = false">
                              Avbryt
                         </VBtn>
-                        <VBtn class="mt-4" type="submit">
+                        <VBtn class="btn-gradient" type="submit">
                             {{ isCreateCost ? 'Spara' : 'Uppdatering'}}
                         </VBtn>
                     </VCardText>
@@ -2295,6 +2396,50 @@ const getFlag = (currency_id) => {
 
     .justify-content-end {
         justify-content: end !important;
+    }
+
+    /* New styles for the updated design */
+    .header-image-placeholder {
+        background-color: #E0E0E0;
+        min-width: 80px;
+        min-height: 80px;
+    }
+
+    .v-tabs-pill .v-tab {
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 500;
+        color: #757575;
+    }
+
+    .v-tabs-pill .v-tab--selected {
+        color: #009688; /* Teal */
+        border-bottom: 1px solid;
+        border-image-source: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+        border-image-slice: 1;
+    }
+
+    /* Custom input styling */
+    :deep(.v-field--variant-solo) {
+        box-shadow: none !important;
+        border: 1px solid transparent;
+    }
+
+    :deep(.v-field--variant-solo.v-field--focused) {
+        border-color: #009688;
+    }
+
+    /* Target AppDateTimePicker if it uses v-field internally */
+    :deep(.app-picker-field .v-field),
+    :deep(.field-solo-flat .v-field) {
+        background-color: #F5F5F5 !important;
+        border-radius: 6px;
+        box-shadow: none !important;
+        border: 1px solid transparent;
+    }
+    
+    :deep(.field-solo-flat .v-field--focused) {
+        border-color: #009688 !important;
     }
 </style>
 
