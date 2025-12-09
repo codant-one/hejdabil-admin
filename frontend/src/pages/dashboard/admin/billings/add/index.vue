@@ -20,6 +20,9 @@ const advisor = ref({
   show: false,
 });
 
+const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null);
+
 // 👉 Default Blank Data
 const validate = ref();
 const invoiceData = ref([]);
@@ -228,89 +231,100 @@ const onSubmit = () => {
     }
   });
 };
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <VForm ref="validate" @submit.prevent="onSubmit">
+  <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
-    <!-- <VRow v-if="advisor.show">
-      <VCol cols="12">
-        <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
-          {{ advisor.message }}
-        </VAlert>
-      </VCol>
-    </VRow> -->
-    <VRow v-if="band" class="row-fill">
-      <!-- 👉 InvoiceEditable -->
-      <VCol
-        cols="12"
-        md="9"
-        class="order-1"
-        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
-      >
-        <InvoiceEditable
-          v-if="userData"
-          :data="invoiceData"
-          :clients="clients"
-          :suppliers="suppliers"
-          :invoices="invoices"
-          :invoice_id="invoice_id"
-          :userData="userData"
-          :role="role"
-          :company="company"
-          :total="total"
-          :amount_discount="amount_discount"
-          :isCreated="true"
-          :isCredit="false"
-          @push="addProduct"
-          @remove="removeProduct"
-          @delete="deleteProduct"
-          @edit="editProduct"
-          @data="data"
-          @discount="applyDiscount"
-        />
-      </VCol>
+    <VForm ref="validate" @submit.prevent="onSubmit">
+      <VRow no-gutters v-if="band" class="card-fill w-100">
+        <!-- 👉 InvoiceEditable -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 9"
+          class="order-1"
+          :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
+        >
+          <InvoiceEditable
+            v-if="userData"
+            :data="invoiceData"
+            :clients="clients"
+            :suppliers="suppliers"
+            :invoices="invoices"
+            :invoice_id="invoice_id"
+            :userData="userData"
+            :role="role"
+            :company="company"
+            :total="total"
+            :amount_discount="amount_discount"
+            :isCreated="true"
+            :isCredit="false"
+            @push="addProduct"
+            @remove="removeProduct"
+            @delete="deleteProduct"
+            @edit="editProduct"
+            @data="data"
+            @discount="applyDiscount"
+          />
+        </VCol>
 
-      <!-- 👉 Right Column: Invoice Action -->
-      <VCol
-        cols="12"
-        md="3"
-        class="order-1 order-md-2"
-        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
-      >
-        <VCard>
-          <VCardText
-            :class="$vuetify.display.smAndDown ? 'pa-6 d-flex gap-4' : 'pa-4'"
-          >
-            <!-- 👉 Send Invoice -->
-            <VBtn
-              class="btn-gradient mb-4"
-              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
-              type="submit"
+        <!-- 👉 Right Column: Invoice Action -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 3"
+          class="order-1 order-md-2"
+          :class="windowWidth < 1024 ? 'p-0' : ''"
+        >
+          <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''">
+            <VCardText
+              :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
             >
-              <template #prepend>
-                <VIcon icon="custom-send" size="24" v-if="!$vuetify.display.smAndDown" />
-                <VIcon icon="custom-send" size="24" v-if="$vuetify.display.smAndDown" />
-              </template>
-              Skapa faktura
-            </VBtn>
+              <!-- 👉 Send Invoice -->
+              <VBtn
+                class="btn-gradient mb-4"
+                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                type="submit"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-send" size="24" v-if="windowWidth >= 1024" />
+                  <VIcon icon="custom-send" size="24" v-if="windowWidth < 1024" />
+                </template>
+                Skapa faktura
+              </VBtn>
 
-            <!-- 👉 Preview -->
-            <VBtn
-              class="btn-light"
-              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
-              :to="{ name: 'dashboard-admin-billings' }"
-            >
-              <template #prepend>
-                <VIcon icon="custom-return" size="24" />
-              </template>
-              Tillbaka
-            </VBtn>
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
-  </VForm>
+              <!-- 👉 Preview -->
+              <VBtn
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                :to="{ name: 'dashboard-admin-billings' }"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-return" size="24" />
+                </template>
+                Tillbaka
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
+    </VForm>
+  </section>
 </template>
 <style lang="scss" scoped>
 .fix-bottom-menu {
@@ -324,12 +338,6 @@ const onSubmit = () => {
     #ecffff 100%
   ) !important;
   z-index: 1;
-}
-.row-fill {
-  @media (max-width: 768px) {
-    padding-bottom: 60px;
-    margin: 0px;
-  }
 }
 @media (max-width: 768px) {
   .mobile-gradient-card {

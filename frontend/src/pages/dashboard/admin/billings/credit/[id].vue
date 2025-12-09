@@ -416,7 +416,7 @@ const credit = async () => {
   }
 
   .invoice-background {
-    background-color: #F2EFFF;
+    background-color: #F6F6F6;
   }
 
   .border-divider {
@@ -436,7 +436,7 @@ const credit = async () => {
     .invoice-background {
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
-      background-color: #F2EFFF !important;
+      background-color: #F6F6F6 !important;
     }
 
     .print-column {

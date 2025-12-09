@@ -1,10 +1,12 @@
 <script setup>
+
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import { useBillingsStores } from "@/stores/useBillings";
 import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores();
 const billingsStores = useBillingsStores();
@@ -279,8 +281,8 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <LoadingOverlay :is-loading="isRequestOngoing" />
   <VForm ref="validate" @submit.prevent="onSubmit">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <VRow v-if="advisor.show">
       <VCol cols="12">
         <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
@@ -367,12 +369,6 @@ const onSubmit = () => {
     #ecffff 100%
   ) !important;
   z-index: 1;
-}
-.row-fill {
-  @media (max-width: 768px) {
-    padding-bottom: 60px;
-    margin: 0px;
-  }
 }
 @media (max-width: 768px) {
   .mobile-gradient-card {
