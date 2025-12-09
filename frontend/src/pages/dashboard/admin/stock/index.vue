@@ -16,8 +16,6 @@ import { useDisplay } from 'vuetify'
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
-import carCogIcon from "@/assets/images/icons/figma/car-cog.svg"; // Assuming this exists or using a fallback
-import downloadIcon from "@/assets/images/icons/figma/download.svg"; // Assuming this exists or using a fallback
 
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
