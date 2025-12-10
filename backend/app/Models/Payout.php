@@ -114,13 +114,13 @@ class Payout extends Model
             'payout_instruction_uuid'           => $request->payout_instruction_uuid ?? null,
             'message'                           => $request->message ?? null,
             'signing_certificate_serial_number' => $request->signing_certificate_serial_number ?? null,
-            'location_url'                      => $request->location_url ?? null
+            'location_url'                      => $request->location_url ?? null,
+            'error_message'                     => $request->error_message ?? null,
+            'error_code'                        => $request->error_code ?? null
         ]);
 
         return $payout;
-        }
-
-    public static function deletePayout($id) {
+    }    public static function deletePayout($id) {
         self::deletePayouts(array($id));
     }
 

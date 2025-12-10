@@ -247,6 +247,36 @@ const closeDialog = () => {
               </VCardText>
             </VCard>
           </VCol>
+
+          <!-- Felinformation -->
+          <VCol cols="12" v-if="payout.error_message || payout.error_code">
+            <VCard variant="outlined" color="error">
+              <VCardTitle class="text-subtitle-1 py-3 text-error">
+                Felinformation
+              </VCardTitle>
+              <VDivider />
+              <VCardText class="pa-3">
+                <VList density="compact">
+                  <VListItem v-if="payout.error_code">
+                    <VListItemTitle class="font-weight-medium text-body-2">
+                      Felkod:
+                    </VListItemTitle>
+                    <VListItemSubtitle class="text-body-1">
+                      {{ payout.error_code }}
+                    </VListItemSubtitle>
+                  </VListItem>
+                  <VListItem v-if="payout.error_message">
+                    <VListItemTitle class="font-weight-medium text-body-2">
+                      Meddelande:
+                    </VListItemTitle>
+                    <VListItemSubtitle class="text-body-1">
+                      {{ payout.error_message }}
+                    </VListItemSubtitle>
+                  </VListItem>
+                </VList>
+              </VCardText>
+            </VCard>
+          </VCol>
         </VRow>
       </VCardText>
 

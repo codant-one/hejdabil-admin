@@ -350,7 +350,10 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'master_password' => $supplier->master_password
+                    'master_password' => $supplier->master_password,
+                    'crs_url' => $supplier->crs_url,
+                    'key_url' => $supplier->key_url,
+                    'pem_url' => $supplier->pem_url,
                 ]
             ], 200);
 

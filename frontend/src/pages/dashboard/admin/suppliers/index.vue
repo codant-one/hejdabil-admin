@@ -23,7 +23,8 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
-const payout_number = ref(null)
+const payout_number = ref('')
+const pemFile = ref([])
 const is_payout = ref(false)
 const state_id = ref(null)
 const refForm = ref(null)
@@ -113,6 +114,7 @@ const showSwishDialog = supplierData => {
   selectedSupplier.value = { ...supplierData }
   payout_number.value = supplierData.payout_number || ''
   is_payout.value = supplierData.is_payout === 0 ? false : true
+  pemFile.value = []
 
   nextTick(() => {
     refForm.value?.resetValidation()
@@ -168,17 +170,20 @@ const swish = () => {
       isConfirmSwishDialogVisible.value = false
       isRequestOngoing.value = true
       
-      let data = {
-        payout_number: payout_number.value,
-        is_payout: is_payout.value ? 1 : 0
+      let formData = new FormData()
+      formData.append('payout_number', payout_number.value)
+      formData.append('is_payout', is_payout.value ? 1 : 0)
+      if (pemFile.value && pemFile.value.length > 0) {
+        formData.append('file', pemFile.value[0])
       }
       
-      suppliersStores.swish(selectedSupplier.value.id, data)
+      suppliersStores.swish(selectedSupplier.value.id, formData)
         .then(async (res) => {
             if (res.data.success) {
               selectedSupplier.value = {}
-              payout_number.value = null
+              payout_number.value = ''
               is_payout.value = false
+              pemFile.value = []
               
               await fetchData()
 
@@ -606,6 +611,12 @@ const downloadCSV = async () => {
               minLength="11"
               maxlength="11"
               @input="formatOrgNumber()"
+            />
+            <VFileInput
+              v-model="pemFile"
+              label="Ladda upp PEM-fil"
+              accept=".pem"
+              prepend-icon="tabler-file"
             />
             <VCheckbox
               v-model="is_payout"

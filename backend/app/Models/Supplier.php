@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Supplier extends Model
 {
@@ -178,9 +180,29 @@ class Supplier extends Model
     }
 
     public static function swish($request, $id) {
-        $supplier = self::where('id', $id)->first();
+        $supplier = self::with('user')->where('id', $id)->first();
         $supplier->is_payout = $request->is_payout;
         $supplier->payout_number = $request->payout_number;
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = 'suppliers/pem/';
+            
+            $firstName = Str::slug($supplier->user->name, '_');
+            $lastName = Str::slug($supplier->user->last_name ?? '', '_');
+            $originalName = $file->getClientOriginalName();
+            
+            $newName = strtolower("{$firstName}_{$lastName}_{$originalName}");
+            $filePath = $path . $newName;
+
+            if ($supplier->pem_url && Storage::disk('public')->exists($supplier->pem_url)) {
+                Storage::disk('public')->delete($supplier->pem_url);
+            }
+
+            Storage::disk('public')->put($filePath, file_get_contents($file));
+            $supplier->pem_url = $filePath;
+        }
+
         $supplier->save();
 
         return $supplier;

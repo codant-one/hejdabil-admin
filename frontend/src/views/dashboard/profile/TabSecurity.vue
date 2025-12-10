@@ -25,6 +25,9 @@ const refForm = ref()
 const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
 const masterPassword = ref('')
+const crsUrl = ref('')
+const keyUrl = ref('')
+const isFileMissingDialogVisible = ref(false)
 const setting = ref([])
 
 const userData = ref(null)
@@ -72,7 +75,10 @@ async function fetchData() {
   role.value = userData.value.roles[0].name
 
   if(role.value === 'Supplier') {
-    masterPassword.value = await suppliersStores.getMasterPassword(userData.value.supplier.id)
+    const supplierData = await suppliersStores.getMasterPassword(userData.value.supplier.id)
+    masterPassword.value = supplierData.master_password
+    crsUrl.value = supplierData.crs_url
+    keyUrl.value = supplierData.key_url
   } else {
     await configsStores.getFeature('setting')
     setting.value = configsStores.getFeaturedConfig('setting')
@@ -184,6 +190,14 @@ const onSubmit = () => {
         })
     }
   })
+}
+
+const downloadFile = (url) => {
+  if (!url) {
+    isFileMissingDialogVisible.value = true
+    return
+  }
+  window.open(url, '_blank')
 }
 
 const onSubmitKey = async () => {
@@ -365,8 +379,35 @@ const onSubmitKey = async () => {
               </VCardText>
           </VForm>
       </VCard>
+
+      <VCard title="Certifikat" class="mt-5" v-if="role === 'Supplier'">
+        <VCardText>
+          <div class="d-flex gap-4">
+            <VBtn @click="downloadFile(crsUrl)">
+              Ladda ner CRS
+            </VBtn>
+            <VBtn @click="downloadFile(keyUrl)">
+              Ladda ner KEY
+            </VBtn>
+          </div>
+        </VCardText>
+      </VCard>
       </VCol>
     </VRow>
+
+    <VDialog v-model="isFileMissingDialogVisible" width="500">
+      <VCard title="Information">
+        <VCardText>
+          Systemet har inte genererat filen ännu, gör en begäran för att kunna generera den.
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn color="primary" @click="isFileMissingDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <AddAuthenticatorAppDialog
       v-model:isDialogVisible="isDialogVisible"
