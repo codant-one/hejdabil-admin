@@ -160,7 +160,7 @@ class PayoutController extends Controller
                 $request
             );
 
-            // Si Swish devuelve error (4xx/5xx), NO guardamos nada en la BD
+            // Si Swish devuelve error (4xx/5xx), guardamos el error en la BD
             if (!$response->successful()) {
                 $body = $response->json();
                 $errorCode = null;
@@ -173,6 +173,18 @@ class PayoutController extends Controller
                         $errorMessage = $first['errorMessage'] ?? null;
                     }
                 }
+
+                // Buscar estado de error
+                $errorStateId = PayoutState::where('name', 'ERROR')->orWhere('label', 'error')->value('id');
+
+                $request->merge([
+                    'payout_state_id' => $errorStateId ?? 1,
+                    'error_message'   => $errorMessage,
+                    'error_code'      => $errorCode,
+                ]);
+
+                Payout::createPayout($request);
+
                 // Avoid logging out on the frontend: map external 401s to 422s
                 $status = $response->status();
                 if ($status === 401) {
@@ -202,11 +214,17 @@ class PayoutController extends Controller
                 }
             }
 
-            // Initial state: look for a "PENDING" state if it exists, otherwise use the default id (1)
-            $pendingStateId = PayoutState::where('label', 'pending')->value('id') ?? 1;
+            // Obtener el status de la respuesta JSON
+            $responseStatus = $response->json()['status'] ?? 'CREATED';
+            $stateId = PayoutState::where('name', $responseStatus)->orWhere('label', strtolower($responseStatus))->value('id');
+
+            // Si no se encuentra, usar pending o default 1
+            if (!$stateId) {
+                $stateId = PayoutState::where('label', 'pending')->value('id') ?? 1;
+            }
 
             $request->merge([
-                'payout_state_id' => $pendingStateId,
+                'payout_state_id' => $stateId,
                 'swish_id'        => $payoutId,
                 'location_url'    => $locationHeader,
             ]);
