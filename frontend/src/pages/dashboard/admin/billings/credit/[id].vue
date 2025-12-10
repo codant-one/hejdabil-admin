@@ -1,5 +1,6 @@
 <script setup>
 
+import { useDisplay } from "vuetify"
 import { themeConfig } from '@themeConfig'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useBillingsStores } from '@/stores/useBillings'
@@ -36,9 +37,27 @@ const advisor = ref({
   show: false
 })
 
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null);
+
+const initialInvoiceData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
+
 const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
 }
+
+const isDirty = computed(() => {
+  if (!initialInvoiceData.value) return false;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
 
 watchEffect(fetchData)
 
@@ -69,21 +88,19 @@ async function fetchData() {
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
     
-    if(invoice.value.supplier_id === null) {//admin
-      await configsStores.getFeature('company')
-      await configsStores.getFeature('logo')
+    if(invoice.value.supplier_id === null) {
+      //admin
+      await configsStores.getFeature("company");
+      await configsStores.getFeature("logo");
 
-      company.value = configsStores.getFeaturedConfig('company')
-      company.value.billings = response.data.data.billings
-      company.value.logo = configsStores.getFeaturedConfig('logo').logo
-    } else if(role.value === 'Supplier') {//supplier
-      company.value = user_data.user_detail
-      company.value.email = user_data.email
-      company.value.billings = user_data.supplier.billings
-    } else {//user
-      company.value = user_data.supplier.boss.user.user_detail
-      company.value.email = user_data.supplier.boss.user.email
-      company.value.billings = user_data.supplier.boss.billings
+      company.value = configsStores.getFeaturedConfig("company");
+      company.value.billings = response.data.data.billings;
+      company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+    } else {
+      //supplier
+      company.value = invoice.value.supplier.user.user_detail;
+      company.value.email = invoice.value.supplier.user.email;
+      company.value.billings = invoice.value.supplier.billings;
     }
 
     isRequestOngoing.value = false
@@ -119,26 +136,58 @@ const credit = async () => {
             isRequestOngoing.value = false
         })
 }
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 </script>
 
 <template>
-  <section>
+  <section class="page-section" ref="sectionEl">
     <Toaster />
     <LoadingOverlay :is-loading="isRequestOngoing" />
-    <VAlert
-      v-if="advisor.show"
-      :type="advisor.type"
-      class="mb-6">  
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
       {{ advisor.message }}
-    </VAlert>
-    <VRow v-if="invoice">
+    </VSnackbar>
+    <VRow no-gutters v-if="invoice" class="card-fill w-100">
       <VCol
-        cols="12"
-        md="9"
-        class="order-2 order-md-1"
+        :cols="windowWidth < 1024 ? 12 : 9"
+        class="order-1"
+        :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
       >
-        <VCard class="pa-10" id="invoice-detail">
-          <VCardText class="d-flex flex-wrap justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
+        <VCard class="pa-5" id="invoice-detail">
+          <VCardText class="d-flex flex-wrap gap-2 justify-space-between flex-column flex-sm-row print-row rounded invoice-background">
             <div class="ma-sm-4 d-flex flex-column">
               <div class="d-flex align-center mb-6">
                 <img
@@ -368,27 +417,35 @@ const credit = async () => {
       </VCol>
 
       <VCol
-        cols="12"
-        md="3"
-        class="order-1 order-md-2 d-print-none"
+        :cols="windowWidth < 1024 ? 12 : 3"
+        class="order-1 order-md-2"
+        :class="windowWidth < 1024 ? 'p-0' : ''"
       >
-        <VCard>
-          <VCardText>
+        <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''">
+          <VCardText
+            :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
+          >
             <VBtn
-              block
-              prepend-icon="tabler-send"
-              class="mb-2"
+              class="btn-gradient mb-4"
+              :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
               @click="credit"
             >
+              <template #prepend>
+                <VIcon icon="custom-cancel-contract" size="24" v-if="windowWidth >= 1024" />
+                <VIcon icon="custom-cancel-contract" size="24" v-if="windowWidth < 1024" />
+              </template>
               Skapa faktura
             </VBtn>
 
+            <!-- 👉 Preview -->
             <VBtn
-              block
-              color="secondary"
-              variant="tonal"
-              class="mb-2"
-              :to="{ name: 'dashboard-admin-billings' }">
+              class="btn-light"
+              :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+              :to="{ name: 'dashboard-admin-billings' }"
+            >
+              <template #prepend>
+                <VIcon icon="custom-return" size="24" />
+              </template>
               Tillbaka
             </VBtn>
 
@@ -406,9 +463,15 @@ const credit = async () => {
 
   .faktura {
     font-size: 32px;
-    color: #57F287;
-    border-top: 2px solid #57F287;
-    border-bottom: 2px solid #57F287;
+    color: #454545;
+    border-top: 2px solid #454545;
+    border-bottom: 2px solid #454545;
+  }
+
+  @media (max-width: 767px) {
+    .faktura {
+      font-size: 16px;
+    }
   }
 
   .invoice-preview-table {

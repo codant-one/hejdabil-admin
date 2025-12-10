@@ -211,6 +211,8 @@ const resolveStatus = state_id => {
     return { class: 'success' }   
   if (state_id === 8)
     return { class: 'error' }
+  if (state_id === 9)
+    return { class: 'error' }
 }
 
 const updateState = async () => {

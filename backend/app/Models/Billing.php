@@ -250,9 +250,16 @@ class Billing extends Model
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
         $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
         $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
+            'supplier_id' => $supplier_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -274,15 +281,8 @@ class Billing extends Model
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-        } else { //Admin
+        if($billing->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -314,6 +314,10 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($billing->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
         }
 
         foreach($details as $row)

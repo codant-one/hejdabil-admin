@@ -8,6 +8,7 @@ import sampleFaktura from "@images/sample-faktura.jpg";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
 import draggable from "vuedraggable";
+import { Title } from "chart.js";
 
 const props = defineProps({
   data: {
@@ -61,6 +62,11 @@ const props = defineProps({
   isCredit: {
     type: Boolean,
     required: true,
+  },
+  title: {
+    type: String,
+    required: false,
+    default: "Skapa fakturan"
   },
 });
 
@@ -456,7 +462,7 @@ const handleBlur = (element) => {
       :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0 fix-header' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
-        <h2 class="faktura-title">Skapa fakturan</h2>
+        <h2 class="faktura-title">{{ title }}</h2>
       </div>
       <VTabs
         v-model="controlledTab"
@@ -1072,7 +1078,7 @@ const handleBlur = (element) => {
                 </span>
               </div>
               <div
-                class="d-block d-md-flex align-center justify-sm-start mb-2 text-right"
+                class=""
                 v-if="client"
               >
                 <span class="mb-2 me-2 text-start w-40 text-black"
@@ -1501,7 +1507,7 @@ const handleBlur = (element) => {
                   {{ company.bic }}
                 </span>
 
-                <span class="me-2 text-bold text-footer" v-if="company.bank">
+                <span class="me-2 mt-4 text-bold text-footer" v-if="company.bank">
                   Bank
                 </span>
                 <span class="text-footer" v-if="company.bank">
@@ -1548,6 +1554,13 @@ const handleBlur = (element) => {
               </VCol>
 
               <VCol cols="6" class="d-flex flex-column flex-1">
+                <span class="me-2 text-bold text-footer"> Adress </span>
+                  <span class="d-flex flex-column">
+                    <span class="text-footer">{{ company.address }}</span>
+                    <span class="text-footer">{{ company.postal_code }}</span>
+                    <span class="text-footer">{{ company.street }}</span>
+                    <span class="text-footer">{{ company.phone }}</span>
+                  </span>
                 <span class="me-2 mt-4 text-bold text-footer">
                   Bolagets säte
                 </span>

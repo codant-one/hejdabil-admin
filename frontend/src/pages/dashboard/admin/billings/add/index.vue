@@ -330,7 +330,7 @@ onBeforeRouteLeave((to, from, next) => {
 <template>
   <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
-     <VSnackbar
+    <VSnackbar
       v-model="advisor.show"
       transition="scroll-y-reverse-transition"
       :location="snackbarLocation"
