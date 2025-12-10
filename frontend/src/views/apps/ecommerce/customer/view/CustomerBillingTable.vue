@@ -569,12 +569,12 @@ const sendMails = async () => {
                         </VListItem>
                         <VListItem
                           v-if="
-                            $can('delete', 'billing') && billing.state_id === 7
+                            $can('edit', 'billing') && billing.state_id !== 9
                           "
                           @click="credit(billing)"
                         >
                           <template #prepend>
-                            <VIcon icon="custom-waste" size="24" />
+                            <VIcon icon="custom-cancel-contract" size="24" />
                           </template>
                           <VListItemTitle>Kreditera</VListItemTitle>
                         </VListItem>
@@ -737,8 +737,8 @@ const sendMails = async () => {
                           </VListItem>
                           <VListItem
                             v-if="
-                              $can('delete', 'billing') &&
-                              billing.state_id === 7
+                              $can('edit', 'billing') &&
+                              billing.state_id !== 9
                             "
                             @click="
                               credit(billing);
@@ -746,7 +746,7 @@ const sendMails = async () => {
                             "
                           >
                             <template #prepend>
-                              <VIcon icon="custom-waste" size="24" />
+                              <VIcon icon="custom-cancel-contract" size="24" />
                             </template>
                             <VListItemTitle>Kreditera</VListItemTitle>
                           </VListItem>

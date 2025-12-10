@@ -127,11 +127,18 @@ const sendMails = async () => {
   }
 };
 
+const credit = () => {
+  router.push({
+    name: "dashboard-admin-billings-credit-id",
+    params: { id: invoice.value.id },
+  });
+};
+
 const send = () => {
   isConfirmSendMailVisible.value = true;
 };
 
-const sendReminder = (billingData) => {
+const sendReminder = () => {
   isConfirmSendMailReminder.value = true;
 };
 
@@ -470,6 +477,16 @@ onBeforeUnmount(() => {
               </template>
               Påminnelse
             </VBtn>
+            <VBtn
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9"
+              class="btn-light w-100"
+              @click="credit"
+            >
+              <template #prepend>
+                <VIcon icon="custom-cancel-contract" size="24" />
+              </template>
+              Kreditera
+            </VBtn>
           </VCardText>
         </VCard>
       </VCol>
@@ -536,6 +553,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-paper-plane" size="24" />
             </template>
             <VListItemTitle>Skicka</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings')"
+            @click="credit(); isMobileActionDialogVisible = false"
+          >
+            <template #prepend>
+              <VIcon icon="custom-cancel-contract" size="24" />
+            </template>
+            <VListItemTitle>Kreditera</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

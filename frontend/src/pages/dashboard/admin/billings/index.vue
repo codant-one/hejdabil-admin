@@ -240,6 +240,13 @@ const updateState = async () => {
   return true;
 };
 
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
+
 const openLink = function (billingData) {
   window.open(themeConfig.settings.urlStorage + billingData.file);
 };
@@ -831,7 +838,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('edit', 'billings') && billing.state_id !== 9"
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -1286,7 +1293,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('edit', 'billings') && billing.state_id !== 9"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
