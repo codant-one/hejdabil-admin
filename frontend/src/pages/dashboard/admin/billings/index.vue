@@ -783,7 +783,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="printInvoice(billing)"
                   >
                     <template #prepend>
@@ -792,7 +792,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Skriv ut</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="openLink(billing)"
                   >
                     <template #prepend>
@@ -829,7 +829,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('delete', 'billings')"
+                    v-if="$can('edit', 'billings')"
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -1031,31 +1031,39 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <!-- 👉 Confirm send reminder -->
-    <VDialog v-model="isConfirmSendMailReminder" persistent class="v-dialog-sm">
+    <VDialog 
+      v-model="isConfirmSendMailReminder" 
+      persistent
+      class="action-dialog"
+    >
       <!-- Dialog close btn -->
-
-      <DialogCloseBtn
+      <VBtn
+        icon
+        class="btn-white close-btn"
         @click="isConfirmSendMailReminder = !isConfirmSendMailReminder"
-      />
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Skicka påminnelse via e-post">
-        <VDivider class="mt-4" />
-        <VCardText>
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-alarm" class="action-icon" />
+          <div class="dialog-title">
+            Skicka påminnelse via e-post
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           Vill du skicka ett påminnelsemeddelande för faktura
           <strong>#{{ selectedBilling.invoice_id }}</strong
           >?
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmSendMailReminder = false"
-          >
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailReminder = false">
             Avbryt
           </VBtn>
-          <VBtn @click="reminder"> Skicka </VBtn>
+          <VBtn class="btn-gradient" @click="reminder"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -1231,7 +1239,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="printInvoice(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1240,7 +1248,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skriv ut</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="openLink(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1258,7 +1266,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Duplicera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 8"
+            v-if="$can('view', 'billings') && selectedBillingForAction.state_id === 8"
             @click="sendReminder(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1267,7 +1275,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1276,7 +1284,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete', 'billings')"
+            v-if="$can('edit', 'billings')"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
