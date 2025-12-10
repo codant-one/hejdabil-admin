@@ -1247,12 +1247,13 @@ const handleBlur = (element) => {
               v-model="invoice.details"
               tag="div"
               item-key="index"
+              handle=".drag-handle"
               @start="onStart"
               @end="onEnd"
             >
               <template #item="{ element, index }">
                 <div class="draggable-item draggable-item-mobile mb-4">
-                  <VIcon icon="custom-grabber" size="24" />
+                  <VIcon icon="custom-grabber" size="24" class="drag-handle" />
                   <div class="d-flex w-100" v-if="element?.note !== undefined">
                     <div class="form-field w-100">
                       <label class="text-sm">Notera</label>
