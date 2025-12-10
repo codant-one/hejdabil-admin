@@ -646,79 +646,58 @@ const goToTracker = (agreementData) => {
         </div>
       </VCardText>
 
-          <VTable class="text-no-wrap">
-            <!-- 👉 table head -->
-            <thead>
-              <tr>
-                <th scope="col"> REG. NR </th>
-                <th scope="col"> INBYTESFORDON REG. NR </th>
-                <th scope="col" class="text-end"> KREDIT / LEASING </th>
-                <th scope="col"> TYP </th>
-                <th scope="col"> SKAPAD </th>
-                <th scope="col"> SKAPAD AV </th>
-                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
-                <th scope="col"> SIGNERA STATUS </th>
-                <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
-              </tr>
-            </thead>
-            <!-- 👉 table body -->
-            <tbody>
-              <tr 
-                v-for="agreement in agreements"
-                :key="agreement.id"
-                style="height: 3rem;">
-                <td> 
-                  {{ agreement.agreement_type_id === 4 ?
-                    agreement.offer.reg_num : 
-                    (agreement.agreement_type_id === 3 ? 
-                      agreement.commission?.vehicle.reg_num   :
-                      agreement.vehicle_client?.vehicle.reg_num 
-                    )                    
-                  }} 
-                </td>
-                <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
-                <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
-                <td> {{ agreement.agreement_type.name  }}</td>          
-                <td>  
-                  {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
-                      year: 'numeric', 
-                      month: '2-digit', 
-                      day: '2-digit', 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: false
-                  }) }}
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="agreement.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + agreement.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(agreement.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ agreement.user.email }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-                  <span class="font-weight-medium"  v-if="agreement.supplier">
-                    {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
-                  </span>
-                </td>
-                <td>
-                  <VChip
-                    label
-                    :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
+      <VTable
+        v-if="!$vuetify.display.smAndDown"
+        v-show="agreements.length"
+        class="px-4 pb-6 text-no-wrap"
+      >
+        <!-- 👉 table head -->
+        <thead>
+          <tr>
+            <th scope="col"> REG. NR </th>
+            <th scope="col"> INBYTESFORDON REG. NR </th>
+            <th scope="col" class="text-end"> KREDIT / LEASING </th>
+            <th scope="col"> TYP </th>
+            <th scope="col"> SKAPAD </th>
+            <th scope="col"> SKAPAD AV </th>
+            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+            <th scope="col"> SIGNERA STATUS </th>
+            <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
+          </tr>
+        </thead>
+        <!-- 👉 table body -->
+        <tbody>
+          <tr 
+            v-for="agreement in agreements"
+            :key="agreement.id"
+            style="height: 3rem;">
+            <td> 
+              {{ agreement.agreement_type_id === 4 ?
+                agreement.offer.reg_num : 
+                (agreement.agreement_type_id === 3 ? 
+                  agreement.commission?.vehicle.reg_num   :
+                  agreement.vehicle_client?.vehicle.reg_num 
+                )                    
+              }} 
+            </td>
+            <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
+            <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
+            <td> {{ agreement.agreement_type.name  }}</td>          
+            <td>  
+              {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
+                  year: 'numeric', 
+                  month: '2-digit', 
+                  day: '2-digit', 
+                  hour: '2-digit', 
+                  minute: '2-digit',
+                  hour12: false
+              }) }}
+            </td>
+            <td class="text-wrap">
+              <div class="d-flex align-center gap-x-3">
+                <VAvatar
+                  :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                  size="38"
                   >
                   <VImg
                     v-if="agreement.user.avatar"
