@@ -766,7 +766,7 @@ onBeforeUnmount(() => {
                     @click="updateBilling(billing)"
                   >
                     <template #prepend>
-                      <VIcon icon="custom-money-transfer" size="24" class="mr-2" />
+                      <VIcon icon="custom-cash-2" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Betala</VListItemTitle>
                   </VListItem>
@@ -1078,7 +1078,7 @@ onBeforeUnmount(() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-money-transfer" class="action-icon" />
+          <VIcon size="32" icon="custom-cash-2" class="action-icon" />
           <div class="dialog-title">
             Uppdatera status
           </div>
@@ -1217,7 +1217,7 @@ onBeforeUnmount(() => {
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
-              <VIcon icon="custom-money-transfer" size="24" />
+              <VIcon icon="custom-cash-2" size="24" />
             </template>
             <VListItemTitle>Betala</VListItemTitle>
           </VListItem>

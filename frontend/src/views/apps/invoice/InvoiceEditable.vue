@@ -456,7 +456,7 @@ const handleBlur = (element) => {
       :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0 fix-header' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
-        <h2>Skapa fakturan</h2>
+        <h2 class="faktura-title">Skapa fakturan</h2>
       </div>
       <VTabs
         v-model="controlledTab"

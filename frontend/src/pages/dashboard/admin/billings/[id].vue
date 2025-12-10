@@ -25,6 +25,7 @@ const skickaDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 
 const isMobileActionDialogVisible = ref(false);
+const isConfirmStateDialogVisible = ref(false);
 
 const advisor = ref({
   type: "",
@@ -106,6 +107,34 @@ const sendMails = async () => {
   }
 };
 
+const updateBilling = () => {
+  isConfirmStateDialogVisible.value = true;
+};
+
+const updateState = async () => {
+  isConfirmStateDialogVisible.value = false;
+  let res = await billingsStores.updateState(invoice.value.id);
+
+  advisor.value = {
+    type: res.data.success ? "success" : "error",
+    message: res.data.success ? "Fakturan uppdaterad!" : res.data.message,
+    show: true,
+  };
+
+  setTimeout(() => {
+    advisor.value = {
+      type: "",
+      message: "",
+      show: false,
+    };
+  }, 3000);
+
+  await loadData();
+  await fetchData();
+
+  return true;
+};
+
 const printInvoice = async () => {
   try {
     const response = await fetch(
@@ -180,17 +209,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
 });
-
-// Intercept all navigation attempts
-onBeforeRouteLeave((to, from, next) => {
-  if (allowNavigation.value || !isDirty.value) {
-    next();
-  } else {
-    nextRoute.value = to;
-    isConfirmLeaveVisible.value = true;
-    next(false);
-  }
-});
 </script>
 
 <template>
@@ -238,16 +256,29 @@ onBeforeRouteLeave((to, from, next) => {
         class="order-2 order-md-1"
         :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
       >
-        <VCard class="p-0" id="invoice-detail">
-          <VuePdfEmbed
-            :source="
-              themeConfig.settings.urlbase +
-              'proxy-image?url=' +
-              themeConfig.settings.urlStorage +
-              invoice.file
-            "
-            class="d-flex justify-content-center w-auto m-auto"
-          />
+        <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''" id="invoice-detail">
+          <VCardTitle
+            class="d-flex justify-space-between bg-white"
+            :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0' : 'pa-4'"
+          >
+            <div class="d-flex align-center w-100 w-md-auto font-blauer">
+              <h2 class="faktura-title">Faktura #{{ invoice.invoice_id }}</h2>
+            </div>
+          </VCardTitle>
+
+          <VDivider class="mt-2 mx-4" />
+
+          <div class="invoice-panel">
+            <VuePdfEmbed
+              :source="
+                themeConfig.settings.urlbase +
+                'proxy-image?url=' +
+                themeConfig.settings.urlStorage +
+                invoice.file
+              "
+              class="d-flex justify-content-center w-auto m-auto"
+            />
+          </div>
         </VCard>
       </VCol>
       <VCol
@@ -275,6 +306,17 @@ onBeforeRouteLeave((to, from, next) => {
             </VBtn>
 
             <VDivider class="mb-4" />
+
+            <VBtn
+              v-if="$can('edit', 'billings') && invoice.state_id === 4"
+              class="btn-light w-100 mb-4"
+              @click="updateBilling()"
+            >
+              <template #prepend>
+                <VIcon icon="custom-cash-2" size="24" />
+              </template>
+              Betala
+            </VBtn>
 
             <VBtn
               class="btn-light w-100 mb-4"
@@ -510,6 +552,43 @@ onBeforeRouteLeave((to, from, next) => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Update State -->
+    <VDialog
+      v-model="isConfirmStateDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmStateDialogVisible = !isConfirmStateDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cash-2" class="action-icon" />
+          <div class="dialog-title">
+            Uppdatera status
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill uppdatera fakturans status
+          <strong>#{{ invoice.invoice_id }}</strong> till betalda?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn  class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -578,8 +657,17 @@ onBeforeRouteLeave((to, from, next) => {
   margin: 24px 16px 16px;
   border-radius: 8px !important;
   opacity: 1;
-  padding: 16px !important;
   border: solid 1px #e7e7e7;
+  overflow: hidden;
+  
+  .vue-pdf-embed {
+    border-radius: 8px;
+  }
+  
+  canvas {
+    border-radius: 8px;
+    display: block;
+  }
 }
 
 .invoice-box {
