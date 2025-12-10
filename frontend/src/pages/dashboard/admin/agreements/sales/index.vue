@@ -465,6 +465,13 @@ const searchCompany = async () => {
             } else {
                 postal_code.value = ''
             }
+
+            // Set Address
+            if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+                address.value = response.postadressOrganisation.postadress.utdelningsadress
+            } else {
+                address.value = ''
+            }
         }
 
     } catch (error) {
