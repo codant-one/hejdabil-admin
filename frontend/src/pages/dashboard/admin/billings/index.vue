@@ -1293,7 +1293,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && billing.state_id !== 9"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
