@@ -113,8 +113,10 @@ const updateBilling = () => {
 
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false;
+  isRequestOngoing.value = true;
   let res = await billingsStores.updateState(invoice.value.id);
 
+  isRequestOngoing.value = false;
   advisor.value = {
     type: res.data.success ? "success" : "error",
     message: res.data.success ? "Fakturan uppdaterad!" : res.data.message,
@@ -129,7 +131,6 @@ const updateState = async () => {
     };
   }, 3000);
 
-  await loadData();
   await fetchData();
 
   return true;
@@ -256,7 +257,7 @@ onBeforeUnmount(() => {
         class="order-2 order-md-1"
         :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
       >
-        <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''" id="invoice-detail">
+        <VCard id="invoice-detail">
           <VCardTitle
             class="d-flex justify-space-between bg-white"
             :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0' : 'pa-4'"
@@ -310,7 +311,7 @@ onBeforeUnmount(() => {
             <VBtn
               v-if="$can('edit', 'billings') && invoice.state_id === 4"
               class="btn-light w-100 mb-4"
-              @click="updateBilling()"
+              @click="updateBilling"
             >
               <template #prepend>
                 <VIcon icon="custom-cash-2" size="24" />
@@ -377,7 +378,16 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            @click="printInvoice"
+            v-if="$can('edit', 'billings') && invoice.state_id === 4"
+            @click="updateBilling(); isMobileActionDialogVisible = false"
+          >
+            <template #prepend>
+              <VIcon icon="custom-cash-2" size="24" />
+            </template>
+            <VListItemTitle>Betala</VListItemTitle>
+          </VListItem>
+          <VListItem
+            @click="printInvoice(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-print" size="24" />
@@ -385,7 +395,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skriv ut</VListItemTitle>
           </VListItem>
           <VListItem
-            @click="download"
+            @click="download(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-download" size="24" />
@@ -393,7 +403,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            @click="duplicate"
+            @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-duplicate" size="24" />
@@ -402,7 +412,7 @@ onBeforeUnmount(() => {
           </VListItem>
           <VListItem
             v-if="invoice.state_id !== 9"
-            @click="duplicate"
+            @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-alarm" size="24" />

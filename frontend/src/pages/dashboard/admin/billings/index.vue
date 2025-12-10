@@ -772,7 +772,7 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem
                     v-if="
-                      $can('edit', 'billings') &&
+                      $can('view', 'billings') &&
                       (billing.state_id === 4 || billing.state_id === 8)
                     "
                     @click="editBilling(billing)"
@@ -819,7 +819,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Påminnelse</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="send(billing)"
                   >
                     <template #prepend>

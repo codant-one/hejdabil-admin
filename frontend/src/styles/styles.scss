@@ -124,8 +124,12 @@ body .v-dialog .v-dialog-close-btn {
 }
 
 .v-card {
-  border-radius: 24px;
+  border-radius: 16px;
   box-shadow: none !important;
+
+  @media (max-width: 1023px) {
+    border-radius: 8px !important;
+  }
 }
 
 .mobile-nav-menu .v-card {
