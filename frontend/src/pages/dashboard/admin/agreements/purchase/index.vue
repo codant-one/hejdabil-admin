@@ -8,11 +8,15 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
+import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { useToastsStores } from '@/stores/useToasts'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
 const carInfoStores = useCarInfoStores()
 const configsStores = useConfigsStores()
+const companyInfoStores = useCompanyInfoStores()
+const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -329,6 +333,49 @@ const formatOrgNumber = () => {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
     organization_number.value = numbers
+}
+
+const searchCompany = async () => {
+    if (!organization_number.value) return
+
+    try {
+        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+        
+        if (response) {
+             // Set Client Type to Företag
+            const foretagType = client_types.value.find(t => t.name === 'Företag')
+            if (foretagType) {
+                client_type_id.value = foretagType.id
+            }
+
+            // Set Name
+            if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+                fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+            } else {
+                fullname.value = ''
+            }
+
+            // Set Postal Code
+            if (response.postadressOrganisation?.postadress?.postnummer) {
+                postal_code.value = response.postadressOrganisation.postadress.postnummer
+            } else {
+                postal_code.value = ''
+            }
+
+            // Set Address
+            if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+                address.value = response.postadressOrganisation.postadress.utdelningsadress
+            } else {
+                address.value = ''
+            }
+        }
+
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Ingen företag hittades med det registreringsnumret',
+            type: 'error'
+        })
+    }
 }
 
 const handleChange = (val) => {
@@ -743,6 +790,8 @@ const onSubmit = () => {
                                                             color="primary"
                                                             size="x-small"
                                                             class="mt-1"
+                                                            @click="searchCompany"
+                                                            :loading="companyInfoStores.loading"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">

@@ -57,14 +57,11 @@ class SwishPayoutController extends Controller
 
         Log::info('Swish callback: Payout found', [
             'payout_id' => $payout->id,
-            'current_status' => $payout->status,
+            'current_status' => $payout->payout_state_id,
             'new_status' => $status
         ]);
 
-        // Actualizar status directamente (campo 'status' en payouts table)
-        $payout->status = $status;
-        
-        // También intentar mapear a payout_states si existe
+        // Mapear a payout_states
         $stateId = PayoutState::where('label', $status)->value('id');
         if ($stateId) {
             $payout->payout_state_id = $stateId;
@@ -73,17 +70,12 @@ class SwishPayoutController extends Controller
             Log::warning('Swish callback: State not found in payout_states', ['status' => $status]);
         }
 
-        // Guardar response_data completo para auditoría
-        $payout->response_data = array_merge(
-            $payout->response_data ?? [],
-            ['callback' => $payload, 'callback_at' => now()->toISOString()]
-        );
-
         $payout->save();
 
         Log::info('Swish callback: Payout updated successfully', [
             'payout_id' => $payout->id,
-            'status' => $status
+            'payout_state_id' => $payout->payout_state_id,
+            'status_label' => $status
         ]);
 
         return response()->json(['ok' => true]);

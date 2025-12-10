@@ -38,8 +38,8 @@ class AddOrUpdatePayoutStates extends Command
      */
     public function handle()
     {
-        $states = ['Skapad', 'Skickad', 'Väntande', 'Betald', 'Misslyckad', 'Avbruten', 'Utgången'];
-        $labels = ['Created', 'Sent', 'Pending', 'Paid', 'Failed', 'Cancelled', 'Expired'];
+        $states = ['Skapad', 'Skickad', 'Väntande', 'Betald', 'Misslyckad', 'Avbruten', 'Utgången', 'Debiterad'];
+        $labels = ['Created', 'Sent', 'Pending', 'Paid', 'Failed', 'Cancelled', 'Expired', 'Debited'];
 
         foreach($states as $key => $state) {
             PayoutState::updateOrCreate(
