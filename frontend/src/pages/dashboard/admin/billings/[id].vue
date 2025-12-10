@@ -10,6 +10,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const billingsStores = useBillingsStores();
 const route = useRoute();
+const emitter = inject("emitter");
 
 const types = ref([]);
 const invoices = ref([]);
@@ -71,6 +72,23 @@ const addTag = (event) => {
   }
 };
 
+const createBilling = () => {
+  router.push({ name: "dashboard-admin-billings-add" });
+};
+
+const goToBilling = () => {
+  let data = {
+    message: "Fakturan är skickad!",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
+};
+
 const sendMails = async () => {
   if (!isValid.value) {
     isConfirmSendMailVisible.value = false;
@@ -82,27 +100,28 @@ const sendMails = async () => {
       emails: selectedTags.value,
     };
 
-    let res = await billingsStores.sendMails(data);
+    try {
+      let res = await billingsStores.sendMails(data);
 
-    isRequestOngoing.value = false;
+      if (res.data.success) {
+        skickaDialog.value = true;
+      } else {
+        inteSkapatsDialog.value = true;
+      }
 
-    advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? "Fakturan är skickad!" : res.data.message,
-      show: true,
-    };
+      isRequestOngoing.value = false;
 
-    setTimeout(() => {
-      selectedTags.value = [];
-      existingTags.value = [];
-      emailDefault.value = true;
+      setTimeout(() => {
+        selectedTags.value = [];
+        existingTags.value = [];
+        emailDefault.value = true;
+      }, 3000);
 
-      advisor.value = {
-        type: "",
-        message: "",
-        show: false,
-      };
-    }, 3000);
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      inteSkapatsDialog.value = true;
+      isRequestOngoing.value = false;
+    }
 
     return true;
   }
@@ -601,18 +620,18 @@ onBeforeUnmount(() => {
           <VIcon size="72" icon="custom-f-checkmark" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Skickat!n</div>
+          <div class="dialog-title">Skickat!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Fakturan har skickats till "Kundnamn". Du hittar den nu i din lista
+          Fakturan har skickats till "{{ invoice.client.fullname }}". Du hittar den nu i din lista
           över skickade fakturor.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="skickaDialog = false">
+          <VBtn class="btn-light" @click="goToBilling">
             Gå till fakturalistan
           </VBtn>
-          <VBtn class="btn-gradient" @click=""> Skapa en ny faktura </VBtn>
+          <VBtn class="btn-gradient" @click="createBilling"> Skapa ny faktura </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
