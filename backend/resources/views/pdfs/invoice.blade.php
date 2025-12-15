@@ -11,7 +11,7 @@
             font-family: 'DM Sans';
             font-style: normal;
             font-weight: 400;
-            src: url({{ storage_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
+            src: url({{ public_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
             font-display: swap;
         }
 
