@@ -445,6 +445,12 @@ body {
     font-size: 32px;
     line-height: 100%;
     color: #1c2925;
+
+    span {
+      font-weight: 400;
+      font-size: 32px;
+      line-height: 100%;
+    }
   }
 
   @media (max-width: 768px) {
@@ -713,6 +719,7 @@ body {
 .selector-user {
   min-width: 150px;
   .v-input__prepend {
+    margin-inline-end: 0px !important;
     margin-right: 0px;
     color: #454545;
 
@@ -730,6 +737,26 @@ body {
         padding-inline-start: 8px;
         opacity: 1 !important;
         color: #454545;
+
+        input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input::-webkit-input-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input::-moz-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input:-ms-input-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
       }
     }
     .v-field__append-inner {
@@ -963,6 +990,10 @@ body {
 }
 
 // Borders
+.rounded-2 {
+  border-radius: 8px !important;
+}
+
 .rounded-4 {
   border-radius: 16px !important;
 }

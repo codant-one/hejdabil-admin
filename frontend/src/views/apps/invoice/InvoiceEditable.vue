@@ -5,6 +5,7 @@ import { formatNumber } from "@/@core/utils/formatters";
 import { requiredValidator } from "@validators";
 import logoBlack from "@images/logo_black.png";
 import sampleFaktura from "@images/sample-faktura.jpg";
+import VuePdfEmbed from "vue-pdf-embed";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
 import draggable from "vuedraggable";
@@ -68,6 +69,11 @@ const props = defineProps({
     required: false,
     default: "Skapa fakturan"
   },
+  hasUnsavedChanges: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
 });
 
 const emit = defineEmits([
@@ -78,6 +84,7 @@ const emit = defineEmits([
   "data",
   "edit",
   "discount",
+  "requestPreview",
 ]);
 
 const { width: windowWidth } = useWindowSize();
@@ -103,6 +110,45 @@ const actionDialog = ref(false);
 
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
+const isAlertPreviewVisible = ref(false);
+const previousTab = ref("redigera");
+const pdfCacheKey = ref(Date.now());
+
+const pdfSource = computed(() => {
+  if (!props.billing?.file) return null;
+  return themeConfig.settings.urlbase +
+    'proxy-image?url=' +
+    themeConfig.settings.urlStorage +
+    props.billing.file +
+    '&t=' + pdfCacheKey.value;
+});
+
+const handleTabChange = (newTab) => {
+  if (newTab === 'forhandsgranska' && (!props.billing?.file || props.hasUnsavedChanges)) {
+    // Revert to previous tab and show alert
+    nextTick(() => {
+      controlledTab.value = previousTab.value;
+    });
+    isAlertPreviewVisible.value = true;
+  } else {
+    previousTab.value = newTab;
+  }
+};
+
+watch(controlledTab, (newVal) => {
+  handleTabChange(newVal);
+});
+
+const setPreviewTab = () => {
+  pdfCacheKey.value = Date.now(); // Force PDF refresh
+  previousTab.value = 'forhandsgranska';
+  controlledTab.value = 'forhandsgranska';
+};
+
+defineExpose({
+  setPreviewTab,
+  controlledTab,
+});
 
 const invoice = ref({
   id: 1,
@@ -429,6 +475,17 @@ const saveDiscount = () => {
 
   isConfirmDiscountVisible.value = false;
 };
+
+const resolveStatus = state_id => {
+  if (state_id === 4)
+    return { class: 'pending' }
+  if (state_id === 7)
+    return { class: 'success' }   
+  if (state_id === 8)
+    return { class: 'error' }
+  if (state_id === 9)
+    return { class: 'error' }
+}
 
 const handleBlur = (element) => {
   const defaults = {
@@ -1174,11 +1231,13 @@ const handleBlur = (element) => {
               </p>
             </div>
 
-            <div class="rouded-select">
+            <div 
+              class="rouded-select" 
+              v-if="
+                props.role === 'SuperAdmin' || props.role === 'Administrator'
+              "
+            >
               <VAutocomplete
-                v-if="
-                  props.role === 'SuperAdmin' || props.role === 'Administrator'
-                "
                 v-model="invoice.supplier_id"
                 :items="suppliers"
                 :item-title="(item) => item.full_name"
@@ -1592,19 +1651,75 @@ const handleBlur = (element) => {
           </VWindowItem>
 
           <VWindowItem
-            class="d-flex flex-column gap-6 pa-6 pb-0"
+            class="d-flex flex-column gap-2 pa-6 pb-0 w-100"
             value="forhandsgranska"
           >
-            <img
-              :src="sampleFaktura"
-              class="w-100"
-              v-if="windowWidth < 1024"
-            />
+            <div class="d-flex flex-column gap-2 bg-white pa-4 mb-6 rounded-2" v-if="windowWidth < 1024 && billing?.file">
+              <div class="d-flex gap-4 bg-white align-center flex-row flex-nowrap pb-0 justify-between">
+                <div class="d-flex align-center font-blauer" v-if="windowWidth < 1024">
+                  <h2 class="faktura-title">Faktura #{{ billing.invoice_id }}</h2>
+                </div>
+                <div
+                  v-if="windowWidth < 1024 && billing?.file"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
+                >
+                  {{ billing.state.name }}
+                </div>
+              </div>
+              <VDivider v-if="windowWidth < 1024" />
+              <div v-if="windowWidth < 1024" class="invoice-panel">
+                
+                <VuePdfEmbed
+                  v-if="billing?.file"
+                  :source="pdfSource"
+                  class="d-flex justify-content-center w-auto m-auto"
+                />
+                <img
+                  v-else
+                  :src="sampleFaktura"
+                  class="w-100"
+                />
+              </div>
+            </div>
           </VWindowItem>
         </VWindow>
       </VCardText>
     </section>
   </VCard>
+
+  <!-- 👉 Alert: Must save before preview -->
+  <VDialog 
+    v-model="isAlertPreviewVisible" 
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isAlertPreviewVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-alarm" class="action-icon" />
+        <div class="dialog-title">
+          Spara fakturan först
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Du måste spara fakturan innan du kan förhandsgranska den. Klicka på "Skapa faktura" för att spara och förhandsgranska.
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-gradient" @click="isAlertPreviewVisible = false">
+          OK
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 
   <!-- 👉 Cancel discount -->
   <VDialog 
@@ -1747,6 +1862,13 @@ const handleBlur = (element) => {
   font-size: 0.75rem !important;
 }
 
+@media (max-width: 1023px) {
+  .invoice-panel {
+    margin: 0;
+    padding: 2px !important;
+  }
+}
+
 @media (max-width: 767px) {
   .faktura {
     font-size: 16px;
@@ -1761,9 +1883,11 @@ const handleBlur = (element) => {
     width: 100%;
   }
 }
+
 .margin-top-fill {
-  margin-top: 125px;
+  margin-top: 120px;
 }
+
 .v-tabs.v-tabs--horizontal:not(.v-tabs-pill) .v-btn {
   flex: 1 1;
 }

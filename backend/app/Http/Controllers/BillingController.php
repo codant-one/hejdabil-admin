@@ -96,7 +96,7 @@ class BillingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'billing' => $billing
+                'billing' => Billing::with('state')->find($billing->id)
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -177,7 +177,7 @@ class BillingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'billing' => $billing
+                    'billing' => Billing::with('state')->find($billing->id)
                 ]
             ], 200);
 

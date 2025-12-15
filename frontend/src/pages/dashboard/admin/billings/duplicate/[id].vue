@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from "vue-router";
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
@@ -8,6 +9,7 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
@@ -28,8 +30,15 @@ const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
 const initialInvoiceData = ref(null);
+const savedInvoiceData = ref(null);
 const allowNavigation = ref(false);
 const nextRoute = ref(null);
+const invoiceEditableRef = ref(null);
+const billing_id = ref(null);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const err = ref(null);
 
 // 👉 Default Blank Data
 const validate = ref()
@@ -61,10 +70,25 @@ const extractDaysFromNetTermSplit = term => {
     return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
 
+const currentInvoiceData = computed(() => ({
+  invoice: invoice.value,
+  invoiceData: invoiceData.value,
+  discount: discount.value,
+}));
+
 const isDirty = computed(() => {
   if (!initialInvoiceData.value) return false;
   try {
     return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
+
+const hasChangedSinceSave = computed(() => {
+  if (!savedInvoiceData.value) return true;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(savedInvoiceData.value);
   } catch (e) {
     return true;
   }
@@ -219,7 +243,50 @@ const editProduct = () => {
   });
 }
 
+
+const createBilling = () => {
+  router.push({
+    name: "dashboard-admin-billings-add"
+  });
+};
+
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+    advisor.value.message = Object.values(err.value.response.data.errors)
+              .flat()
+              .join("<br>");
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  allowNavigation.value = true;
+  
+  if (nextRoute.value) {
+    router.push(nextRoute.value);
+  }
+};
+
 const onSubmit = () => {
+  // If already saved and NO changes since save, show success dialog
+  if (billing.value?.file && !hasChangedSinceSave.value) {
+    skapatsDialog.value = true;
+    return;
+  }
 
     validate.value?.validate().then(async ({ valid: isValid }) => {
 
@@ -253,32 +320,42 @@ const onSubmit = () => {
 
         billingsStores.addBilling(formData)
             .then((res) => {
-                let data = {
-                    message: 'Fakturan duplicerad framgångsrikt',
-                    error: false
+                billing_id.value = res.data.billing.id;
+                billing.value = res.data.billing;
+                isRequestOngoing.value = false;
+                allowNavigation.value = true;
+                
+                // Save current state as the saved state
+                savedInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
+                
+                // On mobile, switch to preview tab
+                if (windowWidth.value < 1024 && invoiceEditableRef.value) {
+                  invoiceEditableRef.value.setPreviewTab();
+                } else {
+                  skapatsDialog.value = true;
                 }
-                
-                isRequestOngoing.value = false
-                
-                router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.billing.id } })
-                emitter.emit('toast', data)
             })
-            .catch((err) => {
-                advisor.value.show = true
-                advisor.value.type = 'error'
-                advisor.value.message = Object.values(err.message).flat().join('<br>')
-
-                setTimeout(() => { 
-                    advisor.value.show = false
-                    advisor.value.type = ''
-                    advisor.value.message = ''
-                }, 3000)
-            
-                isRequestOngoing.value = false
+            .catch((error) => {
+              err.value = error;
+              inteSkapatsDialog.value = true;
+              isRequestOngoing.value = false;
             })
         }
     })
 }
+
+const duplicateBilling = () => {
+  let data = {
+    message: "Fakturan har duplicerats korrekt.",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
+};
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -331,6 +408,7 @@ onBeforeRouteLeave((to, from, next) => {
           :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
         >
           <InvoiceEditable
+              ref="invoiceEditableRef"
               v-if="clients.length > 0"
               :data="invoiceData"
               :clients="clients"
@@ -345,6 +423,7 @@ onBeforeRouteLeave((to, from, next) => {
               :billing="billing"
               :isCreated="false"
               :isCredit="false"
+              :hasUnsavedChanges="hasChangedSinceSave"
               :title="'Duplicera fakturan'"
               @push="addProduct"
               @remove="removeProduct"
@@ -395,6 +474,102 @@ onBeforeRouteLeave((to, from, next) => {
 
       </VRow>
     </VForm>
+
+     <!-- 👉 Dialogs Section -->
+    <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="router.push({
+          name: 'dashboard-admin-billings-id',
+          params: { id: billing_id },
+        })"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-create-order" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Fakturan är skapad!</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="duplicateBilling">
+            Gå till fakturalistan
+          </VBtn>
+          <VBtn class="btn-gradient" @click="createBilling"> Skapa ny faktura </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="inteSkapatsDialog = !inteSkapatsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-cancel" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Fakturan kunde inte skapas</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="showError">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog 
+      v-model="isConfirmLeaveVisible" 
+      persistent 
+      class="action-dialog">
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmLeaveVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Du har osparade ändringar</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Om du lämnar sidan nu kommer dina ändringar inte att sparas.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 

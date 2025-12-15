@@ -345,6 +345,18 @@ onBeforeUnmount(() => {
       </VBtn>
 
     </div>
+    <div v-if="invoice" :class="windowWidth < 1024 ? 'd-block' : 'd-none'">
+      <VBtn
+        v-if="$can('view', 'billings')"
+        class="btn-gradient w-100 mb-4"
+        @click="send"
+      >
+        <template #prepend>
+          <VIcon icon="custom-paper-plane" size="24" />
+        </template>
+        Skicka
+      </VBtn>
+    </div>
     <VRow no-gutters v-if="invoice" class="card-fill w-100">
       <VCol
         :cols="windowWidth < 1024 ? 12 : 8"
@@ -544,15 +556,6 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-alarm" size="24" />
             </template>
             <VListItemTitle>Påminnelse</VListItemTitle>
-          </VListItem>
-          <VListItem
-            v-if="$can('view', 'billings')"
-            @click="send(); isMobileActionDialogVisible = false"
-          >
-            <template #prepend>
-              <VIcon icon="custom-paper-plane" size="24" />
-            </template>
-            <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings')"

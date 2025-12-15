@@ -7,24 +7,8 @@
     </head>
     <style>
 
-        @font-face {
-            font-family: 'DM Sans';
-            font-style: normal;
-            font-weight: 400;
-            src: url({{ storage_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
-            font-display: swap;
-        }
-
-        @font-face {
-            font-family: 'Gelion Regular';
-            font-style: normal;
-            font-weight: 400;
-            src: url({{ storage_path('fonts/gelion-Regular.ttf') }}) format('truetype');
-            font-display: swap;
-        }
-
         body {
-            font-family: 'DM Sans', Arial, sans-serif !important;
+            font-family: 'DM Sans', sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -126,7 +110,7 @@
         }
 
         .table-items {
-            font-family: 'Gelion Regular', Arial, sans-serif !important;
+            font-family: 'DM Sans', sans-serif !important;
             margin-top: 10px;
             border-radius: 8px !important;
             border-width: thin !important;
@@ -165,7 +149,7 @@
         }
 
         .table-supplier {
-            font-family: 'Gelion Regular', Arial, sans-serif !important;
+            font-family: 'DM Sans', sans-serif !important;
         }
 
         .table-supplier td {

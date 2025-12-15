@@ -201,7 +201,7 @@ watch(currentData, () => {
       <VListItem>
         <VTextField
           v-model="fullname"
-          label="Fullständigt namn"
+          label="Fullständigt namn*"
           :rules="[requiredValidator]"
         />
       </VListItem>
@@ -209,13 +209,13 @@ watch(currentData, () => {
         <VTextField
           v-model="email"
           :rules="[emailValidator, requiredValidator]"
-          label="E-post"
+          label="E-post*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="organization_number"
-          label="Org/personummer"
+          label="Org/personummer*"
           :rules="[requiredValidator, minLengthDigitsValidator(10)]"
           minLength="11"
           maxlength="13"
@@ -226,28 +226,28 @@ watch(currentData, () => {
         <VTextField
           v-model="address"
           :rules="[requiredValidator]"
-          label="Adress"
+          label="Adress*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="postal_code"
           :rules="[requiredValidator]"
-          label="Postnummer"
+          label="Postnummer*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="street"
           :rules="[requiredValidator]"
-          label="Stad"
+          label="Stad*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="phone"
           :rules="[requiredValidator, phoneValidator]"
-          label="Telefon"
+          label="Telefon*"
         />
       </VListItem>
       <VListItem>
