@@ -7,37 +7,30 @@
     </head>
     <style>
 
+        /* Register Gelion static fonts (use actual family name). */
         @font-face {
-            font-family: 'DM Sans';
+            font-family: 'gelion';
             font-style: normal;
             font-weight: 400;
             src: url({{ public_path('fonts/gelion-Regular.ttf') }}) format('truetype');
         }
 
         @font-face {
-            font-family: 'DM Sans';
-            font-style: normal;
-            font-weight: 600;
-            src: url({{ public_path('fonts/gelion-Bold.ttf') }}) format('truetype');
-        }
-
-        @font-face {
-            font-family: 'DM Sans';
+            font-family: 'gelion';
             font-style: normal;
             font-weight: 700;
             src: url({{ public_path('fonts/gelion-Bold.ttf') }}) format('truetype');
         }
 
-        * {
-            letter-spacing: normal !important;
-        }
-
+        /* Force no extra letter spacing for dompdf rendering */
         body {
-            font-family: 'DM Sans', Arial, sans-serif !important;
+            font-family: 'gelion', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
             color: #33303CAD;
+            letter-spacing: 0 !important;
+            word-spacing: normal !important;
         }
 
         table {
@@ -49,6 +42,33 @@
 
         table thead {
             font-weight: 700;
+        }
+
+        .faktura {
+            font-family: 'gelion', Arial, sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #454545;
+            border-top: 2px solid #454545;
+            border-bottom: 2px solid #454545;
+            padding: 4px 0;
+            display: inline-block;
+            letter-spacing: 0 !important;
+        }
+
+        .table-items {
+            font-family: 'gelion', Arial, sans-serif !important;
+            margin-top: 10px;
+            border-radius: 8px !important;
+            border-width: thin !important;
+            border-style: solid !important;
+            border-color: rgba(47,43,61, 0.16) !important;
+            letter-spacing: 0 !important;
+        }
+
+        .table-supplier {
+            font-family: 'gelion', Arial, sans-serif !important;
+            letter-spacing: 0 !important;
         }
 
         .invoice-background {
@@ -87,61 +107,6 @@
 
         .mt-20 {
             margin-top: 20px;
-        }
-
-        .mt-auto {
-            margin-top: auto;
-        }
-
-        .w-30 {
-            width: 30%;
-        }
-
-        .pb-0 {
-            padding-bottom: 0 !important;
-        }
-
-        .pt-8 {
-            padding-top: 8px !important;
-        }
-
-        .faktura {
-            font-family: 'DM Sans', Arial, sans-serif;
-            font-size: 32px;
-            font-weight: 600;
-            color: #454545;
-            border-top: 2px solid #454545;
-            border-bottom: 2px solid #454545;
-            padding: 4px 0;
-            display: inline-block;
-            letter-spacing: 0 !important;
-        }
-
-        .table-main {
-            width: 100%;
-            height: calc(100% - 150px); /* Resta el espacio necesario para el footer */
-            margin-bottom: 150px;
-        }
-
-        .number-invoice {
-            align-items: end;
-            justify-content: end;
-            text-align: right;
-            width: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .font-weight-medium {
-            font-weight: 700;
-        }
-
-        .table-items {
-            margin-top: 10px;
-            border-radius: 8px !important;
-            border-width: thin !important;
-            border-style: solid !important;
-            border-color: rgba(47,43,61, 0.16) !important;
         }
 
         .pr-0 {

@@ -3,5 +3,9 @@
         "normal": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/dm_sans_normal_e990fb77b31a6cd9b056a115c3ae7640",
         "600": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/dm_sans_600_0b35db328db811a914b2406ef52ba29c",
         "bold": "dm_sans_bold_0b35db328db811a914b2406ef52ba29c"
+    },
+    "gelion": {
+        "normal": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/gelion_normal_e990fb77b31a6cd9b056a115c3ae7640",
+        "bold": "gelion_bold_0b35db328db811a914b2406ef52ba29c"
     }
 }
