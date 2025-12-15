@@ -34,10 +34,7 @@ $publicFontsPath = __DIR__ . '/public/fonts';
 // Verificar que las fuentes existan
 $fontsToInstall = [
     'DMSans-VariableFont.ttf',
-    'DMSans-Italic-VariableFont.ttf',
-    'gelion-Regular.ttf',
-    'gelion-Bold.ttf',
-    'gelion-Light.ttf'
+    'DMSans-Italic-VariableFont.ttf'
 ];
 
 foreach ($fontsToInstall as $font) {
@@ -69,24 +66,25 @@ $fontMetrics->registerFont(
 );
 echo "DM Sans italic instalada.\n";
 
-// Registrar Gelion
-$fontMetrics->registerFont(
-    ['family' => 'gelion', 'style' => 'normal', 'weight' => 'normal'],
-    $publicFontsPath . '/gelion-Regular.ttf'
-);
-echo "Gelion normal instalada.\n";
+// Intentar registrar Gelion si existe
+$gelionFonts = [
+    ['file' => 'gelion-Regular.ttf', 'weight' => 'normal', 'name' => 'Gelion normal'],
+    ['file' => 'gelion-Bold.ttf', 'weight' => 'bold', 'name' => 'Gelion bold'],
+    ['file' => 'gelion-Light.ttf', 'weight' => '300', 'name' => 'Gelion light']
+];
 
-$fontMetrics->registerFont(
-    ['family' => 'gelion', 'style' => 'normal', 'weight' => 'bold'],
-    $publicFontsPath . '/gelion-Bold.ttf'
-);
-echo "Gelion bold instalada.\n";
-
-$fontMetrics->registerFont(
-    ['family' => 'gelion', 'style' => 'normal', 'weight' => '300'],
-    $publicFontsPath . '/gelion-Light.ttf'
-);
-echo "Gelion light instalada.\n";
+foreach ($gelionFonts as $gelion) {
+    $path = $publicFontsPath . '/' . $gelion['file'];
+    if (file_exists($path)) {
+        $fontMetrics->registerFont(
+            ['family' => 'gelion', 'style' => 'normal', 'weight' => $gelion['weight']],
+            $path
+        );
+        echo $gelion['name'] . " instalada.\n";
+    } else {
+        echo $gelion['name'] . " NO encontrada (opcional).\n";
+    }
+}
 
 echo "\n¡Fuentes instaladas correctamente!\n";
 echo "Verifica el archivo: " . $fontPath . "/installed-fonts.json\n";
