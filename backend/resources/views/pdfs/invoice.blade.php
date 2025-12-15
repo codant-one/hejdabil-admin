@@ -7,22 +7,8 @@
     </head>
     <style>
 
-        /* Register Gelion static fonts (use actual family name). */
-        @font-face {
-            font-family: 'gelion';
-            font-style: normal;
-            font-weight: 400;
-            src: url({{ public_path('fonts/gelion-Regular.ttf') }}) format('truetype');
-        }
-
-        @font-face {
-            font-family: 'gelion';
-            font-style: normal;
-            font-weight: 700;
-            src: url({{ public_path('fonts/gelion-Bold.ttf') }}) format('truetype');
-        }
-
-        /* Force no extra letter spacing for dompdf rendering */
+        /* Using fonts registered by dompdf (storage/fonts/installed-fonts.json). */
+        /* Do NOT declare @font-face here; rely on dompdf's font registry to avoid conflicts. */
         body {
             font-family: 'gelion', Arial, sans-serif !important;
             background-color: #FFFFFF;
