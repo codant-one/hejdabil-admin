@@ -25,7 +25,7 @@ class AdminSeeder extends Seeder
             'updated_at' => now()->toDateString()
         ]);
 
-        $admin->assignRole('SuperAdmin');
+        $admin->assignRole('Supplier');
         
     }
 }

@@ -48,10 +48,10 @@ const { appRouteTransition } = useThemeConfig()
       </Transition>
     </RouterView>
 
-    <!-- 👉 Footer -->
+    <!-- 👉 Footer 
     <template #footer>
       <Footer />
-    </template>
+    </template> -->
 
     <!-- 👉 Customizer -->
     <!-- <TheCustomizer /> -->

@@ -3,8 +3,7 @@
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
-
-const route = useRoute();
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const avatar = ref('')
 const avatarOld = ref('')
@@ -144,22 +143,14 @@ const onImageSelected = event => {
 
 <template>
   <section>
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
+    
     <VAlert
       v-if="advisor.show"
       :type="advisor.type"
       class="mb-6">
         {{ advisor.message }}
     </VAlert>
-
 
     <VRow>
       <VCol

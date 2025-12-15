@@ -10,9 +10,11 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
-        "importsNotUsedAsValues": "error"
+        "verbatimModuleSyntax": true,
+        "allowJs": true,
+        "noEmit": true
     },
-    "exclude": [
-        "./*.js"
+    "include": [
+        "./icons-bundle.js"
     ]
 }

@@ -4,6 +4,7 @@ import { useTypesStores } from '@/stores/useTypes'
 import { useInvoicesStores } from '@/stores/useInvoices'
 import { excelParser } from '@/plugins/csv/excelParser'
 import AddNewInvoiceDrawer from './AddNewInvoiceDrawer.vue' 
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const invoicesStores = useInvoicesStores()
 const typesStores = useTypesStores()
@@ -224,15 +225,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert
@@ -246,7 +239,7 @@ const downloadCSV = async () => {
         <VCard title="">
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -313,7 +306,7 @@ const downloadCSV = async () => {
                 <td class="text-wrap"> {{ invoice.name }} </td>
                 <td class="text-wrap"> {{ invoice.description }}</td>
                 <td class="text-wrap"> {{ invoice.type.name }}</td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'invoices') || $can('delete', 'invoices')">      
                   <VMenu>
                     <template #activator="{ props }">
@@ -417,18 +410,6 @@ const downloadCSV = async () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100%;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 30rem;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

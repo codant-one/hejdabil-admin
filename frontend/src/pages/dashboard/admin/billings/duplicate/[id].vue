@@ -1,11 +1,13 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useBillingsStores } from '@/stores/useBillings'
 import { useConfigsStores } from '@/stores/useConfigs'
 import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores()
 const billingsStores = useBillingsStores()
@@ -19,6 +21,15 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null);
+
+const initialInvoiceData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
 
 // 👉 Default Blank Data
 const validate = ref()
@@ -49,6 +60,15 @@ const extractDaysFromNetTermSplit = term => {
     const daysIndex = parts.findIndex(part => /dagar?/i.test(part));
     return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 }
+
+const isDirty = computed(() => {
+  if (!initialInvoiceData.value) return false;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
 
 watchEffect(fetchData)
 
@@ -99,21 +119,19 @@ async function fetchData() {
 
         localStorage.setItem('user_data', JSON.stringify(user_data))
 
-        if(billing.value.supplier_id === null) {//admin
-          await configsStores.getFeature('company')
-          await configsStores.getFeature('logo')
-
-          company.value = configsStores.getFeaturedConfig('company')
-          company.value.billings = response.data.data.billings
-          company.value.logo = configsStores.getFeaturedConfig('logo').logo
-        } else if(role.value === 'Supplier') {//supplier
-          company.value = user_data.user_detail
-          company.value.email = user_data.email
-          company.value.billings = user_data.supplier.billings
-        } else {//user
-          company.value = user_data.supplier.boss.user.user_detail
-          company.value.email = user_data.supplier.boss.user.email
-          company.value.billings = user_data.supplier.boss.billings
+        if (billing.value.supplier_id === null) {
+          //admin
+          await configsStores.getFeature("company");
+          await configsStores.getFeature("logo");
+    
+          company.value = configsStores.getFeaturedConfig("company");
+          company.value.billings = response.data.data.billings;
+          company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+        } else {
+          //supplier
+          company.value = billing.value.supplier.user.user_detail;
+          company.value.email = billing.value.supplier.user.email;
+          company.value.billings = billing.value.supplier.billings;
         }
 
         JSON.parse(billing.value.detail).forEach(details => {
@@ -262,98 +280,122 @@ const onSubmit = () => {
     })
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 </script>
 
 <template>
-  <VForm
-    ref="validate"
-    @submit.prevent="onSubmit"
-    >
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
-    <VRow v-if="advisor.show">
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">       
-          {{ advisor.message }}
-        </VAlert>
-      </VCol>
-    </VRow>
-    <VRow v-if="band">
-      <!-- 👉 InvoiceEditable -->
-      <VCol
-        cols="12"
-        md="9"
-        class="order-2 order-md-1"
+  <section class="page-section" ref="sectionEl">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
+    <VSnackbar
+        v-model="advisor.show"
+        transition="scroll-y-reverse-transition"
+        :location="snackbarLocation"
+        :color="advisor.type"
+        class="snackbar-alert snackbar-dashboard"
       >
-        <InvoiceEditable
-            v-if="clients.length > 0"
-            :data="invoiceData"
-            :clients="clients"
-            :suppliers="suppliers"
-            :invoices="invoices"
-            :invoice_id="invoice_id"
-            :userData="userData"
-            :role="role"
-            :company="company"
-            :total="total"
-            :amount_discount="amount_discount"
-            :billing="billing"
-            :isCreated="false"
-            :isCredit="false"
-            @push="addProduct"
-            @remove="removeProduct"
-            @delete="deleteProduct"
-            @edit="editProduct"
-            @data="data"
-            @discount="applyDiscount"
-        />
-        
-      </VCol>
+        {{ advisor.message }}
+    </VSnackbar>
+    <VForm ref="validate" @submit.prevent="onSubmit">
+      <VRow no-gutters v-if="band" class="card-fill w-100">
+        <!-- 👉 InvoiceEditable -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 9"
+          class="order-1"
+          :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
+        >
+          <InvoiceEditable
+              v-if="clients.length > 0"
+              :data="invoiceData"
+              :clients="clients"
+              :suppliers="suppliers"
+              :invoices="invoices"
+              :invoice_id="invoice_id"
+              :userData="userData"
+              :role="role"
+              :company="company"
+              :total="total"
+              :amount_discount="amount_discount"
+              :billing="billing"
+              :isCreated="false"
+              :isCredit="false"
+              :title="'Duplicera fakturan'"
+              @push="addProduct"
+              @remove="removeProduct"
+              @delete="deleteProduct"
+              @edit="editProduct"
+              @data="data"
+              @discount="applyDiscount"
+          />
+        </VCol>
 
-      <!-- 👉 Right Column: Invoice Action -->
-      <VCol
-        cols="12"
-        md="3"
-        class="order-1 order-md-2"
-      >
-        <VCard class="mb-8">
-          <VCardText>
-            <!-- 👉 Send Invoice -->
-            <VBtn
-              block
-              prepend-icon="tabler-send"
-              class="mb-2"
-              type="submit"
+        <!-- 👉 Right Column: Invoice Action -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 3"
+          class="order-1 order-md-2"
+          :class="windowWidth < 1024 ? 'p-0' : ''"
+        >
+          <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''">
+            <VCardText
+              :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
             >
-                Duplicera
-            </VBtn>
+              <!-- 👉 Send Invoice -->
+              <VBtn
+                class="btn-gradient mb-4"
+                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                type="submit"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-duplicate" size="24" v-if="windowWidth >= 1024" />
+                  <VIcon icon="custom-duplicate" size="24" v-if="windowWidth < 1024" />
+                </template>
+                  Duplicera
+              </VBtn>
 
-            <!-- 👉 Preview -->
-            <VBtn
-              block
-              color="default"
-              variant="tonal"
-              class="mb-2"
-              :to="{ name: 'dashboard-admin-billings' }"
-            >
-              Tillbaka
-            </VBtn>
-          </VCardText>
-        </VCard>
-      </VCol>
+              <!-- 👉 Preview -->
+              <VBtn
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                :to="{ name: 'dashboard-admin-billings' }"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-return" size="24" />
+                </template>
+                Tillbaka
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VCol>
 
-    </VRow>
-  </VForm>
+      </VRow>
+    </VForm>
+  </section>
 </template>
 
 <route lang="yaml">

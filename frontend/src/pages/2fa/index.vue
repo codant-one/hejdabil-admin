@@ -1,189 +1,161 @@
 <script setup>
 
-import { themeConfig } from '@themeConfig'
-import { useAuthStores } from '@/stores/useAuth'
-import authV1BottomShape from '@images/pages/block-1.png'
-import authV1TopShape from '@images/pages/block-1.png'
+import { useAuthStores } from "@/stores/useAuth";
+import { useDisplay } from "vuetify";
 
-const authStores = useAuthStores()
-const route = useRoute()
-const router = useRouter()
+import logo from "@images/logos/billogg-logo.svg";
 
-const load = ref(false)
-const otp = ref('')
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const authStores = useAuthStores();
+const route = useRoute();
+const router = useRouter();
+
+const load = ref(false);
+const otp = ref("");
 
 const handleOtp = (value) => {
-    otp.value = value
-}
+  otp.value = value;
+};
 
 const advisor = ref({
-  type: '',
-  message: '',
-  show: false
-})
+  type: "",
+  message: "",
+  show: false,
+});
 
 const onSubmit = () => {
+  if (otp.value.length === 6) {
+    load.value = true;
 
-    if (otp.value.length === 6) {
-        load.value = true
-        
-        let data = {
-          panel: false,
-          token_2fa: otp.value,
-          token: localStorage.getItem('token')
+    let data = {
+      panel: false,
+      token_2fa: otp.value,
+      token: localStorage.getItem("token"),
+    };
+
+    authStores
+      .validate(data)
+      .then((response) => {
+        // Redirect to `to` query if exist or redirect to index route
+        router.replace(route.query.to ? String(route.query.to) : "/info");
+      })
+      .catch((err) => {
+        load.value = false;
+
+        if (err.message === "invalid_code") {
+          advisor.value.show = true;
+          advisor.value.type = "error";
+          advisor.value.message = err.errors;
         }
 
-        authStores.validate(data)
-            .then(response => {
-                // Redirect to `to` query if exist or redirect to index route
-                router.replace(route.query.to ? String(route.query.to) : '/info')
-            }).catch(err => {
+        setTimeout(() => {
+          advisor.value.show = false;
+          advisor.value.type = "";
+          advisor.value.message = "";
+        }, 5000);
 
-                load.value = false
-
-                if(err.message === 'invalid_code'){
-                  advisor.value.show = true
-                  advisor.value.type = 'error'
-                  advisor.value.message = err.errors
-                }
-
-                setTimeout(() => {
-                  advisor.value.show = false
-                  advisor.value.type = ''
-                  advisor.value.message = ''
-                }, 5000)
-
-                console.error(err.message)
-            })
-    }
-}
-
+        console.error(err.message);
+      });
+  }
+};
 </script>
 
 <template>
-  <div class="auth-wrapper-2fa d-flex align-center justify-center pa-4">
-    <div class="position-relative my-sm-16">
-      <!-- 👉 Top shape -->
-      <VImg
-        :src="authV1TopShape"
-        class="auth-v1-top-shape d-none d-sm-block"
-      />
+  <VSnackbar
+    v-model="alert.show"
+    transition="scroll-y-reverse-transition"
+    :location="snackbarLocation"
+    :color="alert.type"
+    class="snackbar-alert"
+  >
+    {{ alert.message }}
+  </VSnackbar> 
+  
+  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
+    <div class="d-flex logo-box mt-2 mt-md-0">
+      <RouterLink to="/login">
+        <img :src="logo" width="121" height="40" />
+      </RouterLink>
+    </div>
 
-      <!-- 👉 Bottom shape -->
-      <VImg
-        :src="authV1BottomShape"
-        class="auth-v1-bottom-shape d-none d-sm-block"
-      />
+    <div class="d-flex flex-column align-center text-center box-2fa gap-3">
+      <VIcon
+        icon="custom-f-two-factor-auth"
+        size="120"
+        class="mx-auto"
+      ></VIcon>
 
-      <VAlert
-        v-if="advisor.show"
-        :type="advisor.type"
-        class="mb-6"
-      >
-        {{ advisor.message }}
-      </VAlert>
+      <h2 class="login-title">Autentiserare</h2>
 
-      <div class="d-block">
-        <!-- 👉 Auth card -->
-        <VCard
-          class="auth-card auth pa-4"
-          max-width="448"
-        >
-          <VCardText class="px-2 px-md-6 pb-5">
-              <span class="d-flex justify-center"> 
-                  <VImg
-                      class="padlock"
-                      :src="themeConfig.settings.urlPublic + 'images/google_authenticator.svg'"
-                    />
-              </span>
-            <h5 class="text-h5 font-weight-semibold mb-1 mt-5">
-              Google Authenticator 💬
-            </h5>
-          </VCardText>
+      <p class="letter">Ange din 6-siffriga säkerhetskod</p>
 
-          <VCardText class="px-2 px-md-6 pb-5">
-            <VForm
-              @submit.prevent="onSubmit">
-              <VRow>
-                <!-- email -->
-                <VCol cols="12">
-                  <AppOtpInput @updateOtp="handleOtp"/>
-                </VCol>
+      <VForm @submit.prevent="onSubmit" class="auth-form d-flex flex-column gap-6">
+        <div class="form-field form-field-2fa d-flex flex-column gap-4">
+          <AppOtpInput @updateOtp="handleOtp" />
+        </div>
 
-                <!-- reset password -->
-                <VCol cols="12">
-                  <VBtn
-                    block
-                    type="submit"
-                  >
-                  Skicka
-                    <VProgressCircular
-                      v-if="load"
-                      indeterminate
-                      color="#fff"
-                    />
-                  </VBtn>
-                </VCol>
-              </VRow>
-            </VForm>
-          </VCardText>
-        </VCard>
-      </div>
+        <!-- reset password -->
+        <VBtn 
+          class="btn-gradient w-100" 
+          type="submit"
+          :loading="load"
+          >Skicka
+            <VProgressCircular
+              v-if="load"
+              indeterminate
+              color="#fff"
+            />
+        </VBtn>
+
+        <!-- back to login -->
+        <div class="d-none justify-center">
+          <RouterLink
+            class="gray-link d-flex align-center justify-center gap-2"
+            :to="{ name: 'login' }"
+          >
+            <span>Fick du inte verifieringskoden? <span class="text-underline">Lorem Ipsum</span></span>
+          </RouterLink>
+        </div>
+      </VForm>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-    @use "@core/scss/template/pages/page-auth.scss";
+@use "@core/scss/template/pages/page-auth.scss";
 
-    .auth .v-card-item__prepend {
-        padding-inline-end: 0 !important;
-    }
+.box-2fa {
+  max-width: 442px;
+  width: 100%;
+  margin: 0 auto;
+}
 
-    .auth .v-card-item {
-        padding: 0 24px !important;
-    }
+.login-title {
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 56px;
+  letter-spacing: 0%;
+  text-align: center;
+  color: #454545;
+}
 
-    .padlock {
-      height: 200px;
-    }
-
-    @media(max-width: 991px){
-      .auth .v-card--variant-elevated {
-        box-shadow: none !important;
-      }
-   
-      .v-card--variant-elevated {
-        box-shadow: none !important;
-      }
-
-      .v-card-text {
-        padding: 10px !important;
-      }
-
-      .letter, .v-selection-control--inline .v-label {
-        font-size: 11.5px !important;
-      }
-
-      .v-selection-control__wrapper {
-        width: 28px !important;
-        margin-left: 4px;
-      }
-
-      .text-h5 {
-        font-size: 1.2rem !important;
-      }
-
-      .padlock {
-        height: 100px;
-      }
-    }
+@media (max-width: 991px) {
+  .logo-box {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+}
 </style>
 
 <route lang="yaml">
-    meta:
-      layout: blank
-      action: view
-      subject: Auth
-      redirectIfLoggedIn: false
+meta:
+  layout: blank
+  action: view
+  subject: Auth
+  redirectIfLoggedIn: false
 </route>

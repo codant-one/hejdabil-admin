@@ -39,7 +39,7 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
   <li
     v-if="can(item.action, item.subject)"
     class="nav-link"
-    :class="{ disabled: item.disable }"
+    :class="[{ disabled: item.disable }, item.class]"
   >
     <Component
       :is="item.to ? 'RouterLink' : 'a'"
@@ -51,6 +51,7 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
         :is="config.app.iconRenderer || 'div'"
         v-bind="item.icon || config.verticalNav.defaultNavItemIconProps"
         class="nav-item-icon"
+        size="24"
       />
       <TransitionGroup name="transition-slide-x">
         <!-- 👉 Title -->

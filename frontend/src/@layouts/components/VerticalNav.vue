@@ -1,26 +1,22 @@
 <script setup>
-import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { VNodeRenderer } from './VNodeRenderer'
-import {
-  injectionKeyIsVerticalNavHovered,
-  useLayouts,
-} from '@layouts'
+import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+import { VNodeRenderer } from "./VNodeRenderer";
+import { injectionKeyIsVerticalNavHovered, useLayouts } from "@layouts";
 import {
   VerticalNavGroup,
   VerticalNavLink,
   VerticalNavSectionTitle,
-} from '@layouts/components'
-import { config } from '@layouts/config'
-import { openGroups } from '@layouts/utils'
+} from "@layouts/components";
+import { config } from "@layouts/config";
+import { openGroups } from "@layouts/utils";
+
+import toggleNav from "@/assets/images/icons/figma/toggleNav.svg";
 
 const props = defineProps({
   tag: {
-    type: [
-      String,
-      null,
-    ],
+    type: [String, null],
     required: false,
-    default: 'aside',
+    default: "aside",
   },
   navItems: {
     type: null,
@@ -34,13 +30,14 @@ const props = defineProps({
     type: Function,
     required: true,
   },
-})
+});
 
-const refNav = ref()
-const { width: windowWidth } = useWindowSize()
-const isHovered = useElementHover(refNav)
-const titleAPP = ref(import.meta.env.VITE_APP_TITLE)
+const refNav = ref();
+const { width: windowWidth } = useWindowSize();
+const titleAPP = ref(import.meta.env.VITE_APP_TITLE);
 
+// Provide hover state so children can inject it
+const isHovered = ref(false)
 provide(injectionKeyIsVerticalNavHovered, isHovered)
 
 const {
@@ -48,31 +45,44 @@ const {
   isLessThanOverlayNavBreakpoint,
   isVerticalNavMini,
   isAppRtl,
-} = useLayouts()
+} = useLayouts();
 
-const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered)
+const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered);
 
-const resolveNavItemComponent = item => {
-  if ('heading' in item)
-    return VerticalNavSectionTitle
-  if ('children' in item)
-    return VerticalNavGroup
-  
-  return VerticalNavLink
-}
+// const wasCollapsed = ref(isCollapsed.value);
 
-const route = useRoute()
+// watch(isHovered, val => {
+//   if (val) {
+//     wasCollapsed.value = isCollapsed.value;
+//     isCollapsed.value = false;
+//   } else {
+//     isCollapsed.value = wasCollapsed.value;
+//   }
+// });
 
-watch(() => route.name, () => {
-  props.toggleIsOverlayNavActive(false)
-})
+const resolveNavItemComponent = (item) => {
+  if ("heading" in item) return VerticalNavSectionTitle;
+  if ("children" in item) return VerticalNavGroup;
 
-const isVerticalNavScrolled = ref(false)
-const updateIsVerticalNavScrolled = val => isVerticalNavScrolled.value = val
+  return VerticalNavLink;
+};
 
-const handleNavScroll = evt => {
-  isVerticalNavScrolled.value = evt.target.scrollTop > 0
-}
+const route = useRoute();
+
+watch(
+  () => route.name,
+  () => {
+    props.toggleIsOverlayNavActive(false);
+  }
+);
+
+const isVerticalNavScrolled = ref(false);
+const updateIsVerticalNavScrolled = (val) =>
+  (isVerticalNavScrolled.value = val);
+
+const handleNavScroll = (evt) => {
+  isVerticalNavScrolled.value = evt.target.scrollTop > 0;
+};
 
 </script>
 
@@ -84,22 +94,31 @@ const handleNavScroll = evt => {
     :class="[
       {
         'overlay-nav': isLessThanOverlayNavBreakpoint(windowWidth),
-        'hovered': isHovered,
-        'visible': isOverlayNavActive,
-        'scrolled': isVerticalNavScrolled,
+        visible: isOverlayNavActive,
+        scrolled: isVerticalNavScrolled,
+        hovered: isHovered,
       },
     ]"
   >
     <!-- 👉 Header -->
+    <div class="nav-header-logo">
+      <RouterLink
+        to="/info"
+        :class="hideTitleAndIcon ? 'justify-center' : ''"
+        class="d-flex h-100 app-logo align-center gap-x-1 app-title-wrapper"
+      >
+        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" />
+      </RouterLink>
+    </div>
     <div class="nav-header">
       <slot name="nav-header">
-        <RouterLink
+        <!-- <RouterLink
           to="/info"
           class="app-logo d-flex align-center gap-x-1 app-title-wrapper"
         >
-        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" />
+        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" /> -->
 
-          <!-- <Transition name="vertical-nav-app-title">
+        <!-- <Transition name="vertical-nav-app-title">
             <h4
               v-show="!hideTitleAndIcon"
               class="app-title font-weight-bold leading-normal"
@@ -107,25 +126,26 @@ const handleNavScroll = evt => {
             {{ titleAPP }}
             </h4>
           </Transition> -->
-        </RouterLink>
+        <!-- </RouterLink> -->
+
+        <span v-show="!hideTitleAndIcon">Meny</span>
+        <!-- <VIcon
+          icon="tabler-arrows-minimize"
+          size="small"
+          class="me-2"
+          @click="closeAll"
+        /> -->
 
         <!-- 👉 Vertical nav actions -->
         <!-- Show toggle collapsible in >md and close button in <md -->
         <template v-if="!isLessThanOverlayNavBreakpoint(windowWidth)">
-          <Component
-            :is="config.app.iconRenderer || 'div'"
-            v-show="isCollapsed && !hideTitleAndIcon"
-            class="header-action"
-            v-bind="config.icons.verticalNavUnPinned"
+          <VBtn
+            class="btn-header-action"
+            aria-label="toggle vertical navigation"
             @click="isCollapsed = !isCollapsed"
-          />
-          <Component
-            :is="config.app.iconRenderer || 'div'"
-            v-show="!isCollapsed && !hideTitleAndIcon"
-            class="header-action"
-            v-bind="config.icons.verticalNavPinned"
-            @click="isCollapsed = !isCollapsed"
-          />
+          >
+            <img :src="toggleNav" alt="Toggle Nav Icon" class="" />
+          </VBtn>
         </template>
         <template v-else>
           <Component
@@ -137,9 +157,9 @@ const handleNavScroll = evt => {
         </template>
       </slot>
     </div>
-    <slot name="before-nav-items">
+    <!-- <slot name="before-nav-items">
       <div class="vertical-nav-items-shadow" />
-    </slot>
+    </slot> -->
     <slot
       name="nav-items"
       :update-is-vertical-nav-scrolled="updateIsVerticalNavScrolled"
@@ -169,21 +189,38 @@ const handleNavScroll = evt => {
 // 👉 Vertical Nav
 .layout-vertical-nav {
   position: fixed;
-  z-index: variables.$layout-vertical-nav-z-index;
+  z-index: 999;
   display: flex;
   flex-direction: column;
   block-size: 100%;
   inline-size: variables.$layout-vertical-nav-width;
   inset-block-start: 0;
   inset-inline-start: 0;
-  transition: transform 0.25s ease-in-out, inline-size 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
   will-change: transform, inline-size;
+  background-color: transparent !important;
+  box-shadow: none !important;
+
+  .nav-header-logo {
+    margin: 30px 24px 0 24px;
+  }
 
   .nav-header {
+    margin: 30px 24px 24px 24px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+
+    span {
+      font-weight: 500;
+      font-size: 16px;
+      line-height: 16px;
+      color: #1c2925;
+    }
 
     .header-action {
+      width: 16px;
+      height: 16px;
       cursor: pointer;
     }
   }
@@ -194,6 +231,13 @@ const handleNavScroll = evt => {
 
   .nav-items {
     block-size: 100%;
+    padding-bottom: 19px;
+    display: flex;
+    flex-direction: column;
+
+    > .help-button {
+      margin-top: auto;
+    }
 
     // ℹ️ We no loner needs this overflow styles as perfect scrollbar applies it
     // overflow-x: hidden;
@@ -212,7 +256,11 @@ const handleNavScroll = evt => {
   // 👉 Collapsed
   .layout-vertical-nav-collapsed & {
     &:not(.hovered) {
-      inline-size: variables.$layout-vertical-nav-collapsed-width;
+      inline-size: 120px;
+    }
+
+    &.layout-vertical-nav:not(.hovered) {
+      width: 96px;
     }
   }
 

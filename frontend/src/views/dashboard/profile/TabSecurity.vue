@@ -7,6 +7,7 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const profileStores = useProfileStores()
 const authStores = useAuthStores()
@@ -263,15 +264,7 @@ const onSubmitKey = async () => {
 
 <template>
   <section>
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent>
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VRow>
       <VCol cols="12" class="pb-0">

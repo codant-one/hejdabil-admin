@@ -1,4 +1,5 @@
 <script setup>
+
 import { useRoute } from 'vue-router'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { avatarText } from '@/@core/utils/formatters'
@@ -6,6 +7,7 @@ import { themeConfig } from '@themeConfig'
 import pdfIcon from '@images/icon-pdf-documento.png'
 import axios from '@/plugins/axios'
 import VuePdfEmbed from 'vue-pdf-embed'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const route = useRoute()
 const agreementsStores = useAgreementsStores()
@@ -135,7 +137,7 @@ onMounted(async () => {
             <VAlert v-if="error" type="error" class="mb-4">{{ error }}</VAlert>
 
             <div v-if="isLoading" class="d-flex justify-center my-8">
-              <VProgressCircular indeterminate color="primary" />
+              <LoadingOverlay :is-loading="isRequestOngoing" />
             </div>
 
             <template v-else>

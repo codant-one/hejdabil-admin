@@ -1,8 +1,19 @@
 <script setup>
 
-import router from '@/router'
-import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
-import { useVehiclesStores } from '@/stores/useVehicles'
+import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from 'vue-router';
+import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators';
+import { useVehiclesStores } from '@/stores/useVehicles';
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router';
+
+import iconFordon from "@/assets/images/iconify-svg/Auto-Fordon.svg";
+import iconKund from "@/assets/images/iconify-svg/clients.svg";
+import iconReturn from "@/assets/images/iconify-svg/return.svg";
+import iconSave from "@/assets/images/iconify-svg/save.svg";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+
+const { width: windowWidth } = useWindowSize();
 
 const vehiclesStores = useVehiclesStores()
 
@@ -74,6 +85,57 @@ const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
 const identification_id = ref(null)
+
+const isConfirmLeaveVisible = ref(false)
+const initialData = ref(null)
+const nextRoute = ref(null)
+
+const currentData = computed(() => ({
+    sale_price: sale_price.value,
+    sale_date: sale_date.value,
+    iva_sale_id: iva_sale_id.value,
+    sale_comments: sale_comments.value,
+    discount: discount.value,
+    registration_fee: registration_fee.value,
+    client_id: client_id.value,
+    organization_number: organization_number.value,
+    client_type_id: client_type_id.value,
+    fullname: fullname.value,
+    address: address.value,
+    street: street.value,
+    postal_code: postal_code.value,
+    phone: phone.value,
+    identification_id: identification_id.value,
+    email: email.value,
+    save_client: save_client.value
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+onBeforeRouteLeave((to, from, next) => {
+    if (isDirty.value) {
+        isConfirmLeaveVisible.value = true
+        nextRoute.value = next
+        return
+    }
+    next()
+})
+
+const reallyCloseAndReset = () => {
+    if (nextRoute.value) {
+        initialData.value = JSON.parse(JSON.stringify(currentData.value))
+        nextRoute.value()
+    }
+}
+
+const { mdAndDown } = useDisplay();
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -185,6 +247,10 @@ async function fetchData() {
             brand_id.value = brandId
             model_id.value = vehicle.value.model_id
         }
+
+        nextTick(() => {
+             initialData.value = JSON.parse(JSON.stringify(currentData.value))
+        })
     }
 
     isRequestOngoing.value = false
@@ -226,6 +292,7 @@ const selectClient = client => {
         disabled_client.value = true
     }
 }
+
 
 const onSubmit = () => {
     refForm.value?.validate().then(({ valid }) => {
@@ -295,16 +362,9 @@ const getFlag = (currency_id) => {
 </script>
 
 <template>
-    <section v-if="reg_num">
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+    <div>
+    <section>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
         <VAlert
             v-if="advisor.show"
             :type="advisor.type"
@@ -313,178 +373,192 @@ const getFlag = (currency_id) => {
             {{ advisor.message }}
         </VAlert>
         <VForm
+            v-if="reg_num"
             ref="refForm"
             v-model="isFormValid"
             @submit.prevent="onSubmit">
-            <VRow>
-                <VCol cols="12" md="12" class="py-0">
-                    <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
-                        <div class="d-flex flex-column justify-center">
-                            <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                Försäljningsuppgifter
-                            </h6>
-                            <span class="d-flex align-center">
-                                {{ reg_num }}
-                            </span>
-                        </div>
-                        <VSpacer />
-                        <div class="d-flex flex-column flex-md-row gap-1 gap-md-4 w-100 w-md-auto">
-                            <VBtn
-                                variant="tonal"
-                                color="secondary"
-                                class="mb-2 w-100 w-md-auto"
-                                :to="{ name: 'dashboard-admin-stock' }"
-                                >
-                                Tillbaka
-                            </VBtn>
-
-                            <VBtn type="submit" class="w-100 w-md-auto">
-                                Spara
-                            </VBtn>
-                        </div>
+            <VCard class="card-fill">
+                <VCardTitle
+                    class="d-flex gap-6 justify-space-between"
+                    :class="[
+                    windowWidth < 1024 ? 'flex-column' : 'flex-row',
+                    $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+                    ]"
+                >
+                    <div class="align-center font-blauer">
+                    <h2>Försäljningsuppgifter</h2>
                     </div>
-                </VCol>
-                <VCol cols="12" md="12">              
+
+                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+                    <div class="d-flex gap-4">
+                        <VBtn 
+                            class="btn-light w-auto" 
+                            block
+                            :to="{ name: 'dashboard-admin-stock' }">
+                            <img :src="iconReturn" alt="Fordon" class="me-2" width="24" height="24" />
+                            Tillbaka
+                        </VBtn>
+                        <VBtn
+                            v-if="$can('edit', 'stock')"
+                            class="btn-gradient"
+                            block
+                            type="submit"
+                        >
+                            <img :src="iconSave" alt="Fordon" class="me-2" width="24" height="24" />
+                            Spara
+                        </VBtn>
+                    </div>
+                </VCardTitle>
+
+                <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
+
+                <VRow>
+                    <VCol cols="12" md="12">              
                         <VCard flat class="px-2 px-md-12">
                             <VCardText class="px-2 pt-0 pt-md-5">                
-                                <VTabs v-model="currentTab" fixed-tabs>
-                                    <VTab>Fordon</VTab>
-                                    <VTab>Kund</VTab>
+                                <VTabs v-model="currentTab" class="v-tabs-pill" align-tabs="start">
+                                    <VTab value="tab-1" class="v-tabs-pill" align-tabs="start">
+                                        <img :src="iconFordon" alt="Fordon" class="me-2" width="24" height="24" />
+                                        Fordon
+                                    </VTab>
+                                    <VTab value="tab-2">
+                                        <img :src="iconKund" alt="Kund" class="me-2" width="24" height="24" />
+                                        Kund
+                                    </VTab>
                                 </VTabs>
                                 <VCardText class="px-0 px-md-2">
                                     <VWindow v-model="currentTab" class="pt-3">
                                         <!-- Fordon -->
-                                        <VWindowItem class="px-md-5">
+                                        <VWindowItem value="tab-1" class="px-md-5">
                                             <VRow class="px-md-5">
-                                                <VCol cols="12" md="6">
+                                                <VCol cols="12" class="pa-4 rounded-lg mb-5" style="background-color: #F5F5F5 !important;">
                                                     <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                        Grund och teknisk information
+                                                        Grundläggande, teknisk och prisinformation
                                                     </h6>
-                                                    <VList class="card-list mt-2">
-                                                        <VListItem>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Reg nr:
-                                                                    <span class="text-body-2">
-                                                                        {{ reg_num }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Miltal:
-                                                                    <span class="text-body-2">
-                                                                        {{ mileage }} Mil
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Märke:
-                                                                    <span class="text-body-2">
-                                                                        {{ brands.filter(item => item.id === brand_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Modell:
-                                                                    <span class="text-body-2">
-                                                                        {{ models.filter(item => item.id === model_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Generation:
-                                                                    <span class="text-body-2">
-                                                                        {{ generation }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Kaross:
-                                                                    <span class="text-body-2">
-                                                                        {{ carbodies.filter(item => item.id === car_body_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Årsmodell:
-                                                                    <span class="text-body-2">
-                                                                        {{ year }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Inköpsdatum:
-                                                                    <span class="text-body-2">
-                                                                        {{ purchase_date }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Kontrollbesiktning gäller tom:
-                                                                    <span class="text-body-2">
-                                                                        {{ control_inspection }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Färg:
-                                                                    <span class="text-body-2">
-                                                                        {{ color }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Drivmedel:
-                                                                    <span class="text-body-2">
-                                                                        {{ fuels.filter(item => item.id === fuel_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Växellåda:
-                                                                    <span class="text-body-2">
-                                                                        {{ gearboxes.filter(item => item.id === gearbox_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
+                                                    <VList class="card-list mt-2" id="miLista" bg-color="#F5F5F5">
+                                                        <VListItem style="background-color: #F5F5F5 !important;"   >
+                                                            <VRow>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Reg nr:
+                                                                        </h6>
+                                                                        <VTextField :model-value="reg_num" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Miltal:
+                                                                        </h6>
+                                                                        <VTextField :model-value="`${mileage} Mil`" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Märke:
+                                                                        </h6>
+                                                                        <VTextField :model-value="brands.filter(item => item.id === brand_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Modell:
+                                                                        </h6>
+                                                                        <VTextField :model-value="models.filter(item => item.id === model_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Generation:
+                                                                        </h6>
+                                                                        <VTextField :model-value="generation" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Kaross:
+                                                                        </h6>
+                                                                        <VTextField :model-value="carbodies.filter(item => item.id === car_body_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Årsmodell:
+                                                                        </h6>
+                                                                        <VTextField :model-value="year" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Inköpsdatum:
+                                                                        </h6>
+                                                                        <VTextField :model-value="purchase_date" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Kontrollbesiktning gäller tom:
+                                                                        </h6>
+                                                                        <VTextField :model-value="control_inspection" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Färg:
+                                                                        </h6>
+                                                                        <VTextField :model-value="color" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Drivmedel:
+                                                                        </h6>
+                                                                        <VTextField :model-value="fuels.filter(item => item.id === fuel_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Växellåda:
+                                                                        </h6>
+                                                                        <VTextField :model-value="gearboxes.filter(item => item.id === gearbox_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+
+
+
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            Inköpspris:
+                                                                        </h6>
+                                                                        <VTextField :model-value="`${purchase_price ?? 0} ${currencies.filter(item => item.id === currency_id)[0]?.code}`" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                                <VCol cols="12" md="4" lg="2">
+                                                                    <VListItemTitle class="h-auto mb-2">
+                                                                        <h6 class="text-base font-weight-semibold mb-1">
+                                                                            VMB / Moms:
+                                                                        </h6>
+                                                                        <VTextField :model-value="ivas.filter(item => item.id === iva_purchase_id)[0]?.name" disabled density="compact" variant="outlined" hide-details bg-color="#F5F5F5" />
+                                                                    </VListItemTitle>
+                                                                </VCol>
+                                                            </VRow>
                                                         </VListItem>
                                                     </VList>
                                                 </VCol>
-                                                <VCol cols="12" md="6">
-                                                    <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                        Prisinformation
-                                                    </h6>
-                                                    <VList class="card-list mt-2">
-                                                        <VListItem>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    Inköpspris:
-                                                                    <span class="text-body-2">
-                                                                        {{ purchase_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                            <VListItemTitle>
-                                                                <h6 class="text-base font-weight-semibold">
-                                                                    VMB / Moms:
-                                                                    <span class="text-body-2">
-                                                                        {{ ivas.filter(item => item.id === iva_purchase_id)[0]?.name }}
-                                                                    </span>
-                                                                </h6>
-                                                            </VListItemTitle>
-                                                        </VListItem>
-                                                    </VList>
+                                                <VCol cols="12">
                                                     <h6 class="text-md-h4 text-h6 font-weight-medium my-5">
                                                         Försäljningsuppgifter
                                                     </h6>
@@ -495,6 +569,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="sale_price"
                                                                 label="Försäljningspris"
                                                                 min="0"
+                                                                bg-color="#F5F5F5"
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
@@ -508,6 +583,7 @@ const getFlag = (currency_id) => {
                                                                 :item-value="item => item.id"
                                                                 autocomplete="off"
                                                                 clearable
+                                                                bg-color="#F5F5F5"
                                                                 clear-icon="tabler-x">
                                                                 <template
                                                                     v-if="currency_id"
@@ -531,6 +607,7 @@ const getFlag = (currency_id) => {
                                                                 :item-value="item => item.id"
                                                                 autocomplete="off"
                                                                 clearable
+                                                                bg-color="#F5F5F5"
                                                                 clear-icon="tabler-x"
                                                                 :rules="[requiredValidator]"/>
                                                         </VCol>
@@ -540,6 +617,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="iva_sale_amount"
                                                                 label="Varav moms"
                                                                 min="0"
+                                                                bg-color="#F5F5F5"
                                                                 disabled
                                                                 :rules="[requiredValidator]"
                                                             />
@@ -550,6 +628,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="iva_sale_exclusive"
                                                                 label="Prix ex moms"
                                                                 min="0"
+                                                                bg-color="#F5F5F5"
                                                                 disabled
                                                                 :rules="[requiredValidator]"
                                                             />
@@ -560,6 +639,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="discount"
                                                                 label="Rabatt"
                                                                 min="0"
+                                                                bg-color="#F5F5F5"
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
@@ -569,6 +649,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="registration_fee"
                                                                 label="Registreringsavgift"
                                                                 min="0"
+                                                                bg-color="#F5F5F5"
                                                                 :rules="[requiredValidator]"
                                                             />
                                                         </VCol>
@@ -581,6 +662,7 @@ const getFlag = (currency_id) => {
                                                                 label="Försäljningsdag"
                                                                 :rules="[requiredValidator]"
                                                                 clearable
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="12" class="text-end">
@@ -591,14 +673,14 @@ const getFlag = (currency_id) => {
                                             </VRow>
                                         </VWindowItem>
                                         <!-- Kund -->
-                                        <VWindowItem class="px-md-5">
+                                        <VWindowItem value="tab-2" class="px-md-5">
                                             <VRow class="px-md-5">
-                                                <VCol cols="12" md="6">
+                                                <VCol cols="12">
                                                     <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
                                                         Köpare
                                                     </h6>
                                                     <VRow>
-                                                        <VCol cols="12" md="12">
+                                                        <VCol cols="12" md="6">
                                                             <VAutocomplete
                                                                 v-model="client_id"
                                                                 label="Kunder"
@@ -607,23 +689,26 @@ const getFlag = (currency_id) => {
                                                                 :item-value="item => item.id"
                                                                 autocomplete="off"
                                                                 clearable
+                                                                bg-color="#F5F5F5"
                                                                 @click:clear="clearClient"
                                                                 @update:modelValue="selectClient"/>
                                                         </VCol>
-                                                        <VCol cols="10" md="11">
+                                                        <VCol cols="12" md="6" class="d-flex align-items-end">
                                                             <VTextField
                                                                 v-model="organization_number"
                                                                 label="Org/personummer"
                                                                 :rules="[requiredValidator]"
+                                                                bg-color="#F5F5F5"
                                                             />
-                                                        </VCol>
-                                                        <VCol cols="2" md="1" class="px-0 d-flex align-center">
-                                                            <VBtn
-                                                                icon="tabler-search"
-                                                                variant="tonal"
-                                                                color="primary"
-                                                                size="x-small"
-                                                            />
+
+                                                            <VBtn 
+                                                                variant="outlined" 
+                                                                color="secondary"
+                                                                class="ms-2 px-4" 
+                                                                style="border-color: #BDBDBD; height: 39px !important;">
+                                                                <VIcon icon="tabler-search" class="me-2" />
+                                                                Hämta
+                                                            </VBtn>
                                                         </VCol>
                                                         <VCol cols="12" md="6">
                                                             <VAutocomplete
@@ -633,20 +718,23 @@ const getFlag = (currency_id) => {
                                                                 :item-title="item => item.name"
                                                                 :item-value="item => item.id"
                                                                 :rules="[requiredValidator]"
-                                                                autocomplete="off"/>
+                                                                autocomplete="off"
+                                                                bg-color="#F5F5F5"/>
                                                         </VCol>
                                                         <VCol cols="12" md="6">
                                                             <VTextField
                                                                 v-model="fullname"
                                                                 label="Namn"
                                                                 :rules="[requiredValidator]"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
-                                                        <VCol cols="12" md="12">
+                                                        <VCol cols="12" md="6">
                                                             <VTextField
                                                                 v-model="address"
                                                                 :rules="[requiredValidator]"
                                                                 label="Adress"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
@@ -654,6 +742,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="postal_code"
                                                                 :rules="[requiredValidator]"
                                                                 label="Postnummer"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
@@ -661,6 +750,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="street"
                                                                 :rules="[requiredValidator]"
                                                                 label="Stad"
+                                                                bg-color="#F5F5F5"
                                                             /> 
                                                         </VCol>
                                                         <VCol cols="12" md="6">
@@ -668,6 +758,7 @@ const getFlag = (currency_id) => {
                                                                 v-model="phone"
                                                                 :rules="[requiredValidator, phoneValidator]"
                                                                 label="Telefon"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
@@ -678,18 +769,20 @@ const getFlag = (currency_id) => {
                                                                 :item-title="item => item.name"
                                                                 :item-value="item => item.id"
                                                                 :rules="[requiredValidator]"
-                                                                autocomplete="off"/>
+                                                                autocomplete="off"
+                                                                bg-color="#F5F5F5"/>
                                                         </VCol>
-                                                        <VCol cols="12" md="12">
+                                                        <VCol cols="12" md="6">
                                                             <VTextField
                                                                 v-model="email"
                                                                 :rules="[emailValidator, requiredValidator]"
                                                                 label="E-post"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
                                                     </VRow>
                                                 </VCol>
-                                                <VCol cols="12" md="6">
+                                                <VCol cols="12">
                                                     <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
                                                         Comments
                                                     </h6>
@@ -699,9 +792,10 @@ const getFlag = (currency_id) => {
                                                                 v-model="sale_comments"
                                                                 rows="4"
                                                                 label="Comments"
+                                                                bg-color="#F5F5F5"
                                                             />
                                                         </VCol>
-                                                        <VCol cols="12" md="12" class="py-0">
+                                                        <VCol cols="12" md="12" class="pb-4">
                                                             <VCheckbox
                                                                 v-model="save_client"
                                                                 :readonly="disabled_client"
@@ -718,10 +812,40 @@ const getFlag = (currency_id) => {
                                 </VCardText>
                             </VCardText>
                         </VCard>                
-                </VCol>
-            </VRow>
+                    </VCol>
+                </VRow>
+            </VCard>
         </VForm>
     </section>
+
+    <!-- Confirm leave without saving -->
+    <VDialog
+        v-model="isConfirmLeaveVisible"
+        persistent
+        class="action-dialog"
+    >
+        <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmLeaveVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+        </VBtn>
+        <VCard>
+        <VCardText class="dialog-title-box">
+            <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+            <div class="dialog-title">Avsluta utan att spara?</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+            <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Avbryt</VBtn>
+            <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Ja, fortsätt</VBtn>
+        </VCardText>
+        </VCard>
+    </VDialog>
+    </div>
 </template>
 
 <style scoped>
@@ -736,6 +860,20 @@ const getFlag = (currency_id) => {
 
     .justify-content-end {
         justify-content: end !important;
+    }
+
+    .v-tabs-pill .v-tab {
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 500;
+        color: #757575;
+    }
+
+    .v-tabs-pill .v-tab--selected {
+        color: #009688; /* Teal */
+        border-bottom: 1px solid;
+        border-image-source: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+        border-image-slice: 1;
     }
 </style>
 

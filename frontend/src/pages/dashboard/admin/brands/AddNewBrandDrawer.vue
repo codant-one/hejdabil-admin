@@ -305,10 +305,10 @@ const handleDrawerModelValueUpdate = val => {
 <style scoped>
 
   :deep(.vue-simple-handler) {
-      background: #9966FF !important;
+      background: #57F287 !important;
   }
   :deep(.cropper-preview-circle) {
-      border: dashed 1px #9966FF
+      border: dashed 1px #57F287
   }
   :deep(.cropper-background),
   :deep(.vue-advanced-cropper__foreground) {

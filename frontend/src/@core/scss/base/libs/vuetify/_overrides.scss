@@ -68,11 +68,11 @@ body,
 }
 
 // Removes padding-top for immediately placed v-card-text after itself
-.v-card-text {
-  & + & {
-    padding-block-start: 0 !important;
-  }
-}
+// .v-card-text {
+//   & + & {
+//     padding-block-start: 0 !important;
+//   }
+// }
 
 /*
   👉 Checkbox & Radio Ripple
@@ -89,6 +89,7 @@ body,
 }
 
 .v-selection-control--density-comfortable {
+  --v-selection-control-size: 24px;
   &.v-checkbox-btn,
   &.v-radio,
   &.v-radio-btn {
@@ -244,6 +245,7 @@ body,
 .v-navigation-drawer__scrim {
   background: rgba(var(--v-overlay-scrim-background), var(--v-overlay-scrim-opacity)) !important;
   opacity: 1 !important;
+  border-radius: 0 !important;
 }
 
 // 👉 VMessages

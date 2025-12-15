@@ -10,22 +10,11 @@
 </head>
 
 <body>
-  <div id="app">
-    <div id="loading-bg">
-      <div class="loading-logo">
-        <!-- <img src="/favicon@2x.png" alt="Logo" width="100"/> -->
-      </div>
-      <div class="loading">
-        <div class="effect-1 effects"></div>
-        <div class="effect-2 effects"></div>
-        <div class="effect-3 effects"></div>
-      </div>
-    </div>
-  </div>
+  <div id="app"></div>
   <script type="module" src="/src/main.js"></script>
   <script>
     const loaderColor = localStorage.getItem('Vuexy-initial-loader-bg') || '#FFFFFF'
-    const primaryColor = localStorage.getItem('Vuexy-initial-loader-color') || '#9966FF'
+    const primaryColor = localStorage.getItem('Vuexy-initial-loader-color') || '#57F287'
 
     if (loaderColor)
       document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)

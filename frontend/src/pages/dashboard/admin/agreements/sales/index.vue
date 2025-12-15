@@ -1,11 +1,12 @@
 <script setup>
 
-import router from '@/router'
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { useToastsStores } from '@/stores/useToasts'
 
@@ -611,15 +612,7 @@ const onSubmit = () => {
 
 <template>
     <section>
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
 
         <VForm
             ref="refForm"

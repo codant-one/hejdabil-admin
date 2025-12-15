@@ -9,6 +9,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
@@ -271,15 +272,7 @@ const openPayoutDialog = () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <!-- Payout Detail Dialog -->
       <PayoutDetailDialog
@@ -300,7 +293,7 @@ const openPayoutDialog = () => {
         <VCard title="">
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -391,7 +384,7 @@ const openPayoutDialog = () => {
                     </div>
                   </div>
                 </td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')">      
                   <VMenu>
                     <template #activator="{ props }">
@@ -497,18 +490,6 @@ const openPayoutDialog = () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100% !important;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 20rem !important;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

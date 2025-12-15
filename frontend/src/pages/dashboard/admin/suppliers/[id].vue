@@ -5,7 +5,7 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useClipboard } from '@vueuse/core';
-
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import CustomerBioPanel from '@/views/apps/ecommerce/customer/view/CustomerBioPanel.vue'
 import CustomerTabOverview from '@/views/apps/ecommerce/customer/view/CustomerTabOverview.vue'
@@ -143,15 +143,7 @@ const handleCopy = (data) => {
 <template>
   <div>
     <VRow>
-        <VDialog
-            v-model="isRequestOngoing"
-            width="auto"
-            persistent>
-            <VProgressCircular
-            indeterminate
-            color="primary"
-            class="mb-0"/>
-        </VDialog>
+        <LoadingOverlay :is-loading="isRequestOngoing" />
 
         <VCol cols="12">
             <VAlert

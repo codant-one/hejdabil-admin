@@ -93,6 +93,7 @@
 
   .v-card {
     @extend %style-scroll-bar;
+    box-shadow: none !important;
   }
 }
 

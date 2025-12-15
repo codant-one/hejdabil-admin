@@ -7,6 +7,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const suppliersStores = useSuppliersStores()
 const emitter = inject("emitter")
@@ -285,15 +286,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert
@@ -309,7 +302,7 @@ const downloadCSV = async () => {
         <VCard title="">
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -468,7 +461,7 @@ const downloadCSV = async () => {
                     </div>
                   </div>
                 </td>
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'suppliers') || $can('delete', 'suppliers')">      
                   <VMenu>
                     <template #activator="{ props }">
@@ -677,18 +670,6 @@ const downloadCSV = async () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100%;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 20rem;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

@@ -6,9 +6,10 @@
 @use "@styles/variables/vuetify";
 
 // 👉 Autocomplete
+.v-input--density-compact,
 .v-input--density-compact .v-field--variant-plain,
 .v-input--density-compact .v-field--variant-underlined {
-  --v-input-control-height: 40px !important;
+  --v-input-control-height: 48px !important;
 }
 
 // 👉 Body
@@ -28,9 +29,11 @@ body {
 $alert-prepend-icon-font-size: 1.125rem !important;
 
 .v-alert {
+  background-color: #fff;
+  box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.15);
   font-weight: 500;
 
-  &.v-alert--density-comfortable{
+  &.v-alert--density-comfortable {
     padding-inline: 14px;
   }
 
@@ -76,7 +79,7 @@ $alert-prepend-icon-font-size: 1.125rem !important;
       }
     }
 
-    &.v-alert--variant-tonal{
+    &.v-alert--variant-tonal {
       .v-alert__prepend {
         z-index: 1;
         background-color: rgb(var(--v-theme-surface));
@@ -110,7 +113,7 @@ $alert-prepend-icon-font-size: 1.125rem !important;
       &:not(.v-alert--prominent) {
         &.text-#{$color-name},
         &.bg-#{$color-name} {
-          .v-alert__prepend { 
+          .v-alert__prepend {
             background-color: rgb(var(--v-theme-#{$color-name}));
 
             .v-icon {
@@ -123,29 +126,341 @@ $alert-prepend-icon-font-size: 1.125rem !important;
   }
 }
 
+// Background
+
+.bg-gradient {
+  background: linear-gradient(90deg, #d8ffe4 0%, #c6ffeb 50%, #c0feff 100%);
+}
+
 // 👉 Button
 // Above map but opacity values as key and variant as value
 $btn-active-overlay-opacity: (
-  0.08: (outlined, flat, text, plain),
-  0.24: (tonal),
+  0.08: (
+    outlined,
+    flat,
+    text,
+    plain,
+  ),
+  0.24: (
+    tonal,
+  ),
 );
 $btn-hover-overlay-opacity: (
-  0.1: (elevated),
-  0.08: (outlined, flat, text, plain),
-  0.24: (tonal),
+  0.1: (
+    elevated,
+  ),
+  0.08: (
+    outlined,
+    flat,
+    text,
+    plain,
+  ),
+  0.24: (
+    tonal,
+  ),
 );
 
 body .v-btn {
-  transform: scale(1.001);
+  box-shadow: none !important;
+  min-width: auto !important;
+  height: 48px !important;
+  border-radius: 56px;
+  background-color: #fff !important;
+  padding: 0 16px;
+  gap: 0px !important;
 
-  // ℹ️ This is necessary because as we have darker overlay on hover for elevated variant, button text doesn't get dimmed
-  // This style is already applied to `.v-icon`
-  .v-btn__content {
-    z-index: 0;
+  &.btn-wide {
+    padding: 0 24px;
   }
 
-  &:active {
-    transform: scale(0.98);
+  .v-btn__overlay {
+    display: none !important;
+  }
+
+  .v-btn__content {
+    font-style: Regular;
+    font-size: 15px;
+    line-height: 100%;
+    letter-spacing: 0;
+    font-weight: 500;
+
+    z-index: 0;
+    color: #416054 !important;
+    gap: 8px;
+  }
+
+  &.btn-gradient {
+    background: linear-gradient(
+      90deg,
+      #57f287 0%,
+      #00eeb0 50%,
+      #00ffff 100%
+    ) !important;
+    color: #416054 !important;
+
+    &:hover,
+    &:focus {
+      background: #0fd84e !important;
+    }
+
+    &:active {
+      background-color: #0d6e2d !important;
+
+      .v-btn__content {
+        color: #1c2925 !important;
+      }
+    }
+  }
+
+  &.btn-light {
+    border: solid 1px #6e9383;
+    background-color: transparent !important;
+
+    .v-btn__prepend {
+      color: #6e9383 !important;
+    }
+
+    .v-btn__content {
+      z-index: 0;
+      color: #6e9383 !important;
+    }
+
+    &:hover,
+    &:focus {
+      border: solid 1px #416054 !important;
+      background-color: transparent !important;
+      .v-btn__overlay {
+        display: none;
+      }
+      .v-btn__prepend,
+      .v-btn__content {
+        color: #416054 !important;
+      }
+    }
+
+    &:active {
+      border: solid 1px #6e9383 !important;
+      background-color: transparent !important;
+      .v-btn__overlay {
+        display: none;
+      }
+      .v-btn__prepend,
+      .v-btn__content {
+        color: #6e9383 !important;
+      }
+    }
+  }
+
+  &.btn-white {
+    background-color: #fff !important;
+
+    &:hover,
+    &:focus {
+      background-color: #f6f6f6 !important;
+    }
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    &:active {
+      background-color: #454545 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  &.btn-white-2 {
+    background-color: #fff !important;
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content {
+      font-weight: 400;
+      color: #454545 !important;
+    }
+
+    &:hover,
+    &:focus {
+      background-color: #f6f6f6 !important;
+    }
+
+    &:active {
+      background-color: #454545 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  &.btn-white-3 {
+    background-color: #fff !important;
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content {
+      font-weight: 400;
+      color: #1c2925 !important;
+    }
+
+    &:hover,
+    &:focus {
+      background-color: #f6f6f6 !important;
+    }
+
+    &:active {
+      background-color: #454545 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  &.btn-blue {
+    background-color: #3af8ff !important;
+
+    &:hover,
+    &:focus {
+      background-color: #00e1e2 !important;
+    }
+
+    &:active {
+      background-color: #008c91 !important;
+
+      .v-btn__content {
+        color: #1c2925 !important;
+      }
+    }
+  }
+
+  &.btn-green {
+    background-color: #79fca2 !important;
+
+    &:hover,
+    &:focus {
+      background-color: #0fd84e !important;
+    }
+
+    &:active {
+      background-color: #0d6e2d !important;
+
+      .v-btn__content {
+        color: #1c2925 !important;
+      }
+    }
+  }
+
+  &.btn-header-action {
+    width: 40px;
+    height: 40px !important;
+    border-radius: 40px;
+    background-color: #bdd2c8 !important;
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #1c2925 !important;
+    }
+  }
+
+  &.btn-ghost {
+    background-color: transparent !important;
+    width: auto !important;
+    padding: 0 !important;
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content,
+    .v-btn__prepend {
+      color: #6e9383 !important;
+      gap: 8px;
+    }
+
+    &:hover,
+    &:focus {
+      .v-btn__content,
+      .v-btn__prepend {
+        color: #454545 !important;
+      }
+    }
+  }
+
+  &.btn-custom-notifications {
+    width: 79px !important;
+    min-width: auto !important;
+    height: 48px !important;
+    border-radius: 64px;
+    background-color: #fff !important;
+    padding-right: 16px;
+    padding-left: 16px;
+
+    .v-btn__overlay {
+      display: none !important;
+    }
+
+    .v-btn__content {
+      gap: 8px;
+
+      font-weight: 500;
+      font-size: 15px;
+      color: #1c2925 !important;
+      letter-spacing: 0;
+
+      .v-icon {
+        width: 20px !important;
+      }
+    }
+
+    &:hover,
+    &:focus {
+      background-color: #f6f6f6 !important;
+    }
+
+    &:active {
+      background-color: #454545 !important;
+
+      .v-btn__content {
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  &.btn-icon-profile {
+    padding: 0 16px 0 0 !important;
+
+    .v-btn__content {
+      .v-avatar {
+        width: 48px !important;
+        height: 48px !important;
+      }
+    }
+  }
+
+  &.upload-avatar-btn {
+    height: auto !important;
+    border-radius: 120px !important;
+    border: 1px solid #e7e7e7;
+
+    .avatar-box {
+      background-color: #f6f6f6;
+    }
+  }
+
+  // &.v-btn--icon {
+  //   width: 48px !important;
+  //   height: 48px !important;
+  // }
+
+  .v-btn__prepend {
+    margin: 0 8px 0 0 !important;
   }
 
   // Set icon size to 18px for default button
@@ -168,7 +483,10 @@ body .v-btn {
 
     // append each variant to selectors list
     @each $variant in $variants {
-      $selectors: list.append($selectors, "&.v-btn--variant-#{$variant}:active > .v-btn__overlay,");
+      $selectors: list.append(
+        $selectors,
+        "&.v-btn--variant-#{$variant}:active > .v-btn__overlay,"
+      );
     }
 
     #{$selectors} {
@@ -185,7 +503,10 @@ body .v-btn {
 
     // append each variant to selectors list
     @each $variant in $variants {
-      $selectors: list.append($selectors, "&.v-btn--variant-#{$variant}:hover > .v-btn__overlay,");
+      $selectors: list.append(
+        $selectors,
+        "&.v-btn--variant-#{$variant}:hover > .v-btn__overlay,"
+      );
     }
 
     #{$selectors} {
@@ -253,7 +574,8 @@ body .v-btn {
       }
     }
 
-    &:hover {
+    &:hover,
+    &:focus {
       background-color: #f6f6f6 !important;
     }
 
@@ -279,6 +601,7 @@ body .v-btn {
   .v-label {
     // We adjusted it to vertically align the label
     line-height: 21px;
+    margin-left: 6px;
   }
 
   .v-input__details {
@@ -305,19 +628,19 @@ body .v-btn {
     .v-selection-control__input {
       .v-icon.custom-checkbox-checked {
         // ℹ️ Using filter: drop-shadow() instead of box-shadow because box-shadow creates white background for SVG
-        filter: drop-shadow(map.get(vuetify.$shadow-key-umbra, 2));        
+        filter: drop-shadow(map.get(vuetify.$shadow-key-umbra, 2));
       }
     }
   }
 
-
-  .v-icon--size-default{
+  .v-icon--size-default {
     font-size: calc(var(--v-icon-size-multiplier) * 1.1rem) !important;
   }
 }
 
 // 👉 Dialog
 body .v-dialog {
+  border-radius: 16px;
   // dialog custom close btn
   .v-dialog-close-btn {
     border-radius: 0.375rem;
@@ -327,16 +650,76 @@ body .v-dialog {
     inset-block-start: 0;
     inset-inline-end: 0;
     transform: translate(0.5rem, -0.5rem);
-
-    @include layoutsMixins.rtl {
-      transform: translate(-0.5rem, -0.5rem);
+  }
+  &.action-dialog {
+    &.v-overlay--scroll-blocked {
+      padding-inline-end: 0 !important;
+    }
+    .v-overlay__content {
+      width: 500px;
+      .v-card {
+        border-radius: 16px;
+      }
     }
 
-    &:hover {
-      transform: translate(0.3125rem, -0.3125rem);
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px !important;
+      z-index: 1;
 
-      @include layoutsMixins.rtl {
-        transform: translate(-0.3125rem, -0.3125rem);
+      &:hover,
+      &:focus {
+        background-color: #fff !important;
+      }
+    }
+    .v-card {
+      .dialog-title-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding-bottom: 16px;
+
+        @media (max-width: 991px) {
+          flex-direction: column;
+          align-items: start;
+        }
+
+        &.big-icon {
+          @media (max-width: 991px) {
+            flex-direction: column;
+            align-items: center;
+          }
+        }
+
+        .dialog-title {
+          font-weight: 600;
+          font-size: 24px;
+          line-height: 100%;
+          letter-spacing: 0%;
+          color: #5d5d5d;
+        }
+      }
+      .dialog-text {
+        padding-top: 0px;
+        padding-bottom: 0px;
+      }
+      .dialog-actions {
+        @media (max-width: 991px) {
+          flex-direction: column-reverse;
+          padding: 24px 24px;
+          gap: 8px;
+        }
+      }
+    }
+
+    &.dialog-big-icon {
+      @media (max-width: 991px) {
+        text-align: center;
+
+        .dialog-title-box {
+          align-items: center;
+        }
       }
     }
   }
@@ -345,25 +728,20 @@ body .v-dialog {
 // 👉 Expansion panels
 body .v-layout .v-application__wrap .v-expansion-panels {
   // custom style for expansion panels
+  gap: 16px !important;
+
   &.expansion-panels-width-border {
     border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 0.375rem;
   }
 
   .v-expansion-panel {
-    margin-block-start: 0 !important;
+    margin: 0 !important;
 
     // expansion panel arrow font size
     .v-expansion-panel-title {
-      color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
-      font-weight: 500;
-
       .v-expansion-panel-title__icon {
         transition: transform 0.2s ease-in-out;
-
-        .v-icon {
-          font-size: 1.25rem;
-        }
       }
     }
 
@@ -378,15 +756,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         opacity: 0 !important;
       }
     }
-
-    // Set Elevation when panel open
-    &:not(.v-expansion-panels--variant-accordion) {
-      &.v-expansion-panel--active {
-        .v-expansion-panel__shadow {
-          @include mixins.elevation(7);
-        }
-      }
-    }
   }
 
   &:not(.no-icon-rotate) {
@@ -398,46 +767,83 @@ body .v-layout .v-application__wrap .v-expansion-panels {
           }
         }
       }
-
-      &.v-expansion-panel--active {
-        .v-expansion-panel-title__icon {
-          transform: rotate(90deg);
-
-          @include layoutsMixins.rtl {
-            transform: rotate(-90deg);
-          }
-        }
-      }
     }
   }
 
-  &:not(.expansion-panels-width-border) {
+  &.expansion-panels {
     .v-expansion-panel {
-      &:not(:last-child) {
-        margin-block-end: 0.5rem;
+      padding-right: 16px;
+      padding-left: 16px;
+      border-radius: 16px !important;
+      background-color: #f6f6f6 !important;
+      border-bottom-left-radius: 16px !important;
+      border-bottom-right-radius: 16px !important;
+
+      .v-expansion-panel__shadow {
+        display: none;
       }
 
-      &:not(:first-child)::after {
-        content: none;
-      }
+      .v-expansion-panel-title {
+        height: 66px;
+        padding: 0 8px 0 0;
+        border-radius: 0px;
 
-      // ℹ️ we have to use below style of increase the specificity and override the default style
-      /* stylelint-disable-next-line no-descending-specificity */
-      &:first-child:not(:last-child),
-      &:not(:first-child, :last-child),
-      &:not(:first-child) {
-        border-radius: 0.375rem !important;
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 16px;
+        color: #008c91;
+
+        .order-id {
+          width: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          font-weight: 400;
+          font-size: 14px;
+          line-height: 24px;
+          color: #454545;
+        }
+
+        .order-title-box {
+          display: flex;
+          flex-direction: column;
+          padding: 0 8px;
+          gap: 2px;
+        }
+        .title-organization {
+          display: flex;
+          gap: 8px;
+          color: #878787;
+          .text-black {
+            color: #454545;
+          }
+        }
+
+        &.v-expansion-panel-title--active {
+          border-bottom: 1px solid #e7e7e7;
+        }
+      }
+      .v-expansion-panel-text {
+        .v-expansion-panel-text__wrapper {
+          padding: 24px 0 16px !important;
+        }
       }
     }
   }
 }
 
 .v-field {
-  &.v-field--variant-solo, 
+  &.v-field--variant-solo,
   &.v-field--variant-filled {
     --v-field-padding-top: 7px !important;
 
     color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  }
+  .v-field__clearable {
+    padding: 0 !important;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -474,9 +880,9 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     transition: none;
   }
 
-  &.v-list-item--active{
-    .v-selection-control.v-selection-control--dirty.v-checkbox-btn{
-      .v-icon{
+  &.v-list-item--active {
+    .v-selection-control.v-selection-control--dirty.v-checkbox-btn {
+      .v-icon {
         color: #fff;
       }
     }
@@ -545,11 +951,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   .v-overlay__content {
     .v-list {
       .v-list-item {
-        border-radius: 0.375rem;
-        margin-block: 0.25rem;
-        margin-inline: 0.5rem;
-        min-block-size: 2.375rem;
-
         &:first-child {
           margin-block-start: 0;
         }
@@ -557,10 +958,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
         &:last-child {
           margin-block-end: 0;
         }
-      }
-
-      .v-list-item--density-default:not(.v-list-item--nav).v-list-item--one-line {
-        padding-block: 0.5rem;
       }
     }
   }
@@ -632,7 +1029,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   }
 }
 
-.v-input.v-radio-group > .v-input__control > .v-label{
+.v-input.v-radio-group > .v-input__control > .v-label {
   margin-inline-start: 0;
 }
 
@@ -678,7 +1075,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   .v-selection-control__input {
     transform: translateX(-5px);
 
-    --v-selection-control-size: 1.125rem;
+    --v-selection-control-size: 24px;
 
     .v-switch__thumb {
       background: rgba(var(--v-theme-on-surface), var(--v-switch-opacity));
@@ -715,11 +1112,17 @@ body .v-layout .v-application__wrap .v-expansion-panels {
   &.v-input--disabled {
     &:not(.v-input--dirty) {
       .v-selection-control__input .v-switch__thumb {
-        background: rgba(var(--v-theme-on-surface), var(--v-switch-disabled-thumb-opacity));
+        background: rgba(
+          var(--v-theme-on-surface),
+          var(--v-switch-disabled-thumb-opacity)
+        );
       }
 
       .v-switch__track {
-        background-color: rgba(var(--v-theme-on-surface), var(--v-switch-disabled-track-opacity));
+        background-color: rgba(
+          var(--v-theme-on-surface),
+          var(--v-switch-disabled-track-opacity)
+        );
       }
     }
 
@@ -771,30 +1174,47 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 .v-table {
   --v-table-row-height: 56px;
   --v-table-header-height: 48px !important;
+  .v-table__wrapper {
+    thead {
+      th {
+        border: 0 !important;
+        padding: 0 8px !important;
+        background-color: #f5f8f6;
+        color: #454545 !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
 
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity)) !important;
-
-  th {
-    color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity)) !important;
-    font-size: 0.8125rem;
-    font-weight: 500;
-    letter-spacing: 0.0625rem;
-    text-transform: uppercase;
-
-    .v-data-table-header__content {
-      display: flex;
-      justify-content: space-between;
+        &:first-child {
+          border-top-left-radius: 32px;
+          border-bottom-left-radius: 32px;
+        }
+        &:last-child {
+          border-top-right-radius: 32px;
+          border-bottom-right-radius: 32px;
+        }
+      }
+    }
+    tbody {
+      tr {
+        td {
+          height: 56px !important;
+          border-bottom: solid 1px #e7e7e7;
+          color: #454545 !important;
+          font-size: 14px !important;
+          font-weight: 400 !important;
+        }
+      }
     }
   }
 }
 
 // 👉 Datatable
 
-.v-data-table{
-  table{
-    tbody{
-      .v-data-table-group-header-row{
-        td{
+.v-data-table {
+  table {
+    tbody {
+      .v-data-table-group-header-row {
+        td {
           background-color: rgb(var(--v-theme-surface));
         }
       }
@@ -805,20 +1225,49 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 // 👉 Tabs
 // v-tab with pill support
 .v-tabs {
+  height: 48px !important;
   &.v-tabs--vertical {
-    --v-tabs-height: 38px !important;
-
     &:not(.v-tabs-pill) {
       block-size: 100%;
-      border-inline-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+      border-inline-end: 1px solid
+        rgba(var(--v-border-color), var(--v-border-opacity));
     }
   }
 
   &.v-tabs--horizontal:not(.v-tabs-pill) {
-    border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    .v-btn {
+      min-width: 256px !important;
+      height: 48px !important;
 
+      padding-right: 12px;
+      padding-left: 12px;
+      justify-content: left;
+
+      @media (max-width: 768px) {
+        min-width: auto !important;
+      }
+    }
+
+    // border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    .v-btn__content {
+      display: flex;
+      gap: 8px;
+    }
+    .v-slide-group-item--active {
+      .v-tab__slider {
+        block-size: 1px;
+        background: linear-gradient(
+          90deg,
+          #57f287 0%,
+          #00eeb0 50%,
+          #00ffff 100%
+        );
+      }
+    }
     .v-tab__slider {
-      block-size: 3px;
+      block-size: 1px;
+      background: #e7e7e7;
+      opacity: 1;
     }
   }
 
@@ -828,8 +1277,8 @@ body .v-layout .v-application__wrap .v-expansion-panels {
     font-weight: 400;
     transform: none !important;
 
-    &:hover{
-      color: rgb(var(--v-theme-primary))
+    &:hover {
+      color: rgb(var(--v-theme-primary));
     }
 
     &.v-btn--stacked {
@@ -882,7 +1331,6 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       box-shadow: 0 0 0 0.1875rem rgb(var(--v-theme-on-surface-variant));
 
       @each $color-name in variables.$theme-colors-name {
-
         &.bg-#{$color-name} {
           box-shadow: 0 0 0 0.1875rem rgba(var(--v-theme-#{$color-name}), 0.12);
         }
@@ -896,13 +1344,17 @@ body .v-layout .v-application__wrap .v-expansion-panels {
       .v-timeline-divider__inner-dot {
         background: rgb(var(--v-theme-background));
         box-shadow: none;
-
       }
     }
   }
 
   // we have to override the default bg-color of the timeline dot in the card
-  .v-card:not(.v-card--variant-text, .v-card--variant-plain, .v-card--variant-outlined) & {
+  .v-card:not(
+      .v-card--variant-text,
+      .v-card--variant-plain,
+      .v-card--variant-outlined
+    )
+    & {
     &.v-timeline-icon-only {
       .v-timeline-divider__dot {
         .v-timeline-divider__inner-dot {
@@ -942,6 +1394,11 @@ body {
 
     .v-field--variant-outlined.v-field--focused .v-field__outline {
       --v-field-border-width: 1px !important;
+    }
+
+    // Height and density for combobox
+    .v-combobox {
+      --v-input-control-height: 48px !important;
     }
 
     // Label
@@ -1028,6 +1485,7 @@ body {
         }
 
         &.v-input--density-compact {
+          --v-input-control-height: 48px !important;
           .v-field__input {
             padding-inline-start: 0.5rem;
           }
@@ -1052,8 +1510,72 @@ body {
   @include style-selectable-component("select");
   @include style-selectable-component("combobox");
 
+  // Combobox specific styles
+  .v-combobox {
+    &.v-input--density-compact {
+      --v-input-control-height: 48px !important;
+    }
+
+    .v-input__control {
+      .v-field {
+        height: 48px;
+        border-radius: 8px;
+        background-color: #f6f6f6;
+        border: solid 1px #e7e7e7;
+        
+        .v-field__field {
+          align-items: center;
+          top: 4px;
+        }
+
+        .v-field__input {
+          height: 48px;
+          min-height: 48px;
+          padding: 4px 12px 12px 12px;
+          color: #454545;
+          font-size: 14px;
+          font-weight: 400;
+        }
+
+        .v-field__outline {
+          color: #454545 !important;
+          border-color: #e7e7e7 !important;
+        }
+      }
+    }
+
+    // Chips in combobox
+    &.v-combobox--chips {
+      .v-field__input {
+        gap: 8px;
+        
+        .v-chip {
+          height: 32px;
+          border-radius: 16px;
+          background-color: #fff;
+          border: 1px solid #e7e7e7;
+          
+          .v-chip__content {
+            color: #454545;
+            font-size: 14px;
+            font-weight: 400;
+          }
+        }
+      }
+    }
+  }
+
   // AutoComplete
   @at-root {
+
+    .v-autocomplete {
+      .v-field:not(.v-field--focused) {
+        input {
+          padding-right: 0 !important;
+        }
+      }
+    }
+
     .app-autocomplete__content {
       .v-list-item--active {
         .v-autocomplete__mask {
@@ -1074,10 +1596,27 @@ body {
 
 // Style list differently when it's used in a components like select, menu etc
 .v-menu {
-  .v-list-item {
-    // Adjust padding of list item inside menu
-    padding-block: 8px !important;
-    padding-inline: 16px !important;
+  .v-overlay__content {
+    border-radius: 8px;
+
+    > .v-list {
+      box-shadow: 0 0 40px 0 #00000026;
+      padding: 0;
+
+      .v-list-item {
+        height: 48px;
+        min-width: 170px;
+        margin: 0 !important;
+        padding: 0 16px !important;
+
+        .v-list-item-title {
+          font-weight: 500;
+          font-size: 14px;
+          line-height: 16px;
+          color: #454545;
+        }
+      }
+    }
   }
 }
 
@@ -1093,21 +1632,168 @@ body {
   background: transparent;
 }
 
-
 // otp input
 .v-otp-input {
-  justify-content:unset !important;
+  justify-content: unset !important;
 
-  .v-otp-input__content{
-    max-inline-size: 100% ;
+  .v-otp-input__content {
+    max-inline-size: 100%;
 
     .v-field.v-field--focused {
-      .v-field__outline{
+      .v-field__outline {
         .v-field__outline__start,
-        .v-field__outline__end{
+        .v-field__outline__end {
           border-color: rgb(var(--v-theme-primary)) !important;
         }
       }
+    }
+  }
+}
+
+// Divider
+
+.v-divider {
+  border-color: #e7e7e7 !important;
+}
+
+// Input
+
+.search {
+  .v-input.v-text-field {
+    .v-input__control {
+      .v-field {
+        .v-field__outline {
+          .v-field__outline__start {
+            flex: 0 0 50px !important;
+            border-radius: 32px 0 0 32px;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-left: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+          .v-field__outline__end {
+            border-radius: 0 32px 32px 0;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-right: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+.rouded-select {
+  width: 100% !important;
+
+  .v-input.v-text-field {
+    .v-input__control {
+      .v-field {
+        padding-right: 16px;
+        .v-field__input {
+          height: 48px;
+          opacity: 1;
+          padding-left: 24px;
+          .v-autocomplete__selection {
+            align-items: center;
+            color: #454545;
+          }
+          input {
+            height: 32px;
+            padding-left: 24px;
+          }
+        }
+        .v-field__append-inner {
+          padding-top: 0px;
+          align-items: center;
+
+          .v-icon {
+            width: 16px;
+            height: 16px;
+            color: #1c2925;
+          }
+        }
+        .v-field__outline {
+          .v-field__outline__start {
+            flex: 0 0 50px !important;
+            border-radius: 32px 0 0 32px;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-left: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+          .v-field__outline__end {
+            border-radius: 0 32px 32px 0;
+            border-top: 1px solid #e7e7e7;
+            border-bottom: 1px solid #e7e7e7;
+            border-right: 1px solid #e7e7e7;
+            opacity: 1 !important;
+          }
+        }
+      }
+    }
+  }
+}
+
+.card-client {
+  .v-input {
+    .v-input__control {
+      .v-field {
+        background-color: #f6f6f6;
+        .v-field__outline {
+          color: #454545 !important;
+          border-color: #e7e7e7 !important;
+        }
+      }
+    }
+  }
+}
+
+// Empty list message
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 24px;
+  align-items: center;
+
+  .empty-state-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 40%;
+  }
+
+  .empty-state-title {
+    font-weight: 700;
+    font-size: 32px;
+    line-height: 100%;
+    letter-spacing: 0%;
+    text-align: center;
+    color: #878787;
+  }
+
+  .empty-state-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0%;
+    text-align: center;
+    color: #878787;
+  }
+
+  @media (max-width: 991px) {
+    padding: 0;
+    gap: 8px;
+    margin-bottom: 100px;
+
+    .empty-state-content {
+      width: 100%;
+    }
+    .empty-state-title {
+      font-size: 24px;
     }
   }
 }

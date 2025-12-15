@@ -150,6 +150,7 @@ watch(isVerticalNavMini(windowWidth, isVerticalNavHovered), val => {
       <ul
         v-show="isGroupOpen"
         class="nav-group-children"
+        style="padding-left: 16px;"
       >
         <Component
           :is="'children' in child ? 'VerticalNavGroup' : VerticalNavLink"

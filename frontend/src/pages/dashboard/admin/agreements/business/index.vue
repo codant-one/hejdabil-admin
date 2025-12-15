@@ -7,6 +7,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const router = useRouter()
 const emitter = inject("emitter")
@@ -169,18 +170,7 @@ const onSubmit = () => {
 
 <template>
   <section>
-    <!-- Dialog para mostrar el estado de carga -->
-    <VDialog
-      v-model="isRequestOngoing"
-      width="auto"
-      persistent
-    >
-      <VProgressCircular
-        indeterminate
-        color="primary"
-        class="mb-0"
-      />
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
     <VForm ref="refForm" @submit.prevent="onSubmit">
       <VRow>
         <VCol cols="12" class="py-0">

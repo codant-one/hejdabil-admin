@@ -49,7 +49,19 @@
   // ℹ️ Add spacing above navbar if navbar is floating (was in %layout-navbar-sticky placeholder)
   body .layout-wrapper.layout-nav-type-vertical.layout-navbar-sticky {
     .layout-navbar {
-      inset-block-start: variables.$vertical-nav-floating-navbar-top;
+      background: linear-gradient(
+        90deg,
+        #eafff1 0%,
+        #eafff8 50%,
+        #ecffff 100%
+      ) !important;
+      inset-block-start: 0rem;
+      padding: 24px 24px;
+
+      @media (max-width: 1000px) {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+      }
     }
 
     /*
@@ -57,7 +69,22 @@
       Add `vertical-nav-floating-navbar-top` as margin top to .layout-page-content
     */
     .layout-page-content {
-      margin-block-start: variables.$vertical-nav-floating-navbar-top;
+      padding: 0;
+
+      @media (min-width: 1024px) {
+        margin-block-start: 0;
+        padding-top: 0;
+        padding-inline-start: 236px;
+
+        /*.page-content-container section > .v-row,
+        .page-content-container div > .v-row {
+          margin: 0;
+
+          .v-col {
+            padding: 0;
+          }
+        }*/
+      }
     }
   }
 }

@@ -6,7 +6,7 @@ const theme = {
     light: {
       dark: false,
       colors: {
-        'primary': localStorage.getItem(`${themeConfig.app.title}-lightThemePrimaryColor`) || '#9966FF',
+        'primary': localStorage.getItem(`${themeConfig.app.title}-lightThemePrimaryColor`) || '#57F287',
         'on-primary': '#F3FCFE',
         'secondary': '#2E0684',
         'on-secondary': '#fff',
@@ -60,7 +60,7 @@ const theme = {
     dark: {
       dark: true,
       colors: {
-        'primary': localStorage.getItem(`${themeConfig.app.title}-darkThemePrimaryColor`) || '#9966FF',
+        'primary': localStorage.getItem(`${themeConfig.app.title}-darkThemePrimaryColor`) || '#57F287',
         'on-primary': '#F3FCFE',
         'secondary': '#2E0684',
         'on-secondary': '#fff',

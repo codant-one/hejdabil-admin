@@ -18,13 +18,16 @@
 
     // 👉 Nav group & Link
     .nav-link,
-    .nav-group {
+    .nav-group .nav-group-label {
       // shadow cut issue fix
-      margin-block-end: -0.5rem;
-      padding-block-end: 0.5rem;
+      margin-bottom: 8px !important;
 
       a {
         outline: none;
+      }
+
+      &:last-child {
+        margin-bottom: 8px !important;
       }
     }
 

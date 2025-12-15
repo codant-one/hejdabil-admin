@@ -1,4 +1,3 @@
-import { breakpointsVuetify } from '@vueuse/core'
 import { AppContentLayoutNav, ContentWidth, FooterType, NavbarType } from '@layouts/enums'
 
 export const config = {
@@ -9,7 +8,7 @@ export const config = {
     // logo: () => h('img', { src: 'assets/colored-logo.png' }, null),
     contentWidth: ref(ContentWidth.Boxed),
     contentLayoutNav: ref(AppContentLayoutNav.Vertical),
-    overlayNavFromBreakpoint: breakpointsVuetify.md,
+    overlayNavFromBreakpoint: 1024, // Cambiado de md a lg (1024px)
     enableI18n: true,
     isRtl: ref(false),
   },
@@ -17,17 +16,17 @@ export const config = {
     type: ref(NavbarType.Sticky),
     navbarBlur: ref(true),
   },
-  footer: { type: ref(FooterType.Static) },
+  footer: { type: ref(FooterType.Hidden) },
   verticalNav: {
     isVerticalNavCollapsed: ref(false),
-    defaultNavItemIconProps: { icon: 'tabler-circle' },
+    defaultNavItemIconProps: { icon: 'custom-point' },
   },
   horizontalNav: {
     type: ref('sticky'),
   },
   icons: {
-    chevronDown: { icon: 'tabler-chevron-down' },
-    chevronRight: { icon: 'tabler-chevron-right' },
+    chevronDown: { icon: 'custom-chevron-down' },
+    chevronRight: { icon: 'custom-chevron-right' },
     close: { icon: 'tabler-x' },
     verticalNavPinned: { icon: 'tabler-circle-dot' },
     verticalNavUnPinned: { icon: 'tabler-circle' },

@@ -5,6 +5,7 @@ import show from './show.vue'
 import password from './password.vue' 
 import edit from './edit.vue'
 import destroy from './destroy.vue'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 import { avatarText } from '@/@core/utils/formatters'
 
@@ -215,15 +216,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert
@@ -237,7 +230,7 @@ const downloadCSV = async () => {
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <!-- 👉 Rows per page -->
              <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -338,7 +331,7 @@ const downloadCSV = async () => {
                   <td>
                   {{ user.user.user_detail?.personal_phone ?? '----' }}
                 </td>
-                <!-- 👉 acciones -->
+                <!-- 👉 Actions -->
                 <td style="width: 3rem;">
                   <VMenu>
                     <template #activator="{ props }">
@@ -465,19 +458,11 @@ const downloadCSV = async () => {
     z-index: 1999 !important;
   }
 
-  .search {
-    width: 100%;
-  }
-
   .user-list-filter {
     width: 100%;
   }
 
   @media(min-width: 991px){
-    .search {
-      width: 30rem;
-    }
-
     .user-list-filter {
       inline-size: 12rem;
     }

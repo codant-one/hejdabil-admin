@@ -1,11 +1,12 @@
-<!-- src/pages/sign/[token].vue -->
 <script setup>
+
+import { useTheme } from 'vuetify'
 import { ref, onMounted, nextTick } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import axios from '@/plugins/axios'
-import { useTheme } from 'vuetify'
-import { themeConfig } from '@themeConfig'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
+import VideoLoader from "@/components/common/VideoLoader.vue";
 
 const props = defineProps({
   token: {
@@ -292,6 +293,7 @@ onMounted(loadSignatureData);
 </script>
 
 <template>
+  <VideoLoader />
   <div class="signing-container">
     <!-- Estado de carga y final -->
     <VCard v-if="isLoading || finalState" class="pa-8 text-center" max-width="500">
@@ -418,16 +420,7 @@ onMounted(loadSignatureData);
         </VCardActions>
       </VCard>
     </VDialog>
-
-    <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-    </VDialog>
+    <LoadingOverlay :is-loading="isRequestOngoing" />
   </div>
 </template>
 

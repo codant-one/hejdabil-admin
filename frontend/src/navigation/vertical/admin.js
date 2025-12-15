@@ -1,5 +1,5 @@
 export default [
-  { 
+  {
     title: 'ADMINISTRATION',
     icon: { icon:'tabler-home-cog' },
     children:[
@@ -25,5 +25,12 @@ export default [
         subject: 'invoices'
       }
     ]
+  },
+  {
+    title: 'Hjälp',
+    icon: { icon:'custom-help' },
+    class: 'help-button',
+    action: 'view' , 
+    subject: 'dashboard'
   }
 ]

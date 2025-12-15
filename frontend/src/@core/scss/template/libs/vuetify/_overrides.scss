@@ -66,7 +66,6 @@ $alert-prepend-icon-font-size: 1.125rem !important;
   .v-alert__prepend {
     z-index: 1;
     padding: 0.25rem;
-    border-radius: 0.375rem;
     background-color: #fff;
 
     .v-icon {
@@ -110,4 +109,23 @@ $alert-prepend-icon-font-size: 1.125rem !important;
 
 .v-slider.v-input--vertical .v-slider-thumb__label::before {
   border-inline-end-color: vuetify.$tooltip-background-color !important;
+}
+
+// 👉 Ajustes de densidad para inputs compactos
+body {
+  // Reducimos el margen para obtener 40px de altura
+  .v-input--density-compact {
+    --v-input-control-height: 38px !important;
+    --v-input-chips-margin-bottom: 1px;
+  }
+}
+
+// 👉 Expansion Panels: forzar bordes redondeados (más especificidad para prod)
+body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active),
+body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active),
+body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :last-child:not(:first-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active) {
+  border-bottom-left-radius: 16px !important;
+  border-bottom-right-radius: 16px !important;
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
 }

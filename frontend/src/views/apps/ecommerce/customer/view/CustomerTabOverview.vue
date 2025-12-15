@@ -1,7 +1,5 @@
 <script setup>
 
-// import CustomerOrderTable from './CustomerOrderTable.vue'
-// import CustomerProductTable from './CustomerProductTable.vue'
 import { formatNumber } from '@/@core/utils/formatters'
 
 const props = defineProps({
@@ -137,17 +135,6 @@ async function fetchData() {
             </div>
           </VCardText>
         </VCard>
-      </VCol>
-
-      <VCol cols="12" md="12">
-        <!-- <CustomerOrderTable v-if="!props.isSupplier"/> -->
-      </VCol>
-
-      <VCol cols="12" md="12">
-        <!-- <CustomerProductTable 
-          v-if="props.isSupplier"
-          :id="props.customerData.user.id"  
-        /> -->
       </VCol>
     </VRow>
   </Suspense>

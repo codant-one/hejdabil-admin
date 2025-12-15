@@ -5,7 +5,10 @@
   color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
 
   .nav-item-title {
-    letter-spacing: 0.15px;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 16px;
+    color: #6E9383;
   }
 
   .nav-section-title {

@@ -2,10 +2,8 @@
 
 import { useCurrenciesStores } from '@/stores/useCurrencies'
 import { excelParser } from '@/plugins/csv/excelParser'
-import { themeConfig } from '@themeConfig'
-import { avatarText, formatNumber } from '@/@core/utils/formatters'
 import AddNewCurrencyDrawer from './AddNewCurrencyDrawer.vue' 
-import router from '@/router'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const currenciesStores = useCurrenciesStores()
 const emitter = inject("emitter")
@@ -268,15 +266,7 @@ const downloadCSV = async () => {
 <template>
   <section>
     <VRow>
-      <VDialog
-        v-model="isRequestOngoing"
-        width="auto"
-        persistent>
-        <VProgressCircular
-          indeterminate
-          color="primary"
-          class="mb-0"/>
-      </VDialog>
+      <LoadingOverlay :is-loading="isRequestOngoing" />
 
       <VCol cols="12">
         <VAlert
@@ -290,7 +280,7 @@ const downloadCSV = async () => {
         <VCard title="">
           <VCardText class="d-flex align-center flex-wrap gap-4">
             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa:</span>
+              <span class="text-no-wrap me-3">Visa</span>
               <VSelect
                 v-model="rowPerPage"
                 density="compact"
@@ -395,7 +385,7 @@ const downloadCSV = async () => {
                     {{ currency.state.name }}
                   </VChip>
                 </td> 
-                <!-- 👉 Acciones -->
+                <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')">      
                   <VMenu>
                     <template #activator="{ props }">
@@ -543,18 +533,6 @@ const downloadCSV = async () => {
     </VDialog>
   </section>
 </template>
-
-<style scope>
-    .search {
-        width: 100% !important;
-    }
-
-    @media(min-width: 991px){
-        .search {
-            width: 20rem !important;
-        }
-    }
-</style>
 <route lang="yaml">
   meta:
     action: view

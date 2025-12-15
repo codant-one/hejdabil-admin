@@ -23,11 +23,6 @@
 
     // 👉 Nav header
     .nav-header {
-      overflow: hidden;
-      padding: variables.$vertical-nav-header-padding;
-      margin-inline: variables.$vertical-nav-header-inline-spacing;
-      min-block-size: variables.$vertical-nav-header-height;
-
       // TEMPLATE: Check if we need to move this to master
       .app-logo {
         flex-shrink: 0;
@@ -35,11 +30,19 @@
 
         @at-root {
           // Move logo a bit to align center with the icons in vertical nav mini variant
-          .layout-vertical-nav-collapsed#{$sl-layout-nav-type-vertical}:not(.hovered) .nav-header .app-logo {
-            transform: translateX(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini);
+          .layout-vertical-nav-collapsed#{$sl-layout-nav-type-vertical}:not(
+              .hovered
+            )
+            .nav-header
+            .app-logo {
+            transform: translateX(
+              variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini
+            );
 
             @include layoutsMixins.rtl {
-              transform: translateX(-(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini));
+              transform: translateX(
+                -(variables.$vertical-nav-header-logo-translate-x-when-vertical-nav-mini)
+              );
             }
           }
         }
@@ -54,13 +57,12 @@
     .vertical-nav-items-shadow {
       position: absolute;
       z-index: 1;
-      background:
-        linear-gradient(
-          rgb(#{variables.$vertical-nav-background-color-rgb}) 5%,
-          rgba(#{variables.$vertical-nav-background-color-rgb}, 75%) 45%,
-          rgba(#{variables.$vertical-nav-background-color-rgb}, 20%) 80%,
-          transparent
-        );
+      background: linear-gradient(
+        rgb(#{variables.$vertical-nav-background-color-rgb}) 5%,
+        rgba(#{variables.$vertical-nav-background-color-rgb}, 75%) 45%,
+        rgba(#{variables.$vertical-nav-background-color-rgb}, 20%) 80%,
+        transparent
+      );
       block-size: 55px;
       inline-size: 100%;
       inset-block-start: calc(#{variables.$vertical-nav-header-height} - 2px);
@@ -109,15 +111,18 @@
     // 👉 Nav group & Link
     .nav-link,
     .nav-group {
-      overflow: hidden;
 
       > :first-child {
         @extend %vertical-nav-item;
-        @extend %vertical-nav-item-interactive;
+        height: 44px;
+        padding: 8px;
+        margin: 0 20px !important;
+        gap: 8px;
+        justify-content: center;
       }
 
       .nav-item-icon {
-        @extend %vertical-nav-items-icon;
+        color: #6e9383;
       }
 
       &.disabled {
@@ -130,18 +135,55 @@
     .nav-link {
       @extend %nav-link;
 
+      a:hover {
+        background-color: #bdd2c8;
+        border-radius: 64px;
+
+        ::before {
+          display: none;
+        }
+
+        span,
+        svg {
+          color: #416054;
+        }
+      }
+
       > .router-link-exact-active {
-        @extend %nav-link-active;
+        background-color: #1c2925 !important;
+        border-radius: 64px;
+
+        span {
+          color: #fff !important;
+        }
+
+        svg {
+          color: #57f287 !important;
+        }
       }
 
       > a {
         // Adds before psudo element to style hover state
         @include mixins.before-pseudo;
 
+        svg {
+          width: 22px !important;
+          height: 22px !important;
+        }
         // Adds vuetify states
 
-        &:not(.router-link-active, .router-link-exact-active){
+        &:not(.router-link-active, .router-link-exact-active) {
           @include vuetifyStates.states($active: false);
+        }
+      }
+
+      &.help-button a {
+        border: 1px solid #6e9383;
+        border-radius: 64px;
+
+        &:hover {
+          border: 1px solid #416054;
+          background-color: transparent;
         }
       }
     }
@@ -167,9 +209,12 @@
       }
 
       .nav-group-arrow {
+        color: #6e9383;
         flex-shrink: 0;
         transform-origin: center;
-        transition: transform variables.$vertical-nav-nav-group-arrow-transition-duration variables.$vertical-nav-nav-group-arrow-transition-timing-function;
+        transition: transform
+          variables.$vertical-nav-nav-group-arrow-transition-duration
+          variables.$vertical-nav-nav-group-arrow-transition-timing-function;
         will-change: transform;
       }
 
@@ -183,10 +228,10 @@
       // Nav group label
       > :first-child {
         // Adds before psudo element to style hover state
-        @include mixins.before-pseudo;     
+        @include mixins.before-pseudo;
       }
 
-      &:not(.active,.open) > :first-child {
+      &:not(.active, .open) > :first-child {
         // Adds vuetify states
         @include vuetifyStates.states($active: false);
       }
@@ -248,4 +293,147 @@
   }
 }
 
-// !SECTION
+// Mobile Nav
+
+.mobile-nav-sheet {
+  // Nav item badge
+  .nav-item-badge {
+    @extend %vertical-nav-item-badge;
+  }
+
+  // 👉 Nav group & Link
+  .nav-link,
+  .nav-group {
+    overflow: hidden;
+
+    > :first-child {
+      @extend %vertical-nav-item;
+      display: flex;
+      height: 48px;
+      padding: 8px;
+      gap: 8px;
+      align-items: center;
+      margin: 0 !important;
+    }
+
+    .nav-item-icon {
+      color: #6e9383;
+    }
+
+    &.disabled {
+      opacity: var(--v-disabled-opacity);
+      pointer-events: none;
+    }
+  }
+
+  // 👉 Vertical nav link
+  .nav-link {
+    @extend %nav-link;
+
+    &:hover {
+      a {
+        background-color: #bdd2c8;
+        border-radius: 64px;
+
+        ::before {
+          display: none;
+        }
+
+        span,
+        svg {
+          color: #416054;
+        }
+      }
+    }
+
+    > .router-link-exact-active {
+      background-color: #1c2925 !important;
+      border-radius: 64px;
+
+      span {
+        color: #fff !important;
+      }
+
+      svg {
+        color: #57f287 !important;
+      }
+    }
+
+    > a {
+      // Adds before psudo element to style hover state
+      @include mixins.before-pseudo;
+
+      // Adds vuetify states
+
+      &:not(.router-link-active, .router-link-exact-active) {
+        @include vuetifyStates.states($active: false);
+      }
+
+      &.help-button {
+        border: 1px solid #6e9383;
+        border-radius: 56px;
+
+        &:hover {
+          border: 1px solid #416054;
+          background-color: transparent;
+        }
+      }
+    }
+  }
+
+  // 👉 Vertical nav group
+  .nav-group {
+    // Reduce the size of icon if link/group is inside group
+    .nav-group,
+    .nav-link {
+      .nav-item-icon {
+        @extend %vertical-nav-items-nested-icon;
+      }
+    }
+
+    // Hide icons after 2nd level
+    & .nav-group {
+      .nav-link,
+      .nav-group {
+        .nav-item-icon {
+          @extend %vertical-nav-items-icon-after-2nd-level;
+        }
+      }
+    }
+
+    .nav-group-arrow {
+      flex-shrink: 0;
+      transform-origin: center;
+      transition: transform
+        variables.$vertical-nav-nav-group-arrow-transition-duration
+        variables.$vertical-nav-nav-group-arrow-transition-timing-function;
+      will-change: transform;
+    }
+
+    // Rotate arrow icon if group is opened
+    &.open {
+      > .nav-group-label .nav-group-arrow {
+        transform: rotateZ(90deg);
+      }
+    }
+
+    // Nav group label
+    > :first-child {
+      // Adds before psudo element to style hover state
+      @include mixins.before-pseudo;
+    }
+
+    &:not(.active, .open) > :first-child {
+      // Adds vuetify states
+      @include vuetifyStates.states($active: false);
+    }
+
+    // Active & open states for nav group label
+    &.active,
+    &.open {
+      > :first-child {
+        @extend %vertical-nav-group-open-active;
+      }
+    }
+  }
+}

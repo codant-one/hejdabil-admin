@@ -45,13 +45,14 @@ export const can = (action, subject, item = null) => {
  * @param {Object} item navigation object item
  */
 export const canViewNavMenuGroup = item => {
-  const hasAnyVisibleChild = item.children.some(i => can(i.action, i.subject))
+  const children = Array.isArray(item?.children) ? item.children : []
+  const hasAnyVisibleChild = children.some(i => can(i.action, i.subject))
 
   // If subject and action is defined in item => Return based on children visibility (Hide group if no child is visible)
   // Else check for ability using provided subject and action along with checking if has any visible child
-  if (!(item.action && item.subject))
+  if (!(item?.action && item?.subject))
     return hasAnyVisibleChild
-  
+
   return can(item.action, item.subject) && hasAnyVisibleChild
 }
 export const canNavigate = to => {
