@@ -11,8 +11,25 @@
             font-family: 'DM Sans';
             font-style: normal;
             font-weight: 400;
-            src: url({{ public_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
-            font-display: swap;
+            src: url({{ public_path('fonts/gelion-Regular.ttf') }}) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'DM Sans';
+            font-style: normal;
+            font-weight: 600;
+            src: url({{ public_path('fonts/gelion-Bold.ttf') }}) format('truetype');
+        }
+
+        @font-face {
+            font-family: 'DM Sans';
+            font-style: normal;
+            font-weight: 700;
+            src: url({{ public_path('fonts/gelion-Bold.ttf') }}) format('truetype');
+        }
+
+        * {
+            letter-spacing: normal !important;
         }
 
         body {
@@ -89,6 +106,7 @@
         }
 
         .faktura {
+            font-family: 'DM Sans', Arial, sans-serif;
             font-size: 32px;
             font-weight: 600;
             color: #454545;
@@ -96,6 +114,7 @@
             border-bottom: 2px solid #454545;
             padding: 4px 0;
             display: inline-block;
+            letter-spacing: 0 !important;
         }
 
         .table-main {
