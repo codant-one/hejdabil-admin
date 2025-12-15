@@ -7,8 +7,16 @@
     </head>
     <style>
 
+        @font-face {
+            font-family: 'DM Sans';
+            font-style: normal;
+            font-weight: 400;
+            src: url({{ storage_path('fonts/DMSans-VariableFont.ttf') }}) format('truetype');
+            font-display: swap;
+        }
+
         body {
-            font-family: 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -110,7 +118,6 @@
         }
 
         .table-items {
-            font-family: 'dm sans', sans-serif !important;
             margin-top: 10px;
             border-radius: 8px !important;
             border-width: thin !important;
@@ -146,10 +153,6 @@
             display: flex;
             flex-direction: column;
             width: auto;
-        }
-
-        .table-supplier {
-            font-family: 'dm sans', sans-serif !important;
         }
 
         .table-supplier td {
