@@ -8,7 +8,7 @@
     <style>
 
         body {
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'dm sans', sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -110,7 +110,7 @@
         }
 
         .table-items {
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'dm sans', sans-serif !important;
             margin-top: 10px;
             border-radius: 8px !important;
             border-width: thin !important;
@@ -149,7 +149,7 @@
         }
 
         .table-supplier {
-            font-family: 'DM Sans', sans-serif !important;
+            font-family: 'dm sans', sans-serif !important;
         }
 
         .table-supplier td {
