@@ -68,9 +68,9 @@ echo "DM Sans italic instalada.\n";
 
 // Intentar registrar Gelion si existe
 $gelionFonts = [
-    ['file' => 'gelion-Regular.ttf', 'weight' => 'normal', 'name' => 'Gelion normal'],
-    ['file' => 'gelion-Bold.ttf', 'weight' => 'bold', 'name' => 'Gelion bold'],
-    ['file' => 'gelion-Light.ttf', 'weight' => '300', 'name' => 'Gelion light']
+    ['file' => 'gelion-regular.ttf', 'weight' => 'normal', 'name' => 'Gelion normal'],
+    ['file' => 'gelion-bold.ttf', 'weight' => 'bold', 'name' => 'Gelion bold'],
+    ['file' => 'gelion-light.ttf', 'weight' => '300', 'name' => 'Gelion light']
 ];
 
 foreach ($gelionFonts as $gelion) {
