@@ -1,5 +1,6 @@
 <script setup>
 
+import { useDisplay } from 'vuetify'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -11,7 +12,6 @@ import show from "@/components/vehicles/show.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { useDisplay } from 'vuetify'
 
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
@@ -20,6 +20,12 @@ import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
 const emitter = inject("emitter")
+
+const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null);
+const hasLoaded = ref(false);
+
+const filtreraMobile = ref(false);
 
 const userData = ref(null)
 const role = ref(null)
@@ -140,10 +146,13 @@ const clearColumns = () => {
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = vehicles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = vehicles.value.length + (currentPage.value - 1) * rowPerPage.value
-
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
+  const firstIndex = vehicles.value.length
+    ? (currentPage.value - 1) * rowPerPage.value + 1
+    : 0;
+  const lastIndex =
+    vehicles.value.length + (currentPage.value - 1) * rowPerPage.value;
+  return `${totalVehicles.value} resultat`;
+  //return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
 })
 
 watch(() => plate.value, (val) => {
@@ -212,6 +221,7 @@ async function fetchData(cleanFilters = false) {
     vehicle.checked = false;
   });
 
+  hasLoaded.value = true;
   isRequestOngoing.value = false
 
 }
@@ -399,10 +409,28 @@ const truncateText = (text, length = 15) => {
   }
   return text;
 };
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <section class="page-section">
+  <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
@@ -418,9 +446,15 @@ const truncateText = (text, length = 15) => {
     <Toaster />
 
     <VCard class="card-fill">
-      <VCardTitle class="d-flex gap-6 justify-space-between pa-6">
+      <VCardTitle
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
+      >
         <div class="align-center font-blauer">
-          <h2>I lager <span>({{ totalVehicles }})</span></h2>
+          <h2>I lager <span v-if="hasLoaded">({{ totalVehicles }})</span></h2>
         </div>
 
         <div class="d-flex gap-4">
@@ -443,11 +477,14 @@ const truncateText = (text, length = 15) => {
         </div>
       </VCardTitle>
 
-      <VDivider class="mt-2 mx-4" />
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
-      <VCardText class="d-flex align-center justify-space-between gap-2 pa-4">
+      <VCardText
+        class="d-flex align-center justify-space-between"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4 gap-2'"
+      >
         <!-- 👉 Search  -->
-        <div class="search">
+        <div class="search" style="width: 480px !important">
           <VTextField
             v-model="searchQuery"
             placeholder="Sök"
@@ -455,22 +492,31 @@ const truncateText = (text, length = 15) => {
           />
         </div>
 
-        <VSpacer />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <VBtn 
-          class="btn-white-2" 
+          class="btn-white-2 px-3"
+          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
           @click="isFilterDialogVisible = true"
         >
           <VIcon icon="custom-filter" size="24" />
-          <span>Filtrera efter</span>
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
         </VBtn>
 
-        <VBtn
-          variant="tonal"
-          color="primary"
+        <VBtn 
           class="btn-white-2"
+          :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+          @click="filtreraMobile = true"
+        >
+          <VIcon icon="custom-filter" size="24" />
+        </VBtn>
+        
+        <VBtn
+          class="btn-white-2"
+          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
           @click="isColumnsDialogVisible = true">
-          <VIcon icon="tabler-columns-3" size="24" />
+          <VIcon icon="custom-column" size="24" />
+          <span>Kolumner</span>
         </VBtn>
 
         <div
@@ -486,7 +532,12 @@ const truncateText = (text, length = 15) => {
         </div>
       </VCardText>
 
-      <VTable class="px-4 pb-6 text-no-wrap" v-if="!$vuetify.display.mdAndDown">
+      <VTable
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="vehicles.length"
+        class="pt-2 px-4 pb-6 text-no-wrap"
+        style="border-radius: 0 !important"
+      >
         <!-- 👉 table head -->
         <thead>
           <tr>
@@ -638,21 +689,36 @@ const truncateText = (text, length = 15) => {
             </td>
           </tr>
         </tbody>
-        <!-- 👉 table footer  -->
-        <tfoot v-show="!vehicles.length">
-          <tr>
-            <td
-              colspan="14"
-              class="text-center">
-              Uppgifter ej tillgängliga
-            </td>
-          </tr>
-        </tfoot>
       </VTable>
+
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !vehicles.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-steering-wheel"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Ditt fordonslager är tomt</div>
+          <div class="empty-state-text">
+            Registrera de fordon du har till salu för att enkelt hantera ditt lager och koppla dem till fakturor.
+          </div>
+        </div>
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'stock')"
+          @click="isConfirmCreateDialogVisible = true"
+        >
+          Lägg till fordon
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
 
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
-        v-if="vehicles.length && $vuetify.display.mdAndDown"
+        v-if="vehicles.length && windowWidth < 1024"
       >
         <VExpansionPanel v-for="vehicle in vehicles" :key="vehicle.id" style="background-color: #F6F6F6 !important; border-radius: 12px !important; margin-bottom: 12px !important;">
           <VExpansionPanelTitle
@@ -753,12 +819,16 @@ const truncateText = (text, length = 15) => {
         </div>
       </VExpansionPanels>
     
-      <VCardText class="d-flex align-center flex-wrap gap-4 pt-0 px-6">
+      <VCardText
+        v-if="vehicles.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
         <span class="text-pagination-results">
           {{ paginationData }}
         </span>
 
-        <VSpacer />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
         
         <VPagination
           v-model="currentPage"
@@ -785,7 +855,7 @@ const truncateText = (text, length = 15) => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
+      <VCard flat class="card-form">
         <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-filter" class="action-icon" />
           <div class="dialog-title">
@@ -795,7 +865,21 @@ const truncateText = (text, length = 15) => {
         
         <VCardText class="pt-0">
           <VRow>
-            <VCol cols="12" md="4">
+            <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+              <VAutocomplete
+                prepend-icon="custom-profile"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"
+                class="selector-user selector-truncate"
+              />
+            </VCol>
+            <VCol cols="12" md="12">
               <VAutocomplete
                 v-model="state_id"
                 placeholder="Status"
@@ -806,7 +890,7 @@ const truncateText = (text, length = 15) => {
                 clearable
                 clear-icon="tabler-x"/>
             </VCol>
-            <VCol cols="12" md="4">
+            <VCol cols="12" md="12">
               <VAutocomplete
                 v-model="brand_id"
                 label="Märke"
@@ -819,7 +903,7 @@ const truncateText = (text, length = 15) => {
                 @update:modelValue="selectBrand"
                 :menu-props="{ maxHeight: '300px' }"/>
             </VCol>
-            <VCol cols="12" md="4">
+            <VCol cols="12" md="12">
               <VAutocomplete
                 v-model="model_id"
                 label="Modell"
@@ -829,7 +913,7 @@ const truncateText = (text, length = 15) => {
                 clear-icon="tabler-x"
                 :menu-props="{ maxHeight: '300px' }"/>
             </VCol>
-            <VCol cols="12" md="4">
+            <VCol cols="12" md="12">
               <VTextField
                   v-model="year"
                   :rules="[yearValidator]"
@@ -837,7 +921,7 @@ const truncateText = (text, length = 15) => {
                   clearable
               />
             </VCol>
-            <VCol cols="12" md="4">
+            <VCol cols="12" md="12">
               <VAutocomplete
                 v-model="gearbox_id"
                 label="Biltyp"
@@ -848,22 +932,10 @@ const truncateText = (text, length = 15) => {
                 clearable
                 clear-icon="tabler-x"/>
             </VCol>
-            <VCol cols="12" md="4">
-              <VAutocomplete
-                  v-if="role === 'SuperAdmin' || role === 'Administrator'"
-                  v-model="supplier_id"
-                  placeholder="Leverantörer"
-                  :items="suppliers"
-                  :item-title="item => item.full_name"
-                  :item-value="item => item.id"
-                  autocomplete="off"
-                  clearable
-                  clear-icon="tabler-x"/>
-            </VCol>
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
           <VBtn
             class="btn-light"
             @click="fetchData(true); isFilterDialogVisible = false">
@@ -876,160 +948,303 @@ const truncateText = (text, length = 15) => {
       </VCard>
     </VDialog>
 
-  <!-- 👉 Confirm create -->
+  <!-- 👉 Columns -->
   <VDialog
-      v-model="isColumnsDialogVisible"
-      persistent
-      class="action-dialog" >
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isColumnsDialogVisible = !isColumnsDialogVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-      <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="tabler-columns-3" class="action-icon" />
-          <div class="dialog-title">
-            Välj kolumner
-          </div>
-        </VCardText>
-        <VCardText class="pt-0">
-          <VRow>
-            <VCol cols="12">
-              <div class="d-flex gap-3 mb-4 flex-wrap">
-                <VBtn size="small" @click="selectAllColumns">Alla</VBtn>
-                <VBtn size="small" variant="tonal" @click="selectDefaultColumns">Standard (5)</VBtn>
-                <VBtn size="small" color="secondary" variant="tonal" @click="clearColumns">Rensa</VBtn>
-              </div>
-            </VCol>
-            <VCol cols="12">
-              <VCheckbox
-                v-for="opt in availableColumnOptions"
-                :key="opt.id"
-                :label="opt.label"
-                :value="opt.id"
-                v-model="visibleColumns"
-                density="comfortable"
-                hide-details
-              />
-            </VCol>
-          </VRow>
-        </VCardText>
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="isColumnsDialogVisible = false">Stäng</VBtn>
-        </VCardText>
-      </VCard>
+    v-model="isColumnsDialogVisible"
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isColumnsDialogVisible = !isColumnsDialogVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-column" class="action-icon" />
+        <div class="dialog-title">
+          Välj kolumner
+        </div>
+      </VCardText>
+      <VCardText class="pt-0">
+        <VRow>
+          <VCol cols="12">
+            <div class="d-flex gap-2 flex-wrap">
+              <VBtn class="btn-gradient" size="small" @click="selectAllColumns">Alla</VBtn>
+              <VBtn class="btn-blue" size="small" @click="selectDefaultColumns">Standard (5)</VBtn>
+              <VBtn class="btn-light" size="small" @click="clearColumns">Rensa</VBtn>
+            </div>
+          </VCol>
+          <VCol cols="12">
+            <VCheckbox
+              v-for="opt in availableColumnOptions"
+              :key="opt.id"
+              :label="opt.label"
+              :value="opt.id"
+              v-model="visibleColumns"
+              density="comfortable"
+              hide-details
+            />
+          </VCol>
+        </VRow>
+      </VCardText>
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+        <VBtn class="btn-light" @click="isColumnsDialogVisible = false">Stäng</VBtn>
+      </VCardText>
+    </VCard>
   </VDialog>
 
+  <!-- 👉 Confirm Create -->
   <VDialog
-      v-model="isConfirmCreateDialogVisible"
-      persistent
-      class="action-dialog" >
-      <!-- Dialog close btn -->
-        
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmCreateDialogVisible = !isConfirmCreateDialogVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
+    v-model="isConfirmCreateDialogVisible"
+    persistent
+    class="action-dialog" >
+    <!-- Dialog close btn -->
+      
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmCreateDialogVisible = !isConfirmCreateDialogVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
-      <!-- Dialog Content -->
-       <VForm
-        ref="refForm"
-        @submit.prevent="onSubmit">
-        <VCard>
-          <VCardText class="dialog-title-box">
-            <VIcon size="32" icon="custom-plus" class="action-icon" />
-            <div class="dialog-title">
-              Lägg till en bil
-            </div>
-          </VCardText>
-          <VCardText class="pt-0">
-            <VLabel
-                class="mb-1 text-body-2 text-high-emphasis"
-                text="Reg. nummer"
-              />
-            <VTextField
-                v-model="plate"
-                :rules="[requiredValidator]"
-                placeholder="ABC12X"
-                style="text-transform: uppercase !important"
-            />
-          </VCardText>
-
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-            <VBtn
-              class="btn-light"
-              @click="isConfirmCreateDialogVisible = false">
-                Avbryt
-            </VBtn>
-            <VBtn class="btn-gradient" type="submit">
-                Fortsätt
-            </VBtn>
-          </VCardText>
-        </VCard>
-      </VForm>
-    </VDialog>
-
-    <!-- 👉 Confirm Delete -->
-    <VDialog
-      v-model="isConfirmDeleteDialogVisible"
-      persistent
-      class="action-dialog" >
-      <!-- Dialog close btn -->
-        
-      <VBtn
-        icon
-        class="btn-white close-btn"
-        @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
-      >
-        <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <!-- Dialog Content -->
-      <VCard>
+    <!-- Dialog Content -->
+    <VForm
+      ref="refForm"
+      @submit.prevent="onSubmit">
+      <VCard flat class="card-form">
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <VIcon size="32" icon="custom-lager" class="action-icon" />
           <div class="dialog-title">
-            Är du säker på att du vill radera fordonet?
+            Lägg till en bil
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker att du vill ta bort fordon <strong>{{ selectedVehicle.reg_num }}</strong>?.
+          <VLabel
+              class="mb-1 text-body-2 text-high-emphasis"
+              text="Reg. nummer"
+            />
+          <VTextField
+              v-model="plate"
+              :rules="[requiredValidator]"
+              placeholder="ABC12X"
+              style="text-transform: uppercase !important"
+          />
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
           <VBtn
             class="btn-light"
-            @click="isConfirmDeleteDialogVisible = false">
+            @click="isConfirmCreateDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="removeVehicle">
-              Ja, radera
+          <VBtn class="btn-gradient" type="submit">
+              Fortsätt
           </VBtn>
         </VCardText>
       </VCard>
-    </VDialog>
+    </VForm>
+  </VDialog>
 
-    <show 
-      v-model:isDrawerOpen="isVehicleDetailDialog"
-      :vehicle="selectedVehicle"/>
+  <!-- 👉 Confirm Delete -->
+  <VDialog
+    v-model="isConfirmDeleteDialogVisible"
+    persistent
+    class="action-dialog" >
+    <!-- Dialog close btn -->
+      
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <!-- Dialog Content -->
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+        <div class="dialog-title">
+          Är du säker på att du vill radera fordonet?
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Är du säker att du vill ta bort fordon <strong>{{ selectedVehicle.reg_num }}</strong>?.
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn
+          class="btn-light"
+          @click="isConfirmDeleteDialogVisible = false">
+            Avbryt
+        </VBtn>
+        <VBtn class="btn-gradient" @click="removeVehicle">
+            Ja, radera
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
+
+  <!-- 👉 Mobile Filter Dialog -->
+  <VDialog
+    v-model="filtreraMobile"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard class="card-form">
+      <VList>
+        <VListItem class="form pt-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+          <VAutocomplete
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="item => item.full_name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </VListItem>
+        <VListItem class="form">
+          <VAutocomplete
+            v-model="state_id"
+            placeholder="Status"
+            :items="states"
+            :item-title="item => item.name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"/>
+        </VListItem>
+        <VListItem class="form pt-6">
+          <VAutocomplete
+            v-model="brand_id"
+            label="Märke"
+            :items="brands"
+            :item-title="item => item.name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            @update:modelValue="selectBrand"
+            :menu-props="{ maxHeight: '300px' }"/>
+        </VListItem>
+        <VListItem class="form">
+          <VAutocomplete
+            v-model="model_id"
+            label="Modell"
+            :items="getModels"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            :menu-props="{ maxHeight: '300px' }"/>
+        </VListItem>
+        <VListItem class="form">
+          <VTextField
+            v-model="year"
+            :rules="[yearValidator]"
+            label="Årsmodell"
+            clearable
+          />
+        </VListItem>
+        <VListItem class="form">
+          <VAutocomplete
+            v-model="gearbox_id"
+            label="Biltyp"
+            :items="gearboxes"
+            :item-title="item => item.name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"/>
+        </VListItem>
+        <VListItem class="form mt-5">
+          <VBtn class="btn-gradient w-100" @click="filtreraMobile = false">
+              Visa resultat
+          </VBtn>
+        </VListItem>
+      </VList>
+    </VCard>
+  </VDialog>
+
+  <show 
+    v-model:isDrawerOpen="isVehicleDetailDialog"
+    :vehicle="selectedVehicle"/>
   </section>
 </template>
 
 <style scope>
-    .v-input--disabled svg rect {
-      fill: #28C76F !important;
-    }
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
 
-    .v-input--disabled {
-      pointer-events: visible !important;
-      cursor: no-drop !important;
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 0px !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 16px;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
     }
+    & .v-input {
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          .v-field-label {
+            @media (max-width: 991px) {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
 </style>
 <route lang="yaml">
   meta:

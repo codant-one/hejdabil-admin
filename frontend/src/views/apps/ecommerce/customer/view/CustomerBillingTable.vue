@@ -1114,19 +1114,6 @@ const sendMails = async () => {
     padding: 0 !important;
   }
 }
-.dialog-bottom-full-width {
-  position: fixed !important;
-  left: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  max-width: 100vw !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  .v-card {
-    border-radius: 24px 24px 0 0 !important;
-  }
-}
 </style>
 
 <style lang="scss">
