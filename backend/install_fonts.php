@@ -31,6 +31,18 @@ $fontMetrics = $dompdf->getFontMetrics();
 
 $publicFontsPath = __DIR__ . '/public/fonts';
 
+// Helper: busca un archivo en $dir por nombre ignorando mayúsculas/minúsculas y devuelve el nombre real si existe
+function findFileCI($dir, $name) {
+    if (!is_dir($dir)) return false;
+    $files = scandir($dir);
+    foreach ($files as $f) {
+        if (strcasecmp($f, $name) === 0) {
+            return $f;
+        }
+    }
+    return false;
+}
+
 // Verificar que las fuentes existan
 $fontsToInstall = [
     'DMSans-VariableFont.ttf',
@@ -74,13 +86,14 @@ $gelionFonts = [
 ];
 
 foreach ($gelionFonts as $gelion) {
-    $path = $publicFontsPath . '/' . $gelion['file'];
-    if (file_exists($path)) {
+    $found = findFileCI($publicFontsPath, $gelion['file']);
+    if ($found !== false) {
+        $path = $publicFontsPath . '/' . $found;
         $fontMetrics->registerFont(
             ['family' => 'gelion', 'style' => 'normal', 'weight' => $gelion['weight']],
             $path
         );
-        echo $gelion['name'] . " instalada.\n";
+        echo $gelion['name'] . " instalada. (archivo: $found)\n";
     } else {
         echo $gelion['name'] . " NO encontrada (opcional).\n";
     }
@@ -109,16 +122,19 @@ if (file_exists($publicFontsPath . '/DMSans-Italic-VariableFont.ttf')) {
     $installed['dm sans']['italic'] = 'DMSans-Italic-VariableFont.ttf';
 }
 
-// Gelion (opcional)
+// Gelion (opcional) — usar el nombre real encontrado
 $installed['gelion'] = [];
-if (file_exists($publicFontsPath . '/gelion-Regular.ttf')) {
-    $installed['gelion']['normal'] = 'gelion-Regular.ttf';
+$gelionNormal = findFileCI($publicFontsPath, 'gelion-Regular.ttf');
+$gelionBold = findFileCI($publicFontsPath, 'gelion-Bold.ttf');
+$gelionLight = findFileCI($publicFontsPath, 'gelion-Light.ttf');
+if ($gelionNormal !== false) {
+    $installed['gelion']['normal'] = $gelionNormal;
 }
-if (file_exists($publicFontsPath . '/gelion-Bold.ttf')) {
-    $installed['gelion']['bold'] = 'gelion-Bold.ttf';
+if ($gelionBold !== false) {
+    $installed['gelion']['bold'] = $gelionBold;
 }
-if (file_exists($publicFontsPath . '/gelion-Light.ttf')) {
-    $installed['gelion']['300'] = 'gelion-Light.ttf';
+if ($gelionLight !== false) {
+    $installed['gelion']['300'] = $gelionLight;
 }
 
 // Eliminar entradas vacías
