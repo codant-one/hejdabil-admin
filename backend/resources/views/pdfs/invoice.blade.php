@@ -7,9 +7,9 @@
     </head>
     <style>
 
-        /* Using dompdf native fonts (helvetica) to ensure compatibility on all servers */
+        /* Using fonts from storage/fonts - synced between local and server */
         body {
-            font-family: helvetica, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -30,7 +30,7 @@
         }
 
         .faktura {
-            font-family: helvetica, sans-serif;
+            font-family: 'gelion', 'dm sans', sans-serif;
             font-size: 32px;
             font-weight: 700;
             color: #454545;
@@ -42,7 +42,7 @@
         }
 
         .table-items {
-            font-family: helvetica, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             margin-top: 10px;
             border-radius: 8px !important;
             border-width: thin !important;
@@ -52,7 +52,7 @@
         }
 
         .table-supplier {
-            font-family: helvetica, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             letter-spacing: 0 !important;
         }
 
