@@ -225,6 +225,7 @@ Route::get('/proxy-image',[ProxyController::class, 'getImage']);
 
 //CAR INFO
 Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLicensePlate']);
+Route::get('/cars/lookup-vin/{vin}', [CarInfoController::class, 'lookupByVin']);
 
 //Swish Payout
 Route::post('/swish/payout/callback', [SwishPayoutController::class, 'handle']);
