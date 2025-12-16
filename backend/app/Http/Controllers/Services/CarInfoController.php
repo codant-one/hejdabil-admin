@@ -12,15 +12,36 @@ use Illuminate\Support\Facades\Log;
 
 class CarInfoController extends Controller
 {
-    
+    protected $carInfoService;
+
+    public function __construct(CarInfo $carInfoService)
+    {
+        $this->carInfoService = $carInfoService;
+    }
+
+    /**
+     * Buscar vehículo por matrícula
+     */
     public function lookupByLicensePlate($licensePlate)
     {
-        $carInfoApi = new CarInfo($licensePlate);
-        $result = $carInfoApi->getLicensePlate();
+        $result = $this->carInfoService->getByLicensePlate($licensePlate);
 
         return response()->json(
             $result,
-            $result['status'] ?? 200 // usa el status que venga del service, default 200
+            $result['status'] ?? 200
+        );
+    }
+
+    /**
+     * Buscar vehículo por VIN
+     */
+    public function lookupByVin($vin)
+    {
+        $result = $this->carInfoService->getByVin($vin);
+
+        return response()->json(
+            $result,
+            $result['status'] ?? 200
         );
     }
 }

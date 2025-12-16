@@ -6,7 +6,7 @@ use App\Http\Controllers\SignatureController;
 use Illuminate\Support\Facades\Event;
 use App\Events\NotificationsWebsocketEvent;
 use Illuminate\Http\Request;
-
+use App\Services\SparService;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,6 +21,22 @@ use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view('welcome');
+});
+
+
+    Route::get('/test-spar', function (SparService $spar) {
+    // ID de prueba que venía en la documentación
+    $testPersonId = '195704133106'; 
+    
+    try {
+        $result = $spar->searchPerson($testPersonId);
+        
+        // Esto imprimirá el array en pantalla bonito para que lo veas
+        dd('Conexión Exitosa con Suecia:', $result);
+        
+    } catch (\Exception $e) {
+        dd('Error:', $e->getMessage());
+    }
 });
 Route::get('/sign/{token}', [SignatureController::class, 'showSigningPage'])->name('contracts.sign');
 
