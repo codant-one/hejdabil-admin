@@ -14,11 +14,11 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 
-import iconFordon from "@/assets/images/iconify-svg/Auto-Fordon.svg";
+import iconFordon from "@/assets/images/iconify-svg/autofordon.svg";
 import iconPris from "@/assets/images/iconify-svg/Prisinformation.svg";
 import iconKund from "@/assets/images/iconify-svg/clients.svg";
 import iconInfo from "@/assets/images/iconify-svg/auto-2-ilager.svg";
-import iconAtgarder from "@/assets/images/iconify-svg/Atgarder.svg";
+import iconAtgarder from "@/assets/images/iconify-svg/atgarder-2.svg";
 import iconDokument from "@/assets/images/iconify-svg/dokument-ilager.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
