@@ -1,0 +1,6 @@
+# Allow all font files to be tracked
+!*.ttf
+!*.ufm
+!*.ufm.json
+!*.afm.json
+!installed-fonts.json
