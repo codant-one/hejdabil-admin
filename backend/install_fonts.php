@@ -1,4 +1,8 @@
 <?php
+/**
+ * Script para instalar fuentes en dompdf.
+ * Deja que dompdf genere installed-fonts.json automáticamente con el formato correcto.
+ */
 
 require_once 'vendor/autoload.php';
 
@@ -12,7 +16,7 @@ if (!file_exists($fontPath)) {
     echo "Carpeta storage/fonts creada.\n";
 }
 
-// Limpiar archivos de caché de fuentes existentes
+// Limpiar archivos de caché de fuentes existentes EXCEPTO los .ttf originales de dompdf
 $files = glob($fontPath . '/*');
 foreach ($files as $file) {
     if (is_file($file)) {
@@ -21,17 +25,7 @@ foreach ($files as $file) {
     }
 }
 
-$options = new Options();
-$options->set('fontDir', $fontPath);
-$options->set('fontCache', $fontPath);
-$options->set('isRemoteEnabled', true);
-
-$dompdf = new Dompdf($options);
-$fontMetrics = $dompdf->getFontMetrics();
-
-$publicFontsPath = __DIR__ . '/public/fonts';
-
-// Helper: busca un archivo en $dir por nombre ignorando mayúsculas/minúsculas y devuelve el nombre real si existe
+// Helper: busca un archivo en $dir por nombre ignorando mayúsculas/minúsculas
 function findFileCI($dir, $name) {
     if (!is_dir($dir)) return false;
     $files = scandir($dir);
@@ -43,42 +37,51 @@ function findFileCI($dir, $name) {
     return false;
 }
 
-// Verificar que las fuentes existan
-$fontsToInstall = [
-    'DMSans-VariableFont.ttf',
-    'DMSans-Italic-VariableFont.ttf'
-];
+$publicFontsPath = __DIR__ . '/public/fonts';
 
-foreach ($fontsToInstall as $font) {
-    $path = $publicFontsPath . '/' . $font;
-    if (!file_exists($path)) {
-        echo "ERROR: No se encontró: $path\n";
-        exit(1);
-    }
+// Configurar dompdf para que guarde las métricas en storage/fonts
+$options = new Options();
+$options->set('fontDir', $fontPath);
+$options->set('fontCache', $fontPath);
+$options->set('isRemoteEnabled', true);
+$options->set('isFontSubsettingEnabled', true);
+
+$dompdf = new Dompdf($options);
+$fontMetrics = $dompdf->getFontMetrics();
+
+// Verificar que las fuentes DM Sans existan (case-insensitive)
+$dmSansNormal = findFileCI($publicFontsPath, 'DMSans-VariableFont.ttf');
+$dmSansItalic = findFileCI($publicFontsPath, 'DMSans-Italic-VariableFont.ttf');
+
+if (!$dmSansNormal) {
+    echo "ERROR: No se encontró DMSans-VariableFont.ttf en $publicFontsPath\n";
+    exit(1);
 }
 
-echo "\nTodas las fuentes encontradas. Instalando...\n\n";
+echo "\nInstalando fuentes...\n\n";
 
 // Registrar DM Sans
 $fontMetrics->registerFont(
     ['family' => 'dm sans', 'style' => 'normal', 'weight' => 'normal'],
-    $publicFontsPath . '/DMSans-VariableFont.ttf'
+    $publicFontsPath . '/' . $dmSansNormal
 );
 echo "DM Sans normal instalada.\n";
 
 $fontMetrics->registerFont(
     ['family' => 'dm sans', 'style' => 'normal', 'weight' => 'bold'],
-    $publicFontsPath . '/DMSans-VariableFont.ttf'
+    $publicFontsPath . '/' . $dmSansNormal
 );
 echo "DM Sans bold instalada.\n";
 
-$fontMetrics->registerFont(
-    ['family' => 'dm sans', 'style' => 'italic', 'weight' => 'normal'],
-    $publicFontsPath . '/DMSans-Italic-VariableFont.ttf'
-);
-echo "DM Sans italic instalada.\n";
+if ($dmSansItalic) {
+    $fontMetrics->registerFont(
+        ['family' => 'dm sans', 'style' => 'italic', 'weight' => 'normal'],
+        $publicFontsPath . '/' . $dmSansItalic
+    );
+    echo "DM Sans italic instalada.\n";
+}
 
-// Intentar registrar Gelion si existe
+// Intentar registrar Gelion si existe (case-insensitive)
 $gelionFonts = [
     ['file' => 'gelion-regular.ttf', 'weight' => 'normal', 'name' => 'Gelion normal'],
     ['file' => 'gelion-bold.ttf', 'weight' => 'bold', 'name' => 'Gelion bold'],
@@ -99,58 +102,21 @@ foreach ($gelionFonts as $gelion) {
     }
 }
 
-echo "\n¡Fuentes instaladas correctamente!\n";
-echo "Verifica el archivo: " . $fontPath . "/installed-fonts.json\n";
+// Guardar el fontMetrics para que dompdf escriba installed-fonts.json
+$fontMetrics->saveFontFamilies();
 
-// Mostrar contenido del archivo installed-fonts.json
+echo "\n¡Fuentes instaladas correctamente!\n";
+
+// Mostrar contenido del archivo installed-fonts.json generado por dompdf
 $installedFonts = $fontPath . '/installed-fonts.json';
 if (file_exists($installedFonts)) {
     echo "\nContenido de installed-fonts.json:\n";
     echo file_get_contents($installedFonts) . "\n";
-}
-
-// Asegurar que exista un installed-fonts.json coherente con las fuentes registradas
-$installed = [];
-
-// DM Sans
-$installed['dm sans'] = [];
-if (file_exists($publicFontsPath . '/DMSans-VariableFont.ttf')) {
-    $installed['dm sans']['normal'] = 'DMSans-VariableFont.ttf';
-    $installed['dm sans']['bold'] = 'DMSans-VariableFont.ttf';
-}
-if (file_exists($publicFontsPath . '/DMSans-Italic-VariableFont.ttf')) {
-    $installed['dm sans']['italic'] = 'DMSans-Italic-VariableFont.ttf';
-}
-
-// Gelion (opcional) — usar el nombre real encontrado
-$installed['gelion'] = [];
-$gelionNormal = findFileCI($publicFontsPath, 'gelion-Regular.ttf');
-$gelionBold = findFileCI($publicFontsPath, 'gelion-Bold.ttf');
-$gelionLight = findFileCI($publicFontsPath, 'gelion-Light.ttf');
-if ($gelionNormal !== false) {
-    $installed['gelion']['normal'] = $gelionNormal;
-}
-if ($gelionBold !== false) {
-    $installed['gelion']['bold'] = $gelionBold;
-}
-if ($gelionLight !== false) {
-    $installed['gelion']['300'] = $gelionLight;
-}
-
-// Eliminar entradas vacías
-foreach ($installed as $fam => $vals) {
-    if (empty($vals)) {
-        unset($installed[$fam]);
-    }
-}
-
-if (!empty($installed)) {
-    $json = json_encode($installed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    if (file_put_contents($installedFonts, $json) !== false) {
-        echo "\nWrote installed-fonts.json with registered families:\n" . implode(', ', array_keys($installed)) . "\n";
-    } else {
-        echo "\nERROR: No se pudo escribir: $installedFonts\n";
-    }
 } else {
-    echo "\nNo hay fuentes registradas para escribir en installed-fonts.json.\n";
+    echo "\nADVERTENCIA: installed-fonts.json no fue creado.\n";
+    echo "Listando archivos en storage/fonts:\n";
+    $files = glob($fontPath . '/*');
+    foreach ($files as $file) {
+        echo "  - " . basename($file) . "\n";
+    }
 }
