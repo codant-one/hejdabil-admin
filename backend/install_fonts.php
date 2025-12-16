@@ -95,3 +95,46 @@ if (file_exists($installedFonts)) {
     echo "\nContenido de installed-fonts.json:\n";
     echo file_get_contents($installedFonts) . "\n";
 }
+
+// Asegurar que exista un installed-fonts.json coherente con las fuentes registradas
+$installed = [];
+
+// DM Sans
+$installed['dm sans'] = [];
+if (file_exists($publicFontsPath . '/DMSans-VariableFont.ttf')) {
+    $installed['dm sans']['normal'] = 'DMSans-VariableFont.ttf';
+    $installed['dm sans']['bold'] = 'DMSans-VariableFont.ttf';
+}
+if (file_exists($publicFontsPath . '/DMSans-Italic-VariableFont.ttf')) {
+    $installed['dm sans']['italic'] = 'DMSans-Italic-VariableFont.ttf';
+}
+
+// Gelion (opcional)
+$installed['gelion'] = [];
+if (file_exists($publicFontsPath . '/gelion-Regular.ttf')) {
+    $installed['gelion']['normal'] = 'gelion-Regular.ttf';
+}
+if (file_exists($publicFontsPath . '/gelion-Bold.ttf')) {
+    $installed['gelion']['bold'] = 'gelion-Bold.ttf';
+}
+if (file_exists($publicFontsPath . '/gelion-Light.ttf')) {
+    $installed['gelion']['300'] = 'gelion-Light.ttf';
+}
+
+// Eliminar entradas vacías
+foreach ($installed as $fam => $vals) {
+    if (empty($vals)) {
+        unset($installed[$fam]);
+    }
+}
+
+if (!empty($installed)) {
+    $json = json_encode($installed, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if (file_put_contents($installedFonts, $json) !== false) {
+        echo "\nWrote installed-fonts.json with registered families:\n" . implode(', ', array_keys($installed)) . "\n";
+    } else {
+        echo "\nERROR: No se pudo escribir: $installedFonts\n";
+    }
+} else {
+    echo "\nNo hay fuentes registradas para escribir en installed-fonts.json.\n";
+}
