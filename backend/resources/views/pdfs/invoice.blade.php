@@ -7,10 +7,9 @@
     </head>
     <style>
 
-        /* Using fonts registered by dompdf (storage/fonts/installed-fonts.json). */
-        /* Do NOT declare @font-face here; rely on dompdf's font registry to avoid conflicts. */
+        /* Using fonts from storage/fonts - synced between local and server */
         body {
-            font-family: 'gelion', Arial, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -31,7 +30,7 @@
         }
 
         .faktura {
-            font-family: 'gelion', Arial, sans-serif;
+            font-family: 'gelion', 'dm sans', sans-serif;
             font-size: 32px;
             font-weight: 700;
             color: #454545;
@@ -43,7 +42,7 @@
         }
 
         .table-items {
-            font-family: 'gelion', Arial, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             margin-top: 10px;
             border-radius: 8px !important;
             border-width: thin !important;
@@ -53,7 +52,7 @@
         }
 
         .table-supplier {
-            font-family: 'gelion', Arial, sans-serif !important;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
             letter-spacing: 0 !important;
         }
 

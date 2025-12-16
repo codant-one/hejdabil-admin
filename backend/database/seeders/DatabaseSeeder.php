@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
 
             IvaSeeder::class,
             CarBodySeeder::class,
-            GearBoxSeeder::class,
+            GearboxSeeder::class,
             BrandSeeder::class,
             ModelSeeder::class,
             FuelSeeder::class,
