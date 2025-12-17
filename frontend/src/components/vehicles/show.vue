@@ -347,7 +347,7 @@ const setThumbsSwiper = (swiper) => {
                                 v-model="tab"
                                 grow
                                 :show-arrows="false"
-                                class="profile-tabs"
+                                class="vehicles-tabs"
                             >
                                 <VTab value="0"><span>Fordon</span></VTab>
                                 <VTab value="1"><span>Information om bilen</span></VTab>
@@ -704,7 +704,7 @@ const setThumbsSwiper = (swiper) => {
         }
     }
 
-    .v-tabs.profile-tabs {
+    .v-tabs.vehicles-tabs {
         .v-btn {
             background-color: #F6F6F6 !important;
             min-width: 50px !important;
@@ -716,7 +716,7 @@ const setThumbsSwiper = (swiper) => {
     }
 
     @media (max-width: 776px) {
-        .v-tabs.profile-tabs {
+        .v-tabs.vehicles-tabs {
             .v-icon {
                 display: none !important;
             }

@@ -142,7 +142,8 @@ class VehicleController extends Controller
                 'documents.user',
                 'documents.type',
                 'client_purchase.client',
-                'client_sale.client'
+                'client_sale.client',
+                'state'
             ])->find($id);
 
             if (!$vehicle)

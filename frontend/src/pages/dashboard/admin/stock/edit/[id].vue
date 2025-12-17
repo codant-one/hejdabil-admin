@@ -23,6 +23,7 @@ import iconDokument from "@/assets/images/iconify-svg/dokument-ilager.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { useToastsStores } from '@/stores/useToasts'
+import { ref } from 'vue'
 
 const ability = useAppAbility()
 const authStores = useAuthStores()
@@ -42,6 +43,9 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null);
 
 const userData = ref(null)
 const company = ref(null)
@@ -96,6 +100,7 @@ const fuel_id = ref(null)
 const gearbox_id = ref(null)
 const purchase_price = ref(null)
 const iva_purchase_id = ref(null)
+const state = ref(null)
 const state_id = ref(null)
 const state_idOld = ref(null)
 const sale_price = ref(null)
@@ -282,6 +287,7 @@ async function fetchData() {
         gearbox_id.value = vehicle.value.gearbox_id ?? gearbox_id.value
         purchase_price.value = vehicle.value.purchase_price ?? purchase_price.value
         iva_purchase_id.value = vehicle.value.iva_purchase_id ?? iva_purchase_id.value
+        state.value = vehicle.value.state.name
         state_id.value = vehicle.value.state_id ?? state_id.value
         state_idOld.value = vehicle.value.state_id ?? state_idOld.value
         sale_price.value = vehicle.value.sale_price ?? sale_price.value
@@ -1030,10 +1036,28 @@ const onSubmit = () => {
 const getFlag = (currency_id) => {
     return currencies.value.filter(item => item.id === currency_id)[0].flag
 }
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-    <section>
+    <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
         <VSnackbar
             v-model="advisor.show"
@@ -1047,15 +1071,18 @@ const getFlag = (currency_id) => {
         <VForm
             v-if="reg_num"
             ref="refForm"
+            class="card-form"
             v-model="isFormValid"
             @submit.prevent="onSubmit">
             <VRow>
                 <VCol cols="12" md="12">              
-                    <VCard flat class="px-2 px-md-12">
+                    <VCard flat class="px-2 px-md-12 card-fill">
                         <VCardText class="px-2 pt-0 pt-md-5">
                             <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
                                 <div class="d-flex align-center gap-4">
-                                    <div class="header-image-placeholder rounded d-flex align-center justify-center" style="width: 80px; height: 80px; background-color: #E0E0E0;">
+                                    <div 
+                                        class="header-image-placeholder d-flex align-center justify-center" 
+                                        style="width: 88px; height: 88px; background-color: #D9D9D9; border-radius: 16px;">
                                         <!-- Placeholder for car image -->
                                     </div>
                                     <div class="d-flex flex-column justify-center">
@@ -1063,7 +1090,7 @@ const getFlag = (currency_id) => {
                                             {{ reg_num }}
                                         </h6>
                                         <span class="d-flex align-center text-body-1 text-medium-emphasis">
-                                            På lager
+                                            {{ state }}
                                             <img :src="editIcon" alt="Edit" class="ms-2 cursor-pointer" width="20" height="20" @click="isConfirmStatusDialogVisible = true"/>
                                         </span>
                                     </div>
@@ -1074,18 +1101,23 @@ const getFlag = (currency_id) => {
                                         class="btn-light w-100 w-md-auto"
                                         :to="{ name: state_id === 12 ? 'dashboard-admin-sold' :'dashboard-admin-stock' }"
                                         >
-                                        <VIcon icon="tabler-arrow-left" class="me-2" />
+                                        <VIcon icon="custom-return" size="24" />
                                         Tillbaka
                                     </VBtn>
 
                                     <VBtn type="submit" class="btn-gradient w-100 w-md-auto">
-                                        <VIcon icon="tabler-device-floppy" class="me-2" />
+                                        <VIcon icon="custom-save" class="me-2" />
                                         Spara
                                     </VBtn>
                                 </div>
                             </div>
                 
-                            <VTabs v-model="currentTab" class="v-tabs-pill mb-6" align-tabs="start">
+                            <VTabs 
+                                v-model="currentTab" 
+                                grow
+                                :show-arrows="false"
+                                class="vehicles-tabs"
+                            >
                                 <VTab value="tab-1">
                                     <img :src="iconFordon" alt="Fordon" class="me-2" width="24" height="24" />
                                     Fordon
@@ -1125,10 +1157,6 @@ const getFlag = (currency_id) => {
                                                     <VTextField
                                                         v-model="reg_num"
                                                         placeholder="YTRFVG654436778JHYTYYG"
-                                                        variant="solo"
-                                                        flat
-                                                        bg-color="#F5F5F5"
-                                                        density="default"
                                                     />
                                                     <VBtn variant="outlined" color="secondary" class="px-4" style="height: 56px; border-color: #BDBDBD;">
                                                         <VIcon icon="tabler-search" class="me-2" />
@@ -1143,10 +1171,6 @@ const getFlag = (currency_id) => {
                                                     v-model="mileage"
                                                     suffix="Mil"
                                                     min="0"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1162,10 +1186,6 @@ const getFlag = (currency_id) => {
                                                     @update:modelValue="selectBrand"
                                                     @click:clear="onClearBrand"
                                                     :menu-props="{ maxHeight: '300px' }"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
@@ -1178,30 +1198,18 @@ const getFlag = (currency_id) => {
                                                     clear-icon="tabler-x"
                                                     @update:modelValue="selectModel"
                                                     :menu-props="{ maxHeight: '300px' }"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3" v-if="model_id === 0">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
                                                 <VTextField
                                                     v-model="model"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
                                                 <VTextField
                                                     v-model="generation"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1214,10 +1222,6 @@ const getFlag = (currency_id) => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1225,10 +1229,6 @@ const getFlag = (currency_id) => {
                                                 <VTextField
                                                     v-model="year"
                                                     :rules="[yearValidator]"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1259,10 +1259,6 @@ const getFlag = (currency_id) => {
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
                                                 <VTextField
                                                     v-model="color"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1275,10 +1271,6 @@ const getFlag = (currency_id) => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
@@ -1291,10 +1283,6 @@ const getFlag = (currency_id) => {
                                                     autocomplete="off"
                                                     clearable
                                                     clear-icon="tabler-x"
-                                                    variant="solo"
-                                                    flat
-                                                    bg-color="#F5F5F5"
-                                                    density="default"
                                                 />
                                             </VCol>
                                         </VRow>
@@ -1946,9 +1934,9 @@ const getFlag = (currency_id) => {
             <VForm
                 ref="refForm"
                 @submit.prevent="onSubmit">
-                <VCard>
+                <VCard flat class="card-form">
                     <VCardText class="dialog-title-box">
-                        <VIcon size="32" icon="tabler-edit" class="action-icon" />
+                        <VIcon size="32" icon="custom-pencil" class="action-icon" />
                         <div class="dialog-title">
                             Redigera status
                         </div>
@@ -2422,6 +2410,29 @@ const getFlag = (currency_id) => {
 
 <style scoped>
 
+    .v-tabs.vehicles-tabs {
+        .v-btn {
+            min-width: 50px !important;
+            .v-btn__content {
+                font-size: 14px !important;
+                color: #454545;
+            }
+        }
+    }
+
+    @media (max-width: 776px) {
+        .v-tabs.vehicles-tabs {
+            .v-icon {
+                display: none !important;
+            }
+            .v-btn {
+                .v-btn__content {
+                    white-space: break-spaces;
+                }
+            }
+        }
+    }
+
     :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
         --v-input-control-height: 0 !important;
     }
@@ -2490,6 +2501,8 @@ const getFlag = (currency_id) => {
     :deep(.field-solo-flat .v-field--focused) {
         border-color: #009688 !important;
     }
+
+    
 </style>
 
 <route lang="yaml">
