@@ -1236,7 +1236,7 @@ body .v-layout .v-application__wrap .v-expansion-panels {
 
   &.v-tabs--horizontal:not(.v-tabs-pill) {
     .v-btn {
-      min-width: 256px !important;
+      min-width: 256px;
       height: 48px !important;
 
       padding-right: 12px;

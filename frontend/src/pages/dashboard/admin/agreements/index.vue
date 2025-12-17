@@ -1335,11 +1335,6 @@ const goToTracker = (agreementData) => {
     width: 40px;
     height: 40px;
   }
-
-  .status-chip {
-    border-radius: 16px;
-    padding: 0 12px;
-  }
 </style>
 <route lang="yaml">
   meta:

@@ -413,6 +413,15 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const resolveStatus = state_id => {
+  if (state_id === 10)
+    return { class: 'pending' }
+  if (state_id === 11)
+    return { class: 'info' }   
+  if (state_id === 13)
+    return { class: 'success' }
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -603,7 +612,14 @@ onBeforeUnmount(() => {
                 <span>{{ vehicle.comments }}</span>
               </VTooltip>
             </td>
-            <td class="text-center" v-if="isColVisible('state')"> {{ vehicle.state.name }} </td>
+            <td class="text-center text-wrap d-flex justify-center align-center" v-if="isColVisible('state')"> 
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(vehicle.state.id)?.class}`"
+              >
+                {{ vehicle.state.name }}
+              </div> 
+            </td>
             <td class="text-center" v-if="isColVisible('vat')"> {{ vehicle.iva_purchase?.name }} </td>
             <td class="text-center" v-if="isColVisible('control_inspection')"> {{ vehicle.control_inspection }} </td>
             <td class="text-wrap" v-if="isColVisible('seller')">
