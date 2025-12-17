@@ -897,12 +897,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
-  .dialog-bottom-full-width {
-    .v-card {
-      border-radius: 24px 24px 0 0 !important;
-    }
-  }
-
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

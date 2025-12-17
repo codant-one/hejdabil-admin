@@ -179,7 +179,7 @@ watch(currentData, () => {
 <template>
   <!-- 👉 Form -->
   <VForm
-    class="card-client"
+    class="card-form"
     ref="refForm"
     v-model="isFormValid"
     @submit.prevent="onSubmit"
@@ -310,9 +310,6 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
-.card-client {
-  border-radius: 0 !important;
-}
 .border-img {
   border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 6px;
@@ -327,7 +324,7 @@ watch(currentData, () => {
 </style>
 
 <style lang="scss">
-.card-client {
+.card-form {
   .v-list {
     padding: 28px 24px 40px !important;
 
@@ -341,6 +338,10 @@ watch(currentData, () => {
       }
 
       .v-select .v-field {
+        .v-select__selection {
+          align-items: center;
+        }
+
         .v-field__input > input {
           top: 0px;
           left: 0px;

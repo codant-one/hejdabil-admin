@@ -224,7 +224,7 @@ watch(currentData, () => {
     <VDivider class="mt-4" />
 
     <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
-      <VCard flat class="card-client">
+      <VCard flat class="card-form">
         <VCardText>
           <!-- 👉 Form -->
           <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
@@ -362,7 +362,7 @@ watch(currentData, () => {
 .btn-close-client {
   height: 32px !important;
 }
-.card-client {
+.card-form {
   border-radius: 0 !important;
 }
 .border-img {

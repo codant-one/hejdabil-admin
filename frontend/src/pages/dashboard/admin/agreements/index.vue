@@ -1237,12 +1237,6 @@ const goToTracker = (agreementData) => {
 </template>
 
 <style lang="scss" scoped>
-  .dialog-bottom-full-width {
-    .v-card {
-      border-radius: 24px 24px 0 0 !important;
-    }
-  }
-
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;
@@ -1340,11 +1334,6 @@ const goToTracker = (agreementData) => {
     border-radius: 50%;
     width: 40px;
     height: 40px;
-  }
-
-  .status-chip {
-    border-radius: 16px;
-    padding: 0 12px;
   }
 </style>
 <route lang="yaml">

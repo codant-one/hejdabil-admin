@@ -7,7 +7,7 @@ import { useVehiclesStores } from '@/stores/useVehicles';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router';
 
-import iconFordon from "@/assets/images/iconify-svg/Auto-Fordon.svg";
+import iconFordon from "@/assets/images/iconify-svg/autofordon.svg";
 import iconKund from "@/assets/images/iconify-svg/clients.svg";
 import iconReturn from "@/assets/images/iconify-svg/return.svg";
 import iconSave from "@/assets/images/iconify-svg/save.svg";
