@@ -338,6 +338,10 @@ watch(currentData, () => {
       }
 
       .v-select .v-field {
+        .v-select__selection {
+          align-items: center;
+        }
+
         .v-field__input > input {
           top: 0px;
           left: 0px;
