@@ -716,14 +716,13 @@ body {
 .card-fill {
   border-radius: 0 !important;
   flex: 1 1 auto;
-  padding-bottom: 80px !important;
+  padding-bottom: 60px !important;
 }
 
 @media (min-width: 1024px) {
   .card-fill {
     border-radius: 16px !important;
     padding-bottom: 0 !important;
-    margin-bottom: 24px;
   }
 
   .page-section {
@@ -812,6 +811,7 @@ body {
 .page-section {
   display: flex;
   flex-direction: column;
+  margin-bottom: 24px;
 }
 
 @media (min-width: 991px) {

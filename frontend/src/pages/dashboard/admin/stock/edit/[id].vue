@@ -1106,7 +1106,7 @@ onBeforeUnmount(() => {
                                     </VBtn>
 
                                     <VBtn type="submit" class="btn-gradient w-100 w-md-auto">
-                                        <VIcon icon="custom-save" class="me-2" />
+                                        <VIcon icon="custom-save"  size="24" />
                                         Spara
                                     </VBtn>
                                 </div>

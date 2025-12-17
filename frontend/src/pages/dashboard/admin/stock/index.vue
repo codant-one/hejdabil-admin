@@ -1195,15 +1195,6 @@ onBeforeUnmount(() => {
       <VList>
         <VListItem
           v-if="$can('edit', 'stock')"
-          @click="showVehicle(selectedVehicleForAction.id); isMobileActionDialogVisible = false;"
-        >
-          <template #prepend>
-            <VIcon icon="custom-eye" size="24" />
-          </template>
-          <VListItemTitle>Visa</VListItemTitle>
-        </VListItem>
-        <VListItem
-          v-if="$can('edit', 'stock') &&  (selectedVehicleForAction.state_id === 4 || selectedVehicleForAction.state_id === 8)"
           @click="sellVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
         >
           <template #prepend>
@@ -1221,6 +1212,7 @@ onBeforeUnmount(() => {
           <VListItemTitle>Redigera</VListItemTitle>
         </VListItem>
         <VListItem
+          class="d-none"
           v-if="$can('view', 'stock')"
           @click="openLink(selectedVehicleForAction); isMobileActionDialogVisible = false;"
         >
@@ -1231,6 +1223,7 @@ onBeforeUnmount(() => {
         </VListItem>
         <VListItem
           v-if="$can('edit', 'stock')"
+          class="d-none"
           @click="download(selectedVehicleForAction); isMobileActionDialogVisible = false;"
         >
           <template #prepend>
