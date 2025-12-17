@@ -4,6 +4,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
@@ -28,6 +29,7 @@ import { ref } from 'vue'
 const ability = useAppAbility()
 const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
+const carInfoStores = useCarInfoStores()
 const tasksStores = useTasksStores()
 const costsStores = useCostsStores()
 const documentsStores = useDocumentsStores()
@@ -367,6 +369,88 @@ const selectBrand = brand => {
         model_id.value = ''
         logo.value = _brand.logo
         modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+    }
+}
+
+/**
+ * Buscar información del vehículo por matrícula usando la API car.info
+ * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
+ */
+const searchVehicleByPlate = async () => {
+    if (!reg_num.value) {
+        toastsStores.addToast({
+            message: 'Ange ett registreringsnummer',
+            type: 'warning'
+        })
+        return
+    }
+
+    isRequestOngoing.value = true
+
+    try {
+        const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+
+        // Verificar success (también manejar typo 'sucess' de la API)
+        const isSuccess = carRes.success === true || carRes.sucess === true
+
+        if (isSuccess && carRes.result) {
+            // Actualizar año del modelo
+            if (carRes.result.model_year) {
+                year.value = carRes.result.model_year
+            }
+            
+            // Actualizar generación
+            if (carRes.result.generation) {
+                generation.value = carRes.result.generation
+            }
+            
+            // Actualizar marca (Märke)
+            if (carRes.result.brand_id) {
+                brand_id.value = carRes.result.brand_id
+                selectBrand(brand_id.value)
+            }
+            
+            // Actualizar modelo (Modell)
+            if (carRes.result.model_id) {
+                model_id.value = carRes.result.model_id
+            } else if (carRes.result.model_name) {
+                // Si no se encontró el modelo en la DB, usar el campo de texto libre
+                model_id.value = 0
+                model.value = carRes.result.model_name
+            }
+            
+            // Actualizar tipo de carrocería (Kaross)
+            if (carRes.result.car_body_id) {
+                car_body_id.value = carRes.result.car_body_id
+            }
+            
+            // Actualizar tipo de combustible (Drivmedel)
+            if (carRes.result.fuel_id) {
+                fuel_id.value = carRes.result.fuel_id
+            }
+
+            // Actualizar caja de cambios (Växellåda)
+            if (carRes.result.gearbox_id) {
+                gearbox_id.value = carRes.result.gearbox_id
+            }
+
+            toastsStores.addToast({
+                message: 'Fordonsdata hämtades framgångsrikt',
+                type: 'success'
+            })
+        } else {
+            toastsStores.addToast({
+                message: 'Ingen information hittades för detta registreringsnummer',
+                type: 'warning'
+            })
+        }
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Fel vid hämtning av fordonsdata',
+            type: 'error'
+        })
+    } finally {
+        isRequestOngoing.value = false
     }
 }
 
@@ -1158,7 +1242,13 @@ onBeforeUnmount(() => {
                                                         v-model="reg_num"
                                                         placeholder="YTRFVG654436778JHYTYYG"
                                                     />
-                                                    <VBtn variant="outlined" color="secondary" class="px-4" style="height: 56px; border-color: #BDBDBD;">
+                                                    <VBtn 
+                                                        variant="outlined" 
+                                                        color="secondary" 
+                                                        class="px-4" 
+                                                        style="height: 56px; border-color: #BDBDBD;"
+                                                        @click="searchVehicleByPlate"
+                                                    >
                                                         <VIcon icon="tabler-search" class="me-2" />
                                                         Hämta
                                                     </VBtn>
