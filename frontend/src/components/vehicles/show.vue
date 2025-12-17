@@ -78,6 +78,8 @@ const last_dist_belt = ref(null)
 const comments = ref(null)
 const sale_comments = ref(null)
 
+const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+
 const organization_number_purchase = ref('')
 const address_purchase = ref('')
 const postal_code_purchase = ref('')
@@ -403,15 +405,42 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Servicebok finns? </span>
-                                                    <span class="subtitle-detail">{{ service_book === 0 ? 'Ja' : 'Nej' }}</span>
+                                                    <span class="subtitle-detail ml-2">
+                                                        <VRadioGroup v-model="service_book" inline readonly class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Sommardäck finns? </span>
-                                                    <span class="subtitle-detail">{{ summer_tire === 0 ? 'Ja' : 'Nej' }}</span>
+                                                    <span class="subtitle-detail ml-2">
+                                                        <VRadioGroup v-model="summer_tire" inline readonly class="radio-form">
+                                                        <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Vinterdäck finns? </span>
-                                                    <span class="subtitle-detail">{{ winter_tire  === 0 ? 'Ja' : 'Nej'}}</span>
+                                                    <span class="subtitle-detail ml-2">
+                                                        <VRadioGroup v-model="winter_tire" inline readonly class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
@@ -421,7 +450,16 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
-                                                    <span class="subtitle-detail">{{ dist_belt  === 0 ? 'Ja' : (dist_belt  === 1 ? 'Nej' : 'Vet ej') }}</span>
+                                                    <span class="subtitle-detail ml-2">
+                                                        <VRadioGroup v-model="dist_belt" inline readonly class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt vid Mil/datum </span>
@@ -803,6 +841,18 @@ const setThumbsSwiper = (swiper) => {
         :deep(ul) {
             list-style: disc;
             padding-inline-start: 1.5em;
+        }
+    }
+
+    .radio-form {
+        :deep(.v-selection-control--dirty) {
+            .v-selection-control__input > .v-icon {
+                color: #00E1E2 !important;
+            }
+        }
+        :deep(.v-label) {
+            color: #5D5D5D;
+            font-size: 12px;
         }
     }
 
