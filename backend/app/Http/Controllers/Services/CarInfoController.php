@@ -26,10 +26,8 @@ class CarInfoController extends Controller
     {
         $result = $this->carInfoService->getByLicensePlate($licensePlate);
 
-        return response()->json(
-            $result,
-            $result['status'] ?? 200
-        );
+        // Siempre devolver HTTP 200 para que el frontend maneje el success/error en el body
+        return response()->json($result, 200);
     }
 
     /**

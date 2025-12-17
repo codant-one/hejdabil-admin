@@ -52,6 +52,12 @@ const plate = ref(null)
 const chassis = ref(null)
 const year_api = ref(null)
 const generation = ref(null)
+const model_api = ref(null)
+const brand_id_api = ref(null)
+const model_id_api = ref(null)
+const car_body_id_api = ref(null)
+const fuel_id_api = ref(null)
+const gearbox_id_api = ref(null)
 const refForm = ref()
 
 const states = ref ([
@@ -291,18 +297,41 @@ const onSubmit = async () => {
 
       const carRes = await carInfoStores.getLicensePlate(plate.value)
 
-      if (carRes.success) {
-        chassis.value = carRes.result.chassis
+      // Verificar success (también manejar typo 'sucess' de la API)
+      const isSuccess = carRes.success === true || carRes.sucess === true
+
+      if (isSuccess && carRes.result) {
+        // chassis_number es el VIN real del vehículo
+        chassis.value = carRes.result.chassis_number ?? carRes.result.vin
         year_api.value = carRes.result.model_year
         generation.value = carRes.result.generation
+        model_api.value = carRes.result.model_name
+        brand_id_api.value = carRes.result.brand_id
+        model_id_api.value = carRes.result.model_id
+        car_body_id_api.value = carRes.result.car_body_id
+        fuel_id_api.value = carRes.result.fuel_id
+        gearbox_id_api.value = carRes.result.gearbox_id
       }
 
       let formData = new FormData()
 
       formData.append('reg_num', plate.value)
-      formData.append('chassis', chassis.value)
-      formData.append('year', year_api.value)
-      formData.append('generation', generation.value)
+      if (chassis.value) formData.append('chassis', chassis.value)
+      if (year_api.value) formData.append('year', year_api.value)
+      if (generation.value) formData.append('generation', generation.value)
+      if (model_api.value) formData.append('model', model_api.value)
+      if (brand_id_api.value) formData.append('brand_id', brand_id_api.value)
+      
+      // Si tenemos brand_id pero no model_id, enviar model_id=0 para crear nuevo modelo
+      if (model_id_api.value) {
+        formData.append('model_id', model_id_api.value)
+      } else if (brand_id_api.value && model_api.value) {
+        formData.append('model_id', '0')
+      }
+      
+      if (car_body_id_api.value) formData.append('car_body_id', car_body_id_api.value)
+      if (fuel_id_api.value) formData.append('fuel_id', fuel_id_api.value)
+      if (gearbox_id_api.value) formData.append('gearbox_id', gearbox_id_api.value)
 
       vehiclesStores.addVehicle(formData)
         .then((res) => {
