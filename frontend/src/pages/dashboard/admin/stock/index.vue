@@ -711,6 +711,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem
+                    class="d-none"
                     v-if="$can('view', 'stock')"
                     @click="openLink(vehicle)"
                   >
@@ -720,6 +721,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
                   <VListItem 
+                    class="d-none"
                     v-if="$can('edit', 'stock')" 
                     @click="download(vehicle)"
                   >
