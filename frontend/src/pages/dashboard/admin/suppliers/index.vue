@@ -615,7 +615,6 @@ const downloadCSV = async () => {
               @input="formatOrgNumber()"
             />
             <VFileInput
-              v-if="csr_url !== null"
               v-model="pemFile"
               label="Ladda upp PEM-fil"
               accept=".pem"
