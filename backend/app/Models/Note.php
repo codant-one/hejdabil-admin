@@ -122,4 +122,12 @@ class Note extends Model
             $note->delete();
         }
     }
+
+    public static function sendComment($request) {
+        NoteComment::create([
+            'user_id' => Auth::user()->id,
+            'note_id' => $request->id,
+            'comment' => $request->comment
+        ]);
+    }
 }

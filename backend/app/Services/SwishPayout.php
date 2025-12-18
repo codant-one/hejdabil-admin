@@ -18,10 +18,14 @@ class SwishPayout
 
     public function __construct()
     {
+        $user = Auth::user();
+        $supplier = $user->supplier;
+
+
         $this->baseUrl            = config('services.swish_payout.base_url');
         $this->callbackUrl         = config('services.swish_payout.callback_url');
-        $this->signingCert         = config('services.swish_payout.signing_cert');
-        $this->signingKey          = config('services.swish_payout.signing_key');
+        $this->signingCert         = storage_path('app/public') . $supplier->pem_url; //config('services.swish_payout.signing_cert');
+        $this->signingKey          = storage_path('app/public') . $supplier->key_url; //config('services.swish_payout.signing_key');
         $this->signingKeyPassword  = config('services.swish_payout.signing_key_password', 'swish');
         $this->clientKeyPassword   = config('services.swish_payout.client_key_password');
         $this->clientCertPassword  = config('services.swish_payout.client_cert_password');

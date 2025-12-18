@@ -159,6 +159,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::post('comment', [VehicleTaskController::class, 'comment']);
     });
 
+    //Notes
+    Route::group(['prefix' => 'notes'], function () {
+        Route::post('comment', [NoteController::class, 'comment']);
+    });
+
     //Documents (Vehicle Documents)
     Route::group(['prefix' => 'documents'], function () {
         Route::post('send', [VehicleDocumentController::class, 'send']);
