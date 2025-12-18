@@ -210,13 +210,29 @@ class Vehicle extends Model
             default => $request->supplier_id,
         };
 
+        // Si model_id es 0, crear nuevo modelo
+        $model_id = null;
+        if ($request->model_id === '0' && $request->model && $request->brand_id) {
+            $model = CarModel::create([
+                'name' => $request->model,
+                'brand_id' => $request->brand_id
+            ]);
+            $model_id = $model->id;
+        } elseif ($request->model_id && $request->model_id !== 'null' && $request->model_id !== '0') {
+            $model_id = $request->model_id;
+        }
+
         $vehicle = self::create([
             'user_id' => Auth::user()->id,
             'supplier_id' => $supplier_id,
             'reg_num' => $request->reg_num,
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
             'year' => $request->year === 'null' ? null : $request->year,
-            'generation' => $request->generation === 'null' ? null : $request->generation
+            'generation' => $request->generation === 'null' ? null : $request->generation,
+            'model_id' => $model_id,
+            'car_body_id' => ($request->car_body_id && $request->car_body_id !== 'null') ? $request->car_body_id : null,
+            'fuel_id' => ($request->fuel_id && $request->fuel_id !== 'null') ? $request->fuel_id : null,
+            'gearbox_id' => ($request->gearbox_id && $request->gearbox_id !== 'null') ? $request->gearbox_id : null,
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);

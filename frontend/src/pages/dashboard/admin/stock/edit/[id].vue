@@ -4,6 +4,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
@@ -14,12 +15,7 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 
-import iconFordon from "@/assets/images/iconify-svg/autofordon.svg";
-import iconPris from "@/assets/images/iconify-svg/Prisinformation.svg";
-import iconKund from "@/assets/images/iconify-svg/clients.svg";
-import iconInfo from "@/assets/images/iconify-svg/auto-2-ilager.svg";
-import iconAtgarder from "@/assets/images/iconify-svg/atgarder-2.svg";
-import iconDokument from "@/assets/images/iconify-svg/dokument-ilager.svg";
+
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { useToastsStores } from '@/stores/useToasts'
@@ -28,6 +24,7 @@ import { ref } from 'vue'
 const ability = useAppAbility()
 const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
+const carInfoStores = useCarInfoStores()
 const tasksStores = useTasksStores()
 const costsStores = useCostsStores()
 const documentsStores = useDocumentsStores()
@@ -367,6 +364,88 @@ const selectBrand = brand => {
         model_id.value = ''
         logo.value = _brand.logo
         modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+    }
+}
+
+/**
+ * Buscar información del vehículo por matrícula usando la API car.info
+ * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
+ */
+const searchVehicleByPlate = async () => {
+    if (!reg_num.value) {
+        toastsStores.addToast({
+            message: 'Ange ett registreringsnummer',
+            type: 'warning'
+        })
+        return
+    }
+
+    isRequestOngoing.value = true
+
+    try {
+        const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+
+        // Verificar success (también manejar typo 'sucess' de la API)
+        const isSuccess = carRes.success === true || carRes.sucess === true
+
+        if (isSuccess && carRes.result) {
+            // Actualizar año del modelo
+            if (carRes.result.model_year) {
+                year.value = carRes.result.model_year
+            }
+            
+            // Actualizar generación
+            if (carRes.result.generation) {
+                generation.value = carRes.result.generation
+            }
+            
+            // Actualizar marca (Märke)
+            if (carRes.result.brand_id) {
+                brand_id.value = carRes.result.brand_id
+                selectBrand(brand_id.value)
+            }
+            
+            // Actualizar modelo (Modell)
+            if (carRes.result.model_id) {
+                model_id.value = carRes.result.model_id
+            } else if (carRes.result.model_name) {
+                // Si no se encontró el modelo en la DB, usar el campo de texto libre
+                model_id.value = 0
+                model.value = carRes.result.model_name
+            }
+            
+            // Actualizar tipo de carrocería (Kaross)
+            if (carRes.result.car_body_id) {
+                car_body_id.value = carRes.result.car_body_id
+            }
+            
+            // Actualizar tipo de combustible (Drivmedel)
+            if (carRes.result.fuel_id) {
+                fuel_id.value = carRes.result.fuel_id
+            }
+
+            // Actualizar caja de cambios (Växellåda)
+            if (carRes.result.gearbox_id) {
+                gearbox_id.value = carRes.result.gearbox_id
+            }
+
+            toastsStores.addToast({
+                message: 'Fordonsdata hämtades framgångsrikt',
+                type: 'success'
+            })
+        } else {
+            toastsStores.addToast({
+                message: 'Ingen information hittades för detta registreringsnummer',
+                type: 'warning'
+            })
+        }
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Fel vid hämtning av fordonsdata',
+            type: 'error'
+        })
+    } finally {
+        isRequestOngoing.value = false
     }
 }
 
@@ -1080,7 +1159,14 @@ onBeforeUnmount(() => {
                         <VCardText class="px-2 pt-0 pt-md-5">
                             <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
                                 <div class="d-flex align-center gap-4">
+                                    <VAvatar
+                                        v-if="logo"
+                                        variant="tonal"
+                                        style="width: 88px; height: 88px; border-radius: 16px;"
+                                        :image="themeConfig.settings.urlStorage + logo"
+                                        /> 
                                     <div 
+                                        v-else
                                         class="header-image-placeholder d-flex align-center justify-center" 
                                         style="width: 88px; height: 88px; background-color: #D9D9D9; border-radius: 16px;">
                                         <!-- Placeholder for car image -->
@@ -1106,12 +1192,14 @@ onBeforeUnmount(() => {
                                     </VBtn>
 
                                     <VBtn type="submit" class="btn-gradient w-100 w-md-auto">
-                                        <VIcon icon="custom-save" class="me-2" />
+                                        <VIcon icon="custom-save"  size="24" />
                                         Spara
                                     </VBtn>
                                 </div>
                             </div>
                 
+                            <VDivider class="mb-10" />
+                            
                             <VTabs 
                                 v-model="currentTab" 
                                 grow
@@ -1119,28 +1207,28 @@ onBeforeUnmount(() => {
                                 class="vehicles-tabs"
                             >
                                 <VTab value="tab-1">
-                                    <img :src="iconFordon" alt="Fordon" class="me-2" width="24" height="24" />
-                                    Fordon
+                                    <VIcon size="24" icon="custom-autofordon" />
+                                    <span>Fordon</span>
                                 </VTab>
                                 <VTab value="tab-2">
-                                    <img :src="iconPris" alt="Prisinformation" class="me-2" width="24" height="24" />
-                                    Prisinformation
+                                    <VIcon size="24" icon="custom-pris-information" />
+                                    <span>Prisinformation</span>
                                 </VTab>
                                 <VTab value="tab-3">
-                                    <img :src="iconKund" alt="Kund" class="me-2" width="24" height="24" />
-                                    Kund
+                                    <VIcon size="24" icon="custom-clients" />
+                                    <span>Kund</span>
                                 </VTab>
                                 <VTab value="tab-4">
-                                    <img :src="iconInfo" alt="Information om bilen" class="me-2" width="24" height="24" />
-                                    Information om bilen
+                                    <VIcon size="24" icon="custom-auto-2-ilager" />
+                                    <span>Information om bilen</span>
                                 </VTab>
                                 <VTab value="tab-5">
-                                    <img :src="iconAtgarder" alt="Åtgärder/Kostnader" class="me-2" width="24" height="24" />
-                                    Åtgärder/Kostnader
+                                    <VIcon size="24" icon="custom-atgarder-2" />
+                                    <span>Åtgärder/Kostnader</span>
                                 </VTab>
                                 <VTab value="tab-6">
-                                    <img :src="iconDokument" alt="Dokument" class="me-2" width="24" height="24" />
-                                    Dokument
+                                    <VIcon size="24" icon="custom-dokument-ilager" />
+                                    <span>Dokument</span>
                                 </VTab>
                             </VTabs>
                             <VCardText class="px-2">
@@ -1158,7 +1246,13 @@ onBeforeUnmount(() => {
                                                         v-model="reg_num"
                                                         placeholder="YTRFVG654436778JHYTYYG"
                                                     />
-                                                    <VBtn variant="outlined" color="secondary" class="px-4" style="height: 56px; border-color: #BDBDBD;">
+                                                    <VBtn 
+                                                        variant="outlined" 
+                                                        color="secondary" 
+                                                        class="px-4" 
+                                                        style="height: 56px; border-color: #BDBDBD;"
+                                                        @click="searchVehicleByPlate"
+                                                    >
                                                         <VIcon icon="tabler-search" class="me-2" />
                                                         Hämta
                                                     </VBtn>
@@ -2408,7 +2502,7 @@ onBeforeUnmount(() => {
     </section>
 </template>
 
-<style scoped>
+<style lang="scss">
 
     .v-tabs.vehicles-tabs {
         .v-btn {
@@ -2463,20 +2557,6 @@ onBeforeUnmount(() => {
         background-color: #E0E0E0;
         min-width: 80px;
         min-height: 80px;
-    }
-
-    .v-tabs-pill .v-tab {
-        text-transform: none;
-        letter-spacing: normal;
-        font-weight: 500;
-        color: #757575;
-    }
-
-    .v-tabs-pill .v-tab--selected {
-        color: #009688; /* Teal */
-        border-bottom: 1px solid;
-        border-image-source: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
-        border-image-slice: 1;
     }
 
     /* Custom input styling */

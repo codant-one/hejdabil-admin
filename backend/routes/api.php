@@ -44,6 +44,7 @@ use App\Http\Controllers\Services\{
     CarInfoController,
     SwishPayoutController,
     CompanyInfoController,
+    PersonInfoController,
 };
 
 /*
@@ -237,3 +238,6 @@ Route::post('/swish/payout/callback', [SwishPayoutController::class, 'handle']);
 
 // COMPANY INFO (Bolagsverket)
 Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'lookupByOrgNumber']);
+
+// PERSON INFO (SPAR - Statens Personadressregister)
+Route::get('/persons/lookup/{personId}', [PersonInfoController::class, 'lookupByPersonId']);

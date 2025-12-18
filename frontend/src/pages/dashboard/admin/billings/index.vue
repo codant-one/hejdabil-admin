@@ -990,14 +990,15 @@ onBeforeUnmount(() => {
 
       <VCardText
         v-if="billings.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
         </span>
 
-        <VSpacer class="d-none d-md-block" />
-
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
         <VPagination
           v-model="currentPage"
           size="small"
