@@ -27,7 +27,6 @@ const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
 const masterPassword = ref('')
 const csrUrl = ref('')
-const keyUrl = ref('')
 const isFileMissingDialogVisible = ref(false)
 const setting = ref([])
 
@@ -79,7 +78,6 @@ async function fetchData() {
     const supplierData = await suppliersStores.getMasterPassword(userData.value.supplier.id)
     masterPassword.value = supplierData.master_password
     csrUrl.value = supplierData.csr_url
-    keyUrl.value = supplierData.key_url
   } else {
     await configsStores.getFeature('setting')
     setting.value = configsStores.getFeaturedConfig('setting')
@@ -403,9 +401,6 @@ const onSubmitKey = async () => {
           <div class="d-flex gap-4">
             <VBtn @click="downloadFile(csrUrl)">
               Ladda ner CSR
-            </VBtn>
-            <VBtn @click="downloadFile(keyUrl)">
-              Ladda ner KEY
             </VBtn>
           </div>
         </VCardText>
