@@ -615,11 +615,11 @@ const downloadCSV = async () => {
               @input="formatOrgNumber()"
             />
             <VFileInput
+              v-if="csr_url !== null"
               v-model="pemFile"
               label="Ladda upp PEM-fil"
               accept=".pem"
               prepend-icon="tabler-file"
-              :rules="[requiredValidator]"
             />
             <VCheckbox
               v-if="csr_url !== null"
