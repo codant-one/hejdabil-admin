@@ -15,12 +15,7 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 
-import iconFordon from "@/assets/images/iconify-svg/autofordon.svg";
-import iconPris from "@/assets/images/iconify-svg/Prisinformation.svg";
-import iconKund from "@/assets/images/iconify-svg/clients.svg";
-import iconInfo from "@/assets/images/iconify-svg/auto-2-ilager.svg";
-import iconAtgarder from "@/assets/images/iconify-svg/atgarder-2.svg";
-import iconDokument from "@/assets/images/iconify-svg/dokument-ilager.svg";
+
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { useToastsStores } from '@/stores/useToasts'
@@ -1164,7 +1159,14 @@ onBeforeUnmount(() => {
                         <VCardText class="px-2 pt-0 pt-md-5">
                             <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6 mb-6">
                                 <div class="d-flex align-center gap-4">
+                                    <VAvatar
+                                        v-if="logo"
+                                        variant="tonal"
+                                        style="width: 88px; height: 88px; border-radius: 16px;"
+                                        :image="themeConfig.settings.urlStorage + logo"
+                                        /> 
                                     <div 
+                                        v-else
                                         class="header-image-placeholder d-flex align-center justify-center" 
                                         style="width: 88px; height: 88px; background-color: #D9D9D9; border-radius: 16px;">
                                         <!-- Placeholder for car image -->
@@ -1196,6 +1198,8 @@ onBeforeUnmount(() => {
                                 </div>
                             </div>
                 
+                            <VDivider class="mb-10" />
+                            
                             <VTabs 
                                 v-model="currentTab" 
                                 grow
@@ -1203,28 +1207,28 @@ onBeforeUnmount(() => {
                                 class="vehicles-tabs"
                             >
                                 <VTab value="tab-1">
-                                    <img :src="iconFordon" alt="Fordon" class="me-2" width="24" height="24" />
-                                    Fordon
+                                    <VIcon size="24" icon="custom-autofordon" />
+                                    <span>Fordon</span>
                                 </VTab>
                                 <VTab value="tab-2">
-                                    <img :src="iconPris" alt="Prisinformation" class="me-2" width="24" height="24" />
-                                    Prisinformation
+                                    <VIcon size="24" icon="custom-pris-information" />
+                                    <span>Prisinformation</span>
                                 </VTab>
                                 <VTab value="tab-3">
-                                    <img :src="iconKund" alt="Kund" class="me-2" width="24" height="24" />
-                                    Kund
+                                    <VIcon size="24" icon="custom-clients" />
+                                    <span>Kund</span>
                                 </VTab>
                                 <VTab value="tab-4">
-                                    <img :src="iconInfo" alt="Information om bilen" class="me-2" width="24" height="24" />
-                                    Information om bilen
+                                    <VIcon size="24" icon="custom-auto-2-ilager" />
+                                    <span>Information om bilen</span>
                                 </VTab>
                                 <VTab value="tab-5">
-                                    <img :src="iconAtgarder" alt="Åtgärder/Kostnader" class="me-2" width="24" height="24" />
-                                    Åtgärder/Kostnader
+                                    <VIcon size="24" icon="custom-atgarder-2" />
+                                    <span>Åtgärder/Kostnader</span>
                                 </VTab>
                                 <VTab value="tab-6">
-                                    <img :src="iconDokument" alt="Dokument" class="me-2" width="24" height="24" />
-                                    Dokument
+                                    <VIcon size="24" icon="custom-dokument-ilager" />
+                                    <span>Dokument</span>
                                 </VTab>
                             </VTabs>
                             <VCardText class="px-2">
@@ -2498,7 +2502,7 @@ onBeforeUnmount(() => {
     </section>
 </template>
 
-<style scoped>
+<style lang="scss">
 
     .v-tabs.vehicles-tabs {
         .v-btn {
@@ -2553,20 +2557,6 @@ onBeforeUnmount(() => {
         background-color: #E0E0E0;
         min-width: 80px;
         min-height: 80px;
-    }
-
-    .v-tabs-pill .v-tab {
-        text-transform: none;
-        letter-spacing: normal;
-        font-weight: 500;
-        color: #757575;
-    }
-
-    .v-tabs-pill .v-tab--selected {
-        color: #009688; /* Teal */
-        border-bottom: 1px solid;
-        border-image-source: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
-        border-image-slice: 1;
     }
 
     /* Custom input styling */
