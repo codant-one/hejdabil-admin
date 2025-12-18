@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 use App\Models\CarModel;
 use App\Models\Client;
 use App\Models\VehicleClient;
+use App\Models\Config;
+use App\Models\UserDetails;
 
 use Carbon\Carbon;
 use PDF;
@@ -220,11 +222,53 @@ class Vehicle extends Model
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
+
         if (!file_exists(storage_path('app/public/pdfs'))) {
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.vehicle', compact('vehicle'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
+        PDF::loadView('pdfs.vehicle', compact('vehicle', 'company'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
 
         $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
         $vehicle->update();
@@ -281,7 +325,7 @@ class Vehicle extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
-        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs',  'client_purchase', 'client_sale'])->find($vehicle->id);
+        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase', 'costs',  'client_purchase', 'client_sale'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
         if(!$vehicle->client_purchase && $request->type === '2') {
@@ -294,11 +338,50 @@ class Vehicle extends Model
             VehicleClient::updateClient($request, $vehicle->client_purchase);     
         }
 
+         if($vehicle->supplier_id === null) {
+            //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($vehicle->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        }
+
         if (!file_exists(storage_path('app/public/pdfs'))) {
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.vehicle', compact('vehicle'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
+        PDF::loadView('pdfs.vehicle', compact('vehicle', 'company'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
 
         $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
         $vehicle->update();
@@ -322,14 +405,53 @@ class Vehicle extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
-        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
+        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
         $name = $vehicle->reg_num;
+
+        if($vehicle->supplier_id === null) {
+            //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($vehicle->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.vehicle', compact('vehicle'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
+        PDF::loadView('pdfs.vehicle', compact('vehicle', 'company'))->save(storage_path('app/public/pdfs').'/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf');
 
         $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
         $vehicle->update();

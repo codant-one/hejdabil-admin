@@ -224,7 +224,7 @@ watch(currentData, () => {
     <VDivider class="mt-4" />
 
     <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
-      <VCard flat class="card-client">
+      <VCard flat class="card-form">
         <VCardText>
           <!-- 👉 Form -->
           <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
@@ -232,7 +232,7 @@ watch(currentData, () => {
               <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
                 <VSelect                 
                   v-model="supplier_id"
-                  placeholder="Leverantörer"
+                  placeholder="Leverantörer*"
                   :items="suppliers"
                   :item-title="(item) => item.full_name"
                   :item-value="(item) => item.id"
@@ -245,7 +245,7 @@ watch(currentData, () => {
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="fullname"
-                  label="Fullständigt namn"
+                  label="Fullständigt namn*"
                   :rules="[requiredValidator]"
                 />
               </VCol>
@@ -253,13 +253,13 @@ watch(currentData, () => {
                 <VTextField
                   v-model="email"
                   :rules="[emailValidator, requiredValidator]"
-                  label="E-post"
+                  label="E-post*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="organization_number"
-                  label="Org/personummer"
+                  label="Org/personummer*"
                   :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                   minLength="11"
                   maxlength="13"
@@ -270,28 +270,28 @@ watch(currentData, () => {
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
-                  label="Adress"
+                  label="Adress*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="postal_code"
                   :rules="[requiredValidator]"
-                  label="Postnummer"
+                  label="Postnummer*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="street"
                   :rules="[requiredValidator]"
-                  label="Stad"
+                  label="Stad*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="phone"
                   :rules="[requiredValidator, phoneValidator]"
-                  label="Telefon"
+                  label="Telefon*"
                 />
               </VCol>
               <VCol cols="12" md="6">
@@ -362,7 +362,7 @@ watch(currentData, () => {
 .btn-close-client {
   height: 32px !important;
 }
-.card-client {
+.card-form {
   border-radius: 0 !important;
 }
 .border-img {

@@ -192,4 +192,24 @@ class NoteController extends Controller
             ], 500);
         }
     }
+
+
+    public function comment(Request $request)
+    {
+        try {
+
+            Note::sendComment($request);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }

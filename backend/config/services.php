@@ -44,4 +44,12 @@ return [
         'signing_key_password' => env('SWISH_PAYOUT_SIGNING_KEY_PASSWORD', 'swish')
     ],
 
+    'spar' => [
+        'endpoint'      => env('SPAR_ENDPOINT'),
+        'cert_path'     => env('SPAR_CERT_PATH'),
+        'cert_password' => env('SPAR_CERT_PASSWORD'),
+        'customer_id'   => env('SPAR_CUSTOMER_ID'),
+        'assignment_id' => env('SPAR_ASSIGNMENT_ID'),
+    ],
+
 ];

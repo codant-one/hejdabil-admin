@@ -29,6 +29,7 @@ const hasLoaded = ref(false);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
 const isConfirmSendMailReminder = ref(false);
+const isConfirmKreditera = ref(false)
 const emailDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
@@ -335,12 +336,41 @@ const sendReminder = (billingData) => {
   selectedBilling.value = { ...billingData };
 };
 
-const credit = (billing) => {
+const kreditera = () => {
+  isRequestOngoing.value = true
+  isConfirmKreditera.value = false;
+
+  billingsStores.credit(Number(selectedBilling.value.id))
+      .then((res) => {
+          let data = {
+              message: 'Framgångsrik kredit',
+              error: false
+          }
+          
+          isRequestOngoing.value = false
+          
+          router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.data.billing.id } })
+          emitter.emit('toast', data)
+      })
+      .catch((err) => {
+          advisor.value.show = true
+          advisor.value.type = 'error'
+          advisor.value.message = Object.values(err.message).flat().join('<br>')
+
+          setTimeout(() => { 
+              advisor.value.show = false
+              advisor.value.type = ''
+              advisor.value.message = ''
+          }, 3000)
+      
+          isRequestOngoing.value = false
+      })
+}
+
+const credit = (billingData) => {
+  isConfirmKreditera.value = true;
+  selectedBilling.value = { ...billingData };
   billingsStores.setStateId(state_id.value);
-  router.push({
-    name: "dashboard-admin-billings-credit-id",
-    params: { id: billing.id },
-  });
 };
 
 const send = (billingData) => {
@@ -515,7 +545,7 @@ onBeforeUnmount(() => {
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
           <VAutocomplete
-            v-if="role !== 'Supplier'"
+            v-if="role !== 'Supplier' && hasLoaded"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
@@ -1035,6 +1065,45 @@ onBeforeUnmount(() => {
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="sendMails"> Skicka </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+     <!-- 👉 Confirm kreditera -->
+    <VDialog 
+      v-model="isConfirmKreditera" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmKreditera = !isConfirmKreditera"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cancel-contract" class="action-icon" />
+          <div class="dialog-title">
+            Kreditera faktura
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          En hel kreditering innebär att du tar bort din fordran på kunden till fullo. 
+          Är du säker på att du vill kreditera fakturan
+          <strong>#{{ selectedBilling.invoice_id }}</strong
+          >?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmKreditera = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="kreditera"> Kreditera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

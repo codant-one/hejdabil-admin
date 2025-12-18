@@ -7,21 +7,15 @@
     </head>
     <style>
 
-        @font-face {
-            font-family: 'Gelion Regular';
-            font-style: normal;
-            font-weight: 400;
-            src: url({{ storage_path('fonts/gelion-Regular.ttf') }}) format('truetype');
-            font-display: swap;
-        }
-
+        /* Using fonts from storage/fonts - synced between local and server */
         body {
-            background-color:#FFFFFF;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
+            background-color: #FFFFFF;
             padding: 0;
             margin: 0;
-            font-family: 'Gelion Regular', Arial, sans-serif !important;
             color: #33303CAD;
-            line-height: 1.5;
+            letter-spacing: 0 !important;
+            word-spacing: normal !important;
         }
 
         table {
@@ -38,7 +32,7 @@
         }
 
         .invoice-background {
-            background-color: #F2EFFF;
+            background-color: #F6F6F6;
         }
 
         .invoice-background td:first-child {
@@ -81,11 +75,16 @@
             padding-top: 8px !important;
         }
 
-        .faktura {
-            font-size: 24px;
-            color: #57F287;
-            border-top: 2px solid #57F287;
-            border-bottom: 2px solid #57F287;
+       .faktura {
+            font-family: 'gelion', 'dm sans', sans-serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #454545;
+            border-top: 2px solid #454545;
+            border-bottom: 2px solid #454545;
+            padding: 4px 0;
+            display: inline-block;
+            letter-spacing: 0 !important;
         }
 
         .table-main {
@@ -143,6 +142,11 @@
             width: auto;
         }
 
+        .table-supplier {
+            font-family: 'gelion', 'dm sans', sans-serif !important;
+            letter-spacing: 0 !important;
+        }
+
         .table-supplier td {
             vertical-align: top;
         }
@@ -154,16 +158,12 @@
                     <td>
                         <table width="100%" class="invoice-background">
                             <tr>
-                                <td width="35%" class="data-from">
+                                <td width="35%" class="data-from pb-0">
                                     <div class="d-flex align-center mb-6">
-                                        @if(!$vehicle->user->supplier)
-                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">  
+                                        @if($company->logo)
+                                            <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
-                                            @if($vehicle->user->supplier->logo)
-                                                <img src="{{ asset('storage/'.$vehicle->user->supplier->logo) }}" width="150" alt="logo-main">
-                                            @else
-                                                <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                            @endif
+                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                         @endif
                                     </div>
                                 </td>
@@ -210,20 +210,12 @@
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Adress
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <p class="m-0">Abrahamsbergsvägen 47</p>
-                                    <p class="m-0">16830 BROMMA</p>
-                                    <p>Hejdå Bil AB</p>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <p class="m-0">{{ $vehicle->user->supplier->address }}</p>
-                                    <p class="m-0">{{ $vehicle->user->supplier->postal_code }}</p>
-                                    <p class="m-0">{{ $vehicle->user->supplier->street }}</p>
-                                    <p class="m-0">{{ $vehicle->user->supplier->phone }}</p>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <p class="m-0">{{ $company->address }}</p>
+                                <p class="m-0">{{ $company->postal_code }}</p>
+                                <p class="m-0">{{ $company->street }}</p>
+                                <p class="m-0">{{ $company->phone }}</p>
+                            </span>
                         </p>
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
@@ -233,147 +225,116 @@
                                 <span>Stockholm, Sweden</span>
                             </span>
                         </p>
-                        @if($vehicle->user->supplier && !is_null($vehicle->user->supplier->swish))
+                        @if(!is_null($company->swish))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Swish
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $vehicle->user->supplier->swish }}</span>
+                                <span>{{ $company->swish }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
+                        @if(!is_null($company->organization_number))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Org.nr.
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>559374-0268</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->organization_number }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->organization_number }}</span>
+                            </span>
                         </p>
-                        @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->vat)) || !$vehicle->user->supplier)
+                        @endif
+                        @if(!is_null($company->vat))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Vat
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>SE559374026801</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->vat }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->vat }}</span>
+                            </span>
                         </p>
                         @endif
-                        @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->bic)))
+                        @if(!is_null($company->bic))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 BIC
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $vehicle->user->supplier->bic }}</span>
+                                <span>{{ $company->bic }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->plus_spin)))
+                        @if(!is_null($company->plus_spin))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Plusgiro
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $vehicle->user->supplier->plus_spin }}</span>
+                                <span>{{ $company->plus_spin }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
+                        @if(!is_null($company->link))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0 mt-10">
                                 Webbplats
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>www.hejdabil.se</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->link }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->link }}</span>
+                            </span>
                         </p>
+                        @endif
+                        
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Företagets e-post
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>info@hejdabil.se</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->user->email }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->email }}</span>
+                            </span>
                         </p>
                     </td>
                     <td width="25%">
-                        @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->bank)))
+                        @if(!is_null($company->bank))
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0">
+                            <h4 class="font-weight-medium m-0 mt-10">
                                 Bank
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $vehicle->user->supplier->bank }}</span>
+                                <span>{{ $company->bank }}</span>
                             </span>
                         </p>
                         @endif
-                            @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->iban)) || !$vehicle->user->supplier)
+                        @if(!is_null($company->iban))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Bankgiro
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>5886-4976</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->iban }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->iban }}</span>
+                            </span>
                         </p>
                         @endif
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Kontonummer
                             </h4>
-                            @if(!$vehicle->user->supplier)
-                                <span class="info-supplier">
-                                    <span>9960 1821054721</span>
-                                </span>
-                            @else
-                                <span class="info-supplier">
-                                    <span>{{ $vehicle->user->supplier->account_number }}</span>
-                                </span>
-                            @endif
+                            <span class="info-supplier">
+                                <span>{{ $company->account_number }}</span>
+                            </span>
                         </p>
-                        @if(($vehicle->user->supplier && !is_null($vehicle->user->supplier->iban_number)))
+                        @if(!is_null($company->iban_number))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Iban nummer
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $vehicle->user->supplier->iban_number }}</span>
+                                <span>{{ $company->iban_number }}</span>
                             </span>
                         </p>
                         @endif
