@@ -184,17 +184,16 @@ class Supplier extends Model
     public static function swish($request, $id) {
         $supplier = self::with('user')->where('id', $id)->first();
 
-        //Si se va a gaurdar el PEM file
+        // Common Name solo con números (sin guiones ni caracteres especiales)
+        $payoutNumberClean = preg_replace('/[^0-9]/', '', $request->payout_number);
+        $common_name = $payoutNumberClean;
+
+        //Si se va a guardar el PEM file
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $path = 'suppliers/pem/';
             
-            $firstName = Str::slug($supplier->user->name, '_');
-            $lastName = Str::slug($supplier->user->last_name ?? '', '_');
-            $originalName = $file->getClientOriginalName();
-            
-            $newName = strtolower("{$firstName}_{$lastName}_{$originalName}");
-            $filePath = $path . $newName;
+            $filePath = $path . $common_name . '.pem';
 
             if ($supplier->pem_url && Storage::disk('public')->exists($supplier->pem_url)) {
                 Storage::disk('public')->delete($supplier->pem_url);
@@ -205,11 +204,6 @@ class Supplier extends Model
         } else { //Se se van a generar CSR y KEY
             $supplier->is_payout = $request->is_payout;
             $supplier->payout_number = $request->payout_number;
-
-            $firstName = Str::slug($supplier->user->name, '-');
-            $lastName = Str::slug($supplier->user->last_name ?? '', '-');
-
-            $common_name = strtolower("{$firstName}-{$lastName}-{$request->payout_number}");
 
             $sslService = new OpenSslService();
 

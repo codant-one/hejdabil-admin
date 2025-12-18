@@ -6,14 +6,12 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
-import { useConfigsStores } from '@/stores/useConfigs'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
-const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -92,9 +90,6 @@ async function fetchData(cleanFilters = false) {
 
   if(role.value === 'Supplier') {
     payer_alias.value = user_data.supplier.payout_number
-  } else {
-    await configsStores.getFeature('company')
-    payer_alias.value = configsStores.getFeaturedConfig('company').payout_number
   }
     
   payouts.value = payoutsStores.getPayouts
@@ -210,7 +205,10 @@ const submitCreate = payoutData => {
             : err.message,
             show: true
         }
+        
         isRequestOngoing.value = false
+
+        fetchData()
 
         setTimeout(() => {
             advisor.value = {

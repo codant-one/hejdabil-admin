@@ -23,7 +23,8 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
-const payout_number = ref('')
+const csr_url = ref(null)
+const payout_number = ref(null)
 const pemFile = ref([])
 const is_payout = ref(false)
 const state_id = ref(null)
@@ -112,7 +113,8 @@ const showDeleteDialog = supplierData => {
 const showSwishDialog = supplierData => {
   isConfirmSwishDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
-  payout_number.value = supplierData.payout_number || ''
+  payout_number.value = supplierData.payout_number || null
+  csr_url.value = supplierData.csr_url || null
   is_payout.value = supplierData.is_payout === 0 ? false : true
   pemFile.value = []
 
@@ -181,7 +183,7 @@ const swish = () => {
         .then(async (res) => {
             if (res.data.success) {
               selectedSupplier.value = {}
-              payout_number.value = ''
+              payout_number.value = null
               is_payout.value = false
               pemFile.value = []
               
@@ -603,7 +605,7 @@ const downloadCSV = async () => {
           ref="refForm"
           v-model="isFormValid"
           @submit.prevent="swish">
-          <VCardText>
+          <VCardText class="d-flex flex-column gap-2">
             <VTextField
               v-model="payout_number"
               label="Utbetalningsnummer"
@@ -613,12 +615,15 @@ const downloadCSV = async () => {
               @input="formatOrgNumber()"
             />
             <VFileInput
+              v-if="csr_url !== null"
               v-model="pemFile"
               label="Ladda upp PEM-fil"
               accept=".pem"
               prepend-icon="tabler-file"
+              :rules="[requiredValidator]"
             />
             <VCheckbox
+              v-if="csr_url !== null"
               v-model="is_payout"
               label="Aktivera Swish utbetalningar"
             />

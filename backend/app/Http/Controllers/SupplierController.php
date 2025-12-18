@@ -351,7 +351,7 @@ class SupplierController extends Controller
                 'success' => true,
                 'data' => [ 
                     'master_password' => $supplier->master_password,
-                    'crs_url' => $supplier->crs_url,
+                    'csr_url' => $supplier->csr_url,
                     'key_url' => $supplier->key_url,
                     'pem_url' => $supplier->pem_url,
                 ]

@@ -1,5 +1,6 @@
 <script setup>
 
+import { themeConfig } from "@themeConfig";
 import { confirmedValidator, passwordValidator, requiredValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -25,7 +26,7 @@ const refForm = ref()
 const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
 const masterPassword = ref('')
-const crsUrl = ref('')
+const csrUrl = ref('')
 const keyUrl = ref('')
 const isFileMissingDialogVisible = ref(false)
 const setting = ref([])
@@ -77,7 +78,7 @@ async function fetchData() {
   if(role.value === 'Supplier') {
     const supplierData = await suppliersStores.getMasterPassword(userData.value.supplier.id)
     masterPassword.value = supplierData.master_password
-    crsUrl.value = supplierData.crs_url
+    csrUrl.value = supplierData.csr_url
     keyUrl.value = supplierData.key_url
   } else {
     await configsStores.getFeature('setting')
@@ -192,12 +193,29 @@ const onSubmit = () => {
   })
 }
 
-const downloadFile = (url) => {
+const downloadFile = async (url) => {
   if (!url) {
     isFileMissingDialogVisible.value = true
     return
   }
-  window.open(url, '_blank')
+
+   try {
+    const response = await fetch(
+      themeConfig.settings.urlbase + "proxy-image?url=" + themeConfig.settings.urlStorage + url
+    );
+    const blob = await response.blob();
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = url.split("/").pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error("Error:", error);
+  }
 }
 
 const onSubmitKey = async () => {
@@ -346,7 +364,7 @@ const onSubmitKey = async () => {
           </VCardText>
         </VCard>
 
-        <VCard title="Säkerhetslösenord" class="mt-5" v-if="role !== 'User'">
+        <VCard title="Säkerhetslösenord" class="mt-5" v-if="role === 'Supplier'">
           <VForm
               ref="refForm"
               v-model="isFormValid"
@@ -383,8 +401,8 @@ const onSubmitKey = async () => {
       <VCard title="Certifikat" class="mt-5" v-if="role === 'Supplier'">
         <VCardText>
           <div class="d-flex gap-4">
-            <VBtn @click="downloadFile(crsUrl)">
-              Ladda ner CRS
+            <VBtn @click="downloadFile(csrUrl)">
+              Ladda ner CSR
             </VBtn>
             <VBtn @click="downloadFile(keyUrl)">
               Ladda ner KEY

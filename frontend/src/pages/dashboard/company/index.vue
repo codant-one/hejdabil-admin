@@ -66,7 +66,6 @@ const form = ref({
     bic: '',
     plus_spin: '',
     swish: '',
-    payout_number: '',
     vat: ''
 })
 
@@ -134,7 +133,6 @@ async function fetchData() {
     form.value.bic = data.value.bic
     form.value.plus_spin = data.value.plus_spin
     form.value.swish = data.value.swish
-    form.value.payout_number = data.value.payout_number
     form.value.vat = data.value.vat
 
     await configsStores.getFeature('logo')
@@ -487,22 +485,6 @@ const onCropChange = (coordinates) => {
     // console.log('coordinates', coordinates)
 }
 
-const formatNumber = (field) => {
-    if  (field === 'organization_number') {
-        let numbers = form.value.organization_number.replace(/\D/g, '')
-        if (numbers.length > 4) {
-            numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
-        }
-        form.value.organization_number = numbers
-        return
-    }
-    let numbers = form.value.payout_number.replace(/\D/g, '')
-    if (numbers.length > 4) {
-        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
-    }
-    form.value.payout_number = numbers
-}
-
 const onSubmit = () => {
     
     refVForm.value?.validate().then(({ valid: isValid }) => {
@@ -532,7 +514,6 @@ const onSubmit = () => {
                         bic: form.value.bic,
                         plus_spin: form.value.plus_spin,
                         swish: form.value.swish,
-                        payout_number: form.value.payout_number,
                         vat: form.value.vat
                     }
                 }
@@ -756,16 +737,6 @@ const onSubmit = () => {
                                 <VTextField
                                     v-model="form.vat"
                                     label="Vat"
-                                />
-                            </VCol>
-                              <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="form.payout_number"
-                                    label="Payout number"
-                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                    minLength="11"
-                                    maxlength="11"
-                                    @input="formatNumber('payout_number')"
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
