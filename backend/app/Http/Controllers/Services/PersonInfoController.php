@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Services;
 
 use App\Http\Controllers\Controller;
 use App\Services\SparService;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Exception;
 
 class PersonInfoController extends Controller
@@ -39,9 +39,10 @@ class PersonInfoController extends Controller
 
             $result = $this->sparService->searchPerson($cleanedPersonId);
 
+            $personData = $this->extractFirstPersonRecord($result);
+
             // Check if we got a valid response with person data
-            if (isset($result['PersonsokningSvarspost'])) {
-                $personData = $result['PersonsokningSvarspost'];
+            if (!empty($personData) && is_array($personData)) {
                 
                 // Transform the data to a more frontend-friendly format
                 $transformedData = $this->transformPersonData($personData);
@@ -52,6 +53,19 @@ class PersonInfoController extends Controller
                 ], 200);
             }
 
+            if ((bool) config('services.spar.debug', false)) {
+                $clean = preg_replace('/\D+/', '', $cleanedPersonId) ?? '';
+                $masked = (strlen($clean) > 4)
+                    ? (substr($clean, 0, 2) . str_repeat('*', max(0, strlen($clean) - 4)) . substr($clean, -2))
+                    : '****';
+
+                Log::info('SPAR lookup returned no person record', [
+                    'personId_masked' => $masked,
+                    'result_top_keys' => array_keys($result),
+                    'result_excerpt' => mb_substr(json_encode($result, JSON_UNESCAPED_UNICODE), 0, 800),
+                ]);
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => 'Ingen person hittades',
@@ -59,12 +73,56 @@ class PersonInfoController extends Controller
             ], 404);
 
         } catch (Exception $e) {
+            if (config('app.debug')) {
+                Log::warning('SPAR lookup failed', [
+                    'personId' => $personId,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+
+            $msg = $e->getMessage();
+            $status = 500;
+            if (str_contains($msg, 'SOAP Fault') || str_contains($msg, 'SPAR HTTP error')) {
+                // Error del servicio upstream (SPAR) o de comunicación.
+                $status = 502;
+            }
+
+            // Undantag (respuesta válida, pero SPAR rechaza por estado/permisos/configuración)
+            if (str_contains($msg, 'SPAR Undantag')) {
+                // Caso típico en prod: "Client.EjAktivSlutK" => "Slutkunden är inte aktiv i SPAR"
+                $status = str_contains($msg, 'Client.EjAktivSlutK') ? 403 : 422;
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => 'SPAR API fel',
                 'message' => $e->getMessage()
-            ], 500);
+            ], $status);
         }
+    }
+
+    protected function extractFirstPersonRecord(array $result): ?array
+    {
+        // Variantes observadas/posibles según schemas/serialización:
+        // - PersonsokningSvarspost (directo)
+        // - PersonsokningSvarspostLista -> PersonsokningSvarspost
+        // - PersonsokningSvarspostLista (cuando solo hay un item)
+
+        $candidate = $result['PersonsokningSvarspost']
+            ?? data_get($result, 'PersonsokningSvarspostLista.PersonsokningSvarspost')
+            ?? ($result['PersonsokningSvarspostLista'] ?? null);
+
+        if (empty($candidate)) {
+            return null;
+        }
+
+        // Si vienen múltiples, tomar el primero.
+        if (is_array($candidate) && array_is_list($candidate)) {
+            $first = $candidate[0] ?? null;
+            return is_array($first) ? $first : null;
+        }
+
+        return is_array($candidate) ? $candidate : null;
     }
 
     /**
@@ -75,40 +133,53 @@ class PersonInfoController extends Controller
      */
     protected function transformPersonData(array $personData): array
     {
+        $text = static function ($value): ?string {
+            if (is_array($value)) {
+                if (array_key_exists('_text', $value)) {
+                    $raw = $value['_text'];
+                    return is_string($raw) ? $raw : null;
+                }
+                return null;
+            }
+
+            return is_string($value) ? $value : (is_numeric($value) ? (string) $value : null);
+        };
+
         $namn = $personData['Namn'] ?? [];
         $adress = $personData['Folkbokforingsadress']['SvenskAdress'] ?? [];
         $personDetaljer = $personData['Persondetaljer'] ?? [];
         $personId = $personData['PersonId'] ?? [];
 
         // Build full name from Fornamn and Efternamn
-        $fornamn = $namn['Fornamn'] ?? '';
-        $efternamn = $namn['Efternamn'] ?? '';
-        $fullname = trim("$fornamn $efternamn");
+        $fornamn = $text($namn['Fornamn'] ?? '') ?? '';
+        $efternamn = $text($namn['Efternamn'] ?? '') ?? '';
+        $fullname = trim("{$fornamn} {$efternamn}");
 
         // If no constructed name, try Aviseringsnamn (but reverse it since it's "Lastname, Firstname")
-        if (empty($fullname) && isset($namn['Aviseringsnamn'])) {
-            $parts = explode(',', $namn['Aviseringsnamn']);
+        $aviseringsnamn = $text($namn['Aviseringsnamn'] ?? null);
+        if (empty($fullname) && !empty($aviseringsnamn)) {
+            $parts = explode(',', $aviseringsnamn);
             if (count($parts) === 2) {
                 $fullname = trim($parts[1]) . ' ' . trim($parts[0]);
             } else {
-                $fullname = $namn['Aviseringsnamn'];
+                $fullname = $aviseringsnamn;
             }
         }
 
         return [
-            'personnummer' => $personId['IdNummer'] ?? null,
-            'typ' => $personId['Typ'] ?? null,
+            'personnummer' => $text($personId['IdNummer'] ?? null),
+            'typ' => $text($personId['Typ'] ?? null),
             'fullname' => $fullname,
             'fornamn' => $fornamn,
             'efternamn' => $efternamn,
-            'mellannamn' => $namn['Mellannamn'] ?? null,
-            'adress' => $adress['Utdelningsadress2'] ?? null,
-            'postnummer' => $adress['PostNr'] ?? null,
-            'postort' => $adress['Postort'] ?? null,
-            'fodelsedatum' => $personDetaljer['Fodelsedatum'] ?? null,
-            'kon' => $personDetaljer['Kon'] ?? null,
-            'sekretessmarkering' => $personData['Sekretessmarkering'] ?? null,
-            'skyddadFolkbokforing' => $personData['SkyddadFolkbokforing'] ?? null,
+            'mellannamn' => $text($namn['Mellannamn'] ?? null),
+            'adress' => $text($adress['Utdelningsadress2'] ?? null),
+            'postnummer' => $text($adress['PostNr'] ?? null),
+            'postort' => $text($adress['Postort'] ?? null),
+            'fodelsedatum' => $text($personDetaljer['Fodelsedatum'] ?? null),
+            'kon' => $text($personDetaljer['Kon'] ?? null),
+            'sekretessmarkering' => $text($personData['Sekretessmarkering'] ?? null),
+            'skyddadFolkbokforing' => $text($personData['SkyddadFolkbokforing'] ?? null),
         ];
     }
 }
