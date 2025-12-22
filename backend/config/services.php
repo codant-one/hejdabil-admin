@@ -49,7 +49,12 @@ return [
         'cert_path'     => env('SPAR_CERT_PATH'),
         'cert_password' => env('SPAR_CERT_PASSWORD'),
         'customer_id'   => env('SPAR_CUSTOMER_ID'),
+        // En SPAR, KundNrLeveransMottagare (integratör) y KundNrSlutkund (cliente final)
+        // pueden ser diferentes en producción.
+        'slutkund_id'   => env('SPAR_SLUTKUND_ID', env('SPAR_CUSTOMER_ID')),
         'assignment_id' => env('SPAR_ASSIGNMENT_ID'),
+        'soap_action'   => env('SPAR_SOAP_ACTION'),
+        'debug'         => (bool) env('SPAR_DEBUG', false),
     ],
 
 ];
