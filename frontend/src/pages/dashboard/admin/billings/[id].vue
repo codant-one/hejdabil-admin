@@ -481,7 +481,7 @@ onBeforeUnmount(() => {
 
             <VBtn
               v-if="$can('edit', 'billings') && invoice.state_id === 8"
-              class="btn-light w-100"
+              class="btn-light w-100 mb-4"
               @click="sendReminder"
             >
               <template #prepend>

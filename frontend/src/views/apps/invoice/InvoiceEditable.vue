@@ -501,9 +501,27 @@ const handleBlur = (element) => {
     }
   });
 
+  // Formatear campos decimales (type_id 3) a 2 decimales
+  props.invoices.forEach((inv) => {
+    if (inv.type_id === 3 && element[inv.id] !== undefined && element[inv.id] !== "") {
+      const numValue = parseFloat(element[inv.id]);
+      if (!isNaN(numValue)) {
+        element[inv.id] = numValue.toFixed(2);
+      }
+    }
+  });
+
   // Limitar el campo de descuento (índice 5) a un máximo de 100
   if (element[5] !== undefined && element[5] > 100) {
     element[5] = 100;
+  }
+};
+
+const handleFocus = (element, fieldId) => {
+  const value = element[fieldId];
+  // Clear the field if it's the default "0.00" or 0 to allow easy editing
+  if (value === "0.00" || value === 0 || value === "0") {
+    element[fieldId] = "";
   }
 };
 </script>
@@ -835,8 +853,9 @@ const handleBlur = (element) => {
                                 <VTextarea
                                   v-if="invoice.type_id === 1"
                                   v-model="element[invoice.id]"
-                                  :placeholder="invoice.description"
                                   rows="2"
+                                  :placeholder="invoice.description"
+                                  persistent-placeholder
                                   :readonly="element.disabled"
                                   :rules="[requiredValidator]"
                                 />
@@ -844,7 +863,6 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 2"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :placeholder="invoice.name"
                                   :min="1"
                                   :readonly="element.disabled"
                                   :rules="[requiredValidator]"
@@ -855,13 +873,13 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 3"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :placeholder="invoice.name"
                                   :min="0"
                                   :step="0.01"
                                   :readonly="element.disabled"
                                   @input="$emit('edit')"
                                   :rules="[requiredValidator]"
                                   :disabled="invoice.name === 'Belopp'"
+                                  @focus="() => handleFocus(element, invoice.id)"
                                   @blur="() => handleBlur(element)"
                                 />
                               </div>
@@ -876,7 +894,6 @@ const handleBlur = (element) => {
                                 :disabled="selectedDiscount > 0"
                                 v-model="element[5]"
                                 type="number"
-                                :placeholder="invoice.name"
                                 :min="0"
                                 :max="100"
                                 :readonly="element.disabled"
@@ -1061,7 +1078,7 @@ const handleBlur = (element) => {
             </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold" v-if="company.link"> Webbplats </span>
+            <span class="me-2 text-bold text-footer" v-if="company.link"> Webbplats </span>
             <span class="text-footer" v-if="company.link">
               {{ company.link }}
             </span>
@@ -1394,8 +1411,9 @@ const handleBlur = (element) => {
                                     <VTextarea
                                       v-if="invoice.type_id === 1"
                                       v-model="element[invoice.id]"
-                                      :placeholder="invoice.description"
                                       rows="2"
+                                      :placeholder="invoice.description"
+                                      persistent-placeholder
                                       :readonly="element.disabled"
                                       :rules="[requiredValidator]"
                                     />
@@ -1403,7 +1421,6 @@ const handleBlur = (element) => {
                                       v-if="invoice.type_id === 2"
                                       v-model="element[invoice.id]"
                                       type="number"
-                                      :placeholder="invoice.name"
                                       :min="1"
                                       :readonly="element.disabled"
                                       :rules="[requiredValidator]"
@@ -1414,13 +1431,13 @@ const handleBlur = (element) => {
                                       v-if="invoice.type_id === 3"
                                       v-model="element[invoice.id]"
                                       type="number"
-                                      :placeholder="invoice.name"
                                       :min="0"
                                       :step="0.01"
                                       :readonly="element.disabled"
                                       @input="$emit('edit')"
                                       :rules="[requiredValidator]"
                                       :disabled="invoice.name === 'Belopp'"
+                                      @focus="() => handleFocus(element, invoice.id)"
                                       @blur="() => handleBlur(element)"
                                     />
                                   </div>
@@ -1435,7 +1452,6 @@ const handleBlur = (element) => {
                                     :disabled="selectedDiscount > 0"
                                     v-model="element[5]"
                                     type="number"
-                                    :placeholder="invoice.name"
                                     :min="0"
                                     :max="100"
                                     :readonly="element.disabled"
@@ -1601,8 +1617,11 @@ const handleBlur = (element) => {
                   {{ company.account_number }}
                 </span>
 
+              </VCol>
+
+              <VCol cols="6" class="d-flex flex-column flex-1">
                 <span
-                  class="me-2 mt-4 text-bold text-footer"
+                  class="me-2 text-bold text-footer"
                   v-if="company.iban_number"
                 >
                   Iban nummer
@@ -1610,10 +1629,8 @@ const handleBlur = (element) => {
                 <span class="text-footer" v-if="company.iban_number">
                   {{ company.iban_number }}
                 </span>
-              </VCol>
 
-              <VCol cols="6" class="d-flex flex-column flex-1">
-                <span class="me-2 text-bold text-footer"> Adress </span>
+                <span class="me-2 mt-4 text-bold text-footer"> Adress </span>
                   <span class="d-flex flex-column">
                     <span class="text-footer">{{ company.address }}</span>
                     <span class="text-footer">{{ company.postal_code }}</span>
@@ -1635,9 +1652,10 @@ const handleBlur = (element) => {
                   {{ company.swish }}
                 </span>
 
-                <span class="me-2 mt-4 text-bold" v-if="company.link">
+                <span class="me-2 mt-4 text-bold text-footer" v-if="company.link">
                   Webbplats
                 </span>
+
                 <span class="text-footer" v-if="company.link">
                   {{ company.link }}
                 </span>

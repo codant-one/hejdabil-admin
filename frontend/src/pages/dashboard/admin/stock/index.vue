@@ -908,7 +908,7 @@ onBeforeUnmount(() => {
       <VCardText class="pt-0">
         <VRow>
           <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-            <VAutocomplete
+            <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="supplier_id"
               placeholder="Leverantörer"
@@ -922,7 +922,7 @@ onBeforeUnmount(() => {
             />
           </VCol>
           <VCol cols="12" md="12">
-            <VAutocomplete
+            <AppAutocomplete
               v-model="state_id"
               placeholder="Status"
               :items="states"
@@ -933,7 +933,7 @@ onBeforeUnmount(() => {
               clear-icon="tabler-x"/>
           </VCol>
           <VCol cols="12" md="12">
-            <VAutocomplete
+            <AppAutocomplete
               v-model="brand_id"
               label="Märke"
               :items="brands"
@@ -946,7 +946,7 @@ onBeforeUnmount(() => {
               :menu-props="{ maxHeight: '300px' }"/>
           </VCol>
           <VCol cols="12" md="12">
-            <VAutocomplete
+            <AppAutocomplete
               v-model="model_id"
               label="Modell"
               :items="getModels"
@@ -964,7 +964,7 @@ onBeforeUnmount(() => {
             />
           </VCol>
           <VCol cols="12" md="12">
-            <VAutocomplete
+            <AppAutocomplete
               v-model="gearbox_id"
               label="Biltyp"
               :items="gearboxes"
@@ -1141,7 +1141,7 @@ onBeforeUnmount(() => {
     <VCard class="card-form">
       <VList>
         <VListItem class="form pt-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-          <VAutocomplete
+          <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
@@ -1155,7 +1155,7 @@ onBeforeUnmount(() => {
           />
         </VListItem>
         <VListItem class="form">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="state_id"
             placeholder="Status"
             :items="states"
@@ -1166,7 +1166,7 @@ onBeforeUnmount(() => {
             clear-icon="tabler-x"/>
         </VListItem>
         <VListItem class="form pt-6">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="brand_id"
             label="Märke"
             :items="brands"
@@ -1179,7 +1179,7 @@ onBeforeUnmount(() => {
             :menu-props="{ maxHeight: '300px' }"/>
         </VListItem>
         <VListItem class="form">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="model_id"
             label="Modell"
             :items="getModels"
@@ -1197,7 +1197,7 @@ onBeforeUnmount(() => {
           />
         </VListItem>
         <VListItem class="form">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="gearbox_id"
             label="Biltyp"
             :items="gearboxes"

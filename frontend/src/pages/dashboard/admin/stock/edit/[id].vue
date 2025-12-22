@@ -1269,7 +1269,7 @@ onBeforeUnmount(() => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="brand_id"
                                                     :items="brands"
                                                     :item-title="item => item.name"
@@ -1284,7 +1284,7 @@ onBeforeUnmount(() => {
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="model_id"
                                                     :items="getModels"
                                                     autocomplete="off"
@@ -1308,7 +1308,7 @@ onBeforeUnmount(() => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="car_body_id"
                                                     :items="carbodies"
                                                     :item-title="item => item.name"
@@ -1357,7 +1357,7 @@ onBeforeUnmount(() => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="fuel_id"
                                                     :items="fuels"
                                                     :item-title="item => item.name"
@@ -1369,7 +1369,7 @@ onBeforeUnmount(() => {
                                             </VCol>
                                             <VCol cols="12" md="6">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="gearbox_id"
                                                     :items="gearboxes"
                                                     :item-title="item => item.name"
@@ -1393,7 +1393,7 @@ onBeforeUnmount(() => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="currency_id"
                                                     label="Valuta"
                                                     :items="currencies"
@@ -1413,10 +1413,10 @@ onBeforeUnmount(() => {
                                                             :image="getFlag(currency_id)"
                                                         />
                                                     </template>
-                                                </VAutocomplete>
+                                                </AppAutocomplete>
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="iva_purchase_id"
                                                     label="VMB / Moms"
                                                     :items="ivas"
@@ -1427,7 +1427,7 @@ onBeforeUnmount(() => {
                                                     clear-icon="tabler-x"/>
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="state_idOld"
                                                     label="Status"
                                                     :items="states"
@@ -1445,7 +1445,7 @@ onBeforeUnmount(() => {
                                                 </h6>
                                                 <VRow>
                                                     <VCol cols="12" md="12">
-                                                        <VAutocomplete
+                                                        <AppAutocomplete
                                                             v-model="client_id"
                                                             label="Kunder"
                                                             :items="clients"
@@ -1473,7 +1473,7 @@ onBeforeUnmount(() => {
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
-                                                        <VAutocomplete
+                                                        <AppAutocomplete
                                                             v-model="client_type_id"
                                                             label="Köparen är"
                                                             :items="client_types"
@@ -1513,7 +1513,7 @@ onBeforeUnmount(() => {
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
-                                                        <VAutocomplete
+                                                        <AppAutocomplete
                                                             v-model="identification_id"
                                                             label="Legitimation"
                                                             :items="identifications"
@@ -2036,7 +2036,7 @@ onBeforeUnmount(() => {
                         </div>
                     </VCardText>
                     <VCardText class="pt-0">
-                        <VAutocomplete
+                        <AppAutocomplete
                             v-model="state_idOld"
                             label="Status"
                             :items="states"
@@ -2318,7 +2318,7 @@ onBeforeUnmount(() => {
                         </VAlert>
                         <VRow>
                             <VCol cols="12" md="12">
-                                <VAutocomplete
+                                <AppAutocomplete
                                     v-model="document_type_id"
                                     label="Dokumenttyp"
                                     :items="document_types"
@@ -2465,7 +2465,7 @@ onBeforeUnmount(() => {
                     <VCardText>
                          <VRow>
                             <VCol cols="12" md="12">
-                                <VAutocomplete
+                                <AppAutocomplete
                                     v-model="cl_id"
                                     label="Kunder"
                                     :items="clients"

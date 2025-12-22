@@ -649,7 +649,7 @@ const downloadCSV = async () => {
         </VCardText>
         
         <VCardText class="pt-0">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="brand_id"
@@ -664,7 +664,7 @@ const downloadCSV = async () => {
             :menu-props="{ maxHeight: '400px' }"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="model_id"
@@ -679,7 +679,7 @@ const downloadCSV = async () => {
             :menu-props="{ maxHeight: '400px' }"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="gearbox_id"
@@ -694,7 +694,7 @@ const downloadCSV = async () => {
             :menu-props="{ maxHeight: '400px' }"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="year"

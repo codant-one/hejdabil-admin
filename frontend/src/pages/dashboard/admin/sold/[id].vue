@@ -574,7 +574,7 @@ const getFlag = (currency_id) => {
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
-                                                            <VAutocomplete
+                                                            <AppAutocomplete
                                                                 v-model="currency_id"
                                                                 label="Valuta"
                                                                 disabled
@@ -596,10 +596,10 @@ const getFlag = (currency_id) => {
                                                                         :image="getFlag(currency_id)"
                                                                     />
                                                                 </template>
-                                                            </VAutocomplete>
+                                                            </AppAutocomplete>
                                                         </VCol>
                                                         <VCol cols="12" md="6">
-                                                            <VAutocomplete
+                                                            <AppAutocomplete
                                                                 v-model="iva_sale_id"
                                                                 label="VMB / Moms"
                                                                 :items="ivas"
@@ -681,7 +681,7 @@ const getFlag = (currency_id) => {
                                                     </h6>
                                                     <VRow>
                                                         <VCol cols="12" md="6">
-                                                            <VAutocomplete
+                                                            <AppAutocomplete
                                                                 v-model="client_id"
                                                                 label="Kunder"
                                                                 :items="clients"
@@ -711,7 +711,7 @@ const getFlag = (currency_id) => {
                                                             </VBtn>
                                                         </VCol>
                                                         <VCol cols="12" md="6">
-                                                            <VAutocomplete
+                                                            <AppAutocomplete
                                                                 v-model="client_type_id"
                                                                 label="Köparen är"
                                                                 :items="client_types"
@@ -762,7 +762,7 @@ const getFlag = (currency_id) => {
                                                             />
                                                         </VCol>
                                                         <VCol cols="12" md="6">
-                                                            <VAutocomplete
+                                                            <AppAutocomplete
                                                                 v-model="identification_id"
                                                                 label="Legitimation"
                                                                 :items="identifications"

@@ -544,7 +544,7 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier' && hasLoaded"
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -558,7 +558,7 @@ onBeforeUnmount(() => {
             class="selector-user selector-truncate"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="client_id"
             :items="clients"
@@ -1252,7 +1252,7 @@ onBeforeUnmount(() => {
         </VCardText>
         
         <VCardText class="pt-0">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -1266,7 +1266,7 @@ onBeforeUnmount(() => {
             class="selector-user selector-truncate mb-3"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="client_id"
             :items="clients"
