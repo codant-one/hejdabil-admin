@@ -720,7 +720,7 @@ const handleFocus = (element, fieldId) => {
         class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 p-0 w-100"
       >
         <div class="rouded-select">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'"
             v-model="invoice.supplier_id"
             :items="suppliers"
@@ -735,7 +735,7 @@ const handleFocus = (element, fieldId) => {
           />
         </div>
         <div class="rouded-select">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="invoice.client_id"
             :items="clients"
             :item-title="(item) => item.fullname"
@@ -1254,7 +1254,7 @@ const handleFocus = (element, fieldId) => {
                 props.role === 'SuperAdmin' || props.role === 'Administrator'
               "
             >
-              <VAutocomplete
+              <AppAutocomplete
                 v-model="invoice.supplier_id"
                 :items="suppliers"
                 :item-title="(item) => item.full_name"
@@ -1268,7 +1268,7 @@ const handleFocus = (element, fieldId) => {
               />
             </div>
             <div class="rouded-select">
-              <VAutocomplete
+              <AppAutocomplete
                 v-model="invoice.client_id"
                 :items="clients"
                 :item-title="(item) => item.fullname"

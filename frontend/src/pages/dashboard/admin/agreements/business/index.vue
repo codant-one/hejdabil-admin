@@ -236,7 +236,7 @@ const onSubmit = () => {
                     />
                   </VCol>
                   <VCol cols="12" md="6">
-                    <VAutocomplete
+                    <AppAutocomplete
                         v-model="brand_id"
                         label="Märke"
                         :items="brands"
@@ -251,7 +251,7 @@ const onSubmit = () => {
                         :menu-props="{ maxHeight: '300px' }"/>
                 </VCol>
                 <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
-                  <VAutocomplete
+                  <AppAutocomplete
                       v-model="model_id"
                       label="Modell"
                       :items="getModels"

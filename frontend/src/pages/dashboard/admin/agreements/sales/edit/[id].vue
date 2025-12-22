@@ -670,7 +670,7 @@ const onSubmit = () => {
                                         </h6>
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="brand_id"
                                                     label="Märke"
                                                     :items="brands"
@@ -685,7 +685,7 @@ const onSubmit = () => {
                                                     :menu-props="{ maxHeight: '300px' }"/>
                                             </VCol>
                                             <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="model_id"
                                                     label="Modell"
                                                     :items="getModels"
@@ -744,7 +744,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="guaranty"
                                                     label="Garanti"
                                                     :items="guaranties"
@@ -764,7 +764,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="guaranty_type_id"
                                                     :items="guarantyTypes"
                                                     :item-title="item => item.name"
@@ -775,7 +775,7 @@ const onSubmit = () => {
                                                 />    
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="insurance_company"
                                                     :items="insuranceCompanies"
                                                     :item-title="item => item.name"
@@ -831,7 +831,7 @@ const onSubmit = () => {
                                         </h6>
                                         <VRow class="px-md-5">
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="brand_id_interchange"
                                                     label="Märke"
                                                     :items="brands"
@@ -845,7 +845,7 @@ const onSubmit = () => {
                                                     :menu-props="{ maxHeight: '300px' }"/> 
                                             </VCol>
                                             <VCol cols="12" :md="model_id_interchange !== 0 ? 6 : 3">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="model_id_interchange"
                                                     label="Modell"
                                                     :items="getModelsInterchange"
@@ -875,7 +875,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="car_body_id_interchange"
                                                     label="Kaross"
                                                     :items="carbodies"
@@ -949,7 +949,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="3">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="iva_purchase_id_interchange"
                                                     label="VMB / Moms"
                                                     :items="ivas"
@@ -989,7 +989,7 @@ const onSubmit = () => {
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
-                                                        <VAutocomplete
+                                                        <AppAutocomplete
                                                             v-model="client_type_id"
                                                             label="Köparen är"
                                                             :items="client_types"
@@ -1034,7 +1034,7 @@ const onSubmit = () => {
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
-                                                        <VAutocomplete
+                                                        <AppAutocomplete
                                                             v-model="identification_id"
                                                             label="Legitimation"
                                                             :items="identifications"
@@ -1139,7 +1139,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="currency_id"
                                                     label="Valuta"
                                                     :items="currencies"
@@ -1159,10 +1159,10 @@ const onSubmit = () => {
                                                             :image="getFlag(currency_id)"
                                                         />
                                                     </template>
-                                                </VAutocomplete>
+                                                </AppAutocomplete>
                                             </VCol>                                        
                                             <VCol cols="12" md="6">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="iva_id"
                                                     label="Moms / VMB / Export"
                                                     :items="ivas"
@@ -1221,7 +1221,7 @@ const onSubmit = () => {
                                                 <span class="ms-1 ms-md-0">Mellanpris: {{ middle_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
                                             </VCol>
                                             <VCol cols="12" :md="payment_type_id !== 0 ? 6 : 3">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="payment_type_id"
                                                     label="Betalsätt"
                                                     :items="getPaymentTypes"
@@ -1240,7 +1240,7 @@ const onSubmit = () => {
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6" class="d-none">
-                                                <VAutocomplete
+                                                <AppAutocomplete
                                                     v-model="advance_id"
                                                     label="Handpenning procent"
                                                     :items="advances"
