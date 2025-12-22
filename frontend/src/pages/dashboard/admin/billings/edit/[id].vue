@@ -457,8 +457,8 @@ onBeforeRouteLeave((to, from, next) => {
                 type="submit"
               >
                 <template #prepend>
-                  <VIcon icon="custom-send" size="24" v-if="windowWidth >= 1024" />
-                  <VIcon icon="custom-send" size="24" v-if="windowWidth < 1024" />
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth >= 1024" />
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth < 1024" />
                 </template>
                 Redigera fakturan
               </VBtn>
