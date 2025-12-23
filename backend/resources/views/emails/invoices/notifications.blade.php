@@ -27,7 +27,14 @@
                             <strong>Förfallodatum:</strong> {!! $billing->due_date !!}
                         </p>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            <strong>Summa att betala:</strong> {!! formatCurrency($billing->total) !!} kr
+                            <strong>
+                                @if($billing->state_id === 9)
+                                    Krediterad belopp:
+                                @else
+                                    Summa att betala:
+                                @endif
+                            </strong> 
+                            {!! formatCurrency($billing->total) !!} kr
                         </p><br>
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
                             Dessutom har det företag som genererade fakturan följande information:

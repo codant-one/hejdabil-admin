@@ -272,7 +272,7 @@ const downloadCSV = async () => {
             <VSpacer class="d-none d-md-block"/>
 
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-              <VAutocomplete
+              <AppAutocomplete
                   v-model="brand_id"
                   placeholder="Märke"
                   :items="brands"

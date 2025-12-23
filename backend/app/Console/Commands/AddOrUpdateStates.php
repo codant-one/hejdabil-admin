@@ -38,7 +38,7 @@ class AddOrUpdateStates extends Command
      */
     public function handle()
     {
-        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Obetald', 'Borttagen', 'Avvisad', 'Betald', 'Förfallna', 'Kredit', 'På lager', 'På annons', 'Såld', 'Förmedlingsbil', 'Väntande'];
+        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Obetald', 'Borttagen', 'Avvisad', 'Betald', 'Förfallna', 'Krediterad', 'På lager', 'På annons', 'Såld', 'Förmedlingsbil', 'Väntande'];
         $labels = ['Inactive', 'Active', 'Published', 'Unpaid', 'Removed', 'Rejected', 'Paid', 'Overdue', 'Credit', 'In stock', 'Announced', 'Sold', 'Rented', 'Pending'];
 
         foreach($states as $key => $state) {

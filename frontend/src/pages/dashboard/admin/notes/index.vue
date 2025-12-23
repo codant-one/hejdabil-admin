@@ -273,7 +273,7 @@ const downloadCSV = async () => {
 
             <VSpacer class="d-none d-md-block"/>
 
-            <VAutocomplete
+            <AppAutocomplete
                 v-if="role === 'SuperAdmin' || role === 'Administrator'"
                 v-model="supplier_id"
                 placeholder="Leverantörer"

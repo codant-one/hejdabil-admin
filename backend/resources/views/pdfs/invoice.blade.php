@@ -342,7 +342,13 @@
                             @endif
                             <tr>
                                 <td style="text-align: right;">
-                                    <strong>Summa att betala:</strong>
+                                    <strong>
+                                        @if($billing->state_id === 9)
+                                            Krediterad belopp:
+                                        @else
+                                            Summa att betala:
+                                        @endif
+                                    </strong>
                                 </td>
                                 <td class="numbers" style="text-align: right;">
                                     <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>

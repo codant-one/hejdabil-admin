@@ -867,7 +867,7 @@ onBeforeUnmount(() => {
         </VCardText>
         
         <VCardText class="pt-0">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="supplier_id"

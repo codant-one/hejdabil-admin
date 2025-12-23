@@ -444,10 +444,10 @@ onBeforeRouteLeave((to, from, next) => {
             <VCardText
               :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
             >
-              <!-- 👉 Send Invoice -->
+              <!-- 👉 Duplicera -->
               <VBtn
                 class="btn-gradient mb-4"
-                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                :class="windowWidth < 1024 ? 'flex-1 order-2 mb-0' : 'w-100'"
                 type="submit"
               >
                 <template #prepend>
@@ -460,7 +460,7 @@ onBeforeRouteLeave((to, from, next) => {
               <!-- 👉 Preview -->
               <VBtn
                 class="btn-light"
-                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                           :class="windowWidth < 1024 ? 'flex-1 order-1' : 'w-100'"
                 :to="{ name: 'dashboard-admin-billings' }"
               >
                 <template #prepend>

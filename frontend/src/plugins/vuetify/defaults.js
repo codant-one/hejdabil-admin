@@ -98,6 +98,9 @@ export default {
     color: 'primary',
     density: 'compact',
     hideDetails: 'auto',
+    menuProps: {
+      closeOnContentClick: true,
+    },
   },
   VCombobox: {
     variant: 'outlined',

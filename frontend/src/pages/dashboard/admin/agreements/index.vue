@@ -606,7 +606,7 @@ const goToTracker = (agreementData) => {
           />
         </div>
 
-        <VAutocomplete
+        <AppAutocomplete
             v-model="agreement_type_id_select"
             placeholder="Typ av avtal"
             :items="agreementTypes"
@@ -619,7 +619,7 @@ const goToTracker = (agreementData) => {
             :menu-props="{ maxHeight: '300px' }"
         />
 
-        <VAutocomplete
+        <AppAutocomplete
             v-if="role === 'SuperAdmin' || role === 'Administrator'"
             v-model="supplier_id"
             placeholder="Leverantörer"
@@ -1078,7 +1078,7 @@ const goToTracker = (agreementData) => {
           <VCardText>
             <VRow>
               <VCol cols="12">
-                <VAutocomplete
+                <AppAutocomplete
                   v-model="agreement_type_id"
                   :items="agreementTypes"
                   item-title="name"      
