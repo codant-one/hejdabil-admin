@@ -935,7 +935,7 @@ onBeforeUnmount(() => {
           <VCol cols="12" md="12">
             <AppAutocomplete
               v-model="brand_id"
-              label="Märke"
+              placeholder="Märke"
               :items="brands"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -948,7 +948,7 @@ onBeforeUnmount(() => {
           <VCol cols="12" md="12">
             <AppAutocomplete
               v-model="model_id"
-              label="Modell"
+              placeholder="Modell"
               :items="getModels"
               autocomplete="off"
               clearable
@@ -966,7 +966,7 @@ onBeforeUnmount(() => {
           <VCol cols="12" md="12">
             <AppAutocomplete
               v-model="gearbox_id"
-              label="Biltyp"
+              placeholder="Biltyp"
               :items="gearboxes"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -1168,7 +1168,7 @@ onBeforeUnmount(() => {
         <VListItem class="form pt-6">
           <AppAutocomplete
             v-model="brand_id"
-            label="Märke"
+            placeholder="Märke"
             :items="brands"
             :item-title="item => item.name"
             :item-value="item => item.id"
@@ -1181,7 +1181,7 @@ onBeforeUnmount(() => {
         <VListItem class="form">
           <AppAutocomplete
             v-model="model_id"
-            label="Modell"
+            placeholder="Modell"
             :items="getModels"
             autocomplete="off"
             clearable
@@ -1199,7 +1199,7 @@ onBeforeUnmount(() => {
         <VListItem class="form">
           <AppAutocomplete
             v-model="gearbox_id"
-            label="Biltyp"
+            placeholder="Biltyp"
             :items="gearboxes"
             :item-title="item => item.name"
             :item-value="item => item.id"
