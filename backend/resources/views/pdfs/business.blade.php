@@ -131,6 +131,12 @@
         .signatures-table {
             width: 100%;
             margin-top: 30px;
+            table-layout: fixed;
+            border-collapse: collapse;
+        }
+        .signatures-table td {
+            width: 50%;
+            vertical-align: bottom;
         }
         .signature-box {
             border-top: 1px solid #333;
@@ -232,7 +238,11 @@
                             <td>
                                 <div class="label">Märke & Modell</div>
                                 <div class="value">
-                                    {{ $agreement->offer->model->brand->name }} {{ $agreement->offer->model->name }}
+                                    @if($agreement->offer && $agreement->offer->model)
+                                        {{ $agreement->offer->model->brand->name }} {{ $agreement->offer->model->name }}
+                                    @else
+                                        -
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -247,6 +257,49 @@
                     </table>
                 </td>
             </tr>
+
+            <!-- === CUSTOMER INFORMATION === -->
+            @if($agreement->agreement_client)
+            <tr>
+                <td colspan="2" class="section-cell">
+                    <h2>Kundinformation</h2>
+                    <table class="info-table">
+                        <tr>
+                            <td style="width: 50%; padding-right: 15px; vertical-align: top;">
+                                <div class="label">Namn</div>
+                                <div class="value">{{ $agreement->agreement_client->fullname ?? '-' }}</div>
+                            </td>
+                            <td style="width: 50%; padding-left: 15px; vertical-align: top;">
+                                <div class="label">E-post</div>
+                                <div class="value">{{ $agreement->agreement_client->email ?? '-' }}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="width: 50%; padding-right: 15px; vertical-align: top;">
+                                <div class="label">Org/personummer</div>
+                                <div class="value">{{ $agreement->agreement_client->organization_number ?? '-' }}</div>
+                            </td>
+                            <td style="width: 50%; padding-left: 15px; vertical-align: top;">
+                                <div class="label">Telefon</div>
+                                <div class="value">{{ $agreement->agreement_client->phone ?? '-' }}</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Adress</div>
+                                <div class="value">
+                                    {{ $agreement->agreement_client->address ?? '' }}
+                                    @if(!empty($agreement->agreement_client->postal_code) || !empty($agreement->agreement_client->street))
+                                        <br>
+                                        {{ $agreement->agreement_client->postal_code ?? '' }} {{ $agreement->agreement_client->street ?? '' }}
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            @endif
 
             <!-- === FINANCIAL OVERVIEW === -->
             <tr>
@@ -295,22 +348,46 @@
                     <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
                     <table class="signatures-table">
                         <tr>
-                            <td style="width: 50%; padding-right: 20px;">
-                                <div style="min-height: 70px;">
-                                    @if($company->img_signature)
-                                        <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
-                                    @endif
-                                </div>
-                                <div class="signature-box">(Köparens underskrift)</div>
-                                <div style="padding-top: 5px; font-size: 10px;">{{ $company->name }} {{ $company->last_name }}</div>
+                            <!-- Left: Kund (köpare) -->
+                            <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="height: 70px; vertical-align: bottom;">
+                                            @if(isset($signature_url) && $signature_x === null)
+                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <div class="signature-box">(Köparens underskrift)</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="height: 15px; font-size: 10px;">&nbsp;</td>
+                                    </tr>
+                                </table>
                             </td>
-                            <td style="width: 50%; padding-left: 20px; vertical-align: bottom; position: relative;">
-                                <div style="min-height: 70px;">
-                                    @if(isset($signature_url) && $signature_x === null)
-                                        <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
-                                    @endif
-                                </div>
-                                <div class="signature-box">(Säljarens underskrift)</div>
+
+                            <!-- Right: Säljföretaget -->
+                            <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="height: 70px; vertical-align: bottom; text-align: right;">
+                                            @if($company->img_signature)
+                                                <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="text-align: right;">
+                                            <div class="signature-box">(Säljföretagets underskrift)</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="height: 15px; padding-top: 5px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
+                                    </tr>
+                                </table>
                             </td>
                         </tr>
                     </table>
