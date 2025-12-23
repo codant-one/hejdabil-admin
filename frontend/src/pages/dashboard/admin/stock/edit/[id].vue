@@ -8,7 +8,7 @@ import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
+import { yearValidator, requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
 import { useAuthStores } from '@/stores/useAuth'
@@ -916,13 +916,6 @@ const isCompanyNumber = (orgNumber) => {
 }
 
 /**
- * Computed property to determine if any entity search is in progress
- */
-const isEntitySearchLoading = computed(() => {
-    return companyInfoStores.loading || personInfoStores.loading
-})
-
-/**
  * Search for entity information based on the organization/personal number.
  * If the number starts with 5, searches in CompanyInfo (Bolagsverket).
  * Otherwise, searches in SPAR (Statens Personadressregister).
@@ -939,8 +932,12 @@ const searchEntity = async () => {
 
 const searchCompany = async () => {
     try {
+        isRequestOngoing.value = true
+
         const response = await companyInfoStores.getCompanyInfo(organization_number.value)
         
+        isRequestOngoing.value = false
+
         if (response) {
              // Set Client Type to Företag
             const foretagType = client_types.value.find(t => t.name === 'Företag')
@@ -978,6 +975,7 @@ const searchCompany = async () => {
         }
 
     } catch (error) {
+        isRequestOngoing.value = false
         advisor.value = {
             type: 'error',
             message: 'Ingen företag hittades med det registreringsnumret',
@@ -991,7 +989,11 @@ const searchCompany = async () => {
  */
 const searchPerson = async () => {
     try {
+        isRequestOngoing.value = true
+
         const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+        isRequestOngoing.value = false
 
         if (response?.success && response?.data) {
             const personData = response.data
@@ -1016,7 +1018,10 @@ const searchPerson = async () => {
         }
 
     } catch (error) {
+        isRequestOngoing.value = false
+
         const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        
         advisor.value = {
             type: 'error',
             message: errorMessage,
@@ -1601,12 +1606,14 @@ onBeforeUnmount(() => {
                                                 <VTextField
                                                     v-model="organization_number"
                                                     style="flex: 1;"
-                                                    :rules="[requiredValidator]"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="13"
+                                                    @input="formatOrgNumber()"
                                                 />
                                                 <VBtn
                                                     class="btn-light w-auto px-4"
                                                     @click="searchEntity"
-                                                    :loading="isEntitySearchLoading"
                                                 >
                                                     <VIcon icon="custom-search" size="24" />
                                                     Hämta
@@ -1627,125 +1634,122 @@ onBeforeUnmount(() => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
                                                 v-model="fullname"
-                                                label="Namn"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VTextField
-                                                v-model="address"
-                                                label="Adress"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VTextField
-                                                v-model="postal_code"
-                                                label="Postnummer"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                                             <VTextField
                                                 v-model="street"
-                                                label="Stad"
+                                               :rules="[requiredValidator]"
                                             /> 
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />                                            
                                             <VTextField
-                                                v-model="phone"
-                                                :rules="[phoneValidator]"
-                                                label="Telefon"
+                                                v-model="address"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <AppAutocomplete
                                                 v-model="identification_id"
-                                                label="Legitimation"
+                                                label="Legitimation*"
                                                 :items="identifications"
                                                 :item-title="item => item.name"
                                                 :item-value="item => item.id"
-                                                autocomplete="off"/>
+                                                autocomplete="off"
+                                                :rules="[requiredValidator]"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />                                            
+                                            <VTextField
+                                                v-model="postal_code"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />                                            
+                                            <VTextField
+                                                v-model="phone"
+                                                :rules="[phoneValidator]"
+                                            />
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />                                            
                                             <VTextField
                                                 v-model="email"
                                                 :rules="[emailValidator]"
-                                                label="E-post"
+                                            />
+                                        </div>
+                                        <div v-if="vehicle.client_purchase === null" class="ms-2">
+                                            <VCheckbox
+                                                v-model="save_client"
+                                                :readonly="disabled_client"
+                                                color="primary"
+                                                label="Spara kund?"
+                                                class="w-100 text-center d-flex justify-start"
                                             />
                                         </div>
                                     </div>
                                 </div>
+                                <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-8'" />
                                 <div>
-                                    <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                        Köpare
-                                    </h6>
-                                    <VList class="card-list mt-2">
-                                        <VListItem>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Namn:
-                                                    <span class="text-body-2">
-                                                        {{ company.name }} {{ company.last_name }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Org/personummer:
-                                                    <span class="text-body-2">
-                                                        {{ company.organization_number }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Adress:
-                                                    <span class="text-body-2">
-                                                        {{ company.address }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Postnr. ort:
-                                                    <span class="text-body-2">
-                                                        {{ (company.street ?? '') + ' ' +  (company.postal_code ?? '') }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Telefon:
-                                                    <span class="text-body-2">
-                                                        {{ company.phone }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    E-post
-                                                    <span class="text-body-2">
-                                                        {{ company.email }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Bilfirma:
-                                                    <span class="text-body-2">
-                                                        {{ company.company }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                        </VListItem>
-                                    </VList>
-                                    <div v-if="vehicle.client_purchase === null" class="py-3">
-                                        <VCheckbox
-                                            v-model="save_client"
-                                            :readonly="disabled_client"
-                                            color="primary"
-                                            label="Spara kund?"
-                                            class="w-100 text-center d-flex justify-content-end"
-                                        />
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column gap-1' : 'flex-row gap-4'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%; margin-bottom: 8px;' : 'width: calc(20%);'">
+                                            <span class="title-kopare mb-5">
+                                                Köpare
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(28%);'">
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Namn:
+                                                <span>
+                                                    {{ company.name }} {{ company.last_name }}
+                                                </span>
+                                            </h6>
+                                              <h6 class="list-kopare text-neutral-3">
+                                                Org/personummer:
+                                                <span>
+                                                    {{ company.organization_number }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Adress:
+                                                <span>
+                                                    {{ company.address }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Postnr. ort:
+                                                <span>
+                                                    {{ (company.street ?? '') + ' ' +  (company.postal_code ?? '') }}
+                                                </span>
+                                            </h6>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1" :style="windowWidth < 1024 ? 'width: 100%;; margin-bottom: 8px;' : 'width: calc(45% - 12px);'">
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Telefon:
+                                                <span>
+                                                    {{ company.phone }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                E-post:
+                                                <span>
+                                                    {{ company.email }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Bilfirma:
+                                                <span>
+                                                    {{ company.company }}
+                                                </span>
+                                            </h6>
+                                        </div>
                                     </div>
                                 </div>                            
                             </VWindowItem>
@@ -2648,6 +2652,28 @@ onBeforeUnmount(() => {
 
 <style lang="scss">
 
+    .list-kopare {
+        font-size: 16px;
+        line-height: 100%;
+        font-weight: 700;
+
+        span {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+    
+    .title-kopare {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #878787;
+
+        @media (max-width: 1023px) {
+            font-size: 16px
+        }
+    }
+
     .title-page {
         font-weight: 700;
         font-size: 32px;
@@ -2659,7 +2685,7 @@ onBeforeUnmount(() => {
         }
     }
 
-     .subtitle-page {
+    .subtitle-page {
         font-weight: 500;
         font-size: 16px;
         line-height: 100%;
