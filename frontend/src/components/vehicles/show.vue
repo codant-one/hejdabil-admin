@@ -73,8 +73,10 @@ const service_book = ref(0)
 const summer_tire = ref(0)
 const winter_tire = ref(0)
 const last_service = ref(null)
+const last_service_date = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
+const last_dist_belt_date = ref(null)
 const comments = ref(null)
 const sale_comments = ref(null)
 
@@ -134,8 +136,10 @@ watchEffect(async () => {
             summer_tire.value = props.vehicle.summer_tire
             winter_tire.value = props.vehicle.winter_tire
             last_service.value = props.vehicle.last_service
+            last_service_date.value = props.vehicle.last_service_date
             dist_belt.value = props.vehicle.dist_belt
             last_dist_belt.value = props.vehicle.last_dist_belt
+            last_dist_belt_date.value = props.vehicle.last_dist_belt_date
 
             sale_comments.value = props.vehicle.sale_comments
             organization_number_sale.value = props.vehicle.client_sale?.organization_number
@@ -446,7 +450,7 @@ const setThumbsSwiper = (swiper) => {
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Senaste service: Mil/datum</span>
-                                                    <span class="subtitle-detail">{{ last_service }}</span>
+                                                    <span class="subtitle-detail">{{ last_service }} Mil / {{ last_service_date }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
@@ -463,7 +467,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt vid Mil/datum </span>
-                                                    <span class="subtitle-detail">{{ last_dist_belt }}</span>
+                                                    <span class="subtitle-detail">{{ last_dist_belt }} Mil / {{ last_dist_belt_date }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Anteckningar </span>

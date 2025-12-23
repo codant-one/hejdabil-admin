@@ -8,7 +8,7 @@ const theme = {
       colors: {
         'primary': localStorage.getItem(`${themeConfig.app.title}-lightThemePrimaryColor`) || '#57F287',
         'on-primary': '#F3FCFE',
-        'secondary': '#2E0684',
+        'secondary': '#3AF8FF',
         'on-secondary': '#fff',
         'success': '#A2E5F4',
         'on-success': '#fff',
@@ -62,7 +62,7 @@ const theme = {
       colors: {
         'primary': localStorage.getItem(`${themeConfig.app.title}-darkThemePrimaryColor`) || '#57F287',
         'on-primary': '#F3FCFE',
-        'secondary': '#2E0684',
+        'secondary': '#3AF8FF',
         'on-secondary': '#fff',
         'success': '#A2E5F4',
         'on-success': '#fff',
