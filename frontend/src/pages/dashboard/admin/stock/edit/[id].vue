@@ -1344,9 +1344,13 @@ onBeforeUnmount(() => {
                         </VTab>
                         <VTab value="tab-5">
                             <VIcon size="24" icon="custom-atgarder-2" />
-                            <span>Åtgärder/Kostnader</span>
+                            <span>Åtgärder</span>
                         </VTab>
                         <VTab value="tab-6">
+                            <VIcon size="24" icon="custom-atgarder-2" />
+                            <span>Kostnader</span>
+                        </VTab>
+                        <VTab value="tab-7">
                             <VIcon size="24" icon="custom-dokument-ilager" />
                             <span>Dokument</span>
                         </VTab>
@@ -1994,10 +1998,9 @@ onBeforeUnmount(() => {
                                         </VCard>
                                     </VCol>
                                 </VRow>
-
-                                <VDivider class="my-6" />
-
-                                <!-- Kostnader -->
+                            </VWindowItem>
+                            <!-- Kostnader -->
+                            <VWindowItem value="tab-6" class="px-md-0">
                                 <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
                                     <VSpacer class="d-none d-md-block"/>   
                                     <VBtn
@@ -2081,28 +2084,62 @@ onBeforeUnmount(() => {
                                 </VCardText>
                             </VWindowItem>
                             <!-- Dokument -->
-                            <VWindowItem value="tab-6" class="px-md-0">
-                                <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="documents.length === 0 ? 'border-bottom-secondary' : ''">           
-                                    <VSpacer class="d-none d-md-block"/> 
-                                    <VBtn
-                                        v-if="selectedIds.length > 0"
-                                        color="secondary"
-                                        variant="tonal"
-                                        class="me-2"
-                                        @click="isConfirmSendDocumentDialogVisible = true">
-                                        Sänd PDF
-                                    </VBtn>  
-                                    <VBtn
-                                        v-if="$can('edit', 'stock')"
-                                        class="w-100 w-md-auto"
-                                        prepend-icon="mdi-cloud-upload-outline"
-                                        @click="showDocument">
-                                        Ladda upp dokument
-                                    </VBtn>
-
+                            <VWindowItem value="tab-7" class="px-md-0">
+                                <div 
+                                    class="d-flex gap-4 align-center flex-wrap pb-4 w-100 w-md-auto" 
+                                    :class="windowWidth < 1024 === 0 ? 'flex-column' : ''">           
+                                    <h6 class="title-tab">
+                                        Dokument
+                                    </h6>
+                                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+                                    <div 
+                                        class="d-flex gap-2"
+                                        :class="windowWidth < 1024 ? 'w-100' : 'align-center'">
+                                        <VBtn
+                                            v-if="selectedIds.length > 0"
+                                            class="btn-light w-auto"
+                                            block
+                                            @click="isConfirmSendDocumentDialogVisible = true">
+                                            Sänd PDF
+                                        </VBtn>  
+                                        <VBtn
+                                            v-if="$can('edit', 'stock')"
+                                            class="btn-gradient"
+                                            block
+                                            @click="showDocument">
+                                            <VIcon icon="custom-plus" size="24" />
+                                            Ladda upp dokument
+                                        </VBtn>
+                                    </div>
                                 </div>
-                                <div v-if="documents.length === 0" class="mt-10 text-center">Inga dokument uppladdade</div>
-                                <VTable v-else class="text-no-wrap">
+                                <div v-if="documents.length === 0" 
+                                    class="mt-10 text-center empty-state"
+                                    :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+                                    >
+                                    <VIcon
+                                        :size="$vuetify.display.mdAndDown ? 80 : 120"
+                                        icon="custom-steering-wheel"
+                                    />
+                                    <div class="empty-state-content">
+                                        <div class="empty-state-title">Ditt fordonslager är tomt</div>
+                                        <div class="empty-state-text">
+                                            Registrera de fordon du har till salu för att enkelt hantera ditt lager och koppla dem till fakturor.
+                                        </div>
+                                    </div>
+                                    <VBtn
+                                        class="btn-ghost"
+                                        v-if="$can('create', 'stock')"
+                                        @click="isConfirmCreateDialogVisible = true"
+                                        >
+                                        Lägg till fordon
+                                        <VIcon icon="custom-arrow-right" size="24" />
+                                    </VBtn>
+                                </div>
+                                <VTable 
+                                    v-else 
+                                    class="pt-2 px-4 pb-6 text-no-wrap"
+                                    style="border-radius: 0 !important"
+                                >
                                     <!-- 👉 table head -->
                                     <thead>
                                         <tr>
@@ -2153,25 +2190,19 @@ onBeforeUnmount(() => {
                                                 <VMenu>
                                                     <template #activator="{ props }">
                                                         <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                                                            <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                                                            <path d="M19 16v6"></path>
-                                                            <path d="M22 19l-3 3l-3 -3"></path>
-                                                            <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                                                            </svg>
+                                                            <VIcon icon="custom-dots-vertical" size="22" />
                                                         </VBtn>
                                                     </template>
-
                                                     <VList>
                                                         <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
                                                             <template #prepend>
-                                                                <VIcon icon="mdi-cloud-download-outline" />
+                                                                <VIcon icon="custom-download" class="mr-2" size="24" />
                                                             </template>
                                                             <VListItemTitle>Ladda ner</VListItemTitle>
                                                         </VListItem>
                                                         <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
                                                             <template #prepend>
-                                                            <VIcon icon="tabler-trash" />
+                                                                <VIcon icon="custom-waste" size="24" class="mr-2" />
                                                             </template>
                                                             <VListItemTitle>Ta bort</VListItemTitle>
                                                         </VListItem>
