@@ -1172,7 +1172,7 @@ onBeforeUnmount(() => {
                 <VCardText class="p-0">
                     <div 
                         class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4"
-                        :class="windowWidth < 1024 ? 'justify-center' : 'justify-start justify-sm-space-between'">
+                        :class="windowWidth < 1024 ? 'justify-center text-center' : 'justify-start justify-sm-space-between'">
                         <div 
                             class="d-flex align-center gap-4"
                             :class="windowWidth < 1024 ? 'flex-column' : ''"
@@ -1189,13 +1189,15 @@ onBeforeUnmount(() => {
                                 style="width: 88px; height: 88px; background-color: #D9D9D9; border-radius: 16px;">
                                 <!-- Placeholder for car image -->
                             </div>
-                            <div class="d-flex flex-column justify-center">
-                                <h6 class="text-h4 font-weight-bold">
+                            <div class="d-flex flex-column justify-center gap-4">
+                                <span class="title-page">
                                     {{ reg_num }}
-                                </h6>
-                                <span class="d-flex align-center text-body-1 text-medium-emphasis">
+                                </span>
+                                <span 
+                                    class="d-flex subtitle-page"
+                                    :class="windowWidth < 1024 ? 'justify-center' : 'justify-start'">
                                     {{ state }}
-                                    <img :src="editIcon" alt="Edit" class="ms-2 cursor-pointer" width="20" height="20" @click="isConfirmStatusDialogVisible = true"/>
+                                    <VIcon icon="custom-pencil" size="24" class="ms-2 cursor-pointer" @click="isConfirmStatusDialogVisible = true"/>
                                 </span>
                             </div>
                         </div>
@@ -2554,6 +2556,24 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+    .title-page {
+        font-weight: 700;
+        font-size: 32px;
+        line-height: 100%;
+        color: #1C2925;
+
+        @media (max-width: 1023px) {
+            font-size: 24px
+        }
+    }
+
+     .subtitle-page {
+        font-weight: 500;
+        font-size: 16px;
+        line-height: 100%;
+        color: #6E9383;
+    }
 
     .title-tab {
         font-weight: 700;
