@@ -165,7 +165,7 @@ const emitModelValue = val => {
   inset: 0;
   outline: none;
   padding-block: 0;
-  padding-inline: var(--v-field-padding-start);
+  padding-inline: 12px;
 }
 
 $heading-color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));

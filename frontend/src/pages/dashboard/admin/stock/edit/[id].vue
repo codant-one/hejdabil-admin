@@ -1237,7 +1237,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <section class="page-section" ref="sectionEl">
+    <section class="page-section stock-edit-page" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
         <VSnackbar
             v-model="advisor.show"
@@ -1760,62 +1760,115 @@ onBeforeUnmount(() => {
                                     :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                 >
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                        <VTextField
-                                            v-model="number_keys"
-                                            type="number"
-                                            min="1"
-                                            :rules="[requiredValidator]"
-                                        />
-                                    </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">
-                                        <div class="d-flex flex-column">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
-                                            <VRadioGroup v-model="service_book" inline class="radio-form">
-                                                <VRadio
-                                                    v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                    :key="index"
-                                                    :label="radio"
-                                                    :value="index"
+                                    <div class="d-flex flex-column gap-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                            <VTextField
+                                                v-model="number_keys"
+                                                type="number"
+                                                min="1"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <div class="w-50">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="last_service"
+                                                    suffix="Mil"
+                                                    min="0"
                                                 />
-                                            </VRadioGroup>
+                                            </div>
+                                            <div class="w-50">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                                    v-model="last_service_date"
+                                                    density="default"
+                                                    :config="endDateTimePickerConfig"
+                                                    clearable
+                                                    class="field-solo-flat"
+                                                    placeholder="YYYY-MM-DD"
+                                                    style="margin-top: 3px"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2" v-if="dist_belt === 0">
+                                            <div class="w-50">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid Mil/datum" />
+                                                <VTextField
+                                                    type="number"
+                                                    v-model="last_dist_belt"
+                                                    suffix="Mil"
+                                                    min="0"
+                                                />
+                                            </div>
+                                            <div class="w-50">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                <AppDateTimePicker
+                                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                                    v-model="last_dist_belt_date"
+                                                    density="default"
+                                                    :config="endDateTimePickerConfig"
+                                                    clearable
+                                                    class="field-solo-flat"
+                                                    placeholder="YYYY-MM-DD"
+                                                    style="margin-top: 3px"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
+                                            <VTextarea
+                                                v-model="comments"
+                                                rows="4"
+                                            />
                                         </div>
                                     </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">                                                
-                                        <div class="d-flex flex-column">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
-                                            <VRadioGroup v-model="summer_tire" inline class="radio-form">
-                                                <VRadio
-                                                    v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                    :key="index"
-                                                    :label="radio"
-                                                    :value="index"
-                                                />
-                                            </VRadioGroup>
-                                        </div>
-                                    </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">                                                
-                                        <div class="d-flex flex-column">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
-                                            <VRadioGroup v-model="winter_tire" inline class="radio-form">
-                                                <VRadio
-                                                    v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                    :key="index"
-                                                    :label="radio"
-                                                    :value="index"
-                                                />
-                                            </VRadioGroup>
-                                        </div>
-                                    </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
-                                        <VTextField
-                                            v-model="last_service"
-                                        />
-                                    </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                        <div class="d-flex flex-column">
+                                    <div class="d-flex flex-column gap-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+                                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
+                                                <div class="d-flex flex-column">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
+                                                    <VRadioGroup v-model="service_book" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </div>
+                                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
+                                                <div class="d-flex flex-column">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
+                                                    <VRadioGroup v-model="summer_tire" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </div>
+                                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
+                                                <div class="d-flex flex-column">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
+                                                    <VRadioGroup v-model="winter_tire" inline class="radio-form">
+                                                        <VRadio
+                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                            :key="index"
+                                                            :label="radio"
+                                                            :value="index"
+                                                        />
+                                                    </VRadioGroup>
+                                                </div>
+                                            </div>    
+                                         </div>
+                                         <div class="d-flex flex-column">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
                                             <VRadioGroup v-model="dist_belt" inline class="radio-form">
                                                 <VRadio
@@ -1826,20 +1879,7 @@ onBeforeUnmount(() => {
                                                 />
                                             </VRadioGroup>
                                         </div>
-                                    </div>
-                                    <div v-if="dist_belt === 0" style="width: 100%;">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid Mil/datum" />
-                                        <VTextField
-                                            v-model="last_dist_belt"
-                                        />
-                                    </div>
-                                    <div style="width: 100%;">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
-                                        <VTextarea
-                                            v-model="comments"
-                                            rows="4"
-                                        />
-                                    </div>
+                                     </div>                               
                                 </div>
                             </VWindowItem>
                             <!-- Planerade åtgärder -->
@@ -2650,6 +2690,31 @@ onBeforeUnmount(() => {
     </section>
 </template>
 
+<style lang="scss" scoped>
+    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
+        --v-input-control-height: 0 !important;
+    }
+
+    :deep(.radio-form .v-selection-control__wrapper) {
+        height: 20px !important;
+    }
+
+    :deep(.radio-form .v-icon--size-default) {
+        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
+    }
+
+    :deep(.radio-form .v-selection-control--dirty) {
+        .v-selection-control__input > .v-icon {
+            color: #00E1E2 !important;
+        }
+    }
+
+    :deep(.radio-form .v-label) {
+        color: #5D5D5D;
+        font-size: 12px;
+    }
+</style>
+
 <style lang="scss">
 
     .list-kopare {
@@ -2726,20 +2791,35 @@ onBeforeUnmount(() => {
         }
     }
 
-    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
-        --v-input-control-height: 0 !important;
-    }
-
-    :deep(.radio-form .v-selection-control__wrapper) {
-        height: 20px !important;
-    }
-
-    :deep(.radio-form .v-icon--size-default) {
-        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
-    }
-
     .v-btn--disabled {
         opacity: 1 !important;
+    }
+
+    .radio-form {
+        display: flex;
+        align-items: center;
+        height: 48px;
+        margin-left: 8px;
+
+        :deep(.v-selection-control-group) {
+            gap: 16px;
+        }
+
+        :deep(.v-selection-control) {
+            min-height: auto;
+        }
+
+        :deep(.v-selection-control--dirty) {
+            .v-selection-control__input > .v-icon {
+                color: #00E1E2 !important;
+            }
+        }
+
+        :deep(.v-label) {
+            color: #5D5D5D;
+            font-size: 12px;
+            opacity: 1;
+        }
     }
 
     .border-bottom-secondary {
@@ -2827,6 +2907,12 @@ onBeforeUnmount(() => {
                 left: 0px;
             }
         }
+    }
+</style>
+
+<style lang="scss">
+    .stock-edit-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
+        margin-inline-end: 1.5rem !important;
     }
 </style>
 
