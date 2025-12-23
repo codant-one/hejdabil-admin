@@ -886,6 +886,15 @@ const removeDocument = async (document) => {
     return true
 }
 
+const formatOrgNumber = () => {
+
+    let numbers = organization_number.value.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    organization_number.value = numbers
+}
+
 const searchCompany = async () => {
     if (!organization_number.value) return
 
@@ -953,7 +962,15 @@ const searchPerson = async () => {
     try {
         const response = await personInfoStores.getPersonInfo(organization_number.value)
 
-        if (response?.success && response?.data) {
+        if (!response?.success) {
+            toastsStores.addToast({
+                message: response?.message || response?.error || 'Ingen person hittades med det personnumret',
+                type: 'error'
+            })
+            return
+        }
+
+        if (response?.data) {
             const personData = response.data
 
             // Set Client Type to Privat
@@ -968,7 +985,7 @@ const searchPerson = async () => {
             street.value = personData.postort || ''
         }
     } catch (error) {
-        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        const errorMessage = error?.message || error?.error || 'Ingen person hittades med det personnumret'
         toastsStores.addToast({
             message: errorMessage,
             type: 'error'
@@ -1519,6 +1536,7 @@ onBeforeUnmount(() => {
                                                         <VTextField
                                                             v-model="organization_number"
                                                             label="Org/personummer"
+                                                            @input="formatOrgNumber()"
                                                         />
                                                     </VCol>
                                                     <VCol cols="2" md="1" class="px-0 d-flex align-center">
