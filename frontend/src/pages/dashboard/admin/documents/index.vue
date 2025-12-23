@@ -14,6 +14,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+import pdfIcon from '@images/icon-pdf-documento.png'
 
 const documentsStores = useSignableDocumentsStores()
 const emitter = inject("emitter")
@@ -40,6 +41,12 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  if (trackerPreviewPdfSource.value) URL.revokeObjectURL(trackerPreviewPdfSource.value)
+
+  if (snakeResizeObserver) {
+    snakeResizeObserver.disconnect()
+    snakeResizeObserver = null
+  }
 });
 
 const documents = ref([])
@@ -181,8 +188,117 @@ const openLink = function (documentData) {
 }
 
 const goToTracker = (documentData) => {
-  router.push(`/dashboard/admin/documents/${documentData.id}/sparare`)
+  openTracker(documentData)
 }
+
+// Tracker Logic
+const isTrackerDialogVisible = ref(false)
+const trackerDocument = ref(null)
+const isTrackerPreviewVisible = ref(false)
+const trackerPreviewPdfSource = ref(null)
+const isTrackerPreviewLoading = ref(false)
+const trackerPreviewError = ref('')
+
+const trackerEvents = computed(() => {
+  if (!trackerDocument.value) return []
+
+  const items = []
+
+  // Created event
+  items.push({
+    key: 'created',
+    title: 'Avtal skapat',
+    meta: new Date(trackerDocument.value.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+    text: trackerDocument.value.title,
+    color: '#00EEB0', // Green
+  })
+
+  // Use most recent token for status markers
+  const latestToken = (trackerDocument.value.tokens || []).length
+    ? [...trackerDocument.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+    : null
+
+  if (latestToken) {
+    // Sent event
+    items.push({
+      key: 'sent',
+      title: 'Signeringsförfrågan skickad',
+      meta: new Date(latestToken.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+      text: `Skickad till ${latestToken.recipient_email}`,
+      color: '#1890FF', // Blue
+    })
+
+    // Viewed event
+    if (latestToken.viewed_at) {
+      items.push({
+        key: 'viewed',
+        title: 'Dokument visat av kunden',
+        meta: new Date(latestToken.viewed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+        text: 'Kunden har öppnat signeringslänken.',
+        color: '#FAAD14', // Yellow
+      })
+    }
+
+    // Signed event
+    if (latestToken.signature_status === 'signed' && latestToken.signed_at) {
+      items.push({
+        key: 'signed',
+        title: 'Dokument signerat',
+        meta: new Date(latestToken.signed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+        text: 'Signeringen är slutförd.',
+        color: '#00EEB0', // Green
+      })
+    } else if (latestToken.signature_status === 'sent') {
+      items.push({
+        key: 'pending',
+        title: 'Väntar på signering',
+        meta: 'Aktiv begäran',
+        text: 'Mottagaren har inte signerat ännu.',
+        color: '#FAAD14', // Yellow
+      })
+    }
+  }
+  
+  // Assign sides strictly alternating
+  return items.map((item, index) => ({
+      ...item,
+      side: index % 2 === 0 ? 'right' : 'left'
+  }))
+})
+
+const openTracker = async (doc) => {
+  trackerDocument.value = doc
+  isTrackerDialogVisible.value = true
+  
+  try {
+    const fullDoc = await documentsStores.showDocument(doc.id)
+    trackerDocument.value = fullDoc
+  } catch (e) {
+    console.error('Failed to refresh document details', e)
+  }
+}
+
+const openTrackerPreview = async () => {
+  if (!trackerDocument.value) return
+  isTrackerPreviewVisible.value = true
+  isTrackerPreviewLoading.value = true
+  trackerPreviewError.value = ''
+  try {
+    const response = await axios.get(`/signable-documents/${trackerDocument.value.id}/get-admin-preview-pdf`, { responseType: 'blob' })
+    trackerPreviewPdfSource.value = URL.createObjectURL(response.data)
+  } catch (e) {
+    trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
+  } finally {
+    isTrackerPreviewLoading.value = false
+  }
+}
+
+watch(isTrackerPreviewVisible, val => {
+  if (!val && trackerPreviewPdfSource.value) {
+    URL.revokeObjectURL(trackerPreviewPdfSource.value)
+    trackerPreviewPdfSource.value = null
+  }
+})
 
 const startPlacementProcess = async (documentData) => {
   selectedDocument.value = { ...documentData };
@@ -998,6 +1114,63 @@ const resolveStatus = state => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Tracker Dialog -->
+    <VDialog v-model="isTrackerDialogVisible" max-width="600" content-class="tracker-dialog">
+      <VCard class="tracker-card">
+        <VCardTitle class="d-flex justify-space-between align-center pa-6">
+          <span class="tracker-title">Signaturprocess</span>
+          <VBtn icon variant="text" @click="isTrackerDialogVisible = false">
+            <VIcon icon="tabler-x" />
+          </VBtn>
+        </VCardTitle>
+        
+        <VCardText class="pa-6 pt-0">
+          <div class="snake-timeline-container">
+            <template v-for="(item, index) in trackerEvents" :key="item.key">
+              <!-- Item -->
+              <div 
+                class="snake-item" 
+                :class="item.side === 'right' ? 'row-right' : 'row-left'"
+              >
+                 <div class="snake-line-box"></div>
+                 <div class="snake-content-wrapper">
+                    <div class="snake-meta">{{ item.meta }}</div>
+                    <div class="snake-title">{{ item.title }}</div>
+                    <div class="snake-text">{{ item.text }}</div>
+                    <div v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument" class="snake-file" @click="openTrackerPreview">
+                       <img :src="pdfIcon" width="16" class="me-2" />
+                       <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                    </div>
+                 </div>
+                 <div class="snake-dot" :style="{ backgroundColor: item.color }"></div>
+              </div>
+            </template>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Tracker Preview Dialog -->
+    <VDialog v-model="isTrackerPreviewVisible" max-width="900">
+      <VCard>
+        <VCardTitle class="d-flex justify-space-between align-center">
+          <span>Förhandsvisa dokument</span>
+          <VBtn icon variant="text" @click="isTrackerPreviewVisible = false">
+            <VIcon icon="tabler-x" />
+          </VBtn>
+        </VCardTitle>
+        <VDivider />
+        <VCardText class="d-flex justify-center" style="min-height:400px;">
+          <VProgressCircular v-if="isTrackerPreviewLoading" indeterminate color="primary" />
+          <div v-else class="w-100">
+            <VAlert v-if="trackerPreviewError" type="error" class="mb-4">{{ trackerPreviewError }}</VAlert>
+            <vue-pdf-embed v-if="trackerPreviewPdfSource && !trackerPreviewError" :source="trackerPreviewPdfSource" style="width:100%;" />
+            <VAlert v-else-if="!trackerPreviewError" type="warning">Ingen PDF tillgänglig.</VAlert>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -1041,6 +1214,177 @@ const resolveStatus = state => {
       font-weight: 600;
       white-space: nowrap;
     }
+
+  .tracker-card {
+    border-radius: 16px !important;
+  }
+
+  .tracker-title {
+    font-weight: 600;
+    color: #454545;
+    font-size: 1.25rem;
+  }
+
+  .snake-timeline-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    padding: 20px 0;
+  }
+
+  .snake-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    padding-bottom: 40px;
+    box-sizing: border-box;
+    margin-top: -2px; /* Overlap for continuous line */
+  }
+
+  .snake-item:first-child {
+    margin-top: 0;
+  }
+
+  .snake-item:not(:first-child) {
+    padding-top: 40px;
+  }
+
+  .snake-item:last-child {
+    padding-bottom: 0;
+  }
+
+  .snake-line-box {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc(50% + 1px); /* Slight overlap to avoid gap */
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Row Right (Odd items visually, Index 0, 2...) */
+  .row-right {
+    justify-content: flex-start;
+  }
+
+  .row-right .snake-line-box {
+    right: 0;
+    border-right: 2px solid #E7E7E7;
+  }
+
+  /* Row Left (Even items visually, Index 1, 3...) */
+  .row-left {
+    justify-content: flex-end;
+  }
+
+  .row-left .snake-line-box {
+    left: 0;
+    border-left: 2px solid #E7E7E7;
+  }
+
+  /* Bottom Connections (Curve to next) */
+  .snake-item:not(:last-child) .snake-line-box {
+    border-bottom: 2px solid #E7E7E7;
+  }
+
+  .row-right:not(:last-child) .snake-line-box {
+    border-bottom-right-radius: 50px;
+  }
+
+  .row-left:not(:last-child) .snake-line-box {
+    border-bottom-left-radius: 50px;
+  }
+
+  /* Top Connections (Curve from prev) */
+  .snake-item:not(:first-child) .snake-line-box {
+    border-top: 2px solid #E7E7E7;
+  }
+
+  .row-right:not(:first-child) .snake-line-box {
+    border-top-right-radius: 50px;
+  }
+
+  .row-left:not(:first-child) .snake-line-box {
+    border-top-left-radius: 50px;
+  }
+
+  .snake-content-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    min-height: 144px;
+    box-sizing: border-box;
+    background-color: rgb(var(--v-theme-surface));
+    border-radius: 20px;
+    padding: 20px 22px;
+    z-index: 2;
+  }
+
+  /* Spacing for content */
+  .row-right .snake-content-wrapper {
+    margin-right: 40px;
+  }
+
+  .row-left .snake-content-wrapper {
+    margin-left: 40px;
+  }
+
+  .snake-meta {
+    font-size: 0.8rem;
+    color: #999;
+    margin: 0;
+  }
+
+  .snake-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+    margin: 0;
+  }
+
+  .snake-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+  }
+
+  .snake-file {
+    display: inline-flex;
+    align-items: center;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 0;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    
+    &:hover {
+      background: #e0e0e0;
+    }
+  }
+
+  .snake-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    z-index: 3;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .row-right .snake-dot {
+    right: -6px; /* Centered on 2px border */
+  }
+
+  .row-left .snake-dot {
+    left: -6px; /* Centered on 2px border */
+  }
 </style>
 <route lang="yaml">
   meta:
