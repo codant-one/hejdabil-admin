@@ -720,11 +720,7 @@ const goToTracker = (agreementData) => {
               </span>
             </td>
             <td>
-              <span v-if="agreement.agreement_type_id === 4">
-                NO APLICA
-              </span>
               <VChip
-                v-else
                 label
                 :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
               >
@@ -748,7 +744,7 @@ const goToTracker = (agreementData) => {
                     </template>
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
+                  <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="mdi-draw" class="mr-2" />
                     </template>
@@ -857,18 +853,14 @@ const goToTracker = (agreementData) => {
                 <div class="mb-6">
                   <div class="text-caption text-disabled mb-1">Status</div>
                   <div>
-                    <span v-if="agreement.agreement_type_id === 4">
-                        NO APLICA
-                      </span>
-                      <VChip
-                        v-else
-                        label
-                        variant="outlined"
-                        class="status-chip"
-                        :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
-                      >
-                        {{ agreement.token?.signature_status ?? 'pending' }}
-                      </VChip>
+                    <VChip
+                      label
+                      variant="outlined"
+                      class="status-chip"
+                      :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
+                    >
+                      {{ agreement.token?.signature_status ?? 'pending' }}
+                    </VChip>
                   </div>
                 </div>
                 

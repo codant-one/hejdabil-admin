@@ -8,12 +8,14 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { useToastsStores } from '@/stores/useToasts'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
+const personInfoStores = usePersonInfoStores()
 const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
@@ -440,6 +442,29 @@ const formatOrgNumber = () => {
     organization_number.value = numbers
 }
 
+/**
+ * Swedish organization numbers start with 5.
+ * Otherwise treat as personal identity number.
+ */
+const isCompanyNumber = (value) => {
+    const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+    return cleanNumber.startsWith('5')
+}
+
+const isEntitySearchLoading = computed(() => {
+    return companyInfoStores.loading || personInfoStores.loading
+})
+
+const searchEntity = async () => {
+    if (!organization_number.value) return
+
+    if (isCompanyNumber(organization_number.value)) {
+        await searchCompany()
+    } else {
+        await searchPerson()
+    }
+}
+
 const searchCompany = async () => {
     if (!organization_number.value) return
 
@@ -473,11 +498,45 @@ const searchCompany = async () => {
             } else {
                 address.value = ''
             }
+
+            // Set City (Postort)
+            if (response.postadressOrganisation?.postadress?.postort) {
+                street.value = response.postadressOrganisation.postadress.postort
+            } else {
+                street.value = ''
+            }
         }
 
     } catch (error) {
         toastsStores.addToast({
             message: 'Ingen företag hittades med det registreringsnumret',
+            type: 'error'
+        })
+    }
+}
+
+const searchPerson = async () => {
+    try {
+        const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+        if (response?.success && response?.data) {
+            const personData = response.data
+
+            // Set Client Type to Privat
+            const privatType = client_types.value.find(t => t.name === 'Privat')
+            if (privatType) {
+                client_type_id.value = privatType.id
+            }
+
+            fullname.value = personData.fullname || ''
+            postal_code.value = personData.postnummer || ''
+            address.value = personData.adress || ''
+            street.value = personData.postort || ''
+        }
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        toastsStores.addToast({
+            message: errorMessage,
             type: 'error'
         })
     }
@@ -1018,8 +1077,8 @@ const onSubmit = () => {
                                                             color="primary"
                                                             size="x-small"
                                                             class="mt-1"
-                                                            @click="searchCompany"
-                                                            :loading="companyInfoStores.loading"
+                                                            @click="searchEntity"
+                                                            :loading="isEntitySearchLoading"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">

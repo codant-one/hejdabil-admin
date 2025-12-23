@@ -7,10 +7,16 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
+import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { useToastsStores } from '@/stores/useToasts'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
+const companyInfoStores = useCompanyInfoStores()
+const personInfoStores = usePersonInfoStores()
+const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 const route = useRoute()
@@ -364,6 +370,80 @@ const formatOrgNumber = () => {
         numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
     }
     organization_number.value = numbers
+}
+
+/**
+ * Swedish organization numbers start with 5.
+ * Otherwise treat as personal identity number.
+ */
+const isCompanyNumber = (value) => {
+    const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+    return cleanNumber.startsWith('5')
+}
+
+const isEntitySearchLoading = computed(() => {
+    return companyInfoStores.loading || personInfoStores.loading
+})
+
+const searchCompany = async () => {
+    if (!organization_number.value) return
+
+    try {
+        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+
+        if (response) {
+            const foretagType = client_types.value.find(t => t.name === 'Företag')
+            if (foretagType) {
+                client_type_id.value = foretagType.id
+            }
+
+            fullname.value = response.organisationsnamn?.organisationsnamnLista?.[0]?.namn || ''
+            postal_code.value = response.postadressOrganisation?.postadress?.postnummer || ''
+            address.value = response.postadressOrganisation?.postadress?.utdelningsadress || ''
+            street.value = response.postadressOrganisation?.postadress?.postort || ''
+        }
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Ingen företag hittades med det registreringsnumret',
+            type: 'error'
+        })
+    }
+}
+
+const searchPerson = async () => {
+    try {
+        const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+        if (response?.success && response?.data) {
+            const personData = response.data
+
+            const privatType = client_types.value.find(t => t.name === 'Privat')
+            if (privatType) {
+                client_type_id.value = privatType.id
+            }
+
+            fullname.value = personData.fullname || ''
+            postal_code.value = personData.postnummer || ''
+            address.value = personData.adress || ''
+            street.value = personData.postort || ''
+        }
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        toastsStores.addToast({
+            message: errorMessage,
+            type: 'error'
+        })
+    }
+}
+
+const searchEntity = async () => {
+    if (!organization_number.value) return
+
+    if (isCompanyNumber(organization_number.value)) {
+        await searchCompany()
+    } else {
+        await searchPerson()
+    }
 }
 
 const handleChange = (val) => {
@@ -748,6 +828,8 @@ const onSubmit = () => {
                                                             variant="tonal"
                                                             color="primary"
                                                             size="x-small"
+                                                            @click="searchEntity"
+                                                            :loading="isEntitySearchLoading"
                                                         />
                                                     </VCol>
                                                     <VCol cols="12" md="6">
