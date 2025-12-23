@@ -1800,7 +1800,7 @@ onBeforeUnmount(() => {
                                         </div>
                                         <div class="d-flex gap-2" v-if="dist_belt === 0">
                                             <div class="w-50">
-                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid Mil/datum" />
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
                                                 <VTextField
                                                     type="number"
                                                     v-model="last_dist_belt"
