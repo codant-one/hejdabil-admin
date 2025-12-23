@@ -98,14 +98,17 @@ const state_id = ref(null)
 const state_idOld = ref(null)
 const sale_price = ref(null)
 const purchase_date = ref(null)
+const chassis = ref(null)
 const sale_date = ref(null)
 const number_keys = ref(null)
 const service_book = ref(0)
 const summer_tire = ref(0)
 const winter_tire = ref(0)
 const last_service = ref(null)
+const last_service_date = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
+const last_dist_belt_date = ref(null)
 const comments = ref(null)
 const currency_id = ref(1)
 
@@ -284,6 +287,7 @@ async function fetchData() {
         state_id.value = vehicle.value.state_id ?? state_id.value
         state_idOld.value = vehicle.value.state_id ?? state_idOld.value
         sale_price.value = vehicle.value.sale_price ?? sale_price.value
+        chassis.value = vehicle.value.chassis ?? chassis.value
         purchase_date.value = vehicle.value.purchase_date === null ? formatDate(new Date()) : vehicle.value.purchase_date
         sale_date.value = vehicle.value.sale_date ?? sale_date.value
         number_keys.value = vehicle.value.number_keys ?? number_keys.value
@@ -291,8 +295,10 @@ async function fetchData() {
         summer_tire.value = vehicle.value.summer_tire ?? summer_tire.value
         winter_tire.value = vehicle.value.winter_tire ?? winter_tire.value
         last_service.value = vehicle.value.last_service ?? last_service.value
+        last_service_date.value = vehicle.value.last_service_date ?? last_service_date.value
         dist_belt.value = vehicle.value.dist_belt ?? dist_belt.value
-        dist_belt.value = vehicle.value.last_dist_belt ?? dist_belt.value
+        last_dist_belt.value = vehicle.value.last_dist_belt ?? last_dist_belt.value
+        last_dist_belt_date.value = vehicle.value.last_dist_belt_date ?? last_dist_belt_date.value
         comments.value = vehicle.value.comments ?? comments.value
 
         client_type_id.value = vehicle.value.client_purchase?.client_type_id ?? client_type_id.value
@@ -1065,9 +1071,12 @@ const onSubmit = () => {
             formData.append('summer_tire', summer_tire.value)
             formData.append('winter_tire', winter_tire.value)
             formData.append('last_service', last_service.value)
+            formData.append('last_service_date', last_service_date.value)
             formData.append('dist_belt', dist_belt.value)
             formData.append('last_dist_belt', last_dist_belt.value)
+            formData.append('last_dist_belt_date', last_dist_belt_date.value)
             formData.append('comments', comments.value)
+            formData.append('chassis', chassis.value)
 
             formData.append('type', 2)
             formData.append('save_client', save_client.value)
@@ -1277,7 +1286,7 @@ onBeforeUnmount(() => {
                                                 :rules="[requiredValidator]"
                                             />
                                             <VBtn 
-                                                class="btn-light w-100 w-md-auto px-4"
+                                                class="btn-light w-auto px-4"
                                                 @click="searchVehicleByPlate"
                                             >
                                                 <VIcon icon="custom-search" size="24" />
@@ -1368,6 +1377,13 @@ onBeforeUnmount(() => {
                                             class="field-solo-flat"
                                             placeholder="Välj datum"
                                         />
+                                    </div>
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
+                                        <VTextField
+                                            v-model="chassis"
+                                            :rules="[requiredValidator]"
+                                        /> 
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontrollbesiktning gäller tom" />
@@ -1657,16 +1673,17 @@ onBeforeUnmount(() => {
                                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                 >
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
                                         <VTextField
                                             v-model="number_keys"
                                             type="number"
-                                            label="Antal nycklar"
                                             min="1"
+                                            :rules="[requiredValidator]"
                                         />
                                     </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(16.66% - 16px);'">
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">
                                         <div class="d-flex flex-column">
-                                            <label class="v-label text-body-2 text-wrap"> Servicebok finns?</label>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
                                             <VRadioGroup v-model="service_book" inline class="radio-form">
                                                 <VRadio
                                                     v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1677,9 +1694,9 @@ onBeforeUnmount(() => {
                                             </VRadioGroup>
                                         </div>
                                     </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(16.66% - 16px);'">                                                
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">                                                
                                         <div class="d-flex flex-column">
-                                            <label class="v-label text-body-2 text-wrap">Sommardäck finns?</label>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
                                             <VRadioGroup v-model="summer_tire" inline class="radio-form">
                                                 <VRadio
                                                     v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1690,9 +1707,9 @@ onBeforeUnmount(() => {
                                             </VRadioGroup>
                                         </div>
                                     </div>
-                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(16.66% - 16px);'">                                                
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(15% - 16px);'">                                                
                                         <div class="d-flex flex-column">
-                                            <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
                                             <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                 <VRadio
                                                     v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1704,14 +1721,14 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
                                         <VTextField
                                             v-model="last_service"
-                                            label="Senaste service: Mil/datum"
                                         />
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                         <div class="d-flex flex-column">
-                                            <label class="v-label text-body-2 text-wrap">Kamrem bytt?</label>
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
                                             <VRadioGroup v-model="dist_belt" inline class="radio-form">
                                                 <VRadio
                                                     v-for="(radio, index) in optionsRadio"
@@ -1723,16 +1740,16 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
                                     <div v-if="dist_belt === 0" style="width: 100%;">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid Mil/datum" />
                                         <VTextField
                                             v-model="last_dist_belt"
-                                            label="Kamrem bytt vid Mil/datum"
                                         />
                                     </div>
                                     <div style="width: 100%;">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
                                         <VTextarea
                                             v-model="comments"
                                             rows="4"
-                                            label="Anteckningar"
                                         />
                                     </div>
                                 </div>
