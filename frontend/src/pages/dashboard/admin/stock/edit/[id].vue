@@ -7,6 +7,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
 import { useCostsStores } from '@/stores/useCosts'
@@ -27,6 +28,7 @@ const costsStores = useCostsStores()
 const documentsStores = useDocumentsStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
+const personInfoStores = usePersonInfoStores()
 
 const emitter = inject("emitter")
 const route = useRoute()
@@ -893,9 +895,49 @@ const removeDocument = async (document) => {
     return true
 }
 
-const searchCompany = async () => {
+const formatOrgNumber = () => {
+
+    let numbers = organization_number.value.replace(/\D/g, '')
+    if (numbers.length > 4) {
+        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+    }
+    organization_number.value = numbers
+}
+
+/**
+ * Determines if the given number belongs to a company (starts with 5) or a person.
+ * Swedish organization numbers start with 5, personal identity numbers do not.
+ * @param {string} orgNumber
+ * @returns {boolean}
+ */
+const isCompanyNumber = (orgNumber) => {
+    const cleanNumber = (orgNumber || '').replace(/[\s\-]/g, '')
+    return cleanNumber.startsWith('5')
+}
+
+/**
+ * Computed property to determine if any entity search is in progress
+ */
+const isEntitySearchLoading = computed(() => {
+    return companyInfoStores.loading || personInfoStores.loading
+})
+
+/**
+ * Search for entity information based on the organization/personal number.
+ * If the number starts with 5, searches in CompanyInfo (Bolagsverket).
+ * Otherwise, searches in SPAR (Statens Personadressregister).
+ */
+const searchEntity = async () => {
     if (!organization_number.value) return
 
+    if (isCompanyNumber(organization_number.value)) {
+        await searchCompany()
+    } else {
+        await searchPerson()
+    }
+}
+
+const searchCompany = async () => {
     try {
         const response = await companyInfoStores.getCompanyInfo(organization_number.value)
         
@@ -926,12 +968,58 @@ const searchCompany = async () => {
             } else {
                 address.value = ''
             }
+
+            // Set Street/City (Postort)
+            if (response.postadressOrganisation?.postadress?.postort) {
+                street.value = response.postadressOrganisation.postadress.postort
+            } else {
+                street.value = ''
+            }
         }
 
     } catch (error) {
         advisor.value = {
             type: 'error',
             message: 'Ingen företag hittades med det registreringsnumret',
+            show: true
+        }
+    }
+}
+
+/**
+ * Search for person information in SPAR (Statens Personadressregister) API.
+ */
+const searchPerson = async () => {
+    try {
+        const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+        if (response?.success && response?.data) {
+            const personData = response.data
+
+            // Set Client Type to Privat
+            const privatType = client_types.value.find(t => t.name === 'Privat')
+            if (privatType) {
+                client_type_id.value = privatType.id
+            }
+
+            // Set Name
+            fullname.value = personData.fullname || ''
+
+            // Set Postal Code
+            postal_code.value = personData.postnummer || ''
+
+            // Set Address
+            address.value = personData.adress || ''
+
+            // Set Street/City (Postort)
+            street.value = personData.postort || ''
+        }
+
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        advisor.value = {
+            type: 'error',
+            message: errorMessage,
             show: true
         }
     }
@@ -1520,8 +1608,8 @@ onBeforeUnmount(() => {
                                                     variant="tonal"
                                                     color="primary"
                                                     size="x-small"
-                                                    @click="searchCompany"
-                                                    :loading="companyInfoStores.loading"
+                                                    @click="searchEntity"
+                                                    :loading="isEntitySearchLoading"
                                                 />
                                             </div>
                                             <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
