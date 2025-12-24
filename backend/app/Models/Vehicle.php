@@ -233,6 +233,9 @@ class Vehicle extends Model
             'car_body_id' => ($request->car_body_id && $request->car_body_id !== 'null') ? $request->car_body_id : null,
             'fuel_id' => ($request->fuel_id && $request->fuel_id !== 'null') ? $request->fuel_id : null,
             'gearbox_id' => ($request->gearbox_id && $request->gearbox_id !== 'null') ? $request->gearbox_id : null,
+            'color' => $request->color === 'null' ? null : $request->color,
+            'mileage' => $request->mileage === 'null' ? null : $request->mileage,
+            'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
