@@ -110,8 +110,12 @@ class CarInfo
         // Mapear gearbox_id basado en attributes
         $gearboxId = $this->mapGearboxType($result['attributes'] ?? []);
 
+        $latestInspection = $this->mapLatestInspection($result['latest_inspection'] ?? null);
+        
         // Agregar los IDs mapeados al resultado
         $data['result']['fuel_id'] = $fuelId;
+        $data['result']['mileage'] = $latestInspection['inspection_km'];
+        $data['result']['control_inspection'] = $latestInspection['next_inspection'];
         $data['result']['car_body_id'] = $carBodyId;
         $data['result']['brand_id'] = $brandData['brand_id'];
         $data['result']['model_id'] = $brandData['model_id'];
@@ -120,6 +124,7 @@ class CarInfo
         $data['result']['gearbox_id'] = $gearboxId;
         // El VIN es el número de chasis real
         $data['result']['chassis_number'] = $result['vin'] ?? null;
+        $data['result']['color'] = $result['basic_color'] ?? null;
 
         return $data;
     }
@@ -257,5 +262,24 @@ class CarInfo
         }
 
         return null;
+    }
+
+    /**
+     * Mapear la última inspección desde la API
+     * Retorna un array con los campos: type, date, km (dividido entre 10), next_inspection
+     */
+    protected function mapLatestInspection(?array $latestInspection): array
+    {
+        if (!$latestInspection || empty($latestInspection)) {
+            return [
+                'inspection_km' => null,
+                'next_inspection' => null,
+            ];
+        }
+
+        return [
+            'inspection_km' => isset($latestInspection['km']) ? (int) ($latestInspection['km'] / 10) : null,
+            'next_inspection' => $latestInspection['next_inspection'] ?? null,
+        ];
     }
 }

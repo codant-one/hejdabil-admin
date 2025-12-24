@@ -17,7 +17,6 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
-import editIcon from "@/assets/images/icons/figma/edit.svg";
 
 const ability = useAppAbility()
 const authStores = useAuthStores()
@@ -441,6 +440,18 @@ const searchVehicleByPlate = async () => {
             // Actualizar caja de cambios (Växellåda)
             if (carRes.result.gearbox_id) {
                 gearbox_id.value = carRes.result.gearbox_id
+            }
+
+            if (carRes.result.color) {
+                color.value = carRes.result.color
+            }
+
+            if (carRes.result.mileage) {
+                mileage.value = carRes.result.mileage
+            }
+
+            if (carRes.result.control_inspection) {
+                control_inspection.value = carRes.result.control_inspection
             }
 
             advisor.value = {
