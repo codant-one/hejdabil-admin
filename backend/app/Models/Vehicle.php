@@ -236,6 +236,7 @@ class Vehicle extends Model
             'color' => $request->color === 'null' ? null : $request->color,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
+            'purchase_date' => now()->format('Y-m-d')
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
