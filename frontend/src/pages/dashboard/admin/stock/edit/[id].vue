@@ -454,6 +454,10 @@ const searchVehicleByPlate = async () => {
                 control_inspection.value = carRes.result.control_inspection
             }
 
+            if (carRes.result.chassis_number) {
+                chassis.value = carRes.result.chassis_number
+            }
+
             advisor.value = {
                 type: 'success',
                 message: 'Fordonsdata hämtades framgångsrikt',
