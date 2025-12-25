@@ -309,6 +309,7 @@ class Vehicle extends Model
             $model_id = $request->model_id === 'null' ? null : $request->model_id;
 
         $vehicle->update([
+            'reg_num' => $request->reg_num,
             'model_id' => $model_id,
             'car_body_id' => $request->car_body_id === 'null' ? null : $request->car_body_id,
             'gearbox_id' => $request->gearbox_id === 'null' ? null : $request->gearbox_id,
