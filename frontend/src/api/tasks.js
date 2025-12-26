@@ -17,6 +17,14 @@ class Tasks {
     comment(data) {
         return axios.post('/tasks/comment', data)
     }
+
+    updateComment(data) {
+        return axios.put(`/tasks/comment/${data.comment_id}`, data)
+    }
+
+    deleteComment(data) {
+        return axios.delete(`/tasks/comment/${data.comment_id}`, { data: data })
+    }
     
 }
 

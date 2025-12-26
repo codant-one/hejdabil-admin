@@ -24,8 +24,8 @@ class SwishPayout
 
         $this->baseUrl            = config('services.swish_payout.base_url');
         $this->callbackUrl         = config('services.swish_payout.callback_url');
-        $this->signingCert         = str_replace('\\', '/', storage_path('app/public/' . $supplier->pem_url)); //config('services.swish_payout.signing_cert');
-        $this->signingKey          = str_replace('\\', '/', storage_path('app/public/' . $supplier->key_url)); //config('services.swish_payout.signing_key');
+        $this->signingCert         = str_replace('\\', '/', storage_path('app/public/' . $supplier->pem_url));
+        $this->signingKey          = str_replace('\\', '/', storage_path('app/public/' . $supplier->key_url));
         $this->signingKeyPassword  = config('services.swish_payout.signing_key_password', 'swish');
 
         // Log para verificar las rutas

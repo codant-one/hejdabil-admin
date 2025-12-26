@@ -1736,7 +1736,7 @@ body {
   }
 }
 
-.card-form {
+.card-form, .card-drawer-form {
   .v-input {
     .v-input__control {
       .v-field {
@@ -1744,6 +1744,20 @@ body {
         .v-field__outline {
           color: #454545 !important;
           border-color: #e7e7e7 !important;
+        }
+      }
+    }
+  }
+}
+
+.readonly-form {
+  .v-input {
+    .v-input__control {
+      .v-field {
+        background-color: #f6f6f6;
+        .v-field__outline {
+          color: #878787 !important;
+          border-color: #E7E7E7 !important;
         }
       }
     }

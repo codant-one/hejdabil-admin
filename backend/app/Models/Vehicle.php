@@ -71,10 +71,6 @@ class Vehicle extends Model
         return $this->hasMany(VehicleTask::class, 'vehicle_id', 'id');
     }
 
-    public function costs(){
-        return $this->hasMany(VehicleCost::class, 'vehicle_id', 'id');
-    }
-
     public function documents(){
         return $this->hasMany(VehicleDocument::class, 'vehicle_id', 'id');
     }
@@ -239,7 +235,7 @@ class Vehicle extends Model
             'purchase_date' => now()->format('Y-m-d')
         ]);
         
-        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
+        $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
         if (Auth::user()->getRoleNames()[0] === 'Supplier') {
@@ -348,7 +344,7 @@ class Vehicle extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
-        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase', 'costs',  'client_purchase', 'client_sale'])->find($vehicle->id);
+        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase',  'client_purchase', 'client_sale'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
         if(!$vehicle->client_purchase && $request->type === '2') {
@@ -428,7 +424,7 @@ class Vehicle extends Model
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
         ]);
 
-        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase', 'costs'])->find($vehicle->id);
+        $vehicle = self::with(['supplier.user', 'user', 'model.brand', 'state', 'iva_purchase'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
         if($vehicle->supplier_id === null) {

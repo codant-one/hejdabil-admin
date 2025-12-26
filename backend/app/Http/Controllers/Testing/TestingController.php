@@ -208,7 +208,7 @@ class TestingController extends Controller
 
     public function vehicle() {
 
-        $vehicle = Vehicle::with(['user', 'model.brand', 'state', 'costs'])->find(1);
+        $vehicle = Vehicle::with(['user', 'model.brand', 'state'])->find(1);
 
         $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
         $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];

@@ -359,45 +359,42 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
-.btn-close-client {
-  height: 32px !important;
-}
-.card-form {
-  border-radius: 0 !important;
-}
-.border-img {
-  border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 6px;
-}
-.border-img .v-img__img--contain {
-  padding: 10px;
-}
-.right-drawer {
-  border-radius: 16px !important;
-}
+  .btn-close-client {
+    height: 32px !important;
+  }
+  .card-form {
+    border-radius: 0 !important;
+  }
+  .border-img {
+    border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 6px;
+  }
+  .border-img .v-img__img--contain {
+    padding: 10px;
+  }
 
-:deep(.right-drawer.v-navigation-drawer) {
-  border-color: transparent !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  box-shadow: none !important;
-}
+  :deep(.right-drawer.v-navigation-drawer) {
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    box-shadow: none !important;
+  }
 
-:deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
-  border: none !important;
-}
+  :deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
+    border: none !important;
+  }
 </style>
 
 <style>
-.right-drawer.v-navigation-drawer {
-  border: none !important;
-  border-color: transparent !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  box-shadow: none !important;
-}
+  .right-drawer.v-navigation-drawer {
+    border: none !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    box-shadow: none !important;
+  }
 
-.right-drawer.v-navigation-drawer .v-navigation-drawer__content {
-  border: none !important;
-}
+  .right-drawer.v-navigation-drawer .v-navigation-drawer__content {
+    border: none !important;
+  }
 </style>

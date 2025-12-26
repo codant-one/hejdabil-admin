@@ -29,7 +29,6 @@ use App\Http\Controllers\{
     ModelController,
     VehicleController,
     VehicleTaskController,
-    VehicleCostController,
     VehicleDocumentController,
     NoteController,
     AgreementController,
@@ -100,7 +99,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::apiResource('equipments', EquipmentController::class);
     Route::apiResource('vehicles', VehicleController::class);
     Route::apiResource('tasks', VehicleTaskController::class);
-    Route::apiResource('costs', VehicleCostController::class);
     Route::apiResource('documents', VehicleDocumentController::class);
     Route::apiResource('notes', NoteController::class);
     Route::apiResource('agreements', AgreementController::class);
@@ -158,6 +156,8 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Tasks
     Route::group(['prefix' => 'tasks'], function () {
         Route::post('comment', [VehicleTaskController::class, 'comment']);
+        Route::put('comment/{id}', [VehicleTaskController::class, 'updateComment']);
+        Route::delete('comment/{id}', [VehicleTaskController::class, 'deleteComment']);
     });
 
     //Notes

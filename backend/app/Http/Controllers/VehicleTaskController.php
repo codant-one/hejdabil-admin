@@ -133,4 +133,42 @@ class VehicleTaskController extends Controller
             ], 500);
         }
     }
+
+    public function updateComment(Request $request, $id)
+    {
+        try {
+
+            VehicleTask::updateComment($request, $id);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteComment(Request $request, $id)
+    {
+        try {
+
+            VehicleTask::deleteComment($id);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }

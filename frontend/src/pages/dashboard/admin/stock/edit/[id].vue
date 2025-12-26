@@ -1,16 +1,15 @@
 <script setup>
 
+import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { ref } from 'vue'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
-import { formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useTasksStores } from '@/stores/useTasks'
-import { useCostsStores } from '@/stores/useCosts'
 import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -23,7 +22,6 @@ const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
 const tasksStores = useTasksStores()
-const costsStores = useCostsStores()
 const documentsStores = useDocumentsStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
@@ -48,19 +46,26 @@ const role = ref(null)
 const isRequestOngoing = ref(true)
 const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
+const isConfirmTaskMobileDialogVisible = ref(false)
 const isConfirmUpdateTaskDialogVisible = ref(false)
-const isConfirmCreateCostDialogVisible = ref(false)
+const isConfirmUpdateTaskMobileDialogVisible = ref(false)
 const isConfirmCreateDocumentDialogVisible = ref(false)
 const isConfirmSendDocumentDialogVisible = ref(false)
 
-const selectedTask = ref({})
+const selectedTask = ref({
+    measure: null,
+    description: null,
+    cost: null,
+    start_date: null,
+    end_date: null
+})
+
 const comment = ref(null)
 
 const isFormValid = ref(false)
 const refForm = ref()
 const refTask = ref()
 const refUpdate = ref()
-const refCost = ref()
 const refDocument = ref()
 const refSend = ref()
 const currentTab = ref('tab-1')
@@ -113,12 +118,7 @@ const last_dist_belt_date = ref(null)
 const comments = ref(null)
 const currency_id = ref(1)
 
-const costs = ref([])
-const type = ref([])
-const dateCost = ref([])
 const description = ref([])
-const value = ref([])
-const selectedCost = ref([])
 
 const today = new Date()
 const formattedDate = ref(today.toISOString().split('T')[0])
@@ -149,7 +149,6 @@ const email = ref('')
 const save_client = ref(true)
 const disabled_client = ref(false)
 
-const isCreateCost = ref(true)
 const tasks = ref([])
 const measure = ref(null)
 const cost = ref(null)
@@ -217,6 +216,27 @@ const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
 }
 
+const formatDateDisplay = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}/${month}/${day}`
+}
+
+const formatCommentDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const months = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'dec']
+    const day = date.getDate()
+    const month = months[date.getMonth()]
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day} ${month} ${year}, ${hours}:${minutes}`
+}
+
 watchEffect(fetchData)
 
 async function fetchData() {
@@ -271,7 +291,6 @@ async function fetchData() {
         vehicle_id.value = vehicle.value.id ?? vehicle_id.value
         reg_num.value = vehicle.value.reg_num ?? reg_num.value
         tasks.value = vehicle.value.tasks ?? tasks.value
-        costs.value = vehicle.value.costs ?? costs.value
         documents.value = vehicle.value.documents ?? documents.value
 
         mileage.value = vehicle.value.mileage ?? mileage.value
@@ -499,6 +518,7 @@ const createTask = async () => {
                 formData.append('vehicle_id', vehicle_id.value)
                 formData.append('measure', measure.value)
                 formData.append('cost', cost.value)
+                formData.append('description', description.value)
                 formData.append('start_date', start_date.value)
                 formData.append('end_date', end_date.value)
 
@@ -556,6 +576,7 @@ const updateTask = async () => {
                 formData.append('_method', 'PUT')
                 formData.append('vehicle_id', selectedTask.value.vehicle_id)
                 formData.append('measure', selectedTask.value.measure)
+                formData.append('description', selectedTask.value.description)
                 formData.append('cost', selectedTask.value.cost)
                 formData.append('start_date', selectedTask.value.start_date)
                 formData.append('end_date', selectedTask.value.end_date)
@@ -613,6 +634,7 @@ const updateTask = async () => {
 
 const closeTask = () => {
     isConfirmUpdateTaskDialogVisible.value = false
+    isConfirmUpdateTaskMobileDialogVisible.value = false
     selectedTask.value.vehicle_id = null
     selectedTask.value.measure = null
     selectedTask.value.cost = null
@@ -620,10 +642,19 @@ const closeTask = () => {
     selectedTask.value.end_date = null
 }
 
-const showTask = taskData => {
-    isConfirmUpdateTaskDialogVisible.value = true
-    selectedTask.value = { ...taskData }
+const showTask = (taskData, isMobile = false) => {
+    selectedTask.value = {
+        ...taskData,
+        start_date: taskData.start_date ?? null,
+        end_date: taskData.end_date ?? null
+    }
     selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
+    
+    if (isMobile) {
+        isConfirmUpdateTaskMobileDialogVisible.value = true
+    } else {
+        isConfirmUpdateTaskDialogVisible.value = true
+    }
 }
 
 const removeTask = async (task) => {
@@ -653,26 +684,126 @@ const sendComment = async () => {
     if(comment.value !== null && comment.value !== '') {
         isRequestOngoing.value = true
         
-        await tasksStores.sendComment({ id: selectedTask.value.id, comment: comment.value})
+        const taskId = selectedTask.value.id
+        
+        await tasksStores.sendComment({ id: taskId, comment: comment.value})
         
         isRequestOngoing.value = false
         
         await fetchData()
+        
+        // Actualizar selectedTask con los datos frescos
+        const updatedTask = tasks.value.find(item => item.id === taskId)
+        if (updatedTask) {
+            selectedTask.value = {
+                ...updatedTask,
+                cost: formatDecimal(updatedTask.cost)
+            }
+        }
 
         comment.value = null
+
+        advisor.value = {
+            type: 'success',
+            message: 'Kommentar skapad!',
+            show: true
+        }
+
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
 
         return true
     }
 }
 
-const showCost = costData => {
-    isConfirmCreateCostDialogVisible.value = true
-    selectedCost.value = { ...costData }
-    type.value = costData.type
-    description.value = costData.description
-    dateCost.value = costData.date
-    value.value = formatDecimal(costData.value)
-    isCreateCost.value = false
+const editComment = async (commentData) => {
+    if(commentData.comment !== null && commentData.comment !== '') {
+        isRequestOngoing.value = true
+        
+        const taskId = selectedTask.value.id
+        
+        await tasksStores.updateComment({ 
+            task_id: taskId, 
+            comment_id: commentData.id, 
+            comment: commentData.comment
+        })
+        
+        isRequestOngoing.value = false
+        
+        await fetchData()
+        
+        // Actualizar selectedTask con los datos frescos
+        const updatedTask = tasks.value.find(item => item.id === taskId)
+        if (updatedTask) {
+            selectedTask.value = {
+                ...updatedTask,
+                cost: formatDecimal(updatedTask.cost)
+            }
+        }
+
+        advisor.value = {
+            type: 'success',
+            message: 'Kommentar uppdaterad!',
+            show: true
+        }
+
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+
+        return true
+    }
+}
+
+const deleteComment = async (commentData) => {
+    
+    isRequestOngoing.value = true
+    
+    const taskId = selectedTask.value.id
+    
+    await tasksStores.deleteComment({ 
+        task_id: taskId, 
+        comment_id: commentData.id
+    })
+    
+    isRequestOngoing.value = false
+    
+    await fetchData()
+    
+    // Actualizar selectedTask con los datos frescos
+    const updatedTask = tasks.value.find(item => item.id === taskId)
+    if (updatedTask) {
+        selectedTask.value = {
+            ...updatedTask,
+            cost: formatDecimal(updatedTask.cost)
+        }
+    }
+
+    advisor.value = {
+        type: 'success',
+        message: 'Kommentar borttagen!',
+        show: true
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
+
 }
 
 const formatDecimal = (value) => {
@@ -683,122 +814,6 @@ const formatDecimal = (value) => {
     }
 
     return number.toString();
-}
-
-const handleCost = async () => {
-    refCost.value?.validate().then(async({ valid }) => {
-        if (valid) {
-            let formData = new FormData()
-
-            formData.append('vehicle_id', vehicle_id.value)
-            formData.append('type', type.value)
-            formData.append('description', description.value)
-            formData.append('value', value.value)
-            formData.append('date', dateCost.value)
-
-            isRequestOngoing.value = true
-
-            if(isCreateCost.value) {
-                costsStores.addCost(formData)
-                    .then(async(res) => {
-                        if (res.data.success) {
-                            advisor.value = {
-                                type: 'success',
-                                message: 'Kostnader skapad!',
-                                show: true
-                            }
-                        }
-                        
-                        isRequestOngoing.value = false
-                        await fetchData()
-                    })
-                    .catch((err) => {
-                        
-                        advisor.value = {
-                            type: 'error',
-                            message: err.message,
-                            show: true
-                        }
-
-                        isRequestOngoing.value = false
-                    })
-            } else {
-
-                formData.append('id', selectedCost.value.id)
-                formData.append('_method', 'PUT')
-                formData.append('vehicle_id', selectedCost.value.vehicle_id)
-                formData.append('description', description.value)
-                formData.append('value', value.value)
-
-                let data = {
-                    data: formData, 
-                    id: selectedCost.value.id
-                }
-
-                costsStores.updateCost(data)
-                    .then(async(res) => {
-                        if (res.data.success) {
-                            advisor.value = {
-                                type: 'success',
-                                message: 'Kostnader uppdaterad!',
-                                show: true
-                            }
-                        }
-
-                        isRequestOngoing.value = false
-                        await fetchData()
-                    })
-                    .catch((err) => {
-                        
-                        advisor.value = {
-                            type: 'error',
-                            message: err.message,
-                            show: true
-                        }
-
-                        isRequestOngoing.value = false
-                    })
-            }
-            
-            isCreateCost.value = true
-            isConfirmCreateCostDialogVisible.value = false
-            type.value = null
-            description.value = null
-            value.value = null
-            dateCost.value = null
-
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
-        }
-    })
-}
-
-const removeCost = async (cost) => {
-
-    let res = await costsStores.deleteCost(cost.id)
-
-    advisor.value = {
-        type: res.data.success ? 'success' : 'error',
-        message: res.data.success ? 'Kostnader borttagen!' : res.data.message,
-        show: true
-    }
-
-    await fetchData()
-
-    setTimeout(() => {
-        advisor.value = {
-        type: '',
-        message: '',
-        show: false
-        }
-    }, 3000)
-
-    return true
 }
 
 const showDocument = () => {
@@ -1359,13 +1374,9 @@ onBeforeUnmount(() => {
                         </VTab>
                         <VTab value="tab-5">
                             <VIcon size="24" icon="custom-atgarder-2" />
-                            <span>Åtgärder</span>
+                            <span>Åtgärder / Kostnader</span>
                         </VTab>
                         <VTab value="tab-6">
-                            <VIcon size="24" icon="custom-atgarder-2" />
-                            <span>Kostnader</span>
-                        </VTab>
-                        <VTab value="tab-7">
                             <VIcon size="24" icon="custom-dokument-ilager" />
                             <span>Dokument</span>
                         </VTab>
@@ -1903,203 +1914,145 @@ onBeforeUnmount(() => {
                             </VWindowItem>
                             <!-- Planerade åtgärder -->
                             <VWindowItem value="tab-5" class="px-md-0">
-                                <div class="d-flex flex-column flex-md-row text-center justify-md-space-between gap-x-6" :class="tasks.length === 0 ? 'border-bottom-secondary' : ''">
-                                    <h6 class="text-md-h4 text-h5 font-weight-medium mb-5 mb-0">
+                                <div class="d-flex gap-4 align-center flex-wrap pb-4 w-100">           
+                                    <h6 class="title-tab">
                                         Övrigt
                                     </h6>
-                                    <VBtn class="w-100 w-md-auto" @click="isConfirmTaskDialogVisible = true">
+                                    <VSpacer />                                   
+                                    <VBtn
+                                        v-if="$can('edit', 'stock') && windowWidth >= 1024"
+                                        class="btn-gradient"
+                                        @click="isConfirmTaskDialogVisible = true">
+                                        <VIcon icon="custom-plus" size="24" />
+                                        Lägg till åtgärd
+                                    </VBtn>
+                                    <VBtn
+                                        v-if="$can('edit', 'stock') && windowWidth < 1024"
+                                        class="btn-gradient"
+                                        @click="isConfirmTaskMobileDialogVisible = true">
+                                        <VIcon icon="custom-plus" size="24" />
                                         Lägg till åtgärd
                                     </VBtn>
                                 </div>
-
-                                <div v-if="tasks.length === 0" class="mt-10 text-center">Inga åtgärder hittades</div>
-
-                                <VRow no-gutters v-else class="mt-5">
-                                    <VCol
-                                        v-for="(task, index) in tasks"
-                                        :key="index"
-                                        cols="12" md="4"
+                                <div v-if="tasks.length === 0" 
+                                    class="mt-10 text-center empty-state"
+                                    :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
                                     >
-                                        <VCard
-                                            flat
-                                            color="#E3DEEB"
-                                            class="mx-1 my-1"
-                                            style="box-shadow: none !important; border-radius: 12px !important;"
-                                        >
-                                            <VCardItem>
-                                                <template #prepend>
-                                                    <VIcon
-                                                    size="1.9rem"
-                                                    icon="mdi-note-outline"
-                                                    />
-                                                </template>
-                                            <VCardTitle> {{ index + 1 }}</VCardTitle>
-                                            </VCardItem>
-
-                                            <VCardText>
-                                                <p class="clamp-text mb-0">
-                                                    <strong>Vad ska göras?:</strong> {{ task.measure }}
-                                                </p>
-                                                <p class="clamp-text mb-0">
-                                                    <strong>Beräknad kostnad (kr):</strong> {{ task.cost }} kr
-                                                </p>
-                                                <p class="clamp-text mb-0">
-                                                    <strong>Planerat startdatum:</strong> {{ task.start_date }}
-                                                </p>
-                                                <p class="clamp-text mb-0">
-                                                    <strong>Förväntat slutdatum:</strong> {{ task.end_date }}
-                                                </p>
-                                                <p class="clamp-text mb-0 mt-2">
-                                                    <VExpansionPanels>
-                                                        <VExpansionPanel>
-                                                            <VExpansionPanelTitle>kommentarer</VExpansionPanelTitle>
-                                                            <VExpansionPanelText>
-                                                                <VAlert 
-                                                                    v-for="(comment, index) in task.comments" 
-                                                                    :key="index"
-                                                                    variant="outlined" 
-                                                                    color="secondary"
-                                                                    class="my-1">
-                                                                    <div class="d-flex flex-column">
-                                                                        {{ comment.comment }}
-                                                                        <span class="text-xs">  
-                                                                            {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
-                                                                                year: 'numeric', 
-                                                                                month: '2-digit', 
-                                                                                day: '2-digit', 
-                                                                                hour: '2-digit', 
-                                                                                minute: '2-digit',
-                                                                                hour12: false
-                                                                            }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
-                                                                        </span>                                        
-                                                                    </div>            
-                                                                </VAlert>                                
-                                                            </VExpansionPanelText>
-                                                        </VExpansionPanel>
-                                                    </VExpansionPanels>
-                                                </p>
-                                            </VCardText>
-
-                                            <VCardText class="d-flex justify-space-between align-center flex-wrap">
-                                            <div class="text-no-wrap">
-                                                <VAvatar
-                                                    color="#E3DEEB"
-                                                    :variant="task.user.avatar ? 'outlined' : 'tonal'"
-                                                    size="34"
-                                                >
-                                                    <VImg
-                                                        v-if="task.user.avatar"
-                                                        style="border-radius: 50%;"
-                                                        :src="themeConfig.settings.urlStorage + task.user.avatar"
-                                                    />
-                                                    <span v-else>{{ avatarText(task.user.name) }}</span>
-                                                </VAvatar>
-                                                <span class="ms-2">{{ task.user.name }} {{ task.user.last_name }}</span>
-                                            </div>
-
-                                            <div class="d-flex align-center">
-                                                <VIcon
-                                                    icon="tabler-edit"
-                                                    class="me-1 cursor-pointer"
-                                                    @click="showTask(task)"
-                                                />
-                                                <VIcon
-                                                    icon="tabler-trash"
-                                                    class="cursor-pointer"
-                                                    @click="removeTask(task)"
-                                                />
-                                            </div>
-                                            </VCardText>
-                                        </VCard>
-                                    </VCol>
-                                </VRow>
-                            </VWindowItem>
-                            <!-- Kostnader -->
-                            <VWindowItem value="tab-6" class="px-md-0">
-                                <div class="d-flex align-center flex-wrap pb-4 w-100 w-md-auto" :class="costs.length === 0 ? 'border-bottom-secondary' : ''">           
-                                    <VSpacer class="d-none d-md-block"/>   
+                                    <VIcon
+                                        :size="$vuetify.display.mdAndDown ? 80 : 120"
+                                        icon="custom-steering-wheel"
+                                    />
+                                    <div class="empty-state-content">
+                                        <div class="empty-state-title">Ditt fordonslager är tomt</div>
+                                        <div class="empty-state-text">
+                                            Registrera de fordon du har till salu för att enkelt hantera ditt lager och koppla dem till fakturor.
+                                        </div>
+                                    </div>
                                     <VBtn
-                                        v-if="$can('edit', 'stock')"
-                                        class="w-100 w-md-auto"
-                                        prepend-icon="tabler-plus"
-                                        @click="isConfirmCreateCostDialogVisible = true">
-                                        Lägg till kostnad
+                                        v-if="$can('edit', 'stock') && windowWidth >= 1024"
+                                        class="btn-ghost"
+                                        @click="isConfirmTaskDialogVisible = true"
+                                        >
+                                        Lägg till åtgärd
+                                        <VIcon icon="custom-arrow-right" size="24" />
+                                    </VBtn>
+                                    <VBtn
+                                        v-if="$can('edit', 'stock') && windowWidth < 1024"
+                                        class="btn-ghost"
+                                        @click="isConfirmTaskMobileDialogVisible = true"
+                                        >
+                                        Lägg till åtgärd
+                                        <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                 </div>
-                                <div v-if="costs.length === 0" class="mt-10 text-center">Ingen kostnader registrerade ännu</div>
-                                <VTable v-else class="text-no-wrap">
-                                    <!-- 👉 table head -->
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">Händelse</th>
-                                            <th scope="col">Datum</th>
-                                            <th scope="col">Typ</th>
-                                            <th scope="col" class="text-end">Belopp (kr)</th>
-                                            <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
-                                        </tr>
-                                    </thead>
-                                    <!-- 👉 table body -->
-                                    <tbody>
-                                        <tr 
-                                            v-for="(cost, index) in costs"
-                                            :key="index"
-                                            style="height: 3rem;">
 
-                                            <td> {{ index + 1 }} </td>
-                                            <td> {{ cost.date }} </td>
-                                            <td class="text-wrap"> {{ cost.type }} </td>
-                                            <td class="text-end"> {{ formatNumber(cost.value ?? 0) }} kr</td>
-                                            <!-- 👉 Actions -->
-                                            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
-                                            <VMenu>
-                                                <template #activator="{ props }">
-                                                    <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                                                        <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                                                        <path d="M19 16v6"></path>
-                                                        <path d="M22 19l-3 3l-3 -3"></path>
-                                                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                                                        </svg>
-                                                    </VBtn>
-                                                </template>
+                                <div 
+                                    v-else
+                                    class="d-flex flex-wrap gap-4"
+                                >
+                                    <VCard
+                                        v-for="(task, index) in tasks"
+                                        :key="index"
+                                        flat
+                                        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33.333% - 11px);'"
+                                        class="border-card-comment py-2 px-4 readonly-form d-flex flex-column"
+                                    >
+                                        <VCardText 
+                                            class="d-flex align-center px-0 border-comments" 
+                                            style="min-height: 48px; max-height: 48px;"
+                                            > 
+                                            <span class="title-comments" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ task.measure }}</span>
+                                            <VSpacer />
+                                            <VIcon 
+                                                icon="custom-waste" 
+                                                size="24" 
+                                                class="cursor-pointer"
+                                                style="flex-shrink: 0;"
+                                                @click="removeTask(task)"
+                                            />
+                                        </VCardText>
 
-                                                <VList>
-                                                    <VListItem v-if="$can('edit', 'stock')" @click="showCost(cost)">
-                                                        <template #prepend>
-                                                            <VIcon icon="tabler-edit" />
-                                                        </template>
-                                                        <VListItemTitle>Redigera</VListItemTitle>
-                                                    </VListItem>
-                                                    <VListItem v-if="$can('delete','stock')" @click="removeCost(cost)">
-                                                        <template #prepend>
-                                                        <VIcon icon="tabler-trash" />
-                                                        </template>
-                                                        <VListItemTitle>Ta bort</VListItemTitle>
-                                                    </VListItem>
-                                                </VList>
-                                            </VMenu>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <!-- 👉 table footer  -->
-                                    <tfoot v-show="!costs.length">
-                                    <tr>
-                                        <td
-                                        colspan="6"
-                                        class="text-center">
-                                        Uppgifter ej tillgängliga
-                                        </td>
-                                    </tr>
-                                    </tfoot>
-                                </VTable>
-                                <VCardText class="d-block d-md-flex text-center align-center flex-wrap px-0 py-3" v-if="costs.length > 0">
-                                    <span class="d-block d-md-flex text-sm text-disabled">
-                                        <strong class="d-block me-md-5">Totalt: {{ formatNumber(costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr</strong>
-                                    </span>
-                                </VCardText>
+                                        <div class="d-block gap-4 px-0 mt-auto">
+                                            <div class="text-comments mt-4" v-if="task.description">
+                                                {{ task.description }}
+                                            </div>
+            
+                                            <VTextField
+                                                type="number"
+                                                v-model="task.cost"
+                                                suffix="(kr)"
+                                                readonly
+                                                class="my-4"
+                                            />
+
+                                            <div class="d-flex gap-4 mb-4">
+                                                <VTextField
+                                                    :value="formatDateDisplay(task.start_date)"
+                                                    readonly
+                                                />
+                                                <VTextField
+                                                    :value="formatDateDisplay(task.end_date)"
+                                                    readonly
+                                                />
+
+                                            </div>         
+
+                                            <div class="d-flex align-center px-0">
+                                                <div class="text-no-wrap">
+                                                    <VAvatar
+                                                        color="#E3DEEB"
+                                                        :variant="task.user.avatar ? 'outlined' : 'tonal'"
+                                                        size="40"
+                                                    >
+                                                        <VImg
+                                                            v-if="task.user.avatar"
+                                                            style="border-radius: 50%;"
+                                                            :src="themeConfig.settings.urlStorage + task.user.avatar"
+                                                        />
+                                                        <span v-else>{{ avatarText(task.user.name) }}</span>
+                                                    </VAvatar>
+                                                    <span class="ms-2 text-comments text-neutral-3">{{ task.user.name }} {{ task.user.last_name }}</span>
+                                                </div>
+
+                                                <VSpacer />
+
+                                                <div class="d-flex align-center">
+                                                    <VIcon 
+                                                        icon="custom-comments" 
+                                                        size="24" 
+                                                        class="cursor-pointer"
+                                                        @click="showTask(task, windowWidth < 1024 ? true : false)"
+                                                    />
+
+                                                    <span class="ms-2 text-comments text-neutral-3">{{ task.comments.length }}</span>
+                                                </div>
+                                            </div>
+                                        </div>    
+                                    </VCard>
+                                </div>
                             </VWindowItem>
                             <!-- Dokument -->
-                            <VWindowItem value="tab-7" class="px-md-0">
+                            <VWindowItem value="tab-6" class="px-md-0">
                                 <div 
                                     class="d-flex gap-4 align-center flex-wrap pb-4 w-100 w-md-auto" 
                                     :class="windowWidth < 1024 === 0 ? 'flex-column' : ''">           
@@ -2144,7 +2097,7 @@ onBeforeUnmount(() => {
                                     <VBtn
                                         class="btn-ghost"
                                         v-if="$can('create', 'stock')"
-                                        @click="isConfirmCreateDialogVisible = true"
+                                        @click="showDocument"
                                         >
                                         Lägg till fordon
                                         <VIcon icon="custom-arrow-right" size="24" />
@@ -2294,122 +2247,420 @@ onBeforeUnmount(() => {
             </VForm>
         </VDialog>
 
-        <!-- 👉 Create task -->
+        <!-- 👉 Create task  -->
+        <VNavigationDrawer
+            temporary
+            :width="550"
+            location="end"
+            class="scrollable-content right-drawer rounded-left-4"
+            :model-value="isConfirmTaskDialogVisible"
+        >
+            <!-- 👉 Title -->
+            <div class="d-flex align-center pa-6 pb-1">
+                <h6 class="title-modal font-blauer">
+                    Lägg till åtgärd för fordonet
+                </h6>
+
+            <VSpacer />
+
+            <!-- 👉 Close btn -->
+            <VBtn
+                icon
+                class="btn-white"
+                @click="isConfirmTaskDialogVisible = false"
+            >
+                <VIcon size="32" icon="custom-cancel" />
+            </VBtn>
+            </div>
+
+            <VDivider class="mt-4" />
+
+            <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
+                <VCard flat class="card-drawer-form">
+                    <VCardText>
+                        <!-- 👉 Form -->
+                        <VForm
+                            ref="refTask"
+                            @submit.prevent="createTask">
+                            
+                            <VRow>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="measure"
+                                        label="¿Vad ska goras?*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextarea
+                                        v-model="description"
+                                        rows="4"
+                                        label="Beskrivning"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="cost"
+                                        type="number"
+                                        min="0"
+                                        label="Beräknad kostnad (kr)*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="start_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        :rules="[requiredValidator]"
+                                        label="Startdatum*"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="end_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        label="Slutdatum"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12">
+                                    <VBtn
+                                        class="btn-light me-3"
+                                        @click="isConfirmTaskDialogVisible = false">
+                                        Avbryt
+                                    </VBtn>
+                                    <VBtn class="btn-gradient" type="submit">
+                                        Lägg till
+                                    </VBtn>
+                                </VCol>
+                            </VRow>
+                        </VForm>
+                    </VCardText>
+                </VCard>
+            </PerfectScrollbar>
+        </VNavigationDrawer>
+        
         <VDialog
-            v-model="isConfirmTaskDialogVisible"
-            persistent
-            class="action-dialog" >
+            v-model="isConfirmTaskMobileDialogVisible"
+            fullscreen
+            :scrim="false"
+            transition="dialog-bottom-transition"
+            class="action-dialog dialog-fullscreen" >
             
             <VBtn
                 icon
                 class="btn-white close-btn"
-                @click="isConfirmTaskDialogVisible = false"
+                @click="isConfirmTaskMobileDialogVisible = false"
             >
                 <VIcon size="16" icon="custom-close" />
             </VBtn>
-
-            <!-- Dialog Content -->
             <VForm
                 ref="refTask"
+                class="h-100"
                 @submit.prevent="createTask">
-                <VCard>
-                    <VCardText class="dialog-title-box">
-                        <VIcon size="32" icon="custom-plus" class="action-icon" />
+                <VCard flat class="card-drawer-form h-100">
+                    <VCardText class="dialog-title-box my-8">
                         <div class="dialog-title">
                             Lägg till åtgärd för fordonet
                         </div>
                     </VCardText>
-                    <VCardText class="dialog-subtitle text-center mb-4">
-                        Fyll i planerad åtgärd nedan
-                    </VCardText>
                     <VCardText class="pt-0">
                         <VRow>
-                            <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="measure"
-                                    label="Vad ska göras?"
-                                    :rules="[requiredValidator]"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="cost"
-                                    type="number"
-                                    min="0"
-                                    label="Beräknad kostnad (kr)"
-                                    :rules="[requiredValidator]"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="start_date"
-                                    density="compact"
-                                    :config="endDateTimePickerConfig"
-                                    :rules="[requiredValidator]"
-                                    label="Planerat startdatum"
-                                    clearable
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="end_date"
-                                    density="compact"
-                                    :config="endDateTimePickerConfig"
-                                    label="Förväntat slutdatum"
-                                    clearable
-                                />
-                            </VCol>
-                        </VRow>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="measure"
+                                        label="¿Vad ska goras?*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextarea
+                                        v-model="description"
+                                        rows="4"
+                                        label="Beskrivning"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="cost"
+                                        type="number"
+                                        min="0"
+                                        label="Beräknad kostnad (kr)*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="start_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        :rules="[requiredValidator]"
+                                        label="Startdatum*"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="end_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        label="Slutdatum"
+                                        clearable
+                                    />
+                                </VCol>
+                            </VRow>
                         
                     </VCardText>
-
                     <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
                             class="btn-light"
-                            @click="isConfirmTaskDialogVisible = false">
+                            @click="isConfirmTaskMobileDialogVisible = false">
                             Avbryt
                         </VBtn>
                         <VBtn class="btn-gradient" type="submit">
-                            Spara
+                            Lägg till
                         </VBtn>
                     </VCardText>
                 </VCard>
             </VForm>
         </VDialog>
+      
+        <!-- 👉 Update task  -->
+        <VNavigationDrawer
+            temporary
+            :width="550"
+            location="end"
+            class="scrollable-content right-drawer rounded-left-4"
+            :model-value="isConfirmUpdateTaskDialogVisible"
+            @update:model-value="(val) => !val && closeTask()"
+        >
+            <!-- 👉 Title -->
+            <div class="d-flex align-center pa-6 pb-1">
+                <h6 class="title-modal font-blauer">
+                    Lägg till åtgärd för fordonet
+                </h6>
 
-        <!-- 👉 Update task -->
+            <VSpacer />
+
+            <!-- 👉 Close btn -->
+            <VBtn
+                icon
+                class="btn-white"
+                @click="closeTask"
+            >
+                <VIcon size="32" icon="custom-cancel" />
+            </VBtn>
+            </div>
+
+            <VDivider class="mt-4" />
+
+            <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
+                <VCard flat class="card-drawer-form">
+                    <VCardText>
+                        <!-- 👉 Form -->
+                        <VForm
+                            ref="refUpdate"
+                            @submit.prevent="updateTask">
+                            
+                            <VRow>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="selectedTask.measure"
+                                        label="¿Vad ska goras?*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextarea
+                                        v-model="selectedTask.description"
+                                        rows="4"
+                                        label="Beskrivning"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="selectedTask.cost"
+                                        type="number"
+                                        min="0"
+                                        label="Beräknad kostnad (kr)*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="selectedTask.start_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        :rules="[requiredValidator]"
+                                        label="Startdatum*"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="selectedTask.end_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        label="Slutdatum"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12">
+                                    <VBtn
+                                        class="btn-light me-3"
+                                        @click="closeTask">
+                                        Avbryt
+                                    </VBtn>
+                                    <VBtn class="btn-gradient" type="submit">
+                                        Uppdatering
+                                    </VBtn>
+                                </VCol>
+                            </VRow>
+
+                            <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                            <div class="d-flex gap-2 mb-6">
+                                <VIcon size="24" icon="custom-comments-2" class="action-icon" />
+                                <span class="span-comments">
+                                   Kommentarer
+                                </span>
+                            </div>
+
+                            <VExpansionPanels class="d-none">
+                                <VExpansionPanel>
+                                    <VExpansionPanelTitle>Aktiviteter</VExpansionPanelTitle>
+                                    <VExpansionPanelText>
+                                        <div 
+                                            v-for="(history, index) in selectedTask.histories" 
+                                            :key="index" 
+                                            :class="selectedTask.histories.length > 1 && index !== selectedTask.histories.length - 1 ? 'py-2 border-bottom-secondary' : 'pt-2'"
+                                            class="d-flex flex-column">
+                                            <span v-if="history.is_created"><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
+                                            <span v-else><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> uppdaterade kortet.</span>
+                                            <span>  {{}}
+                                                {{ new Date(history.created_at).toLocaleString('sv-SE', { 
+                                                    year: 'numeric', 
+                                                    month: '2-digit', 
+                                                    day: '2-digit', 
+                                                    hour: '2-digit', 
+                                                    minute: '2-digit',
+                                                    hour12: false
+                                                }) }}
+                                            </span>                                        
+                                        </div>                                  
+                                    </VExpansionPanelText>
+                                </VExpansionPanel>
+                            </VExpansionPanels>
+         
+                            <div class="d-flex flex-column gap-6">
+                                <VTextField
+                                    v-model="comment"
+                                    placeholder="Skriv en kommentar"
+                                />
+                                <VBtn class="btn-light w-auto align-self-start" @click="sendComment">
+                                    Kommentar
+                                </VBtn>
+                            </div>
+
+                            <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                            <div 
+                                v-for="(comment, index) in selectedTask.comments" 
+                                :key="index"
+                                class="d-flex flex-column gap-2 justify-center mb-4">
+                                <div class="text-no-wrap w-100">
+                                    <VAvatar
+                                        color="#E3DEEB"
+                                        :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                                        size="40"
+                                    >
+                                        <VImg
+                                            v-if="comment.user.avatar"
+                                            style="border-radius: 50%;"
+                                            :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                                        />
+                                        <span v-else>{{ avatarText(comment.user.name) }}</span>
+                                    </VAvatar>
+                                    <span class="ms-2 user-comments">
+                                        {{ comment.user.name }} {{ comment.user.last_name }}
+
+                                        <span class="date-comments">  
+                                            {{ formatCommentDate(comment.created_at) }}
+                                        </span>
+                                    </span>
+                                    
+                                </div>
+                                <VTextField
+                                    v-model="comment.comment"
+                                    placeholder="Kommentar.."
+                                />
+                                <div class="d-flex gap-4">
+                                    <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
+                                    <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                                </div>
+                            </div>
+                        </VForm>
+                    </VCardText>
+                </VCard>
+            </PerfectScrollbar>
+        </VNavigationDrawer>
+        
+        <!-- 👉 Update task mobile -->
         <VDialog
-            v-model="isConfirmUpdateTaskDialogVisible"
-            scrollable
-            persistent
-            class="v-dialog-sm">
-            <!-- Dialog close btn -->
-                
-            <DialogCloseBtn @click="closeTask" />
-
-            <!-- Dialog Content -->
+            v-model="isConfirmUpdateTaskMobileDialogVisible"
+            fullscreen
+            :scrim="false"
+            transition="dialog-bottom-transition"
+            class="action-dialog dialog-fullscreen" >
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="closeTask"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
             <VForm
                 ref="refUpdate"
+                class="h-100 d-flex flex-column"
                 @submit.prevent="updateTask">
-                <VCard title="Se eller redigera kort">
-                    <VDivider />
-                    <VCardText style="max-height: 450px;">
+                <VCard flat class="card-drawer-form h-100 d-flex flex-column">
+                    <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
+                        <div class="dialog-title">
+                           Lägg till åtgärd för fordonet
+                        </div>
+                    </VCardText>
+                    <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                         <VRow>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="selectedTask.measure"
-                                    label="Vad ska göras?"
+                                    label="¿Vad ska goras?*"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="12">
+                                <VTextarea
+                                    v-model="selectedTask.description"
+                                    rows="4"
+                                    label="Beskrivning"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="selectedTask.cost"
                                     type="number"
                                     min="0"
-                                    label="Beräknad kostnad (kr)"
+                                    label="Beräknad kostnad (kr)*"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -2420,7 +2671,7 @@ onBeforeUnmount(() => {
                                     density="compact"
                                     :config="endDateTimePickerConfig"
                                     :rules="[requiredValidator]"
-                                    label="Planerat startdatum"
+                                    label="Startdatum*"
                                     clearable
                                 />
                             </VCol>
@@ -2430,95 +2681,168 @@ onBeforeUnmount(() => {
                                     v-model="selectedTask.end_date"
                                     density="compact"
                                     :config="endDateTimePickerConfig"
-                                    label="Förväntat slutdatum"
+                                    label="Slutdatum"
                                     clearable
                                 />
                             </VCol>
                         </VRow>
                         
-                        <VAlert
-                            color="primary"
-                            icon="mdi-information-outline"
-                            variant="tonal"
-                            class="my-5"
-                            >
-                            Du kan stänga dialogrutan. Dina ändringar har sparats automatiskt.
-                        </VAlert>
-                
-                        <VExpansionPanels>
-                            <VExpansionPanel>
-                                <VExpansionPanelTitle>Aktiviteter</VExpansionPanelTitle>
-                                <VExpansionPanelText>
-                                    <div 
-                                        v-for="(history, index) in selectedTask.histories" 
-                                        :key="index" 
-                                        :class="selectedTask.histories.length > 1 && index !== selectedTask.histories.length - 1 ? 'py-2 border-bottom-secondary' : 'pt-2'"
-                                        class="d-flex flex-column">
-                                        <span v-if="history.is_created"><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
-                                        <span v-else><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> uppdaterade kortet.</span>
-                                        <span>  {{}}
-                                            {{ new Date(history.created_at).toLocaleString('sv-SE', { 
-                                                year: 'numeric', 
-                                                month: '2-digit', 
-                                                day: '2-digit', 
-                                                hour: '2-digit', 
-                                                minute: '2-digit',
-                                                hour12: false
-                                            }) }}
-                                        </span>                                        
-                                    </div>                                  
-                                </VExpansionPanelText>
-                            </VExpansionPanel>
-                        </VExpansionPanels>
-
-                        <div class="py-5">
-                            <h6 class="text-md-h5 text-h6 font-weight-medium mb-3">
-                                kommentarer
-                            </h6>
-                            <div class="d-flex">
-                                <VTextField
-                                    v-model="comment"
-                                    placeholder="Skriv en kommentar"
-                                    label="kommentar"
-                                />
-                                <VBtn class="ms-2" @click="sendComment">
-                                    Skicka
-                                </VBtn>
-                            </div>
+                        <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                            <VBtn
+                                class="btn-light"
+                                @click="closeTask">
+                                Avbryt
+                            </VBtn>
+                            <VBtn class="btn-gradient" type="submit">
+                                Uppdatering
+                            </VBtn>
                         </div>
 
-                        <VAlert 
+                        <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                        <div class="d-flex gap-2 mb-6">
+                            <VIcon size="24" icon="custom-comments-2" class="action-icon" />
+                            <span class="span-comments">
+                                Kommentarer
+                            </span>
+                        </div>
+        
+                        <div class="d-flex flex-column gap-6">
+                            <VTextField
+                                v-model="comment"
+                                placeholder="Skriv en kommentar"
+                            />
+                            <VBtn class="btn-light w-auto align-self-start" @click="sendComment">
+                                Kommentar
+                            </VBtn>
+                        </div>
+
+                        <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                        <div 
                             v-for="(comment, index) in selectedTask.comments" 
                             :key="index"
-                            variant="outlined" 
-                            color="secondary"
-                            class="my-1">
-                            <div class="d-flex flex-column">
-                                {{ comment.comment }}
-                                <span class="text-xs">  
-                                    {{ new Date(comment.created_at).toLocaleString('sv-SE', { 
-                                        year: 'numeric', 
-                                        month: '2-digit', 
-                                        day: '2-digit', 
-                                        hour: '2-digit', 
-                                        minute: '2-digit',
-                                        hour12: false
-                                    }) }} | <strong>{{ comment.user.name }} {{ comment.user.last_name }}</strong>
-                                </span>                                        
-                            </div>            
-                        </VAlert>
-                    </VCardText>
+                            class="d-flex flex-column gap-2 justify-center mb-4">
+                            <div class="text-no-wrap w-100">
+                                <VAvatar
+                                    color="#E3DEEB"
+                                    :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                                    size="40"
+                                >
+                                    <VImg
+                                        v-if="comment.user.avatar"
+                                        style="border-radius: 50%;"
+                                        :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                                    />
+                                    <span v-else>{{ avatarText(comment.user.name) }}</span>
+                                </VAvatar>
+                                <span class="ms-2 user-comments">
+                                    {{ comment.user.name }} {{ comment.user.last_name }}
 
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
+                                    <span class="date-comments">  
+                                        {{ formatCommentDate(comment.created_at) }}
+                                    </span>
+                                </span>
+                                
+                            </div>
+                            <VTextField
+                                v-model="comment.comment"
+                                placeholder="Kommentar.."
+                            />
+                            <div class="d-flex gap-4">
+                                <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
+                                <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                            </div>
+                        </div>
+                        
+                        
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
+
+        <!-- 👉 Create task mobile -->
+        <VDialog
+            v-model="isConfirmTaskMobileDialogVisible"
+            fullscreen
+            :scrim="false"
+            transition="dialog-bottom-transition"
+            class="action-dialog dialog-fullscreen" >
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmTaskMobileDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VForm
+                ref="refTask"
+                class="h-100"
+                @submit.prevent="createTask">
+                <VCard flat class="card-drawer-form h-100">
+                    <VCardText class="dialog-title-box my-8">
+                        <div class="dialog-title">
+                            Lägg till åtgärd för fordonet
+                        </div>
+                    </VCardText>
+                    <VCardText class="pt-0">
+                        <VRow>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="measure"
+                                        label="¿Vad ska goras?*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextarea
+                                        v-model="description"
+                                        rows="4"
+                                        label="Beskrivning"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="12">
+                                    <VTextField
+                                        v-model="cost"
+                                        type="number"
+                                        min="0"
+                                        label="Beräknad kostnad (kr)*"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="start_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        :rules="[requiredValidator]"
+                                        label="Startdatum*"
+                                        clearable
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="end_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        label="Slutdatum"
+                                        clearable
+                                    />
+                                </VCol>
+                            </VRow>
+                        
+                    </VCardText>
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
-                            class="mt-4"
-                            color="secondary"
-                            variant="tonal"
-                            @click="closeTask">
+                            class="btn-light"
+                            @click="isConfirmTaskMobileDialogVisible = false">
                             Avbryt
                         </VBtn>
-                        <VBtn class="mt-4" type="submit">
-                            Uppdatering
+                        <VBtn class="btn-gradient" type="submit">
+                            Lägg till
                         </VBtn>
                     </VCardText>
                 </VCard>
@@ -2596,85 +2920,6 @@ onBeforeUnmount(() => {
                         </VBtn>
                         <VBtn class="mt-4" type="submit">
                              Ladda upp
-                        </VBtn>
-                    </VCardText>
-                </VCard>
-            </VForm>
-        </VDialog>
-
-        <!-- 👉 Create/Update cost -->
-        <VDialog
-            v-model="isConfirmCreateCostDialogVisible"
-            persistent
-            class="action-dialog">
-            
-            <VBtn
-                icon
-                class="btn-white close-btn"
-                @click="isConfirmCreateCostDialogVisible = false"
-            >
-                <VIcon size="16" icon="custom-close" />
-            </VBtn>
-
-            <!-- Dialog Content -->
-            <VForm
-                ref="refCost"
-                @submit.prevent="handleCost">
-                <VCard>
-                    <VCardText class="dialog-title-box">
-                        <VIcon size="32" icon="custom-plus" class="action-icon" />
-                        <div class="dialog-title">
-                            {{ isCreateCost ? 'Lägg till kostnader' : 'Uppdatera kostnader' }}
-                        </div>
-                    </VCardText>
-                    <VCardText class="pt-0" style="max-height: 450px;">
-                        <VRow>
-                            <VCol cols="12" md="12">
-                                <VTextField
-                                    v-model="type"
-                                    label="Vad gäller kostnaden?"
-                                    placeholder="T.ex. 'Reparation', 'Service', 'Besiktning'..."
-                                    :rules="[requiredValidator]"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="12">
-                                <VTextarea
-                                    v-model="description"
-                                    rows="4"
-                                    label="Beskrivning (valfritt)"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <VTextField
-                                    v-model="value"
-                                    type="number"
-                                    label="Kostnader"
-                                    min="0"
-                                    :rules="[requiredValidator]"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="6">
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="dateCost"
-                                    density="compact"
-                                    :config="endDateTimePickerConfig"
-                                    label="Datum"
-                                    :rules="[requiredValidator]"
-                                    clearable
-                                />
-                            </VCol>
-                        </VRow>                        
-                    </VCardText>
-
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-                        <VBtn
-                            class="btn-light"
-                            @click="isConfirmCreateCostDialogVisible = false">
-                             Avbryt
-                        </VBtn>
-                        <VBtn class="btn-gradient" type="submit">
-                            {{ isCreateCost ? 'Spara' : 'Uppdatering'}}
                         </VBtn>
                     </VCardText>
                 </VCard>
@@ -2812,6 +3057,53 @@ onBeforeUnmount(() => {
         @media (max-width: 1023px) {
             font-size: 16px
         }
+    }
+
+    .title-comments {
+        font-weight: 700;
+        font-size: 20px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .text-comments {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 100%;
+        color: #5D5D5D; 
+    }
+
+    .span-comments {
+        font-weight: 400;
+        font-size: 24px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .user-comments {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 100%;
+        color: #454545; 
+    }
+
+    .date-comments {
+        font-weight: 400;
+        font-size: 12px;
+        line-height: 100%;
+        color: #878787; 
+    }
+
+    .link-comments {
+        font-weight: 500;
+        font-size: 12px;
+        line-height: 100%;
+        color: #454545;
+        text-decoration: underline;
+    }
+
+    .border-comments {
+        border-bottom: 1px solid #E7E7E7;
     }
 
     .v-tabs.vehicles-tabs {
@@ -2957,10 +3249,49 @@ onBeforeUnmount(() => {
 </style>
 
 <style lang="scss">
+
+    .border-card-comment {
+        border: 1px solid #E7E7E7;
+        border-radius: 16px !important;
+    }
+
     .stock-edit-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
         margin-inline-end: 1.5rem !important;
     }
+
+    :deep(.right-drawer.v-navigation-drawer) {
+        border-color: transparent !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        box-shadow: none !important;
+    }
+
+    :deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
+        border: none !important;
+    }
 </style>
+
+<style>
+    .right-drawer.v-navigation-drawer {
+        border: none !important;
+        border-color: transparent !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        box-shadow: none !important;
+    }
+
+    .right-drawer.v-navigation-drawer .v-navigation-drawer__content {
+        border: none !important;
+    }
+
+    .dialog-fullscreen.v-overlay--active .v-overlay__content {
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+</style>
+
 
 <route lang="yaml">
     meta:

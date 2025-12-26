@@ -60,5 +60,31 @@ export const useTasksStores = defineStore('tasks', {
                 })
             
         },
+        updateComment(data) {
+            this.setLoading(true)
+
+            return Tasks.updateComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        deleteComment(data) {
+            this.setLoading(true)
+
+            return Tasks.deleteComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
     }
 })

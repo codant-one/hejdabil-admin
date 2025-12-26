@@ -244,7 +244,7 @@ const downloadCSV = async () => {
       FÖRSÄLJNINGSDATUM: element.sale_date ?? '',
       BILINFO: bilinfo,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      KOSTNADER: formatNumber(element.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0),
+      KOSTNADER: formatNumber(element.tasks.reduce((sum, item) => sum + parseFloat(item.cost), 0) ?? 0),
       FÖRSÄLJNINGSPRIS: formatNumber(element.total_sale ?? 0) + ' kr',
       VINST: formatNumber(element.total_sale - element.purchase_price) + ' kr',
       KÖPAREN: element.client_sale?.fullname
@@ -387,7 +387,7 @@ const downloadCSV = async () => {
               </div>
             </td>                
             <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
-            <td class="text-end"> {{ formatNumber(vehicle.costs.reduce((sum, item) => sum + parseFloat(item.value), 0) ?? 0) }} kr </td>                
+            <td class="text-end"> {{ formatNumber(vehicle.tasks.reduce((sum, item) => sum + parseFloat(item.cost), 0) ?? 0) }} kr </td>                
             <td class="text-end"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
             <td class="text-end"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>
             <td class="text-wrap">

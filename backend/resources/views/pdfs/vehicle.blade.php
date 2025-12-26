@@ -198,7 +198,7 @@
             </tr>
             <tr>
                 <td class="font-weight-medium">Kostnad </td>
-                <td>{{ formatCurrency(collect($vehicle->costs)->sum(fn($item) => floatval($item['value']))) }} kr</td>
+                <td>{{ formatCurrency(collect($vehicle->tasks)->sum(fn($item) => floatval($item['cost']))) }} kr</td>
             </tr>
         </table>
 
