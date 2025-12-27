@@ -647,7 +647,7 @@ const updateTask = async () => {
                 formData.append('end_date', selectedTask.value.end_date)
 
                 isRequestOngoing.value = true
-
+                isConfirmUpdateTaskMobileDialogVisible.value = false
                 
                 let data = {
                     data: formData, 
