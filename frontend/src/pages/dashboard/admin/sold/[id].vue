@@ -125,21 +125,7 @@ const isDirty = computed(() => {
   }
 })
 
-onBeforeRouteLeave((to, from, next) => {
-    if (isDirty.value) {
-        isConfirmLeaveVisible.value = true
-        nextRoute.value = next
-        return
-    }
-    next()
-})
-
-const reallyCloseAndReset = () => {
-    if (nextRoute.value) {
-        initialData.value = JSON.parse(JSON.stringify(currentData.value))
-        nextRoute.value()
-    }
-}
+// Confirm-leave is handled further down (single guard).
 
 const startDateTimePickerConfig = computed(() => {
 
@@ -447,9 +433,26 @@ const goToVehicles = () => {
 };
 
 const sendVehicles = () => {
-  router.push({
-    name: "dashboard-admin-sold"
-  });
+
+    let data = {
+        message: 'Aktie uppdaterad framgångsrikt.!',
+        error: false
+    }
+
+    router.push({
+        name: "dashboard-admin-sold"
+    });
+
+    emitter.emit('toast', data)
+};
+
+const confirmLeave = () => {
+    isConfirmLeaveVisible.value = false;
+    allowNavigation.value = true;
+
+    if (nextRoute.value) {
+        router.push(nextRoute.value);
+    }
 };
 
 const showError = () => {
@@ -542,6 +545,11 @@ const onSubmit = async () => {
             vehiclesStores.sendVehicle(formData)
                 .then((res) => {
                     if (res.data.success) {
+                        allowNavigation.value = true;
+
+                        // Save current state so the dirty-check stops blocking navigation
+                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
                         skapatsDialog.value = true;
                     }
                     isRequestOngoing.value = false;
@@ -1063,7 +1071,7 @@ onBeforeRouteLeave((to, from, next) => {
         <VDialog
             v-model="isConfirmLeaveVisible"
             persistent
-            class="action-dialog d-none"
+            class="action-dialog"
         >
             <VBtn
             icon
@@ -1075,14 +1083,14 @@ onBeforeRouteLeave((to, from, next) => {
             <VCard>
             <VCardText class="dialog-title-box">
                 <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
-                <div class="dialog-title">Avsluta utan att spara?</div>
+                <div class="dialog-title">Du har osparade ändringar</div>
             </VCardText>
             <VCardText class="dialog-text">
-                <strong>Du har osparade ändringar.</strong> Om du lämnar den här vyn nu kommer informationen du har angett inte att sparas.
+                Om du lämnar sidan nu kommer dina ändringar inte att sparas.
             </VCardText>
             <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-                <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Avbryt</VBtn>
-                <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Ja, fortsätt</VBtn>
+                <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+                <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
             </VCardText>
             </VCard>
         </VDialog>

@@ -11,7 +11,7 @@ import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-
+import Toaster from "@/components/common/Toaster.vue";
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import downloadIcon from "@/assets/images/icons/figma/download.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
@@ -289,6 +289,8 @@ onBeforeUnmount(() => {
     >
       {{ advisor.message }}
     </VSnackbar>  
+
+    <Toaster />
 
     <VCard class="card-fill">
       <VCardTitle
