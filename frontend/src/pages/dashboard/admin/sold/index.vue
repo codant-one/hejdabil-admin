@@ -9,7 +9,6 @@ import { formatNumber } from '@/@core/utils/formatters'
 import { formatNumberInteger } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
-import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
@@ -38,6 +37,7 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isVehicleDetailDialog = ref(false)
 const selectedVehicle = ref({})
 const isFilterDialogVisible = ref(false);
+const filtreraMobile = ref(false);
 
 const year = ref(null)
 const gearboxes = ref([])
@@ -47,8 +47,6 @@ const brand_id = ref(null)
 const models = ref([])
 const model_id = ref(null)
 const modelsByBrand = ref([])
-const currencies = ref([])
-const currency_id = ref(null)
 
 const advisor = ref({
   type: '',
@@ -56,17 +54,13 @@ const advisor = ref({
   show: false
 })
 
+const sectionEl = ref(null);
+const hasLoaded = ref(false);
+
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 // 👉 Computing pagination data
-// const paginationData = computed(() => {
-//   const firstIndex = vehicles.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-//   const lastIndex = vehicles.value.length + (currentPage.value - 1) * rowPerPage.value
-
-//   return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalVehicles.value } register`
-// })
-
 const paginationData = computed(() => {
   const firstIndex = vehicles.value.length
     ? (currentPage.value - 1) * rowPerPage.value + 1
@@ -134,6 +128,7 @@ async function fetchData(cleanFilters = false) {
     suppliers.value = vehiclesStores.getSuppliers
   }
 
+  hasLoaded.value = true;
   isRequestOngoing.value = false
 
 }
@@ -142,10 +137,6 @@ watchEffect(registerEvents)
 
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
-}
-
-const editVehicle = vehicleData => {
-  router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: vehicleData.id } })
 }
 
 const showVehicle = async (id) => {
@@ -244,7 +235,7 @@ const downloadCSV = async () => {
       FÖRSÄLJNINGSDATUM: element.sale_date ?? '',
       BILINFO: bilinfo,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      KOSTNADER: formatNumber(element.tasks.reduce((sum, item) => sum + parseFloat(item.cost), 0) ?? 0),
+      KOSTNADER: formatNumber((element.tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)),
       FÖRSÄLJNINGSPRIS: formatNumber(element.total_sale ?? 0) + ' kr',
       VINST: formatNumber(element.total_sale - element.purchase_price) + ' kr',
       KÖPAREN: element.client_sale?.fullname
@@ -259,6 +250,23 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
@@ -284,7 +292,7 @@ const downloadCSV = async () => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Sålda fordon</h2>
+          <h2>Sålda fordon <span v-if="hasLoaded">({{ vehicles.length }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
@@ -311,13 +319,23 @@ const downloadCSV = async () => {
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
         <VBtn 
-          class="btn-white-2" 
-          v-if="role !== 'Supplier' && role !== 'User'"
+          class="btn-white-2 px-3"
+          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
           @click="isFilterDialogVisible = true"
         >
           <VIcon icon="custom-filter" size="24" />
           <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+        </VBtn>
+
+        <VBtn 
+          class="btn-white-2"
+          :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+          @click="filtreraMobile = true"
+        >
+          <VIcon icon="custom-filter" size="24" />
         </VBtn>
 
         <div
@@ -333,97 +351,107 @@ const downloadCSV = async () => {
         </div>
       </VCardText>
 
-      <VTable 
+      <VTable
         v-if="!$vuetify.display.mdAndDown"
-        class="px-4 pb-6 text-no-wrap">
+        v-show="vehicles.length"
+        class="px-4 pb-6 text-no-wrap"
+      >
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> Försäljningsdatum </th>
-            <th scope="col"> Bil info </th>
-            <th scope="col" class="text-end"> Inköpspris </th>
-            <th scope="col" class="text-end"> Kostnader </th>
-            <th scope="col" class="text-end"> Försäljningspris </th>
-            <th scope="col" class="text-end"> Vinst </th>
+            <th class="text-center" scope="col"> Försäljningsdatum </th>
+            <th scope="col"> Bilinfo </th>
+            <th class="text-center" scope="col"> Inköpspris </th>
+            <th class="text-center" scope="col"> Kostnader </th>
+            <th class="text-center" scope="col"> Försäljningspris </th>
+            <th class="text-center" scope="col"> Vinst </th>
             <th scope="col" class="text-start"> Köparen </th>
-            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
-            <th scope="col"> SKAPAD AV </th>  
+            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
+            <th scope="col"> Skapad av </th>  
             <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
-        <tbody>
+        <tbody v-show="vehicles.length">
           <tr 
             v-for="vehicle in vehicles"
             :key="vehicle.id"
             style="height: 3rem;">
-            <td> {{ vehicle.sale_date }}</td>
+            <td class="text-center"> {{ vehicle.sale_date }}</td>
             <td class="text-wrap cursor-pointer"  @click="showVehicle(vehicle.id)">
-              <div class="d-flex align-center gap-x-3">
+              <div class="d-flex align-center gap-x-3"> 
                 <VAvatar
                   v-if="vehicle.model?.brand?.logo"
-                  size="38"
+                  size="24"
                   variant="tonal"
-                  rounded
                   :image="themeConfig.settings.urlStorage + vehicle.model.brand.logo"
                 />
                 <VAvatar
                     v-else
-                    size="38"
-                    variant="tonal"
-                    rounded
-                    color="secondary"
-                >
-                    <VIcon size="x-large" icon="mdi-image-outline" />                        
+                    size="24"
+                    color="#D9D9D9"
+                >              
                 </VAvatar>
                 <div class="d-flex flex-column">
-                  <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">
+                  <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
                     {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
                   </span>
-                  <span class="text-sm text-disabled">
-                    {{ vehicle.reg_num }}
-                  </span>
+                  <!--<span class="text-sm text-disabled">
+                    {{ vehicle.color }}
+                  </span>-->
                 </div>
               </div>
             </td>                
-            <td class="text-end"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
-            <td class="text-end"> {{ formatNumber(vehicle.tasks.reduce((sum, item) => sum + parseFloat(item.cost), 0) ?? 0) }} kr </td>                
-            <td class="text-end"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
-            <td class="text-end"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>
+            <td class="text-center"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
+            <td class="text-center"> {{ formatNumber((vehicle.tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
+            <td class="text-center"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
+            <td class="text-center"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>
             <td class="text-wrap">
-              <div class="d-flex flex-column">
-                <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer text-primary" @click="seeClient(vehicle.client_sale.client)">
+              <div v-if="vehicle.client_sale" class="d-flex flex-column">
+                <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer" @click="seeClient(vehicle.client_sale.client)">
                   {{ vehicle.client_sale.fullname }} 
                 </span>
-                <span v-else class="font-weight-medium  text-primary">
+                <span v-else class="font-weight-medium ">
                   {{ vehicle.client_sale.fullname }} 
                 </span>
                 <span class="text-sm text-disabled">{{ vehicle.client_sale.phone }}</span>
               </div>
+              <span v-else class="text-sm text-disabled">—</span>
             </td>           
-            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-              <span class="font-weight-medium"  v-if="vehicle.supplier">
-                {{ vehicle.supplier.user.name }} {{ vehicle.supplier.user.last_name ?? '' }} 
+            <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator')">
+              <span v-if="vehicle.supplier">
+                {{ vehicle.supplier.user.name }}
+                {{ vehicle.supplier.user.last_name ?? "" }}
               </span>
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+             <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="vehicle.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
-                  >
+                >
                   <VImg
                     v-if="vehicle.user.avatar"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + vehicle.user.avatar"
                   />
-                    <span v-else>{{ avatarText(vehicle.user.name) }}</span>
+                  <span v-else>{{ avatarText(vehicle.user.name) }}</span>
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ vehicle.user.name }} {{ vehicle.user.last_name ?? '' }} 
+                    {{ vehicle.user.name }} {{ vehicle.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ vehicle.user.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="vehicle.user.email && vehicle.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(vehicle.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ vehicle.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ vehicle.user.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>     
@@ -443,7 +471,7 @@ const downloadCSV = async () => {
                     </template>
                     <VListItemTitle>Visa</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
+                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
                     <template #prepend>
                       <img :src="downloadIcon" alt="See Icon" class="mr-2" />
                     </template>
@@ -460,17 +488,31 @@ const downloadCSV = async () => {
             </td>
           </tr>              
         </tbody>
-        <!-- 👉 table footer  -->
-        <tfoot v-show="!vehicles.length">
-          <tr>
-            <td
-              colspan="10"
-              class="text-center">
-              Uppgifter ej tillgängliga
-            </td>
-          </tr>
-        </tfoot>
       </VTable>
+
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !vehicles.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-suv"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Inga sålda fordon än</div>
+          <div class="empty-state-text">
+             När du markerar ett fordon som sålt från ditt lager kommer det att visas i den här listan för din historik.
+          </div>
+        </div>
+        <VBtn
+          class="btn-ghost"
+          @click="router.push({ name : 'dashboard-admin-stock' })"
+        >
+          Gå till I lager
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
 
       <VExpansionPanels
         class="expansion-panels pb-6 px-6"
@@ -481,31 +523,28 @@ const downloadCSV = async () => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <div class="d-flex align-center gap-x-3">
-              <VAvatar
-                v-if="vehicle.model?.brand?.logo"
-                size="38"
-                variant="tonal"
-                rounded
-                :image="themeConfig.settings.urlStorage + vehicle.model.brand.logo"
-              />
-              <VAvatar
-                  v-else
-                  size="38"
+             <div class="d-flex align-center w-100">
+                <VAvatar
+                  v-if="vehicle.model?.brand?.logo"
+                  size="32"
                   variant="tonal"
-                  rounded
-                  color="secondary"
-              >
-                  <VIcon size="x-large" icon="mdi-image-outline" />                        
-              </VAvatar>
-              <div class="d-flex flex-column">
-                <span class="text-sm text-disabled">
-                  Regnr {{ vehicle.reg_num }}
-                </span>
-                <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-primary">
-                  {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
-                </span>
-              </div>
+                  class="me-3"
+                  :image="themeConfig.settings.urlStorage + vehicle.model.brand.logo"
+                />
+                <VAvatar
+                    v-else
+                    size="32"
+                    color="#D9D9D9"
+                    class="me-3"
+                >            
+                </VAvatar>
+
+                <div class="d-flex flex-column gap-1">
+                    <span class="text-aqua">Reg. Nr. {{ vehicle.reg_num }}</span>
+                    <span class="text-neutral-3">
+                        {{ vehicle.model?.brand?.name }} {{ vehicle.model?.name }} {{ vehicle.year ?`, ${vehicle.year}` : '' }}
+                    </span>
+                </div>
             </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
@@ -534,13 +573,7 @@ const downloadCSV = async () => {
                 </template>
 
                 <VList>
-                  <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id)">
-                    <template #prepend>
-                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Visa</VListItemTitle>
-                  </VListItem>
-                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)">
+                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
                     <template #prepend>
                       <img :src="downloadIcon" alt="See Icon" class="mr-2" />
                     </template>
@@ -585,8 +618,6 @@ const downloadCSV = async () => {
       </VCardText>
     </VCard>
 
-    
-
     <!-- 👉 Confirm Delete -->
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
@@ -623,7 +654,7 @@ const downloadCSV = async () => {
           <VBtn class="btn-light" @click="isConfirmDeleteDialogVisible = false">
             Avbryt
           </VBtn>
-          <VBtn class="btn-gradient" @click="removeClient"> Ja, radera posten</VBtn>
+          <VBtn class="btn-gradient" @click="removeVehicle"> Ja, radera posten</VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -642,76 +673,63 @@ const downloadCSV = async () => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
+      <VCard flat class="card-form">
         <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-filter" class="action-icon" />
-          <div class="dialog-title">Filtrera efter</div>
+          <div class="dialog-title">
+            Filtrera
+          </div>
         </VCardText>
         
         <VCardText class="pt-0">
-          <AppAutocomplete
-            v-if="role !== 'Supplier'"
-            prepend-icon="custom-profile"
-            v-model="brand_id"
-            placeholder="Märke"
-            :items="brands"
-            :item-title="(item) => item.name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user"
-            :menu-props="{ maxHeight: '400px' }"
-          />
-
-          <AppAutocomplete
-            v-if="role !== 'Supplier'"
-            prepend-icon="custom-profile"
-            v-model="model_id"
-            placeholder="Modell"
-            :items="models"
-            :item-title="(item) => item.name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user"
-            :menu-props="{ maxHeight: '400px' }"
-          />
-
-          <AppAutocomplete
-            v-if="role !== 'Supplier'"
-            prepend-icon="custom-profile"
-            v-model="gearbox_id"
-            placeholder="Biltyp"
-            :items="gearboxes"
-            :item-title="(item) => item.name"
-            :item-value="(item) => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user"
-            :menu-props="{ maxHeight: '400px' }"
-          />
-
-          <AppAutocomplete
-            v-if="role !== 'Supplier'"
-            prepend-icon="custom-profile"
-            v-model="year"
-            placeholder="Årsmodell"
-            :items="vehicles"
-            :item-title="(item) => item.year"
-            :item-value="(item) => item.year"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            class="selector-user"
-            :menu-props="{ maxHeight: '400px' }"
-          />
+          <VRow>
+            <VCol cols="12" md="12">
+              <AppAutocomplete
+                v-model="brand_id"
+                placeholder="Märke"
+                :items="brands"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"
+                @update:modelValue="selectBrand"
+                :menu-props="{ maxHeight: '300px' }"/>
+            </VCol>
+            <VCol cols="12" md="12">
+              <AppAutocomplete
+                v-model="model_id"
+                placeholder="Modell"
+                :items="getModels"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"
+                :menu-props="{ maxHeight: '300px' }"/>
+            </VCol>
+            <VCol cols="12" md="12">
+              <VTextField
+                v-model="year"
+                :rules="[yearValidator]"
+                label="Årsmodell"
+                clearable
+            />
+            </VCol>
+            <VCol cols="12" md="12">
+              <AppAutocomplete
+                v-model="gearbox_id"
+                placeholder="Biltyp"
+                :items="gearboxes"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+            </VCol>
+          </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
-          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isFilterDialogVisible = false">
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
@@ -720,6 +738,66 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard class="card-form">
+        <VList>
+          <VListItem class="form pt-6">
+            <AppAutocomplete
+              v-model="brand_id"
+              placeholder="Märke"
+              :items="brands"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              @update:modelValue="selectBrand"
+              :menu-props="{ maxHeight: '300px' }"/>
+          </VListItem>
+          <VListItem class="form">
+            <AppAutocomplete
+              v-model="model_id"
+              placeholder="Modell"
+              :items="getModels"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              :menu-props="{ maxHeight: '300px' }"/>
+          </VListItem>
+          <VListItem class="form">
+            <VTextField
+              v-model="year"
+              :rules="[yearValidator]"
+              label="Årsmodell"
+              clearable
+            />
+          </VListItem>
+          <VListItem class="form">
+            <AppAutocomplete
+              v-model="gearbox_id"
+              placeholder="Biltyp"
+              :items="gearboxes"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"/>
+          </VListItem>
+          <VListItem class="form mt-5">
+            <VBtn class="btn-gradient w-100" @click="filtreraMobile = false">
+                Tillämpa
+            </VBtn>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
     <show 
       v-model:isDrawerOpen="isVehicleDetailDialog"
       :vehicle="selectedVehicle"/>
@@ -736,6 +814,79 @@ const downloadCSV = async () => {
     cursor: no-drop !important;
   }
 </style>
+<style scope>
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 0px !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+
+          .v-select__selection, .v-autocomplete__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 16px;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
+    }
+    & .v-input {
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          .v-field-label {
+            @media (max-width: 991px) {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
+</style>
+
 <route lang="yaml">
   meta:
     action: view

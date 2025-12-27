@@ -191,12 +191,14 @@ watchEffect(async () => {
 })
 
 const resolveStatus = () => {
-  if (state_id.value === 10)
-    return { class: 'pending' }
-  if (state_id.value === 11)
-    return { class: 'info' }   
-  if (state_id.value === 13)
-    return { class: 'success' }
+    if (state_id.value === 10)
+        return { class: 'pending' }
+    if (state_id.value === 11)
+        return { class: 'info' } 
+    if (state_id.value === 12)
+        return { class: 'success' }  
+    if (state_id.value === 13)
+        return { class: 'success' }
 }
 
 const mediaSlides = computed(() => {
@@ -550,78 +552,82 @@ const setThumbsSwiper = (swiper) => {
                                 </VWindowItem>
                                 <VWindowItem value="4" v-if="state_id === 12">
                                     <VContainer fluid class="px-3">
-                                        <VRow>
-                                            <VCol cols="12">
-                                                <div>
-                                                    <span class="font-weight-semibold"> Försäljningspris: </span>
-                                                    <span>{{ formatNumber(vehicle.sale_price ?? 0) }} {{ currency_sale }}</span>
+                                        <div class="d-flex gap-6">
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Försäljningspris </span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.sale_price ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> VMB / Moms: </span>
-                                                    <span>{{ iva_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> VMB / Moms</span>
+                                                    <span class="subtitle-detail">{{ iva_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Varav moms: </span>
-                                                    <span>{{ formatNumber(vehicle.iva_sale_amount ?? 0) }} {{ currency_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Varav moms </span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.iva_sale_amount ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Prix ex moms: </span>
-                                                    <span>{{ formatNumber(vehicle.iva_sale_exclusive ?? 0) }} {{ currency_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Prix ex moms </span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.iva_sale_exclusive ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Rabatt: </span>
-                                                    <span>{{ formatNumber(vehicle.discount ?? 0) }} {{ currency_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Rabatt </span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.discount ?? 0) }} {{ currency_sale }}</span>
+                                                </div>                                    
+                                            </div>
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Registreringsavgift</span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.registration_fee ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Registreringsavgift: </span>
-                                                    <span>{{ formatNumber(vehicle.registration_fee ?? 0) }} {{ currency_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Totalpris</span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Totalpris: </span>
-                                                    <span>{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
-                                                </div>                                                
-                                                <div>
-                                                    <span class="font-weight-semibold"> Försäljningsdag: </span>
-                                                    <span>{{ sale_date }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Försäljningsdag</span>
+                                                    <span class="subtitle-detail">{{ sale_date }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Comments: </span>
-                                                    <span>{{ sale_comments }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Comments</span>
+                                                    <span class="subtitle-detail">{{ sale_comments }}</span>
                                                 </div>
-                                            </VCol>
-                                        </VRow>
+                                            </div>
+                                        </div>
                                     </VContainer>
                                 </VWindowItem>
                                 <VWindowItem value="5" v-if="state_id === 12">
-                                    <VContainer fluid>
-                                        <VRow>
-                                            <VCol cols="12">                                             
-                                                <div>
-                                                    <span class="font-weight-semibold"> Org/personummer: </span>
-                                                    <span>{{ organization_number_sale }}</span>
+                                    <VContainer fluid class="px-3">
+                                        <div class="d-flex gap-6">
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Org/personummer </span>
+                                                    <span class="subtitle-detail">{{ organization_number_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Namn: </span>
-                                                    <span>{{ fullname_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Namn</span>
+                                                    <span class="subtitle-detail">{{ fullname_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Adress: </span>
-                                                    <span>{{ address_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Adress</span>
+                                                    <span class="subtitle-detail">{{ address_sale }}</span>
+                                                </div>                                 
+                                            </div>
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Postnr. ort</span>
+                                                    <span class="subtitle-detail">{{ postal_code_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Postnr. ort: </span>
-                                                    <span>{{ postal_code_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Telefon</span>
+                                                    <span class="subtitle-detail">{{ phone_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> Telefon: </span>
-                                                    <span>{{ phone_sale }}</span>
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> E-post</span>
+                                                    <span class="subtitle-detail">{{ email_sale }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="font-weight-semibold"> E-post: </span>
-                                                    <span>{{ email_sale }}</span>
-                                                </div>
-                                            </VCol>
-                                        </VRow>
+                                            </div>
+                                        </div>
                                     </VContainer>
                                 </VWindowItem>
                             </VWindow>
@@ -709,7 +715,7 @@ const setThumbsSwiper = (swiper) => {
     }
 
     .v-tabs.vehicles-tabs {
-        .v-btn {
+        :deep(.v-btn) {
             background-color: #F6F6F6 !important;
             min-width: 50px !important;
             .v-btn__content {
@@ -717,14 +723,18 @@ const setThumbsSwiper = (swiper) => {
                 color: #454545;
             }
         }
+        :deep(.v-slide-group__prev),
+        :deep(.v-slide-group__next) {
+            display: none !important;
+        }
     }
 
     @media (max-width: 776px) {
         .v-tabs.vehicles-tabs {
-            .v-icon {
+            :deep(.v-icon) {
                 display: none !important;
             }
-            .v-btn {
+            :deep(.v-btn) {
                  background-color: #FFFFFF !important;
                 .v-btn__content {
                     white-space: break-spaces;

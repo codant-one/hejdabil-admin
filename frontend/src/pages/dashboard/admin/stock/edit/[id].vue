@@ -1548,6 +1548,7 @@ onBeforeRouteLeave((to, from, next) => {
 <template>
     <section class="page-section stock-edit-page" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
+
         <VSnackbar
             v-model="advisor.show"
             transition="scroll-y-reverse-transition"
@@ -1557,6 +1558,7 @@ onBeforeRouteLeave((to, from, next) => {
         >
             {{ advisor.message }}
         </VSnackbar>
+
         <VForm
             v-if="reg_num"
             ref="refForm"
@@ -1946,7 +1948,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                                             <VTextField
                                                 v-model="street"
