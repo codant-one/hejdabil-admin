@@ -3,7 +3,7 @@
 import { onBeforeRouteLeave } from "vue-router";
 import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
@@ -755,7 +755,9 @@ const sendComment = async () => {
         
         isRequestOngoing.value = false
         
-        await fetchData()
+        await refreshTasks()
+        
+        await nextTick()
         
         // Actualizar selectedTask con los datos frescos
         const updatedTask = tasks.value.find(item => item.id === taskId)
@@ -800,7 +802,9 @@ const editComment = async (commentData) => {
         
         isRequestOngoing.value = false
         
-        await fetchData()
+        await refreshTasks()
+        
+        await nextTick()
         
         // Actualizar selectedTask con los datos frescos
         const updatedTask = tasks.value.find(item => item.id === taskId)
@@ -842,7 +846,9 @@ const deleteComment = async (commentData) => {
     
     isRequestOngoing.value = false
     
-    await fetchData()
+    await refreshTasks()
+    
+    await nextTick()
     
     // Actualizar selectedTask con los datos frescos
     const updatedTask = tasks.value.find(item => item.id === taskId)
@@ -879,6 +885,17 @@ const formatDecimal = (value) => {
     }
 
     return number.toString();
+}
+
+// Función para refrescar solo los tasks sin recargar toda la data
+const refreshTasks = async () => {
+    const data = await vehiclesStores.showVehicle(Number(route.params.id))
+    if (data && data.vehicle && data.vehicle.tasks) {
+        tasks.value = data.vehicle.tasks.map(task => ({
+            ...task,
+            cost: task.cost
+        }))
+    }
 }
 
 const showDocument = (isMobile = false) => {
@@ -2234,7 +2251,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 >
                                     <VCard
                                         v-for="(task, index) in tasks"
-                                        :key="index"
+                                        :key="task.id"
                                         flat
                                         :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33.333% - 11px);'"
                                         class="border-card-comment py-2 px-4 readonly-form d-flex flex-column"
@@ -2261,7 +2278,7 @@ onBeforeRouteLeave((to, from, next) => {
             
                                             <VTextField
                                                 type="number"
-                                                v-model="task.cost"
+                                                :value="task.cost"
                                                 suffix="(kr)"
                                                 readonly
                                                 class="my-4"
