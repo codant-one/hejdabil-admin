@@ -63,7 +63,9 @@ const selectedTask = ref({
     description: null,
     cost: null,
     start_date: null,
-    end_date: null
+    end_date: null,
+    comments: [],
+    histories: []
 })
 
 const comment = ref(null)
@@ -2915,7 +2917,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 </VBtn>
                             </div>
 
-                            <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                            <VDivider v-if="selectedTask.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
 
                             <div 
                                 v-for="(comment, index) in selectedTask.comments" 
@@ -3066,7 +3068,7 @@ onBeforeRouteLeave((to, from, next) => {
                             </VBtn>
                         </div>
 
-                        <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                        <VDivider v-if="selectedTask.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
 
                         <div 
                             v-for="(comment, index) in selectedTask.comments" 

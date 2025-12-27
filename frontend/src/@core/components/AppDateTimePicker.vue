@@ -437,4 +437,22 @@ input[altinputclass="inlinePicker"] {
     }
   }
 }
+
+// Mobile calendar positioning fix for dialogs/modals
+@media (max-width: 1023px) {
+  .flatpickr-calendar {
+    position: fixed !important;
+    inset-block-start: 50% !important;
+    inset-inline-start: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 99999 !important;
+  }
+
+  .flatpickr-calendar.arrowTop::before,
+  .flatpickr-calendar.arrowTop::after,
+  .flatpickr-calendar.arrowBottom::before,
+  .flatpickr-calendar.arrowBottom::after {
+    display: none !important;
+  }
+}
 </style>
