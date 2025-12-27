@@ -1,5 +1,6 @@
 <script setup>
 
+import { onBeforeRouteLeave } from "vue-router";
 import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { ref } from 'vue'
@@ -16,6 +17,7 @@ import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from '@/router'
 
 const ability = useAppAbility()
@@ -161,6 +163,10 @@ const end_date = ref(null)
 
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
+const initialVehicleData = ref(null);
+const savedVehicleData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const isConfirmLeaveVisible = ref(false);
@@ -220,6 +226,48 @@ const allSelected = computed({
     selectedIds.value = value ? documents.value.map(doc => doc.id) : []
   }
 })
+
+const currentVehicleData = computed(() => ({
+  reg_num: reg_num.value,
+  mileage: mileage.value,
+  brand_id: brand_id.value,
+  model_id: model_id.value,
+  model: model.value,
+  generation: generation.value,
+  car_body_id: car_body_id.value,
+  year: year.value,
+  control_inspection: control_inspection.value,
+  color: color.value,
+  fuel_id: fuel_id.value,
+  gearbox_id: gearbox_id.value,
+  purchase_price: purchase_price.value,
+  iva_purchase_id: iva_purchase_id.value,
+  state_id: state_id.value,
+  sale_price: sale_price.value,
+  purchase_date: purchase_date.value,
+  chassis: chassis.value,
+  sale_date: sale_date.value,
+  number_keys: number_keys.value,
+  service_book: service_book.value,
+  summer_tire: summer_tire.value,
+  winter_tire: winter_tire.value,
+  last_service: last_service.value,
+  last_service_date: last_service_date.value,
+  dist_belt: dist_belt.value,
+  last_dist_belt: last_dist_belt.value,
+  last_dist_belt_date: last_dist_belt_date.value,
+  comments: comments.value,
+  currency_id: currency_id.value,
+}));
+
+const isDirty = computed(() => {
+  if (!initialVehicleData.value) return false;
+  try {
+    return JSON.stringify(currentVehicleData.value) !== JSON.stringify(initialVehicleData.value);
+  } catch (e) {
+    return true;
+  }
+});
 
 const checkIfMobile = () => {
     isMobile.value = window.innerWidth < 768;
@@ -353,6 +401,11 @@ async function fetchData() {
             selectedTask.value = tasks.value.filter(item => item.id === selectedTask.value.id)[0]
             selectedTask.value.cost = formatDecimal(selectedTask.value.cost)
         }
+
+        // Save initial state for dirty checking
+        await nextTick();
+        initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
+        savedVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
     }
 
     isRequestOngoing.value = false
@@ -1212,6 +1265,15 @@ const createVehicles = () => {
   });
 };
 
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  allowNavigation.value = true;
+  
+  if (nextRoute.value) {
+    router.push(nextRoute.value);
+  }
+};
+
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab-1 (Fordon)
@@ -1412,6 +1474,11 @@ const onSubmit = async () => {
             vehiclesStores.updateVehicle(data)
                 .then((res) => {
                     if (res.data.success) {
+                        allowNavigation.value = true;
+                        
+                        // Save current state as the saved state
+                        savedVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
+                        
                         skapatsDialog.value = true;
                     }
                     isRequestOngoing.value = false
@@ -1445,6 +1512,17 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
 });
 </script>
 
@@ -3334,6 +3412,34 @@ onBeforeUnmount(() => {
                     <VBtn class="btn-light" @click="showError">
                         Stäng
                     </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <VDialog 
+            v-model="isConfirmLeaveVisible" 
+            persistent 
+            class="action-dialog">
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmLeaveVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <VCard>
+                <VCardText class="dialog-title-box">
+                    <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+                    <div class="dialog-title">Du har osparade ändringar</div>
+                </VCardText>
+                <VCardText class="dialog-text">
+                    Om du lämnar sidan nu kommer dina ändringar inte att sparas.
+                </VCardText>
+
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+                    <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
                 </VCardText>
             </VCard>
         </VDialog>
