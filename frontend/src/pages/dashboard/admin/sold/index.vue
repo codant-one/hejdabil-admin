@@ -214,6 +214,13 @@ const download = async(vehicle) => {
   }
 };
 
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
