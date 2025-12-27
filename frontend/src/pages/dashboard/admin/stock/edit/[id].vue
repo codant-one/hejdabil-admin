@@ -1,5 +1,6 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { ref } from 'vue'
 import { themeConfig } from '@themeConfig'
@@ -27,6 +28,8 @@ const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
 
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const emitter = inject("emitter")
 const route = useRoute()
 
@@ -523,6 +526,7 @@ const createTask = async () => {
                 formData.append('start_date', start_date.value)
                 formData.append('end_date', end_date.value)
 
+                isConfirmTaskMobileDialogVisible.value = false
                 isRequestOngoing.value = true
 
                 tasksStores.addTask(formData)
@@ -1162,7 +1166,138 @@ const handleSendMail = () => {
     })
 }
 
-const onSubmit = () => {
+const onSubmit = async () => {
+    // Validación manual ANTES de usar VForm.validate()
+    // Verificar tab-1 (Fordon)
+    const hasTab1Errors = !reg_num.value || 
+                          !mileage.value || 
+                          !brand_id.value || 
+                          !model_id.value || 
+                          (model_id.value === 0 && !model.value) ||
+                          !car_body_id.value || 
+                          !year.value || 
+                          !chassis.value ||
+                          yearValidator(year.value) !== true
+
+    // Verificar tab-2 (Prisinformation)
+    const hasTab2Errors = purchase_price.value === null || 
+                          purchase_price.value === undefined || 
+                          purchase_price.value === '' ||
+                          !currency_id.value || 
+                          !iva_purchase_id.value
+
+    // Verificar tab-3 (Kund)
+    const hasTab3Errors = !client_type_id.value || 
+                          !organization_number.value || 
+                          (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                          !fullname.value || 
+                          !street.value || 
+                          !address.value || 
+                          !identification_id.value || 
+                          !postal_code.value ||
+                          (email.value && emailValidator(email.value) !== true) ||
+                          (phone.value && phoneValidator(phone.value) !== true)
+
+    // Verificar tab-4 (Information om bilen)
+    const hasTab4Errors = number_keys.value === null || 
+                          number_keys.value === undefined || 
+                          number_keys.value === ''
+
+    // Si hay errores, ir al primer tab con error
+    if (hasTab1Errors) {
+        currentTab.value = 'tab-1'
+        
+        // Esperar a que el tab se monte y luego validar
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordon',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+    
+    if (hasTab2Errors) {
+        currentTab.value = 'tab-2'
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Prisinformation',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+    
+    if (hasTab3Errors) {
+        currentTab.value = 'tab-3'
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+    
+    if (hasTab4Errors) {
+        currentTab.value = 'tab-4'
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Information om bilen',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+
+    // Si no hay errores manuales, proceder con el submit
     refForm.value?.validate().then(({ valid }) => {
         if (valid) {
             let formData = new FormData()
@@ -1287,7 +1422,7 @@ onBeforeUnmount(() => {
         <VSnackbar
             v-model="advisor.show"
             transition="scroll-y-reverse-transition"
-            location="top end"
+            :location="snackbarLocation"
             :color="advisor.type"
             class="snackbar-alert snackbar-dashboard"
         >
@@ -2438,12 +2573,14 @@ onBeforeUnmount(() => {
             </PerfectScrollbar>
         </VNavigationDrawer>
         
+        <!-- 👉 Create task mobile -->
         <VDialog
             v-model="isConfirmTaskMobileDialogVisible"
             fullscreen
+            persistent
             :scrim="false"
             transition="dialog-bottom-transition"
-            class="action-dialog dialog-fullscreen" >
+            class="action-dialog dialog-fullscreen">
             
             <VBtn
                 icon
@@ -2454,40 +2591,41 @@ onBeforeUnmount(() => {
             </VBtn>
             <VForm
                 ref="refTask"
-                class="h-100"
+                class="h-100 d-flex flex-column"
                 @submit.prevent="createTask">
-                <VCard flat class="card-drawer-form h-100">
-                    <VCardText class="dialog-title-box my-8">
+                <VCard flat class="card-drawer-form h-100 d-flex flex-column">
+                    <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
                         <div class="dialog-title">
-                            Lägg till åtgärd för fordonet
+                           Lägg till åtgärd för fordonet
                         </div>
                     </VCardText>
-                    <VCardText class="pt-0">
+                    <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                         <VRow>
-                                <VCol cols="12" md="12">
-                                    <VTextField
-                                        v-model="measure"
-                                        label="¿Vad ska goras?*"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="12">
-                                    <VTextarea
-                                        v-model="description"
-                                        rows="4"
-                                        label="Beskrivning"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="12">
-                                    <VTextField
-                                        v-model="cost"
-                                        type="number"
-                                        min="0"
-                                        label="Beräknad kostnad (kr)*"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
+                            <VCol cols="12" md="12">
+                                <VTextField
+                                    v-model="measure"
+                                    label="¿Vad ska goras?*"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="12">
+                                <VTextarea
+                                    v-model="description"
+                                    rows="4"
+                                    label="Beskrivning"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="12">
+                                <VTextField
+                                    v-model="cost"
+                                    type="number"
+                                    min="0"
+                                    label="Beräknad kostnad (kr)*"
+                                    :rules="[requiredValidator]"
+                                />
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <div @click.stop>
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="start_date"
@@ -2497,8 +2635,10 @@ onBeforeUnmount(() => {
                                         label="Startdatum*"
                                         clearable
                                     />
-                                </VCol>
-                                <VCol cols="12" md="6">
+                                </div>
+                            </VCol>
+                            <VCol cols="12" md="6">
+                                <div @click.stop>
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="end_date"
@@ -2507,19 +2647,20 @@ onBeforeUnmount(() => {
                                         label="Slutdatum"
                                         clearable
                                     />
-                                </VCol>
-                            </VRow>
+                                </div>
+                            </VCol>
+                        </VRow>  
                         
-                    </VCardText>
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-                        <VBtn
-                            class="btn-light"
-                            @click="isConfirmTaskMobileDialogVisible = false">
-                            Avbryt
-                        </VBtn>
-                        <VBtn class="btn-gradient" type="submit">
-                            Lägg till
-                        </VBtn>
+                        <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                            <VBtn
+                                class="btn-light"
+                                @click="isConfirmTaskMobileDialogVisible = false">
+                                Avbryt
+                            </VBtn>
+                            <VBtn class="btn-gradient" type="submit">
+                                Lägg till
+                            </VBtn>
+                        </div>
                     </VCardText>
                 </VCard>
             </VForm>
@@ -2711,6 +2852,7 @@ onBeforeUnmount(() => {
         <VDialog
             v-model="isConfirmUpdateTaskMobileDialogVisible"
             fullscreen
+            persistent
             :scrim="false"
             transition="dialog-bottom-transition"
             class="action-dialog dialog-fullscreen" >
@@ -2758,25 +2900,29 @@ onBeforeUnmount(() => {
                                 />
                             </VCol>
                             <VCol cols="12" md="6">
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="selectedTask.start_date"
-                                    density="compact"
-                                    :config="endDateTimePickerConfig"
-                                    :rules="[requiredValidator]"
-                                    label="Startdatum*"
-                                    clearable
-                                />
+                                <div @click.stop>
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="selectedTask.start_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        :rules="[requiredValidator]"
+                                        label="Startdatum*"
+                                        clearable
+                                    />
+                                </div>
                             </VCol>
                             <VCol cols="12" md="6">
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="selectedTask.end_date"
-                                    density="compact"
-                                    :config="endDateTimePickerConfig"
-                                    label="Slutdatum"
-                                    clearable
-                                />
+                                <div @click.stop>   
+                                    <AppDateTimePicker
+                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                        v-model="selectedTask.end_date"
+                                        density="compact"
+                                        :config="endDateTimePickerConfig"
+                                        label="Slutdatum"
+                                        clearable
+                                    />
+                                </div>
                             </VCol>
                         </VRow>
                         
@@ -2854,93 +3000,6 @@ onBeforeUnmount(() => {
             </VForm>
         </VDialog>
 
-        <!-- 👉 Create task mobile -->
-        <VDialog
-            v-model="isConfirmTaskMobileDialogVisible"
-            fullscreen
-            :scrim="false"
-            transition="dialog-bottom-transition"
-            class="action-dialog dialog-fullscreen" >
-            
-            <VBtn
-                icon
-                class="btn-white close-btn"
-                @click="isConfirmTaskMobileDialogVisible = false"
-            >
-                <VIcon size="16" icon="custom-close" />
-            </VBtn>
-            <VForm
-                ref="refTask"
-                class="h-100"
-                @submit.prevent="createTask">
-                <VCard flat class="card-drawer-form h-100">
-                    <VCardText class="dialog-title-box my-8">
-                        <div class="dialog-title">
-                            Lägg till åtgärd för fordonet
-                        </div>
-                    </VCardText>
-                    <VCardText class="pt-0">
-                        <VRow>
-                                <VCol cols="12" md="12">
-                                    <VTextField
-                                        v-model="measure"
-                                        label="¿Vad ska goras?*"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="12">
-                                    <VTextarea
-                                        v-model="description"
-                                        rows="4"
-                                        label="Beskrivning"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="12">
-                                    <VTextField
-                                        v-model="cost"
-                                        type="number"
-                                        min="0"
-                                        label="Beräknad kostnad (kr)*"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="start_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        :rules="[requiredValidator]"
-                                        label="Startdatum*"
-                                        clearable
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="end_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        label="Slutdatum"
-                                        clearable
-                                    />
-                                </VCol>
-                            </VRow>
-                        
-                    </VCardText>
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-                        <VBtn
-                            class="btn-light"
-                            @click="isConfirmTaskMobileDialogVisible = false">
-                            Avbryt
-                        </VBtn>
-                        <VBtn class="btn-gradient" type="submit">
-                            Lägg till
-                        </VBtn>
-                    </VCardText>
-                </VCard>
-            </VForm>
-        </VDialog>
 
         <!-- 👉 Create document (Desktop) -->
         <VNavigationDrawer
