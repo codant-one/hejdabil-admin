@@ -103,5 +103,27 @@ const label = computed(() => useAttrs().label)
     .v-field--focused {
       box-shadow: none !important;
     }
+
+    .v-field__input {
+      input::placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input::-webkit-input-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input::-moz-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input:-ms-input-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+    }
   }
 </style>

@@ -50,6 +50,7 @@ const isConfirmTaskMobileDialogVisible = ref(false)
 const isConfirmUpdateTaskDialogVisible = ref(false)
 const isConfirmUpdateTaskMobileDialogVisible = ref(false)
 const isConfirmCreateDocumentDialogVisible = ref(false)
+const isConfirmCreateDocumentMobileDialogVisible = ref(false)
 const isConfirmSendDocumentDialogVisible = ref(false)
 
 const selectedTask = ref({
@@ -816,8 +817,22 @@ const formatDecimal = (value) => {
     return number.toString();
 }
 
-const showDocument = () => {
-    isConfirmCreateDocumentDialogVisible.value = true
+const showDocument = (isMobile = false) => {
+    alertFile.value = null
+    document_type_id.value = null
+    reference.value = null
+    filename.value = []
+    
+    if (isMobile) {
+        isConfirmCreateDocumentMobileDialogVisible.value = true
+    } else {
+        isConfirmCreateDocumentDialogVisible.value = true
+    }
+}
+
+const closeDocument = () => {
+    isConfirmCreateDocumentDialogVisible.value = false
+    isConfirmCreateDocumentMobileDialogVisible.value = false
     alertFile.value = null
     document_type_id.value = null
     reference.value = null
@@ -849,7 +864,7 @@ const handleFileUpload = async (event) => {
                             show: true
                         }
 
-                        isConfirmCreateDocumentDialogVisible.value = false
+                        closeDocument()
                         await fetchData()
                     } else {
                         alertFile.value = res.data.message
@@ -2071,10 +2086,18 @@ onBeforeUnmount(() => {
                                             Sänd PDF
                                         </VBtn>  
                                         <VBtn
-                                            v-if="$can('edit', 'stock')"
+                                            v-if="$can('edit', 'stock') && windowWidth >= 1024"
                                             class="btn-gradient"
                                             block
-                                            @click="showDocument">
+                                            @click="showDocument(false)">
+                                            <VIcon icon="custom-plus" size="24" />
+                                            Ladda upp dokument
+                                        </VBtn>
+                                        <VBtn
+                                            v-if="$can('edit', 'stock') && windowWidth < 1024"
+                                            class="btn-gradient"
+                                            block
+                                            @click="showDocument(true)">
                                             <VIcon icon="custom-plus" size="24" />
                                             Ladda upp dokument
                                         </VBtn>
@@ -2095,54 +2118,133 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
                                     <VBtn
+                                        v-if="$can('create', 'stock') && windowWidth >= 1024"
                                         class="btn-ghost"
-                                        v-if="$can('create', 'stock')"
-                                        @click="showDocument"
+                                        @click="showDocument(false)"
+                                        >
+                                        Lägg till fordon
+                                        <VIcon icon="custom-arrow-right" size="24" />
+                                    </VBtn>
+                                    <VBtn
+                                        v-if="$can('create', 'stock') && windowWidth < 1024"
+                                        class="btn-ghost"
+                                        @click="showDocument(true)"
                                         >
                                         Lägg till fordon
                                         <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                 </div>
-                                <VTable 
-                                    v-else 
-                                    class="pt-2 px-4 pb-6 text-no-wrap"
-                                    style="border-radius: 0 !important"
-                                >
-                                    <!-- 👉 table head -->
-                                    <thead>
-                                        <tr>
-                                            <th scope="col">
-                                                <VCheckbox
-                                                    :model-value="allSelected"
-                                                    @update:model-value="allSelected = $event"
-                                                    density="compact"
-                                                    hide-details
-                                                />
-                                            </th>
-                                            <th scope="col">Namn</th>
-                                            <th scope="col">Dokumenttyp</th>
-                                            <th scope="col">Datum</th>
-                                            <th scope="col">Skapad av</th>                                                        
-                                            <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
-                                        </tr>
-                                    </thead>
-                                    <!-- 👉 table body -->
-                                    <tbody>
-                                        <tr 
-                                            v-for="(document, index) in documents"
-                                            :key="index"
-                                            style="height: 3rem;">
-                                            <td style="min-width: 30px;">
+                                <template v-else>
+                                    <VTable 
+                                        v-if="!$vuetify.display.mdAndDown"
+                                        class="pt-2 px-4 pb-6 text-no-wrap"
+                                        style="border-radius: 0 !important"
+                                    >
+                                        <!-- 👉 table head -->
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">
+                                                    <VCheckbox
+                                                        :model-value="allSelected"
+                                                        @update:model-value="allSelected = $event"
+                                                        density="compact"
+                                                        hide-details
+                                                    />
+                                                </th>
+                                                <th scope="col">Namn</th>
+                                                <th scope="col">Dokumenttyp</th>
+                                                <th scope="col">Datum</th>
+                                                <th scope="col">Skapad av</th>                                                        
+                                                <th scope="col" v-if="$can('edit', 'stock') || $can('delete', 'stock')"></th>
+                                            </tr>
+                                        </thead>
+                                        <!-- 👉 table body -->
+                                        <tbody>
+                                            <tr 
+                                                v-for="(document, index) in documents"
+                                                :key="index"
+                                                style="height: 3rem;">
+                                                <td style="min-width: 30px;">
+                                                    <VCheckbox
+                                                        :value="document.id"
+                                                        v-model="selectedIds"
+                                                        density="compact"
+                                                        hide-details
+                                                    />
+                                                </td>
+                                                <td class="text-wrap">{{ document.file.split('/').pop() }} </td>
+                                                <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
+                                                <td>  
+                                                    {{ new Date(document.created_at).toLocaleString('sv-SE', { 
+                                                        year: 'numeric', 
+                                                        month: '2-digit', 
+                                                        day: '2-digit', 
+                                                        hour: '2-digit', 
+                                                        minute: '2-digit',
+                                                        hour12: false
+                                                    }) }} 
+                                                </td>
+                                                <td> {{ document.user.name }} {{ document.user.last_name }}</td>
+                                                <!-- 👉 Actions -->
+                                                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
+                                                    <VMenu>
+                                                        <template #activator="{ props }">
+                                                            <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
+                                                                <VIcon icon="custom-dots-vertical" size="22" />
+                                                            </VBtn>
+                                                        </template>
+                                                        <VList>
+                                                            <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
+                                                                <template #prepend>
+                                                                    <VIcon icon="custom-download" class="mr-2" size="24" />
+                                                                </template>
+                                                                <VListItemTitle>Ladda ner</VListItemTitle>
+                                                            </VListItem>
+                                                            <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
+                                                                <template #prepend>
+                                                                    <VIcon icon="custom-waste" size="24" class="mr-2" />
+                                                                </template>
+                                                                <VListItemTitle>Ta bort</VListItemTitle>
+                                                            </VListItem>
+                                                        </VList>
+                                                    </VMenu>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </VTable>
+
+                                    <VExpansionPanels
+                                        class="expansion-panels pb-6 px-0"
+                                        v-if="$vuetify.display.mdAndDown"
+                                    >
+                                        <VExpansionPanel v-for="(document, index) in documents" :key="index">
+                                        <VExpansionPanelTitle
+                                            collapse-icon="custom-chevron-right"
+                                            expand-icon="custom-chevron-down"
+                                        >
+                                            <span class="order-id" @click.stop>
                                                 <VCheckbox
                                                     :value="document.id"
                                                     v-model="selectedIds"
                                                     density="compact"
                                                     hide-details
                                                 />
-                                            </td>
-                                            <td class="text-wrap">{{ document.file.split('/').pop() }} </td>
-                                            <td> {{ document.document_type_id === 4 ? document.reference : document.type.name }} </td>
-                                            <td>  
+                                                <VIcon icon="custom-pdf-file" class="ms-1" size="24" />
+                                            </span>
+                                            <div class="order-title-box">
+                                            <span class="title-panel">{{  document.file.split('/').pop() }}</span>
+                                            </div>
+                                        </VExpansionPanelTitle>
+                                        <VExpansionPanelText>
+                                            <div class="mb-6">
+                                            <div class="expansion-panel-item-label">Dokumenttyp</div>
+                                            <div class="expansion-panel-item-value">
+                                                {{ document.document_type_id === 4 ? document.reference : document.type.name }} 
+                                            </div>
+                                            </div>
+                                            <div class="mb-6">
+                                            <div class="expansion-panel-item-label">Datum</div>
+                                            <div class="expansion-panel-item-value">
                                                 {{ new Date(document.created_at).toLocaleString('sv-SE', { 
                                                     year: 'numeric', 
                                                     month: '2-digit', 
@@ -2150,46 +2252,37 @@ onBeforeUnmount(() => {
                                                     hour: '2-digit', 
                                                     minute: '2-digit',
                                                     hour12: false
-                                                }) }} 
-                                            </td>
-                                            <td> {{ document.user.name }} {{ document.user.last_name }}</td>
-                                            <!-- 👉 Actions -->
-                                            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'stock') || $can('delete', 'stock')">      
-                                                <VMenu>
-                                                    <template #activator="{ props }">
-                                                        <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                                                            <VIcon icon="custom-dots-vertical" size="22" />
-                                                        </VBtn>
-                                                    </template>
-                                                    <VList>
-                                                        <VListItem v-if="$can('edit', 'stock')" @click="download(document)">
-                                                            <template #prepend>
-                                                                <VIcon icon="custom-download" class="mr-2" size="24" />
-                                                            </template>
-                                                            <VListItemTitle>Ladda ner</VListItemTitle>
-                                                        </VListItem>
-                                                        <VListItem v-if="$can('delete','stock')" @click="removeDocument(document)">
-                                                            <template #prepend>
-                                                                <VIcon icon="custom-waste" size="24" class="mr-2" />
-                                                            </template>
-                                                            <VListItemTitle>Ta bort</VListItemTitle>
-                                                        </VListItem>
-                                                    </VList>
-                                                </VMenu>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                    <!-- 👉 table footer  -->
-                                    <tfoot v-show="!documents.length">
-                                    <tr>
-                                        <td
-                                        colspan="6"
-                                        class="text-center">
-                                        Uppgifter ej tillgängliga
-                                        </td>
-                                    </tr>
-                                    </tfoot>
-                                </VTable>
+                                                }) }}
+                                            </div>
+                                            </div>
+                                            <div class="mb-6">
+                                            <div class="expansion-panel-item-label">Skapad av</div>
+                                            <div class="expansion-panel-item-value">
+                                                {{ document.user.name }} {{ document.user.last_name }}
+                                            </div>
+                                            </div>
+                                            <div class="mb-4 row-with-buttons">
+                                            <VBtn
+                                                v-if="$can('delete','stock')"
+                                                class="btn-light"
+                                                @click="removeDocument(document)"
+                                            >
+                                                <VIcon icon="custom-waste" size="24" />
+                                                Ta bort
+                                            </VBtn>
+                                            <VBtn
+                                                v-if="$can('edit', 'stock')"
+                                                class="btn-light"
+                                                @click="seeDocument(document)">
+                                                <VIcon icon="custom-download" size="24" />
+                                                Ladda ner
+                                            </VBtn>
+                                            </div>
+                                        </VExpansionPanelText>
+                                        </VExpansionPanel>
+                                    </VExpansionPanels>
+                                </template>
+                                
                             </VWindowItem>
                         </VWindow>
                     </VCardText>
@@ -2849,129 +2942,236 @@ onBeforeUnmount(() => {
             </VForm>
         </VDialog>
 
-        <!-- 👉 Create document -->
-        <VDialog
-            v-model="isConfirmCreateDocumentDialogVisible"
-            persistent
-            class="v-dialog-sm">
-            <!-- Dialog close btn -->
-                
-            <DialogCloseBtn @click="isConfirmCreateDocumentDialogVisible = !isConfirmCreateDocumentDialogVisible" />
+        <!-- 👉 Create document (Desktop) -->
+        <VNavigationDrawer
+            temporary
+            :width="550"
+            location="end"
+            class="scrollable-content right-drawer rounded-left-4"
+            :model-value="isConfirmCreateDocumentDialogVisible"
+            @update:model-value="(val) => !val && closeDocument()"
+        >
+            <!-- 👉 Title -->
+            <div class="d-flex align-center pa-6 pb-1">
+                <h6 class="title-modal font-blauer">
+                    Ladda upp dokument
+                </h6>
 
-            <!-- Dialog Content -->
-            <VForm
-                ref="refDocument"
-                @submit.prevent="handleFileUpload">
-                <VCard title="Ladda upp dokument">
-                    <VDivider />
-                    <VCardText style="max-height: 450px;">
-                        <VAlert
-                            v-if="alertFile"
-                            color="error"
-                            icon="mdi-alert-octagon-outline"
-                            variant="tonal"
-                            class="mb-5"
-                            >
-                            {{alertFile}}
-                        </VAlert>
-                        <VRow>
-                            <VCol cols="12" md="12">
-                                <AppAutocomplete
-                                    v-model="document_type_id"
-                                    label="Dokumenttyp"
-                                    :items="document_types"
-                                    :item-title="item => item.name"
-                                    :item-value="item => item.id"
-                                    autocomplete="off"
-                                    :rules="[requiredValidator]"/>
-                            </VCol>
-                             <VCol cols="12" md="12" v-if="document_type_id === 4">
-                                <VTextField
-                                    v-model="reference"
-                                    label="Övrigt"
-                                    :rules="document_type_id === 4 ? [requiredValidator] : []"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="3">
-                                <VTextField
-                                    :model-value="formattedDate"
-                                    disabled
-                                    label="Datum"
-                                />
-                            </VCol>
-                            <VCol cols="12" md="9">
-                                <VFileInput       
-                                    v-model="filename"                   
-                                    label="Välj fil"
-                                    placeholder="Välj fil"
-                                    :rules="[requiredValidator]"
-                                />
-                            </VCol>
-                        </VRow>                        
-                    </VCardText>
+                <VSpacer />
 
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-4">
-                        <VBtn
-                            class="mt-4"
-                            color="secondary"
-                            variant="tonal"
-                            @click="isConfirmCreateDocumentDialogVisible = false">
-                             Avbryt
-                        </VBtn>
-                        <VBtn class="mt-4" type="submit">
-                             Ladda upp
-                        </VBtn>
+                <!-- 👉 Close btn -->
+                <VBtn
+                    icon
+                    class="btn-white"
+                    @click="closeDocument"
+                >
+                    <VIcon size="32" icon="custom-cancel" />
+                </VBtn>
+            </div>
+
+            <VDivider class="mt-4" />
+
+            <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
+                <VCard flat class="card-drawer-form">
+                    <VCardText>
+                        <!-- 👉 Form -->
+                        <VForm
+                            ref="refDocument"
+                            @submit.prevent="handleFileUpload">
+                            <VAlert
+                                v-if="alertFile"
+                                color="error"
+                                icon="mdi-alert-octagon-outline"
+                                variant="tonal"
+                                class="mb-5"
+                                >
+                                {{alertFile}}
+                            </VAlert>
+                            <VRow>
+                                <VCol cols="12" md="12">
+                                    <AppAutocomplete
+                                        v-model="document_type_id"
+                                        placeholder="Dokumenttyp*"
+                                        :items="document_types"
+                                        :item-title="item => item.name"
+                                        :item-value="item => item.id"
+                                        autocomplete="off"
+                                        :rules="[requiredValidator]"/>
+                                </VCol>
+                                <VCol cols="12" md="12" v-if="document_type_id === 4">
+                                    <VTextField
+                                        v-model="reference"
+                                        label="Övrigt"
+                                        :rules="document_type_id === 4 ? [requiredValidator] : []"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <VTextField
+                                        :model-value="formattedDate"
+                                        disabled
+                                        label="Datum"
+                                    />
+                                </VCol>
+                                <VCol cols="12" md="6">
+                                    <VFileInput       
+                                        v-model="filename"                   
+                                        label="Ladda upp fil*"
+                                        placeholder="Ladda upp fil*"
+                                        prepend-icon=""
+                                        append-inner-icon="custom-upload"
+                                        :rules="[requiredValidator]"
+                                    />
+                                </VCol>
+                                <VCol cols="12">
+                                    <VBtn
+                                        class="btn-light me-3"
+                                        @click="closeDocument">
+                                        Avbryt
+                                    </VBtn>
+                                    <VBtn class="btn-gradient" type="submit">
+                                        Ladda upp
+                                    </VBtn>
+                                </VCol>
+                            </VRow>
+                        </VForm>
                     </VCardText>
                 </VCard>
-            </VForm>
+            </PerfectScrollbar>
+        </VNavigationDrawer>
+
+        <!-- 👉 Create document (Mobile) -->
+        <VDialog
+            v-model="isConfirmCreateDocumentMobileDialogVisible"
+            transition="dialog-bottom-transition"
+            scrollable
+            content-class="dialog-bottom-full-width">
+            <VCard>
+                <VForm
+                    ref="refDocument"
+                    class="card-form"
+                    @submit.prevent="handleFileUpload">
+
+                    <VAlert
+                        v-if="alertFile"
+                        color="error"
+                        icon="mdi-alert-octagon-outline"
+                        variant="tonal"
+                        class="mb-5"
+                        >
+                        {{alertFile}}
+                    </VAlert>
+                    <VList>
+                        <VListItem>
+                            <AppAutocomplete
+                                v-model="document_type_id"
+                                placeholder="Dokumenttyp*"
+                                :items="document_types"
+                                :item-title="item => item.name"
+                                :item-value="item => item.id"
+                                autocomplete="off"
+                                :rules="[requiredValidator]"/>
+                        </VListItem>
+                        <VListItem v-if="document_type_id === 4">
+                            <VTextField
+                                v-model="reference"
+                                label="Övrigt"
+                                :rules="document_type_id === 4 ? [requiredValidator] : []"
+                            />
+                        </VListItem>
+                        <VListItem>
+                            <VTextField
+                                :model-value="formattedDate"
+                                disabled
+                                label="Datum"
+                            />
+                        </VListItem>
+                        <VListItem>
+                            <VFileInput       
+                                v-model="filename"                   
+                                label="Ladda upp fil*"
+                                placeholder="Ladda upp fil*"
+                                prepend-icon=""
+                                append-inner-icon="custom-upload"
+                                class="mt-4"
+                                :rules="[requiredValidator]"
+                            />
+                        </VListItem>
+                    
+                    </VList>
+                    <div class="px-5 mb-5 d-flex flex-column gap-2 w-100">
+                        <VBtn
+                            type="reset"
+                            block
+                            class="btn-light"
+                            @click="closeDocument"
+                        >
+                            Avbryt
+                        </VBtn>
+                        <VBtn
+                            type="submit"
+                            class="btn-gradient"
+                            >
+                            Ladda upp
+                        </VBtn>
+                    </div>
+                </VForm>
+            </VCard>
         </VDialog>
 
         <!-- 👉 Confirm send documents -->
         <VDialog
             v-model="isConfirmSendDocumentDialogVisible"
             persistent
-            class="v-dialog-sm" >
+            class="action-dialog">
             <!-- Dialog close btn -->
                 
-            <DialogCloseBtn @click="isConfirmSendDocumentDialogVisible = !isConfirmSendDocumentDialogVisible" />
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmSendDocumentDialogVisible = !isConfirmSendDocumentDialogVisible">
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
 
             <!-- Dialog Content -->
             <VForm
                 ref="refSend"
                 @submit.prevent="handleSendMail">
-                <VCard title="Skicka pdf som e-post">
-                    <VDivider />
-                    <VCardText>
-                         <VRow>
-                            <VCol cols="12" md="12">
-                                <AppAutocomplete
-                                    v-model="cl_id"
-                                    label="Kunder"
-                                    :items="clients"
-                                    :item-title="item => item.fullname"
-                                    :item-value="item => item.id"
-                                    autocomplete="off"
-                                    @update:modelValue="selectCl"
-                                    :rules="[requiredValidator]"/>
-                            </VCol>
-                            <VCol cols="12" md="12">
-                                <VTextField
-                                    v-model="mail"
-                                    label="E-post"
-                                    :rules="[emailValidator]"
-                                />
-                            </VCol>
-                        </VRow>
+                <VCard>
+                    <VCardText class="dialog-title-box">
+                        <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+                        <div class="dialog-title">
+                            Skicka pdf som e-post
+                        </div>
+                    </VCardText>
+                    <VCardText class="pb-0">
+                        <AppAutocomplete
+                            prepend-icon="custom-profile"
+                            :items="clients"
+                            :item-title="item => item.fullname"
+                            :item-value="item => item.id"
+                            placeholder="Kunder"
+                            autocomplete="off"
+                            clearable
+                            clear-icon="tabler-x"
+                            class="selector-user selector-truncate w-auto"
+                            @update:modelValue="selectCl"
+                            :rules="[requiredValidator]"/>
+                    </VCardText>
+                    <VCardText class="card-form">
+                        <VTextField
+                            v-model="mail"
+                            label="E-post"
+                            :rules="[emailValidator]"
+                        />                           
                     </VCardText>
 
                     <VCardText class="d-flex justify-end gap-3 flex-wrap">
                         <VBtn
-                            color="secondary"
-                            variant="tonal"
+                            class="btn-light"
                             @click="isConfirmSendDocumentDialogVisible = false">
                             Avbryt
                         </VBtn>
-                        <VBtn type="submit">
+                        <VBtn class="btn-gradient" type="submit">
                             Skicka
                         </VBtn>
                     </VCardText>
@@ -3291,7 +3491,61 @@ onBeforeUnmount(() => {
         max-height: 100% !important;
     }
 </style>
+<style lang="scss">
+.card-form {
+  .v-list {
+    padding: 28px 24px 40px !important;
 
+    .v-list-item {
+      margin-bottom: 0px;
+      padding: 0px !important;
+      gap: 0px !important;
+
+      .v-input--density-compact {
+        --v-input-control-height: 48px !important;
+      }
+
+      .v-select .v-field {
+        .v-select__selection {
+          align-items: center;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 0px;
+        }
+
+        .v-field__append-inner {
+          align-items: center;
+          padding-top: 0px;
+        }
+      }
+
+      .v-text-field {
+        .v-input__control {
+          padding-top: 16px;
+          input {
+            min-height: 48px;
+            padding: 12px 16px;
+          }
+        }
+      }
+    }
+  }
+  & .v-input {
+    & .v-input__control {
+      .v-field {
+        background-color: #f6f6f6;
+        .v-field-label {
+          @media (max-width: 991px) {
+            top: 12px !important;
+          }
+        }
+      }
+    }
+  }
+}
+</style>
 
 <route lang="yaml">
     meta:

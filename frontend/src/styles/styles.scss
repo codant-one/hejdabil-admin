@@ -808,6 +808,94 @@ body {
   }
 }
 
+// File Input Global Styles
+.v-file-input {
+  .v-input__control {
+    width: 100%;
+    .v-field {
+      padding-right: 0px;
+      background: white !important;
+      border-radius: 8px;
+      border: solid 1px #e7e7e7 !important;
+
+      .v-field__field {
+        label {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+      }
+
+      .v-field__input {
+        padding-inline-start: 8px;
+        opacity: 1 !important;
+        color: #454545 !important;
+
+        input {
+          color: #454545 !important;
+        }
+
+        input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input::-webkit-input-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input::-moz-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+
+        input:-ms-input-placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+      }
+
+      &.v-field--error {
+        border: solid 1px #e7e7e7 !important;
+        
+        .v-field__field {
+          label {
+            color: #454545 !important;
+            opacity: 1 !important;
+          }
+        }
+      }
+    }
+    .v-field__append-inner {
+      .v-icon {
+        opacity: 1 !important;
+        color: #454545 !important;
+      }
+    }
+    .v-field__outline {
+      .v-field__outline__start,
+      .v-field__outline__end {
+        border: 0px !important;
+      }
+    }
+
+    .v-field--variant-outlined .v-field__outline__notch {
+      color: transparent !important;
+    }
+
+    .v-field__append-inner {
+      padding-right: 10px;
+    }
+  }
+
+  // Override label color globally
+  .v-label {
+    color: #454545 !important;
+    opacity: 1 !important;
+  }
+
+}
+
 .page-section {
   display: flex;
   flex-direction: column;

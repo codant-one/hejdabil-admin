@@ -157,7 +157,7 @@ export const useLayouts = () => {
           same component is providing & injecting we are getting undefined error
     */
   const isVerticalNavMini = (windowWidth, isVerticalNavHovered = null) => {
-    const isVerticalNavHoveredLocal = isVerticalNavHovered || inject(injectionKeyIsVerticalNavHovered) || ref(false)
+    const isVerticalNavHoveredLocal = isVerticalNavHovered || inject(injectionKeyIsVerticalNavHovered, ref(false))
     
     return computed(() => isVerticalNavCollapsed.value && !isVerticalNavHoveredLocal.value && !isLessThanOverlayNavBreakpoint.value(unref(windowWidth)))
   }
