@@ -8,8 +8,8 @@ import { useVehiclesStores } from '@/stores/useVehicles';
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import router from '@/router';
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import router from '@/router'
 
 const vehiclesStores = useVehiclesStores()
 const companyInfoStores = useCompanyInfoStores()
@@ -92,6 +92,9 @@ const isConfirmLeaveVisible = ref(false)
 const initialData = ref(null)
 const nextRoute = ref(null)
 const allowNavigation = ref(false);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const err = ref(null);
 
 const currentData = computed(() => ({
     sale_price: sale_price.value,
@@ -429,6 +432,49 @@ const formatOrgNumber = () => {
     organization_number.value = numbers
 }
 
+
+const goToVehicles = () => {
+
+    let data = {
+        message: 'Aktie uppdaterad framgångsrikt.!',
+        error: false
+    }
+
+    router.push({ name : 'dashboard-admin-stock'})
+
+    emitter.emit('toast', data)                 
+
+};
+
+const sendVehicles = () => {
+  router.push({
+    name: "dashboard-admin-sold"
+  });
+};
+
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+    advisor.value.message = Object.values(err.value.response.data.errors)
+              .flat()
+              .join("<br>");
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
+
+
 const onSubmit = async () => {
     // Tab-1: Försäljningsuppgifter
     const hasTab1Errors = !sale_price.value || !sale_date.value || !iva_sale_id.value ||
@@ -496,22 +542,20 @@ const onSubmit = async () => {
             vehiclesStores.sendVehicle(formData)
                 .then((res) => {
                     if (res.data.success) {
-                        let data = {
-                            message: 'Aktie uppdaterad framgångsrikt.!',
-                            error: false
-                        };
-                        router.push({ name: 'dashboard-admin-sold' });
-                        emitter.emit('toast', data);
+                        skapatsDialog.value = true;
                     }
                     isRequestOngoing.value = false;
                 })
-                .catch((err) => {
-                    let data = {
+                .catch((error) => {
+                    /*let data = {
                         message: err.message,
                         error: true
                     };
                     router.push({ name: 'dashboard-admin-stock' });
-                    emitter.emit('toast', data);
+                    emitter.emit('toast', data);*/
+
+                    err.value = error;
+                    inteSkapatsDialog.value = true;
                     isRequestOngoing.value = false;
                 });
         }
@@ -948,11 +992,78 @@ onBeforeRouteLeave((to, from, next) => {
             </VCard>
         </VForm>
     
+        <!-- 👉 Dialogs Section -->
+        <VDialog
+            v-model="skapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="router.push({
+                    name: 'dashboard-admin-sold'
+                })"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-sedan" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Fordonet har markerats som sålt!</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    "Märke och modell" har flyttats från ditt lager till listan över sålda fordon.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="goToVehicles">
+                        Stäng
+                    </VBtn>
+                    <VBtn class="btn-gradient" @click="sendVehicles"> Gå till sålda fordon </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <VDialog
+            v-model="inteSkapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="inteSkapatsDialog = !inteSkapatsDialog"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-cancel" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Kunde inte markera fordonet som sålt</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    Ett fel uppstod när fordonet skulle flyttas. Kontrollera uppgifterna och försök igen.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="showError">
+                        Försök igen
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
         <!-- Confirm leave without saving -->
         <VDialog
             v-model="isConfirmLeaveVisible"
             persistent
-            class="action-dialog"
+            class="action-dialog d-none"
         >
             <VBtn
             icon
