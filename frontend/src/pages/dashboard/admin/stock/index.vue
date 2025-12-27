@@ -1,5 +1,6 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
@@ -16,6 +17,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const { width: windowWidth } = useWindowSize();
 const sectionEl = ref(null);
@@ -67,6 +69,7 @@ const refForm = ref()
 
 const selectedVehicleForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+const hasProcessedCreateAction = ref(false);
 
 const states = ref ([
   { id: 10, name: "På lager" },
@@ -166,6 +169,16 @@ const paginationData = computed(() => {
 watch(() => plate.value, (val) => {
   plate.value = val === null ? null : val.toUpperCase()
 });
+
+// Watch para limpiar query parameter cuando se cierra el modal
+watch(
+  () => isConfirmCreateDialogVisible.value,
+  (isOpen) => {
+    if (!isOpen && route.query.action === 'create') {
+      router.replace({ name: route.name, query: {} });
+    }
+  }
+);
 
 // 👉 watching current page
 watchEffect(() => {
@@ -472,6 +485,12 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Check if we should open create dialog
+  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
+    hasProcessedCreateAction.value = true;
+    isConfirmCreateDialogVisible.value = true;
+  }
 });
 
 onBeforeUnmount(() => {

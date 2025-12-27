@@ -161,6 +161,11 @@ const end_date = ref(null)
 
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const err = ref(null);
+
 const startDateTimePickerConfig = computed(() => {
 
     const now = new Date();
@@ -1166,6 +1171,47 @@ const handleSendMail = () => {
     })
 }
 
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+    advisor.value.message = Object.values(err.value.response.data.errors)
+              .flat()
+              .join("<br>");
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
+
+const goToVehicles = () => {
+
+    let data = {
+        message: 'Aktie uppdaterad framgångsrikt.!',
+        error: false
+    }
+
+    router.push({ name : 'dashboard-admin-stock'})
+    emitter.emit('toast', data)                 
+
+};
+
+const createVehicles = () => {
+  router.push({
+    name: "dashboard-admin-stock",
+    query: { action: "create" }
+  });
+};
+
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab-1 (Fordon)
@@ -1366,28 +1412,14 @@ const onSubmit = async () => {
             vehiclesStores.updateVehicle(data)
                 .then((res) => {
                     if (res.data.success) {
-                        
-                        let data = {
-                            message: 'Aktie uppdaterad framgångsrikt.!',
-                            error: false
-                        }
-
-                        router.push({ name : 'dashboard-admin-stock'})
-                        emitter.emit('toast', data)
+                        skapatsDialog.value = true;
                     }
                     isRequestOngoing.value = false
                 })
-                .catch((err) => {
-                    
-                    let data = {
-                        message: err.message,
-                        error: true
-                    }
-
-                    router.push({ name : 'dashboard-admin-stock'})
-                    emitter.emit('toast', data)
-
-                    isRequestOngoing.value = false
+                .catch((error) => {
+                    err.value = error;
+                    inteSkapatsDialog.value = true;
+                    isRequestOngoing.value = false;
                 })
         }
     })
@@ -3236,6 +3268,74 @@ onBeforeUnmount(() => {
                     </VCardText>
                 </VCard>
             </VForm>
+        </VDialog>
+
+        <!-- 👉 Dialogs Section -->
+        <VDialog
+            v-model="skapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="router.push({
+                    name: 'dashboard-admin-stock-edit-id',
+                    params: { id: Number(route.params.id) },
+                })"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-checkmark" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Fordonet har lagts till i lagret!</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    "Märke och modell" har registrerats och finns nu i din lagerlista.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="goToVehicles">
+                        Gå till lagerlistan
+                    </VBtn>
+                    <VBtn class="btn-gradient" @click="createVehicles"> Lägg till ett till fordon </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <VDialog
+            v-model="inteSkapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="inteSkapatsDialog = !inteSkapatsDialog"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-cancel" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Kunde inte lägga till fordonet</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    Ett fel uppstod. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="showError">
+                        Stäng
+                    </VBtn>
+                </VCardText>
+            </VCard>
         </VDialog>
     </section>
 </template>

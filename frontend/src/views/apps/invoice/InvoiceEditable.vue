@@ -7,9 +7,7 @@ import logoBlack from "@images/logo_black.png";
 import sampleFaktura from "@images/sample-faktura.jpg";
 import VuePdfEmbed from "vue-pdf-embed";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
 import draggable from "vuedraggable";
-import { Title } from "chart.js";
 
 const props = defineProps({
   data: {
@@ -752,19 +750,6 @@ const handleFocus = (element, fieldId) => {
       </VCardText>
 
       <VDivider :class="windowWidth < 1024 ? 'm-0' : 'my-6 mx-0'" />
-
-      <!-- <InvoiceProductEdit
-            v-else
-            :id="index"
-            :data="element"
-            :invoices="invoices"
-            :isCreated="props.isCreated"
-            @remove-product="removeProduct"
-            @delete-product="deleteProduct"
-            @edit-product="editx"
-
-            componente dentro del draggable
-        /> -->
 
       <!-- 👉 Add purchased products -->
       <VCardText class="add-products-form mt-2 py-0 px-0">
