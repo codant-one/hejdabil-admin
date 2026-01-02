@@ -1,11 +1,14 @@
 <script setup>
 
+import { ref, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useNotesStores } from '@/stores/useNotes'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText , formatNumber } from '@/@core/utils/formatters'
+import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
+import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import AddNewNoteDrawer from './AddNewNoteDrawer.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewNoteMobile from "./AddNewNoteMobile.vue";
@@ -30,6 +33,7 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const comment = ref(null)
 
 const advisor = ref({
   type: '',
@@ -47,6 +51,8 @@ const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
 const isFilterDialogVisible = ref(false);
+const isConfirmUpdateNoteDialogVisible = ref(false);
+const isConfirmUpdateNoteMobileDialogVisible = ref(false);
 const leaveContext = ref(null); // 'mobile' | 'route' | null
 
 let nextRoute = null;
@@ -157,10 +163,20 @@ const cancelLeave = () => {
   leaveContext.value = null;
 };
 
-
-const editNote = noteData => {
-    isAddNewNoteDrawerVisible.value = true
+const showNote = (noteData, isMobile = false) => {
     selectedNote.value = { ...noteData }
+    
+    if (isMobile) {
+        isConfirmUpdateNoteMobileDialogVisible.value = true
+    } else {
+        isConfirmUpdateNoteDialogVisible.value = true
+    }
+}
+
+const closeNote = () => {
+    isConfirmUpdateNoteDialogVisible.value = false
+    isConfirmUpdateNoteMobileDialogVisible.value = false
+    selectedNote.value = {}
 }
 
 const showDeleteDialog = noteData => {
@@ -192,6 +208,145 @@ const removeNote = async () => {
   return true
 }
 
+const formatCommentDate = (dateString) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const months = ['jan', 'feb', 'mars', 'apr', 'maj', 'juni', 'juli', 'aug', 'sept', 'okt', 'nov', 'dec']
+    const day = date.getDate()
+    const month = months[date.getMonth()]
+    const year = date.getFullYear()
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    return `${day} ${month} ${year}, ${hours}:${minutes}`
+}
+
+const sendComment = async () => {
+
+    if(comment.value !== null && comment.value !== '') {
+        isRequestOngoing.value = true
+        
+        const noteId = selectedNote.value.id
+        
+        await notesStores.sendComment({ id: noteId, comment: comment.value})
+        
+        // Refrescar datos desde el servidor
+        await fetchData()
+        
+        await nextTick()
+        
+        // Actualizar selectedNote con los datos frescos
+        const updatedNote = notes.value.find(item => item.id === noteId)
+        if (updatedNote) {
+            selectedNote.value = {
+                ...updatedNote
+            }
+        }
+
+        comment.value = null
+
+        advisor.value = {
+            type: 'success',
+            message: 'Kommentar skapad!',
+            show: true
+        }
+
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+
+        return true
+    }
+}
+
+const editComment = async (commentData) => {
+    if(commentData.comment !== null && commentData.comment !== '') {
+        isRequestOngoing.value = true
+        
+        const noteId = selectedNote.value.id
+        
+        await notesStores.updateComment({ 
+            note_id: noteId, 
+            comment_id: commentData.id, 
+            comment: commentData.comment
+        })
+        
+        // Refrescar datos desde el servidor
+        await fetchData()
+        
+        await nextTick()
+        
+        // Actualizar selectedNote con los datos frescos
+        const updatedNote = notes.value.find(item => item.id === noteId)
+        if (updatedNote) {
+            selectedNote.value = {
+                ...updatedNote
+            }
+        }
+
+        advisor.value = {
+            type: 'success',
+            message: 'Kommentar uppdaterad!',
+            show: true
+        }
+
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+
+        return true
+    }
+}
+
+const deleteComment = async (commentData) => {
+    
+    isRequestOngoing.value = true
+    
+    const noteId = selectedNote.value.id
+    
+    await notesStores.deleteComment({ 
+        note_id: noteId, 
+        comment_id: commentData.id
+    })
+    
+    // Refrescar datos desde el servidor
+    await fetchData()
+    
+    await nextTick()
+    
+    // Actualizar selectedNote con los datos frescos
+    const updatedNote = notes.value.find(item => item.id === noteId)
+    if (updatedNote) {
+        selectedNote.value = {
+            ...updatedNote
+        }
+    }
+
+    advisor.value = {
+        type: 'success',
+        message: 'Kommentar borttagen!',
+        show: true
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
+
+}
+
 const submitForm = async (note, method) => {
   isRequestOngoing.value = true
 
@@ -202,6 +357,21 @@ const submitForm = async (note, method) => {
   }
 
   submitCreate(note.data)
+}
+
+const submitFormFromDrawer = async () => {
+  isRequestOngoing.value = true
+
+  const formData = new FormData()
+  formData.append('_method', 'PUT')
+  formData.append('reg_num', selectedNote.value.reg_num)
+  formData.append('note', selectedNote.value.note)
+  formData.append('name', selectedNote.value.name)
+  formData.append('phone', selectedNote.value.phone)
+  formData.append('email', selectedNote.value.email)
+  formData.append('comment', selectedNote.value.comment)
+
+  submitUpdate({ id: selectedNote.value.id, data: formData })
 }
 
 const submitCreate = noteData => {
@@ -248,6 +418,9 @@ const submitUpdate = noteData => {
                 }
                 fetchData()
             }
+
+            isConfirmUpdateNoteDialogVisible.value = false
+            isConfirmUpdateNoteMobileDialogVisible.value = false
             isRequestOngoing.value = false
         })
         .catch((err) => {
@@ -313,11 +486,6 @@ const handleMobileDialogUpdate = (val) => {
 
 const onNoteFormEdited = (val) => {
   isNoteFormEdited.value = !!val;
-};
-
-const editNoteMobile = (noteData) => {
-  isDialogOpen.value = true;
-  selectedNote.value = { ...noteData };
 };
 
 const openAddNewNoteDrawerMobile = () => {
@@ -511,7 +679,7 @@ onBeforeUnmount(() => {
                           icon="custom-comments" 
                           size="24" 
                           class="cursor-pointer"
-                          
+                          @click="showNote(note, windowWidth < 1024 ? true : false)"
                       />
                       <span class="ms-2 text-comments text-neutral-3">
                         {{ note.comments?.length ?? 0 }}
@@ -693,6 +861,316 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 View/Update Note Dialog (Desktop) -->
+    <VNavigationDrawer
+      temporary
+      :width="550"
+      location="end"
+      class="scrollable-content right-drawer rounded-left-4"
+      :model-value="isConfirmUpdateNoteDialogVisible"
+      @update:model-value="(val) => !val && closeNote()"
+    >
+
+      <div class="d-flex align-center pa-6 pb-1">
+        <h6 class="title-modal font-blauer">
+          Uppdatera värdering
+        </h6>
+
+        <VSpacer />
+
+        <!-- Dialog close btn -->
+        <VBtn
+          icon
+          class="btn-white"
+          @click="closeNote"
+        >
+          <VIcon size="32" icon="custom-cancel" />
+        </VBtn>
+      </div>
+
+      <VDivider class="mt-4" />
+
+      <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
+        <VCard flat class="card-form">
+          <VCardText>
+            <!-- 👉 Form -->
+            <VForm
+              ref="refForm"
+              @submit.prevent="submitFormFromDrawer"
+            >
+              <VRow>
+                <VCol cols="12" md="12">
+                    <VTextField
+                        v-model="selectedNote.reg_num"
+                        label="Reg nr*"
+                        :rules="[requiredValidator]"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                    <VTextField
+                        v-model="selectedNote.note"
+                        type="number"
+                        min="0"
+                        label="Egen värdering*"
+                        :rules="[requiredValidator]"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                    <VTextField
+                        v-model="selectedNote.name"
+                        label="Kundnamn"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                    <VTextField
+                        v-model="selectedNote.phone"
+                        :rules="[phoneValidator]"
+                        label="Tel nr"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                    <VTextField
+                        v-model="selectedNote.email"
+                        :rules="[emailValidator]"
+                        label="E-post"
+                    />
+                </VCol>
+                <VCol cols="12" md="12">
+                    <VTextarea
+                        v-model="selectedNote.comment"
+                        rows="3"
+                        label="Kommentar"
+                    />
+                </VCol>
+                <!-- 👉 Submit and Cancel -->
+                <VCol cols="12">
+                  <VBtn
+                    type="reset"
+                    class="btn-light me-3"
+                    @click="closeNote"
+                  >
+                    Avbryt
+                  </VBtn>
+                  <VBtn
+                    type="submit"
+                    class="btn-gradient"
+                  >
+                    Uppdatering
+                  </VBtn>
+                </VCol>
+              </VRow>
+
+              <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+              <div class="d-flex gap-2 mb-6">
+                  <VIcon size="24" icon="custom-comments-2" class="action-icon" />
+                  <span class="span-comments">
+                      Kommentarer
+                  </span>
+              </div>
+
+              <div class="d-flex flex-column gap-6">
+                <VTextField
+                    v-model="comment"
+                    placeholder="Skriv en kommentar"
+                />
+                <VBtn class="btn-light w-auto align-self-start" @click="sendComment">
+                    Kommentar
+                </VBtn>
+              </div>
+
+              <VDivider v-if="selectedNote.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+              <div 
+                  v-for="(comment, index) in selectedNote.comments" 
+                  :key="index"
+                  class="d-flex flex-column gap-2 justify-center mb-4">
+                  <div class="text-no-wrap w-100">
+                      <VAvatar
+                          color="#E3DEEB"
+                          :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                          size="40"
+                      >
+                          <VImg
+                              v-if="comment.user.avatar"
+                              style="border-radius: 50%;"
+                              :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                          />
+                          <span v-else>{{ avatarText(comment.user.name) }}</span>
+                      </VAvatar>
+                      <span class="ms-2 user-comments">
+                          {{ comment.user.name }} {{ comment.user.last_name }}
+
+                          <span class="date-comments">  
+                              {{ formatCommentDate(comment.created_at) }}
+                          </span>
+                      </span>
+                      
+                  </div>
+                  <VTextField
+                      v-model="comment.comment"
+                      placeholder="Kommentar.."
+                  />
+                  <div class="d-flex gap-4">
+                      <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
+                      <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                  </div>
+              </div>
+            </VForm>
+          </VCardText>
+        </VCard>
+      </PerfectScrollbar>
+     
+    </VNavigationDrawer>
+
+    <!-- 👉 View/Update Note Dialog (Mobile) -->
+    <VDialog
+      v-model="isConfirmUpdateNoteMobileDialogVisible"
+      fullscreen
+      persistent
+      :scrim="false"
+      transition="dialog-bottom-transition"
+      class="action-dialog dialog-fullscreen" >
+
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeNote"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VForm
+        ref="refUpdate"
+        class="h-100 d-flex flex-column"
+        @submit.prevent="submitFormFromDrawer">
+        <VCard flat class="card-drawer-form h-100 d-flex flex-column">
+            <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
+                <div class="dialog-title">
+                  Uppdatera värdering
+                </div>
+            </VCardText>
+            <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+                <VRow>
+                    <VCol cols="12" md="12">
+                        <VTextField
+                            v-model="selectedNote.reg_num"
+                            label="Reg nr*"
+                            :rules="[requiredValidator]"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextField
+                            v-model="selectedNote.note"
+                            type="number"
+                            min="0"
+                            label="Egen värdering*"
+                            :rules="[requiredValidator]"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextField
+                            v-model="selectedNote.name"
+                            label="Kundnamn"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextField
+                            v-model="selectedNote.phone"
+                            :rules="[phoneValidator]"
+                            label="Tel nr"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextField
+                            v-model="selectedNote.email"
+                            :rules="[emailValidator]"
+                            label="E-post"
+                        />
+                    </VCol>
+                    <VCol cols="12" md="12">
+                        <VTextarea
+                            v-model="selectedNote.comment"
+                            rows="3"
+                            label="Kommentar"
+                        />
+                    </VCol>
+                </VRow>
+                
+                <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                    <VBtn
+                        class="btn-light"
+                        @click="closeNote">
+                        Avbryt
+                    </VBtn>
+                    <VBtn class="btn-gradient" type="submit">
+                        Uppdatering
+                    </VBtn>
+                </div>
+
+                <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                <div class="d-flex gap-2 mb-6">
+                    <VIcon size="24" icon="custom-comments-2" class="action-icon" />
+                    <span class="span-comments">
+                        Kommentarer
+                    </span>
+                </div>
+
+                <div class="d-flex flex-column gap-6">
+                    <VTextField
+                        v-model="comment"
+                        placeholder="Skriv en kommentar"
+                    />
+                    <VBtn class="btn-light w-auto align-self-start" @click="sendComment">
+                        Kommentar
+                    </VBtn>
+                </div>
+
+                <VDivider v-if="selectedNote.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+
+                <div 
+                    v-for="(comment, index) in selectedNote.comments" 
+                    :key="index"
+                    class="d-flex flex-column gap-2 justify-center mb-4">
+                    <div class="text-no-wrap w-100">
+                        <VAvatar
+                            color="#E3DEEB"
+                            :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                            size="40"
+                        >
+                            <VImg
+                                v-if="comment.user.avatar"
+                                style="border-radius: 50%;"
+                                :src="themeConfig.settings.urlStorage + comment.user.avatar"
+                            />
+                            <span v-else>{{ avatarText(comment.user.name) }}</span>
+                        </VAvatar>
+                        <span class="ms-2 user-comments">
+                            {{ comment.user.name }} {{ comment.user.last_name }}
+
+                            <span class="date-comments">  
+                                {{ formatCommentDate(comment.created_at) }}
+                            </span>
+                        </span>
+                        
+                    </div>
+                    <VTextField
+                        v-model="comment.comment"
+                        placeholder="Kommentar.."
+                    />
+                    <div class="d-flex gap-4">
+                        <span class="link-comments cursor-pointer" @click="editComment(comment)">Redigera</span>
+                        <span class="link-comments cursor-pointer" @click="deleteComment(comment)">Eliminera</span>
+                    </div>
+                </div>
+                
+                
+            </VCardText>
+        </VCard>
+      </VForm>
+      
+    </VDialog>
+
     <!-- Confirm leave without saving (parent-level for mobile outside-click and route change) -->
     <VDialog
       v-model="isConfirmLeaveVisible"
@@ -724,6 +1202,14 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+  .dialog-fullscreen.v-overlay--active .v-overlay__content {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+
   .note-value-field {
     background-color: #F6F6F6;
     border-radius: 8px;

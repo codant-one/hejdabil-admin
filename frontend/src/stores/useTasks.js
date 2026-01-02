@@ -85,6 +85,6 @@ export const useTasksStores = defineStore('tasks', {
                     this.setLoading(false)
                 })
             
-        },
+        }
     }
 })

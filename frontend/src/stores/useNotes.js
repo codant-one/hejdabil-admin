@@ -93,6 +93,45 @@ export const useNotesStores = defineStore('notes', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
+        },
+        sendComment(data) {
+            this.setLoading(true)
+
+            return Notes.comment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        updateComment(data) {
+            this.setLoading(true)
+
+            return Notes.updateComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        deleteComment(data) {
+            this.setLoading(true)
+
+            return Notes.deleteComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
         }
     }
 })

@@ -134,4 +134,26 @@ class Note extends Model
             'comment' => $request->comment
         ]);
     }
+
+    public static function updateComment($request, $id) {
+        $comment = NoteComment::find($id);
+        
+        if ($comment) {
+            $comment->update([
+                'comment' => $request->comment
+            ]);
+        }
+        
+        return $comment;
+    }
+
+    public static function deleteComment($id) {
+        $comment = NoteComment::find($id);
+        
+        if ($comment) {
+            $comment->delete();
+        }
+        
+        return true;
+    }
 }

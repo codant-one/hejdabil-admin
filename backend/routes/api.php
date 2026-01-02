@@ -163,6 +163,8 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Notes
     Route::group(['prefix' => 'notes'], function () {
         Route::post('comment', [NoteController::class, 'comment']);
+        Route::put('comment/{id}', [NoteController::class, 'updateComment']);
+        Route::delete('comment/{id}', [NoteController::class, 'deleteComment']);
     });
 
     //Documents (Vehicle Documents)

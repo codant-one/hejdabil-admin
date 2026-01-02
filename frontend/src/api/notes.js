@@ -21,6 +21,18 @@ class Notes {
     delete(id){
         return axios.delete(`/notes/${id}`)
     }
+
+    comment(data) {
+        return axios.post('/notes/comment', data)
+    }
+
+    updateComment(data) {
+        return axios.put(`/notes/comment/${data.comment_id}`, data)
+    }
+
+    deleteComment(data) {
+        return axios.delete(`/notes/comment/${data.comment_id}`, { data: data })
+    }
     
 }
 

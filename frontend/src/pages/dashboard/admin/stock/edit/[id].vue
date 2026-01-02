@@ -2805,16 +2805,16 @@ onBeforeRouteLeave((to, from, next) => {
                     Lägg till åtgärd för fordonet
                 </h6>
 
-            <VSpacer />
+                <VSpacer />
 
-            <!-- 👉 Close btn -->
-            <VBtn
-                icon
-                class="btn-white"
-                @click="closeTask"
-            >
-                <VIcon size="32" icon="custom-cancel" />
-            </VBtn>
+                <!-- 👉 Close btn -->
+                <VBtn
+                    icon
+                    class="btn-white"
+                    @click="closeTask"
+                >
+                    <VIcon size="32" icon="custom-cancel" />
+                </VBtn>
             </div>
 
             <VDivider class="mt-4" />
