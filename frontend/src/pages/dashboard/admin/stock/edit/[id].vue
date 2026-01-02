@@ -5,7 +5,7 @@ import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { ref, nextTick } from 'vue'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
+import { avatarText, formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
@@ -2278,24 +2278,17 @@ onBeforeRouteLeave((to, from, next) => {
                                                 {{ task.description }}
                                             </div>
             
-                                            <VTextField
-                                                type="number"
-                                                :value="task.cost"
-                                                suffix="(kr)"
-                                                readonly
-                                                class="my-4"
-                                            />
+                                            <div class="note-value-field my-4">
+                                                {{ formatNumber(task.cost ?? 0) }} (kr)
+                                            </div>    
 
                                             <div class="d-flex gap-4 mb-4">
-                                                <VTextField
-                                                    :value="formatDateDisplay(task.start_date)"
-                                                    readonly
-                                                />
-                                                <VTextField
-                                                    :value="formatDateDisplay(task.end_date)"
-                                                    readonly
-                                                />
-
+                                                <span class="note-value-field w-100">
+                                                    {{ formatDateDisplay(task.start_date) }}
+                                                </span>
+                                                <span class="note-value-field w-100">
+                                                    {{ formatDateDisplay(task.start_date) }}
+                                                </span>
                                             </div>         
 
                                             <div class="d-flex align-center px-0">
@@ -3590,6 +3583,20 @@ onBeforeRouteLeave((to, from, next) => {
 
     .border-comments {
         border-bottom: 1px solid #E7E7E7;
+    }
+
+    .note-value-field {
+        background-color: #F6F6F6;
+        border-radius: 8px;
+        border: 1px solid #E7E7E7;
+        padding: 0 16px;
+        height: 40px !important;
+        align-items: center;
+        display: flex;
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
+        color: #878787;
     }
 
     .v-tabs.vehicles-tabs {

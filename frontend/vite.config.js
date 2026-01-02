@@ -16,11 +16,11 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         quietDeps: true,
-        silenceDeprecations: ['global-builtin'],
+        silenceDeprecations: ['global-builtin', 'legacy-js-api'],
       },
       sass: {
         quietDeps: true,
-        silenceDeprecations: ['global-builtin'],
+        silenceDeprecations: ['global-builtin', 'legacy-js-api'],
       },
     },
   },
@@ -77,6 +77,25 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 5000,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress baseline-browser-mapping warning
+        if (warning.message && warning.message.includes('baseline-browser-mapping')) {
+          return;
+        }
+        // Suppress CSS syntax warnings from dependencies
+        if (warning.code === 'SOURCEMAP_ERROR') {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
+  esbuild: {
+    // Suppress CSS syntax warnings during minification
+    logOverride: {
+      'css-syntax-error': 'silent',
+    },
   },
   optimizeDeps: {
     exclude: ['vuetify'],

@@ -21,6 +21,10 @@ class Note extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
+    public function comments(){
+        return $this->hasMany(NoteComment::class, 'note_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {

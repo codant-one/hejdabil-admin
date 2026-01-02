@@ -1,12 +1,7 @@
 <script setup>
-import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import {
-  emailValidator,
-  requiredValidator,
-  phoneValidator,
-  minLengthDigitsValidator,
-} from "@/@core/utils/validators";
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
 
 const props = defineProps({
   isDrawerOpen: {
@@ -57,6 +52,7 @@ const currentData = computed(() => ({
   reference: reference.value,
   comments: comments.value,
 }))
+
 const isDirty = computed(() => {
   if (!initialData.value) return false
   try {
@@ -65,10 +61,6 @@ const isDirty = computed(() => {
     return true
   }
 })
-
-const getTitle = computed(() => {
-  return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
-});
 
 watchEffect(async () => {
   if (props.isDrawerOpen) {
@@ -257,27 +249,22 @@ watch(currentData, () => {
         <VTextarea v-model="comments" label="Beskrivning" />
       </VListItem>
     </VList>
-    <VRow class="px-9">
+    <div class="pb-6 px-6 d-flex gap-4 form-actions">
       <!-- 👉 Submit and Cancel -->
-      <VCol cols="6">
-        <VBtn
-          type="reset"
-          block
-          class="btn-light me-3"
-          @click="closeNavigationDrawer"
-        >
-          Avbryt
-        </VBtn>
-      </VCol>
-      <VCol cols="6">
-        <VBtn
-          type="submit"
-          class="btn-gradient"
-        >
-          {{ isEdit ? "Uppdatering" : "Lägg till" }}
-        </VBtn>
-      </VCol>
-    </VRow>
+      <VBtn
+        class="btn-light" 
+        type="reset"
+        @click="closeNavigationDrawer"
+      >
+        Avbryt
+      </VBtn>
+      <VBtn
+        class="btn-gradient"
+        type="submit"
+      >
+        {{ isEdit ? "Uppdatering" : "Lägg till" }}
+      </VBtn>
+    </div>
   </VForm>
 
   <!-- Confirm leave without saving (mobile) -->
@@ -320,6 +307,12 @@ watch(currentData, () => {
 
 .v-btn {
   width: 100%;
+}
+
+.form-actions {
+  .v-btn {
+    flex: 1;
+  }
 }
 </style>
 

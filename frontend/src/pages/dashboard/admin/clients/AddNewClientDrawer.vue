@@ -1,12 +1,8 @@
 <script setup>
+
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import {
-  emailValidator,
-  requiredValidator,
-  phoneValidator,
-  minLengthDigitsValidator,
-} from "@/@core/utils/validators";
 
 const props = defineProps({
   isDrawerOpen: {
@@ -23,7 +19,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:isDrawerOpen", "clientData", "edited"]);
+const emit = defineEmits([
+  "update:isDrawerOpen", 
+  "clientData", 
+  "edited"
+]);
 
 const isFormValid = ref(false);
 const refForm = ref();
@@ -58,6 +58,7 @@ const currentData = computed(() => ({
   reference: reference.value,
   comments: comments.value,
 }))
+
 const isDirty = computed(() => {
   if (!initialData.value) return false
   try {
@@ -223,11 +224,16 @@ watch(currentData, () => {
 
     <VDivider class="mt-4" />
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
+    <PerfectScrollbar 
+      :options="{ wheelPropagation: false }" 
+      class="scrollbar-no-border">
       <VCard flat class="card-form">
         <VCardText>
           <!-- 👉 Form -->
-          <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+          <VForm 
+            ref="refForm" 
+            v-model="isFormValid" 
+            @submit.prevent="onSubmit">
             <VRow>
               <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
                 <VSelect                 

@@ -1,14 +1,19 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import { useNotesStores } from '@/stores/useNotes'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
+import { avatarText , formatNumber } from '@/@core/utils/formatters'
 import AddNewNoteDrawer from './AddNewNoteDrawer.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import AddNewNoteMobile from "./AddNewNoteMobile.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const notesStores = useNotesStores()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const notes = ref([])
 const searchQuery = ref('')
@@ -32,12 +37,30 @@ const advisor = ref({
   show: false
 })
 
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay()
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end")
+const sectionEl = ref(null);
+const hasLoaded = ref(false);
+
+const isDialogOpen = ref(false);
+const isNoteFormEdited = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const isFilterDialogVisible = ref(false);
+const leaveContext = ref(null); // 'mobile' | 'route' | null
+
+let nextRoute = null;
+
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = notes.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = notes.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = notes.value.length 
+    ? (currentPage.value - 1) * rowPerPage.value + 1 
+    : 0
+  const lastIndex = 
+    notes.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalNotes.value } register`
+  return `${totalNotes.value} resultat`;
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalNotes.value } register`
 })
 
 // 👉 watching current page
@@ -70,6 +93,7 @@ async function fetchData(cleanFilters = false) {
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isFilterDialogVisible.value = false;
 
   await notesStores.fetchNotes(data)
 
@@ -78,20 +102,61 @@ async function fetchData(cleanFilters = false) {
   totalNotes.value = notesStores.notesTotalCount
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
+  role.value = userData.value?.roles?.[0]?.name ?? null
 
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = notesStores.getSuppliers
   }
 
+  hasLoaded.value = true;
   isRequestOngoing.value = false
 }
 
 watchEffect(registerEvents)
 
+// Guard route changes if client creation form has unsaved changes
+onBeforeRouteLeave((to, from, next) => {
+  if (isNoteFormEdited.value && (isAddNewNoteDrawerVisible.value || isDialogOpen.value)) {
+    isConfirmLeaveVisible.value = true;
+    nextRoute = next;
+    leaveContext.value = 'route';
+  } else {
+    next();
+  }
+});
+
 function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  if (leaveContext.value === 'route' && nextRoute) {
+    isAddNewNoteDrawerVisible.value = false;
+    isDialogOpen.value = false;
+    isNoteFormEdited.value = false;
+    const go = nextRoute;
+    nextRoute = null;
+    leaveContext.value = null;
+    go();
+    return;
+  }
+  if (leaveContext.value === 'mobile') {
+    isDialogOpen.value = false;
+    isNoteFormEdited.value = false;
+  }
+  leaveContext.value = null;
+};
+
+const cancelLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  if (leaveContext.value === 'route' && nextRoute) {
+    nextRoute(false);
+    nextRoute = null;
+  }
+  leaveContext.value = null;
+};
+
 
 const editNote = noteData => {
     isAddNewNoteDrawerVisible.value = true
@@ -138,7 +203,6 @@ const submitForm = async (note, method) => {
 
   submitCreate(note.data)
 }
-
 
 const submitCreate = noteData => {
 
@@ -234,261 +298,506 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+
+// Intercept mobile dialog outside-click close
+const handleMobileDialogUpdate = (val) => {
+  if (val === false && isNoteFormEdited.value) {
+    // keep dialog open and show confirm
+    isDialogOpen.value = true;
+    isConfirmLeaveVisible.value = true;
+    leaveContext.value = 'mobile';
+    return;
+  }
+  isDialogOpen.value = val;
+};
+
+const onNoteFormEdited = (val) => {
+  isNoteFormEdited.value = !!val;
+};
+
+const editNoteMobile = (noteData) => {
+  isDialogOpen.value = true;
+  selectedNote.value = { ...noteData };
+};
+
+const openAddNewNoteDrawerMobile = () => {
+  isDialogOpen.value = true;
+  selectedNote.value = {};
+};
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Check if we should open create dialog
+  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
+    hasProcessedCreateAction.value = true;
+    isConfirmCreateDialogVisible.value = true;
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <section>
-    <VRow>
-      <LoadingOverlay :is-loading="isRequestOngoing" />
+  <section class="page-section" ref="sectionEl">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            
-          {{ advisor.message }}
-        </VAlert>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
 
-        <VCard title="">
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                variant="outlined"
-                class="w-100"
-                :items="[10, 20, 30, 50]"/>
-            </div>
+    <VCard class="card-fill">
+      <VCardTitle
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
+      >
+        <div class="align-center font-blauer">
+          <h2>Mina värderingar <span v-if="hasLoaded">({{ totalNotes }})</span></h2>
+        </div>
 
-            <VBtn
-              variant="tonal"
-              color="secondary"
-              prepend-icon="tabler-file-export"
-              class="w-100 w-md-auto"
-              @click="downloadCSV">
-              Exportera
-            </VBtn>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
-            <VSpacer class="d-none d-md-block"/>
-
-            <AppAutocomplete
-                v-if="role === 'SuperAdmin' || role === 'Administrator'"
-                v-model="supplier_id"
-                placeholder="Leverantörer"
-                :items="suppliers"
-                :item-title="item => item.full_name"
-                :item-value="item => item.id"
-                autocomplete="off"
-                clearable
-                clear-icon="tabler-x"/>
-
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök"
-                  density="compact"
-                  clearable
-                />
-              </div>
-
-              <!-- 👉 Add user button -->
-              <VBtn
-                v-if="$can('create','notes')"
-                prepend-icon="tabler-plus"
-                class="w-100 w-md-auto"
-                @click="isAddNewNoteDrawerVisible = true">
-                  Ny värdering
-              </VBtn>
-            </div>
-          </VCardText>
-
-          <v-divider />
-
-          <v-table class="text-no-wrap">
-            <!-- 👉 table head -->
-            <thead>
-              <tr>
-                <th scope="col"> Reg nr </th>
-                <th scope="col"> Egen värdering  </th>
-                <th scope="col"> Info </th>
-                <th scope="col"> E-post</th>
-                <th scope="col"> Kommentar </th>
-                <th scope="col"> Datum </th>
-                <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
-                <th scope="col"> SKAPAD AV </th> 
-                <th scope="col" v-if="$can('edit', 'notes') || $can('delete', 'notes')"></th>
-              </tr>
-            </thead>
-            <!-- 👉 table body -->
-            <tbody>
-              <tr 
-                v-for="note in notes"
-                :key="note.id"
-                style="height: 3rem;">
-                <td> {{ note.reg_num }} </td>
-                <td> {{ note.note }} </td>
-                <td> 
-                  <div class="d-flex align-center gap-x-3">
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ note.name }} 
-                      </span>
-                      <span class="text-sm text-disabled" v-if="note.phone">Tel nr: {{ note.phone }}</span>
-                    </div>
-                  </div>
-                </td>
-                <td> {{ note.email }} </td>
-                <td class="text-wrap">
-                    {{ note.comment }}
-                </td>  
-                <td class="text-wrap">
-                   {{ new Date(note.created_at).toLocaleString('sv-SE', { 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit', 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false
-                    }) }} 
-                </td>               
-                <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-                  <span class="font-weight-medium"  v-if="note.supplier">
-                    {{ note.supplier.user.name }} {{ note.supplier.user.last_name ?? '' }} 
-                  </span>
-                </td>
-                <td class="text-wrap">
-                  <div class="d-flex align-center gap-x-3">
-                    <VAvatar
-                      :variant="note.user.avatar ? 'outlined' : 'tonal'"
-                      size="38"
-                      >
-                      <VImg
-                        v-if="note.user.avatar"
-                        style="border-radius: 50%;"
-                        :src="themeConfig.settings.urlStorage + note.user.avatar"
-                      />
-                        <span v-else>{{ avatarText(note.user.name) }}</span>
-                    </VAvatar>
-                    <div class="d-flex flex-column">
-                      <span class="font-weight-medium">
-                        {{ note.user.name }} {{ note.user.last_name ?? '' }} 
-                      </span>
-                      <span class="text-sm text-disabled">{{ note.user.email }}</span>
-                    </div>
-                  </div>
-                </td>     
-                <!-- 👉 Actions -->
-                <td 
-                  class="text-center" 
-                  style="width: 3rem;" 
-                  v-if="($can('edit', 'notes') || $can('delete', 'notes')) && userData.id === note.user_id">      
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
-                      </VBtn>
-                    </template>
-                    <VList>
-                      <VListItem
-                         v-if="$can('edit', 'notes')"
-                         @click="editNote(note)">
-                        <template #prepend>
-                          <VIcon icon="tabler-edit" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','notes')"
-                        @click="showDeleteDialog(note)">
-                        <template #prepend>
-                          <VIcon icon="tabler-trash" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-                <td v-else></td>
-              </tr>
-            </tbody>
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!notes.length">
-              <tr>
-                <td
-                  colspan="8"
-                  class="text-center">
-                  Uppgifter ej tillgängliga
-                </td>
-              </tr>
-            </tfoot>
-          </v-table>
+        <div class="d-flex gap-4">
+          <VBtn
+            class="btn-light w-auto"
+            block
+            @click="downloadCSV">
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
+          <VBtn
+            v-if="$can('create', 'notes') && windowWidth >= 1024"
+            class="btn-gradient"
+            block
+            @click="isAddNewNoteDrawerVisible = true">
+              <VIcon icon="custom-plus" size="24" />
+              Ny värdering
+          </VBtn>
+          <VBtn
+            v-if="windowWidth < 1024 && $can('create', 'notes')"
+            class="btn-gradient"
+            block
+            @click="openAddNewNoteDrawerMobile"
+          >
+            <VIcon icon="custom-plus" size="24" />
+            Ny värdering
+          </VBtn>
+        </div>
+      </VCardTitle>
         
-          <v-divider />
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
-            <span class="text-sm text-disabled">
-              {{ paginationData }}
-            </span>
+      <VCardText
+        class="d-flex align-center justify-space-between gap-2 pb-0"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
+      >
+        <!-- 👉 Search  -->
+        <div class="search">
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+        </div>
 
-            <VSpacer class="d-none d-md-block"/>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-            <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="5"
-              :length="totalPages"/>
-          
-          </VCardText>
+        <VBtn 
+          class="btn-white-2" 
+          v-if="role !== 'Supplier' && role !== 'User'"
+          @click="isFilterDialogVisible = true"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+        </VBtn>
+
+        <div
+          v-if="!$vuetify.display.mdAndDown"
+          class="d-flex align-center visa-select"
+        >
+          <span class="text-no-wrap pr-4">Visa</span>
+          <VSelect
+            v-model="rowPerPage"
+            class="custom-select-hover"
+            :items="[10, 20, 30, 50]"
+          />
+        </div>
+      </VCardText>
+
+      <div 
+        v-show="notes.length"
+        class="d-flex flex-wrap gap-4"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'">
+        <VCard
+            v-for="(note, index) in notes"
+            :key="note.id"
+            flat
+            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33.333% - 11px);'"
+            class="border-card-comment py-2 px-4 readonly-form d-flex flex-column"
+        >
+            <VCardText 
+                class="d-flex align-center px-0 border-comments" 
+                style="min-height: 48px; max-height: 48px;"
+                > 
+                <div class="d-flex flex-column gap-1">
+                  <span class="title-comments" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
+                    {{ note.name }}
+                  </span>
+                  <span class="subtitle-comments">
+                    {{ note.phone }}
+                  </span>
+                </div>
+                <VSpacer />
+                <VIcon 
+                    icon="custom-waste" 
+                    size="24" 
+                    class="cursor-pointer"
+                    style="flex-shrink: 0;"
+                    @click="showDeleteDialog(note)"
+                />
+            </VCardText>
+
+            <div class="d-block gap-4 px-0 mt-auto">
+                <div class="text-comments mt-4" v-if="note.comment">
+                    {{ note.comment }}
+                </div>
+
+                <div class="text-comments mt-10">
+                  Egen värdering
+                </div>
+
+                <div class="note-value-field my-4">
+                  {{ formatNumber(note.note ?? 0) }} (kr)
+                </div>       
+
+                <div class="d-flex align-center px-0">
+                    <div class="text-no-wrap">
+                        <VAvatar
+                            color="#E3DEEB"
+                            :variant="note.user.avatar ? 'outlined' : 'tonal'"
+                            size="40"
+                        >
+                            <VImg
+                                v-if="note.user.avatar"
+                                style="border-radius: 50%;"
+                                :src="themeConfig.settings.urlStorage + note.user.avatar"
+                            />
+                            <span v-else>{{ avatarText(note.user.name) }}</span>
+                        </VAvatar>
+                        <span class="ms-2 text-comments text-neutral-3">{{ note.user.name }} {{ note.user.last_name }}</span>
+                    </div>
+
+                    <VSpacer />
+
+                    <div class="d-flex align-center">
+                      <VIcon 
+                          icon="custom-comments" 
+                          size="24" 
+                          class="cursor-pointer"
+                          
+                      />
+                      <span class="ms-2 text-comments text-neutral-3">
+                        {{ note.comments?.length ?? 0 }}
+                      </span>
+                    </div>
+                </div>
+            </div>    
         </VCard>
-      </VCol>
-    </VRow>
+      </div>
+
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !notes.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-notes"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Inga värderingar sparade</div>
+          <div class="empty-state-text">
+            Använd det här utrymmet för att spara detaljer från förhandlingar och värderingar. 
+            Glöm aldrig en överenskommelse igen.
+          </div>
+        </div>
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'notes') && !$vuetify.display.mdAndDown"
+          @click="isAddNewNoteDrawerVisible = true"
+        >
+          Skapa ny anteckning
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'notes')"
+          @click="isDialogOpen = true"
+        >
+          Skapa ny anteckning
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
+
+      <VCardText
+        v-if="notes.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
+
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="5"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />      
+      </VCardText>
+    </VCard>
+     
+ 
     <!-- 👉 Add New Note -->
     <AddNewNoteDrawer
       v-model:isDrawerOpen="isAddNewNoteDrawerVisible"
       :note="selectedNote"
-      @note-data="submitForm"/>
+      @note-data="submitForm"
+      @edited="onNoteFormEdited"/>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
       v-model="isConfirmDeleteDialogVisible"
       persistent
-      class="v-dialog-sm" >
+      class="action-dialog" >
+
       <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort värdering">
-        <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill ta bort värdering  <strong>{{ selectedNote.reg_num }}</strong>?
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Radera värdering?
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill radera denna värdering? 
+          All information i anteckningen kommer att försvinna permanent.
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
           <VBtn
-            color="secondary"
-            variant="tonal"
+            class="btn-light"
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeNote">
-              Acceptera
+          <VBtn class="btn-gradient" @click="removeNote">
+              Ja, radera
           </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+     <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <AppAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user"
+            :menu-props="{ maxHeight: '400px' }"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Add New Note Mobile Dialog -->
+    <VDialog
+      v-model="isDialogOpen"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+      @update:model-value="handleMobileDialogUpdate"
+    >
+      <VCard>
+        <AddNewNoteMobile
+          v-model:isDrawerOpen="isDialogOpen"
+          :note="selectedNote"
+          @note-data="submitForm"
+          @edited="onNoteFormEdited"
+        />
+      </VCard>
+    </VDialog>
+
+    <!-- Confirm leave without saving (parent-level for mobile outside-click and route change) -->
+    <VDialog
+      v-model="isConfirmLeaveVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="cancelLeave"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Du har osparade ändringar</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+            Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="cancelLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="confirmLeave">Stanna kvar</VBtn>
         </VCardText>
       </VCard>
     </VDialog>
   </section>
 </template>
+
+<style lang="scss">
+  .note-value-field {
+    background-color: #F6F6F6;
+    border-radius: 8px;
+    border: 1px solid #E7E7E7;
+    padding: 0 16px;
+    height: 40px !important;
+    align-items: center;
+    display: flex;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    color: #878787;
+  }
+
+  .border-card-comment {
+      border: 1px solid #E7E7E7;
+      border-radius: 16px !important;
+  }
+
+  .title-comments {
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 100%;
+      color: #454545; 
+  }
+
+  .subtitle-comments {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 100%;
+    color: #878787; 
+  }
+
+  .text-comments {
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 100%;
+      color: #454545; 
+  }
+
+  .span-comments {
+      font-weight: 400;
+      font-size: 24px;
+      line-height: 100%;
+      color: #454545; 
+  }
+
+  .user-comments {
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 100%;
+      color: #454545; 
+  }
+
+  .date-comments {
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 100%;
+      color: #878787; 
+  }
+
+  .link-comments {
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 100%;
+      color: #454545;
+      text-decoration: underline;
+  }
+
+  .border-comments {
+      border-bottom: 1px solid #E7E7E7;
+  }
+</style>
+
 <route lang="yaml">
   meta:
     action: view

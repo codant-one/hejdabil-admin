@@ -37,6 +37,7 @@ class NoteController extends Controller
                                 $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
                             },
                             'user.userDetail',
+                            'comments'
                         ])
                          ->applyFilters(
                                 $request->only([
