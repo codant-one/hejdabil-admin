@@ -49,11 +49,13 @@ const hasLoaded = ref(false);
 
 const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);
+const isNoteEditFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
 const isFilterDialogVisible = ref(false);
 const isConfirmUpdateNoteDialogVisible = ref(false);
 const isConfirmUpdateNoteMobileDialogVisible = ref(false);
-const leaveContext = ref(null); // 'mobile' | 'route' | null
+const leaveContext = ref(null); // 'mobile' | 'route' | 'noteEdit' | 'noteEditMobile' | null
+const originalNoteData = ref(null);
 
 let nextRoute = null;
 
@@ -122,7 +124,10 @@ watchEffect(registerEvents)
 
 // Guard route changes if client creation form has unsaved changes
 onBeforeRouteLeave((to, from, next) => {
-  if (isNoteFormEdited.value && (isAddNewNoteDrawerVisible.value || isDialogOpen.value)) {
+  const hasUnsavedNewNote = isNoteFormEdited.value && (isAddNewNoteDrawerVisible.value || isDialogOpen.value);
+  const hasUnsavedEditNote = checkNoteFormChanges() && (isConfirmUpdateNoteDialogVisible.value || isConfirmUpdateNoteMobileDialogVisible.value);
+  
+  if (hasUnsavedNewNote || hasUnsavedEditNote) {
     isConfirmLeaveVisible.value = true;
     nextRoute = next;
     leaveContext.value = 'route';
@@ -141,6 +146,10 @@ const confirmLeave = () => {
     isAddNewNoteDrawerVisible.value = false;
     isDialogOpen.value = false;
     isNoteFormEdited.value = false;
+    isConfirmUpdateNoteDialogVisible.value = false;
+    isConfirmUpdateNoteMobileDialogVisible.value = false;
+    isNoteEditFormEdited.value = false;
+    originalNoteData.value = null;
     const go = nextRoute;
     nextRoute = null;
     leaveContext.value = null;
@@ -151,6 +160,18 @@ const confirmLeave = () => {
     isDialogOpen.value = false;
     isNoteFormEdited.value = false;
   }
+  if (leaveContext.value === 'noteEdit') {
+    isConfirmUpdateNoteDialogVisible.value = false;
+    isNoteEditFormEdited.value = false;
+    originalNoteData.value = null;
+    selectedNote.value = {};
+  }
+  if (leaveContext.value === 'noteEditMobile') {
+    isConfirmUpdateNoteMobileDialogVisible.value = false;
+    isNoteEditFormEdited.value = false;
+    originalNoteData.value = null;
+    selectedNote.value = {};
+  }
   leaveContext.value = null;
 };
 
@@ -160,11 +181,23 @@ const cancelLeave = () => {
     nextRoute(false);
     nextRoute = null;
   }
+  // Para noteEdit y noteEditMobile, simplemente cerramos el diálogo de confirmación
+  // y el usuario permanece en el formulario de edición
   leaveContext.value = null;
 };
 
 const showNote = (noteData, isMobile = false) => {
     selectedNote.value = { ...noteData }
+    // Guardar copia original para detectar cambios
+    originalNoteData.value = JSON.stringify({
+        reg_num: noteData.reg_num,
+        note: noteData.note,
+        name: noteData.name,
+        phone: noteData.phone,
+        email: noteData.email,
+        comment: noteData.comment
+    })
+    isNoteEditFormEdited.value = false
     
     if (isMobile) {
         isConfirmUpdateNoteMobileDialogVisible.value = true
@@ -173,10 +206,33 @@ const showNote = (noteData, isMobile = false) => {
     }
 }
 
-const closeNote = () => {
+// Detectar cambios en el formulario de edición
+const checkNoteFormChanges = () => {
+    if (!originalNoteData.value) return false
+    const currentData = JSON.stringify({
+        reg_num: selectedNote.value.reg_num,
+        note: selectedNote.value.note,
+        name: selectedNote.value.name,
+        phone: selectedNote.value.phone,
+        email: selectedNote.value.email,
+        comment: selectedNote.value.comment
+    })
+    return currentData !== originalNoteData.value
+}
+
+const closeNote = (forceClose = false) => {
+    // Verificar si hay cambios sin guardar
+    if (!forceClose && checkNoteFormChanges()) {
+        isConfirmLeaveVisible.value = true
+        leaveContext.value = isConfirmUpdateNoteMobileDialogVisible.value ? 'noteEditMobile' : 'noteEdit'
+        return
+    }
+    
     isConfirmUpdateNoteDialogVisible.value = false
     isConfirmUpdateNoteMobileDialogVisible.value = false
     selectedNote.value = {}
+    originalNoteData.value = null
+    isNoteEditFormEdited.value = false
 }
 
 const showDeleteDialog = noteData => {
@@ -882,7 +938,7 @@ onBeforeUnmount(() => {
         <VBtn
           icon
           class="btn-white"
-          @click="closeNote"
+          @click="closeNote()"
         >
           <VIcon size="32" icon="custom-cancel" />
         </VBtn>
@@ -945,9 +1001,8 @@ onBeforeUnmount(() => {
                 <!-- 👉 Submit and Cancel -->
                 <VCol cols="12">
                   <VBtn
-                    type="reset"
                     class="btn-light me-3"
-                    @click="closeNote"
+                    @click="closeNote()"
                   >
                     Avbryt
                   </VBtn>
@@ -1035,7 +1090,7 @@ onBeforeUnmount(() => {
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="closeNote"
+        @click="closeNote()"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
@@ -1099,7 +1154,7 @@ onBeforeUnmount(() => {
                 <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
                     <VBtn
                         class="btn-light"
-                        @click="closeNote">
+                        @click="closeNote()">
                         Avbryt
                     </VBtn>
                     <VBtn class="btn-gradient" type="submit">
@@ -1193,8 +1248,8 @@ onBeforeUnmount(() => {
             Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
         </VCardText>
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="cancelLeave">Lämna sidan</VBtn>
-          <VBtn class="btn-gradient" @click="confirmLeave">Stanna kvar</VBtn>
+          <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="cancelLeave">Stanna kvar</VBtn>
         </VCardText>
       </VCard>
     </VDialog>
