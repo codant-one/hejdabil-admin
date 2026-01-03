@@ -4,6 +4,7 @@ import SignableDocuments from '@/api/signableDocuments'
 export const useSignableDocumentsStores = defineStore('signableDocuments', {
     state: () => ({
         documents: [],
+        suppliers: {},
         loading: false,
         last_page: 1,
         documentsTotalCount: 0,
@@ -11,6 +12,9 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
     getters: {
         getDocuments() {
             return this.documents
+        },
+        getSuppliers(){
+            return this.suppliers
         }
     },
     actions: {
@@ -23,6 +27,7 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
             return SignableDocuments.get(params)
                 .then((response) => {
                     this.documents = response.data.data.documents.data
+                    this.suppliers = response.data.data.suppliers
                     this.last_page = response.data.data.documents.last_page
                     this.documentsTotalCount = response.data.data.documentsTotalCount
                 })

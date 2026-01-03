@@ -813,10 +813,10 @@ body {
   .v-input__control {
     width: 100%;
     .v-field {
+      background-color: #f6f6f6 !important;
       padding-right: 0px;
-      background: white !important;
       border-radius: 8px;
-      border: solid 1px #e7e7e7 !important;
+      border: solid 1px #F6F6F6 !important;
 
       .v-field__field {
         label {
@@ -856,7 +856,7 @@ body {
       }
 
       &.v-field--error {
-        border: solid 1px #e7e7e7 !important;
+        border: solid 1px #F6F6F6 !important;
         
         .v-field__field {
           label {

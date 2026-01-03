@@ -1364,7 +1364,7 @@ onBeforeUnmount(() => {
     & .v-input {
       & .v-input__control {
         .v-field {
-          background-color: #f6f6f6;
+          background-color: #f6f6f6 !important;
           .v-field-label {
             @media (max-width: 991px) {
               top: 12px !important;

@@ -22,14 +22,14 @@ export default [
   },
   { 
     title: 'Signera dokument', 
-    icon: { icon: 'mdi-draw' },
+    icon: { icon: 'custom-signature' },
     to: 'dashboard-admin-documents', 
     action: 'view', 
     subject: 'signed-documents'
   },
   { 
     title: 'Betalningar', 
-    icon: { icon: 'mdi-payment' },
+    icon: { icon: 'custom-cash-2' },
     to: 'dashboard-admin-payouts', 
     action: 'view', 
     subject: 'payouts'

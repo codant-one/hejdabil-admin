@@ -2,73 +2,85 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Document;
-use App\Models\Token;
+use App\Http\Requests\DocumentRequest;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+
+use App\Models\Document;
+use App\Models\Token;
+use App\Models\Supplier;
+
 class DocumentController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware(PermissionMiddleware::class . ':view signed-documents|administrator')->only(['index']);
+        $this->middleware(PermissionMiddleware::class . ':create signed-documents|administrator')->only(['store']);
+        $this->middleware(PermissionMiddleware::class . ':edit signed-documents|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':delete signed-documents|administrator')->only(['destroy']);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Document::with(['tokens', 'user']);
+        try {
 
-        // Search
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
+            $limit = $request->has('limit') ? $request->limit : 10;
+
+            $query = Document::with([
+                        'supplier' => function ($q) {
+                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                        },
+                        'tokens',
+                        'user'
+                    ])
+                    ->applyFilters(
+                        $request->only([
+                            'search',
+                            'orderByField',
+                            'orderBy',
+                            'supplier_id'
+                        ])
+                    );
+
+            $count = $query->count();
+
+            $documents = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'documents' => $documents,
+                    'documentsTotalCount' => $count,
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
         }
-
-        // Ordering
-        $orderByField = $request->get('orderByField', 'created_at');
-        $orderBy = $request->get('orderBy', 'desc');
-        $query->orderBy($orderByField, $orderBy);
-
-        // Pagination
-        $limit = $request->get('limit', 10);
-        $page = $request->get('page', 1);
-        
-        $documents = $query->paginate($limit, ['*'], 'page', $page);
-        $totalCount = Document::count();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'documents' => $documents,
-                'documentsTotalCount' => $totalCount,
-            ]
-        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(DocumentRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
-            'description' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
         try {
+
             $document = Document::createDocument($request);
 
             if ($request->hasFile('file')) {
@@ -82,13 +94,15 @@ class DocumentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Document created successfully',
+                'message' => 'Dokumentet har skapats',
                 'data' => ['document' => $document->load('tokens')]
             ]);
-        } catch (\Exception $e) {
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error creating document: ' . $e->getMessage()
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
             ], 500);
         }
     }
@@ -98,19 +112,31 @@ class DocumentController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $document = Document::with(['tokens'])->find($id);
+        try {
+            $document = Document::with(['tokens'])->find($id);
 
-        if (!$document) {
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Dokumentet hittades inte'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'document' => $document
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Document not found'
-            ], 404);
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => ['document' => $document]
-        ]);
     }
 
     /**
@@ -118,63 +144,7 @@ class DocumentController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $document = Document::find($id);
-
-        if (!$document) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document not found'
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'file' => 'sometimes|file|mimes:pdf|max:10240',
-            'description' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            if ($request->has('title')) {
-                $document->title = $request->title;
-            }
-            if ($request->has('description')) {
-                $document->description = $request->description;
-            }
-
-            if ($request->hasFile('file')) {
-                // Delete old file
-                if ($document->file) {
-                    Storage::disk('public')->delete($document->file);
-                }
-
-                $file = $request->file('file');
-                $path = 'documents/';
-                
-                $file_data = uploadFileWithOriginalName($file, $path);
-                $document->file = $file_data['filePath'];
-            }
-
-            $document->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Document updated successfully',
-                'data' => ['document' => $document->load('tokens')]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating document: ' . $e->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
@@ -182,25 +152,30 @@ class DocumentController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $document = Document::find($id);
-
-        if (!$document) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document not found'
-            ], 404);
-        }
-
         try {
+
+            $document = Document::find($id);
+
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Dokumentet hittades inte'
+                ], 404);
+            }
+
             Document::deleteDocument($id);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Document deleted successfully'
+                'message' => 'Dokumentet har raderats'
             ]);
-        } catch (\Exception $e) {
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting document: ' . $e->getMessage()
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
             ], 500);
         }
     }
@@ -215,7 +190,7 @@ class DocumentController extends Controller
             return response()->file($path);
         }
 
-        abort(404, 'PDF file not found for this document.');
+        abort(404, 'PDF-fil hittades inte för detta dokument.');
     }
 
     /**
@@ -231,7 +206,9 @@ class DocumentController extends Controller
         ]);
 
         if (!$document->file) {
-            return response()->json(['message' => 'Este documento aún no tiene un PDF cargado para firmar.'], 422);
+            return response()->json([
+                'message' => 'Det finns ännu ingen PDF-fil att underteckna för detta dokument.'
+            ], 422);
         }
 
         $signingToken = Str::uuid()->toString();
@@ -250,7 +227,9 @@ class DocumentController extends Controller
         // Send email
         \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
         
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+        return response()->json([
+            'message' => 'Begäran om underskrift skickad med framgång.'
+        ]);
     }
 
     /**
@@ -263,7 +242,9 @@ class DocumentController extends Controller
         ]);
 
         if (!$document->file) {
-            return response()->json(['message' => 'Este documento aún no tiene un PDF cargado para firmar.'], 422);
+            return response()->json([
+                'message' => 'Det finns ännu ingen PDF-fil att underteckna för detta dokument.'
+            ], 422);
         }
 
         $signingToken = Str::uuid()->toString();
@@ -281,7 +262,9 @@ class DocumentController extends Controller
 
         \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
         
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+        return response()->json([
+            'message' => 'Begäran om underskrift skickad med framgång.'
+        ]);
     }
 
     /**
@@ -295,7 +278,7 @@ class DocumentController extends Controller
         if (!$token) {
             return response()->json([
                 'success' => false,
-                'message' => 'No hay una solicitud de firma activa para reenviar.'
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om.'
             ], 422);
         }
 
@@ -304,12 +287,12 @@ class DocumentController extends Controller
             \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
             return response()->json([
                 'success' => true,
-                'message' => 'El correo de firma ha sido reenviado.'
+                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'No se pudo reenviar el correo: ' . $e->getMessage()
+                'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
             ], 500);
         }
     }

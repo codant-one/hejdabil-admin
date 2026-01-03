@@ -6,6 +6,8 @@ import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from "@/@core/utils/formatters";
+import { excelParser } from '@/plugins/csv/excelParser'
+import { useRoute } from 'vue-router'
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
@@ -18,36 +20,27 @@ import pdfIcon from '@images/icon-pdf-documento.png'
 
 const documentsStores = useSignableDocumentsStores()
 const emitter = inject("emitter")
-const router = useRouter()
+const route = useRoute()
 
 const { mdAndDown } = useDisplay();
+const { width: windowWidth } = useWindowSize();
 const sectionEl = ref(null);
 const hasLoaded = ref(false);
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
-function resizeSectionToRemainingViewport() {
-  const el = sectionEl.value;
-  if (!el) return;
+const userData = ref(null)
+const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
 
-  const rect = el.getBoundingClientRect();
-  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
-  el.style.minHeight = `${remaining}px`;
-}
-
-onMounted(() => {
-  resizeSectionToRemainingViewport();
-  window.addEventListener("resize", resizeSectionToRemainingViewport);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", resizeSectionToRemainingViewport);
-  if (trackerPreviewPdfSource.value) URL.revokeObjectURL(trackerPreviewPdfSource.value)
-
-  if (snakeResizeObserver) {
-    snakeResizeObserver.disconnect()
-    snakeResizeObserver = null
-  }
-});
+const isDialogOpen = ref(false);
+const isNoteFormEdited = ref(false);
+const isNoteEditFormEdited = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const isFilterDialogVisible = ref(false);
+const isConfirmUpdateNoteDialogVisible = ref(false);
+const isConfirmUpdateNoteMobileDialogVisible = ref(false);
+const leaveContext = ref(null); // 'mobile' | 'route' | 'noteEdit' | 'noteEditMobile' | null
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -118,6 +111,7 @@ async function fetchData(cleanFilters = false) {
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isFilterDialogVisible.value = false;
 
   await documentsStores.fetchDocuments(data)
 
@@ -125,6 +119,13 @@ async function fetchData(cleanFilters = false) {
   totalPages.value = documentsStores.last_page
   totalDocuments.value = documentsStores.documentsTotalCount
   
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? null
+
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = documentsStores.getSuppliers
+  }
+
   hasLoaded.value = true
   isRequestOngoing.value = false
 }
@@ -185,6 +186,40 @@ const download = async(document) => {
 
 const openLink = function (documentData) {
   window.open(themeConfig.settings.urlStorage + documentData.file)
+}
+
+const downloadCSV = async () => {
+
+  isRequestOngoing.value = true
+
+  let data = { limit: -1 }
+
+  await documentsStores.fetchDocuments(data)
+
+  let dataArray = [];
+
+  documentsStores.getDocuments.forEach(element => {
+
+    const createdAt = element.created_at ? new Date(element.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+
+    let data = {
+      TITEL: element.title ?? '',
+      BESKRIVNING: element.description ?? '',
+      SKAPAD: createdAt,
+      SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
+      SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
+      MOTTAGARE: element.tokens && element.tokens.length > 0 ? element.tokens.map(t => t.email).join(', ') : '',
+      FIL: element.file ? element.file.split('/').pop() : ''
+    }
+
+    dataArray.push(data)
+  })
+
+  excelParser()
+    .exportDataFromJSON(dataArray, "documents", "csv");
+
+  isRequestOngoing.value = false
+
 }
 
 const goToTracker = (documentData) => {
@@ -577,6 +612,29 @@ const resolveStatus = state => {
   return { color: 'default' }
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Check if we should open create dialog
+  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
+    hasProcessedCreateAction.value = true;
+    isConfirmCreateDialogVisible.value = true;
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
@@ -597,26 +655,31 @@ const resolveStatus = state => {
 
     <VCard class="card-fill">
       <VCardTitle
-        class="d-flex justify-space-between"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
       >
-        <div class="d-flex align-center w-100 w-md-auto font-blauer">
+         <div class="align-center font-blauer">
           <h2>Dokument <span v-if="hasLoaded">({{ documents.length }})</span></h2>
         </div>
 
-        <div class="d-flex gap-4 title-action-buttons">
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+        <div class="d-flex gap-4">
           <VBtn
-            v-if="$can('create', 'signed-documents') && !$vuetify.display.smAndDown"
-            class="btn-gradient w-100 w-md-auto"
-            @click="openUploadModal"
-          >
-            <VIcon icon="custom-plus" size="24" />
-            Skapa
+            class="btn-light w-auto"
+            block
+            @click="downloadCSV">
+            <VIcon icon="custom-export" size="24" />
+            Exportera
           </VBtn>
 
           <VBtn
-            v-if="$vuetify.display.smAndDown && $can('create', 'signed-documents')"
-            class="btn-gradient w-100 w-md-auto"
+            v-if="$can('create', 'signed-documents')"
+            class="btn-gradient"
+            block
             @click="openUploadModal"
           >
             <VIcon icon="custom-plus" size="24" />
@@ -625,24 +688,30 @@ const resolveStatus = state => {
         </div>
       </VCardTitle>
 
-      <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
+      <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex align-center justify-space-between gap-2 pb-0"
+        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
           <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
-        <VBtn class="btn-white-2" v-if="!$vuetify.display.smAndDown">
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <VBtn 
+          class="btn-white-2" 
+          v-if="role !== 'Supplier' && role !== 'User'"
+          @click="isFilterDialogVisible = true"
+        >
           <VIcon icon="custom-filter" size="24" />
-          <span class="d-none d-md-block">Filtrera efter</span>
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
         </VBtn>
 
         <div
-          v-if="!$vuetify.display.smAndDown"
+          v-if="!$vuetify.display.mdAndDown"
           class="d-flex align-center visa-select"
         >
           <span class="text-no-wrap pr-4">Visa</span>
@@ -655,7 +724,7 @@ const resolveStatus = state => {
       </VCardText>
 
       <VTable
-        v-if="!$vuetify.display.smAndDown"
+        v-if="!$vuetify.display.mdAndDown"
         v-show="documents.length"
         class="px-4 pb-6 text-no-wrap"
       >
@@ -807,33 +876,25 @@ const resolveStatus = state => {
       <div
         v-if="!isRequestOngoing && hasLoaded && !documents.length"
         class="empty-state"
-        :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
       >
         <VIcon
-          :size="$vuetify.display.smAndDown ? 80 : 120"
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
           icon="custom-f-user"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga dokument än</div>
+          <div class="empty-state-title">Du har inga kunder än</div>
           <div class="empty-state-text">
-            Ladda upp dokument här för att hantera signeringar.
+            Lägg till dina kunder här för att snabbt skapa fakturor och hålla
+            ordning på dina kontakter.
           </div>
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'signed-documents') && !$vuetify.display.smAndDown"
+          v-if="$can('create', 'signed-documents')"
           @click="openUploadModal"
         >
-          Ladda upp dokument
-          <VIcon icon="custom-arrow-right" size="24" />
-        </VBtn>
-
-        <VBtn
-          class="btn-ghost"
-          v-if="$vuetify.display.smAndDown && $can('create', 'signed-documents')"
-          @click="openUploadModal"
-        >
-          Ladda upp dokument
+          Lägg till ny kund
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -948,25 +1009,29 @@ const resolveStatus = state => {
     <!-- 👉 Upload Document Modal -->
     <VDialog
       v-model="isUploadModalVisible"
-      max-width="600"
+      persistent
+      class="action-dialog"
     >
       <VBtn
         icon
-        variant="text"
-        color="default"
-        size="small"
+        class="btn-white close-btn"
         @click="isUploadModalVisible = false"
-        style="position: absolute; top: 10px; right: 10px; z-index: 1;"
       >
-        <VIcon icon="tabler-x" />
+        <VIcon size="16" icon="custom-close" />
       </VBtn>
     
       <VForm
         ref="uploadForm"
         @submit.prevent="submitUpload"
       >
-        <VCard title="Ladda upp dokument">
-          <VCardText>
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-icon-pdf" class="action-icon" />
+            <div class="dialog-title">
+              Ladda upp dokument
+            </div>
+          </VCardText>
+          <VCardText class="pt-0">
             <VRow>
               <VCol cols="12">
                 <VTextField
@@ -988,7 +1053,10 @@ const resolveStatus = state => {
                 <VFileInput
                   ref="uploadFileInput"
                   label="PDF-fil"
+                  placeholder="PDF-fil"
                   accept=".pdf"
+                  prepend-icon=""
+                  append-inner-icon="custom-upload"
                   :rules="[requiredValidator]"
                   @change="handleFileSelect"
                 />
@@ -996,15 +1064,14 @@ const resolveStatus = state => {
             </VRow>
           </VCardText>
 
-          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
-              color="secondary"
-              variant="tonal"
+              class="btn-light"
               @click="isUploadModalVisible = false"
             >
               Avbryt
             </VBtn>
-            <VBtn type="submit">
+            <VBtn class="btn-gradient" type="submit">
               Ladda upp
             </VBtn>
           </VCardText>
@@ -1171,8 +1238,129 @@ const resolveStatus = state => {
         </VCardText>
       </VCard>
     </VDialog>
+
+     <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <AppAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user"
+            :menu-props="{ maxHeight: '400px' }"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
+
+<style scope>
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 0px !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+
+          .v-select__selection, .v-autocomplete__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 16px;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
+    }
+    & .v-input {
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          .v-field-label {
+            @media (max-width: 991px) {
+              top: 12px !important;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
+</style>
 
 <style lang="scss" scoped>
   .bottom-sheet-card {
