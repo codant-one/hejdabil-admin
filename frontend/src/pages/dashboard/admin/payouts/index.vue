@@ -1,14 +1,23 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
+import { formatDate } from '@/@core/utils/formatters'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+
+import eyeIcon from "@/assets/images/icons/figma/eye.svg";
+import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
@@ -27,6 +36,9 @@ const isPayoutDetailDialogVisible = ref(false)
 const selectedPayoutId = ref(null)
 const isConfirmDeleteDialogVisible = ref(false)
 const selectedPayout = ref({})
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const err = ref(null);
 
 const userData = ref(null)
 const role = ref(null)
@@ -161,6 +173,26 @@ const removePayout = async () => {
   return true
 }
 
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && !err.value.success) {
+    advisor.value.message = err.value.message;
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
+
 const submitForm = async (payoutData) => {
   isRequestOngoing.value = true
 
@@ -174,49 +206,27 @@ const submitCreate = payoutData => {
   payoutsStores.addPayout(payoutData)
     .then((res) => {
         if (res.data.success) {
-            advisor.value = {
-                type: 'success',
-                message: 'Betalning skapad!',
-                show: true
-            }
+            skapatsDialog.value = true;
 
             fetchData()
-            
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
         }
 
         isRequestOngoing.value = false
     })
-    .catch((err) => {
-        // Intentamos mostrar el mensaje que viene desde el backend (por ejemplo, "Incorrect ssn format")
-        const apiMessage = err.response?.data?.message
-        const apiCode = err.response?.data?.errorCode
+    .catch((error) => {
+      err.value = error;
+      inteSkapatsDialog.value = true;
+      isRequestOngoing.value = false
 
-        advisor.value = {
-          type: 'error',
-          message: apiMessage
-            ? (apiCode ? `${apiCode}: ${apiMessage}` : apiMessage)
-            : err.message,
-            show: true
-        }
-        
-        isRequestOngoing.value = false
+      fetchData()
 
-        fetchData()
-
-        setTimeout(() => {
-            advisor.value = {
-                type: '',
-                message: '',
-                show: false
-            }
-        }, 3000)
+      setTimeout(() => {
+          advisor.value = {
+              type: '',
+              message: '',
+              show: false
+          }
+      }, 3000)
     })
 }
 
@@ -265,6 +275,26 @@ const openPayoutDialog = () => {
   
   isAddNewPayoutDrawerVisible.value = true
 }
+
+
+const resolveStatus = state_id => {
+  if (state_id === 1)
+    return { class: 'pending' }
+  if (state_id === 2)
+    return { class: 'pending' }   
+  if (state_id === 3)
+    return { class: 'pending' }
+  if (state_id === 4)
+    return { class: 'success' }
+  if (state_id === 5)
+    return { class: 'error' }
+  if (state_id === 6)
+    return { class: 'error' }   
+  if (state_id === 7)
+    return { class: 'error' }
+  if (state_id === 8)
+    return { class: 'error' }
+}
 </script>
 
 <template>
@@ -280,72 +310,100 @@ const openPayoutDialog = () => {
       />
 
       <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            
+        <VSnackbar
+          v-model="advisor.show"
+          transition="scroll-y-reverse-transition"
+          :location="snackbarLocation"
+          :color="advisor.type"
+          class="snackbar-alert snackbar-dashboard"
+        >
           {{ advisor.message }}
-        </VAlert>
+        </VSnackbar>
 
-        <VCard title="">
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                variant="outlined"
-                class="w-100"
-                :items="[10, 20, 30, 50]"/>
+        
+
+        <VCard class="card-fill">
+          <VCardTitle
+            class="d-flex gap-6 justify-space-between"
+            :class="[
+              windowWidth < 1024 ? 'flex-column' : 'flex-row',
+              $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+            ]"
+          >
+            <div class="align-center font-blauer">
+              <h2>Swish</h2>
             </div>
 
-            <VBtn
-              variant="tonal"
-              color="secondary"
-              prepend-icon="tabler-file-export"
-              class="w-100 w-md-auto"
-              @click="downloadCSV">
-              Exportera
+            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+            <div class="d-flex gap-4">
+              <VBtn 
+                class="btn-light w-auto" 
+                block
+                @click="downloadCSV">
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+              <VBtn
+                class="btn-gradient"
+                block
+                @click="openPayoutDialog"
+              >
+                <VIcon icon="custom-plus" size="24" />
+                Ny betalning
+              </VBtn>
+            </div>
+          </VCardTitle>
+
+          <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
+
+          <VCardText
+            class="d-flex align-center justify-space-between gap-2"
+            :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
+          >
+            <!-- 👉 Search  -->
+            <div class="search">
+              <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+            </div>
+
+            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+            
+            <VBtn 
+              class="btn-white-2" 
+              @click="isFilterDialogVisible = true"
+            >
+              <VIcon icon="custom-filter" size="24" />
+              <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
             </VBtn>
 
-            <VSpacer class="d-none d-md-block"/>
-
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto">
-
-              <!-- 👉 Search  -->
-              <div class="search">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök"
-                  density="compact"
-                  clearable
-                />
-              </div>
-
-              <!-- 👉 Add user button -->
-              <VBtn
-                v-if="$can('create','payouts')"
-                prepend-icon="tabler-plus"
-                class="w-100 w-md-auto"
-                @click="openPayoutDialog">
-                  Ny betalning
-              </VBtn>
+            <div
+              v-if="!$vuetify.display.mdAndDown"
+              class="d-flex align-center visa-select"
+            >
+              <span class="text-no-wrap pr-4">Visa</span>
+              <VSelect
+                v-model="rowPerPage"
+                class="custom-select-hover"
+                :items="[10, 20, 30, 50]"
+              />
             </div>
           </VCardText>
 
-          <v-divider />
-
-          <v-table class="text-no-wrap">
+          <v-table 
+            v-show="payouts.length && ! $vuetify.display.mdAndDown"
+            class="text-no-wrap"
+          >
             <!-- 👉 table head -->
             <thead>
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> SWISH ID </th>
                 <th scope="col"> REFERENCE </th>
+                <th scope="col"> DATUM </th>
                 <th scope="col"> AMOUNT </th>
                 <th scope="col"> PAYEE ALIAS </th>
                 <th scope="col"> SKAPAD AV </th>
+                <th scope="col"> STATUS </th>
                 <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
               </tr>
             </thead>
@@ -359,6 +417,7 @@ const openPayoutDialog = () => {
                 <td> {{ payout.id }} </td>
                 <td> {{ payout.swish_id ?? ''}} </td>
                 <td> {{ payout.reference ?? ''}} </td>
+                <td> {{ payout.created_at ? formatDate(payout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}</td>
                 <td> {{ payout.amount ?? ''}} </td>
                 <td> {{ payout.payee_alias ?? ''}} </td>
                 <td class="text-wrap">
@@ -382,17 +441,21 @@ const openPayoutDialog = () => {
                     </div>
                   </div>
                 </td>
+                <!-- 😵 Statuses -->
+                <td class="text-center text-wrap d-flex justify-center align-center">
+                  <div
+                    class="status-chip"
+                    :class="`status-chip-${resolveStatus(payout.state.id)?.class}`"
+                  >
+                    {{ payout.state.name }}
+                  </div>
+                </td>
                 <!-- 👉 Actions -->
                 <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')">      
                   <VMenu>
                     <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
+                      <VBtn v-bind="props" icon variant="text" class="btn-white">
+                        <VIcon icon="custom-dots-vertical" size="22" />
                       </VBtn>
                     </template>
                     <VList>
@@ -400,7 +463,7 @@ const openPayoutDialog = () => {
                         v-if="$can('view','payouts')"
                         @click="seePayout(payout)">
                         <template #prepend>
-                          <VIcon icon="tabler-eye" />
+                          <img :src="eyeIcon" alt="See Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Visa detaljer</VListItemTitle>
                       </VListItem>
@@ -408,7 +471,7 @@ const openPayoutDialog = () => {
                         v-if="$can('delete','payouts')"
                         @click="showDeleteDialog(payout)">
                         <template #prepend>
-                          <VIcon icon="tabler-trash" />
+                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
@@ -429,9 +492,110 @@ const openPayoutDialog = () => {
             </tfoot>
           </v-table>
         
-          <v-divider />
+          <div
+            v-if="!payouts.length && !$vuetify.display.mdAndDown"
+            class="empty-state"
+            :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+          >
+            <VIcon
+              :size="$vuetify.display.mdAndDown ? 80 : 120"
+              icon="custom-f-user"
+            />
+            <div class="empty-state-content">
+              <div class="empty-state-title">Du har inga kunder än</div>
+              <div class="empty-state-text">
+                Lägg till dina kunder här för att snabbt skapa fakturor och hålla
+                ordning på dina kontakter.
+              </div>
+            </div>
+            <VBtn
+              class="btn-ghost"
+              v-if="$can('create', 'payouts') && !$vuetify.display.mdAndDown"
+              @click="openPayoutDialog"
+            >
+              Lägg till ny kund
+              <VIcon icon="custom-arrow-right" size="24" />
+            </VBtn>
 
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
+            <VBtn
+              class="btn-ghost"
+              v-if="$vuetify.display.mdAndDown && $can('create', 'payouts')"
+              @click="openPayoutDialog"
+            >
+              Lägg till ny kund Movil
+              <VIcon icon="custom-arrow-right" size="24" />
+            </VBtn>
+          </div>
+
+          <VExpansionPanels
+            class="expansion-panels pb-6 px-6"
+            v-if="payouts.length && $vuetify.display.mdAndDown"
+          >
+            <VExpansionPanel v-for="payout in payouts" :key="payout.id">
+              <VExpansionPanelTitle
+                collapse-icon="custom-chevron-right"
+                expand-icon="custom-chevron-down"
+              >
+                
+                <div class="order-title-box">
+                  <span class="title-panel"><strong>{{ payout.reference ?? '' }}</strong></span>
+                  <div class="title-organization">
+                    <span class="title-panel">{{ payout.created_at ? formatDate(payout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}</span>
+                    <VIcon size="16" icon="custom-clock" />
+                    <span class="title-panel">{{ payout.created_at ? formatDate(payout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}</span>
+                  </div>
+                </div>
+                <span class="title-panel w-100 me-4"><h2 class="text-end">{{ payout.amount ?? '' }} kr</h2></span>
+              </VExpansionPanelTitle>
+              <VExpansionPanelText>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">PayEE Alias:</div>
+                  <div class="expansion-panel-item-value">
+                    {{ payout.payer_alias ?? "" }}
+                  </div>
+                </div>
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Status:</div>
+                  <div class="expansion-panel-item-value">
+                    <div
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus(payout.state.id)?.class}`"
+                    >
+                      {{ payout.state.name }}
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-4 row-with-buttons">
+                  <VBtn
+                    class="btn-light"
+                    @click="seePayout(payout)"
+                  >
+                    <template #prepend>
+                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                    </template>
+                    Visa detaljer
+                  </VBtn>
+                  <VBtn
+                    v-if="$can('delete', 'payouts')"
+                    class="btn-light"
+                    @click="showDeleteDialog(payout)"
+                  >
+                    <template #prepend>
+                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                    </template>
+                    Ta bort
+                  </VBtn>
+                </div>
+              </VExpansionPanelText>
+            </VExpansionPanel>
+            <div v-if="!payouts.length" class="text-center py-4">
+              Uppgifter ej tillgängliga
+            </div>
+          </VExpansionPanels>
+
+          <VCardText 
+            v-if="payouts.length && ! $vuetify.display.mdAndDown"
+            class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
             <span class="text-sm text-disabled">
               {{ paginationData }}
             </span>
@@ -456,6 +620,74 @@ const openPayoutDialog = () => {
       :payer_alias="payer_alias"
       @payout-data="submitForm"
     />
+
+    <!-- 👉 Dialogs Section -->
+    <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="router.push({
+          name: 'dashboard-admin-billings-id',
+          params: { id: billing_id },
+        })"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-create-order" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Betalningen lyckades!</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Din betalning via Swich har genomförts och skickats till mottagaren. Du hittar kvittot i din betalningshistorik.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="createBilling">
+            Visa kvitto
+          </VBtn>
+          <VBtn class="btn-gradient" @click="reloadPage"> Klar </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="inteSkapatsDialog = !inteSkapatsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-cancel" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Betalningen har inte genomförts!</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Din betalning via Swich har inte behandlats korrekt, försök igen.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="showError">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
