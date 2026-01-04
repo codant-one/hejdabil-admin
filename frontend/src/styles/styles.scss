@@ -815,20 +815,23 @@ body {
     .v-field {
       background-color: #f6f6f6 !important;
       padding-right: 0px;
-      border-radius: 8px;
-      border: solid 1px #F6F6F6 !important;
+      border-radius: 6px;
+      border: solid 1px #B7B7B7 !important;
 
       .v-field__field {
         label {
           color: #454545 !important;
-          opacity: 1 !important;
+          opacity: 1;
         }
       }
 
       .v-field__input {
         padding-inline-start: 8px;
-        opacity: 1 !important;
+        opacity: 1;
         color: #454545 !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
 
         input {
           color: #454545 !important;
@@ -836,39 +839,47 @@ body {
 
         input::placeholder {
           color: #454545 !important;
-          opacity: 1 !important;
+          opacity: 1;
         }
 
         input::-webkit-input-placeholder {
           color: #454545 !important;
-          opacity: 1 !important;
+          opacity: 1;
         }
 
         input::-moz-placeholder {
           color: #454545 !important;
-          opacity: 1 !important;
+          opacity: 1;
         }
 
         input:-ms-input-placeholder {
           color: #454545 !important;
-          opacity: 1 !important;
+          opacity: 1;
         }
       }
 
+      // Truncar el texto del archivo seleccionado
+      .v-file-input__text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+      }
+
       &.v-field--error {
-        border: solid 1px #F6F6F6 !important;
+        border: solid 1px #B7B7B7 !important;
         
         .v-field__field {
           label {
             color: #454545 !important;
-            opacity: 1 !important;
+            opacity: 1;
           }
         }
       }
     }
     .v-field__append-inner {
       .v-icon {
-        opacity: 1 !important;
+        opacity: 1;
         color: #454545 !important;
       }
     }
@@ -888,10 +899,18 @@ body {
     }
   }
 
+  // Truncar chips de archivos seleccionados
+  .v-chip__content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+  }
+
   // Override label color globally
   .v-label {
     color: #454545 !important;
-    opacity: 1 !important;
+    opacity: 1;
   }
 
 }

@@ -176,6 +176,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'signable-documents'], function () {
         Route::get('/', [DocumentController::class, 'index']);
         Route::post('/', [DocumentController::class, 'store']);
+        Route::post('/send', [DocumentController::class, 'send']);
         Route::get('/{document}', [DocumentController::class, 'show']);
         Route::post('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);

@@ -108,5 +108,49 @@ class Document extends Model
             $document->delete();
         }
     }
+
+    public static function sendDocument($request)
+    {
+        $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
+        $documents = self::with('user')->whereIn('id', $ids)->get();
+
+        if ($documents->isEmpty()) {
+            return false;
+        }
+
+        $titles = $documents->pluck('title')->unique()->implode(', ');
+        $data = ['titles' => $titles];
+
+        $subject = 'Dokument: ' . $titles;
+
+        try {
+            \Mail::send(
+                'emails.documents.signable',
+                $data,
+                function ($message) use ($request, $documents, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($request->email)->subject($subject);
+
+                    foreach ($documents as $document) {
+                        $pathToFile = storage_path('app/public/' . $document->file);
+
+                        if (file_exists($pathToFile)) {
+                            $mime = mime_content_type($pathToFile);
+                            $message->attach($pathToFile, [
+                                'as' => \Illuminate\Support\Str::of($document->file)->afterLast('/'),
+                                'mime' => $mime
+                            ]);
+                        }
+                    }
+                }
+            );
+
+            return true;
+
+        } catch (\Exception $e) {
+            \Log::error('Error al enviar correo:', ['error' => $e->getMessage()]);
+            return false;
+        }
+    }
 }
 

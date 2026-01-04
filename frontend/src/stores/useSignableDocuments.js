@@ -119,6 +119,18 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
                     .catch(error => reject(error))
             })
         },
+        sendDocument(data) {
+            this.setLoading(true)
+
+            return SignableDocuments.send(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
     }
 })
 

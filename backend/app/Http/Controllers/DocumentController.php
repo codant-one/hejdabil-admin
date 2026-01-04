@@ -181,6 +181,39 @@ class DocumentController extends Controller
     }
 
     /**
+     * Send document(s) via email
+     */
+    public function send(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'ids' => 'required',
+                'email' => 'required|email',
+            ]);
+
+            $result = Document::sendDocument($request);
+
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dokumentet har skickats via e-post'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Kunde inte skicka dokumentet'
+            ], 400);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ett fel inträffade: ' . $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get PDF for admin preview
      */
     public function getAdminPreviewPdf(Document $document)

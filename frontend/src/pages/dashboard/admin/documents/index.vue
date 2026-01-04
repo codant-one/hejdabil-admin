@@ -3,6 +3,7 @@
 import { inject } from 'vue'
 import { useDisplay } from "vuetify";
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
+import { useClientsStores } from '@/stores/useClients'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from "@/@core/utils/formatters";
@@ -12,13 +13,10 @@ import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-
-import eyeIcon from "@/assets/images/icons/figma/eye.svg";
-import editIcon from "@/assets/images/icons/figma/edit.svg";
-import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 import pdfIcon from '@images/icon-pdf-documento.png'
 
 const documentsStores = useSignableDocumentsStores()
+const clientsStores = useClientsStores()
 const emitter = inject("emitter")
 const route = useRoute()
 
@@ -32,6 +30,7 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const clients = ref([])
 
 const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);
@@ -55,6 +54,8 @@ const signatureEmail = ref('')
 const refSignatureForm = ref()              
 const isStaticSignatureFlow = ref(false)
 const selectedDocument = ref({})
+const selectedDocumentForAction = ref({});
+const isMobileActionDialogVisible = ref(false);
 
 const isPlacementModalVisible = ref(false)
 const placementPdfSource = ref(null)
@@ -68,6 +69,15 @@ const uploadTitle = ref('')
 const uploadDescription = ref('')
 const uploadFile = ref(null)
 const uploadFileInput = ref(null)
+const hiddenFileInput = ref(null)
+const fileValidationError = ref('')
+
+// Send document dialog refs
+const isConfirmSendDocumentDialogVisible = ref(false)
+const sendDocumentEmail = ref('')
+const sendDocumentForm = ref(null)
+const documentToSend = ref(null)
+const selectedClientId = ref(null)
 
 const advisor = ref({
   type: '',
@@ -77,10 +87,13 @@ const advisor = ref({
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = documents.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = documents.value.length + (currentPage.value - 1) * rowPerPage.value
-
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalDocuments.value } register`
+  const firstIndex = documents.value.length 
+    ? (currentPage.value - 1) * rowPerPage.value + 1 
+    : 0
+  const lastIndex = 
+    documents.value.length + (currentPage.value - 1) * rowPerPage.value
+  return `${totalDocuments.value} resultat`;
+  // return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalDocuments.value } register`
 })
 
 // 👉 watching current page
@@ -99,7 +112,8 @@ async function fetchData(cleanFilters = false) {
   if(cleanFilters === true) {
     searchQuery.value = ''
     rowPerPage.value = 10
-    currentPage.value = 1
+    currentPage.value = 1;
+    supplier_id.value = null;
   }
 
   let data = {
@@ -108,6 +122,7 @@ async function fetchData(cleanFilters = false) {
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
+    supplier_id: supplier_id.value,
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -125,6 +140,10 @@ async function fetchData(cleanFilters = false) {
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = documentsStores.getSuppliers
   }
+
+  // Fetch clients for send document dialog
+  await clientsStores.fetchClients({ limit: -1 })
+  clients.value = clientsStores.getClients
 
   hasLoaded.value = true
   isRequestOngoing.value = false
@@ -165,16 +184,16 @@ const removeDocument = async () => {
   return true
 }
 
-const download = async(document) => {
+const download = async(document_) => {
   try {
-    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + document.file);
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + document_.file);
     const blob = await response.blob();
     
     const blobUrl = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
     a.href = blobUrl;
-    a.download = document.file.replace('documents/', '');
+    a.download = document_.file.replace('documents/', '');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -183,6 +202,66 @@ const download = async(document) => {
     console.error('Error:', error);
   }
 };
+
+const openSendDocumentDialog = (document_) => {
+  documentToSend.value = document_
+  sendDocumentEmail.value = ''
+  selectedClientId.value = null
+  isConfirmSendDocumentDialogVisible.value = true
+}
+
+const selectClient = (clientId) => {
+  if (clientId) {
+    const client = clients.value.find(c => c.id === clientId)
+    if (client && client.email) {
+      sendDocumentEmail.value = client.email
+    }
+  }
+}
+
+const handleSendDocument = () => {
+  sendDocumentForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      let formData = new FormData()
+      formData.append('ids', documentToSend.value.id)
+      formData.append('email', sendDocumentEmail.value)
+
+      isConfirmSendDocumentDialogVisible.value = false
+      isRequestOngoing.value = true
+
+      documentsStores.sendDocument(formData)
+        .then((res) => {
+          if (res.data.success) {
+            advisor.value = {
+              type: 'success',
+              message: 'Dokumentet har skickats!',
+              show: true
+            }
+          }
+          isRequestOngoing.value = false
+        })
+        .catch((err) => {
+          advisor.value = {
+            type: 'error',
+            message: err.message || 'Ett fel inträffade',
+            show: true
+          }
+          isRequestOngoing.value = false
+        })
+
+      setTimeout(() => {
+        sendDocumentEmail.value = ''
+        documentToSend.value = null
+        selectedClientId.value = null
+        advisor.value = {
+          type: '',
+          message: '',
+          show: false
+        }
+      }, 3000)
+    }
+  })
+}
 
 const openLink = function (documentData) {
   window.open(themeConfig.settings.urlStorage + documentData.file)
@@ -200,7 +279,7 @@ const downloadCSV = async () => {
 
   documentsStores.getDocuments.forEach(element => {
 
-    const createdAt = element.created_at ? new Date(element.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }) : ''
+    const createdAt = element.created_at ? new Date(element.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 
     let data = {
       TITEL: element.title ?? '',
@@ -221,6 +300,13 @@ const downloadCSV = async () => {
   isRequestOngoing.value = false
 
 }
+
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + "...";
+  }
+  return text;
+};
 
 const goToTracker = (documentData) => {
   openTracker(documentData)
@@ -527,6 +613,7 @@ const openUploadModal = () => {
   uploadTitle.value = ''
   uploadDescription.value = ''
   uploadFile.value = null
+  fileValidationError.value = ''
   if (uploadFileInput.value) {
     uploadFileInput.value.value = ''
   }
@@ -547,24 +634,39 @@ const handleFileSelect = (event) => {
       return
     }
     uploadFile.value = file
+    fileValidationError.value = ''
+  }
+}
+
+const handleFileDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (file) {
+    if (file.type !== 'application/pdf') {
+      advisor.value = {
+        type: 'error',
+        message: 'Endast PDF-filer är tillåtna.',
+        show: true
+      }
+      setTimeout(() => {
+        advisor.value.show = false
+      }, 3000)
+      return
+    }
+    uploadFile.value = file
+    fileValidationError.value = ''
   }
 }
 
 const submitUpload = async () => {
   const { valid } = await uploadForm.value?.validate()
-  if (!valid) return
-
+  
+  // Validate file
+  fileValidationError.value = ''
   if (!uploadFile.value) {
-    advisor.value = {
-      type: 'error',
-      message: 'Vänligen välj en PDF-fil.',
-      show: true
-    }
-    setTimeout(() => {
-      advisor.value.show = false
-    }, 3000)
-    return
+    fileValidationError.value = 'Detta fält är obligatoriskt.'
   }
+
+  if (!valid || !uploadFile.value) return
 
   isRequestOngoing.value = true
   isUploadModalVisible.value = false
@@ -604,12 +706,11 @@ const submitUpload = async () => {
 
 const resolveStatus = state => {
   if (state === 'signed')
-    return { color: 'info' }
+    return { class: 'info' }
   if (state === 'pending')
-    return { color: 'warning' } 
+    return { class: 'pending' } 
   if (state === 'sent')
-    return { color: 'success' } 
-  return { color: 'default' }
+    return { class: 'success' }
 }
 
 function resizeSectionToRemainingViewport() {
@@ -691,7 +792,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2 pb-0"
+        class="d-flex align-center justify-space-between gap-2"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
@@ -726,45 +827,74 @@ onBeforeUnmount(() => {
       <VTable
         v-if="!$vuetify.display.mdAndDown"
         v-show="documents.length"
-        class="px-4 pb-6 text-no-wrap"
+        class="pt-2 px-4 pb-6 text-no-wrap"
+        style="border-radius: 0 !important"
       >
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col">TITEL</th>
-            <th scope="col">BESKRIVNING</th>
-            <th scope="col">SKAPAD</th>
-            <th scope="col">SKAPAD AV</th>
-            <th scope="col">SIGNERA STATUS</th>
-            <th
-              scope="col"
-              v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"
-            ></th>
+            <th scope="col">#ID</th>
+            <th scope="col" class="text-center">Titel</th>
+            <th scope="col" class="text-center">Beskrivning</th>
+            <th scope="col" class="text-center">Skapad</th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
+            <th scope="col">Skapad av</th>
+            <th scope="col" class="text-center">Signera status</th>
+            <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
           </tr>
         </thead>
         <!-- 👉 table body -->
         <tbody v-show="documents.length">
           <tr v-for="document in documents" :key="document.id">
             <td>
+              <span>{{ document.id }}</span>
+            </td>
+            <td class="text-center">
               <span>{{ document.title }}</span>
             </td>
-            <td>
+            <td class="text-center">
               <span>{{ document.description || '-' }}</span>
             </td>
-            <td>
+            <td class="text-center">
               <span>
-                  {{ new Date(document.created_at).toLocaleString('sv-SE', { 
-                      year: 'numeric', 
-                      month: '2-digit', 
-                      day: '2-digit', 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: false
-                  }) }}
+                    {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
               </span>
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
+              <div class="d-flex align-center gap-x-1" v-if="document.supplier">
+                <VAvatar
+                  :variant="document.supplier.user.avatar ? 'outlined' : 'tonal'"
+                  size="38"
+                >
+                  <VImg
+                    v-if="document.supplier.user.avatar"
+                    style="border-radius: 50%"
+                    :src="themeConfig.settings.urlStorage + document.supplier.user.avatar"
+                  />
+                  <span v-else>{{
+                    avatarText(document.supplier.user.name)
+                  }}</span>
+                </VAvatar>
+                <div class="d-flex flex-column">
+                  <span class="font-weight-medium">
+                    {{ document.supplier.user.name }} {{ document.supplier.user.last_name ?? "" }}
+                  </span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="document.supplier.user.email && document.supplier.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(document.supplier.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ document.supplier.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ document.supplier.user.email }}</span>
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="document.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
@@ -780,27 +910,36 @@ onBeforeUnmount(() => {
                   <span class="font-weight-medium">
                     {{ document.user.name }} {{ document.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{
-                    document.user.email
-                  }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip location="bottom" v-if="document.user.email && document.user.email.length > 20">
+                      <template #activator="{ props }">
+                        <span v-bind="props">
+                          {{ truncateText(document.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ document.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ document.user.email }}</span>
+                  </span>
                 </div>
               </div>
             </td>
-            <td>
-                  <VChip
-                    v-if="document.tokens && document.tokens.length > 0"
-                    label
-                    :color="resolveStatus(document.tokens[0]?.signature_status ?? 'pending')?.color"
-                  >
-                    {{ document.tokens[0]?.signature_status ?? 'pending' }}
-                  </VChip>
-                  <VChip
-                    v-else
-                    label
-                    color="default"
-                  >
-                    Ingen signering
-                  </VChip>
+            <td class="text-center text-wrap d-flex justify-center align-center">
+              <div
+                v-if="document.tokens && document.tokens.length > 0"
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+              >
+                {{ document.tokens[0]?.signature_status }}
+              </div>
+
+              <div
+                v-else
+                class="status-chip"
+                :class="`status-chip-${resolveStatus('pending')?.class}`"
+              >
+                 Ingen signering
+              </div>
             </td>
             <!-- 👉 Actions -->
             <td
@@ -819,50 +958,52 @@ onBeforeUnmount(() => {
                     v-if="$can('view','signed-documents')"
                     @click="goToTracker(document)">
                     <template #prepend>
-                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Spårare</VListItemTitle>
-                  </VListItem>
-                  
+                    <VListItemTitle>Sparare</VListItemTitle>
+                  </VListItem>                  
                   <VListItem
                     v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
-                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                      <VIcon icon="custom-signature" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Signera</VListItemTitle>
-                  </VListItem>
-                  
+                  </VListItem>                  
                   <VListItem
                     v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
                     @click="openResendSignature(document)">
                     <template #prepend>
-                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                      <VIcon icon="custom-edit" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Vidarebefordra</VListItemTitle>
                   </VListItem>
-
                   <VListItem
-                        v-if="$can('view', 'signed-documents')"
-                        @click="openLink(document)">
+                    v-if="$can('view', 'signed-documents')"
+                    @click="openLink(document)">
                     <template #prepend>
-                        <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-pdf" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
-                    </VListItem>
-                    <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
+                  </VListItem>
+                  <VListItem v-if="$can('view','signed-documents')" @click="download(document)">
                     <template #prepend>
-                        <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-download" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
-                    </VListItem>
-
+                  </VListItem>
+                  <VListItem v-if="$can('view','signed-documents')" @click="openSendDocumentDialog(document)">
+                    <template #prepend>
+                      <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Sänd PDF</VListItemTitle>
+                  </VListItem>
                   <VListItem
                     v-if="$can('delete', 'signed-documents')"
                     @click="showDeleteDialog(document)"
                   >
                     <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                      <VIcon icon="custom-waste" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
@@ -908,42 +1049,48 @@ onBeforeUnmount(() => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <span class="title-panel">{{ document.title }}</span>
+            <span class="order-id">{{ document.id }}</span>
+            <div class="order-title-box">
+              <span class="title-panel">{{ document.title }}</span>
+              <div class="title-organization">
+                {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+              </div>
+            </div>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">Beskrivning:</div>
+              <div class="expansion-panel-item-label">Skapad av:</div>
               <div class="expansion-panel-item-value">
-                {{ document.description || '-' }}
+                {{ document.user.name }} {{ document.user.last_name ?? "" }}
               </div>
             </div>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">Skapad:</div>
+              <div class="expansion-panel-item-label">Status:</div>
               <div class="expansion-panel-item-value">
-                {{ new Date(document.created_at).toLocaleString('sv-SE', { 
-                      year: 'numeric', 
-                      month: '2-digit', 
-                      day: '2-digit', 
-                      hour: '2-digit', 
-                      minute: '2-digit',
-                      hour12: false
-                  }) }}
+                <div
+                  v-if="document.tokens && document.tokens.length > 0"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+                >
+                  {{ document.tokens[0]?.signature_status }}
+                </div>
+
+                <div
+                  v-else
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus('pending')?.class}`"
+                >
+                  Ingen signering
+                </div>
               </div>
             </div>
             <div class="mb-4 row-with-buttons">
               <VBtn
                 v-if="$can('delete', 'signed-documents')"
                 class="btn-light"
-                @click="showDeleteDialog(document)"
+                @click="selectedDocumentForAction = document; isMobileActionDialogVisible = true"
               >
-                <VIcon icon="custom-waste" size="24" />
-                Ta bort
-              </VBtn>
-            </div>
-            <div>
-              <VBtn class="btn-light w-100" @click="goToTracker(document)">
-                <VIcon icon="custom-eye" size="24" />
-                Spårare
+                Åtgärder
               </VBtn>
             </div>
           </VExpansionPanelText>
@@ -952,14 +1099,15 @@ onBeforeUnmount(() => {
 
       <VCardText
         v-if="documents.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
         </span>
 
-        <VSpacer class="d-none d-md-block" />
-
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
         <VPagination
           v-model="currentPage"
           size="small"
@@ -1006,6 +1154,70 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Send Document Dialog -->
+    <VDialog
+      v-model="isConfirmSendDocumentDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendDocumentDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VForm
+        ref="sendDocumentForm"
+        @submit.prevent="handleSendDocument"
+      >
+        <VCard>
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka PDF som e-post
+            </div>
+          </VCardText>
+          <VCardText class="pb-0">
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="selectedClientId"
+              :items="clients"
+              :item-title="item => item.fullname"
+              :item-value="item => item.id"
+              placeholder="Kunder"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate w-auto"
+              @update:modelValue="selectClient"
+            />
+          </VCardText>
+          <VCardText class="card-form">
+            <VTextField
+              v-model="sendDocumentEmail"
+              label="E-post"
+              placeholder="Ange mottagarens e-postadress"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="isConfirmSendDocumentDialogVisible = false"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+              Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
+    </VDialog>
+
     <!-- 👉 Upload Document Modal -->
     <VDialog
       v-model="isUploadModalVisible"
@@ -1031,37 +1243,62 @@ onBeforeUnmount(() => {
               Ladda upp dokument
             </div>
           </VCardText>
-          <VCardText class="pt-0">
-            <VRow>
-              <VCol cols="12">
+          <VCardText class="dialog-text mb-4">
+            You can access all the files in tis folder.
+          </VCardText>
+          <VCardText class="dialog-text">
+            <div class="d-flex flex-column gap-4">
+              <div>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Titel*" />
                 <VTextField
                   v-model="uploadTitle"
-                  label="Titel"
                   placeholder="Ange dokumenttitel"
                   :rules="[requiredValidator]"
                 />
-              </VCol>
-              <VCol cols="12">
-                <VTextarea
+              </div>
+              <div>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
+                <VTextField
                   v-model="uploadDescription"
-                  label="Beskrivning"
                   placeholder="Ange beskrivning (valfritt)"
-                  rows="3"
                 />
-              </VCol>
-              <VCol cols="12">
-                <VFileInput
-                  ref="uploadFileInput"
-                  label="PDF-fil"
-                  placeholder="PDF-fil"
-                  accept=".pdf"
-                  prepend-icon=""
-                  append-inner-icon="custom-upload"
-                  :rules="[requiredValidator]"
-                  @change="handleFileSelect"
-                />
-              </VCol>
-            </VRow>
+              </div>
+              <div>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                
+                <div 
+                  class="file-upload-area"
+                  :class="{ 'has-file': uploadFile, 'has-error': fileValidationError }"
+                  @click="$refs.hiddenFileInput.click()"
+                  @dragover.prevent
+                  @drop.prevent="handleFileDrop"
+                >
+                  <input
+                    ref="hiddenFileInput"
+                    type="file"
+                    accept=".pdf"
+                    class="d-none"
+                    @change="handleFileSelect"
+                  />
+                  <template v-if="!uploadFile">
+                    <VIcon icon="custom-attach" :size="24" color="grey" />
+                    <span class="file-upload-text">Bifoga ditt dokument</span>
+                  </template>
+                  <template v-else>
+                    <VIcon icon="mdi-file-pdf-box" :size="32" color="error" class="file-pdf-icon" />
+                    <span class="file-upload-text">{{ uploadFile.name }}</span>
+                    <span
+                      class="file-remove-btn"
+                      @click.stop="uploadFile = null"
+                    >
+                      <VIcon icon="custom-close" size="10" />
+                    </span>
+                  </template>
+                </div>
+                <div v-if="fileValidationError" class="file-error-message">
+                  {{ fileValidationError }}
+                </div>
+              </div>
+            </div>
           </VCardText>
 
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1286,6 +1523,82 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+            v-if="$can('view', 'signed-documents')"
+            @click="goToTracker(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-eye" size="24" />
+            </template>
+            <VListItemTitle>Sparare</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed')"
+            @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-signature" size="24" />
+            </template>
+            <VListItemTitle>Signera</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'sent'"
+            @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-edit" size="24" />
+            </template>
+            <VListItemTitle>Vidarebefordra</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'signed-documents')"
+            @click="openLink(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-pdf" size="24" />
+            </template>
+            <VListItemTitle>Visa som PDF</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'signed-documents')"
+            @click="download(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-download" size="24" />
+            </template>
+            <VListItemTitle>Ladda ner</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'signed-documents')"
+            @click="openSendDocumentDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-paper-plane" size="24" />
+            </template>
+            <VListItemTitle>Sänd PDF</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('delete', 'signed-documents')"
+            @click="showDeleteDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
   </section>
 </template>
 
@@ -1572,6 +1885,80 @@ onBeforeUnmount(() => {
 
   .row-left .snake-dot {
     left: -6px; /* Centered on 2px border */
+  }
+
+  .file-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed #E7E7E7;
+    border-radius: 8px;
+    min-height: 88px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #F6F6F6;
+    position: relative;
+
+    /*&:hover {
+      border-color: rgba(var(--v-theme-primary), 0.5);
+      background-color: rgba(var(--v-theme-primary), 0.04);
+    }
+
+    &.has-file {
+      border-color: rgb(var(--v-theme-primary));
+      background-color: rgba(var(--v-theme-primary), 0.08);
+    }*/
+
+    &.has-error {
+      border-color: rgb(var(--v-theme-error));
+      background-color: rgba(var(--v-theme-error), 0.04);
+    }
+  }
+
+  .file-upload-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    max-width: calc(100% - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-pdf-icon {
+    font-size: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .file-remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .file-error-message {
+    color: rgb(var(--v-theme-error));
+    font-size: 12px;
+    margin-top: 4px;
+    padding-left: 8px;
   }
 </style>
 <route lang="yaml">

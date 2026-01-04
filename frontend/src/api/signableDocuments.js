@@ -47,6 +47,10 @@ class SignableDocuments {
     resendSignatureRequest(documentId) {
         return axios.post(`/signable-documents/${documentId}/resend-signature-request`)
     }
+
+    send(data) {
+        return axios.post('/signable-documents/send', data)
+    }
 }
 
 const signableDocuments = new SignableDocuments();
