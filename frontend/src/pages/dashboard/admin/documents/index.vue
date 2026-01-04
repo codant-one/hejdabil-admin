@@ -9,6 +9,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from "@/@core/utils/formatters";
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
+import logo from "@images/logos/billogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
@@ -960,7 +961,7 @@ onBeforeUnmount(() => {
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Sparare</VListItemTitle>
+                    <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>                  
                   <VListItem
                     v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
@@ -974,7 +975,7 @@ onBeforeUnmount(() => {
                     v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
                     @click="openResendSignature(document)">
                     <template #prepend>
-                      <VIcon icon="custom-edit" size="24" class="mr-2" />
+                      <VIcon icon="custom-forward" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Vidarebefordra</VListItemTitle>
                   </VListItem>
@@ -1320,20 +1321,31 @@ onBeforeUnmount(() => {
     <VDialog
       v-model="isSignatureDialogVisible"
       persistent
-      class="v-dialog-sm"
+      class="action-dialog"
     >
-      <DialogCloseBtn @click="isSignatureDialogVisible = !isSignatureDialogVisible" />
-
-      <VCard title="Skicka signeringsförfrågan">
-        <VForm
-          ref="refSignatureForm"
-          @submit.prevent="handleSignatureSubmit"
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isSignatureDialogVisible = !isSignatureDialogVisible"
         >
-          <VDivider class="mt-4"/>
-          <VCardText>
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VForm
+        ref="refSignatureForm"
+        @submit.prevent="handleSignatureSubmit"
+      >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-sent" class="action-icon" />
+            <div class="dialog-title">
+              Skicka signeringsförfrågan
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
           </VCardText>
-          <VCardText>
+          <VCardText class="dialog-text mt-4">
             <VTextField
               v-model="signatureEmail"
               label="E-postadress"
@@ -1342,19 +1354,19 @@ onBeforeUnmount(() => {
             />
           </VCardText>
 
-          <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
-              color="secondary"
-              variant="tonal"
+              class="btn-light"
               @click="isSignatureDialogVisible = false">
                 Avbryt
             </VBtn>
-            <VBtn type="submit">
+            <VBtn class="btn-gradient" type="submit">
                 Skicka
             </VBtn>
           </VCardText>
+          </VCard>
         </VForm>
-      </VCard>
+      
     </VDialog>
 
     <!-- 👉 Placement Modal -->
@@ -1365,57 +1377,53 @@ onBeforeUnmount(() => {
       transition="dialog-bottom-transition"
       @update:modelValue="handlePlacementModalClose"
     >
-      <VCard>
-        <VToolbar
-          dark
-          color="primary"
-        >
-          <VBtn
-            icon
-            dark
-            @click="isPlacementModalVisible = false"
-          >
-            <VIcon>mdi-close</VIcon>
-          </VBtn>
-          <VToolbarTitle>Placera signatur för {{ selectedDocument.title }}</VToolbarTitle>
-          <VSpacer />
-          <VToolbarItems>
-            <VBtn
-              variant="text"
-              :disabled="!signaturePlacement.visible"
-              @click="openSignatureDialog(selectedDocument)"
-            >
-              Bekräfta och skicka
-            </VBtn>
-          </VToolbarItems>
-        </VToolbar>
-        
-        <VCardText class="pa-0 d-flex justify-center align-center" style="background-color: #525659; height: calc(100vh - 64px);">
-          <VProgressCircular
-            v-if="isLoadingPlacementPdf"
-            indeterminate
-            color="white"
-          />
+      <VCard flat class="placement-modal-card">
+        <div class="placement-header">
+          <RouterLink to="/login">
+            <img :src="logo" width="121" height="40" />
+          </RouterLink>
+        </div>
+        <div class="placement-content bg-page">
+          <LoadingOverlay :is-loading="isLoadingPlacementPdf" />
           <div 
             v-show="!isLoadingPlacementPdf"
             ref="pdfPlacementContainer" 
             class="pdf-container-admin" 
             @click="handleAdminPdfClick"
           >
-            <vue-pdf-embed :source="placementPdfSource" />
+            <VuePdfEmbed 
+              :source="placementPdfSource"
+              class="pdf-embed-fullscreen"
+            />
 
             <div 
               v-if="signaturePlacement.visible"
               class="signature-placeholder-admin"
               :style="{ left: signaturePlacement.absoluteX + 'px', top: signaturePlacement.absoluteY + 'px' }"
             >
-              <span class="signature-placeholder-content">
-                <VIcon icon="mdi-draw" />
+              <span class="signature-placeholder-content btn-light">
+                 <VIcon size="16" icon="custom-pencil" />
                 <span>Signera här</span>
               </span>
             </div>
           </div>
-        </VCardText>
+
+          <div class="d-flex justify-center w-100 gap-4 mt-4" v-if="!isLoadingPlacementPdf">
+            <VBtn
+              class="btn-blue"
+              @click="isPlacementModalVisible = false"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn
+              class="btn-green"
+              :disabled="!signaturePlacement.visible"
+              @click="openSignatureDialog(selectedDocument)"
+            >
+              Skicka
+            </VBtn>
+          </div>
+        </div>
       </VCard>
     </VDialog>
 
@@ -1476,7 +1484,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
-     <!-- 👉 Filter Dialog -->
+    <!-- 👉 Filter Dialog -->
     <VDialog
       v-model="isFilterDialogVisible"
       persistent
@@ -1539,7 +1547,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-eye" size="24" />
             </template>
-            <VListItemTitle>Sparare</VListItemTitle>
+            <VListItemTitle>Spårare</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed')"
@@ -1555,7 +1563,7 @@ onBeforeUnmount(() => {
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
-              <VIcon icon="custom-edit" size="24" />
+              <VIcon icon="custom-forward" size="24" />
             </template>
             <VListItemTitle>Vidarebefordra</VListItemTitle>
           </VListItem>
@@ -1683,18 +1691,63 @@ onBeforeUnmount(() => {
     overflow-y: auto;
   }
 
+  .placement-modal-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    overflow-y: auto;
+    background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+  }
+
+  .placement-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    background: transparent;
+  }
+
+  .placement-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px;
+  }
+
   :deep(.pdf-container-admin) {
     position: relative;
     cursor: crosshair;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    width: 90%;
-    max-width: 800px;
-    height: 95%;
-    overflow-y: auto;
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 8px;
+    padding: 0;
+    overflow: hidden;
   }
 
-  :deep(.pdf-container-admin > div){
+  :deep(.pdf-container-admin > div) {
     width: 100% !important;
+  }
+
+  :deep(.pdf-embed-fullscreen) {
+    display: block;
+    width: 100%;
+    
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+      display: block;
+    }
+  }
+
+  :deep(.pdf-container-admin .vue-pdf-embed > div) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 0;
   }
 
   :deep(.signature-placeholder-admin) {
@@ -1703,18 +1756,30 @@ onBeforeUnmount(() => {
       pointer-events: none;
     }
 
-    :deep(.signature-placeholder-content) {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: 2px dashed #ffc107;
-      background-color: rgba(255, 193, 7, 0.2);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: #ffc107;
-      font-weight: 600;
-      white-space: nowrap;
+  :deep(.signature-placeholder-content) {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: solid 1px #6e9383;
+    background-color: transparent;
+    border-radius: 56px;
+    padding: 8px 16px;
+    color: #6e9383;
+    font-weight: 500;
+    font-size: 15px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #416054;
+      color: #416054;
     }
+  }
+
+  .bg-page {
+    background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+  }
 
   .tracker-card {
     border-radius: 16px !important;
