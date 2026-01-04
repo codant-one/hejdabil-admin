@@ -707,11 +707,23 @@ const submitUpload = async () => {
 
 const resolveStatus = state => {
   if (state === 'signed')
-    return { class: 'info' }
+    return { 
+      name: 'Signerad',
+      class: 'success',
+      icon: 'custom-signature'
+    }
   if (state === 'pending')
-    return { class: 'pending' } 
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
   if (state === 'sent')
-    return { class: 'success' }
+    return { 
+      name: 'Skickad',
+      class: 'pending',
+      icon: 'custom-forward'
+    }
 }
 
 function resizeSectionToRemainingViewport() {
@@ -931,7 +943,8 @@ onBeforeUnmount(() => {
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
               >
-                {{ document.tokens[0]?.signature_status }}
+                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
               </div>
 
               <div
@@ -939,7 +952,8 @@ onBeforeUnmount(() => {
                 class="status-chip"
                 :class="`status-chip-${resolveStatus('pending')?.class}`"
               >
-                 Ingen signering
+                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                 {{ resolveStatus('pending')?.name }}
               </div>
             </td>
             <!-- 👉 Actions -->
@@ -993,7 +1007,8 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','signed-documents')" @click="openSendDocumentDialog(document)">
+                  <VListItem v-if="$can('view','signed-documents') && document.tokens?.[0]?.signature_status === 'signed'"
+                    @click="openSendDocumentDialog(document)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
                     </template>
@@ -1073,7 +1088,8 @@ onBeforeUnmount(() => {
                   class="status-chip"
                   :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
                 >
-                  {{ document.tokens[0]?.signature_status }}
+                  <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                  {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
                 </div>
 
                 <div
@@ -1081,7 +1097,8 @@ onBeforeUnmount(() => {
                   class="status-chip"
                   :class="`status-chip-${resolveStatus('pending')?.class}`"
                 >
-                  Ingen signering
+                  <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                 {{ resolveStatus('pending')?.name }}
                 </div>
               </div>
             </div>
@@ -1586,7 +1603,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'signed-documents')"
+            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'signed'"
             @click="openSendDocumentDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
