@@ -1294,7 +1294,7 @@ const dataURLtoBlob = (dataURL) => {
 
       <VCardText class="d-flex justify-end gap-4 btn-box">
         <VBtn
-          class="btn-ghost"
+          class="btn-light"
           @click="isConfirmChangeSignatureVisible = false"
         >
           Avbryt
@@ -1439,10 +1439,6 @@ const dataURLtoBlob = (dataURL) => {
   padding: 24px;
 
   .v-overlay__content {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0;
-
     .v-dialog-close-btn {
       top: 16px !important;
       right: 24px;

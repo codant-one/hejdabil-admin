@@ -32,7 +32,7 @@ const payee_ssn = ref(null)
 const master_password = ref(null)
 const isMasterPasswordVisible = ref(false)
 
-const getTitle = computed(() => 'Ny betalning från ' + payer_alias.value)
+const getTitle = computed(() => 'Ny betalning')
 
 watchEffect(() => {
   if (props.isDialogOpen) {
@@ -108,7 +108,9 @@ const onSubmit = () => {
   <VDialog
     :model-value="props.isDialogOpen"
     persistent
+    scrollable
     class="action-dialog"
+    content-class="scrollable-dialog-content"
     @update:model-value="val => emit('update:isDialogOpen', val)"
   >
 
@@ -120,34 +122,30 @@ const onSubmit = () => {
       <VIcon size="16" icon="custom-close" />
     </VBtn>
 
-    <VCard flat class="card-form pt-3">
-      <VCardTitle class="dialog-title-box">
-        <VIcon size="32" icon="custom-surface" class="action-icon" />
+    <VForm
+      ref="refForm"
+      v-model="isFormValid"
+      @submit.prevent="onSubmit"
+    >
+      <VCard>
+        <VCardText class="dialog-title-box flex-row">
+          <VIcon size="32" icon="custom-surface" class="action-icon" />
           <div class="dialog-title">
-            {{ getTitle }}
+             {{ getTitle }}
           </div>
-          
-        
-      </VCardTitle>
+        </VCardText>
+        <VCardText class="dialog-text pe-0">
+          Överför pengar till dina kunder via Swish
+        </VCardText>
 
-      <VCardSubtitle>
-        Överför pengar till dina kunder via Swish.
-      </VCardSubtitle>
-
-      <VCardText>
-        
-        <VForm
-          ref="refForm"
-          v-model="isFormValid"
-          @submit.prevent="onSubmit"
-        >
+        <VCardText class="dialog-text mt-2">        
           <!-- Stepper Header -->
           <VTabs 
             v-model="currentStep" 
             grow
             disabled
             :show-arrows="false"
-            class="vehicles-tabs"
+            class="payouts-tabs"
           >
             <VTab :value="1">
                 <VIcon size="24" icon="custom-cash" />
@@ -158,138 +156,174 @@ const onSubmit = () => {
                 <span>Bekräftelse</span>
             </VTab>
           </VTabs>
-          
-          <!-- Step 1: Payment Information -->
+        
           <VWindow v-model="currentStep">
+            <!-- Step 1: Payment Information -->
             <VWindowItem :value="1">
-              <VCard flat class="card-form">
-              <VCardText>
-                <VForm ref="refFormStep1">
-                  <VRow>
-                    <VCol cols="12" class="mt-2">
-                      <VTextField
-                        v-model="payee_alias"
-                        label="Mobilnummer"
-                        :rules="[requiredValidator, minLengthDigitsValidator(11)]"
-                        minLength="11"
-                        maxlength="11"
-                        @input="formatNumber('payee_alias')"
-                      />
-                    </VCol>
-
-                    <VCol cols="12">
-                      <VTextField
-                        v-model="payee_ssn"
-                        label="Personnummer"
-                        :rules="[requiredValidator, minLengthDigitsValidator(12)]"
-                        minLength="12"
-                        maxlength="12"
-                        @input="formatNumber('payee_ssn')"
-                      />
-                    </VCol>
-
-                    <VCol cols="12">
-                      <VTextField
-                        v-model="amount"
-                        type="number"
-                        label="Belopp (SEK)"
-                        :rules="[requiredValidator]"
-                        min="1"
-                      />
-                    </VCol>
-
-                    <VCol cols="12">
-                      <VTextarea
-                        v-model="message"
-                        label="Meddelande (valfritt)"
-                        rows="3"
-                      />
-                    </VCol>
-                  </VRow>
-                </VForm>
-              </VCardText>
-              </VCard>
+              <VForm ref="refFormStep1" class="card-form">
+                <div class="d-flex flex-column gap-4">
+                  <div class="mt-4">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer*" />
+                    <VTextField
+                      v-model="payee_alias"
+                      placeholder="Mobilnummer"
+                      :rules="[requiredValidator, minLengthDigitsValidator(11)]"
+                      minLength="11"
+                      maxlength="11"
+                      @input="formatNumber('payee_alias')"
+                    />
+                  </div>
+                  <div>
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Personnummer*" />
+                    <VTextField
+                      v-model="payee_ssn"
+                      placeholder="Personnummer"
+                      :rules="[requiredValidator, minLengthDigitsValidator(12)]"
+                      minLength="12"
+                      maxlength="12"
+                      @input="formatNumber('payee_ssn')"
+                    />
+                  </div>
+                  <div>
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Belopp*" />
+                    <VTextField
+                      v-model="amount"
+                      type="number"
+                      suffix="SEK"
+                      placeholder="Belopp (SEK)"
+                      :rules="[requiredValidator]"
+                      min="1"
+                    />
+                  </div>
+                  <div>
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />
+                    <VTextarea
+                      v-model="message"
+                      placeholder="Meddelande (valfritt)"
+                      persistent-placeholder
+                      rows="3"
+                    />
+                  </div>
+                </div>
+              </VForm>
             </VWindowItem>
-
             <!-- Step 2: Security Password -->
-            <VWindowItem class="mt-8" :value="2">
-              <VRow>
-                <VCol cols="12">
-                  <VAlert
-                    variant="tonal"
-                    color="info"
-                    class="mb-4"
-                  >
-                    <div class="text-pagination-results">
-                      <p class="mb-2 d-flex justify-between" style="color: #5d5d5d;">Mobilnummer: <strong>+{{ payee_alias }}</strong></p>
-                      <VDivider />
-                      <p class="mb-2 d-flex justify-between mt-2">Personnummer: <strong>{{ payee_ssn }}</strong></p>
-                      <VDivider />
-                      <p class="mb-2 d-flex justify-between mt-2">Belopp: <strong>{{ amount }} SEK</strong></p>
-                      <VDivider />
-                      <p v-if="message" class="mb-0 mt-2 ">Meddelande: <br> <strong>{{ message }}</strong></p>
-                    </div>
-                  </VAlert>
-                </VCol>
+            <VWindowItem :value="2">
+              <div class="mt-4 card-form d-flex flex-column gap-4">
+                <div class="bg-alert">
+                  <span class="mb-2 d-flex justify-between text-neutral-3">
+                    Mobilnummer: <strong class="text-black">+{{ payee_alias }}</strong>
+                  </span>
+                  <VDivider />
+                  <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+                    Personnummer: <strong class="text-black">{{ payee_ssn }}</strong>
+                  </span>
+                  <VDivider />
+                  <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+                    Belopp: <strong class="text-black">{{ amount }} SEK</strong>
+                  </span>
+                  <VDivider v-if="message" class="mb-2"/>
+                  <span v-if="message">
+                    Meddelande: <br> <strong class="text-black">{{ message }}</strong>
+                  </span>
+                </div>
 
-                <VCol cols="12">
+                <div>
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord*" />
                   <VTextField
                     v-model="master_password"
-                    label="Säkerhetslösenord"
                     :type="isMasterPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isMasterPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
                     :rules="[requiredValidator]"
                     placeholder="Ange ditt säkerhetslösenord för att bekräfta"
                     @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
                   />
-                </VCol>
-              </VRow>
+                </div>
+              </div>
             </VWindowItem>
           </VWindow>
 
           <!-- Buttons -->
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0">
             <VBtn
               v-if="currentStep === 2"
-              color="secondary"
-              variant="tonal"
+              class="btn-ghost"
               @click="prevStep"
             >
-              <VIcon icon="tabler-arrow-left" class="me-2" />
               Tillbaka
             </VBtn>
+
             <VSpacer v-else />
             
-
-              <VBtn
-                color="secondary"
-                variant="tonal"
-                class="btn-light"
-                @click="closeDialog"
-              >
-                Avbryt
-              </VBtn>
-              <VBtn
-                v-if="currentStep === 1"
-                class="btn-gradient"
-                @click="nextStep"
-              >
-                Nästa
-              </VBtn>
-              <VBtn
-                v-else
-                class="btn-gradient"
-                type="submit"
-              >
-                Bekräfta betalning
-              </VBtn>
-
+            <VBtn
+              class="btn-light"
+              @click="closeDialog"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn
+              v-if="currentStep === 1"
+              class="btn-gradient"
+              @click="nextStep"
+            >
+              Nästa
+            </VBtn>
+            <VBtn
+              v-else
+              class="btn-gradient"
+              type="submit"
+            >
+              Bekräfta betalning
+            </VBtn>
           </VCardText>
-        </VForm>
-      </VCardText>
-    </VCard>
+        </VCardText>
+      </VCard>
+    </VForm>
   </VDialog>
 </template>
+
+<style lang="scss">
+
+  .scrollable-dialog-content {
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  .bg-alert {
+    background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+    border-radius: 16px;
+    gap: 16px;
+    opacity: 1;
+    padding-top: 16px;
+    padding-right: 24px;
+    padding-bottom: 16px;
+    padding-left: 24px;
+  }
+
+  .v-tabs.payouts-tabs {
+    .v-btn {
+      min-width: 50px !important;
+      .v-btn__content {
+        font-size: 14px !important;
+        color: #454545;
+      }
+    }
+  }
+
+  @media (max-width: 776px) {
+    .v-tabs.payouts-tabs {
+      .v-icon {
+        width: 20px!important;
+        height: 20px!important;
+      }
+      .v-btn {
+        .v-btn__content {
+          white-space: break-spaces;
+        }
+      }
+    }
+  }
+</style>
 
 <style scoped>
 .stepper-header {

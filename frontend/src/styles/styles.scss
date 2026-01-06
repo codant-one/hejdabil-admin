@@ -1240,6 +1240,77 @@ body {
   background-image: url("/src/assets/images/icons/alerts/alert-error-icon.svg") !important;
 }
 
+/* Global VAlert styled like snackbar (apply via class "custom-alert") */
+.custom-alert.v-alert {
+  border-radius: 8px !important;
+  background-color: #ffffff !important;
+  box-shadow: 0px 4px 16px 0px rgba(0, 0, 0, 0.15) !important;
+  padding: 16px !important;
+  border: none !important;
+  border-left: 3px solid transparent !important;
+  color: #5d5d5d !important;
+  font-size: 16px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px;
+}
+
+.custom-alert.v-alert .v-alert__content {
+  padding: 0 !important;
+  color: #5d5d5d !important;
+  font-size: 16px;
+  line-height: normal;
+}
+
+.custom-alert.v-alert::before {
+  content: "";
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  margin-right: 8px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+/* per-type variants */
+.custom-alert.v-alert.bg-success,
+.custom-alert.v-alert[border-color="success"] {
+  border-left-color: #00eeb0 !important;
+}
+.custom-alert.v-alert.bg-success::before,
+.custom-alert.v-alert[border-color="success"]::before {
+  background-image: url("/src/assets/images/icons/alerts/alert-check-icon.svg") !important;
+}
+
+.custom-alert.v-alert.bg-info,
+.custom-alert.v-alert[border-color="info"] {
+  border-left-color: #1890ff !important;
+}
+.custom-alert.v-alert.bg-info::before,
+.custom-alert.v-alert[border-color="info"]::before {
+  background-image: url("/src/assets/images/icons/alerts/alert-info-icon.svg") !important;
+}
+
+.custom-alert.v-alert.bg-warning,
+.custom-alert.v-alert[border-color="warning"] {
+  border-left-color: #faad14 !important;
+}
+.custom-alert.v-alert.bg-warning::before,
+.custom-alert.v-alert[border-color="warning"]::before {
+  background-image: url("/src/assets/images/icons/alerts/alert-warning-icon.svg") !important;
+}
+
+.custom-alert.v-alert.bg-error,
+.custom-alert.v-alert[border-color="error"] {
+  border-left-color: #ff4d4f !important;
+}
+.custom-alert.v-alert.bg-error::before,
+.custom-alert.v-alert[border-color="error"]::before {
+  background-image: url("/src/assets/images/icons/alerts/alert-error-icon.svg") !important;
+}
+
 // Extra bottom space for mobile snackbars (location bottom)
 @media (max-width: 991px) {
   // Default for auth / public pages

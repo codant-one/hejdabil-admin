@@ -916,7 +916,7 @@ onBeforeUnmount(() => {
           v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
           @click="isDialogOpen = true"
         >
-          Lägg till ny kund
+           Skapa ny faktura
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>

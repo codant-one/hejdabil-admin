@@ -7,6 +7,7 @@ import SignaturePad from 'signature_pad'
 import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
+import logo from "@images/logos/billogg-logo.svg";
 
 const props = defineProps({
   token: {
@@ -130,7 +131,8 @@ const loadSignatureDetails = async () => {
 }
 
 // Calcula la posición del placeholder considerando múltiples páginas
-const calculatePlaceholderPosition = () => {
+// y desplaza el scroll del contenedor para poner el placeholder en vista
+const calculatePlaceholderPosition = (shouldScroll = false) => {
   if (signaturePlacement.value.isStatic || !signaturePlacement.value.visible) {
     return
   }
@@ -138,25 +140,27 @@ const calculatePlaceholderPosition = () => {
   const container = pdfContainer.value
   if (!container) {
     // Reintentar después de un momento
-    setTimeout(calculatePlaceholderPosition, 100)
+    setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
     return
   }
 
   const pages = Array.from(container.querySelectorAll('canvas, svg, img'))
   if (pages.length === 0) {
     // Reintentar después de un momento
-    setTimeout(calculatePlaceholderPosition, 100)
+    setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
     return
   }
 
   const targetPageIndex = (signaturePlacement.value.page || 1) - 1
   const targetPage = pages[targetPageIndex] || pages[0]
 
-  // Calcular la suma de alturas de todas las páginas anteriores
-  let accumulatedHeight = 0
-  for (let i = 0; i < targetPageIndex && i < pages.length; i++) {
-    accumulatedHeight += pages[i].offsetHeight
-  }
+  // Obtener el rect de la página objetivo relativo al contenedor
+  const containerRect = container.getBoundingClientRect()
+  const pageRect = targetPage.getBoundingClientRect()
+
+  // Calcular el offset de la página dentro del contenedor (para páginas centradas)
+  const pageOffsetLeft = pageRect.left - containerRect.left + container.scrollLeft
+  const pageOffsetTop = pageRect.top - containerRect.top + container.scrollTop
 
   // Obtener dimensiones de la página objetivo
   const pageWidth = targetPage.offsetWidth
@@ -166,11 +170,26 @@ const calculatePlaceholderPosition = () => {
   const xPx = (signaturePlacement.value.x / 100) * pageWidth
   const yPx = (signaturePlacement.value.y / 100) * pageHeight
 
-  // Calcular posición absoluta en el contenedor (anclado arriba/izquierda, sin centrar)
-  const left = xPx
-  const top = accumulatedHeight + yPx
+  // Calcular posición absoluta en el contenedor (incluyendo offset de centrado)
+  const left = pageOffsetLeft + xPx
+  const top = pageOffsetTop + yPx
 
   computedPlacement.value = { left, top }
+
+  // Desplazar la VENTANA para que el placeholder quede visible
+  if (shouldScroll) {
+    setTimeout(() => {
+      const placeholder = document.querySelector('.signature-placeholder')
+      if (placeholder) {
+        const rect = placeholder.getBoundingClientRect()
+        // Posicionar el placeholder en el tercio inferior de la pantalla
+        // Usar un factor mayor en móviles para que el placeholder quede más arriba
+        const offsetFactor = window.innerWidth <= 768 ? 0.5 : 0.35
+        const scrollY = window.scrollY + rect.top - (window.innerHeight * offsetFactor)
+        window.scrollTo({ top: scrollY, behavior: 'smooth' })
+      }
+    }, 500)
+  }
 }
 
 // Carga tanto el PDF como los detalles de la firma
@@ -195,10 +214,20 @@ const loadSignatureData = async () => {
       
       // Esperar a que el PDF se renderice y calcular posición
       await nextTick()
-      calculatePlaceholderPosition()
+      // Primer cálculo sin scroll - esperar más para que el PDF se renderice completamente
+      setTimeout(() => {
+        calculatePlaceholderPosition(false)
+      }, 500)
       
-      // Recalcular al redimensionar
-      window.addEventListener('resize', calculatePlaceholderPosition)
+      // Después de que el video termine (aprox 3 segundos), hacer scroll al placeholder
+      setTimeout(() => {
+        calculatePlaceholderPosition(true)
+      }, 3500)
+      
+      // Recalcular al redimensionar (sin scroll)
+      window.addEventListener('resize', () => {
+        setTimeout(() => calculatePlaceholderPosition(false), 100)
+      })
     }
     
   } catch (error) {
@@ -294,10 +323,16 @@ onMounted(loadSignatureData);
 
 <template>
   <VideoLoader />
+  <LoadingOverlay :is-loading="isRequestOngoing" />
   <div class="signing-container">
+    <!-- Header con logo -->
+    <div class="signing-header">
+      <img :src="logo" width="121" height="40" alt="Billogg" />
+    </div>
+
     <!-- Estado de carga y final -->
-    <VCard v-if="isLoading || finalState" class="pa-8 text-center" max-width="500">
-      <VProgressCircular v-if="isLoading" indeterminate color="primary" size="64" />
+    <div v-if="isLoading || finalState" class="signing-content">
+    <VCard class="pa-8 text-center" max-width="500">
       <div v-if="finalState">
         <VIcon :icon="finalState.icon" :color="finalState.type" size="64" class="mb-4" />
         <VCardTitle class="text-h5">{{ finalState.title }}</VCardTitle>
@@ -314,133 +349,199 @@ onMounted(loadSignatureData);
         </VBtn>
       </div>
     </VCard>
+    </div>
 
     <!-- Visor de PDF cuando ya está firmado -->
-    <VCard v-if="!isLoading && !finalState && isAlreadySigned" class="signing-card">
-      <!-- Banner informativo de documento firmado -->
-      <VAlert
-        type="success"
-        variant="tonal"
-        class="ma-4 mb-0 alert-no-shrink"
-        prominent
-      >
-        <template #prepend>
-          <VIcon icon="mdi-check-circle" size="32" />
-        </template>
-        <VAlertTitle class="text-h6">Dokumentet är redan signerat</VAlertTitle>
-        <div>
-          <p class="mb-2">Avtal #{{ signedInfo?.agreementId }} signerades {{ signedInfo?.signedAt }}</p>
-          <VBtn
-            color="success"
-            variant="outlined"
-            size="small"
-            prepend-icon="mdi-download"
-            class="mb-2"
-            @click="downloadSignedPdf"
-          >
-            Ladda ner signerat dokument
-          </VBtn>
+    <div v-if="!isLoading && !finalState && isAlreadySigned" class="signing-content">
+      <VCard class="signing-card">
+        <!-- Banner informativo de documento firmado -->
+        <VAlert
+          color="success"
+          class="ma-4 mb-0 alert-no-shrink custom-alert"
+        >
+          <VAlertTitle class="text-h6">Dokumentet är redan signerat</VAlertTitle>
+          <div>
+            <p class="mb-2">Avtal #{{ signedInfo?.agreementId }} signerades {{ signedInfo?.signedAt }}</p>
+            <VBtn
+              color="success"
+              variant="outlined"
+              size="small"
+              prepend-icon="mdi-download"
+              class="mb-2"
+              @click="downloadSignedPdf"
+            >
+              Ladda ner signerat dokument
+            </VBtn>
+          </div>
+        </VAlert>
+        
+        <VDivider class="mt-4" />
+        
+        <!-- Visor del PDF firmado (solo lectura) -->
+        <div class="pdf-container read-only">
+          <div style="position: relative;">
+            <vue-pdf-embed :source="pdfSource" />
+          </div>
         </div>
-      </VAlert>
-      
-      <VDivider class="mt-4" />
-      
-      <!-- Visor del PDF firmado (solo lectura) -->
-      <div class="pdf-container read-only">
-        <div style="position: relative;">
-          <vue-pdf-embed :source="pdfSource" />
-        </div>
-      </div>
-    </VCard>
+      </VCard>
+    </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
-    <VCard v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-card">
-      <VToolbar density="compact" color="surface">
-        <VToolbarTitle class="text-subtitle-1">
-          Vänligen signera dokumentet
-        </VToolbarTitle>
-      </VToolbar>
-      <VDivider />
-      
-      <div class="pdf-container">
-        <div ref="pdfContainer" style="position: relative;">
-          <vue-pdf-embed :source="pdfSource" />
-          
-          <!-- Placeholder de firma clickeable (posición dinámica) -->
-          <div 
-            v-if="signaturePlacement.visible && !signaturePlacement.isStatic && computedPlacement.left !== null"
-            class="signature-placeholder"
-            :style="{
-              left: computedPlacement.left + 'px', 
-              top: computedPlacement.top + 'px'
-            }"
-            @click.stop="openSignatureModal"
-          >
-            <VIcon icon="mdi-draw" />
-            <span>Signera här</span>
-          </div>
-          
-          <!-- Placeholder de firma estática -->
-          <div 
-            v-if="signaturePlacement.visible && signaturePlacement.isStatic"
-            class="signature-placeholder static-signature-position"
-            :class="{ 
-              'align-left': signaturePlacement.alignment === 'left',
-              'align-right': signaturePlacement.alignment === 'right'
-            }"
-            @click.stop="openSignatureModal"
-          >
-            <VIcon icon="mdi-draw" />
-            <span>Signera här</span>
+    <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-content">
+      <VCard class="signing-card">
+        <div class="pdf-container">
+          <div ref="pdfContainer" style="position: relative;">
+            <vue-pdf-embed :source="pdfSource" />
+            
+            <!-- Placeholder de firma clickeable (posición dinámica) -->
+            <div 
+              v-if="signaturePlacement.visible && !signaturePlacement.isStatic && computedPlacement.left !== null"
+              class="signature-placeholder"
+              :style="{
+                left: computedPlacement.left + 'px', 
+                top: computedPlacement.top + 'px'
+              }"
+              @click.stop="openSignatureModal"
+            >
+              <span class="signature-placeholder-content">
+                <VIcon icon="mdi-draw" size="16" />
+                <span>Signera här</span>
+              </span>
+            </div>
+            
+            <!-- Placeholder de firma estática -->
+            <div 
+              v-if="signaturePlacement.visible && signaturePlacement.isStatic"
+              class="signature-placeholder static-signature-position"
+              :class="{ 
+                'align-left': signaturePlacement.alignment === 'left',
+                'align-right': signaturePlacement.alignment === 'right'
+              }"
+              @click.stop="openSignatureModal"
+            >
+              <span class="signature-placeholder-content">
+                <VIcon icon="mdi-draw" size="16" />
+                <span>Signera här</span>
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </VCard>
+      </VCard>
+    </div>
 
     <!-- Diálogo para firmar (el lienzo) -->
-    <VDialog v-model="isSignatureModalVisible" persistent max-width="500">
+    <VDialog 
+      v-model="isSignatureModalVisible"
+      max-width="500"
+      persistent
+      class="signature-dialog"
+    >
       <VCard>
-        <VCardTitle>Rita din signatur</VCardTitle>
-        <VCardText>
+        <VCardText class="without-padding v-card-custom-title">
+          <VIcon icon="custom-signature" class="mr-4" size="32"></VIcon>
+          Rita din signatur
+        </VCardText>
+        <VCardText class="without-padding">
           <div class="signature-pad-wrapper">
             <canvas ref="signatureCanvas"></canvas>
           </div>
         </VCardText>
-        <VCardActions>
-          <VSpacer />
-          <VBtn color="secondary" @click="closeSignatureModal(false)">Avbryt</VBtn>
+        <VCardText class="d-flex justify-end gap-4 btn-box">
+          <VBtn class="btn-light" @click="closeSignatureModal(false)">Avbryt</VBtn>
           <VBtn 
-            color="primary" 
+            class="btn-gradient" 
             @click="closeSignatureModal(true)" 
             :disabled="isSubmitting" 
             :loading="isSubmitting"
           >
             Acceptera
           </VBtn>
-        </VCardActions>
+        </VCardText>
       </VCard>
     </VDialog>
-    <LoadingOverlay :is-loading="isRequestOngoing" />
   </div>
 </template>
 
+<style lang="scss">
+  .signature-dialog {
+    max-width: 500px;
+    border-radius: 16px;
+    gap: 32px;
+    padding: 24px;
 
+    .v-overlay__content {
+
+      .v-dialog-close-btn {
+        top: 16px !important;
+        right: 24px;
+        transform: none !important;
+        height: 16px !important;
+        width: 16px !important;
+        padding: 0px !important;
+      }
+
+      .v-card {
+        .v-card-text {
+          padding: 24px 24px 24px !important;
+
+          &.without-padding {
+            padding: 24px 24px 0px !important;
+          }
+
+          &.v-card-custom-title {
+            font-weight: 600;
+            font-size: 24px;
+            line-height: 100%;
+            color: #5d5d5d;
+          }
+
+          @media (max-width: 991px) {
+            &.btn-box {
+              flex-direction: column-reverse;
+              gap: 8px;
+            }
+          }
+        }
+      }
+  }
+  }
+</style>
 <style scoped>
+  
 .signing-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2rem;
+  flex-direction: column;
   min-height: 100vh;
-  background-color: rgb(var(--v-theme-surface-variant));
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+  overflow-y: auto;
+}
+
+.signing-header {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  padding: 16px 24px;
+  background: transparent;
+}
+
+.signing-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 24px 24px;
+  margin-bottom: 0;
 }
 
 .signing-card {
   width: 100%;
   max-width: 900px;
-  max-height: 90vh;
   display: flex;
   flex-direction: column;
+  background: transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .alert-no-shrink {
@@ -450,33 +551,85 @@ onMounted(loadSignatureData);
 .pdf-container {
   position: relative;
   flex-grow: 1;
-  overflow: auto;
-  padding: 1rem;
+  overflow: visible;
+  padding: 0;
+  background-color: transparent;
 }
 
 .pdf-container.read-only {
-  background-color: rgb(var(--v-theme-surface));
+  background-color: transparent;
+}
+
+/* Contenedor del vue-pdf-embed */
+:deep(.pdf-container > div) {
+  width: 100% !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Contenedor interno de vue-pdf-embed */
+:deep(.pdf-container .vue-pdf-embed) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+:deep(.pdf-container .vue-pdf-embed > div) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+/* Cada página del PDF como una hoja separada con fondo blanco */
+:deep(.pdf-container .vue-pdf-embed canvas),
+:deep(.pdf-container .vue-pdf-embed img),
+:deep(.pdf-container .vue-pdf-embed svg) {
+  display: block !important;
+  max-width: 816px !important;
+  width: 100% !important;
+  height: auto !important;
+  background: #fff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 4px !important;
 }
 
 .signature-placeholder {
   position: absolute;
-  border: 2px dashed rgb(var(--v-theme-primary));
-  background-color: rgba(var(--v-theme-primary), 0.1);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: rgb(var(--v-theme-primary));
-  font-weight: 600;
   z-index: 10;
+  cursor: pointer;
+}
+
+.signature-placeholder-content {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  border: solid 1px #6e9383;
+  background-color: transparent;
+  border-radius: 56px;
+  padding: 8px 16px;
+  color: #6e9383;
+  font-weight: 500;
+  font-size: 15px;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
-.signature-placeholder:hover {
-  background-color: rgba(var(--v-theme-primary), 0.2);
-  transform: scale(1.05);
+.signature-placeholder-content:hover {
+  border-color: #416054;
+  color: #416054;
+  background-color: rgba(110, 147, 131, 0.1);
+}
+
+.signing-card-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
 }
 
 /* Posicionamiento para la firma estática */
@@ -512,19 +665,21 @@ canvas {
   }
 
   .signing-card {
-    max-height: 95vh;
+    max-height: none;
     max-width: 100%;
   }
 
-  .signature-placeholder {
-    padding: 4px 8px;
-    font-size: 0.5rem!important;
-    gap: 4px;
-    border-radius: 4px;
+  .signature-placeholder-content {
+    padding: 2px 6px;
+    font-size: 8px;
+    gap: 2px;
+    border-radius: 12px;
   }
   
-  .signature-placeholder .v-icon {
-    font-size: 1rem;
+  .signature-placeholder-content .v-icon {
+    font-size: 8px !important;
+    width: 8px !important;
+    height: 8px !important;
   }
 
   .static-signature-position.align-left {

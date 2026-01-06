@@ -1104,7 +1104,6 @@ onBeforeUnmount(() => {
             </div>
             <div class="mb-4 row-with-buttons">
               <VBtn
-                v-if="$can('delete', 'signed-documents')"
                 class="btn-light"
                 @click="selectedDocumentForAction = document; isMobileActionDialogVisible = true"
               >
@@ -1425,7 +1424,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
 
-          <div class="d-flex justify-center w-100 gap-4 mt-4" v-if="!isLoadingPlacementPdf">
+          <div class="d-flex justify-center w-100 gap-4 my-4" v-if="!isLoadingPlacementPdf">
             <VBtn
               class="btn-blue"
               @click="isPlacementModalVisible = false"
@@ -1729,7 +1728,7 @@ onBeforeUnmount(() => {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    padding: 24px;
+    padding: 0 24px;
   }
 
   :deep(.pdf-container-admin) {
@@ -1738,10 +1737,10 @@ onBeforeUnmount(() => {
     width: 100%;
     max-width: 1280px;
     margin: 0 auto;
-    background: #fff;
+    background: transparent;
     border-radius: 8px;
     padding: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   :deep(.pdf-container-admin > div) {
@@ -1763,8 +1762,15 @@ onBeforeUnmount(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 16px 0;
+    gap: 8px;
+    padding: 0 0 12px 0;
+    background: transparent;
+  }
+
+  :deep(.pdf-container-admin .vue-pdf-embed canvas) {
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
   }
 
   :deep(.signature-placeholder-admin) {
@@ -1791,6 +1797,19 @@ onBeforeUnmount(() => {
     &:hover {
       border-color: #416054;
       color: #416054;
+    }
+
+    @media (max-width: 768px) {
+      padding: 2px 6px;
+      font-size: 8px;
+      gap: 2px;
+      border-radius: 12px;
+
+      .v-icon {
+        font-size: 8px !important;
+        width: 8px !important;
+        height: 8px !important;
+      }
     }
   }
 
