@@ -291,6 +291,17 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const formatDateTime = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
 const resolveStatus = state_id => {
   if (state_id === 1)
     return { class: 'info' }
@@ -414,12 +425,11 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> #ID </th>
-            <th scope="col"> Swish ID </th>
-            <th scope="col" class="text-center"> Reference </th>
-            <th scope="col" class="text-center"> Datum </th>
-            <th scope="col" class="text-center"> Amount </th>
-            <th scope="col" class="text-center"> Payee alias </th>
+            <th scope="col" class="text-center"> Referens </th>
+            <th scope="col" class="text-center"> Datum </th>            
+            <th scope="col" class="text-center"> Personnummer </th>
+            <th scope="col" class="text-center"> Mobilnummer </th>
+            <th scope="col" class="text-center"> Belopp </th>
             <th scope="col"> Skapad av </th>
             <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
@@ -431,13 +441,11 @@ onBeforeUnmount(() => {
             v-for="payout in payouts"
             :key="payout.id"
             style="height: 3rem;">
-
-            <td> {{ payout.id }} </td>
-            <td> {{ payout.swish_id ?? ''}} </td>
-            <td class="text-center"> {{ payout.reference ?? ''}} </td>
-            <td class="text-center"> {{ payout.created_at ? formatDate(payout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}</td>
+            <td class="text-center"> {{ payout.message ?? ''}} </td>
+            <td class="text-center"> {{ formatDateTime(payout.created_at) }}</td>
+            <td class="text-center"> {{ payout.payee_ssn ?? ''}} </td>
+            <td class="text-center"> +{{ payout.payee_alias ?? ''}} </td>
             <td class="text-center"> {{ formatNumber(payout.amount ?? 0) }} kr</td>
-            <td class="text-center"> {{ payout.payee_alias ?? ''}} </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
@@ -497,7 +505,8 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem 
                     v-if="$can('delete','payouts')"
-                    @click="showDeleteDialog(payout)">
+                    @click="showDeleteDialog(payout)"
+                    class="d-none">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
                     </template>
@@ -547,7 +556,7 @@ onBeforeUnmount(() => {
           >            
             <div class="order-title-box">
               <span class="title-panel">
-                <strong>{{ payout.reference ?? '' }}</strong>
+                <strong>{{ payout.message ?? '' }}</strong>
               </span>
               <div class="gap-2 title-organization">
                 <span>
@@ -692,6 +701,7 @@ onBeforeUnmount(() => {
           </VListItem>
           <VListItem
             v-if="$can('delete', 'payouts')"
+            class="d-none"
             @click="showDeleteDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
