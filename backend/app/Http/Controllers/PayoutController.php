@@ -91,7 +91,7 @@ class PayoutController extends Controller
                     ], 422);
                 }
                 $masterPasswordValid = ($request->master_password === $supplier->master_password);
-            } else {
+            } else { // por el momento no tenemos swish para otros roles
                 $config = Config::getByKey('setting');
                 
                 if (!$config) {
@@ -124,7 +124,7 @@ class PayoutController extends Controller
                 $masterPasswordValid = ($request->master_password === $master_password);
             }
 
-            if (!$masterPasswordValid) {
+            if (!$masterPasswordValid) {// no coincide el master password
                 return response()->json([
                     'success' => false,
                     'message' => 'Felaktigt säkerhetslösenord',

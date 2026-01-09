@@ -380,6 +380,7 @@ onBeforeUnmount(() => {
             Exportera
           </VBtn>
           <VBtn
+            v-if="$can('create', 'payouts') && role === 'Supplier'"
             class="btn-gradient"
             block
             @click="openPayoutDialog"
@@ -537,7 +538,7 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'payouts')"
+          v-if="$can('create', 'payouts') && role === 'Supplier'"
           @click="openPayoutDialog"
         >
           Skapa ny faktura

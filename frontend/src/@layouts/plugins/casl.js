@@ -23,19 +23,20 @@ export const can = (action, subject, item = null) => {
   // Si no tiene permiso básico, retornar false
   if (!hasPermission) return false
   
-  // Validación adicional para payouts - solo visible para Suppliers con is_payout === 1
+  // Validación adicional para payouts:
+  // - Si el usuario es Supplier: además del permiso, debe tener `is_payout === 1`.
+  // - Si no es Supplier: solo se valida el permiso.
   if (subject === 'payouts') {
     const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
     if (!userData) return false
-    
+
     const userRole = userData.roles?.[0]?.name
-    
-    // Solo los Suppliers pueden ver payouts, y deben tener is_payout === 1
-    if (userRole !== 'Supplier') {
-      return false
+
+    if (userRole === 'Supplier') {
+      return userData.supplier?.is_payout === 1 && hasPermission
     }
-    
-    return userData.supplier?.is_payout === 1
+
+    return hasPermission
   }
   
   return hasPermission
