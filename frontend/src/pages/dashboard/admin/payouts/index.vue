@@ -583,6 +583,18 @@ onBeforeUnmount(() => {
               <VListItemTitle>Debiterad</VListItemTitle>
             </VListItem>
 
+             <VListItem @click="updateStateId(5)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 5"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Misslyckad</VListItemTitle>
+            </VListItem>
           </VList>
         </VMenu>
 
@@ -1070,6 +1082,18 @@ onBeforeUnmount(() => {
               /></VListItemAction>
             </template>
             <VListItemTitle>Debiterad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(5)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 5"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Misslyckad</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

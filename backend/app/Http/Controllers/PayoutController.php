@@ -177,7 +177,7 @@ class PayoutController extends Controller
                 }
 
                 // Buscar estado de error
-                $errorStateId = PayoutState::where('name', 'ERROR')->orWhere('label', 'error')->value('id');
+                $errorStateId = PayoutState::where('name', 'Misslyckad')->orWhere('label', 'failed')->value('id');
 
                 $request->merge([
                     'payout_state_id' => $errorStateId ?? 1,

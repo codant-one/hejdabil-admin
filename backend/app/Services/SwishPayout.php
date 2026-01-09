@@ -27,15 +27,6 @@ class SwishPayout
         $this->signingCert         = str_replace('\\', '/', storage_path('app/public/' . $supplier->pem_url));
         $this->signingKey          = str_replace('\\', '/', storage_path('app/public/' . $supplier->key_url));
         $this->signingKeyPassword  = config('services.swish_payout.signing_key_password', 'swish');
-
-        // Log para verificar las rutas
-        Log::info('SwishPayout: Rutas de certificados' . PHP_EOL . json_encode([
-            'signingCert' => $this->signingCert,
-            'signingKey' => $this->signingKey,
-            'signingCert_exists' => file_exists($this->signingCert),
-            'signingKey_exists' => file_exists($this->signingKey),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-
         $this->clientKeyPassword   = config('services.swish_payout.client_key_password');
         $this->clientCertPassword  = config('services.swish_payout.client_cert_password');
     }
