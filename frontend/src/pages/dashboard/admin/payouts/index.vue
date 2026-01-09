@@ -53,6 +53,7 @@ const isMobileActionDialogVisible = ref(false);
 const userData = ref(null)
 const role = ref(null)
 const payer_alias = ref(null)
+const newlyCreatedPayoutId = ref(null)
 
 const advisor = ref({
   type: '',
@@ -232,7 +233,7 @@ const submitCreate = payoutData => {
     .then((res) => {
         if (res.data.success) {
             skapatsDialog.value = true;
-
+            newlyCreatedPayoutId.value = res.data.data.payout.id
             fetchData()
         }
 
@@ -348,6 +349,52 @@ const resolveStatus = state_id => {
   if (state_id === 8)
     return { class: 'error' }
 }
+
+const goToPayouts = () => {
+
+  skapatsDialog.value = false;
+
+  advisor.value = {
+    type: 'success',
+    message: 'Betalning genomförd!',
+    show: true
+  }
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)               
+
+};
+
+const viewReceipt = async () => {
+  skapatsDialog.value = false;
+  
+  // Refresh data to ensure the new payout is in the list
+  await fetchData();
+
+  if (newlyCreatedPayoutId.value) {
+    selectedPayoutId.value = newlyCreatedPayoutId.value;
+    isPayoutDetailDialogVisible.value = true;
+  }
+  
+  advisor.value = {
+    type: 'success',
+    message: 'Betalning genomförd!',
+    show: true
+  }
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000);
+};
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -709,10 +756,18 @@ onBeforeUnmount(() => {
             </span>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Payee alias:</div>
-              <div class="expansion-panel-item-value">
-                {{ payout.payer_alias ?? "" }}
+            <div class="mb-6 d-flex justify-between flex-wrap gap-4">
+              <div>
+                <div class="expansion-panel-item-label">Personnummer:</div>
+                <div class="expansion-panel-item-value">
+                  {{ payout.payee_ssn ?? "" }}
+                </div>
+              </div>
+              <div>
+                <div class="expansion-panel-item-label">Mobilnummer:</div>
+                <div class="expansion-panel-item-value">
+                  +{{ payout.payee_alias ?? "" }}
+                </div>
               </div>
             </div>
             <div class="mb-6">
@@ -858,10 +913,7 @@ onBeforeUnmount(() => {
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="router.push({
-          name: 'dashboard-admin-billings-id',
-          params: { id: billing_id },
-        })"
+        @click="skapatsDialog = false"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
@@ -878,10 +930,10 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="createBilling">
+          <VBtn class="btn-light" @click="viewReceipt">
             Visa kvitto
           </VBtn>
-          <VBtn class="btn-gradient" @click="reloadPage"> Klar </VBtn>
+          <VBtn class="btn-gradient" @click="goToPayouts"> Klar </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
