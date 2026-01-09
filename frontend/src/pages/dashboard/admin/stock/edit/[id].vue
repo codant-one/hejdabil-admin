@@ -2605,7 +2605,7 @@ onBeforeRouteLeave((to, from, next) => {
             :width="550"
             location="end"
             class="scrollable-content right-drawer rounded-left-4"
-            :model-value="isConfirmTaskDialogVisible"
+            v-model="isConfirmTaskDialogVisible"
         >
             <!-- 👉 Title -->
             <div class="d-flex align-center pa-6 pb-1">

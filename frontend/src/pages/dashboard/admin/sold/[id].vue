@@ -661,8 +661,8 @@ onBeforeRouteLeave((to, from, next) => {
                             block
                             type="submit"
                         >
-                            <VIcon icon="custom-save"  size="24" />
-                            Spara
+                            <VIcon icon="custom-car-open"  size="24" />
+                            Sälj
                         </VBtn>
                     </div>
                     </div>                
@@ -695,61 +695,90 @@ onBeforeRouteLeave((to, from, next) => {
                                         Grundläggande, teknisk och prisinformation
                                     </div>
                                     <div class="info-grid">
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Reg nr</span>
-                                            <VTextField :model-value="reg_num" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ reg_num }}
+                                            </div>  
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Miltal</span>
-                                            <VTextField :model-value="`${mileage} Mil`" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ mileage ?? '' }} Mil
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Märke</span>
-                                            <VTextField :model-value="brands.filter(item => item.id === brand_id)[0]?.name" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ brands.filter(item => item.id === brand_id)[0]?.name }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Modell</span>
-                                            <VTextField :model-value="models.filter(item => item.id === model_id)[0]?.name" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ models.filter(item => item.id === model_id)[0]?.name }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Generation</span>
-                                            <VTextField :model-value="generation" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ generation }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Kaross</span>
-                                            <VTextField :model-value="carbodies.filter(item => item.id === car_body_id)[0]?.name" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ carbodies.filter(item => item.id === car_body_id)[0]?.name }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Årsmodell</span>
-                                            <VTextField :model-value="year" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ year }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Inköpsdatum</span>
-                                            <VTextField :model-value="purchase_date" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ purchase_date }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Inspektion av</span>
-                                            <VTextField :model-value="control_inspection" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ control_inspection }}    
+                                            </div> 
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Färg</span>
-                                            <VTextField :model-value="color" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ color }}    
+                                            </div> 
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Drivmedel</span>
-                                            <VTextField :model-value="fuels.filter(item => item.id === fuel_id)[0]?.name" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ fuels.filter(item => item.id === fuel_id)[0]?.name }}    
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Växellåda</span>
-                                            <VTextField :model-value="gearboxes.filter(item => item.id === gearbox_id)[0]?.name" disabled density="compact" variant="outlined"  />
+                                            <div class="value-field">
+                                                {{ gearboxes.filter(item => item.id === gearbox_id)[0]?.name }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>Inköpspris</span>
-                                            <VTextField :model-value="`${purchase_price ?? 0} ${currencies.filter(item => item.id === currency_id)[0]?.code}`" disabled density="compact" variant="outlined"  />
+                                              <div class="value-field">
+                                                {{ formatNumber(purchase_price ?? 0) }} 
+                                                {{ currencies.filter(item => item.id === currency_id)[0]?.code }}
+                                            </div>
                                         </div>
-                                        <div class="info-item">
+                                        <div class="info-item d-flex flex-column gap-2">
                                             <span>VMB / Moms</span>
-                                            <VTextField :model-value="ivas.filter(item => item.id === iva_purchase_id)[0]?.name" disabled density="compact" variant="outlined"/>
+                                            <div class="value-field">
+                                                {{ ivas.filter(item => item.id === iva_purchase_id)[0]?.name }}
+                                            </div>
                                         </div>
                                     </div>
                                 </VCol>
@@ -1171,6 +1200,20 @@ onBeforeRouteLeave((to, from, next) => {
                 font-size: 16px;
                 line-height: 24px;
                 color: #454545;
+            }
+
+            .value-field {
+                background-color: #F6F6F6;
+                border-radius: 8px;
+                border: 1px solid #E7E7E7;
+                padding: 16px;
+                height: 48px !important;
+                align-items: center;
+                display: flex;
+                font-weight: 400;
+                font-size: 12px;
+                line-height: 24px;
+                color: #5D5D5D;
             }
 
             @media (max-width: 1023px) {
