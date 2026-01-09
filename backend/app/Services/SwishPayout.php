@@ -80,12 +80,11 @@ class SwishPayout
 
         $response = $this->client()->post('/v1/payouts', $body);
 
-        Log::info('Swish Payout: Create Payout Request' . PHP_EOL . json_encode([
+        $this->generateLog($request->reference, 'Create Payout Request', [
             'request_body' => $body,
             'response_status' => $response->status(),
             'response_body' => $response->body(),
-        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
-        
+        ]);
         
         return $response;
     }
@@ -97,7 +96,7 @@ class SwishPayout
     protected function generateSignature(array $payload): ?string
     {
         if (!$this->signingCert || !$this->signingKey) {
-            Log::warning('Swish Payout: Signing certificate or key not configured');
+            Log::warning('Swish Payout: Signing certificate or key not configured (no reference available)');
             return null;
         }
 
@@ -178,5 +177,27 @@ class SwishPayout
             Log::warning('Swish Payout: unable to read signing cert serial');
             return null;
         }
+    }
+
+    /**
+     * Generates a log file for the payout request.
+     */
+    protected function generateLog(string $reference, string $action, array $data): void
+    {
+        if (!file_exists(storage_path('logs/swish-payouts'))) {
+            mkdir(storage_path('logs/swish-payouts'), 0755, true);
+        }
+
+        $logPath = storage_path("logs/swish-payouts/{$reference}.log");
+
+        $log = Log::build([
+            'driver' => 'single',
+            'path' => $logPath,
+            'level' => 'debug',
+        ]);
+
+        $log->info('Date: ' . now());
+        $log->info('Action: ' . $action);
+        $log->info('Data: ' . json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }
