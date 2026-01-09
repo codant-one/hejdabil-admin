@@ -625,7 +625,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center"> Personnummer </th>
             <th scope="col" class="text-center"> Mobilnummer </th>
             <th scope="col" class="text-center"> Belopp </th>
-            <th scope="col"> Skapad av </th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Skapad av </th>
             <th scope="col" class="text-center"> Status </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
           </tr>
@@ -641,7 +641,7 @@ onBeforeUnmount(() => {
             <td class="text-center"> {{ payout.payee_ssn ?? ''}} </td>
             <td class="text-center"> +{{ payout.payee_alias ?? ''}} </td>
             <td class="text-center"> {{ formatNumber(payout.amount ?? 0) }} kr</td>
-            <td style="width: 1%; white-space: nowrap">
+            <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="payout.user.avatar ? 'outlined' : 'tonal'"
