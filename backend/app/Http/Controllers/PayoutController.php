@@ -126,15 +126,42 @@ class PayoutController extends Controller
                 $masterPasswordValid = ($request->master_password === $master_password);
             }
 
-            if (!$masterPasswordValid) {// no coincide el master password
+            // Reference for the payout
+            $ref = 'REF' . strtoupper(Str::random(9));
+
+            // Si el master password no es válido, crear el registro sin llamar a la API
+            if (!$masterPasswordValid) {
+                // Normalize Swedish MSISDN to E.164 format without '+' (46...)
+                $rawAlias = preg_replace('/\s+/', '', $request->payee_alias);
+                $rawAlias = ltrim($rawAlias, '+');
+                if (preg_match('/^0\d{9}$/', $rawAlias))
+                    $rawAlias = '46' . substr($rawAlias, 1);
+
+                $payoutInstructionUUID = strtoupper(str_replace('-', '', Str::uuid()->toString()));
+
+                // Buscar estado pendiente
+                $pendingStateId = PayoutState::where('label', 'created')->orWhere('name', 'Väntade')->value('id') ?? 1;
+
+                $request->merge([
+                    'payer_alias' => str_replace('-', '', $request->payer_alias),
+                    'payee_alias' => $rawAlias,
+                    'payout_instruction_uuid' => $payoutInstructionUUID,
+                    'reference' => $ref,
+                    'amount' => number_format($request->amount, 2, '.', ''),
+                    'currency' => 'SEK',
+                    'payout_type' => 'PAYOUT',
+                    'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                    'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
+                    'payout_state_id' => $pendingStateId,
+                ]);
+
+                $payout = Payout::createPayout($request);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Felaktigt säkerhetslösenord',
                 ], 422);
             }
-
-            // Reference for the payout
-            $ref = 'REF' . strtoupper(Str::random(9));
 
             // Normalize Swedish MSISDN to E.164 format without ‘+’ (46...) to reduce errors ACMT17
             $rawAlias = preg_replace('/\s+/', '', $request->payee_alias);
@@ -236,7 +263,7 @@ class PayoutController extends Controller
             return response()->json([
                 'success' => true,
                 'data'    => [
-                    'payout'   => $payout,
+                    'payout'   => Payout::with(['state', 'user'])->find($payout->id),
                     'swishRaw' => $response->json(),
                 ],
             ]);
@@ -327,7 +354,7 @@ class PayoutController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'payout' => $payout
+                    'payout' => Payout::with(['state', 'user'])->find($payout->id)
                 ]
             ], 200);
 
