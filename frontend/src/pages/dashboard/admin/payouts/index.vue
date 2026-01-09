@@ -42,6 +42,12 @@ const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const err = ref(null);
 
+const suppliers = ref([]);
+const supplier_id = ref(null);
+const state_id = ref(null);
+const filtreraMobile = ref(false);
+const isFilterDialogVisible = ref(false);
+
 const selectedPayoutForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 const userData = ref(null)
@@ -83,6 +89,8 @@ async function fetchData(cleanFilters = false) {
     searchQuery.value = ''
     rowPerPage.value = 10
     currentPage.value = 1
+    supplier_id.value = null;
+    state_id.value = null;
   }
 
   let data = {
@@ -91,9 +99,12 @@ async function fetchData(cleanFilters = false) {
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
+    user_id: supplier_id.value,
+    state_id: payoutsStores.getStateId ?? state_id.value,
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isFilterDialogVisible.value = false;
 
   await payoutsStores.fetchPayouts(data)
 
@@ -111,7 +122,13 @@ async function fetchData(cleanFilters = false) {
   if(role.value === 'Supplier') {
     payer_alias.value = user_data.supplier.payout_number
   }
-    
+
+  // Ensure suppliers are loaded once we know the user's role
+  await payoutsStores.info();
+  if (role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = payoutsStores.suppliers;
+  }
+
   payouts.value = payoutsStores.getPayouts
   totalPages.value = payoutsStores.last_page
   totalPayouts.value = payoutsStores.payoutsTotalCount
@@ -302,6 +319,17 @@ const formatDateTime = (dateString) => {
   return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
+const updateStateId = (newStateId) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (state_id.value === newStateId) {
+    newStateId = null;
+  }
+
+  payoutsStores.setStateId(newStateId);
+  state_id.value = newStateId;
+  filtreraMobile.value = false;
+};
+
 const resolveStatus = state_id => {
   if (state_id === 1)
     return { class: 'info' }
@@ -330,7 +358,7 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
-onMounted(() => {
+onMounted(async () => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
   
@@ -339,6 +367,16 @@ onMounted(() => {
     hasProcessedCreateAction.value = true;
     isConfirmCreateDialogVisible.value = true;
   }
+
+  state_id.value = payoutsStores.getStateId ?? state_id.value;
+  updateStateId(state_id.value);
+
+  await payoutsStores.info();
+
+  if (role.value === "SuperAdmin" || role.value === "Administrator") {
+    suppliers.value = payoutsStores.suppliers;
+  }
+
 });
 
 onBeforeUnmount(() => {
@@ -403,7 +441,103 @@ onBeforeUnmount(() => {
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+          <AppAutocomplete
+            v-if="role !== 'Supplier' && hasLoaded"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.user_id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
         
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStateId(4)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 4"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Slutförd</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Väntade</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(3)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 3"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Avbruten</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(8)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 8"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Debiterad</VListItemTitle>
+            </VListItem>
+
+          </VList>
+        </VMenu>
+
         <div
           v-if="!$vuetify.display.mdAndDown"
           class="d-flex align-center visa-select"
@@ -779,6 +913,112 @@ onBeforeUnmount(() => {
             Stäng
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <AppAutocomplete
+            v-if="role !== 'Supplier'"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.user_id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate mb-3"
+          />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStateId(4)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 4"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Slutförd</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                 :model-value="state_id === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Väntade</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(3)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Avbruten</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(8)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 8"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Debiterad</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
   </section>

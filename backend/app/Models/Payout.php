@@ -12,40 +12,6 @@ class Payout extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'request_payload' => 'array',
-        'response_data' => 'array',
-        'amount' => 'decimal:2',
-    ];
-
-    protected $appends = ['status_label', 'status_color'];
-
-    // Accessor para el label del status
-    public function getStatusLabelAttribute()
-    {
-        $labels = [
-            'CREATED' => 'Creado',
-            'DEBITED' => 'Debitado',
-            'PAID' => 'Pagado',
-            'ERROR' => 'Error',
-            'CANCELLED' => 'Cancelado'
-        ];
-        return $labels[$this->status] ?? $this->status;
-    }
-
-    // Accessor para el color del status
-    public function getStatusColorAttribute()
-    {
-        $colors = [
-            'CREATED' => 'info',
-            'DEBITED' => 'warning',
-            'PAID' => 'success',
-            'ERROR' => 'error',
-            'CANCELLED' => 'secondary'
-        ];
-        return $colors[$this->status] ?? 'default';
-    }
-
     /**** Relationship ****/
     public function state() {
         return $this->belongsTo(PayoutState::class, 'payout_state_id', 'id');
@@ -79,6 +45,10 @@ class Payout extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('state_id') !== null) {
+            $query->where('payout_state_id', $filters->get('state_id'));
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {

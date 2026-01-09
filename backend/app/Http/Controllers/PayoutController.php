@@ -20,6 +20,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Models\Payout;
 use App\Models\PayoutState;
 use App\Models\Config;
+use App\Models\Supplier;
 
 class PayoutController extends Controller
 {
@@ -46,7 +47,8 @@ class PayoutController extends Controller
                                     'search',
                                     'orderByField',
                                     'orderBy',
-                                    'user_id'
+                                    'user_id',
+                                    'state_id'
                                 ])
                             );
 
@@ -336,5 +338,32 @@ class PayoutController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+     public function info() {
+
+        try {
+
+            $suppliers = 
+                Supplier::with(['user' => fn($q) => $q->withTrashed()])
+                    ->whereNull('boss_id')
+                    ->withTrashed()
+                    ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'suppliers' => $suppliers
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+
     }
 }

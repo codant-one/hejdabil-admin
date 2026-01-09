@@ -17,6 +17,10 @@ class Payouts {
     delete(id){
         return axios.delete(`/payouts/${id}`)
     }
+
+    info(){
+        return axios.get(`/payouts/info/all`)
+    }
     
 }
 

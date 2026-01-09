@@ -205,6 +205,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
     });
 
+    //Billing
+    Route::group(['prefix' => 'payouts'], function () {
+        Route::get('/info/all', [PayoutController::class, 'info']);
+    });
+
     //Configs
     Route::get('featured/{slug}', [ConfigController::class, 'featured']);
     Route::post('featured/{slug}', [ConfigController::class, 'featured_update']);
