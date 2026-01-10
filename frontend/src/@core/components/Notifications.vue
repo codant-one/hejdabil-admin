@@ -34,7 +34,7 @@ const emit = defineEmits(["click:readAllNotifications"]);
       <VList class="py-0">
         <!-- 👉 Header -->
         <VListItem
-          title="Notifications"
+          title="Meddelanden"
           class="notification-section"
           height="48px"
         >
@@ -93,7 +93,7 @@ const emit = defineEmits(["click:readAllNotifications"]);
         <!-- 👉 Footer -->
         <VListItem class="notification-section">
           <VBtn block @click="$emit('click:readAllNotifications')">
-            READ ALL NOTIFICATIONS
+            LÄS ALLA MEDDELANDEN
           </VBtn>
         </VListItem>
       </VList>

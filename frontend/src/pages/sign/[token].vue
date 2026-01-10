@@ -139,14 +139,12 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
   const container = pdfContainer.value
   if (!container) {
-    // Reintentar después de un momento
     setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
     return
   }
 
   const pages = Array.from(container.querySelectorAll('canvas, svg, img'))
   if (pages.length === 0) {
-    // Reintentar después de un momento
     setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
     return
   }
@@ -154,27 +152,41 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
   const targetPageIndex = (signaturePlacement.value.page || 1) - 1
   const targetPage = pages[targetPageIndex] || pages[0]
 
-  // Obtener el rect de la página objetivo relativo al contenedor
-  const containerRect = container.getBoundingClientRect()
+  // Usar EXACTAMENTE el mismo método que el admin
   const pageRect = targetPage.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
 
-  // Calcular el offset de la página dentro del contenedor (para páginas centradas)
-  const pageOffsetLeft = pageRect.left - containerRect.left + container.scrollLeft
-  const pageOffsetTop = pageRect.top - containerRect.top + container.scrollTop
+  // Dimensiones de la página
+  const pageWidth = pageRect.width
+  const pageHeight = pageRect.height
 
-  // Obtener dimensiones de la página objetivo
-  const pageWidth = targetPage.offsetWidth
-  const pageHeight = targetPage.offsetHeight
+  // Convertir porcentajes a píxeles locales (inversa del cálculo del admin)
+  const x_percent = parseFloat(signaturePlacement.value.x)
+  const y_percent = parseFloat(signaturePlacement.value.y)
+  
+  const localX = (x_percent / 100) * pageWidth
+  const localY = (y_percent / 100) * pageHeight
 
-  // Convertir porcentajes a píxeles en la página objetivo
-  const xPx = (signaturePlacement.value.x / 100) * pageWidth
-  const yPx = (signaturePlacement.value.y / 100) * pageHeight
+  // EXACTA fórmula del admin en handleAdminPdfClick
+  const absoluteX = (pageRect.left - containerRect.left) + localX + (container.scrollLeft || 0)
+  const absoluteY = (pageRect.top - containerRect.top) + localY + (container.scrollTop || 0)
 
-  // Calcular posición absoluta en el contenedor (incluyendo offset de centrado)
-  const left = pageOffsetLeft + xPx
-  const top = pageOffsetTop + yPx
+  computedPlacement.value = { left: absoluteX, top: absoluteY }
 
-  computedPlacement.value = { left, top }
+  // Debug log para mobile
+  if (window.innerWidth <= 768) {
+    console.log('📱 Mobile Position:', {
+      screenWidth: window.innerWidth,
+      pageWidth,
+      pageHeight,
+      percentX: x_percent,
+      percentY: y_percent,
+      localX,
+      localY,
+      absoluteX,
+      absoluteY
+    })
+  }
 
   // Desplazar la VENTANA para que el placeholder quede visible
   if (shouldScroll) {
@@ -182,8 +194,6 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
       const placeholder = document.querySelector('.signature-placeholder')
       if (placeholder) {
         const rect = placeholder.getBoundingClientRect()
-        // Posicionar el placeholder en el tercio inferior de la pantalla
-        // Usar un factor mayor en móviles para que el placeholder quede más arriba
         const offsetFactor = window.innerWidth <= 768 ? 0.5 : 0.35
         const scrollY = window.scrollY + rect.top - (window.innerHeight * offsetFactor)
         window.scrollTo({ top: scrollY, behavior: 'smooth' })
@@ -219,15 +229,32 @@ const loadSignatureData = async () => {
         calculatePlaceholderPosition(false)
       }, 500)
       
+      // Segundo cálculo para asegurar que el PDF está completamente renderizado
+      setTimeout(() => {
+        calculatePlaceholderPosition(false)
+      }, 1000)
+      
       // Después de que el video termine (aprox 3 segundos), hacer scroll al placeholder
       setTimeout(() => {
         calculatePlaceholderPosition(true)
       }, 3500)
       
-      // Recalcular al redimensionar (sin scroll)
-      window.addEventListener('resize', () => {
-        setTimeout(() => calculatePlaceholderPosition(false), 100)
-      })
+      // Recalcular al redimensionar y al hacer scroll con debounce
+      let resizeTimeout
+      const recalculateHandler = () => {
+        clearTimeout(resizeTimeout)
+        resizeTimeout = setTimeout(() => {
+          calculatePlaceholderPosition(false)
+        }, 100)
+      }
+      
+      window.addEventListener('resize', recalculateHandler)
+      window.addEventListener('scroll', recalculateHandler, { passive: true })
+      
+      // También recalcular cuando el contenedor hace scroll
+      if (pdfContainer.value) {
+        pdfContainer.value.addEventListener('scroll', recalculateHandler, { passive: true })
+      }
     }
     
   } catch (error) {
@@ -403,8 +430,8 @@ onMounted(loadSignatureData);
               }"
               @click.stop="openSignatureModal"
             >
-              <span class="signature-placeholder-content">
-                <VIcon icon="mdi-draw" size="16" />
+              <span class="signature-placeholder-content btn-light">
+                <VIcon size="16" icon="custom-pencil" />
                 <span>Signera här</span>
               </span>
             </div>
@@ -420,7 +447,7 @@ onMounted(loadSignatureData);
               @click.stop="openSignatureModal"
             >
               <span class="signature-placeholder-content">
-                <VIcon icon="mdi-draw" size="16" />
+                <VIcon size="16" icon="custom-pencil" />
                 <span>Signera här</span>
               </span>
             </div>
@@ -535,7 +562,7 @@ onMounted(loadSignatureData);
 
 .signing-card {
   width: 100%;
-  max-width: 900px;
+  max-width: 1280px;
   display: flex;
   flex-direction: column;
   background: transparent;
@@ -573,7 +600,7 @@ onMounted(loadSignatureData);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -581,7 +608,7 @@ onMounted(loadSignatureData);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -590,7 +617,6 @@ onMounted(loadSignatureData);
 :deep(.pdf-container .vue-pdf-embed img),
 :deep(.pdf-container .vue-pdf-embed svg) {
   display: block !important;
-  max-width: 816px !important;
   width: 100% !important;
   height: auto !important;
   background: #fff !important;
@@ -602,6 +628,8 @@ onMounted(loadSignatureData);
   position: absolute;
   z-index: 10;
   cursor: pointer;
+  display: flex;
+  justify-content: start;
 }
 
 .signature-placeholder-content {
@@ -664,22 +692,31 @@ canvas {
     padding: 0.5rem;
   }
 
+  .signing-content {
+    padding: 0 12px 12px;
+  }
+
   .signing-card {
     max-height: none;
     max-width: 100%;
   }
 
+  /* Asegurar que el PDF se escale correctamente en mobile */
+  .pdf-container {
+    width: 100%;
+  }
+
   .signature-placeholder-content {
-    padding: 2px 6px;
-    font-size: 8px;
-    gap: 2px;
-    border-radius: 12px;
+    padding: 0 3px;
+    font-size: 6px;
+    gap: 1px;
+    border-radius: 16px;
   }
   
   .signature-placeholder-content .v-icon {
-    font-size: 8px !important;
-    width: 8px !important;
-    height: 8px !important;
+    font-size: 4px !important;
+    width: 4px !important;
+    height: 4px !important;
   }
 
   .static-signature-position.align-left {

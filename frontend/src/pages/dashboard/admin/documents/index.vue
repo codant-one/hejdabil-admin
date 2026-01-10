@@ -32,15 +32,7 @@ const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
 const clients = ref([])
-
-const isDialogOpen = ref(false);
-const isNoteFormEdited = ref(false);
-const isNoteEditFormEdited = ref(false);
-const isConfirmLeaveVisible = ref(false);
 const isFilterDialogVisible = ref(false);
-const isConfirmUpdateNoteDialogVisible = ref(false);
-const isConfirmUpdateNoteMobileDialogVisible = ref(false);
-const leaveContext = ref(null); // 'mobile' | 'route' | 'noteEdit' | 'noteEditMobile' | null
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -475,6 +467,16 @@ const handleAdminPdfClick = (event) => {
     pageWidth: pageRect.width,
     pageHeight: pageRect.height,
   }
+
+  console.log('🎯 Admin Click Position:', {
+    localX,
+    localY,
+    absoluteX,
+    absoluteY,
+    pageWidth: pageRect.width,
+    pageHeight: pageRect.height,
+    page: pageIndex + 1
+  })
 }
 
 const openSignatureDialog = (documentData) => {
