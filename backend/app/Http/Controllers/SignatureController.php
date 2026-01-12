@@ -23,6 +23,15 @@ use App\Models\Config;
 class SignatureController extends Controller
 {
     /**
+     * Factor de corrección para la posición Y de la firma en documentos.
+     * Compensa la diferencia entre el renderizado de vue-pdf-embed (PDF.js) y las coordenadas reales del PDF.
+     * Valor expresado como porcentaje de la altura de la página (ej: 0.045 = 4.5%).
+     * Valor positivo = mover la firma hacia arriba en el PDF final.
+     * Ajustar este valor si la firma aparece desplazada verticalmente.
+     */
+    private const SIGNATURE_Y_CORRECTION_FACTOR = 0.045;
+
+    /**
      * Método 1: Iniciar el proceso de firma (Activado desde tu Dashboard de Vue).
      * URL: POST /api/agreements/{agreement}/send-signature-request
      */
@@ -306,10 +315,19 @@ class SignatureController extends Controller
         }
         
         // 7. Devolver una respuesta exitosa a Vue.
-        return response()->json([
+        $response = [
             'message'      => 'Contrato firmado con éxito.',
             'download_url' => Storage::disk('public')->url($signedPdfPath)
-        ]);
+        ];
+
+        // Agregar ID del documento o agreement para la descarga
+        if ($token->agreement_id) {
+            $response['agreement_id'] = $token->agreement_id;
+        } elseif ($token->document_id) {
+            $response['document_id'] = $token->document_id;
+        }
+
+        return response()->json($response);
     }
     
     /**
@@ -571,6 +589,14 @@ class SignatureController extends Controller
                 $xPoint = ($x / 100) * $size['width'];
                 $yPoint = ($y / 100) * $size['height'];
 
+                // CORRECCIÓN: Ajustar la coordenada Y para compensar la diferencia 
+                // entre el renderizado de vue-pdf-embed y las coordenadas reales del PDF.
+                // vue-pdf-embed (PDF.js) puede renderizar con un pequeño offset.
+                // Este factor de corrección se ha calibrado empíricamente.
+                // Valor negativo = mover la firma hacia arriba
+                $yCorrection = $size['height'] * self::SIGNATURE_Y_CORRECTION_FACTOR;
+                $yPoint = max(0, $yPoint - $yCorrection);
+
                 // Calcular tamaño de firma: 20% del ancho de página, manteniendo proporción real de la imagen
                 $sigWidth = max(5, $size['width'] * 0.20);
                 $sigHeight = 0; // se calculará por proporción
@@ -586,13 +612,47 @@ class SignatureController extends Controller
                     $sigHeight = $sigWidth * 0.4;
                 }
 
-                // Dibujar usando el punto clicado como esquina superior izquierda
+                // Log para debug - información detallada
+                Log::info('FPDI Signature placement debug', [
+                    'pdf_path' => $pdfPath,
+                    'input_x_percent' => $x,
+                    'input_y_percent' => $y,
+                    'page_size_mm' => [
+                        'width' => $size['width'], 
+                        'height' => $size['height'],
+                        'orientation' => $size['orientation']
+                    ],
+                    'raw_position_mm' => [
+                        'x' => ($x / 100) * $size['width'], 
+                        'y' => ($y / 100) * $size['height']
+                    ],
+                    'y_correction_mm' => $yCorrection,
+                    'corrected_position_mm' => [
+                        'x' => $xPoint, 
+                        'y' => $yPoint
+                    ],
+                    'signature_size_mm' => [
+                        'width' => $sigWidth, 
+                        'height' => $sigHeight
+                    ],
+                    'target_page' => $targetPage
+                ]);
+
+                // El punto clicado representa donde el usuario quiere que aparezca la firma
+                // Dibujamos con la esquina superior izquierda en ese punto
+                // NO centramos porque el placeholder visual en el frontend también usa esquina superior izquierda
                 $xDraw = $xPoint;
                 $yDraw = $yPoint;
 
                 // Limitar para que no se salga de la página
                 $xDraw = max(0, min($size['width'] - $sigWidth, $xDraw));
                 $yDraw = max(0, min($size['height'] - $sigHeight, $yDraw));
+
+                Log::info('FPDI Final draw position', [
+                    'xDraw' => $xDraw,
+                    'yDraw' => $yDraw,
+                    'adjusted_from_limits' => ($xDraw != $xPoint || $yDraw != $yPoint)
+                ]);
                 
                 // Dibujar imagen
                 $pdf->Image($signaturePath, $xDraw, $yDraw, $sigWidth, $sigHeight);
@@ -641,6 +701,12 @@ class SignatureController extends Controller
         // Convertir coordenadas de porcentaje a píxeles
         $xPixel = ($x / 100.0) * $pageWidth;
         $yPixel = ($y / 100.0) * $pageHeight;
+
+        // CORRECCIÓN: Ajustar la coordenada Y para compensar la diferencia 
+        // entre el renderizado de vue-pdf-embed y las coordenadas reales del PDF.
+        // Este factor de corrección se ha calibrado empíricamente (~4.5% hacia arriba)
+        $yCorrection = $pageHeight * self::SIGNATURE_Y_CORRECTION_FACTOR;
+        $yPixel = max(0, $yPixel - $yCorrection);
         
         // Usar el punto clicado como esquina superior izquierda
         $xDraw = (int) round($xPixel);

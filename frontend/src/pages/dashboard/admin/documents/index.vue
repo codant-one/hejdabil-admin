@@ -445,18 +445,28 @@ const handleAdminPdfClick = (event) => {
   const pageRect = pageEl.getBoundingClientRect();
   const containerRect = container.getBoundingClientRect();
 
-  // Coordenadas locales dentro de la página (para guardar en porcentaje)
-  const localX = event.clientX - pageRect.left;
-  const localY = event.clientY - pageRect.top;
+  // Obtener el estilo computado para calcular el border
+  const computedStyle = window.getComputedStyle(pageEl);
+  const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0;
+  const borderTop = parseFloat(computedStyle.borderTopWidth) || 0;
 
-  // Coordenadas absolutas dentro del contenedor (para mostrar el placeholder correctamente en páginas > 1)
-  const absoluteX = (pageRect.left - containerRect.left) + localX + (container.scrollLeft || 0);
-  const absoluteY = (pageRect.top - containerRect.top) + localY + (container.scrollTop || 0);
+  // Usar clientWidth/clientHeight para dimensiones del contenido (excluye borders)
+  // Esto es consistente con el cálculo en [token].vue
+  const contentWidth = pageEl.clientWidth;
+  const contentHeight = pageEl.clientHeight;
+
+  // Coordenadas locales en el sistema CSS (excluyendo el border)
+  const localX = event.clientX - pageRect.left - borderLeft;
+  const localY = event.clientY - pageRect.top - borderTop;
+
+  // Coordenadas absolutas dentro del contenedor (para mostrar el placeholder)
+  const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0);
+  const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0);
 
   const pageIndex = Math.max(0, pages.indexOf(pageEl))
 
   signaturePlacement.value = {
-    // Locales a la página para convertir a porcentaje
+    // Coordenadas locales para calcular porcentaje
     x: localX,
     y: localY,
     // Absolutas para mostrar el placeholder correctamente
@@ -464,8 +474,9 @@ const handleAdminPdfClick = (event) => {
     absoluteY,
     page: pageIndex + 1,
     visible: true,
-    pageWidth: pageRect.width,
-    pageHeight: pageRect.height,
+    // Dimensiones del área de contenido (clientWidth/clientHeight)
+    pageWidth: contentWidth,
+    pageHeight: contentHeight,
   }
 }
 
