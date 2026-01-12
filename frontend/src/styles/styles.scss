@@ -1255,6 +1255,15 @@ body {
   gap: 8px;
 }
 
+.custom-alert .v-alert-title {
+  margin-block-end: 0 !important;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: 0%;
+  color: #5D5D5D !important;
+}
+
 .custom-alert.v-alert .v-alert__content {
   padding: 0 !important;
   color: #5d5d5d !important;

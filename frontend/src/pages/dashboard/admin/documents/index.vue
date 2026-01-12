@@ -467,16 +467,6 @@ const handleAdminPdfClick = (event) => {
     pageWidth: pageRect.width,
     pageHeight: pageRect.height,
   }
-
-  console.log('🎯 Admin Click Position:', {
-    localX,
-    localY,
-    absoluteX,
-    absoluteY,
-    pageWidth: pageRect.width,
-    pageHeight: pageRect.height,
-    page: pageIndex + 1
-  })
 }
 
 const openSignatureDialog = (documentData) => {
@@ -1495,7 +1485,7 @@ onBeforeUnmount(() => {
           <VProgressCircular v-if="isTrackerPreviewLoading" indeterminate color="primary" />
           <div v-else class="w-100">
             <VAlert v-if="trackerPreviewError" type="error" class="mb-4">{{ trackerPreviewError }}</VAlert>
-            <vue-pdf-embed v-if="trackerPreviewPdfSource && !trackerPreviewError" :source="trackerPreviewPdfSource" style="width:100%;" />
+            <VuePdfEmbed v-if="trackerPreviewPdfSource && !trackerPreviewError" :source="trackerPreviewPdfSource" style="width:100%;" />
             <VAlert v-else-if="!trackerPreviewError" type="warning">Ingen PDF tillgänglig.</VAlert>
           </div>
         </VCardText>
@@ -1801,7 +1791,7 @@ onBeforeUnmount(() => {
       color: #416054;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 1023px) {
       padding: 2px 6px;
       font-size: 8px;
       gap: 2px;

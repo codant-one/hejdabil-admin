@@ -173,21 +173,6 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
   computedPlacement.value = { left: absoluteX, top: absoluteY }
 
-  // Debug log para mobile
-  if (window.innerWidth <= 768) {
-    console.log('📱 Mobile Position:', {
-      screenWidth: window.innerWidth,
-      pageWidth,
-      pageHeight,
-      percentX: x_percent,
-      percentY: y_percent,
-      localX,
-      localY,
-      absoluteX,
-      absoluteY
-    })
-  }
-
   // Desplazar la VENTANA para que el placeholder quede visible
   if (shouldScroll) {
     setTimeout(() => {
@@ -320,6 +305,7 @@ const submitFinalSignature = async (signatureImage) => {
       message: response.data.message,
       downloadUrl: response.data.download_url,
     }
+    isAlreadySigned.value = true
   } catch (error) {
     finalState.value = {
       type: 'error',
@@ -357,59 +343,37 @@ onMounted(loadSignatureData);
       <img :src="logo" width="121" height="40" alt="Billogg" />
     </div>
 
-    <!-- Estado de carga y final -->
-    <div v-if="isLoading || finalState" class="signing-content">
-    <VCard class="pa-8 text-center" max-width="500">
-      <div v-if="finalState">
-        <VIcon :icon="finalState.icon" :color="finalState.type" size="64" class="mb-4" />
-        <VCardTitle class="text-h5">{{ finalState.title }}</VCardTitle>
-        <VCardText>{{ finalState.message }}</VCardText>
-        <VBtn 
-          v-if="finalState.downloadUrl" 
-          :href="finalState.downloadUrl" 
-          target="_blank" 
-          color="success" 
-          class="mt-4" 
-          prepend-icon="mdi-cloud-download-outline"
-        >
-          Ladda ner signerat avtal
-        </VBtn>
-      </div>
-    </VCard>
-    </div>
-
     <!-- Visor de PDF cuando ya está firmado -->
-    <div v-if="!isLoading && !finalState && isAlreadySigned" class="signing-content">
-      <VCard class="signing-card">
+    <div v-if="isAlreadySigned" class="signing-content bg-white">
+      <VCard class="signing-card mt-4">
         <!-- Banner informativo de documento firmado -->
         <VAlert
           color="success"
-          class="ma-4 mb-0 alert-no-shrink custom-alert"
+          class="alert-no-shrink custom-alert"
         >
-          <VAlertTitle class="text-h6">Dokumentet är redan signerat</VAlertTitle>
-          <div>
-            <p class="mb-2">Avtal #{{ signedInfo?.agreementId }} signerades {{ signedInfo?.signedAt }}</p>
-            <VBtn
-              color="success"
-              variant="outlined"
-              size="small"
-              prepend-icon="mdi-download"
-              class="mb-2"
-              @click="downloadSignedPdf"
-            >
-              Ladda ner signerat dokument
-            </VBtn>
-          </div>
+          <VAlertTitle>Ditt kontrakt är undertecknat.</VAlertTitle>
+         
         </VAlert>
+
+        <div class="d-flex gap-2 my-4">
+          <VIcon icon="custom-help" size="24" />
+          <span class="text-help">Tryck för att visa dokumentet.</span>
+        </div>  
         
-        <VDivider class="mt-4" />
         
         <!-- Visor del PDF firmado (solo lectura) -->
         <div class="pdf-container read-only">
           <div style="position: relative;">
-            <vue-pdf-embed :source="pdfSource" />
+            <VuePdfEmbed :source="pdfSource" />
           </div>
         </div>
+
+        <VBtn
+          class="btn-gradient my-4"
+          @click="downloadSignedPdf"
+        >
+          Ladda ner
+        </VBtn>
       </VCard>
     </div>
 
@@ -418,7 +382,7 @@ onMounted(loadSignatureData);
       <VCard class="signing-card">
         <div class="pdf-container">
           <div ref="pdfContainer" style="position: relative;">
-            <vue-pdf-embed :source="pdfSource" />
+            <VuePdfEmbed :source="pdfSource" />
             
             <!-- Placeholder de firma clickeable (posición dinámica) -->
             <div 
@@ -540,7 +504,6 @@ onMounted(loadSignatureData);
   flex-direction: column;
   min-height: 100vh;
   background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
-  overflow-y: auto;
 }
 
 .signing-header {
@@ -548,7 +511,11 @@ onMounted(loadSignatureData);
   align-items: center;
   justify-content: start;
   padding: 16px 24px;
-  background: transparent;
+
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
 }
 
 .signing-content {
@@ -620,8 +587,9 @@ onMounted(loadSignatureData);
   width: 100% !important;
   height: auto !important;
   background: #fff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-  border-radius: 4px !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: 1px solid #E7E7E7;
 }
 
 .signature-placeholder {
@@ -687,13 +655,26 @@ canvas {
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
+  .text-help {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: 0%;
+    color: #454545;
+  }
+
+  .signing-header {
+    justify-content: center;
+  }
+  
   .signing-container {
-    padding: 0.5rem;
+    padding: 0;
   }
 
   .signing-content {
-    padding: 0 12px 12px;
+    padding: 0 16px 16px;
+    background-color: white;
   }
 
   .signing-card {
