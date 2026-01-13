@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 use App\Http\Controllers\Testing\TestingController;
 
@@ -36,7 +37,8 @@ use App\Http\Controllers\{
     SignatureController,
     ConfigController,
     DocumentController,
-    PayoutController
+    PayoutController,
+    NotificationController
 };
 
 use App\Http\Controllers\Services\{
@@ -78,6 +80,9 @@ Route::group([
         Route::get('company', [AuthController::class , 'companyDetail'])->name('companyDetail');
     });
 });
+
+// Broadcasting Authentication (para canales privados de WebSocket)
+Broadcast::routes(['middleware' => ['cors', 'jwt']]);
 
 //Private Endpoints
 Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
@@ -232,6 +237,11 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
     Route::get('/{token}/status', [SignatureController::class, 'getTokenStatus'])->name('signatures.status');
     Route::get('/{token}/get-signed-pdf', [SignatureController::class, 'getSignedPdf'])->name('signatures.getSignedPdf');
+});
+
+//Notifications
+Route::group(['prefix' => 'notifications', 'middleware' => ['cors']], function () {
+    Route::post('/send', [NotificationController::class, 'send'])->name('notifications.send');
 });
 
 //PROXY

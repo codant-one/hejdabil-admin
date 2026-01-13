@@ -14,6 +14,7 @@ import mitt from 'mitt';
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 import VueClipboard from 'vue-clipboard2'
+import { themeConfig } from '@themeConfig'
 
 // Importa las librerías
 import Echo from 'laravel-echo';
@@ -37,6 +38,14 @@ const baseEchoConfig = {
   forceTLS: useTLS,
   encrypted: useTLS,
   disableStats: true,
+  // Configuración de autenticación para canales privados (NOTIFICACIONES)
+  authEndpoint: themeConfig.settings.urlbase + 'broadcasting/auth',
+  auth: {
+    headers: {
+      Authorization: 'Bearer ' + localStorage.getItem('accessToken'),
+      Accept: 'application/json',
+    },
+  },
 };
 
 const transportConfig = hasCustomHost

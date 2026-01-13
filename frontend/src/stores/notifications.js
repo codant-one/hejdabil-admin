@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
+import notificationsApi from '@/api/notifications'
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
     initialized: false,
+    privateChannelSubscribed: false,
   }),
   actions: {
-    async init() {
+    async init(userId = null) {
+      
       if (this.initialized)
         return
       this.initialized = true
@@ -25,29 +28,70 @@ export const useNotificationsStore = defineStore('notifications', {
 
       // Suscribirse a eventos en tiempo real
       try {
+        
         if (window && window.Echo) {
+          
+          // Canal público (notificaciones generales)
           window.Echo.channel('notifications-channel')
             .listen('.notifications-channel', data => {
-              //console.log('Received notification:', data)
               this.addFromBackend(data.message)
             })
             .error(error => {
-              // eslint-disable-next-line no-console
-              console.error('Error in notification channel:', error)
+              console.error('❌ Error in notification channel:', error)
             })
-          // eslint-disable-next-line no-console
-          //console.log('Subscribed to notification channel: notifications-channel')
+          
+          // Canal privado (notificaciones específicas del usuario)
+          if (userId) {
+            this.subscribeToPrivateChannel(userId)
+          } else {
+            console.warn('⚠️ No userId provided, skipping private channel subscription')
+          }
+          
         } else {
-          // eslint-disable-next-line no-console
-          console.warn('Echo not available. Please check initialization in notifications.js')
+          console.warn('❌ Echo not available. Please check initialization in notifications.js')
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Error subscribing to notifications:', err)
+        console.error('❌ Error subscribing to notifications:', err)
+      }
+    },
+
+    /**
+     * Suscribirse al canal privado de notificaciones del usuario
+     * @param {number} userId - ID del usuario
+     */
+    subscribeToPrivateChannel(userId) {
+      if (this.privateChannelSubscribed || !window.Echo) {
+        return
+      }
+
+      try {
+        // Actualizar el token de autorización en Echo antes de suscribirse
+        const token = localStorage.getItem('accessToken')
+        
+        if (token && window.Echo.connector.pusher.config.auth) {
+          window.Echo.connector.pusher.config.auth.headers.Authorization = `Bearer ${token}`
+        }
+
+        window.Echo.private(`notifications.${userId}`)
+          .listen('.user-notification', data => {
+            this.addFromBackend(data.message)
+          })
+          .error(error => {
+            console.error('❌ Error in private notification channel:', error)
+          })
+          .subscribed(() => {
+            //console.log('✅ Successfully subscribed to private channel:', `notifications.${userId}`)
+          })
+
+        this.privateChannelSubscribed = true
+      } catch (err) {
+        console.error('❌ Error subscribing to private notifications:', err)
       }
     },
 
     addFromBackend(data) {
+      //console.log('➕ Adding notification to store:', data)
+      
       const mapped = {
         title: data?.title ?? 'Ny avisering',
         subtitle: data?.subtitle ?? '',
@@ -58,6 +102,15 @@ export const useNotificationsStore = defineStore('notifications', {
         text: data?.text,
       }
       this.notifications.unshift(mapped)
+    },
+    async send(payload) {
+      try {
+        const response = await notificationsApi.send(payload)
+        return response
+      } catch (error) {
+        console.error('Error sending notification:', error)
+        throw error
+      }
     },
 
     markAllRead() {

@@ -44,7 +44,7 @@ const emit = defineEmits(["click:readAllNotifications"]);
               color="primary"
               size="small"
             >
-              {{ props.notifications.length }} New
+              {{ props.notifications.length }} Nytt
             </VChip>
           </template>
         </VListItem>
@@ -72,7 +72,6 @@ const emit = defineEmits(["click:readAllNotifications"]);
                   :image="notification.img || undefined"
                   :icon="notification.icon || undefined"
                   size="40"
-                  variant="tonal"
                 >
                   <span v-if="notification.text">{{
                     avatarText(notification.text)

@@ -306,9 +306,29 @@ class SignatureController extends Controller
         }
         
         // 7. Devolver una respuesta exitosa a Vue.
+        $userId = null;
+        if ($token->agreement_id) {
+            $agreement = $token->agreement;
+            // Obtener el user_id del supplier asociado al agreement
+            if ($agreement->supplier && $agreement->supplier->user_id) {
+                $userId = $agreement->supplier->user_id;
+            }
+        } elseif ($token->document_id) {
+            $document = $token->document;
+            // Si los documentos tienen user_id o supplier
+            if (isset($document->user_id)) {
+                $userId = $document->user_id;
+            } elseif (isset($document->supplier) && $document->supplier->user_id) {
+                $userId = $document->supplier->user_id;
+            }
+        }
+        
         return response()->json([
             'message'      => 'Contrato firmado con éxito.',
-            'download_url' => Storage::disk('public')->url($signedPdfPath)
+            'download_url' => Storage::disk('public')->url($signedPdfPath),
+            'agreement_id' => $token->agreement_id ?? $token->document_id,
+            'signed_by'    => $token->recipient_email,
+            'user_id'      => $userId, // ID del usuario que debe recibir la notificación
         ]);
     }
     

@@ -169,8 +169,8 @@ const target = (0, path_1.join)(__dirname, 'icons-bundle.js');
                     await (0, tools_1.runSVGO)(svg);
                 }
                 catch (err) {
-                    // Invalid icon
-                    console.error(`Error parsing ${name} from ${source.dir}:`, err);
+                    // Invalid icon - skip it instead of failing
+                    console.warn(`Skipping ${name} from ${source.dir}: ${err.message}`);
                     iconSet.remove(name);
                     return;
                 }

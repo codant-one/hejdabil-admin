@@ -8,6 +8,7 @@ import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
+import notificationsApi from '@/api/notifications'
 
 const props = defineProps({
   token: {
@@ -306,6 +307,23 @@ const submitFinalSignature = async (signatureImage) => {
       downloadUrl: response.data.download_url,
     }
     isAlreadySigned.value = true
+
+    // Enviar notificación de firma completada
+    try {
+      await notificationsApi.send({
+        title: 'Dokument signerat',
+        subtitle: 'Ett dokument har signerats framgångsrikt',
+        text: `Dokumentet har signerats korrekt. Dokument ID: ${response.data.agreement_id || 'N/A'}`,
+        color: 'primary',
+        icon: 'custom-signature',
+        agreement_id: response.data.agreement_id?.toString() || null,
+        signed_by: response.data.signed_by || 'Användare',
+        user_id: response.data.user_id || null // ID del usuario que recibirá la notificación
+      })
+    } catch (notificationError) {
+      // No interrumpir el flujo si falla la notificación
+      console.error('Error al enviar notificación:', notificationError)
+    }
   } catch (error) {
     finalState.value = {
       type: 'error',

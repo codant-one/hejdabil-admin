@@ -721,13 +721,13 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-order"
+          icon="custom-f-payment"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Inga fakturor skapade än</div>
+          <div class="empty-state-title">Inga Swish-transaktioner än</div>
           <div class="empty-state-text">
-            Här kommer alla dina skapade fakturor att listas. Skapa din första
-            för att komma igång med din försäljning.
+            Här samlas historiken för alla betalningar som genomförs via Swish. 
+            Kom igång med snabba och säkra transaktioner direkt i plattformen.
           </div>
         </div>
         <VBtn
@@ -735,7 +735,7 @@ onBeforeUnmount(() => {
           v-if="$can('create', 'payouts') && role === 'Supplier'"
           @click="openPayoutDialog"
         >
-          Skapa ny faktura
+          Ny betalning
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
