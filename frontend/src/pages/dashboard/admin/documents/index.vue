@@ -1857,6 +1857,15 @@ onBeforeUnmount(() => {
 
   .tracker-body {
     padding: 24px 32px 32px !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari/Edge */
+    }
   }
 
   /* ===== SNAKE TIMELINE - PROD STYLE (Pixel Perfect Refinement) ===== */
@@ -1887,7 +1896,7 @@ onBeforeUnmount(() => {
   $curve-width: 2px;
   $curve-color: #E7E7E7;
   $curve-radius: 40px;
-  $gap-to-center: 16px; /* Reduced from 36px to bring text closer */
+  $gap-to-center: 12px; /* 12px per Figma */
 
   /* ===== LA CURVA (SNAKE LINE) ===== */
   .snake-curve {
@@ -1904,7 +1913,7 @@ onBeforeUnmount(() => {
   .snake-item.icon-right {
     flex-direction: row;
     justify-content: flex-end; 
-    padding-right: 50%; 
+    padding-right: 10%; 
     text-align: right;
 
     .snake-curve {
@@ -1925,7 +1934,7 @@ onBeforeUnmount(() => {
   .snake-item.icon-left {
     flex-direction: row;
     justify-content: flex-start;
-    padding-left: 50%; 
+    padding-left: 10%; 
     text-align: left;
 
     .snake-curve {
