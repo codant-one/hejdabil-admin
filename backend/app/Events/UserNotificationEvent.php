@@ -35,13 +35,16 @@ class UserNotificationEvent implements ShouldBroadcastNow
 
         // Mapea y asegura valores por defecto vacíos si faltan
         $this->message = [
-            'title'   => isset($data['title']) ? (string) $data['title'] : null,
+            'id'       => isset($data['id']) ? $data['id'] : null,
+            'title'    => isset($data['title']) ? (string) $data['title'] : null,
             'subtitle' => isset($data['subtitle']) ? (string) $data['subtitle'] : null,
-            'time'    => isset($data['time']) ? (string) $data['time'] : null,
-            'img'     => isset($data['img']) ? (string) $data['img'] : null,
-            'color'   => isset($data['color']) ? (string) $data['color'] : null,
-            'icon'    => isset($data['icon']) ? (string) $data['icon'] : null,
-            'text'    => isset($data['text']) ? (string) $data['text'] : null,
+            'time'     => isset($data['time']) ? (string) $data['time'] : null,
+            'img'      => isset($data['img']) ? (string) $data['img'] : null,
+            'color'    => isset($data['color']) ? (string) $data['color'] : null,
+            'icon'     => isset($data['icon']) ? (string) $data['icon'] : null,
+            'text'     => isset($data['text']) ? (string) $data['text'] : null,
+            'route'    => isset($data['route']) ? (string) $data['route'] : null,
+            'read'     => isset($data['read']) ? $data['read'] : false,
         ];
     }
 

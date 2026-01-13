@@ -4,21 +4,21 @@ import { inject } from 'vue'
 import { useDisplay } from "vuetify";
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from "@/@core/utils/formatters";
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
-import router from '@/router'
 import logo from "@images/logos/billogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import pdfIcon from '@images/icon-pdf-documento.png'
 
 const documentsStores = useSignableDocumentsStores()
 const clientsStores = useClientsStores()
+const notificationsStore = useNotificationsStore()
 const emitter = inject("emitter")
 const route = useRoute()
 
@@ -98,6 +98,16 @@ watchEffect(() => {
 
 onMounted(async () => {
   await fetchData()
+  
+  // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
+  notificationsStore.onNotificationReceived((notification) => {    
+    // Si la notificación tiene una ruta relacionada con documentos, refrescar
+    if (notification.route && notification.route.includes('/documents')) {
+      fetchData()
+    } else {
+      console.warn('⚠️ Route does not match /documents criteria')
+    }
+  })
 })
 
 watchEffect(fetchData)
@@ -815,6 +825,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Limpiar listeners de notificaciones
+  notificationsStore.offNotificationReceived()
 });
 </script>
 

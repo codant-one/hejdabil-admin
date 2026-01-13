@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import notificationsApi from '@/api/notifications'
 
+// Callback global para notificaciones
+let globalNotificationCallback = null
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
@@ -111,6 +114,7 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     addFromBackend(data) {
+  
       const mapped = {
         id: data?.id,
         title: data?.title ?? 'Ny avisering',
@@ -123,7 +127,25 @@ export const useNotificationsStore = defineStore('notifications', {
         route: data?.route ?? '/dashboard',
         read: data?.read ?? false,
       }
+      
       this.notifications.unshift(mapped)
+      
+      // Llamar al callback global si existe
+      if (globalNotificationCallback) {
+        globalNotificationCallback(mapped)
+      } else {
+        console.warn('⚠️ No global callback registered')
+      }
+    },
+
+    // Método para registrar el callback de notificaciones
+    onNotificationReceived(callback) {
+      globalNotificationCallback = callback
+    },
+
+    // Método para limpiar el callback
+    offNotificationReceived() {
+      globalNotificationCallback = null
     },
 
     async markAsRead(notificationId) {
