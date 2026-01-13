@@ -2,13 +2,13 @@
 
 import { useTheme } from 'vuetify'
 import { ref, onMounted, nextTick } from 'vue'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
-import notificationsApi from '@/api/notifications'
 
 const props = defineProps({
   token: {
@@ -16,6 +16,9 @@ const props = defineProps({
     required: true,
   },
 })
+
+const notificationsStore = useNotificationsStore()
+
 
 // --- Refs de Estado (Ahora más simples) ---
 const isLoading = ref(true)
@@ -40,7 +43,7 @@ const { global } = useTheme()
 const checkTokenStatus = async () => {
   try {
     const response = await axios.get(`/signatures/${props.token}/status`)
-    
+
     if (response.data.status === 'signed') {
       // El documento ya está firmado
       isAlreadySigned.value = true
@@ -63,14 +66,14 @@ const checkTokenStatus = async () => {
     return response.data.status === 'sent'
   } catch (error) {
     console.error("Kunde inte verifiera token status:", error)
-    if (error.response?.status === 404) {
-      finalState.value = {
-        type: 'error',
-        icon: 'mdi-alert-circle-outline',
-        title: 'Ogiltig länk',
-        message: 'Signeringslänken är ogiltig.',
-      }
+
+    finalState.value = {
+      type: 'error',
+      icon: 'mdi-alert-circle-outline',
+      title: 'Ogiltig länk',
+      message: error.message || 'Denna signeringslänk är ogiltig.',
     }
+    
     return false
   }
 }
@@ -340,7 +343,7 @@ const submitFinalSignature = async (signatureImage) => {
 
     // Enviar notificación de firma completada
     try {
-      await notificationsApi.send({
+      await notificationsStore.send({
         title: 'Dokument signerat',
         subtitle: 'Ett dokument har signerats framgångsrikt',
         text: `Dokumentet har signerats korrekt. Dokument ID: ${response.data.agreement_id || 'N/A'}`,
@@ -408,8 +411,7 @@ onMounted(loadSignatureData);
           <VIcon icon="custom-help" size="24" />
           <span class="text-help">Tryck för att visa dokumentet.</span>
         </div>  
-        
-        
+         
         <!-- Visor del PDF firmado (solo lectura) -->
         <div class="pdf-container read-only">
           <div style="position: relative;">
@@ -427,22 +429,20 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
-    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned" class="signing-content">
-      <VCard class="signing-card mt-4 text-center pa-8">
-        <VIcon 
-          :icon="finalState.icon" 
-          size="64" 
+    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned" class="signing-content bg-white">
+      <VCard class="signing-card mt-4">
+        <VAlert
           color="error"
-          class="mb-4"
-        />
-        <h2 class="text-h5 mb-2">{{ finalState.title }}</h2>
-        <p class="text-body-1 text-medium-emphasis">{{ finalState.message }}</p>
+          class="alert-no-shrink custom-alert"
+        >
+          <VAlertTitle>{{ finalState.message }}</VAlertTitle>
+        </VAlert>
       </VCard>
     </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
     <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-content">
-      <VCard class="signing-card">
+      <VCard class="signing-card mt-4">
         <div class="pdf-container">
           <div ref="pdfContainer" style="position: relative;">
             <VuePdfEmbed :source="pdfSource" />

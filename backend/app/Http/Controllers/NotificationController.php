@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\NotificationRequest;
+
 use App\Events\NotificationsWebsocketEvent;
 use App\Events\UserNotificationEvent;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Validator;
@@ -17,41 +20,21 @@ class NotificationController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function send(Request $request)
+    public function send(NotificationRequest $request)
     {
-        // Validar datos de entrada
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'subtitle' => 'nullable|string|max:255',
-            'text' => 'required|string|max:1000',
-            'color' => 'nullable|string|in:primary,success,info,warning,error',
-            'icon' => 'nullable|string|max:100',
-            'img' => 'nullable|url|max:500',
-            'user_id' => 'nullable|integer|exists:users,id', // ID del usuario que recibirá la notificación
-            'agreement_id' => 'nullable|string|max:100',
-            'signed_by' => 'nullable|string|max:255',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Datos de validación incorrectos',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Preparar el mensaje de notificación
-        $message = (object) [
-            'title' => $request->input('title'),
-            'subtitle' => $request->input('subtitle', ''),
-            'time' => now()->format('H:i:s'),
-            'img' => $request->input('img'),
-            'color' => $request->input('color', 'primary'),
-            'icon' => $request->input('icon', 'tabler-bell'),
-            'text' => $request->input('text'),
-        ];
-
         try {
+
+            // Preparar el mensaje de notificación
+            $message = (object) [
+                'title' => $request->input('title'),
+                'subtitle' => $request->input('subtitle', ''),
+                'time' => now()->format('H:i:s'),
+                'img' => $request->input('img'),
+                'color' => $request->input('color', 'primary'),
+                'icon' => $request->input('icon', 'tabler-bell'),
+                'text' => $request->input('text'),
+            ];
+
             $userId = $request->input('user_id');
             
             if ($userId) {//privada
