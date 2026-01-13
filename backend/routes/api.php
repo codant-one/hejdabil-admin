@@ -113,6 +113,13 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
+    /* NOTIFICATIONS */
+    Route::group(['prefix' => 'notifications'], function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    });
+
     //Users
     Route::group(['prefix' => 'users'], function () {
         Route::get('user/online', [UsersController::class, 'getOnline']);

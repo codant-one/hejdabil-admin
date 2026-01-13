@@ -561,12 +561,6 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
-  
-  // Check if we should open create dialog
-  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
-    hasProcessedCreateAction.value = true;
-    isConfirmCreateDialogVisible.value = true;
-  }
 });
 
 onBeforeUnmount(() => {

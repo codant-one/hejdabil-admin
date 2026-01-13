@@ -1,10 +1,12 @@
 <script setup>
 
+import { useRouter } from 'vue-router'
 import { onMounted } from 'vue'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import Notifications from '@core/components/Notifications.vue'
 
 const notificationsStore = useNotificationsStore()
+const router = useRouter()
 
 onMounted(async () => {
   // Obtener el usuario actual y su ID
@@ -27,8 +29,20 @@ onMounted(async () => {
   await notificationsStore.init(userId)
 })
 
-const onReadAll = () => {
-  notificationsStore.markAllRead()
+const onReadAll = async () => {
+  await notificationsStore.markAllRead()
+}
+
+const onNotificationClick = async (notification) => {
+  // Marcar como leída si tiene ID
+  if (notification.id && !notification.read) {
+    await notificationsStore.markAsRead(notification.id)
+  }
+  
+  // Navegar a la ruta si existe
+  if (notification.route) {
+    router.push(notification.route)
+  }
 }
 </script>
 
@@ -36,5 +50,6 @@ const onReadAll = () => {
   <Notifications 
     :notifications="notificationsStore.notifications" 
     @click:readAllNotifications="onReadAll" 
+    @click:notification="onNotificationClick"
   />  
 </template>

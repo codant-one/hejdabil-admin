@@ -14,16 +14,24 @@ export const useNotificationsStore = defineStore('notifications', {
         return
       this.initialized = true
 
-      // Cargar notificaciones iniciales desde el backend si aplica
+      // Cargar notificaciones guardadas desde la base de datos
       try {
-        if (window && window.axios) {
-          // Descomenta y ajusta el endpoint si tienes API para iniciales
-          // const { data } = await window.axios.get('/api/notifications')
-          // this.notifications = Array.isArray(data) ? data : []
+        const { data } = await notificationsApi.getAll()
+        if (data.success && Array.isArray(data.data)) {
+          this.notifications = data.data.map(notification => ({
+            id: notification.id,
+            title: notification.title,
+            subtitle: notification.subtitle,
+            time: this.formatTime(notification.created_at),
+            text: notification.text,
+            route: notification.route,
+            read: notification.read === 1,
+            color: notification.color ?? 'primary',
+            icon: notification.icon ?? 'tabler-bell',
+          }))
         }
       } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('Error loading initial notifications:', err)
+        console.error('Error loading notifications from database:', err)
       }
 
       // Suscribirse a eventos en tiempo real
@@ -53,6 +61,19 @@ export const useNotificationsStore = defineStore('notifications', {
       } catch (err) {
         console.error('❌ Error subscribing to notifications:', err)
       }
+    },
+
+    formatTime(dateString) {
+      const date = new Date(dateString)
+      const now = new Date()
+      const diffInSeconds = Math.floor((now - date) / 1000)
+      
+      if (diffInSeconds < 60) return 'Nyss'
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} min sedan`
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} tim sedan`
+      if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} dag sedan`
+      
+      return date.toLocaleDateString('sv-SE')
     },
 
     /**
@@ -90,19 +111,36 @@ export const useNotificationsStore = defineStore('notifications', {
     },
 
     addFromBackend(data) {
-      //console.log('➕ Adding notification to store:', data)
-      
       const mapped = {
+        id: data?.id,
         title: data?.title ?? 'Ny avisering',
         subtitle: data?.subtitle ?? '',
-        time: data?.time ?? 'Ahora',
+        time: data?.time ?? 'Nyss',
         img: data?.img,
         color: data?.color,
         icon: data?.icon,
         text: data?.text,
+        route: data?.route ?? '/dashboard',
+        read: data?.read ?? false,
       }
       this.notifications.unshift(mapped)
     },
+
+    async markAsRead(notificationId) {
+      try {
+        await notificationsApi.markAsRead(notificationId)
+        
+        // Actualizar en el store local
+        const notification = this.notifications.find(n => n.id === notificationId)
+        if (notification) {
+          notification.read = true
+        }
+      } catch (error) {
+        console.error('Error marking notification as read:', error)
+        throw error
+      }
+    },
+
     async send(payload) {
       try {
         const response = await notificationsApi.send(payload)
@@ -113,9 +151,17 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
-    markAllRead() {
-      // Ajusta según política de lectura (vaciar o marcar como leídas)
-      this.notifications = []
+    async markAllRead() {
+      try {
+        await notificationsApi.markAllAsRead()
+        
+        // Actualizar todas como leídas en el store local
+        this.notifications.forEach(n => {
+          n.read = true
+        })
+      } catch (error) {
+        console.error('Error marking all notifications as read:', error)
+      }
     },
   },
 })
