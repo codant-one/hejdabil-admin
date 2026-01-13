@@ -9,6 +9,7 @@ import { themeConfig } from '@themeConfig'
 import { avatarText } from "@/@core/utils/formatters";
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
+import router from '@/router'
 import logo from "@images/logos/billogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
@@ -748,15 +749,68 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
+// Watch for route changes to open tracker automatically
+watch(() => route.query.file_id, async (fileId) => {
+  if (fileId && hasLoaded.value) {
+    const documentId = parseInt(fileId)
+    let document = documents.value.find(doc => doc.id === documentId)
+    
+    if (!document) {
+      // If not found in current page, try to fetch it directly
+      try {
+        document = await documentsStores.showDocument(documentId)
+      } catch (error) {
+        console.error('Document not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Dokumentet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (document) {
+      await goToTracker(document)
+    }
+  }
+}, { immediate: true })
+
+// Watch hasLoaded to trigger file_id check after data is loaded
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.file_id) {
+    const documentId = parseInt(route.query.file_id)
+    let document = documents.value.find(doc => doc.id === documentId)
+    
+    if (!document) {
+      try {
+        document = await documentsStores.showDocument(documentId)
+      } catch (error) {
+        console.error('Document not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Dokumentet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (document) {
+      await goToTracker(document)
+    }
+  }
+})
+
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
-  
-  // Check if we should open create dialog
-  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
-    hasProcessedCreateAction.value = true;
-    isConfirmCreateDialogVisible.value = true;
-  }
 });
 
 onBeforeUnmount(() => {

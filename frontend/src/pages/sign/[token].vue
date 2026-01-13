@@ -343,12 +343,15 @@ const submitFinalSignature = async (signatureImage) => {
 
     // Enviar notificación de firma completada
     try {
+      const fileId = signedInfo.value?.documentId || signedInfo.value?.agreementId || 'dokument'
+
       await notificationsStore.send({
         title: 'Dokument signerat',
         subtitle: 'Ett dokument har signerats framgångsrikt',
         text: `Dokumentet har signerats korrekt. Dokument ID: ${response.data.agreement_id || 'N/A'}`,
         color: 'primary',
         icon: 'custom-signature',
+        route: `/dashboard/admin/documents?file_id=${fileId}` || null,
         agreement_id: response.data.agreement_id?.toString() || null,
         signed_by: response.data.signed_by || 'Användare',
         user_id: response.data.user_id || null // ID del usuario que recibirá la notificación

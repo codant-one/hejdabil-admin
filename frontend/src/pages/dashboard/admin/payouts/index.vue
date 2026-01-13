@@ -408,12 +408,6 @@ function resizeSectionToRemainingViewport() {
 onMounted(async () => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
-  
-  // Check if we should open create dialog
-  if (route.query.action === 'create' && !hasProcessedCreateAction.value) {
-    hasProcessedCreateAction.value = true;
-    isConfirmCreateDialogVisible.value = true;
-  }
 
   state_id.value = payoutsStores.getStateId ?? state_id.value;
   updateStateId(state_id.value);
