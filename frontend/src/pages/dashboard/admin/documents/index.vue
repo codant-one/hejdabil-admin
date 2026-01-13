@@ -1895,7 +1895,7 @@ onBeforeUnmount(() => {
   /* Variables SASS Ajustadas */
   $curve-width: 2px;
   $curve-color: #E7E7E7;
-  $curve-radius: 40px;
+  $curve-radius: 70px; /* Aumentado para curva más pronunciada/circular */
   $gap-to-center: 12px; /* 12px per Figma */
 
   /* ===== LA CURVA (SNAKE LINE) ===== */
