@@ -329,32 +329,34 @@ const trackerEvents = computed(() => {
 
   const items = []
 
-  // Created event
-  items.push({
-    key: 'created',
-    title: 'Avtal skapat',
-    meta: new Date(trackerDocument.value.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
-    text: trackerDocument.value.title,
-    color: '#00EEB0', // Green
-    bgClass: 'status-success',
-    icon: 'tabler-circle-check',
-  })
-
   // Use most recent token for status markers
   const latestToken = (trackerDocument.value.tokens || []).length
     ? [...trackerDocument.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
+  
+  // Created event
+  items.push({
+    key: 'created',
+    title: 'Dokument skapat',
+    meta: new Date(trackerDocument.value.created_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+    text: trackerDocument.value.title,
+    color: '#00EEB0', // Green
+    bgClass: 'status-success',
+    icon: 'custom-check-white',
+    showFile: latestToken?.signature_status === 'signed' ? false : true,
+  })
 
   if (latestToken) {
     // Sent event
     items.push({
       key: 'sent',
       title: 'Signeringsförfrågan skickad',
-      meta: new Date(latestToken.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+      meta: new Date(latestToken.created_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
       text: `Skickad till ${latestToken.recipient_email}`,
       color: '#1890FF', // Blue
       bgClass: 'status-info',
-      icon: 'tabler-eye',
+      icon: 'custom-eye',
+      showFile: false,
     })
 
     // Viewed event
@@ -362,11 +364,12 @@ const trackerEvents = computed(() => {
       items.push({
         key: 'viewed',
         title: 'Dokument visat av kunden',
-        meta: new Date(latestToken.viewed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+        meta: new Date(latestToken.viewed_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
         text: 'Kunden har öppnat signeringslänken.',
         color: '#FAAD14', // Yellow
         bgClass: 'status-warning',
-        icon: 'tabler-alert-triangle',
+        icon: 'custom-risk-white',
+        showFile: false,
       })
     }
 
@@ -375,11 +378,12 @@ const trackerEvents = computed(() => {
       items.push({
         key: 'signed',
         title: 'Dokument signerat',
-        meta: new Date(latestToken.signed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
+        meta: new Date(latestToken.signed_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
         text: 'Signeringen är slutförd.',
         color: '#1890FF', // Blue
         bgClass: 'status-info',
-        icon: 'tabler-star',
+        icon: 'custom-star',
+        showFile: true,
       })
     } else if (latestToken.signature_status === 'sent') {
       items.push({
@@ -389,7 +393,8 @@ const trackerEvents = computed(() => {
         text: 'Mottagaren har inte signerat ännu.',
         color: '#FAAD14', // Yellow
         bgClass: 'status-warning',
-        icon: 'tabler-star',
+        icon: 'custom-risk-white',
+        showFile: false,
       })
     }
   }
@@ -1524,14 +1529,25 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <!-- 👉 Tracker Dialog -->
-    <VDialog v-model="isTrackerDialogVisible" max-width="520" content-class="tracker-dialog">
-      <VCard class="tracker-card">
-        <VCardTitle class="d-flex justify-space-between align-center px-6 pt-5 pb-0">
-          <span class="tracker-title">Signaturprocess</span>
-          <VBtn icon variant="text" size="small" @click="isTrackerDialogVisible = false">
-            <VIcon icon="tabler-x" size="20" />
-          </VBtn>
-        </VCardTitle>
+    <VDialog 
+      v-model="isTrackerDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerDialogVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">
+            Signaturprocess
+          </div>
+        </VCardText>
         
         <VCardText class="tracker-body">
           <div class="snake-timeline">
@@ -1554,18 +1570,18 @@ onBeforeUnmount(() => {
                 <h4 class="snake-heading">{{ item.title }}</h4>
                 <p class="snake-text">{{ item.text }}</p>
                 <div 
-                  v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument" 
+                  v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument && item.showFile" 
                   class="snake-file-btn" 
                   @click="openTrackerPreview"
                 >
-                  <VIcon icon="tabler-file-text" size="14" />
+                  <VIcon icon="custom-pdf-2" size="14" />
                   <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
                 </div>
               </div>
 
               <!-- Status Icon Circle -->
               <div class="snake-icon-wrapper" :class="item.bgClass">
-                <VIcon :icon="item.icon" size="20" color="white" />
+                <VIcon :icon="item.icon" size="16" color="white" />
               </div>
             </div>
           </div>
@@ -1574,14 +1590,26 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <!-- 👉 Tracker Preview Dialog -->
-    <VDialog v-model="isTrackerPreviewVisible" max-width="900">
+    <VDialog 
+      v-model="isTrackerPreviewVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerPreviewVisible = !isTrackerPreviewVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
       <VCard>
-        <VCardTitle class="d-flex justify-space-between align-center">
-          <span>Förhandsvisa dokument</span>
-          <VBtn icon variant="text" @click="isTrackerPreviewVisible = false">
-            <VIcon icon="tabler-x" />
-          </VBtn>
-        </VCardTitle>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-signature" class="action-icon" />
+          <div class="dialog-title">
+            Förhandsvisa dokument
+          </div>
+        </VCardText>
         <VDivider />
         <VCardText class="d-flex justify-center" style="min-height:400px;">
           <VProgressCircular v-if="isTrackerPreviewLoading" indeterminate color="primary" />
@@ -1911,11 +1939,6 @@ onBeforeUnmount(() => {
     background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
   }
 
-  .tracker-card {
-    border-radius: 20px !important;
-    overflow: hidden;
-  }
-
   .tracker-title {
     font-weight: 600;
     color: #333;
@@ -2071,28 +2094,29 @@ onBeforeUnmount(() => {
 
   /* Typography */
   .snake-date {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: #999;
-    letter-spacing: 0.02em;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #878787;
     margin-bottom: 4px;
     text-transform: uppercase;
   }
 
   .snake-heading {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #2c2c2c;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 16px;
+    text-align: right;
+    color: #454545;
     margin: 0 0 4px 0;
-    line-height: 1.3;
   }
 
   .snake-text {
-    font-size: 0.85rem;
     font-weight: 400;
-    color: #666;
+    font-size: 14px;
+    line-height: 16px;
+    color: #454545;
     margin: 0;
-    line-height: 1.5;
   }
 
   /* File Badge */
@@ -2100,18 +2124,20 @@ onBeforeUnmount(() => {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    background: #F3F4F6;
+    background: #E7E7E7;
     padding: 6px 12px;
     border-radius: 6px;
     margin-top: 8px;
     cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #4B5563;
     transition: all 0.2s;
     border: 1px solid transparent;
-    
+
     span {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 16px;
+      color: #454545;
+
       max-width: 160px;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -2130,12 +2156,11 @@ onBeforeUnmount(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     z-index: 20;
-    top: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+    top: 48%;
   }
 
   /* Icon Right */
@@ -2153,22 +2178,18 @@ onBeforeUnmount(() => {
   /* Status Colors */
   .snake-icon-wrapper.status-success {
     background-color: #00EEB0;
-    background-image: linear-gradient(135deg, #00EEB0, #00EEB0);
   }
 
   .snake-icon-wrapper.status-info {
     background-color: #1890FF;
-    background-image: linear-gradient(135deg, #1890FF, #1890FF);
   }
 
   .snake-icon-wrapper.status-warning {
     background-color: #FAAD14;
-    background-image: linear-gradient(135deg, #FAAD14, #FAAD14);
   }
 
   .snake-icon-wrapper.status-error {
     background-color: #EF4444;
-    background-image: linear-gradient(135deg, #EF4444, #DC2626);
   }
 
   /* ===== RESPONSIVE ===== */
