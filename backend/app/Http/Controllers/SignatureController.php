@@ -2,23 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Agreement;
-use App\Models\Document;
-use App\Models\Token;
+use App\Http\Requests\Signature\SendSignatureRequest;
+use App\Http\Requests\Signature\SendStaticSignatureRequest;
+use App\Http\Requests\Signature\SignatureRequest;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\SignatureRequestMail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use PDF;
 use Illuminate\Support\Facades\Response;
-use App\Mail\SignedDocumentMail; 
 use Illuminate\Support\Facades\Log;
+
+use App\Mail\SignedDocumentMail; 
+use App\Mail\SignatureRequestMail;
+
+use PDF;
 
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Models\Agreement;
+use App\Models\Document;
+use App\Models\Token;
 
 class SignatureController extends Controller
 {
@@ -35,23 +41,23 @@ class SignatureController extends Controller
      * Método 1: Iniciar el proceso de firma (Activado desde tu Dashboard de Vue).
      * URL: POST /api/agreements/{agreement}/send-signature-request
      */
-    public function sendSignatureRequest(Agreement $agreement, Request $request)
+    public function sendSignatureRequest(Agreement $agreement, SendSignatureRequest $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'x' => 'required|numeric',
-            'y' => 'required|numeric',
-            'page' => 'required|integer',
-        ]);
+        $validated = $request->validated();
+  
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
-            return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
+            return response()->json([
+                'message' => 'Det finns ännu ingen PDF-fil för detta avtal som kan undertecknas.'
+            ], 422);
         }
 
         // 2. Obtener el cliente asociado al contrato. Tu modelo usa 'agreement_client'.
         $agreementClient = $agreement->agreement_client;
         if (!$agreementClient || !$agreementClient->email) {
-            return response()->json(['message' => 'El contrato no tiene un cliente con email asociado.'], 422);
+            return response()->json([
+                'message' => 'Det finns ingen kund med en associerad e-postadress för detta avtal.'
+            ], 422);
         }
 
         // 3. Generar un token único para la solicitud de firma.
@@ -71,27 +77,32 @@ class SignatureController extends Controller
         // 5. Enviar el email al cliente con el enlace de firma.
         Mail::to($validated['email'])->send(new SignatureRequestMail($token));
         
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+        return response()->json([
+            'message' => 'Begäran om underskrift skickad med framgång.'
+        ]);
     }
 
     //Firmar con posición fija.
-    public function sendStaticSignatureRequest(Agreement $agreement, Request $request)
+    public function sendStaticSignatureRequest(Agreement $agreement, SendStaticSignatureRequest $request)
     {
-        $validated = $request->validate([
-            'email' => 'required|email',
-        ]);
+        $validated = $request->validated();
+
         // 1. Verificar si el contrato ya tiene un PDF generado.
         if (!$agreement->file) {
-            return response()->json(['message' => 'Este contrato aún no tiene un PDF generado para firmar.'], 422);
+            return response()->json([
+                'message' => 'Det finns ännu ingen PDF-fil för detta avtal som kan undertecknas.'
+            ], 422);
         }
 
         // 2. Obtener el cliente asociado al contrato.
         $agreementClient = $agreement->agreement_client;
         if (!$agreementClient || !$agreementClient->email) {
-            return response()->json(['message' => 'El contrato no tiene un cliente con email asociado.'], 422);
+            return response()->json([
+                'message' => 'Det finns ingen kund med en associerad e-postadress för detta avtal.'
+            ], 422);
         }
 
-        // 3. Generar un token único.
+        // 3. Generera un token único.
         $signingToken = Str::uuid()->toString();
         
         // 4. Crear el registro en 'tokens' SIN coordenadas.
@@ -108,7 +119,7 @@ class SignatureController extends Controller
         // 5. Enviar el email al cliente.
         Mail::to($validated['email'])->send(new SignatureRequestMail($token));
         
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+        return response()->json(['message' => 'Begäran om underskrift skickad med framgång.']);
     }
 
     /**
@@ -123,7 +134,7 @@ class SignatureController extends Controller
                   ->first();
 
         if (!$token) {
-            abort(404, 'Enlace de firma no válido o expirado');
+            abort(404, 'Ogiltig eller utgången signaturlänk');
         }
 
         // Verificar si el token ya fue usado para firmar
@@ -137,7 +148,7 @@ class SignatureController extends Controller
         }
         
         // Para cualquier otro estado no contemplado
-        abort(404, 'Estado de firma no válido.');
+        abort(404, 'Ogiltigt signaturstatus.');
     }
 
     /**
@@ -168,7 +179,7 @@ class SignatureController extends Controller
             return response()->file($path);
         }
         
-        abort(404, 'Archivo PDF firmado no encontrado.');
+        abort(404, 'Signerad PDF-fil hittades inte.');
     }
 
     /**
@@ -182,14 +193,14 @@ class SignatureController extends Controller
         if (!$token) {
             return response()->json([
                 'status' => 'invalid',
-                'message' => 'Token no válido'
+                'message' => 'Ogiltig token'
             ], 404);
         }
         
         if ($token->token_expires_at < now() && $token->signature_status !== 'signed') {
             return response()->json([
                 'status' => 'expired',
-                'message' => 'El enlace de firma ha expirado'
+                'message' => 'Signeringslänken har löpt ut'
             ], 410);
         }
         
@@ -219,20 +230,14 @@ class SignatureController extends Controller
      * Método 3: Guardar la firma y Regenerar el PDF (Activado desde la página de firma de Vue).
      * URL: POST /api/signatures/submit/{token}
      */
-    public function storeSignature(Request $request, $tokenString)
+    public function storeSignature(SignatureRequest $request, $tokenString)
     {
         // 1. Validar de nuevo el token para máxima seguridad.
         $token = Token::where('signing_token', $tokenString)
                       ->where('signature_status', 'sent')
                       ->where('token_expires_at', '>', now())
                       ->firstOrFail();
-
-        // 2. Validar que la firma viene en la petición.
-        $request->validate(['signature' => 'required|string']);
-
-        $validated = $request->validate([
-            'signature' => 'required|string'
-        ]);
+        // 2. Asegurarse de que la firma esté presente en la solicitud (ya validado por SignatureRequest).
 
         // 3. Decodificar y guardar la imagen de la firma.
         $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->signature));
@@ -255,9 +260,13 @@ class SignatureController extends Controller
                 $token->placement_x,
                 $token->placement_y
             );
+
             if (!$signedPdfPath) {
-                return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
+                return response()->json([
+                    'message' => 'Det gick inte att återställa PDF-filen med signaturen.'
+                ], 500);
             }
+
             $agreement->file = $signedPdfPath;
             $agreement->save();
         } elseif ($token->document_id) {
@@ -270,7 +279,9 @@ class SignatureController extends Controller
                 $token->placement_page ?? 1
             );
             if (!$signedPdfPath) {
-                return response()->json(['message' => 'No se pudo regenerar el PDF con la firma.'], 500);
+                return response()->json([
+                    'message' => 'Det gick inte att återställa dokument-PDF-filen med signaturen.'
+                ], 500);
             }
             $document->file = $signedPdfPath;
             $document->save();
@@ -315,8 +326,32 @@ class SignatureController extends Controller
         }
         
         // 7. Devolver una respuesta exitosa a Vue.
+        $userId = null;
+        if ($token->agreement_id) {
+            $agreement = $token->agreement;
+            // Obtener el user_id del supplier asociado al agreement
+            if ($agreement->supplier && $agreement->supplier->user_id) {
+                $userId = $agreement->supplier->user_id;
+            }
+        } elseif ($token->document_id) {
+            $document = $token->document;
+            // Si los documentos tienen user_id o supplier
+            if (isset($document->user_id)) {
+                $userId = $document->user_id;
+            } elseif (isset($document->supplier) && $document->supplier->user_id) {
+                $userId = $document->supplier->user_id;
+            }
+        }
+        
+        return response()->json([
+            'message'      => 'Kontraktet har undertecknats.',
+            'download_url' => Storage::disk('public')->url($signedPdfPath),
+            'agreement_id' => $token->agreement_id ?? $token->document_id,
+            'signed_by'    => $token->recipient_email,
+            'user_id'      => $userId, // ID del usuario que debe recibir la notificación
+        ]);
         $response = [
-            'message'      => 'Contrato firmado con éxito.',
+            'message'      => 'Kontraktet har undertecknats.',
             'download_url' => Storage::disk('public')->url($signedPdfPath)
         ];
 
@@ -474,7 +509,7 @@ class SignatureController extends Controller
             }
         }
         
-        abort(404, 'Archivo PDF no encontrado.');
+        abort(404, 'PDF-fil hittades inte.');
     }
 
     public function getAdminPreviewPdf(Agreement $agreement)
@@ -485,7 +520,7 @@ class SignatureController extends Controller
             return response()->file($path);
         }
 
-        abort(404, 'Archivo PDF no encontrado para este contrato.');
+        abort(404, 'PDF-fil hittades inte för detta kontrakt.');
     }
 
     public function getSignatureDetails($tokenString)
@@ -555,7 +590,7 @@ class SignatureController extends Controller
             }
             
             // Si ninguna librería está disponible, lanzar excepción
-            throw new \Exception('FPDI es requerido para agregar firmas a PDFs. Por favor instala setasign/fpdi ejecutando: composer require setasign/fpdi');
+            throw new \Exception('FPDI krävs för att lägga till signaturer till PDF-filer. Installera setasign/fpdi genom att köra: composer require setasign/fpdi');
             
         } catch (\Exception $e) {
             Log::error('Error al agregar firma al PDF: ' . $e->getMessage());
@@ -612,32 +647,6 @@ class SignatureController extends Controller
                     $sigHeight = $sigWidth * 0.4;
                 }
 
-                // Log para debug - información detallada
-                Log::info('FPDI Signature placement debug', [
-                    'pdf_path' => $pdfPath,
-                    'input_x_percent' => $x,
-                    'input_y_percent' => $y,
-                    'page_size_mm' => [
-                        'width' => $size['width'], 
-                        'height' => $size['height'],
-                        'orientation' => $size['orientation']
-                    ],
-                    'raw_position_mm' => [
-                        'x' => ($x / 100) * $size['width'], 
-                        'y' => ($y / 100) * $size['height']
-                    ],
-                    'y_correction_mm' => $yCorrection,
-                    'corrected_position_mm' => [
-                        'x' => $xPoint, 
-                        'y' => $yPoint
-                    ],
-                    'signature_size_mm' => [
-                        'width' => $sigWidth, 
-                        'height' => $sigHeight
-                    ],
-                    'target_page' => $targetPage
-                ]);
-
                 // El punto clicado representa donde el usuario quiere que aparezca la firma
                 // Dibujamos con la esquina superior izquierda en ese punto
                 // NO centramos porque el placeholder visual en el frontend también usa esquina superior izquierda
@@ -647,12 +656,6 @@ class SignatureController extends Controller
                 // Limitar para que no se salga de la página
                 $xDraw = max(0, min($size['width'] - $sigWidth, $xDraw));
                 $yDraw = max(0, min($size['height'] - $sigHeight, $yDraw));
-
-                Log::info('FPDI Final draw position', [
-                    'xDraw' => $xDraw,
-                    'yDraw' => $yDraw,
-                    'adjusted_from_limits' => ($xDraw != $xPoint || $yDraw != $yPoint)
-                ]);
                 
                 // Dibujar imagen
                 $pdf->Image($signaturePath, $xDraw, $yDraw, $sigWidth, $sigHeight);

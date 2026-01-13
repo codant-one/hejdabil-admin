@@ -1050,13 +1050,13 @@ onBeforeUnmount(() => {
       >
         <VIcon
           :size="$vuetify.display.mdAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-agreement"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Du har inga kunder än</div>
+          <div class="empty-state-title">Inga dokument att signera än</div>
           <div class="empty-state-text">
-            Lägg till dina kunder här för att snabbt skapa fakturor och hålla
-            ordning på dina kontakter.
+            Ladda upp externa filer för att skicka dem för digital signering. 
+            Följ statusen i realtid och samla alla dina signerade avtal på ett ställe.
           </div>
         </div>
         <VBtn
@@ -1064,7 +1064,7 @@ onBeforeUnmount(() => {
           v-if="$can('create', 'signed-documents')"
           @click="openUploadModal"
         >
-          Lägg till ny kund
+          Ladda upp för signering
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>

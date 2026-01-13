@@ -2221,12 +2221,12 @@ onBeforeRouteLeave((to, from, next) => {
                                     >
                                     <VIcon
                                         :size="$vuetify.display.mdAndDown ? 80 : 120"
-                                        icon="custom-steering-wheel"
+                                        icon="custom-f-list"
                                     />
                                     <div class="empty-state-content">
-                                        <div class="empty-state-title">Ditt fordonslager är tomt</div>
+                                        <div class="empty-state-title">Inga åtgärder registrerade än</div>
                                         <div class="empty-state-text">
-                                            Registrera de fordon du har till salu för att enkelt hantera ditt lager och koppla dem till fakturor.
+                                            Lägg till reparationer, service eller övriga kostnader för att få en tydlig överblick över arbetet som krävs på detta fordon.
                                         </div>
                                     </div>
                                     <VBtn
@@ -2368,12 +2368,12 @@ onBeforeRouteLeave((to, from, next) => {
                                     >
                                     <VIcon
                                         :size="$vuetify.display.mdAndDown ? 80 : 120"
-                                        icon="custom-steering-wheel"
+                                        icon="custom-f-document-car"
                                     />
                                     <div class="empty-state-content">
-                                        <div class="empty-state-title">Ditt fordonslager är tomt</div>
+                                        <div class="empty-state-title">Inga dokument uppladdade än</div>
                                         <div class="empty-state-text">
-                                            Registrera de fordon du har till salu för att enkelt hantera ditt lager och koppla dem till fakturor.
+                                            Ladda upp viktiga filer som registreringsbevis, besiktningsprotokoll och garantier för att hålla all dokumentation samlad för detta fordon.
                                         </div>
                                     </div>
                                     <VBtn
@@ -2381,7 +2381,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="btn-ghost"
                                         @click="showDocument(false)"
                                         >
-                                        Lägg till fordon
+                                        Ladda upp dokument
                                         <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                     <VBtn
@@ -2389,7 +2389,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="btn-ghost"
                                         @click="showDocument(true)"
                                         >
-                                        Lägg till fordon
+                                        Ladda upp dokument
                                         <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                 </div>
