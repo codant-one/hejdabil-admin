@@ -153,24 +153,30 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
   const targetPageIndex = (signaturePlacement.value.page || 1) - 1
   const targetPage = pages[targetPageIndex] || pages[0]
 
-  // Usar EXACTAMENTE el mismo método que el admin
   const pageRect = targetPage.getBoundingClientRect()
   const containerRect = container.getBoundingClientRect()
 
-  // Dimensiones de la página
-  const pageWidth = pageRect.width
-  const pageHeight = pageRect.height
+  // Obtener el estilo computado para calcular el border
+  const computedStyle = window.getComputedStyle(targetPage)
+  const borderLeft = parseFloat(computedStyle.borderLeftWidth) || 0
+  const borderTop = parseFloat(computedStyle.borderTopWidth) || 0
+
+  // Usar clientWidth/clientHeight que excluyen el border
+  // Esto da las dimensiones reales del contenido renderizado del PDF
+  const contentWidth = targetPage.clientWidth
+  const contentHeight = targetPage.clientHeight
 
   // Convertir porcentajes a píxeles locales (inversa del cálculo del admin)
+  // Usando las dimensiones del contenido (sin border)
   const x_percent = parseFloat(signaturePlacement.value.x)
   const y_percent = parseFloat(signaturePlacement.value.y)
   
-  const localX = (x_percent / 100) * pageWidth
-  const localY = (y_percent / 100) * pageHeight
+  const localX = (x_percent / 100) * contentWidth
+  const localY = (y_percent / 100) * contentHeight
 
-  // EXACTA fórmula del admin en handleAdminPdfClick
-  const absoluteX = (pageRect.left - containerRect.left) + localX + (container.scrollLeft || 0)
-  const absoluteY = (pageRect.top - containerRect.top) + localY + (container.scrollTop || 0)
+  // Calcular posición absoluta incluyendo el offset del border
+  const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0)
+  const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0)
 
   computedPlacement.value = { left: absoluteX, top: absoluteY }
 
@@ -299,6 +305,30 @@ const submitFinalSignature = async (signatureImage) => {
     }
     const response = await axios.post(`/signatures/submit/${props.token}`, payload)
 
+    // Liberar el blob del PDF sin firmar
+    if (pdfSource.value) {
+      URL.revokeObjectURL(pdfSource.value)
+      pdfSource.value = null
+    }
+
+    // Cargar el PDF firmado para mostrar y descargar
+    try {
+      const pdfResponse = await axios.get(`/signatures/${props.token}/get-signed-pdf`, { 
+        responseType: 'blob' 
+      })
+      pdfSource.value = URL.createObjectURL(pdfResponse.data)
+    } catch (pdfError) {
+      console.error("No se pudo cargar el PDF firmado:", pdfError)
+    }
+
+    // Guardar información del documento firmado
+    signedInfo.value = {
+      signedAt: new Date().toLocaleString('sv-SE'),
+      agreementId: response.data.agreement_id || response.data.document_id || 'unknown',
+      documentId: response.data.document_id,
+      message: response.data.message
+    }
+
     finalState.value = {
       type: 'success',
       icon: 'mdi-check-circle-outline',
@@ -342,7 +372,9 @@ const downloadSignedPdf = () => {
   if (pdfSource.value) {
     const link = document.createElement('a')
     link.href = pdfSource.value
-    link.download = `avtal-${signedInfo.value?.agreementId}-signerat.pdf`
+    // Usar documentId si está disponible, de lo contrario usar agreementId
+    const fileId = signedInfo.value?.documentId || signedInfo.value?.agreementId || 'dokument'
+    link.download = `dokument-${fileId}-signerat.pdf`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
@@ -369,8 +401,7 @@ onMounted(loadSignatureData);
           color="success"
           class="alert-no-shrink custom-alert"
         >
-          <VAlertTitle>Ditt kontrakt är undertecknat.</VAlertTitle>
-         
+          <VAlertTitle>{{ finalState?.title || 'Ditt kontrakt är undertecknat.' }}</VAlertTitle>
         </VAlert>
 
         <div class="d-flex gap-2 my-4">
@@ -392,6 +423,20 @@ onMounted(loadSignatureData);
         >
           Ladda ner
         </VBtn>
+      </VCard>
+    </div>
+
+    <!-- Estado de error (enlace inválido, expirado, etc.) -->
+    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned" class="signing-content">
+      <VCard class="signing-card mt-4 text-center pa-8">
+        <VIcon 
+          :icon="finalState.icon" 
+          size="64" 
+          color="error"
+          class="mb-4"
+        />
+        <h2 class="text-h5 mb-2">{{ finalState.title }}</h2>
+        <p class="text-body-1 text-medium-emphasis">{{ finalState.message }}</p>
       </VCard>
     </div>
 
