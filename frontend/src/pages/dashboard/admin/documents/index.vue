@@ -366,9 +366,9 @@ const trackerEvents = computed(() => {
         title: 'Dokument signerat',
         meta: new Date(latestToken.signed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
         text: 'Signeringen är slutförd.',
-        color: '#00EEB0', // Green
-        bgClass: 'status-success',
-        icon: 'tabler-circle-check',
+        color: '#1890FF', // Blue
+        bgClass: 'status-info',
+        icon: 'tabler-star',
       })
     } else if (latestToken.signature_status === 'sent') {
       items.push({
@@ -2085,18 +2085,18 @@ onBeforeUnmount(() => {
 
   /* Status Colors */
   .snake-icon-wrapper.status-success {
-    background-color: #10B981;
-    background-image: linear-gradient(135deg, #10B981, #059669);
+    background-color: #00EEB0;
+    background-image: linear-gradient(135deg, #00EEB0, #00EEB0);
   }
 
   .snake-icon-wrapper.status-info {
-    background-color: #3B82F6;
-    background-image: linear-gradient(135deg, #3B82F6, #2563EB);
+    background-color: #1890FF;
+    background-image: linear-gradient(135deg, #1890FF, #1890FF);
   }
 
   .snake-icon-wrapper.status-warning {
-    background-color: #F59E0B;
-    background-image: linear-gradient(135deg, #F59E0B, #D97706);
+    background-color: #FAAD14;
+    background-image: linear-gradient(135deg, #FAAD14, #FAAD14);
   }
 
   .snake-icon-wrapper.status-error {
