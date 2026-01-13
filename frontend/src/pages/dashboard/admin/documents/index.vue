@@ -326,6 +326,8 @@ const trackerEvents = computed(() => {
     meta: new Date(trackerDocument.value.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
     text: trackerDocument.value.title,
     color: '#00EEB0', // Green
+    bgClass: 'status-success',
+    icon: 'tabler-circle-check',
   })
 
   // Use most recent token for status markers
@@ -341,6 +343,8 @@ const trackerEvents = computed(() => {
       meta: new Date(latestToken.created_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
       text: `Skickad till ${latestToken.recipient_email}`,
       color: '#1890FF', // Blue
+      bgClass: 'status-info',
+      icon: 'tabler-eye',
     })
 
     // Viewed event
@@ -351,6 +355,8 @@ const trackerEvents = computed(() => {
         meta: new Date(latestToken.viewed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
         text: 'Kunden har öppnat signeringslänken.',
         color: '#FAAD14', // Yellow
+        bgClass: 'status-warning',
+        icon: 'tabler-alert-triangle',
       })
     }
 
@@ -362,6 +368,8 @@ const trackerEvents = computed(() => {
         meta: new Date(latestToken.signed_at).toLocaleString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }),
         text: 'Signeringen är slutförd.',
         color: '#00EEB0', // Green
+        bgClass: 'status-success',
+        icon: 'tabler-circle-check',
       })
     } else if (latestToken.signature_status === 'sent') {
       items.push({
@@ -370,11 +378,13 @@ const trackerEvents = computed(() => {
         meta: 'Aktiv begäran',
         text: 'Mottagaren har inte signerat ännu.',
         color: '#FAAD14', // Yellow
+        bgClass: 'status-warning',
+        icon: 'tabler-star',
       })
     }
   }
   
-  // Assign sides strictly alternating
+  // Assign sides strictly alternating (right for odd index 0,2,4... left for even index 1,3,5...)
   return items.map((item, index) => ({
       ...item,
       side: index % 2 === 0 ? 'right' : 'left'
@@ -1501,36 +1511,50 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <!-- 👉 Tracker Dialog -->
-    <VDialog v-model="isTrackerDialogVisible" max-width="600" content-class="tracker-dialog">
+    <VDialog v-model="isTrackerDialogVisible" max-width="520" content-class="tracker-dialog">
       <VCard class="tracker-card">
-        <VCardTitle class="d-flex justify-space-between align-center pa-6">
+        <VCardTitle class="d-flex justify-space-between align-center px-6 pt-5 pb-0">
           <span class="tracker-title">Signaturprocess</span>
-          <VBtn icon variant="text" @click="isTrackerDialogVisible = false">
-            <VIcon icon="tabler-x" />
+          <VBtn icon variant="text" size="small" @click="isTrackerDialogVisible = false">
+            <VIcon icon="tabler-x" size="20" />
           </VBtn>
         </VCardTitle>
         
-        <VCardText class="pa-6 pt-0">
-          <div class="snake-timeline-container">
-            <template v-for="(item, index) in trackerEvents" :key="item.key">
-              <!-- Item -->
-              <div 
-                class="snake-item" 
-                :class="item.side === 'right' ? 'row-right' : 'row-left'"
-              >
-                 <div class="snake-line-box"></div>
-                 <div class="snake-content-wrapper">
-                    <div class="snake-meta">{{ item.meta }}</div>
-                    <div class="snake-title">{{ item.title }}</div>
-                    <div class="snake-text">{{ item.text }}</div>
-                    <div v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument" class="snake-file" @click="openTrackerPreview">
-                       <img :src="pdfIcon" width="16" class="me-2" />
-                       <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
-                    </div>
-                 </div>
-                 <div class="snake-dot" :style="{ backgroundColor: item.color }"></div>
+        <VCardText class="tracker-body">
+          <div class="snake-timeline">
+            <div 
+              v-for="(item, index) in trackerEvents" 
+              :key="item.key"
+              class="snake-item"
+              :class="[
+                index % 2 === 0 ? 'icon-right' : 'icon-left',
+                { 'is-first': index === 0 },
+                { 'is-last': index === trackerEvents.length - 1 }
+              ]"
+            >
+              <!-- Curved Border Line -->
+              <div class="snake-curve"></div>
+              
+              <!-- Content Block (centered, covers the line) -->
+              <div class="snake-content">
+                <span class="snake-date">{{ item.meta }}</span>
+                <h4 class="snake-heading">{{ item.title }}</h4>
+                <p class="snake-text">{{ item.text }}</p>
+                <div 
+                  v-if="(item.key === 'created' || item.key === 'signed') && trackerDocument" 
+                  class="snake-file-btn" 
+                  @click="openTrackerPreview"
+                >
+                  <VIcon icon="tabler-file-text" size="14" />
+                  <span>{{ item.key === 'created' ? trackerDocument.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                </div>
               </div>
-            </template>
+
+              <!-- Status Icon Circle -->
+              <div class="snake-icon-wrapper" :class="item.bgClass">
+                <VIcon :icon="item.icon" size="20" color="white" />
+              </div>
+            </div>
           </div>
         </VCardText>
       </VCard>
@@ -1875,174 +1899,294 @@ onBeforeUnmount(() => {
   }
 
   .tracker-card {
-    border-radius: 16px !important;
+    border-radius: 20px !important;
+    overflow: hidden;
   }
 
   .tracker-title {
     font-weight: 600;
-    color: #454545;
-    font-size: 1.25rem;
+    color: #333;
+    font-size: 1.2rem;
   }
 
-  .snake-timeline-container {
+  .tracker-body {
+    padding: 24px 32px 32px !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari/Edge */
+    }
+  }
+
+  /* ===== SNAKE TIMELINE - PROD STYLE (Pixel Perfect Refinement) ===== */
+  .snake-timeline {
     position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 350px;
+    max-width: 600px; 
     margin: 0 auto;
-    padding: 20px 0;
+    padding: 0 32px;
   }
 
   .snake-item {
     position: relative;
     display: flex;
     width: 100%;
-    padding-bottom: 40px;
+    min-height: 140px;
     box-sizing: border-box;
-    margin-top: -2px; /* Overlap for continuous line */
+    
+    /* SOLUCIÓN DOBLE LÍNEA */
+    & + .snake-item {
+      margin-top: -2px; 
+    }
   }
 
-  .snake-item:first-child {
-    margin-top: 0;
-  }
+  /* Variables SASS Ajustadas */
+  $curve-width: 2px;
+  $curve-color: #E7E7E7;
+  $curve-radius: 70px; /* Aumentado para curva más pronunciada/circular */
+  $gap-to-center: 12px; /* 12px per Figma */
 
-  .snake-item:not(:first-child) {
-    padding-top: 40px;
-  }
-
-  .snake-item:last-child {
-    padding-bottom: 0;
-  }
-
-  .snake-line-box {
+  /* ===== LA CURVA (SNAKE LINE) ===== */
+  .snake-curve {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: calc(50% + 1px); /* Slight overlap to avoid gap */
+    width: calc(50% + 1px); 
+    border: 0 solid $curve-color;
     pointer-events: none;
     z-index: 1;
   }
 
-  /* Row Right (Odd items visually, Index 0, 2...) */
-  .row-right {
-    justify-content: flex-start;
-  }
+  /* --- Ítem: Icono Derecha (Contenido Izquierda) --- */
+  .snake-item.icon-right {
+    flex-direction: row;
+    justify-content: flex-end; 
+    padding-right: 10%; 
+    text-align: right;
 
-  .row-right .snake-line-box {
-    right: 0;
-    border-right: 2px solid #E7E7E7;
-  }
+    .snake-curve {
+      left: 50%; 
+      border-top-width: $curve-width;
+      border-right-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: 0 $curve-radius $curve-radius 0;
+    }
 
-  /* Row Left (Even items visually, Index 1, 3...) */
-  .row-left {
-    justify-content: flex-end;
-  }
-
-  .row-left .snake-line-box {
-    left: 0;
-    border-left: 2px solid #E7E7E7;
-  }
-
-  /* Bottom Connections (Curve to next) */
-  .snake-item:not(:last-child) .snake-line-box {
-    border-bottom: 2px solid #E7E7E7;
-  }
-
-  .row-right:not(:last-child) .snake-line-box {
-    border-bottom-right-radius: 50px;
-  }
-
-  .row-left:not(:last-child) .snake-line-box {
-    border-bottom-left-radius: 50px;
-  }
-
-  /* Top Connections (Curve from prev) */
-  .snake-item:not(:first-child) .snake-line-box {
-    border-top: 2px solid #E7E7E7;
-  }
-
-  .row-right:not(:first-child) .snake-line-box {
-    border-top-right-radius: 50px;
-  }
-
-  .row-left:not(:first-child) .snake-line-box {
-    border-top-left-radius: 50px;
-  }
-
-  .snake-content-wrapper {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
-    min-height: 144px;
-    box-sizing: border-box;
-    background-color: rgb(var(--v-theme-surface));
-    border-radius: 20px;
-    padding: 20px 22px;
-    z-index: 2;
-  }
-
-  /* Spacing for content */
-  .row-right .snake-content-wrapper {
-    margin-right: 40px;
-  }
-
-  .row-left .snake-content-wrapper {
-    margin-left: 40px;
-  }
-
-  .snake-meta {
-    font-size: 0.8rem;
-    color: #999;
-    margin: 0;
-  }
-
-  .snake-title {
-    font-weight: 600;
-    font-size: 1rem;
-    color: #333;
-    margin: 0;
-  }
-
-  .snake-text {
-    font-size: 0.9rem;
-    color: #666;
-    margin: 0;
-  }
-
-  .snake-file {
-    display: inline-flex;
-    align-items: center;
-    background: #f5f5f5;
-    padding: 4px 8px;
-    border-radius: 4px;
-    margin-top: 0;
-    cursor: pointer;
-    font-size: 0.85rem;
-    font-weight: 500;
-    
-    &:hover {
-      background: #e0e0e0;
+    .snake-content {
+      align-items: flex-end; 
+      margin-right: $gap-to-center;
     }
   }
 
-  .snake-dot {
+  /* --- Ítem: Icono Izquierda (Contenido Derecha) --- */
+  .snake-item.icon-left {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding-left: 10%; 
+    text-align: left;
+
+    .snake-curve {
+      right: 50%; 
+      border-top-width: $curve-width;
+      border-left-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: $curve-radius 0 0 $curve-radius;
+    }
+
+    .snake-content {
+      align-items: flex-start; 
+      margin-left: $gap-to-center;
+    }
+  }
+
+  /* --- PRIMER ÍTEM (Corrección "Cola") --- */
+  .snake-item.is-first {
+    .snake-curve {
+      top: 50%; 
+      height: 50% !important;
+      border-top-width: 0; /* IMPORTANTE: Eliminar borde superior */
+      border-bottom-width: $curve-width;
+    }
+    
+    &.icon-right .snake-curve {
+      border-top-right-radius: 0; /* Eliminar curva superior */
+      border-bottom-right-radius: $curve-radius;
+      border-radius: 0 0 $curve-radius 0; /* Solo curva abajo-derecha */
+    }
+
+    &.icon-left .snake-curve {
+      border-top-left-radius: 0; /* Eliminar curva superior */
+      border-bottom-left-radius: $curve-radius;
+      border-radius: 0 0 0 $curve-radius; /* Solo curva abajo-izquierda */
+    }
+  }
+
+  /* --- ÚLTIMO ÍTEM (Final) --- */
+  .snake-item.is-last {
+    .snake-curve {
+      top: 0;
+      height: 50% !important; 
+      border-top-width: $curve-width;
+      border-bottom-width: 0; 
+    }
+
+    &.icon-right .snake-curve {
+      border-radius: 0 $curve-radius 0 0;
+    }
+    &.icon-left .snake-curve {
+      border-radius: $curve-radius 0 0 0;
+    }
+  }
+
+  /* --- CONTENIDO DE TEXTO --- */
+  .snake-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 320px; 
+    padding: 12px 0;
+  }
+
+  /* Typography */
+  .snake-date {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #999;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .snake-heading {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2c2c2c;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+  }
+
+  .snake-text {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #666;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* File Badge */
+  .snake-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F3F4F6;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4B5563;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    
+    span {
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    &:hover {
+      background: #E5E7EB;
+      border-color: #D1D5DB;
+    }
+  }
+
+  /* ===== ESTADO (ICONO) ===== */
+  .snake-icon-wrapper {
     position: absolute;
-    width: 12px;
-    height: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    z-index: 3;
+    z-index: 20;
     top: 50%;
-    transform: translateY(-50%);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
   }
 
-  .row-right .snake-dot {
-    right: -6px; /* Centered on 2px border */
+  /* Icon Right */
+  .snake-item.icon-right .snake-icon-wrapper {
+    right: 0;
+    transform: translate(50%, -50%);
   }
 
-  .row-left .snake-dot {
-    left: -6px; /* Centered on 2px border */
+  /* Icon Left */
+  .snake-item.icon-left .snake-icon-wrapper {
+    left: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Status Colors */
+  .snake-icon-wrapper.status-success {
+    background-color: #10B981;
+    background-image: linear-gradient(135deg, #10B981, #059669);
+  }
+
+  .snake-icon-wrapper.status-info {
+    background-color: #3B82F6;
+    background-image: linear-gradient(135deg, #3B82F6, #2563EB);
+  }
+
+  .snake-icon-wrapper.status-warning {
+    background-color: #F59E0B;
+    background-image: linear-gradient(135deg, #F59E0B, #D97706);
+  }
+
+  .snake-icon-wrapper.status-error {
+    background-color: #EF4444;
+    background-image: linear-gradient(135deg, #EF4444, #DC2626);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .tracker-body {
+      padding: 16px 12px 24px !important;
+    }
+
+    .snake-timeline {
+      padding: 0 24px;
+    }
+
+    .snake-item {
+      min-height: 120px;
+    }
+    
+    .snake-content {
+      max-width: none; 
+    }
+
+    .snake-item.icon-right .snake-content { margin-right: 20px; }
+    .snake-item.icon-left .snake-content { margin-left: 20px; }
+
+    .snake-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      
+      .v-icon {
+        font-size: 16px !important;
+      }
+    }
   }
 
   .file-upload-area {
