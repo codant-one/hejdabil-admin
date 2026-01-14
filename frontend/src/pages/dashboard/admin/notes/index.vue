@@ -49,6 +49,7 @@ const hasLoaded = ref(false);
 
 const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);
+const isEdit = ref(false);
 const isNoteEditFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
 const isFilterDialogVisible = ref(false);
@@ -186,8 +187,10 @@ const cancelLeave = () => {
   leaveContext.value = null;
 };
 
-const showNote = (noteData, isMobile = false) => {
+const showNote = (noteData, isMobile = false, is_edit = false) => {
+    isEdit.value = is_edit;
     selectedNote.value = { ...noteData }
+
     // Guardar copia original para detectar cambios
     originalNoteData.value = JSON.stringify({
         reg_num: noteData.reg_num,
@@ -676,10 +679,10 @@ onBeforeUnmount(() => {
                 > 
                 <div class="d-flex flex-column gap-1">
                   <span class="title-comments" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">
-                    {{ note.name }}
+                    {{ note.reg_num }}
                   </span>
                   <span class="subtitle-comments">
-                    {{ note.phone }}
+                    {{ note.name }} - {{ note.phone }}
                   </span>
                 </div>
                 <VSpacer />
@@ -726,10 +729,16 @@ onBeforeUnmount(() => {
 
                     <div class="d-flex align-center">
                       <VIcon 
-                          icon="custom-comments" 
-                          size="24" 
-                          class="cursor-pointer"
-                          @click="showNote(note, windowWidth < 1024 ? true : false)"
+                        icon="custom-pencil" 
+                        size="24" 
+                        class="cursor-pointer me-2"
+                        @click="showNote(note, windowWidth < 1024 ? true : false, true)"
+                      />
+                      <VIcon 
+                        icon="custom-comments" 
+                        size="24" 
+                        class="cursor-pointer"
+                        @click="showNote(note, windowWidth < 1024 ? true : false, false)"
                       />
                       <span class="ms-2 text-comments text-neutral-3">
                         {{ note.comments?.length ?? 0 }}
@@ -923,7 +932,7 @@ onBeforeUnmount(() => {
 
       <div class="d-flex align-center pa-6 pb-1">
         <h6 class="title-modal font-blauer">
-          Uppdatera värdering
+          {{ isEdit ? 'Uppdatera värdering' : 'Kommentera värdering' }}
         </h6>
 
         <VSpacer />
@@ -951,49 +960,55 @@ onBeforeUnmount(() => {
               <VRow>
                 <VCol cols="12" md="12">
                     <VTextField
-                        v-model="selectedNote.reg_num"
-                        label="Reg nr*"
-                        :rules="[requiredValidator]"
+                      v-model="selectedNote.reg_num"
+                      label="Reg nr*"
+                      :rules="[requiredValidator]"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
                     <VTextField
-                        v-model="selectedNote.note"
-                        type="number"
-                        min="0"
-                        label="Egen värdering*"
-                        :rules="[requiredValidator]"
+                      v-model="selectedNote.note"
+                      type="number"
+                      min="0"
+                      label="Egen värdering*"
+                      :rules="[requiredValidator]"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
                     <VTextField
-                        v-model="selectedNote.name"
-                        label="Kundnamn"
+                      v-model="selectedNote.name"
+                      label="Kundnamn"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
                     <VTextField
-                        v-model="selectedNote.phone"
-                        :rules="[phoneValidator]"
-                        label="Tel nr"
+                      v-model="selectedNote.phone"
+                      :rules="[phoneValidator]"
+                      label="Tel nr"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
                     <VTextField
-                        v-model="selectedNote.email"
-                        :rules="[emailValidator]"
-                        label="E-post"
+                      v-model="selectedNote.email"
+                      :rules="[emailValidator]"
+                      label="E-post"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
                     <VTextarea
-                        v-model="selectedNote.comment"
-                        rows="3"
-                        label="Kommentar"
+                      v-model="selectedNote.comment"
+                      rows="3"
+                      label="Kommentar"
+                      :readonly="!isEdit"
                     />
                 </VCol>
                 <!-- 👉 Submit and Cancel -->
-                <VCol cols="12">
+                <VCol cols="12" :class="isEdit ? '' : 'd-none'">
                   <VBtn
                     class="btn-light me-3"
                     @click="closeNote()"
@@ -1009,16 +1024,21 @@ onBeforeUnmount(() => {
                 </VCol>
               </VRow>
 
-              <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+              <VDivider 
+                :class="[
+                  windowWidth < 1024 ? 'my-4' : 'my-6',
+                  isEdit ? 'd-none' : ''
+                ]" 
+              />
 
-              <div class="d-flex gap-2 mb-6">
+              <div class="mb-6" :class="isEdit ? 'd-none' : 'd-flex gap-2'">
                   <VIcon size="24" icon="custom-comments-2" class="action-icon" />
                   <span class="span-comments">
                       Kommentarer
                   </span>
               </div>
 
-              <div class="d-flex flex-column gap-6">
+              <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
                 <VTextField
                     v-model="comment"
                     placeholder="Skriv en kommentar"
@@ -1028,12 +1048,17 @@ onBeforeUnmount(() => {
                 </VBtn>
               </div>
 
-              <VDivider v-if="selectedNote.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+              <VDivider v-if="selectedNote.comments?.length > 0" :class="[
+                windowWidth < 1024 ? 'my-4' : 'my-6',
+                isEdit ? 'd-none' : ''
+              ]" />
 
               <div 
-                  v-for="(comment, index) in selectedNote.comments" 
-                  :key="index"
-                  class="d-flex flex-column gap-2 justify-center mb-4">
+                v-for="(comment, index) in selectedNote.comments" 
+                :key="index"
+                class="mb-4"
+                :class="isEdit ? 'd-none' : 'd-flex flex-column gap-2 justify-center'"
+              >                
                   <div class="text-no-wrap w-100">
                       <VAvatar
                           color="#E3DEEB"
@@ -1095,57 +1120,63 @@ onBeforeUnmount(() => {
         <VCard flat class="card-drawer-form h-100 d-flex flex-column">
             <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
                 <div class="dialog-title">
-                  Uppdatera värdering
+                  {{ isEdit ? 'Uppdatera värdering' : 'Kommentera värdering' }}
                 </div>
             </VCardText>
             <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                 <VRow>
                     <VCol cols="12" md="12">
-                        <VTextField
-                            v-model="selectedNote.reg_num"
-                            label="Reg nr*"
-                            :rules="[requiredValidator]"
-                        />
+                      <VTextField
+                        v-model="selectedNote.reg_num"
+                        label="Reg nr*"
+                        :rules="[requiredValidator]"
+                        :readonly="!isEdit"
+                      />
                     </VCol>
                     <VCol cols="12" md="12">
-                        <VTextField
-                            v-model="selectedNote.note"
-                            type="number"
-                            min="0"
-                            label="Egen värdering*"
-                            :rules="[requiredValidator]"
-                        />
+                      <VTextField
+                        v-model="selectedNote.note"
+                        type="number"
+                        min="0"
+                        label="Egen värdering*"
+                        :rules="[requiredValidator]"
+                        :readonly="!isEdit"
+                      />
                     </VCol>
                     <VCol cols="12" md="12">
-                        <VTextField
-                            v-model="selectedNote.name"
-                            label="Kundnamn"
-                        />
+                      <VTextField
+                          v-model="selectedNote.name"
+                          label="Kundnamn"
+                          :readonly="!isEdit"
+                      />
                     </VCol>
                     <VCol cols="12" md="12">
-                        <VTextField
-                            v-model="selectedNote.phone"
-                            :rules="[phoneValidator]"
-                            label="Tel nr"
-                        />
+                      <VTextField
+                        v-model="selectedNote.phone"
+                        :rules="[phoneValidator]"
+                        label="Tel nr"
+                        :readonly="!isEdit"
+                      />
                     </VCol>
                     <VCol cols="12" md="12">
-                        <VTextField
-                            v-model="selectedNote.email"
-                            :rules="[emailValidator]"
-                            label="E-post"
-                        />
+                      <VTextField
+                        v-model="selectedNote.email"
+                        :rules="[emailValidator]"
+                        label="E-post"
+                        :readonly="!isEdit"
+                      />
                     </VCol>
                     <VCol cols="12" md="12">
-                        <VTextarea
-                            v-model="selectedNote.comment"
-                            rows="3"
-                            label="Kommentar"
-                        />
+                      <VTextarea
+                        v-model="selectedNote.comment"
+                        rows="3"
+                        label="Kommentar"
+                        :readonly="!isEdit"
+                      />
                     </VCol>
                 </VRow>
                 
-                <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                <div :class="isEdit ? 'd-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2' : 'd-none'">
                     <VBtn
                         class="btn-light"
                         @click="closeNote()">
@@ -1156,16 +1187,21 @@ onBeforeUnmount(() => {
                     </VBtn>
                 </div>
 
-                <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                <VDivider 
+                  :class="[
+                    windowWidth < 1024 ? 'my-4' : 'my-6',
+                    isEdit ? 'd-none' : ''
+                  ]" 
+                />
 
-                <div class="d-flex gap-2 mb-6">
+                <div class="mb-6" :class="isEdit ? 'd-none' : 'd-flex gap-2'">
                     <VIcon size="24" icon="custom-comments-2" class="action-icon" />
                     <span class="span-comments">
                         Kommentarer
                     </span>
                 </div>
 
-                <div class="d-flex flex-column gap-6">
+                <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
                     <VTextField
                         v-model="comment"
                         placeholder="Skriv en kommentar"
@@ -1175,12 +1211,20 @@ onBeforeUnmount(() => {
                     </VBtn>
                 </div>
 
-                <VDivider v-if="selectedNote.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                <VDivider 
+                  v-if="selectedNote.comments?.length > 0" 
+                  :class="[
+                    windowWidth < 1024 ? 'my-4' : 'my-6', 
+                    isEdit ? 'd-none' : ''
+                  ]"
+                />
 
                 <div 
                     v-for="(comment, index) in selectedNote.comments" 
                     :key="index"
-                    class="d-flex flex-column gap-2 justify-center mb-4">
+                    class="mb-4"
+                    :class="isEdit ? 'd-none' : 'd-flex flex-column gap-2 justify-center'"
+                >
                     <div class="text-no-wrap w-100">
                         <VAvatar
                             color="#E3DEEB"
