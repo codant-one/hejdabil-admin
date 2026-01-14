@@ -634,11 +634,11 @@ onBeforeUnmount(() => {
               <VListItemTitle>Avbruten</VListItemTitle>
             </VListItem>
 
-            <VListItem @click="updateStateId(8)">
+            <VListItem @click="updateStateId(7)">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
-                    :model-value="state_id === 8"
+                    :model-value="state_id === 7"
                     class="ml-3"
                     true-icon="custom-checked-checkbox"
                     false-icon="custom-unchecked-checkbox"
@@ -1221,11 +1221,11 @@ onBeforeUnmount(() => {
             <VListItemTitle>Avbruten</VListItemTitle>
           </VListItem>
 
-          <VListItem @click="updateStateId(8)">
+          <VListItem @click="updateStateId(7)">
             <template #prepend>
               <VListItemAction>
                 <VCheckbox
-                  :model-value="state_id === 8"
+                  :model-value="state_id === 7"
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
               /></VListItemAction>
