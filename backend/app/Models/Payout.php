@@ -90,7 +90,9 @@ class Payout extends Model
         ]);
 
         return $payout;
-    }    public static function deletePayout($id) {
+    }    
+    
+    public static function deletePayout($id) {
         self::deletePayouts(array($id));
     }
 
@@ -99,6 +101,12 @@ class Payout extends Model
             $payout = self::find($id);
             $payout->delete();
         }
+    }
+
+    public static function cancelPayout($id) {
+       $payout = self::find($id);
+       $payout->payout_state_id = 8; // Cancelled
+       $payout->save();
     }
 }
 

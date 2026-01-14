@@ -220,6 +220,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     //Billing
     Route::group(['prefix' => 'payouts'], function () {
         Route::get('/info/all', [PayoutController::class, 'info']);
+        Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
     });
 
     //Configs

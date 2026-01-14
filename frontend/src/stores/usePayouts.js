@@ -55,6 +55,18 @@ export const usePayoutsStores = defineStore('payouts', {
                     this.setLoading(false)
                 })
         },
+        updatePayout(id, data) {
+            this.setLoading(true)
+
+            return Payouts.update(id, data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
         showPayout(id) {
             this.setLoading(true)
 
@@ -76,6 +88,18 @@ export const usePayoutsStores = defineStore('payouts', {
                 .then((response) => {
                     let index = this.payouts.findIndex((item) => item.id === id)
                     this.payouts.splice(index, 1)
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        cancelPayout(id) {
+            this.setLoading(true)
+
+            return Payouts.cancel(id)
+                .then((response) => {
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

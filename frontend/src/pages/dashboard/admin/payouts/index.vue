@@ -13,6 +13,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import PayoutDetailDialog from './PayoutDetailDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { asyncComputed } from '@vueuse/core';
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -24,7 +25,6 @@ const authStores = useAuthStores()
 const payoutsStores = usePayoutsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
-const route = useRoute()
 
 const payouts = ref([])
 const searchQuery = ref('')
@@ -37,6 +37,7 @@ const isAddNewPayoutDrawerVisible = ref(false)
 const isPayoutDetailDialogVisible = ref(false)
 const selectedPayoutId = ref(null)
 const isConfirmDeleteDialogVisible = ref(false)
+const isConfirmCancelDialogVisible = ref(false)
 const selectedPayout = ref({})
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
@@ -149,9 +150,19 @@ const showDeleteDialog = payoutData => {
   selectedPayout.value = { ...payoutData }
 }
 
+const showCancelDialog = payoutData => {
+  isConfirmCancelDialogVisible.value = true
+  selectedPayout.value = { ...payoutData }
+}
+
 const seePayout = payoutData => {
   selectedPayoutId.value = payoutData.id
   isPayoutDetailDialogVisible.value = true
+}
+
+const editPayout = payoutData => {
+  selectedPayout.value = { ...payoutData }
+  isAddNewPayoutDrawerVisible.value = true
 }
 
 const handlePayoutUpdated = updatedPayout => {
@@ -174,6 +185,30 @@ const handlePayoutUpdated = updatedPayout => {
       show: false
     }
   }, 3000)
+}
+
+const cancelPayout = async () => {
+  isConfirmCancelDialogVisible.value = false
+  let res = await payoutsStores.cancelPayout(selectedPayout.value.id)
+  selectedPayout.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Betalning avbruten!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
 }
 
 const removePayout = async () => {
@@ -223,7 +258,42 @@ const showError = () => {
 const submitForm = async (payoutData) => {
   isRequestOngoing.value = true
 
-  submitCreate(payoutData.data)
+  // Check if we're editing (selectedPayout has an id)
+  if (selectedPayout.value && selectedPayout.value.id) {
+    submitUpdate(payoutData.data, selectedPayout.value.id)
+  } else {
+    submitCreate(payoutData.data)
+  }
+}
+
+const submitUpdate = (payoutData, payoutId) => {
+  payoutData.payer_alias = payer_alias.value
+
+  payoutsStores.updatePayout(payoutId, payoutData)
+    .then((res) => {
+        if (res.data.success) {
+            skapatsDialog.value = true
+            newlyCreatedPayoutId.value = res.data.data.payout.id
+            fetchData()
+        }
+
+        isRequestOngoing.value = false
+    })
+    .catch((error) => {
+      err.value = error
+      inteSkapatsDialog.value = true
+      isRequestOngoing.value = false
+
+      fetchData()
+
+      setTimeout(() => {
+          advisor.value = {
+              type: '',
+              message: '',
+              show: false
+          }
+      }, 3000)
+    })
 }
 
 const submitCreate = payoutData => {
@@ -577,7 +647,7 @@ onBeforeUnmount(() => {
               <VListItemTitle>Debiterad</VListItemTitle>
             </VListItem>
 
-             <VListItem @click="updateStateId(5)">
+            <VListItem @click="updateStateId(5)">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
@@ -588,6 +658,19 @@ onBeforeUnmount(() => {
                 /></VListItemAction>
               </template>
               <VListItemTitle>Misslyckad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(8)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 8"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Cancel</VListItemTitle>
             </VListItem>
           </VList>
         </VMenu>
@@ -691,6 +774,22 @@ onBeforeUnmount(() => {
                       <VIcon icon="custom-eye" size="24" />
                     </template>
                     <VListItemTitle>Visa detaljer</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    @click="editPayout(payout)">
+                    <template #prepend>
+                      <VIcon icon="custom-forward" size="24" />
+                    </template>
+                    <VListItemTitle>Bekräfta betalning</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    @click="showCancelDialog(payout)">
+                    <template #prepend>
+                      <VIcon icon="custom-cancel" size="24" />
+                    </template>
+                    <VListItemTitle>Avbryt</VListItemTitle>
                   </VListItem>
                   <VListItem 
                     v-if="$can('delete','payouts')"
@@ -835,7 +934,7 @@ onBeforeUnmount(() => {
     <AddNewPayoutDialog
       v-if="payer_alias"
       v-model:isDialogOpen="isAddNewPayoutDrawerVisible"
-      :payer_alias="payer_alias"
+      :payout-data="selectedPayout"
       @payout-data="submitForm"
     />
 
@@ -879,6 +978,46 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Confirm Cancel -->
+    <VDialog
+      v-model="isConfirmCancelDialogVisible"
+      persistent
+      class="action-dialog" >
+
+      <!-- Dialog close btn -->
+      <VBtn
+      icon
+        class="btn-white close-btn"
+        @click="isConfirmCancelDialogVisible = !isConfirmCancelDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cancel" class="action-icon" />
+          <div class="dialog-title">
+            Avbryt betalningar
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill avbryta betalningen <strong>{{ selectedPayout.reference }}</strong>?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            @click="isConfirmCancelDialogVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="cancelPayout">
+              Acceptera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
       <!-- 👉 Mobile Action Dialog -->
     <VDialog
       v-model="isMobileActionDialogVisible"
@@ -895,6 +1034,22 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-eye" size="24" />
             </template>
             <VListItemTitle>Visa detaljer</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
+            @click="editPayout(selectedPayoutForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-forward" size="24" />
+            </template>
+            <VListItemTitle>Bekräfta betalning</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
+            @click="showCancelDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-cancel" size="24" />
+            </template>
+            <VListItemTitle>Avbryt</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('delete', 'payouts')"
@@ -1088,6 +1243,18 @@ onBeforeUnmount(() => {
               /></VListItemAction>
             </template>
             <VListItemTitle>Misslyckad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(8)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 8"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Cancel</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

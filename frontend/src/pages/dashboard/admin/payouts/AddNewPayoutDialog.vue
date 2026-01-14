@@ -7,10 +7,9 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
-  payer_alias: {
-    type: String,
-    required: true,
-    default: '',
+  payoutData: {
+    type: Object,
+    default: () => ({}),
   },
 })
 
@@ -24,7 +23,6 @@ const isFormValid = ref(false)
 const refForm = ref()
 const refFormStep1 = ref()
 
-const payer_alias = ref(props.payer_alias)
 const payee_alias = ref(null)
 const message = ref(null)
 const amount = ref(null)
@@ -32,15 +30,31 @@ const payee_ssn = ref(null)
 const master_password = ref(null)
 const isMasterPasswordVisible = ref(false)
 
-const getTitle = computed(() => 'Ny betalning')
+const { width: windowWidth } = useWindowSize();
+
+const getTitle = computed(() => {
+  return props.payoutData && Object.keys(props.payoutData).length > 0 
+    ? 'Bekräfta betalning' 
+    : 'Ny betalning'
+})
 
 watchEffect(() => {
   if (props.isDialogOpen) {
     currentStep.value = 1
-    payee_alias.value = null
-    amount.value = null
-    payee_ssn.value = null
-    message.value = null
+    
+    // Pre-fill form if payoutData exists
+    if (props.payoutData && Object.keys(props.payoutData).length > 0) {
+      payee_alias.value = props.payoutData.payee_alias || null
+      amount.value = props.payoutData.amount || null
+      payee_ssn.value = props.payoutData.payee_ssn || null
+      message.value = props.payoutData.message || null
+    } else {
+      payee_alias.value = null
+      amount.value = null
+      payee_ssn.value = null
+      message.value = null
+    }
+    
     master_password.value = null
   }
 })
@@ -128,7 +142,11 @@ const onSubmit = () => {
       @submit.prevent="onSubmit"
     >
       <VCard>
-        <VCardText class="dialog-title-box flex-row">
+        <VCardText 
+          class="dialog-title-box flex-row"
+          :class="[
+            windowWidth < 1024 && (props.payoutData && Object.keys(props.payoutData).length > 0) ? 'gap-modal' : ''
+          ]">
           <VIcon size="32" icon="custom-surface" class="action-icon" />
           <div class="dialog-title">
              {{ getTitle }}
@@ -283,6 +301,10 @@ const onSubmit = () => {
 </template>
 
 <style lang="scss">
+
+  .gap-modal {
+    gap: 4px !important;
+  }
 
   .scrollable-dialog-content {
     max-height: 90vh !important;

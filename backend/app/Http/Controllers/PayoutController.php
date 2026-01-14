@@ -222,7 +222,7 @@ class PayoutController extends Controller
 
                 return response()->json([
                     'success' => false,
-                    'message' => $errorMessage ?? 'Swish payout error',
+                    'message' => $errorMessage ?? 'Fel vid Swish-utbetalning',
                     'errorCode' => $errorCode,
                     'errors'  => $body,
                 ], $status);
@@ -328,9 +328,181 @@ class PayoutController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(SwishRequest $request, $id, SwishPayout $swish): JsonResponse
     {
-        //
+        try {
+            $payout = Payout::find($id);
+            
+            if (!$payout) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Betalningen hittades inte'
+                ], 404);
+            }
+
+            // Validate master_password
+            $user = Auth::user();
+            $role = $user->roles->first()->name ?? null;
+            $masterPasswordValid = false;
+            
+            if ($role === 'Supplier') {
+                $supplier = $user->supplier;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } else {
+                $config = Config::getByKey('setting');
+                
+                if (!$config) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                
+                $configValue = is_array($config) ? ($config['value'] ?? null) : ($config->value ?? null);
+                
+                if (!$configValue) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                
+                $configArr = json_decode($configValue, true);
+                
+                if (!isset($configArr['master_password'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat',
+                    ], 422);
+                }
+                
+                $master_password = $configArr['master_password'];
+                $masterPasswordValid = ($request->master_password === $master_password);
+            }
+
+            if (!$masterPasswordValid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Felaktigt säkerhetslösenord',
+                ], 422);
+            }
+
+            // Use existing reference from database
+            $ref = $payout->reference;
+
+            // Normalize Swedish MSISDN to E.164 format
+            $rawAlias = preg_replace('/\s+/', '', $request->payee_alias);
+            $rawAlias = ltrim($rawAlias, '+');
+            if (preg_match('/^0\d{9}$/', $rawAlias))
+                $rawAlias = '46' . substr($rawAlias, 1);
+            $payeeAlias = $rawAlias;
+
+            $payoutInstructionUUID = strtoupper(str_replace('-', '', Str::uuid()->toString()));
+
+            $request->merge([
+                'payer_alias' => str_replace('-', '', $request->payer_alias),
+                'payout_instruction_uuid' => $payoutInstructionUUID,
+                'reference' => $ref,
+                'amount' => number_format($request->amount, 2, '.', ''),
+                'currency' => 'SEK',
+                'payout_type' => 'PAYOUT',
+                'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
+                'signing_certificate_serial_number' => $swish->getSigningCertificateSerialNumber(),
+            ]);
+
+            // Service swish call
+            $response = $swish->createPayout($request);
+
+            if (!$response->successful()) {
+                $body = $response->json();
+                $errorCode = null;
+                $errorMessage = null;
+
+                if (is_array($body)) {
+                    $first = $body[0] ?? null;
+                    if (is_array($first)) {
+                        $errorCode = $first['errorCode'] ?? null;
+                        $errorMessage = $first['errorMessage'] ?? null;
+                    }
+                }
+
+                $errorStateId = PayoutState::where('name', 'Misslyckad')->orWhere('label', 'failed')->value('id');
+
+                $payout->update([
+                    'payout_state_id' => $errorStateId ?? 1,
+                    'error_message'   => $errorMessage,
+                    'error_code'      => $errorCode,
+                ]);
+
+                $status = $response->status();
+                if ($status === 401) {
+                    $status = 422;
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage ?? 'Fel vid Swish-utbetalning',
+                    'errorCode' => $errorCode,
+                    'errors'  => $body,
+                ], $status);
+            }
+
+            $locationHeader = $response->header('Location') ?? $response->header('location');
+            $payoutId = null;
+
+            if ($locationHeader) {
+                $path = parse_url($locationHeader, PHP_URL_PATH);
+                $payoutId = $path ? basename($path) : null;
+            } else {
+                $responseJson = $response->json();
+                if (is_array($responseJson)) {
+                    $payoutId = $responseJson['id'] ?? $responseJson['payoutId'] ?? $responseJson['paymentReference'] ?? null;
+                }
+            }
+
+            $responseStatus = $response->json()['status'] ?? 'CREATED';
+            $stateId = PayoutState::where('name', $responseStatus)->orWhere('label', strtolower($responseStatus))->value('id');
+
+            if (!$stateId) {
+                $stateId = PayoutState::where('label', 'pending')->value('id') ?? 1;
+            }
+
+            $payout->update([
+                'payout_state_id' => $stateId,
+                'swish_id'        => $payoutId,
+                'location_url'    => $locationHeader,
+                'payee_alias'     => $payeeAlias,
+                'payee_ssn'       => $request->payee_ssn,
+                'amount'          => $request->amount,
+                'message'         => $request->message,
+            ]);
+ 
+            return response()->json([
+                'success' => true,
+                'data'    => [
+                    'payout'   => Payout::with(['state', 'user'])->find($payout->id),
+                    'swishRaw' => $response->json(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Swish Payout update exception', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success'  => false,
+                'message'  => 'internal_error',
+                'exception'=> $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -392,5 +564,36 @@ class PayoutController extends Controller
             ], 500);
         }
 
+    }
+
+    public function cancel($id)
+    {
+        try {
+
+            $payout = Payout::find($id);
+        
+            if (!$payout)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Betalningen hittades inte'
+                ], 404);
+            
+            $payout->cancelPayout($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'payout' => Payout::with(['state', 'user'])->find($payout->id)
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 }
