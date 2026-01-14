@@ -105,7 +105,7 @@ class Payout extends Model
 
     public static function cancelPayout($id) {
        $payout = self::find($id);
-       $payout->payout_state_id = 8; // Cancelled
+       $payout->payout_state_id = 3; // Cancelled
        $payout->save();
     }
 }

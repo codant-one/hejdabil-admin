@@ -140,7 +140,7 @@ class PayoutController extends Controller
                 $payoutInstructionUUID = strtoupper(str_replace('-', '', Str::uuid()->toString()));
 
                 // Buscar estado pendiente
-                $pendingStateId = PayoutState::where('label', 'created')->orWhere('name', 'Väntade')->value('id') ?? 1;
+                $pendingStateId = PayoutState::where('label', 'created')->orWhere('name', 'Väntande')->value('id') ?? 1;
 
                 $request->merge([
                     'payer_alias' => str_replace('-', '', $request->payer_alias),

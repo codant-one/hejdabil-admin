@@ -403,21 +403,17 @@ const updateStateId = (newStateId) => {
 
 const resolveStatus = state_id => {
   if (state_id === 1)
-    return { class: 'info' }
+    return { class: 'pending' }
   if (state_id === 2)
     return { class: 'info' }   
   if (state_id === 3)
-    return { class: 'pending' }
+    return { class: 'error' }
   if (state_id === 4)
     return { class: 'success' }
   if (state_id === 5)
     return { class: 'error' }
   if (state_id === 6)
     return { class: 'error' }   
-  if (state_id === 7)
-    return { class: 'error' }
-  if (state_id === 8)
-    return { class: 'error' }
 }
 
 const goToPayouts = () => {
@@ -618,7 +614,7 @@ onBeforeUnmount(() => {
                     false-icon="custom-unchecked-checkbox"
                 /></VListItemAction>
               </template>
-              <VListItemTitle>Väntade</VListItemTitle>
+              <VListItemTitle>Väntande</VListItemTitle>
             </VListItem>
 
             <VListItem @click="updateStateId(3)">
@@ -634,19 +630,6 @@ onBeforeUnmount(() => {
               <VListItemTitle>Avbruten</VListItemTitle>
             </VListItem>
 
-            <VListItem @click="updateStateId(7)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="state_id === 7"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Debiterad</VListItemTitle>
-            </VListItem>
-
             <VListItem @click="updateStateId(5)">
               <template #prepend>
                 <VListItemAction>
@@ -658,19 +641,6 @@ onBeforeUnmount(() => {
                 /></VListItemAction>
               </template>
               <VListItemTitle>Misslyckad</VListItemTitle>
-            </VListItem>
-
-            <VListItem @click="updateStateId(8)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="state_id === 8"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Cancel</VListItemTitle>
             </VListItem>
           </VList>
         </VMenu>
@@ -1002,7 +972,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker på att du vill avbryta betalningen <strong>{{ selectedPayout.reference }}</strong>?
+          Är du säker på att du vill avbryta betalningen <strong>{{ selectedPayout.message }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1206,7 +1176,7 @@ onBeforeUnmount(() => {
                   false-icon="custom-unchecked-checkbox"
               /></VListItemAction>
             </template>
-            <VListItemTitle>Väntade</VListItemTitle>
+            <VListItemTitle>Väntande</VListItemTitle>
           </VListItem>
 
           <VListItem @click="updateStateId(3)">
@@ -1221,18 +1191,6 @@ onBeforeUnmount(() => {
             <VListItemTitle>Avbruten</VListItemTitle>
           </VListItem>
 
-          <VListItem @click="updateStateId(7)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="state_id === 7"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Debiterad</VListItemTitle>
-          </VListItem>
-
           <VListItem @click="updateStateId(5)">
             <template #prepend>
               <VListItemAction>
@@ -1243,18 +1201,6 @@ onBeforeUnmount(() => {
               /></VListItemAction>
             </template>
             <VListItemTitle>Misslyckad</VListItemTitle>
-          </VListItem>
-
-          <VListItem @click="updateStateId(8)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="state_id === 8"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Cancel</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>
