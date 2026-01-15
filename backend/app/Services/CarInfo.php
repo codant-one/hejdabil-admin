@@ -200,14 +200,25 @@ class CarInfo
         // Buscar coincidencia en el mapeo
         foreach ($bodyMapping as $key => $name) {
             if (str_contains($bodyTypeLower, $key)) {
-                $carBody = CarBody::where('name', $name)->first();
-                return $carBody?->id;
+                $carBody = CarBody::firstOrCreate(
+                    ['name' => $name],
+                    ['name' => $name]
+                );
+                return $carBody->id;
             }
         }
 
         // Intentar búsqueda directa por nombre
         $carBody = CarBody::whereRaw('LOWER(name) LIKE ?', ['%' . $bodyTypeLower . '%'])->first();
-        return $carBody?->id;
+        
+        // Si no se encuentra, crear un nuevo registro con el nombre original
+        if (!$carBody) {
+            $carBody = CarBody::create([
+                'name' => ucfirst($bodyType)
+            ]);
+        }
+        
+        return $carBody->id;
     }
 
     /**

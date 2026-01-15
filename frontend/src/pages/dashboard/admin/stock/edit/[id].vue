@@ -480,7 +480,9 @@ const searchVehicleByPlate = async () => {
 
     try {
         const carRes = await carInfoStores.getLicensePlate(reg_num.value)
-        console.log('carRes', carRes)
+        
+        await fetchData()
+        
         // Verificar success (también manejar typo 'sucess' de la API)
         const isSuccess = carRes.success === true || carRes.sucess === true
 
