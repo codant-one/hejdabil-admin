@@ -14,8 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Log;
 
-use App\Mail\SignedDocumentMail; 
-use App\Mail\SignatureRequestMail;
+use App\Mail\SignedDocumentMail;
 
 use PDF;
 
@@ -61,32 +60,50 @@ class SignatureController extends Controller
             ], 422);
         }
 
-        // 3. Generate a unique token for the signature request.
-        $signingToken = Str::uuid()->toString();
-        
-        // 4. Create the record in the 'tokens' table.
-        $token = $agreement->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email'     => $validated['email'],
-            'token_expires_at'    => now()->addDays(7),
-            'signature_status'        => 'created',
-            'placement_x'   => $validated['x'],
-            'placement_y'   => $validated['y'],
-            'placement_page'=> $validated['page'],
-        ]);
+        // 3. Get or create token for this agreement
+        // First check for tokens with 'created' or 'delivery_issues' status
+        $token = $agreement->tokens()
+            ->whereIn('signature_status', ['created', 'delivery_issues'])
+            ->latest()
+            ->first();
 
-        // Register 'created' event
-        TokenHistory::logEvent(
-            tokenId: $token->id,
-            eventType: TokenHistory::EVENT_CREATED,
-            description: 'Avtal skapat och sparat i systemet',
-            ipAddress: $request->ip(),
-            userAgent: $request->userAgent(),
-            metadata: [
-                'recipient' => $validated['email'],
-                'agreement_id' => $agreement->id,
-            ]
-        );
+        if (!$token) {
+            // If no 'created' or 'delivery_issues' token exists, create a new one
+            $signingToken = Str::uuid()->toString();
+            
+            // 4. Create the record in the 'tokens' table.
+            $token = $agreement->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email'     => $validated['email'],
+                'token_expires_at'    => now()->addDays(7),
+                'signature_status'        => 'created',
+                'placement_x'   => $validated['x'],
+                'placement_y'   => $validated['y'],
+                'placement_page'=> $validated['page'],
+            ]);
+
+            // Register 'created' event
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_CREATED,
+                description: 'Avtal skapat och sparat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'recipient' => $validated['email'],
+                    'agreement_id' => $agreement->id,
+                ]
+            );
+        } else {
+            // Update existing token with new signature details
+            $token->update([
+                'recipient_email'     => $validated['email'],
+                'token_expires_at'    => now()->addDays(7),
+                'placement_x'   => $validated['x'],
+                'placement_y'   => $validated['y'],
+                'placement_page'=> $validated['page'],
+            ]);
+        }
 
         // 5. Send the email to the customer with the signature link.
         try {
@@ -121,17 +138,17 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            Mail::to($validated['email'])->send(new SignatureRequestMail($token));
-                        // Check if there were any failures
-            $failures = Mail::failures();
-            if (!empty($failures)) {
-                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
-            }
-                        // Check if there were any failures
-            $failures = Mail::failures();
-            if (!empty($failures)) {
-                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
-            }
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $validated['email'];
+            $subject = 'Solicitud para Firmar su Contrato';
+
+            \Mail::send(
+                'emails.agreements.signature_request'
+                , ['signingUrl' => $signingUrl]
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
             
             // Update status to delivered if the sending was successful
             $token->update(['signature_status' => 'delivered']);
@@ -194,33 +211,51 @@ class SignatureController extends Controller
             ], 422);
         }
 
-        // 3. Generate a unique token.
-        $signingToken = Str::uuid()->toString();
-        
-        // 4. Create the record in 'tokens' WITHOUT coordinates.
-        $token = $agreement->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email'     => $validated['email'],
-            'token_expires_at'    => now()->addDays(7),
-            'signature_status'        => 'created',
-            'placement_x'   => null, // Save null to identify static signature
-            'placement_y'   => null,
-            'placement_page'=> 1,    // Default to page 1
-        ]);
+        // 3. Get or create token for this agreement
+        // First check for tokens with 'created' or 'delivery_issues' status
+        $token = $agreement->tokens()
+            ->whereIn('signature_status', ['created', 'delivery_issues'])
+            ->latest()
+            ->first();
 
-        // Log 'created' event when token is created
-        TokenHistory::logEvent(
-            tokenId: $token->id,
-            eventType: TokenHistory::EVENT_CREATED,
-            description: 'Signature token created for agreement (static)',
-            ipAddress: $request->ip(),
-            userAgent: $request->userAgent(),
-            metadata: [
-                'agreement_id' => $agreement->id,
-                'recipient' => $validated['email'],
-                'static_signature' => true,
-            ]
-        );
+        if (!$token) {
+            // If no 'created' or 'delivery_issues' token exists, create a new one
+            $signingToken = Str::uuid()->toString();
+            
+            // 4. Create the record in 'tokens' WITHOUT coordinates.
+            $token = $agreement->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email'     => $validated['email'],
+                'token_expires_at'    => now()->addDays(7),
+                'signature_status'        => 'created',
+                'placement_x'   => null, // Save null to identify static signature
+                'placement_y'   => null,
+                'placement_page'=> 1,    // Default to page 1
+            ]);
+
+            // Log 'created' event when token is created
+            TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: TokenHistory::EVENT_CREATED,
+                description: 'Signature token created for agreement (static)',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'agreement_id' => $agreement->id,
+                    'recipient' => $validated['email'],
+                    'static_signature' => true,
+                ]
+            );
+        } else {
+            // Update existing token with new signature details
+            $token->update([
+                'recipient_email'     => $validated['email'],
+                'token_expires_at'    => now()->addDays(7),
+                'placement_x'   => null,
+                'placement_y'   => null,
+                'placement_page'=> 1,
+            ]);
+        }
 
         // 5. Send the email to the client.
         try {
@@ -259,7 +294,17 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            Mail::to($validated['email'])->send(new SignatureRequestMail($token));
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $validated['email'];
+            $subject = 'Solicitud para Firmar su Contrato';
+
+            \Mail::send(
+                'emails.agreements.signature_request'
+                , ['signingUrl' => $signingUrl]
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
             
             // Update status to 'delivered' if the sending was successful
             $token->update(['signature_status' => 'delivered']);

@@ -273,10 +273,14 @@ class DocumentController extends Controller
         }
 
         // Get or create token for this document
-        $token = $document->tokens()->where('signature_status', 'created')->first();
+        // First check for tokens with 'created' or 'delivery_issues' status
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['created', 'delivery_issues'])
+            ->latest()
+            ->first();
         
         if (!$token) {
-            // If no 'created' token exists, create a new one
+            // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             $token = $document->tokens()->create([
                 'signing_token' => $signingToken,
@@ -329,8 +333,18 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-            
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $validated['email'];
+            $subject = 'Solicitud para Firmar su Contrato';
+
+            \Mail::send(
+                'emails.agreements.signature_request'
+                , ['signingUrl' => $signingUrl]
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
+
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -392,10 +406,14 @@ class DocumentController extends Controller
         }
 
         // Get or create token for this document
-        $token = $document->tokens()->where('signature_status', 'created')->first();
+        // First check for tokens with 'created' or 'delivery_issues' status
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['created', 'delivery_issues'])
+            ->latest()
+            ->first();
         
         if (!$token) {
-            // If no 'created' token exists, create a new one
+            // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             $token = $document->tokens()->create([
                 'signing_token' => $signingToken,
@@ -448,14 +466,18 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-            
-            // Check if there were any failures
-            $failures = \Mail::failures();
-            if (!empty($failures)) {
-                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
-            }
-            
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $validated['email'];
+            $subject = 'Solicitud para Firmar su Contrato';
+
+            \Mail::send(
+                'emails.agreements.signature_request'
+                , ['signingUrl' => $signingUrl]
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
+
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -534,13 +556,17 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $token->recipient_email, 'resend' => true]
             );
             
-            \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
-            
-            // Check if there were any failures
-            $failures = \Mail::failures();
-            if (!empty($failures)) {
-                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
-            }
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $token->recipient_email;
+            $subject = 'Solicitud para Firmar su Contrato';
+
+            \Mail::send(
+                'emails.agreements.signature_request'
+                , ['signingUrl' => $signingUrl]
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
             
             // Update status to delivered if the resend was successful
             $token->update(['signature_status' => 'delivered']);

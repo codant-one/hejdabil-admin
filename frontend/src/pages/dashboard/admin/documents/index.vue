@@ -107,7 +107,6 @@ onMounted(async () => {
   notificationsStore.onNotificationReceived(async (notification) => {    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
-      await fetchData()
       
       // Si el tracker está abierto, actualizar también el documento actual
       if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
@@ -375,7 +374,7 @@ const trackerEvents = computed(() => {
 
   // Si tenemos historial de token, usar esos registros
   if (latestToken && latestToken.history && latestToken.history.length > 0) {
-    const history = [...latestToken.history].sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
     
     // Check if there's a 'signed' event in the history
     const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -442,7 +441,7 @@ const getEventConfig = (eventType, event) => {
       text: 'Det uppstod problem med e-postleveransen',
       color: '#FAAD14',
       bgClass: 'status-warning',
-      icon: 'custom-alert'
+      icon: 'custom-risk'
     },
     'reviewed': {
       title: 'Dokument granskat',
@@ -625,8 +624,6 @@ const submitPlacementSignatureRequest = async () => {
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
-
-    await fetchData() 
     
   } catch (error) {
     advisor.value = {
@@ -636,10 +633,11 @@ const submitPlacementSignatureRequest = async () => {
     }
     console.error('Error sending signature request:', error?.response || error)
   } finally {
+    await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
     setTimeout(() => {
-      advisor.value = { show: false }
+      advisor.value = { show: false } 
     }, 3000)
   }
 }
@@ -665,7 +663,6 @@ const submitStaticSignatureRequest = async () => {
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     };
-    await fetchData();
 
   } catch (error) {
     advisor.value = {
@@ -676,6 +673,7 @@ const submitStaticSignatureRequest = async () => {
   } finally {
     isRequestOngoing.value = false;
     signatureEmail.value = '';
+    await fetchData();
     setTimeout(() => {
       advisor.value = { show: false };
     }, 3000);
