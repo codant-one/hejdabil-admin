@@ -440,8 +440,9 @@ const viewReceipt = async () => {
       // Si no se encuentra en la lista actual (por paginación), usar el valor original
       selectedPayout.value = newlyCreatedPayout.value;
     }
-    
-    isPayoutDetailDialogVisible.value = true;
+
+    isPayoutDetailDialogVisible.value = windowWidth.value >= 1024 ? true : false
+    isPayoutDetailMobileDialogVisible.value = windowWidth.value >= 1024 ? false : true
   }
   
   advisor.value = {
