@@ -450,6 +450,12 @@ class DocumentController extends Controller
 
             \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
             
+            // Check if there were any failures
+            $failures = \Mail::failures();
+            if (!empty($failures)) {
+                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
+            }
+            
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -529,6 +535,12 @@ class DocumentController extends Controller
             );
             
             \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
+            
+            // Check if there were any failures
+            $failures = \Mail::failures();
+            if (!empty($failures)) {
+                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
+            }
             
             // Update status to delivered if the resend was successful
             $token->update(['signature_status' => 'delivered']);

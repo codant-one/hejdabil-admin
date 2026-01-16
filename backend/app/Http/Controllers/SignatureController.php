@@ -122,6 +122,16 @@ class SignatureController extends Controller
             );
 
             Mail::to($validated['email'])->send(new SignatureRequestMail($token));
+                        // Check if there were any failures
+            $failures = Mail::failures();
+            if (!empty($failures)) {
+                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
+            }
+                        // Check if there were any failures
+            $failures = Mail::failures();
+            if (!empty($failures)) {
+                throw new \Exception('Mail sending failed to: ' . implode(', ', $failures));
+            }
             
             // Update status to delivered if the sending was successful
             $token->update(['signature_status' => 'delivered']);
