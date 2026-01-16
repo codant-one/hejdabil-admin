@@ -3,9 +3,9 @@
 import { useTheme } from 'vuetify'
 import { ref, onMounted, nextTick } from 'vue'
 import { useNotificationsStore } from '@/stores/useNotifications'
+import { useSignaturesStore } from '@/stores/useSignatures'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
-import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
@@ -18,6 +18,7 @@ const props = defineProps({
 })
 
 const notificationsStore = useNotificationsStore()
+const signaturesStore = useSignaturesStore()
 
 
 // --- Refs de Estado (Ahora más simples) ---
@@ -40,9 +41,19 @@ const { global } = useTheme()
 
 // --- Funciones del Componente (Refactorizadas) ---
 
+// Registrar la visita a la página de firma
+const logPageView = async () => {
+  try {
+    await signaturesStore.logView(props.token)
+  } catch (error) {
+    // No interrumpir el flujo si falla el registro de vista
+    console.warn('No se pudo registrar la visita:', error)
+  }
+}
+
 const checkTokenStatus = async () => {
   try {
-    const response = await axios.get(`/signatures/${props.token}/status`)
+    const response = await signaturesStore.checkStatus(props.token)
 
     if (response.data.status === 'signed') {
       // El documento ya está firmado
@@ -61,9 +72,26 @@ const checkTokenStatus = async () => {
         message: 'Denna signeringslänk har löpt ut.',
       }
       return false
+    } else if (response.data.status === 'failed') {
+      finalState.value = {
+        type: 'error',
+        icon: 'mdi-alert-circle-outline',
+        title: 'Signeringen misslyckades',
+        message: 'Ett fel uppstod under signeringsprocessen. Vänligen kontakta support.',
+      }
+      return false
+    } else if (response.data.status === 'delivery_issues') {
+      finalState.value = {
+        type: 'warning',
+        icon: 'mdi-email-alert-outline',
+        title: 'Problem med e-postleverans',
+        message: 'Det fanns problem med att leverera signeringsförfrågan. Vänligen kontakta avsändaren.',
+      }
+      return false
     }
     
-    return response.data.status === 'sent'
+    // Estados válidos para continuar: sent, delivered, reviewed
+    return ['sent', 'delivered', 'reviewed'].includes(response.data.status)
   } catch (error) {
     console.error("Kunde inte verifiera token status:", error)
 
@@ -85,14 +113,10 @@ const loadPdf = async () => {
     
     if (isAlreadySigned.value) {
       // Cargar el PDF firmado
-      pdfResponse = await axios.get(`/signatures/${props.token}/get-signed-pdf`, { 
-        responseType: 'blob' 
-      })
+      pdfResponse = await signaturesStore.getSignedPdf(props.token)
     } else {
       // Cargar el PDF sin firmar
-      pdfResponse = await axios.get(`/signatures/${props.token}/get-unsigned-pdf`, { 
-        responseType: 'blob' 
-      })
+      pdfResponse = await signaturesStore.getUnsignedPdf(props.token)
     }
     
     pdfSource.value = URL.createObjectURL(pdfResponse.data)
@@ -105,7 +129,7 @@ const loadPdf = async () => {
 // Cargar los detalles de posicionamiento de la firma (solo si no está firmado)
 const loadSignatureDetails = async () => {
   try {
-    const response = await axios.get(`/signatures/${props.token}/details`)
+    const response = await signaturesStore.getDetails(props.token)
     
     const { placement_x, placement_y, placement_page, signature_alignment } = response.data
 
@@ -210,6 +234,11 @@ const loadSignatureData = async () => {
       return
     }
     
+    // Registrar la visita a la página (solo si no está firmado)
+    if (!isAlreadySigned.value) {
+      await logPageView()
+    }
+    
     // Cargar el PDF
     await loadPdf()
     
@@ -306,7 +335,7 @@ const submitFinalSignature = async (signatureImage) => {
     const payload = {
       signature: signatureImage,
     }
-    const response = await axios.post(`/signatures/submit/${props.token}`, payload)
+    const response = await signaturesStore.submitSignature(props.token, payload)
 
     // Liberar el blob del PDF sin firmar
     if (pdfSource.value) {
@@ -316,9 +345,7 @@ const submitFinalSignature = async (signatureImage) => {
 
     // Cargar el PDF firmado para mostrar y descargar
     try {
-      const pdfResponse = await axios.get(`/signatures/${props.token}/get-signed-pdf`, { 
-        responseType: 'blob' 
-      })
+      const pdfResponse = await signaturesStore.getSignedPdf(props.token)
       pdfSource.value = URL.createObjectURL(pdfResponse.data)
     } catch (pdfError) {
       console.error("No se pudo cargar el PDF firmado:", pdfError)
@@ -361,11 +388,21 @@ const submitFinalSignature = async (signatureImage) => {
       console.error('Error al enviar notificación:', notificationError)
     }
   } catch (error) {
+    // Determinar si es un error 500 u otro tipo de error
+    const isServerError = error.response?.status >= 500
+    
     finalState.value = {
       type: 'error',
       icon: 'mdi-alert-circle-outline',
-      title: 'Ett fel uppstod',
-      message: error.response?.data?.message || 'Kunde inte slutföra signeringen.',
+      title: isServerError ? 'Serverfel' : 'Ett fel uppstod',
+      message: error.response?.data?.message || (isServerError 
+        ? 'Ett oväntat fel uppstod på servern. Vänligen försök igen senare.' 
+        : 'Kunde inte slutföra signeringen.'),
+    }
+    
+    // Log adicional para errores 500
+    if (isServerError) {
+      console.error('Error 500 durante la firma:', error)
     }
   } finally {
     isSubmitting.value = false

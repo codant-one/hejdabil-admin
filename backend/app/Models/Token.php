@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Token extends Model
@@ -37,6 +38,7 @@ class Token extends Model
         'viewed_at' => 'datetime',
     ];
 
+    /**** Relationship ****/
     public function agreement(): BelongsTo
     {
         return $this->belongsTo(Agreement::class);
@@ -50,5 +52,10 @@ class Token extends Model
     public function signable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function history(): HasMany
+    {
+        return $this->hasMany(TokenHistory::class);
     }
 }

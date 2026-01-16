@@ -311,12 +311,22 @@ const downloadCSV = async () => {
 }
 
 const resolveStatus = state => {
+  if (state === 'created')
+    return { color: 'info' }
+  if (state === 'sent')
+    return { color: 'warning' }
   if (state === 'signed')
     return { color: 'info' }
   if (state === 'pending')
     return { color: 'warning' } 
-  if (state === 'sent')
-    return { color: 'success' } 
+  if (state === 'delivered')
+    return { color: 'success' }
+  if (state === 'reviewed')
+    return { color: 'info' }
+  if (state === 'delivery_issues')
+    return { color: 'warning' }
+  if (state === 'failed')
+    return { color: 'error' }
 }
 
 const startPlacementProcess = async (agreementData) => {

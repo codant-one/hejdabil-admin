@@ -92,6 +92,33 @@ class DocumentController extends Controller
                 $document->save();
             }
 
+            // Create initial token with 'created' status when document is created
+            $signingToken = Str::uuid()->toString();
+            $token = $document->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => null, // Will be set when signature is requested
+                'token_expires_at' => now()->addDays(30),
+                'signature_status' => 'created',
+                'placement_x' => 0,
+                'placement_y' => 0,
+                'placement_page' => 1, // Default to page 1
+                'signature_alignment' => 'left',
+            ]);
+
+            // Log 'created' event when document is created
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Dokument skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'document_id' => $document->id,
+                    'document_title' => $document->title,
+                    'user_id' => $document->user_id,
+                ]
+            );
+
             return response()->json([
                 'success' => true,
                 'message' => 'Dokumentet har skapats',
@@ -113,7 +140,9 @@ class DocumentController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $document = Document::with(['tokens'])->find($id);
+            $document = Document::with(['tokens.history' => function($query) {
+                $query->orderBy('created_at', 'asc');
+            }])->find($id);
 
             if (!$document) {
                 return response()->json([
@@ -125,9 +154,7 @@ class DocumentController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'document' => $document
-                ]
+                'data' => $document
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -244,25 +271,121 @@ class DocumentController extends Controller
             ], 422);
         }
 
-        $signingToken = Str::uuid()->toString();
+        // Get or create token for this document
+        $token = $document->tokens()->where('signature_status', 'created')->first();
         
-        $token = $document->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email' => $validated['email'],
-            'token_expires_at' => now()->addDays(7),
-            'signature_status' => 'sent',
-            'placement_x' => $validated['x'],
-            'placement_y' => $validated['y'],
-            'placement_page' => $validated['page'],
-            'signature_alignment' => $request->get('alignment', 'left'),
-        ]);
+        if (!$token) {
+            // If no 'created' token exists, create a new one
+            $signingToken = Str::uuid()->toString();
+            $token = $document->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'created',
+                'placement_x' => $validated['x'],
+                'placement_y' => $validated['y'],
+                'placement_page' => $validated['page'],
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
 
-        // Send email
-        \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-        
-        return response()->json([
-            'message' => 'Begäran om underskrift skickad med framgång.'
-        ]);
+            // Log 'created' event for new token
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Dokument skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'document_id' => $document->id,
+                    'document_title' => $document->title,
+                    'recipient' => $validated['email'],
+                ]
+            );
+        } else {
+            // Update existing token with signature details
+            $token->update([
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'placement_x' => $validated['x'],
+                'placement_y' => $validated['y'],
+                'placement_page' => $validated['page'],
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
+        }
+
+        // Send email with error handling
+        try {
+            if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
+                $token->update(['signature_status' => 'delivery_issues']);
+                
+                // Log delivery issues event
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: 'Ogiltig e-postadress',
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: [
+                        'recipient' => $validated['email'], 
+                        'error' => 'Invalid email format'
+                    ]
+                );
+                
+                return response()->json([
+                    'message' => 'Ogiltig e-postadress.'
+                ], 422);
+            }
+
+            // Update status to 'sent'
+            $token->update(['signature_status' => 'sent']);
+            
+            // Log 'sent' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: 'E-post skickad till ' . $validated['email'],
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
+
+            \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
+            $token->update(['signature_status' => 'delivered']);
+            
+            // Log 'delivered' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
+            
+            return response()->json([
+                'message' => 'Begäran om underskrift skickad med framgång.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending signature email for document: ' . $e->getMessage());
+            $token->update(['signature_status' => 'delivery_issues']);
+            
+            // Log 'delivery_issues' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid sändning av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'error' => $e->getMessage(), 
+                    'recipient' => $validated['email']
+                ]
+            );
+            
+            return response()->json([
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+            ], 500);
+        }
     }
 
     /**
@@ -280,24 +403,118 @@ class DocumentController extends Controller
             ], 422);
         }
 
-        $signingToken = Str::uuid()->toString();
+        // Get or create token for this document
+        $token = $document->tokens()->where('signature_status', 'created')->first();
         
-        $token = $document->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email' => $validated['email'],
-            'token_expires_at' => now()->addDays(7),
-            'signature_status' => 'sent',
-            'placement_x' => null,
-            'placement_y' => null,
-            'placement_page' => 1,
-            'signature_alignment' => $request->get('alignment', 'left'),
-        ]);
+        if (!$token) {
+            // If no 'created' token exists, create a new one
+            $signingToken = Str::uuid()->toString();
+            $token = $document->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'created',
+                'placement_x' => null,
+                'placement_y' => null,
+                'placement_page' => 1,
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
 
-        \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-        
-        return response()->json([
-            'message' => 'Begäran om underskrift skickad med framgång.'
-        ]);
+            // Log 'created' event for new token
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Dokument skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'document_id' => $document->id,
+                    'document_title' => $document->title,
+                    'recipient' => $validated['email'],
+                    'static_signature' => true,
+                ]
+            );
+        } else {
+            // Update existing token with signature details
+            $token->update([
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'placement_x' => null,
+                'placement_y' => null,
+                'placement_page' => 1,
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
+        }
+
+        try {
+            if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
+                $token->update(['signature_status' => 'delivery_issues']);
+                
+                // Log delivery issues event
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                    description: 'Ogiltig e-postadress',
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: [
+                        'recipient' => $validated['email'], 
+                        'error' => 'Invalid email format'
+                    ]
+                );
+                
+                return response()->json([
+                    'message' => 'Ogiltig e-postadress.'
+                ], 422);
+            }
+
+            // Update status to 'sent'
+            $token->update(['signature_status' => 'sent']);
+            
+            // Log 'sent' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: 'E-post skickad till ' . $validated['email'],
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
+
+            \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
+            $token->update(['signature_status' => 'delivered']);
+            
+            // Log 'delivered' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
+            
+            return response()->json([
+                'message' => 'Begäran om underskrift skickad med framgång.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error sending static signature email for document: ' . $e->getMessage());
+            $token->update(['signature_status' => 'delivery_issues']);
+            
+            // Log 'delivery_issues' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid sändning av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['error' => $e->getMessage(), 'recipient' => $validated['email']]
+            );
+            
+            return response()->json([
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+            ], 500);
+        }
     }
 
     /**
@@ -305,8 +522,11 @@ class DocumentController extends Controller
      */
     public function resendSignatureRequest(Document $document, Request $request)
     {
-        // Find the most recent token with status 'sent' for this document
-        $token = $document->tokens()->where('signature_status', 'sent')->latest()->first();
+        // Find the most recent token with allowed statuses for this document
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
+            ->latest()
+            ->first();
 
         if (!$token) {
             return response()->json([
@@ -317,12 +537,51 @@ class DocumentController extends Controller
 
         // Re-send the original email to the same recipient with the SAME token/url
         try {
+            // Update status to 'sent' before attempting to resend
+            $token->update(['signature_status' => 'sent']);
+            
+            // Register 'sent' event for the resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: 'Vidarebefordran av signaturpost påbörjad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+            );
+            
             \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
+            // Update status to delivered if the resend was successful
+            $token->update(['signature_status' => 'delivered']);
+            
+            // Register 'delivered' event for the resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: 'E-post vidarebefordrad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+            );
+            
             return response()->json([
                 'success' => true,
                 'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
             ]);
         } catch (\Exception $e) {
+            // If resend fails, change to delivery_issues
+            $token->update(['signature_status' => 'delivery_issues']);
+            
+            // Register 'delivery_issues' event for the failed resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid vidarebefordran av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['error' => $e->getMessage(), 'recipient' => $token->recipient_email, 'resend' => true]
+            );
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()

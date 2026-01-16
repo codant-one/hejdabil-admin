@@ -115,13 +115,15 @@ onMounted(async () => {
     agreementData.value = agreement
     // Fallback: if detail lacks token(s), try to hydrate from list cache
     if (agreementData.value && !agreementData.value.token && !Array.isArray(agreementData.value.tokens)) {
-      const fromList = (agreementsStores.agreements || []).find(a => a.id == id)
+      const agreements = agreementsStores.agreements || agreementsStores.getAgreements || []
+      const fromList = Array.isArray(agreements) ? agreements.find(a => a.id == id) : null
       if (fromList && fromList.token) {
         agreementData.value.token = fromList.token
       }
     }
   } catch (e) {
-    error.value = 'Kunde inte hämta avtalets information.'
+    error.value = 'Kunde inte hämta avtalets information: ' + (e.message || e)
+    console.error('Error loading agreement:', e)
   } finally {
     isLoading.value = false
   }
@@ -136,9 +138,9 @@ onMounted(async () => {
           <VCardText>
             <VAlert v-if="error" type="error" class="mb-4">{{ error }}</VAlert>
 
-            <div v-if="isLoading" class="d-flex justify-center my-8">
+            <!-- <div v-if="isLoading" class="d-flex justify-center my-8">
               <LoadingOverlay :is-loading="isRequestOngoing" />
-            </div>
+            </div>-->
 
             <template v-else>
               <div class="d-flex align-center justify-space-between flex-wrap mb-6">

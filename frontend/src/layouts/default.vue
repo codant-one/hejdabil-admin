@@ -6,8 +6,6 @@ import { useThemeConfig } from '@core/composable/useThemeConfig'
 import { AppContentLayoutNav } from '@layouts/enums'
 
 import navItems from '@/navigation/vertical'
-import axios from '@axios'
-import { openGroups } from '@layouts/utils'
 
 const menus = ref([])
 

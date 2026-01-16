@@ -244,6 +244,7 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
     Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
     Route::get('/{token}/status', [SignatureController::class, 'getTokenStatus'])->name('signatures.status');
+    Route::post('/{token}/log-view', [SignatureController::class, 'logView'])->name('signatures.logView');
     Route::get('/{token}/get-signed-pdf', [SignatureController::class, 'getSignedPdf'])->name('signatures.getSignedPdf');
 });
 

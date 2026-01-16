@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { avatarText } from '@/@core/utils/formatters'
 import pdfIcon from '@images/icon-pdf-documento.png'
-import axios from '@/plugins/axios'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
@@ -88,7 +87,7 @@ const openPreview = async () => {
   isLoadingPreview.value = true
   previewError.value = ''
   try {
-    const response = await axios.get(`/signable-documents/${documentData.value.id}/get-admin-preview-pdf`, { responseType: 'blob' })
+    const response = await documentsStores.getAdminPreviewPdf(documentData.value.id)
     previewPdfSource.value = URL.createObjectURL(response.data)
   } catch (e) {
     previewError.value = 'Kunde inte ladda PDF-förhandsvisning.'

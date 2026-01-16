@@ -1,5 +1,5 @@
 <script setup>
-import axios from '@axios'
+
 import { useThemeConfig } from '@core/composable/useThemeConfig'
 
 const { appContentLayoutNav } = useThemeConfig()
@@ -141,13 +141,6 @@ const noDataSuggestions = [
 const searchQuery = ref('')
 const searchResult = ref([])
 const router = useRouter()
-
-// 👉 fetch search result API
-watchEffect(() => {
-  axios.get('/app-bar/search', { params: { q: searchQuery.value } }).then(response => {
-    searchResult.value = response.data
-  })
-})
 
 const redirectToSuggestedOrSearchedPage = selected => {
   router.push(selected.url)

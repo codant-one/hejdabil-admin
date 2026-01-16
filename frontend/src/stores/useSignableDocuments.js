@@ -54,7 +54,7 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
             return SignableDocuments.show(id)
                 .then((response) => {
                     if(response.data.success)
-                        return Promise.resolve(response.data.data.document)
+                        return Promise.resolve(response.data.data)
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {
@@ -131,6 +131,17 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
                     this.setLoading(false)
                 })
         },
+        getAdminPreviewPdf(id) {
+            this.setLoading(true)
+
+            return SignableDocuments.getAdminPreviewPdf(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        }
     }
 })
-
