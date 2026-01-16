@@ -1160,7 +1160,17 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center">
               <span>
-                    {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                {{ 
+                  new Date(document.created_at).toLocaleString('en-GB', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit', 
+                    hour12: false 
+                  })
+                }}
               </span>
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
