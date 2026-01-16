@@ -1,6 +1,5 @@
 <script setup>
 
-import { useRoute } from 'vue-router'
 import { useDisplay } from "vuetify";
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { excelParser } from '@/plugins/csv/excelParser'
@@ -11,9 +10,7 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { formatNumber } from '@/@core/utils/formatters'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
-import PayoutDetailDialog from './PayoutDetailDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { asyncComputed } from '@vueuse/core';
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -35,7 +32,7 @@ const totalPayouts = ref(0)
 const isRequestOngoing = ref(true)
 const isAddNewPayoutDrawerVisible = ref(false)
 const isPayoutDetailDialogVisible = ref(false)
-const selectedPayoutId = ref(null)
+const isPayoutDetailMobileDialogVisible = ref(false)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCancelDialogVisible = ref(false)
 const selectedPayout = ref({})
@@ -54,7 +51,7 @@ const isMobileActionDialogVisible = ref(false);
 const userData = ref(null)
 const role = ref(null)
 const payer_alias = ref(null)
-const newlyCreatedPayoutId = ref(null)
+const newlyCreatedPayout = ref(null)
 
 const advisor = ref({
   type: '',
@@ -155,36 +152,27 @@ const showCancelDialog = payoutData => {
   selectedPayout.value = { ...payoutData }
 }
 
-const seePayout = payoutData => {
-  selectedPayoutId.value = payoutData.id
-  isPayoutDetailDialogVisible.value = true
+const seePayout = (payoutData, isMobile = false) => {
+  selectedPayout.value = { ...payoutData }
+  if (isMobile) {
+    isPayoutDetailMobileDialogVisible.value = true
+  } else {
+    isPayoutDetailDialogVisible.value = true
+  }
+}
+
+const closePayoutDetailDialog = () => {
+  isPayoutDetailDialogVisible.value = false
+  isPayoutDetailMobileDialogVisible.value = false
+  // Retrasar el reset para evitar errores mientras el diálogo se cierra
+  setTimeout(() => {
+    selectedPayout.value = {}
+  }, 300)
 }
 
 const editPayout = payoutData => {
   selectedPayout.value = { ...payoutData }
   isAddNewPayoutDrawerVisible.value = true
-}
-
-const handlePayoutUpdated = updatedPayout => {
-  // Actualizar el payout en la lista local
-  const index = payouts.value.findIndex(p => p.id === updatedPayout.id)
-  if (index !== -1) {
-    payouts.value[index] = { ...payouts.value[index], ...updatedPayout }
-  }
-  
-  advisor.value = {
-    type: 'success',
-    message: 'Status uppdaterad!',
-    show: true
-  }
-
-  setTimeout(() => {
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
 }
 
 const cancelPayout = async () => {
@@ -273,7 +261,7 @@ const submitUpdate = (payoutData, payoutId) => {
     .then((res) => {
         if (res.data.success) {
             skapatsDialog.value = true
-            newlyCreatedPayoutId.value = res.data.data.payout.id
+            newlyCreatedPayout.value = res.data.data.payout
             fetchData()
         }
 
@@ -303,7 +291,7 @@ const submitCreate = payoutData => {
     .then((res) => {
         if (res.data.success) {
             skapatsDialog.value = true;
-            newlyCreatedPayoutId.value = res.data.data.payout.id
+            newlyCreatedPayout.value = res.data.data.payout
             fetchData()
         }
 
@@ -442,8 +430,8 @@ const viewReceipt = async () => {
   // Refresh data to ensure the new payout is in the list
   await fetchData();
 
-  if (newlyCreatedPayoutId.value) {
-    selectedPayoutId.value = newlyCreatedPayoutId.value;
+  if (newlyCreatedPayout.value) {
+    selectedPayout.value = newlyCreatedPayout.value;
     isPayoutDetailDialogVisible.value = true;
   }
   
@@ -739,17 +727,25 @@ onBeforeUnmount(() => {
                 <VList>
                   <VListItem
                     v-if="$can('view','payouts')"
-                    @click="seePayout(payout)">
+                    @click="seePayout(payout, false)">
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" />
                     </template>
                     <VListItemTitle>Visa detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    v-if="$can('view','payouts') && payout.state.id === 4"
                     @click="editPayout(payout)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" />
+                    </template>
+                    <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    @click="editPayout(payout)">
+                    <template #prepend>
+                      <VIcon icon="custom-check-mark" size="24" />
                     </template>
                     <VListItemTitle>Bekräfta betalning</VListItemTitle>
                   </VListItem>
@@ -757,7 +753,7 @@ onBeforeUnmount(() => {
                     v-if="$can('view','payouts') && payout.state.id === 1"
                     @click="showCancelDialog(payout)">
                     <template #prepend>
-                      <VIcon icon="custom-cancel" size="24" />
+                      <VIcon icon="custom-unavailable" size="24" />
                     </template>
                     <VListItemTitle>Avbryt</VListItemTitle>
                   </VListItem>
@@ -866,9 +862,6 @@ onBeforeUnmount(() => {
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
-        <div v-if="!payouts.length" class="text-center py-4">
-          Uppgifter ej tillgängliga
-        </div>
       </VExpansionPanels>
 
       <VCardText
@@ -894,11 +887,187 @@ onBeforeUnmount(() => {
     </VCard>
 
     <!-- Payout Detail Dialog -->
-    <PayoutDetailDialog
-      v-model:isDialogVisible="isPayoutDetailDialogVisible"
-      :payout-id="selectedPayoutId"
-      @payout-updated="handlePayoutUpdated"
-    />
+    <VDialog
+      :model-value="isPayoutDetailDialogVisible"
+      persistent
+      scrollable
+      class="action-dialog"
+      content-class="scrollable-dialog-content"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closePayoutDetailDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">
+            Detaljer
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
+          <div class="bg-alert">
+            <div class="d-flex justify-between">
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
+              >
+                {{ selectedPayout.state.name }}
+              </div>
+
+              <VBtn
+                v-if="selectedPayout.payout_state_id === 4"
+                class="btn-light"
+                style="height: 40px !important;"
+              >
+                <VIcon icon="custom-forward" size="24" />
+                Dela kvitto
+              </VBtn>
+            </div>
+            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3">
+              <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
+              <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
+              <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
+              <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
+              <div class="d-flex gap-2 title-organization justify-center align-center">
+                  <span class="text-date-swish">
+                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}
+                  </span>
+                  <VIcon size="16" icon="custom-clock" />
+                  <span class="text-date-swish">
+                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                  </span>
+              </div>
+              <span class="text-reference">{{ selectedPayout.reference }}</span>
+            </VCardText>
+          </div>      
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          <span class="mb-2 d-flex justify-between text-neutral-3">
+            Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
+          </span>
+          <VDivider />
+          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+            Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
+          </span>
+          <VDivider v-if="selectedPayout.message" class="mb-2"/>
+          <span v-if="selectedPayout.message">
+            Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
+          </span>
+          <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
+          <span v-if="selectedPayout.error_message">
+            Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
+          </span>
+        </VCardText>
+
+        <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
+          <img 
+            src="@/assets/images/billogg_img.png" 
+            alt="Billogg image"
+          />
+          <VDivider vertical />
+          <img 
+            src="@/assets/images/swish_img.png" 
+            alt="Swish image"
+          />
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Payout Detail Dialog mobile -->
+    <VDialog
+        v-model="isPayoutDetailMobileDialogVisible"
+        fullscreen
+        persistent
+        :scrim="false"
+        transition="dialog-bottom-transition"
+        class="action-dialog dialog-fullscreen">
+       <VCard>
+        <VCardText 
+          class="dialog-title-box px-4 pb-0 flex-row" 
+          :style="selectedPayout.payout_state_id !== 5 ? 'height: 50px !important;' : ''">
+          <div class="dialog-title d-flex justify-between w-100">
+            <VBtn
+              class="btn-light"
+              @click="closePayoutDetailDialog"
+            >
+              <VIcon icon="custom-return" size="24" />
+              Gå ut
+            </VBtn>
+            <VBtn
+              v-if="selectedPayout.payout_state_id === 4"
+              class="btn-light"
+            >
+              <VIcon icon="custom-forward" size="24" />
+              Dela kvitto
+            </VBtn>
+          </div>
+        </VCardText>
+
+        <VCardText class="dialog-text px-4" v-if="selectedPayout.state">
+          <div class="bg-alert">
+            <div
+              class="status-chip"
+              :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
+            >
+              {{ selectedPayout.state.name }}
+            </div>
+            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3">
+              <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
+              <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
+              <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
+              <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
+              <div class="d-flex gap-2 title-organization justify-center align-center">
+                  <span class="text-date-swish">
+                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}
+                  </span>
+                  <VIcon size="16" icon="custom-clock" />
+                  <span class="text-date-swish">
+                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                  </span>
+              </div>
+              <span class="text-reference">{{ selectedPayout.reference }}</span>
+            </VCardText>
+          </div>      
+        </VCardText>
+
+        <VCardText class="dialog-text">
+          <span class="mb-2 d-flex justify-between text-neutral-3">
+            Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
+          </span>
+          <VDivider />
+          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+            Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
+          </span>
+          <VDivider v-if="selectedPayout.message" class="mb-2"/>
+          <span v-if="selectedPayout.message">
+            Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
+          </span>
+          <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
+          <span v-if="selectedPayout.error_message">
+            Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
+          </span>
+        </VCardText>
+
+        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4">
+          <img 
+            src="@/assets/images/billogg_img.png" 
+            alt="Billogg image"
+          />
+          <VDivider vertical />
+          <img 
+            src="@/assets/images/swish_img.png" 
+            alt="Swish image"
+          />
+        </VCardText>
+      </VCard>
+    </VDialog>
 
     <!-- 👉 Add New Payout -->
     <AddNewPayoutDialog
@@ -966,7 +1135,7 @@ onBeforeUnmount(() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-cancel" class="action-icon" />
+          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
           <div class="dialog-title">
             Avbryt betalningar
           </div>
@@ -988,7 +1157,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
-      <!-- 👉 Mobile Action Dialog -->
+    <!-- 👉 Mobile Action Dialog -->
     <VDialog
       v-model="isMobileActionDialogVisible"
       transition="dialog-bottom-transition"
@@ -998,7 +1167,7 @@ onBeforeUnmount(() => {
         <VList>
           <VListItem
             v-if="$can('view', 'payouts')"
-            @click="seePayout(selectedPayoutForAction); isMobileActionDialogVisible = false;"
+            @click="seePayout(selectedPayoutForAction, true); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
               <VIcon icon="custom-eye" size="24" />
@@ -1009,7 +1178,7 @@ onBeforeUnmount(() => {
             v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
             @click="editPayout(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <VIcon icon="custom-forward" size="24" />
+              <VIcon icon="custom-check-mark" size="24" />
             </template>
             <VListItemTitle>Bekräfta betalning</VListItemTitle>
           </VListItem>
@@ -1017,7 +1186,7 @@ onBeforeUnmount(() => {
             v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
             @click="showCancelDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <VIcon icon="custom-cancel" size="24" />
+              <VIcon icon="custom-unavailable" size="24" />
             </template>
             <VListItemTitle>Avbryt</VListItemTitle>
           </VListItem>
@@ -1051,7 +1220,7 @@ onBeforeUnmount(() => {
 
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-create-order" />
+          <VIcon size="72" icon="custom-f-checkmark" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
           <div class="dialog-title">Betalningen lyckades!</div>
@@ -1207,6 +1376,31 @@ onBeforeUnmount(() => {
     </VDialog>
   </section>
 </template>
+<style>
+  .text-amount {
+    font-weight: 600;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #5D5D5D;
+  }
+
+  .text-date-swish {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;   
+  }
+
+  .text-reference {
+    font-weight: 700;
+    font-size: 14px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #878787;   
+  }
+</style>
 <route lang="yaml">
   meta:
     action: view
