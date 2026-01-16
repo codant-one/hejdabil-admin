@@ -8,6 +8,7 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
         loading: false,
         last_page: 1,
         documentsTotalCount: 0,
+        status: null
     }),
     getters: {
         getDocuments() {
@@ -15,11 +16,20 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
         },
         getSuppliers(){
             return this.suppliers
+        },
+        getStatus(){
+            return this.status
         }
     },
     actions: {
         setLoading(payload) {
             this.loading = payload
+        },
+        setStatus(status) {
+            this.status = status
+        },
+        cleanData() {
+            this.status = null
         },
         fetchDocuments(params) {
             this.setLoading(true)

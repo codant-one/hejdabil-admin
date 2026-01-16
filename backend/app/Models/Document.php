@@ -61,6 +61,12 @@ class Document extends Model
             $query->whereSearch($filters->get('search'));
         }
 
+        if ($filters->get('status') !== null) {
+            $query->whereHas('tokens', function($q) use ($filters) {
+                $q->where('signature_status', $filters->get('status'));
+            });
+        }
+
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
             $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';
             $orderBy = $filters->get('orderBy') ? $filters->get('orderBy') : 'asc';

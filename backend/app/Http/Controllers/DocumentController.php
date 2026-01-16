@@ -48,7 +48,8 @@ class DocumentController extends Controller
                             'search',
                             'orderByField',
                             'orderBy',
-                            'supplier_id'
+                            'supplier_id',
+                            'status'
                         ])
                     );
 

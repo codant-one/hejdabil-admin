@@ -31,8 +31,10 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const status = ref(null);
 const clients = ref([])
 const isFilterDialogVisible = ref(false);
+const filtreraMobile = ref(false);
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -96,6 +98,9 @@ watchEffect(() => {
 })
 
 onMounted(async () => {
+  status.value = documentsStores.getStatus ?? status.value;
+  updateStatus(status.value);
+
   await fetchData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
@@ -152,6 +157,7 @@ async function fetchData(cleanFilters = false) {
     rowPerPage.value = 10
     currentPage.value = 1;
     supplier_id.value = null;
+    status.value = null;
   }
 
   let data = {
@@ -161,6 +167,7 @@ async function fetchData(cleanFilters = false) {
     limit: rowPerPage.value,
     page: currentPage.value,
     supplier_id: supplier_id.value,
+    status: documentsStores.getStatus ?? status.value,
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -788,6 +795,17 @@ const submitUpload = async () => {
   }
 }
 
+const updateStatus = (newStatus) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (status.value === newStatus) {
+    newStatus = null;
+  }
+
+  documentsStores.setStatus(newStatus);
+  status.value = newStatus;
+  filtreraMobile.value = false;
+};
+
 const resolveStatus = state => {
   if (state === 'created')
     return { 
@@ -990,14 +1008,113 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <VBtn 
-          class="btn-white-2" 
-          v-if="role !== 'Supplier' && role !== 'User'"
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+          <AppAutocomplete
+            v-if="role !== 'Supplier' && hasLoaded"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
           @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
         >
           <VIcon icon="custom-filter" size="24" />
-          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+          <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStatus('created')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'created'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Skapad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('delivered')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'delivered'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Levererad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('delivery_issues')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'delivery_issues'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Leveransproblem</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('reviewed')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'reviewed'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Granskad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('signed')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'signed'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Signerad</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.mdAndDown"
@@ -1835,6 +1952,81 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStatus('created')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'created'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Skapad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('delivered')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'delivered'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Levererad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('delivery_issues')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'delivery_issues'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Leveransproblem</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('reviewed')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'reviewed'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Granskad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('signed')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'signed'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Signerad</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
