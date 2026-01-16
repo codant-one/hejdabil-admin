@@ -427,11 +427,20 @@ const goToPayouts = () => {
 const viewReceipt = async () => {
   skapatsDialog.value = false;
   
-  // Refresh data to ensure the new payout is in the list
+  // Refresh data to ensure the new payout is in the list with updated state
   await fetchData();
 
   if (newlyCreatedPayout.value) {
-    selectedPayout.value = newlyCreatedPayout.value;
+    // Buscar el payout actualizado en la lista recién cargada
+    const updatedPayout = payouts.value.find(p => p.id === newlyCreatedPayout.value.id);
+    
+    if (updatedPayout) {
+      selectedPayout.value = updatedPayout;
+    } else {
+      // Si no se encuentra en la lista actual (por paginación), usar el valor original
+      selectedPayout.value = newlyCreatedPayout.value;
+    }
+    
     isPayoutDetailDialogVisible.value = true;
   }
   
