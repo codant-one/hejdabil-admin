@@ -846,8 +846,8 @@ const resolveStatus = state => {
   if (state === 'delivery_issues')
     return { 
       name: 'Leveransproblem',
-      class: 'warning',
-      icon: 'custom-alert'
+      class: 'pending',
+      icon: 'custom-risk'
     }
   if (state === 'failed')
     return { 

@@ -316,27 +316,6 @@ class DocumentController extends Controller
 
         // Send email with error handling
         try {
-            if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-                
-                // Log delivery issues event
-                \App\Models\TokenHistory::logEvent(
-                    tokenId: $token->id,
-                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress',
-                    ipAddress: $request->ip(),
-                    userAgent: $request->userAgent(),
-                    metadata: [
-                        'recipient' => $validated['email'], 
-                        'error' => 'Invalid email format'
-                    ]
-                );
-                
-                return response()->json([
-                    'message' => 'Ogiltig e-postadress.'
-                ], 422);
-            }
-
             // Update status to 'sent'
             $token->update(['signature_status' => 'sent']);
             
@@ -351,6 +330,7 @@ class DocumentController extends Controller
             );
 
             \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
+            
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -366,8 +346,13 @@ class DocumentController extends Controller
             return response()->json([
                 'message' => 'Begäran om underskrift skickad med framgång.'
             ]);
-        } catch (\Exception $e) {
-            \Log::error('Error sending signature email for document: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Error sending signature email for document: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'email' => $validated['email']
+            ]);
+            
             $token->update(['signature_status' => 'delivery_issues']);
             
             // Log 'delivery_issues' event
@@ -378,13 +363,15 @@ class DocumentController extends Controller
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
-                    'error' => $e->getMessage(), 
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
                     'recipient' => $validated['email']
                 ]
             );
             
             return response()->json([
-                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -448,27 +435,6 @@ class DocumentController extends Controller
         }
 
         try {
-            if (!filter_var($validated['email'], FILTER_VALIDATE_EMAIL)) {
-                $token->update(['signature_status' => 'delivery_issues']);
-                
-                // Log delivery issues event
-                \App\Models\TokenHistory::logEvent(
-                    tokenId: $token->id,
-                    eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                    description: 'Ogiltig e-postadress',
-                    ipAddress: $request->ip(),
-                    userAgent: $request->userAgent(),
-                    metadata: [
-                        'recipient' => $validated['email'], 
-                        'error' => 'Invalid email format'
-                    ]
-                );
-                
-                return response()->json([
-                    'message' => 'Ogiltig e-postadress.'
-                ], 422);
-            }
-
             // Update status to 'sent'
             $token->update(['signature_status' => 'sent']);
             
@@ -483,6 +449,7 @@ class DocumentController extends Controller
             );
 
             \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
+            
             $token->update(['signature_status' => 'delivered']);
             
             // Log 'delivered' event
@@ -498,8 +465,13 @@ class DocumentController extends Controller
             return response()->json([
                 'message' => 'Begäran om underskrift skickad med framgång.'
             ]);
-        } catch (\Exception $e) {
-            \Log::error('Error sending static signature email for document: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Error sending static signature email for document: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'email' => $validated['email']
+            ]);
+            
             $token->update(['signature_status' => 'delivery_issues']);
             
             // Log 'delivery_issues' event
@@ -509,11 +481,16 @@ class DocumentController extends Controller
                 description: 'Fel vid sändning av e-post',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'recipient' => $validated['email']]
+                metadata: [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'recipient' => $validated['email']
+                ]
             );
             
             return response()->json([
-                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -552,6 +529,7 @@ class DocumentController extends Controller
             );
             
             \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
+            
             // Update status to delivered if the resend was successful
             $token->update(['signature_status' => 'delivered']);
             
@@ -569,7 +547,14 @@ class DocumentController extends Controller
                 'success' => true,
                 'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            \Log::error('Error resending signature email: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'token_id' => $token->id,
+                'email' => $token->recipient_email
+            ]);
+            
             // If resend fails, change to delivery_issues
             $token->update(['signature_status' => 'delivery_issues']);
             
@@ -580,7 +565,12 @@ class DocumentController extends Controller
                 description: 'Fel vid vidarebefordran av e-post',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'recipient' => $token->recipient_email, 'resend' => true]
+                metadata: [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'recipient' => $token->recipient_email,
+                    'resend' => true
+                ]
             );
             
             return response()->json([

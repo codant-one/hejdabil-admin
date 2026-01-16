@@ -139,8 +139,12 @@ class SignatureController extends Controller
             return response()->json([
                 'message' => 'Begäran om underskrift skickad med framgång.'
             ]);
-        } catch (\Exception $e) {
-            \Log::error('Error sending signature email for document: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            \Log::error('Error sending signature email: ' . $e->getMessage(), [
+                'agreement_id' => $agreement->id,
+                'email' => $validated['email'],
+                'error_type' => get_class($e)
+            ]);
             $token->update(['signature_status' => 'delivery_issues']);
             
             // Log 'delivery_issues' event
@@ -150,11 +154,12 @@ class SignatureController extends Controller
                 description: 'Email sending failed',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'recipient' => $validated['email']]
+                metadata: ['error' => $e->getMessage(), 'error_type' => get_class($e), 'recipient' => $validated['email']]
             );
             
             return response()->json([
-                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -271,11 +276,12 @@ class SignatureController extends Controller
                 description: 'Email sending failed',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
-                metadata: ['error' => $e->getMessage(), 'recipient' => $validated['email']]
+                metadata: ['error' => $e->getMessage(), 'error_type' => get_class($e), 'recipient' => $validated['email']]
             );
             
             return response()->json([
-                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.'
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
