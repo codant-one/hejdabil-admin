@@ -99,14 +99,49 @@ onMounted(async () => {
   await fetchData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
-  notificationsStore.onNotificationReceived((notification) => {    
+  notificationsStore.onNotificationReceived(async (notification) => {    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
-      fetchData()
+      await fetchData()
+      
+      // Si el tracker está abierto, actualizar también el documento actual
+      if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+        try {
+          const response = await documentsStores.showDocument(trackerDocument.value.id)
+          trackerDocument.value = response
+        } catch (e) {
+          console.error('Failed to refresh tracker document in real-time', e)
+        }
+      }
     } else {
       console.warn('⚠️ Route does not match /documents criteria')
     }
   })
+
+  // Polling para actualizar el tracker en tiempo real si está abierto
+  const pollingInterval = setInterval(async () => {
+    // Solo hacer polling si el tracker está visible
+    if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+      try {
+        const response = await documentsStores.showDocument(trackerDocument.value.id)
+        // Solo actualizar si hay cambios en el historial
+        const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
+        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+        
+        if (newHistoryLength > currentHistoryLength) {
+          trackerDocument.value = response
+          // También actualizar la lista principal de documentos
+          await fetchData()
+          //console.log('✅ Tracker updated via polling - new events detected')
+        }
+      } catch (e) {
+        console.error('Failed to poll tracker updates:', e)
+      }
+    }
+  }, 3000) // Poll every 3 seconds
+
+  // Guardar el intervalo para limpiarlo después
+  window._trackerPollingInterval = pollingInterval
 })
 
 watchEffect(fetchData)
@@ -882,6 +917,12 @@ onBeforeUnmount(() => {
   
   // Limpiar listeners de notificaciones
   notificationsStore.offNotificationReceived()
+  
+  // Limpiar el polling interval
+  if (window._trackerPollingInterval) {
+    clearInterval(window._trackerPollingInterval)
+    window._trackerPollingInterval = null
+  }
 });
 </script>
 
