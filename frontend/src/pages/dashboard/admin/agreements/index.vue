@@ -14,6 +14,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import editIcon from "@/assets/images/icons/figma/edit.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 
+const { width: windowWidth } = useWindowSize();
 const agreementsStores = useAgreementsStores()
 const emitter = inject("emitter")
 
@@ -36,6 +37,8 @@ const existingTags = ref([])
 const isValid = ref(false)
 const selectedAgreement = ref({})
 const isStaticSignatureFlow = ref(false)
+const filtreraMobile = ref(false);
+const isFilterDialogVisible = ref(false);
 
 const agreementTypes = ref([])
 const agreement_type_id_select = ref(null)
@@ -122,6 +125,7 @@ async function fetchData(cleanFilters = false) {
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isFilterDialogVisible.value = false;
 
   await agreementsStores.fetchAgreements(data)
 
@@ -531,6 +535,16 @@ const addAgreements = () => {
   })
 }
 
+const updateType = (newType) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (agreement_type_id_select.value === newType) {
+    newType = null;
+  }
+
+  agreement_type_id_select.value = newType;
+  filtreraMobile.value = false;
+};
+
 const openLink = function (agreementData) {
   window.open(themeConfig.settings.urlStorage + agreementData.file)
 }
@@ -606,22 +620,13 @@ const goToTracker = (agreementData) => {
           />
         </div>
 
-        <AppAutocomplete
-            v-model="agreement_type_id_select"
-            placeholder="Typ av avtal"
-            :items="agreementTypes"
-            :item-title="item => item.name"
-            :item-value="item => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-        />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
         <AppAutocomplete
             v-if="role === 'SuperAdmin' || role === 'Administrator'"
             v-model="supplier_id"
+            prepend-icon="custom-profile"
             placeholder="Leverantörer"
             :items="suppliers"
             :item-title="item => item.full_name"
@@ -631,7 +636,88 @@ const goToTracker = (agreementData) => {
             clear-icon="tabler-x"
             style="width: 200px"
             :menu-props="{ maxHeight: '300px' }"
+            class="selector-user selector-truncate"
         />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+        
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateType(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Försäljningsavtal</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(2)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 2"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Obetalda</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(3)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 3"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(4)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 4"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Prisförslag</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.smAndDown"
@@ -796,12 +882,12 @@ const goToTracker = (agreementData) => {
       >
         <VIcon
           :size="$vuetify.display.smAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-agreement"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Inga avtal hittades</div>
+          <div class="empty-state-title">Du har inga sparade avtal</div>
           <div class="empty-state-text">
-            Skapa ett nytt avtal för att komma igång.
+            Här kommer alla dina köpeavtal och servicedokument att listas. Skapa ditt första avtal för att enkelt hantera och spåra dina överenskommelser.
           </div>
         </div>
         <VBtn
@@ -809,7 +895,7 @@ const goToTracker = (agreementData) => {
           v-if="$can('create', 'agreements')"
           @click="isModalVisible = true"
         >
-          Skapa avtal
+          Skapa nytt avtal
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -899,7 +985,7 @@ const goToTracker = (agreementData) => {
                       </VListItem>
                       <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
                         <template #prepend>
-                          <VIcon icon="mdi-draw" class="mr-2" />
+                          <VIcon icon="custom-signature" class="mr-2" />
                         </template>
                         <VListItemTitle>Signera</VListItemTitle>
                       </VListItem>
@@ -907,7 +993,7 @@ const goToTracker = (agreementData) => {
                          v-if="$can('view', 'agreements')"
                          @click="openLink(agreement)">
                         <template #prepend>
-                          <VIcon icon="mdi-file-pdf-box" class="mr-2" />
+                          <VIcon icon="custom-pdf" class="mr-2" />
                         </template>
                         <VListItemTitle>Visa som PDF</VListItemTitle>
                       </VListItem>
@@ -1225,6 +1311,114 @@ const goToTracker = (agreementData) => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateType(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Försäljningsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(2)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 2"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Obetalda</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(3)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(4)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 4"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Prisförslag</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <AppAutocomplete
+            v-if="role === 'SuperAdmin' || role === 'Administrator'"
+            v-model="supplier_id"
+            prepend-icon="custom-profile"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="item => item.full_name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            style="width: 200px"
+            :menu-props="{ maxHeight: '300px' }"
+            class="selector-user selector-truncate"
+        />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
   </section>
 </template>
 
@@ -1290,6 +1484,7 @@ const goToTracker = (agreementData) => {
   .custom-expansion-panels {
     /* Remove default margins/shadows if needed */
     margin-top: 0;
+    background-color: #f6f6f6 !important;
   }
 
   :deep(.custom-expansion-panels .v-expansion-panel) {
@@ -1315,17 +1510,21 @@ const goToTracker = (agreementData) => {
   }
 
   .btn-details {
-    border-color: #E0E0E0;
+    /*border-color: #E0E0E0;*/
     text-transform: none;
     letter-spacing: normal;
     font-weight: 500;
+    border: solid 1px #6e9383 !important;
+    background-color: transparent !important;
   }
 
   .btn-actions {
-    border-color: #E0E0E0;
+    /*border-color: #E0E0E0;*/
     border-radius: 50%;
     width: 40px;
     height: 40px;
+    border: solid 1px #6e9383 !important;
+    background-color: transparent !important;
   }
 </style>
 <route lang="yaml">
