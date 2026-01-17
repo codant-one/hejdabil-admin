@@ -82,6 +82,8 @@ const sale_comments = ref(null)
 
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
+const tasks = ref([])
+
 const organization_number_purchase = ref('')
 const address_purchase = ref('')
 const postal_code_purchase = ref('')
@@ -156,6 +158,8 @@ watchEffect(async () => {
             phone_purchase.value = props.vehicle.client_purchase?.phone
             fullname_purchase.value = props.vehicle.client_purchase?.fullname
             email_purchase.value = props.vehicle.client_purchase?.email
+
+            tasks.value = props.vehicle.tasks || []
 
             vehicleImages.value = [
                 { url: car },
@@ -359,8 +363,9 @@ const setThumbsSwiper = (swiper) => {
                                 <VTab value="1"><span>Information om bilen</span></VTab>
                                 <VTab value="2"><span>Prisinformation</span></VTab>
                                 <VTab value="3"><span>Säljaren</span></VTab>
-                                <VTab value="4" v-if="state_id === 12"><span>Försäljningsuppgifter</span></VTab>
-                                <VTab value="5" v-if="state_id === 12"><span>Köpare</span></VTab>
+                                <VTab value="4"><span>Kostnader</span></VTab>
+                                <VTab value="5" v-if="state_id === 12"><span>Försäljningsuppgifter</span></VTab>
+                                <VTab value="6" v-if="state_id === 12"><span>Köpare</span></VTab>
                             </VTabs>
                             <VWindow v-model="tab">
                                 <VWindowItem value="0">
@@ -393,7 +398,7 @@ const setThumbsSwiper = (swiper) => {
                                                     <span class="title-detail"> Drivmedel </span>
                                                     <span class="subtitle-detail">{{ fuel }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="gearbox">
                                                     <span class="title-detail"> Växellåda </span>
                                                     <span class="subtitle-detail">{{ gearbox }}</span>
                                                 </div>
@@ -451,10 +456,6 @@ const setThumbsSwiper = (swiper) => {
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Senaste service: Mil/datum</span>
-                                                    <span class="subtitle-detail">{{ last_service }} Mil / {{ last_service_date }}</span>
-                                                </div>
-                                                <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
                                                     <span class="subtitle-detail ml-2">
                                                         <VRadioGroup v-model="dist_belt" inline readonly class="radio-form">
@@ -468,10 +469,14 @@ const setThumbsSwiper = (swiper) => {
                                                     </span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Kamrem bytt vid Mil/datum </span>
-                                                    <span class="subtitle-detail">{{ last_dist_belt }} Mil / {{ last_dist_belt_date }}</span>
+                                                    <span class="title-detail"> Senaste service: Mil/datum</span>
+                                                    <span class="subtitle-detail">{{ last_service ?? 0 }} Mil / {{ last_service_date ?? '0000-00-00' }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Kamrem bytt vid Mil/datum </span>
+                                                    <span class="subtitle-detail">{{ last_dist_belt ?? 0 }} Mil / {{ last_dist_belt_date ?? '0000-00-00' }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="comments">
                                                     <span class="title-detail"> Anteckningar </span>
                                                     <span class="subtitle-detail">{{ comments }}</span>
                                                 </div>
@@ -503,12 +508,12 @@ const setThumbsSwiper = (swiper) => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                            <div class="flex-1-1 d-flex flex-column gap-4" v-if="vehicle.total_sale">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Försäljningspris</span>
                                                     <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="vehicle.total_sale">
                                                     <span class="title-detail"> Vinst</span>
                                                     <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} {{ currency_sale }}</span>
                                                 </div>
@@ -550,7 +555,29 @@ const setThumbsSwiper = (swiper) => {
                                         </div>
                                     </VContainer>
                                 </VWindowItem>
-                                <VWindowItem value="4" v-if="state_id === 12">
+                                <VWindowItem value="4">
+                                    <VContainer fluid class="px-3">
+                                        <div class="d-flex gap-6">
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> Totala kostnader </span>
+                                                    <span class="subtitle-detail">{{ formatNumber((tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_purchase }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div 
+                                                    v-for="(task, index) in tasks"
+                                                    :key="task.id"
+                                                    class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> {{ task.measure }} </span>
+                                                    <span class="subtitle-detail" v-if="task.description">{{ task.description }}</span>
+                                                    <span class="subtitle-detail">{{ formatNumber(task.cost ?? 0) }} {{ currency_purchase }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </VContainer>
+                                </VWindowItem>
+                                <VWindowItem value="5" v-if="state_id === 12">
                                     <VContainer fluid class="px-3">
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
@@ -588,7 +615,7 @@ const setThumbsSwiper = (swiper) => {
                                                     <span class="title-detail"> Försäljningsdag</span>
                                                     <span class="subtitle-detail">{{ sale_date }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="sale_comments">
                                                     <span class="title-detail"> Comments</span>
                                                     <span class="subtitle-detail">{{ sale_comments }}</span>
                                                 </div>
@@ -596,7 +623,7 @@ const setThumbsSwiper = (swiper) => {
                                         </div>
                                     </VContainer>
                                 </VWindowItem>
-                                <VWindowItem value="5" v-if="state_id === 12">
+                                <VWindowItem value="6" v-if="state_id === 12">
                                     <VContainer fluid class="px-3">
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">

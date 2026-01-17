@@ -13,7 +13,6 @@ import { useRoute } from 'vue-router'
 import logo from "@images/logos/billogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
-import axios from '@/plugins/axios'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const documentsStores = useSignableDocumentsStores()
@@ -32,8 +31,10 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const status = ref(null);
 const clients = ref([])
 const isFilterDialogVisible = ref(false);
+const filtreraMobile = ref(false);
 
 const documents = ref([])
 const searchQuery = ref('')
@@ -97,17 +98,54 @@ watchEffect(() => {
 })
 
 onMounted(async () => {
+  status.value = documentsStores.getStatus ?? status.value;
+  updateStatus(status.value);
+
   await fetchData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
-  notificationsStore.onNotificationReceived((notification) => {    
+  notificationsStore.onNotificationReceived(async (notification) => {    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
-      fetchData()
+      
+      // Si el tracker está abierto, actualizar también el documento actual
+      if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+        try {
+          const response = await documentsStores.showDocument(trackerDocument.value.id)
+          trackerDocument.value = response
+        } catch (e) {
+          console.error('Failed to refresh tracker document in real-time', e)
+        }
+      }
     } else {
       console.warn('⚠️ Route does not match /documents criteria')
     }
   })
+
+  // Polling para actualizar el tracker en tiempo real si está abierto
+  const pollingInterval = setInterval(async () => {
+    // Solo hacer polling si el tracker está visible
+    if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+      try {
+        const response = await documentsStores.showDocument(trackerDocument.value.id)
+        // Solo actualizar si hay cambios en el historial
+        const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
+        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+        
+        if (newHistoryLength > currentHistoryLength) {
+          trackerDocument.value = response
+          // También actualizar la lista principal de documentos
+          await fetchData()
+          //console.log('✅ Tracker updated via polling - new events detected')
+        }
+      } catch (e) {
+        console.error('Failed to poll tracker updates:', e)
+      }
+    }
+  }, 3000) // Poll every 3 seconds
+
+  // Guardar el intervalo para limpiarlo después
+  window._trackerPollingInterval = pollingInterval
 })
 
 watchEffect(fetchData)
@@ -118,6 +156,7 @@ async function fetchData(cleanFilters = false) {
     rowPerPage.value = 10
     currentPage.value = 1;
     supplier_id.value = null;
+    status.value = null;
   }
 
   let data = {
@@ -127,6 +166,7 @@ async function fetchData(cleanFilters = false) {
     limit: rowPerPage.value,
     page: currentPage.value,
     supplier_id: supplier_id.value,
+    status: documentsStores.getStatus ?? status.value,
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -328,91 +368,113 @@ const trackerEvents = computed(() => {
   if (!trackerDocument.value) return []
 
   const items = []
-
-  // Use most recent token for status markers
   const latestToken = (trackerDocument.value.tokens || []).length
     ? [...trackerDocument.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
-  
-  // Created event
-  items.push({
-    key: 'created',
-    title: 'Dokument skapat',
-    meta: new Date(trackerDocument.value.created_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-    text: trackerDocument.value.title,
-    color: '#00EEB0', // Green
-    bgClass: 'status-success',
-    icon: 'custom-check-white',
-    showFile: latestToken?.signature_status === 'signed' ? false : true,
-  })
 
-  if (latestToken) {
-    // Sent event
-    items.push({
-      key: 'sent',
-      title: 'Signeringsförfrågan skickad',
-      meta: new Date(latestToken.created_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-      text: `Skickad till ${latestToken.recipient_email}`,
-      color: '#1890FF', // Blue
-      bgClass: 'status-info',
-      icon: 'custom-eye',
-      showFile: false,
+  // Si tenemos historial de token, usar esos registros
+  if (latestToken && latestToken.history && latestToken.history.length > 0) {
+    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+    
+    // Check if there's a 'signed' event in the history
+    const hasSignedEvent = history.some(event => event.event_type === 'signed')
+    
+    history.forEach(event => {
+      const eventConfig = getEventConfig(event.event_type, event)
+      if (eventConfig) {
+        items.push({
+          key: event.event_type,
+          title: eventConfig.title,
+          meta: new Date(event.created_at).toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+          }),
+          text: event.description || eventConfig.text,
+          color: eventConfig.color,
+          bgClass: eventConfig.bgClass,
+          icon: eventConfig.icon,
+          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+          ipAddress: event.ip_address,
+          userAgent: event.user_agent
+        })
+      }
     })
-
-    // Viewed event
-    if (latestToken.viewed_at) {
-      items.push({
-        key: 'viewed',
-        title: 'Dokument visat av kunden',
-        meta: new Date(latestToken.viewed_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        text: 'Kunden har öppnat signeringslänken.',
-        color: '#FAAD14', // Yellow
-        bgClass: 'status-warning',
-        icon: 'custom-risk-white',
-        showFile: false,
-      })
-    }
-
-    // Signed event
-    if (latestToken.signature_status === 'signed' && latestToken.signed_at) {
-      items.push({
-        key: 'signed',
-        title: 'Dokument signerat',
-        meta: new Date(latestToken.signed_at).toLocaleString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        text: 'Signeringen är slutförd.',
-        color: '#1890FF', // Blue
-        bgClass: 'status-info',
-        icon: 'custom-star',
-        showFile: true,
-      })
-    } else if (latestToken.signature_status === 'sent') {
-      items.push({
-        key: 'pending',
-        title: 'Väntar på signering',
-        meta: 'Aktiv begäran',
-        text: 'Mottagaren har inte signerat ännu.',
-        color: '#FAAD14', // Yellow
-        bgClass: 'status-warning',
-        icon: 'custom-risk-white',
-        showFile: false,
-      })
-    }
   }
   
-  // Assign sides strictly alternating (right for odd index 0,2,4... left for even index 1,3,5...)
+  // Assign sides strictly alternating
   return items.map((item, index) => ({
-      ...item,
-      side: index % 2 === 0 ? 'right' : 'left'
+    ...item,
+    side: index % 2 === 0 ? 'right' : 'left'
   }))
 })
+
+const getEventConfig = (eventType, event) => {
+  const configs = {
+    'created': {
+      title: 'Dokument skapat',
+      text: trackerDocument.value?.title || 'Dokument',
+      color: '#00EEB0',
+      bgClass: 'status-info',
+      icon: 'custom-star'
+    },
+    'sent': {
+      title: 'Signeringsförfrågan skickad',
+      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      color: '#1890FF',
+      bgClass: 'status-success',
+      icon: 'custom-forward'
+    },
+    'delivered': {
+      title: 'E-post levererad',
+      text: 'E-postmeddelandet har levererats framgångsrikt',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-check-mark-2'
+    },
+    'delivery_issues': {
+      title: 'Leveransproblem',
+      text: 'Det uppstod problem med e-postleveransen',
+      color: '#FAAD14',
+      bgClass: 'status-warning',
+      icon: 'custom-risk'
+    },
+    'reviewed': {
+      title: 'Dokument granskat',
+      text: 'Kunden har öppnat och granskat dokumentet',
+      color: '#1890FF',
+      bgClass: 'status-info',
+      icon: 'custom-eye'
+    },
+    'signed': {
+      title: 'Dokument signerat',
+      text: 'Signeringen är slutförd',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-signature'
+    },
+    'failed': {
+      title: 'Signeringen misslyckades',
+      text: 'Ett fel inträffade under signeringsprocessen',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-close'
+    }
+  }
+  return configs[eventType] || null
+}
 
 const openTracker = async (doc) => {
   trackerDocument.value = doc
   isTrackerDialogVisible.value = true
   
   try {
-    const fullDoc = await documentsStores.showDocument(doc.id)
-    trackerDocument.value = fullDoc
+    const response = await documentsStores.showDocument(doc.id)
+    trackerDocument.value = response
   } catch (e) {
     console.error('Failed to refresh document details', e)
   }
@@ -424,7 +486,7 @@ const openTrackerPreview = async () => {
   isTrackerPreviewLoading.value = true
   trackerPreviewError.value = ''
   try {
-    const response = await axios.get(`/signable-documents/${trackerDocument.value.id}/get-admin-preview-pdf`, { responseType: 'blob' })
+    const response = await documentsStores.getAdminPreviewPdf(trackerDocument.value.id)
     trackerPreviewPdfSource.value = URL.createObjectURL(response.data)
   } catch (e) {
     trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
@@ -447,9 +509,7 @@ const startPlacementProcess = async (documentData) => {
   signaturePlacement.value.visible = false;
 
   try {
-    const response = await axios.get(`/signable-documents/${documentData.id}/get-admin-preview-pdf`, {
-        responseType: 'blob',
-    })
+    const response = await documentsStores.getAdminPreviewPdf(documentData.id)
     placementPdfSource.value = URL.createObjectURL(response.data);
   } catch (error) {
     advisor.value = { type: 'error', message: 'Kunde inte ladda PDF-dokumentet.', show: true };
@@ -564,8 +624,6 @@ const submitPlacementSignatureRequest = async () => {
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     }
-
-    await fetchData() 
     
   } catch (error) {
     advisor.value = {
@@ -575,10 +633,11 @@ const submitPlacementSignatureRequest = async () => {
     }
     console.error('Error sending signature request:', error?.response || error)
   } finally {
+    await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
     setTimeout(() => {
-      advisor.value = { show: false }
+      advisor.value = { show: false } 
     }, 3000)
   }
 }
@@ -604,7 +663,6 @@ const submitStaticSignatureRequest = async () => {
       message: response.data.message || 'Signeringsförfrågan har skickats!',
       show: true,
     };
-    await fetchData();
 
   } catch (error) {
     advisor.value = {
@@ -615,6 +673,7 @@ const submitStaticSignatureRequest = async () => {
   } finally {
     isRequestOngoing.value = false;
     signatureEmail.value = '';
+    await fetchData();
     setTimeout(() => {
       advisor.value = { show: false };
     }, 3000);
@@ -734,7 +793,30 @@ const submitUpload = async () => {
   }
 }
 
+const updateStatus = (newStatus) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (status.value === newStatus) {
+    newStatus = null;
+  }
+
+  documentsStores.setStatus(newStatus);
+  status.value = newStatus;
+  filtreraMobile.value = false;
+};
+
 const resolveStatus = state => {
+  if (state === 'created')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'sent')
+    return { 
+      name: 'Skickad',
+      class: 'success',
+      icon: 'custom-forward'
+    }
   if (state === 'signed')
     return { 
       name: 'Signerad',
@@ -747,11 +829,29 @@ const resolveStatus = state => {
       class: 'info',
       icon: 'custom-star'
     }
-  if (state === 'sent')
+  if (state === 'delivered')
     return { 
-      name: 'Skickad',
+      name: 'Levererad',
+      class: 'success',
+      icon: 'custom-check-mark-2'
+    }
+  if (state === 'reviewed')
+    return { 
+      name: 'Granskad',
+      class: 'info',
+      icon: 'custom-eye'
+    }
+  if (state === 'delivery_issues')
+    return { 
+      name: 'Leveransproblem',
       class: 'pending',
-      icon: 'custom-forward'
+      icon: 'custom-risk'
+    }
+  if (state === 'failed')
+    return { 
+      name: 'Misslyckades',
+      class: 'error',
+      icon: 'custom-close'
     }
 }
 
@@ -833,6 +933,12 @@ onBeforeUnmount(() => {
   
   // Limpiar listeners de notificaciones
   notificationsStore.offNotificationReceived()
+  
+  // Limpiar el polling interval
+  if (window._trackerPollingInterval) {
+    clearInterval(window._trackerPollingInterval)
+    window._trackerPollingInterval = null
+  }
 });
 </script>
 
@@ -900,14 +1006,113 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <VBtn 
-          class="btn-white-2" 
-          v-if="role !== 'Supplier' && role !== 'User'"
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+          <AppAutocomplete
+            v-if="role !== 'Supplier' && hasLoaded"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
           @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
         >
           <VIcon icon="custom-filter" size="24" />
-          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+          <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStatus('created')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'created'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Skapad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('delivered')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'delivered'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Levererad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('delivery_issues')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'delivery_issues'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Leveransproblem</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('reviewed')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'reviewed'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Granskad</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStatus('signed')">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="status === 'signed'"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Signerad</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.mdAndDown"
@@ -955,7 +1160,17 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center">
               <span>
-                    {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+                {{ 
+                  new Date(document.created_at).toLocaleString('en-GB', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit', 
+                    second: '2-digit', 
+                    hour12: false 
+                  })
+                }}
               </span>
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
@@ -1063,7 +1278,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed')"
+                    v-if="$can('edit','signed-documents') && (document.tokens?.[0]?.signature_status !== 'sent' && document.tokens?.[0]?.signature_status !== 'signed' && document.tokens?.[0]?.signature_status !== 'delivered')"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
                       <VIcon icon="custom-signature" size="24" class="mr-2" />
@@ -1071,7 +1286,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'sent'"
+                    v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'delivered'"
                     @click="openResendSignature(document)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" class="mr-2" />
@@ -1688,7 +1903,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Spårare</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed')"
+            v-if="$can('edit', 'signed-documents') && (selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed' && selectedDocumentForAction.tokens?.[0]?.signature_status !== 'delivered')"
             @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1697,7 +1912,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'sent'"
+            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'delivered'"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1745,6 +1960,81 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStatus('created')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'created'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Skapad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('delivered')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'delivered'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Levererad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('delivery_issues')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'delivery_issues'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Leveransproblem</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('reviewed')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'reviewed'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Granskad</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStatus('signed')">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="status === 'signed'"
+                  class="ml-3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Signerad</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 

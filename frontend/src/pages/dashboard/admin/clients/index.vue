@@ -726,9 +726,6 @@ onBeforeUnmount(() => {
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
-        <div v-if="!clients.length" class="text-center py-4">
-          Uppgifter ej tillgängliga
-        </div>
       </VExpansionPanels>
 
       <VCardText

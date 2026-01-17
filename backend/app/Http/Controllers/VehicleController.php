@@ -60,7 +60,8 @@ class VehicleController extends Controller
                         'gearbox',
                         'fuel',
                         'client_purchase.client',
-                        'client_sale.client'
+                        'client_sale.client',
+                        'tasks'
                     ])->applyFilters(
                         $request->only([
                             'search',

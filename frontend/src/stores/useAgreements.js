@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import Agreements from '@/api/agreements'
-import vehicles from '@/api/vehicles'
 
 export const useAgreementsStores = defineStore('agreements', {
     state: () => ({

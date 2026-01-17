@@ -277,10 +277,8 @@ const checkIfMobile = () => {
 
 const formatDateDisplay = (dateString) => {
     if (!dateString) return ''
-    const date = new Date(dateString)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    // Parsear directamente el string para evitar problemas de zona horaria
+    const [year, month, day] = dateString.split('T')[0].split('-')
     return `${year}/${month}/${day}`
 }
 
@@ -604,6 +602,7 @@ const createTask = async () => {
 
                         measure.value = null
                         cost.value = null
+                        description.value = null
                         start_date.value = null
                         end_date.value = null
 
@@ -670,6 +669,7 @@ const updateTask = async () => {
                         selectedTask.value.vehicle_id = null
                         selectedTask.value.measure = null
                         selectedTask.value.cost = null
+                        selectedTask.value.description = null
                         selectedTask.value.start_date = null
                         selectedTask.value.end_date = null
 
@@ -2289,7 +2289,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                     {{ formatDateDisplay(task.start_date) }}
                                                 </span>
                                                 <span class="note-value-field w-100">
-                                                    {{ formatDateDisplay(task.start_date) }}
+                                                    {{ formatDateDisplay(task.end_date) }}
                                                 </span>
                                             </div>         
 
@@ -2641,7 +2641,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 <VCol cols="12" md="12">
                                     <VTextField
                                         v-model="measure"
-                                        label="¿Vad ska goras?*"
+                                        label="Vad ska goras?*"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
@@ -2730,7 +2730,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="measure"
-                                    label="¿Vad ska goras?*"
+                                    label="Vad ska goras?*"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -2833,7 +2833,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 <VCol cols="12" md="12">
                                     <VTextField
                                         v-model="selectedTask.measure"
-                                        label="¿Vad ska goras?*"
+                                        label="Vad ska goras?*"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
@@ -3005,7 +3005,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <VCol cols="12" md="12">
                                 <VTextField
                                     v-model="selectedTask.measure"
-                                    label="¿Vad ska goras?*"
+                                    label="Vad ska goras?*"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
