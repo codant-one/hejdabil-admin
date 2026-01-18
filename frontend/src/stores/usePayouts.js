@@ -107,6 +107,25 @@ export const usePayoutsStores = defineStore('payouts', {
                     this.setLoading(false)
                 })  
         },
+        saveReceiptImage(id, formData) {
+            this.setLoading(true)
+
+            return Payouts.saveReceiptImage(id, formData)
+                .then((response) => {
+                    if(response.data.success) {
+                        // Update payout in store with new image_url
+                        let index = this.payouts.findIndex((item) => item.id === id)
+                        if(index !== -1) {
+                            this.payouts[index] = response.data.data.payout
+                        }
+                    }
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
         info() {
             this.setLoading(true)
 

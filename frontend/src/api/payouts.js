@@ -26,6 +26,14 @@ class Payouts {
         return axios.post(`/payouts/${id}/cancel`)
     }
 
+    saveReceiptImage(id, formData){
+        return axios.post(`/payouts/${id}/save-receipt-image`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+    }
+
     info(){
         return axios.get(`/payouts/info/all`)
     }
