@@ -648,17 +648,28 @@ const captureAndShare = async (method) => {
 
 const shareToWhatsApp = () => {
   const imageUrl = selectedPayout.value.image_url
+  
+  // Create message with receipt details and image URL
   const message = encodeURIComponent(
     `Swish-betalningskvitto\n` +
     `Referens: ${selectedPayout.value.reference}\n` +
     `Meddelande: ${selectedPayout.value.message}\n` +
     `Belopp: ${formatNumber(selectedPayout.value.amount)} kr\n` +
     `Datum: ${formatDateTime(selectedPayout.value.created_at)}\n\n` +
-    `Se kvitto: ${imageUrl}`
+    `${imageUrl}`
   )
   
-  // Open WhatsApp Web/Desktop with the message and link
-  window.open(`https://wa.me/?text=${message}`, '_blank')
+  // Create anchor element with WhatsApp link (as per WhatsApp documentation)
+  const link = document.createElement('a')
+  link.setAttribute('aria-label', 'Chat on WhatsApp')
+  link.href = `https://wa.me/?text=${message}`
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  
+  // Append to body, click, and remove
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
   
   advisor.value = {
     type: 'success',
