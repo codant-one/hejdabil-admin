@@ -1408,7 +1408,7 @@ const downloadImage = () => {
             src="@/assets/images/billogg_img.png" 
             alt="Billogg image"
           />
-          <VDivider vertical />
+          <VDivider vertical class="my-auto"/>
           <img 
             src="@/assets/images/swish_img.png" 
             alt="Swish image"
