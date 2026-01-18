@@ -1403,7 +1403,7 @@ const downloadImage = () => {
           </span>
         </VCardText>
 
-        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4">
+        <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="height: 32px !important;">
           <img 
             src="@/assets/images/billogg_img.png" 
             alt="Billogg image"
