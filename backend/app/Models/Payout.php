@@ -11,6 +11,7 @@ class Payout extends Model
     use HasFactory;
 
     protected $guarded = [];
+    protected $appends = ['image_url'];
 
     /**** Relationship ****/
     public function state() {
@@ -107,6 +108,14 @@ class Payout extends Model
        $payout = self::find($id);
        $payout->payout_state_id = 3; // Cancelled
        $payout->save();
+    }
+
+    /**** Accessors ****/
+    public function getImageUrlAttribute() {
+        if ($this->image) {
+            return url('storage/' . $this->image);
+        }
+        return null;
     }
 }
 

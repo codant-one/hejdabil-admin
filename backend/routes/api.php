@@ -221,6 +221,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'payouts'], function () {
         Route::get('/info/all', [PayoutController::class, 'info']);
         Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
+        Route::post('/{payout}/save-receipt-image', [PayoutController::class, 'saveReceiptImage'])->name('payouts.saveReceiptImage');
     });
 
     //Configs

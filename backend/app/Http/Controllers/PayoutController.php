@@ -596,4 +596,58 @@ class PayoutController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Save receipt image from frontend
+     */
+    public function saveReceiptImage(Request $request, $id)
+    {
+        try {
+            $payout = Payout::find($id);
+        
+            if (!$payout) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Betalningen hittades inte'
+                ], 404);
+            }
+
+            // Validate that the image is coming
+            $request->validate([
+                'image' => 'required|file|mimes:png,jpg,jpeg|max:5120' // max 5MB
+            ]);
+
+            // Save the image
+            $image = $request->file('image');
+            $fileName = 'payouts/' . $payout->reference . '_' . time() . '.png';
+            
+            // Save in storage/app/public/payouts
+            $path = $image->storeAs('public/' . dirname($fileName), basename($fileName));
+            
+            // Update the payout with the image path
+            $payout->image = $fileName;
+            $payout->save();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'payout' => Payout::with(['state', 'user'])->find($payout->id),
+                    'image_url' => $payout->image_url
+                ]
+            ]);
+
+        } catch(\Exception $ex) {
+            Log::error('Error saving receipt image', [
+                'payout_id' => $id,
+                'message' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Fel vid sparande av bilden',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }
