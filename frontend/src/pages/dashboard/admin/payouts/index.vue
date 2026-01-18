@@ -646,65 +646,24 @@ const captureAndShare = async (method) => {
   }
 }
 
-const shareToWhatsApp = async () => {
-  try {
-    // Check if Web Share API is available
-    if (navigator.share && navigator.canShare) {
-      // Fetch the image from URL and convert to blob
-      const imageUrl = selectedPayout.value.image_url
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      
-      // Create file from blob
-      const file = new File(
-        [blob], 
-        `swish-kvitto-${selectedPayout.value.reference}.png`, 
-        { type: 'image/png' }
-      )
-      
-      // Prepare share data
-      const shareData = {
-        title: 'Swish-betalningskvitto',
-        text: `Swish-betalningskvitto\nReferens: ${selectedPayout.value.reference}\nMeddelande: ${selectedPayout.value.message}\nBelopp: ${formatNumber(selectedPayout.value.amount)} kr\nDatum: ${formatDateTime(selectedPayout.value.created_at)}`,
-        files: [file]
-      }
-      
-      // Check if we can share with files
-      if (navigator.canShare(shareData)) {
-        await navigator.share(shareData)
-        
-        advisor.value = {
-          type: 'success',
-          message: 'Kvitto delat framgångsrikt',
-          show: true
-        }
-      } else {
-        // Fallback to URL share if files not supported
-        throw new Error('File sharing not supported')
-      }
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      throw new Error('Web Share API not supported')
-    }
-  } catch (error) {
-    // Fallback: Open WhatsApp with text and link
-    const imageUrl = selectedPayout.value.image_url
-    const message = encodeURIComponent(
-      `Swish-betalningskvitto\n` +
-      `Referens: ${selectedPayout.value.reference}\n` +
-      `Meddelande: ${selectedPayout.value.message}\n` +
-      `Belopp: ${formatNumber(selectedPayout.value.amount)} kr\n` +
-      `Datum: ${formatDateTime(selectedPayout.value.created_at)}\n\n` +
-      `Se kvitto: ${imageUrl}`
-    )
-    
-    window.open(`https://wa.me/?text=${message}`, '_blank')
-    
-    advisor.value = {
-      type: 'success',
-      message: 'Öppnar WhatsApp...',
-      show: true
-    }
+const shareToWhatsApp = () => {
+  const imageUrl = selectedPayout.value.image_url
+  const message = encodeURIComponent(
+    `Swish-betalningskvitto\n` +
+    `Referens: ${selectedPayout.value.reference}\n` +
+    `Meddelande: ${selectedPayout.value.message}\n` +
+    `Belopp: ${formatNumber(selectedPayout.value.amount)} kr\n` +
+    `Datum: ${formatDateTime(selectedPayout.value.created_at)}\n\n` +
+    `Se kvitto: ${imageUrl}`
+  )
+  
+  // Open WhatsApp Web/Desktop with the message and link
+  window.open(`https://wa.me/?text=${message}`, '_blank')
+  
+  advisor.value = {
+    type: 'success',
+    message: 'Öppnar WhatsApp...',
+    show: true
   }
 
   setTimeout(() => {
