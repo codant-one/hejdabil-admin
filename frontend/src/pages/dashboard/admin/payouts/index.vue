@@ -652,52 +652,53 @@ const shareToWhatsApp = async () => {
   // Detect if device is mobile
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
   
-  // On MOBILE: Use Web Share API (shows native share dialog with WhatsApp)
-  if (isMobile) {
+  // Try Web Share API first (works on mobile)
+  if (isMobile && navigator.share) {
     try {
-      if (navigator.share) {
-        // Fetch the image from URL and convert to blob
-        const response = await fetch(imageUrl)
-        const blob = await response.blob()
+      // Fetch the image from URL and convert to blob
+      const response = await fetch(imageUrl)
+      const blob = await response.blob()
+      
+      // Create file from blob
+      const file = new File(
+        [blob], 
+        `swish-kvitto-${selectedPayout.value.reference}.png`, 
+        { type: 'image/png' }
+      )
+      
+      // Prepare share data with image file
+      const shareData = {
+        title: 'Swish-betalningskvitto',
+        text: `Swish-betalningskvitto\nReferens: ${selectedPayout.value.reference}\nMeddelande: ${selectedPayout.value.message}\nBelopp: ${formatNumber(selectedPayout.value.amount)} kr\nDatum: ${formatDateTime(selectedPayout.value.created_at)}`,
+        files: [file]
+      }
+      
+      // Try to share with files
+      if (navigator.canShare && navigator.canShare(shareData)) {
+        await navigator.share(shareData)
         
-        // Create file from blob
-        const file = new File(
-          [blob], 
-          `swish-kvitto-${selectedPayout.value.reference}.png`, 
-          { type: 'image/png' }
-        )
-        
-        // Prepare share data with image file
-        const shareData = {
-          title: 'Swish-betalningskvitto',
-          text: `Swish-betalningskvitto\nReferens: ${selectedPayout.value.reference}\nMeddelande: ${selectedPayout.value.message}\nBelopp: ${formatNumber(selectedPayout.value.amount)} kr\nDatum: ${formatDateTime(selectedPayout.value.created_at)}`,
-          files: [file]
+        advisor.value = {
+          type: 'success',
+          message: 'Kvitto delat!',
+          show: true
         }
         
-        // Check if we can share files
-        if (navigator.canShare && navigator.canShare(shareData)) {
-          // This will open the native share dialog (WhatsApp will appear)
-          await navigator.share(shareData)
-          
-          advisor.value = {
-            type: 'success',
-            message: 'Kvitto delat!',
-            show: true
-          }
-          
-          setTimeout(() => {
-            advisor.value = { type: '', message: '', show: false }
-          }, 3000)
-          return
-        }
+        setTimeout(() => {
+          advisor.value = { type: '', message: '', show: false }
+        }, 3000)
+        return
       }
     } catch (error) {
-      console.log('Share cancelled or error:', error)
-      return
+      // If user cancelled or error, continue to fallback
+      if (error.name === 'AbortError') {
+        console.log('User cancelled share')
+        return
+      }
+      console.log('Web Share API failed, using fallback:', error)
     }
   }
   
-  // On DESKTOP: Open WhatsApp Web directly (Windows doesn't show WhatsApp in share dialog)
+  // Fallback: Open WhatsApp directly with message
   const message = encodeURIComponent(
     `Swish-betalningskvitto\n` +
     `Referens: ${selectedPayout.value.reference}\n` +
