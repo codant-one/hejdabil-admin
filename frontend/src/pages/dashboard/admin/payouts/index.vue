@@ -1310,7 +1310,7 @@ const downloadImage = () => {
        <VCard ref="payoutReceiptMobileRef" class="payout-receipt-card">
         <VCardText 
           class="dialog-title-box px-4 pb-0 flex-row" 
-          :style="selectedPayout.payout_state_id !== 5 ? 'height: 50px !important;' : ''"
+          :style="selectedPayout.payout_state_id !== 5 ? 'height: 30px !important;' : 'height: 50px !important;'"
           data-html2canvas-ignore="true">
           <div class="dialog-title d-flex justify-between w-100">
             <VBtn
@@ -1357,7 +1357,7 @@ const downloadImage = () => {
           </div>
         </VCardText>
 
-        <VCardText class="dialog-text px-4" v-if="selectedPayout.state">
+        <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
           <div class="bg-alert">
             <div
               v-if="!showShareOptions"
@@ -1366,7 +1366,7 @@ const downloadImage = () => {
             >
               {{ selectedPayout.state.name }}
             </div>
-            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3">
+            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3 py-0">
               <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
               <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
               <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
