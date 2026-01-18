@@ -646,10 +646,58 @@ const captureAndShare = async (method) => {
   }
 }
 
-const shareToWhatsApp = () => {
+const shareToWhatsApp = async () => {
   const imageUrl = selectedPayout.value.image_url
   
-  // Create message with receipt details and image URL
+  // Detect if device is mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  
+  // On MOBILE: Use Web Share API (shows native share dialog with WhatsApp)
+  if (isMobile) {
+    try {
+      if (navigator.share) {
+        // Fetch the image from URL and convert to blob
+        const response = await fetch(imageUrl)
+        const blob = await response.blob()
+        
+        // Create file from blob
+        const file = new File(
+          [blob], 
+          `swish-kvitto-${selectedPayout.value.reference}.png`, 
+          { type: 'image/png' }
+        )
+        
+        // Prepare share data with image file
+        const shareData = {
+          title: 'Swish-betalningskvitto',
+          text: `Swish-betalningskvitto\nReferens: ${selectedPayout.value.reference}\nMeddelande: ${selectedPayout.value.message}\nBelopp: ${formatNumber(selectedPayout.value.amount)} kr\nDatum: ${formatDateTime(selectedPayout.value.created_at)}`,
+          files: [file]
+        }
+        
+        // Check if we can share files
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          // This will open the native share dialog (WhatsApp will appear)
+          await navigator.share(shareData)
+          
+          advisor.value = {
+            type: 'success',
+            message: 'Kvitto delat!',
+            show: true
+          }
+          
+          setTimeout(() => {
+            advisor.value = { type: '', message: '', show: false }
+          }, 3000)
+          return
+        }
+      }
+    } catch (error) {
+      console.log('Share cancelled or error:', error)
+      return
+    }
+  }
+  
+  // On DESKTOP: Open WhatsApp Web directly (Windows doesn't show WhatsApp in share dialog)
   const message = encodeURIComponent(
     `Swish-betalningskvitto\n` +
     `Referens: ${selectedPayout.value.reference}\n` +
@@ -659,17 +707,7 @@ const shareToWhatsApp = () => {
     `${imageUrl}`
   )
   
-  // Create anchor element with WhatsApp link (as per WhatsApp documentation)
-  const link = document.createElement('a')
-  link.setAttribute('aria-label', 'Chat on WhatsApp')
-  link.href = `https://wa.me/?text=${message}`
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-  
-  // Append to body, click, and remove
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  window.open(`https://wa.me/?text=${message}`, '_blank')
   
   advisor.value = {
     type: 'success',
