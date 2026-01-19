@@ -1118,12 +1118,12 @@ onBeforeUnmount(() => {
         class="h-100 d-flex flex-column"
         @submit.prevent="submitFormFromDrawer">
         <VCard flat class="card-drawer-form h-100 d-flex flex-column">
-            <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
+            <VCardText class="dialog-title-box mt-8 mb-2 pb-0 flex-0">
                 <div class="dialog-title">
                   {{ isEdit ? 'Uppdatera värdering' : 'Kommentera värdering' }}
                 </div>
             </VCardText>
-            <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+            <VCardText class="pt-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                 <VRow>
                     <VCol cols="12" md="12">
                       <VTextField

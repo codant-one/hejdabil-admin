@@ -1931,15 +1931,4 @@ const handleFocus = (element, fieldId) => {
 .ghost-divider {
   border-color: #f6f6f6 !important;
 }
-
-.cursor-none {
-  cursor: default !important;
-  pointer-events: none !important;
-}
-
-.cursor-none :deep(.v-field__input),
-.cursor-none :deep(.v-field),
-.cursor-none :deep(input) {
-  cursor: default !important;
-}
 </style>

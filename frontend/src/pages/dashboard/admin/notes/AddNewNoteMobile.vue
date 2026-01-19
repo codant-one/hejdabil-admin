@@ -185,7 +185,7 @@ watch(currentData, () => {
                 />
             </VListItem>
         </VList>
-        <div class="pb-6 px-6 d-flex gap-4 form-actions">
+        <div class="pt-3 pb-6 px-6 d-flex gap-4 form-actions">
             <!-- 👉 Submit and Cancel -->
             <VBtn
                 class="btn-light" 

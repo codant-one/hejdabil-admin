@@ -64,6 +64,7 @@ const selectedTask = ref({
     cost: null,
     start_date: null,
     end_date: null,
+    is_cost: 0,
     comments: [],
     histories: []
 })
@@ -162,6 +163,8 @@ const measure = ref(null)
 const cost = ref(null)
 const start_date = ref(null)
 const end_date = ref(null)
+const is_cost = ref(0)
+const isEdit = ref(false);
 
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
 
@@ -585,6 +588,7 @@ const createTask = async () => {
                 formData.append('description', description.value)
                 formData.append('start_date', start_date.value)
                 formData.append('end_date', end_date.value)
+                formData.append('is_cost', is_cost.value)
 
                 isConfirmTaskMobileDialogVisible.value = false
                 isRequestOngoing.value = true
@@ -605,6 +609,7 @@ const createTask = async () => {
                         description.value = null
                         start_date.value = null
                         end_date.value = null
+                        is_cost.value = 0
 
                         await fetchData()
                     })
@@ -672,6 +677,7 @@ const updateTask = async () => {
                         selectedTask.value.description = null
                         selectedTask.value.start_date = null
                         selectedTask.value.end_date = null
+                        selectedTask.value.is_cost = 0
 
                         await fetchData()
                     })
@@ -700,16 +706,22 @@ const updateTask = async () => {
 }
 
 const closeTask = () => {
+    isConfirmTaskDialogVisible.value = false
+    isConfirmTaskMobileDialogVisible.value = false
     isConfirmUpdateTaskDialogVisible.value = false
     isConfirmUpdateTaskMobileDialogVisible.value = false
+    isEdit.value = false
+    is_cost.value = 0
     selectedTask.value.vehicle_id = null
     selectedTask.value.measure = null
     selectedTask.value.cost = null
     selectedTask.value.start_date = null
     selectedTask.value.end_date = null
+    selectedTask.value.is_cost = 0
 }
 
-const showTask = (taskData, isMobile = false) => {
+const showTask = (taskData, isMobile = false, is_edit = false) => {
+    isEdit.value = is_edit;
     selectedTask.value = {
         ...taskData,
         start_date: taskData.start_date ?? null,
@@ -2207,14 +2219,14 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="btn-gradient"
                                         @click="isConfirmTaskDialogVisible = true">
                                         <VIcon icon="custom-plus" size="24" />
-                                        Lägg till åtgärd
+                                        Lägg till åtgärder/kostnader
                                     </VBtn>
                                     <VBtn
                                         v-if="$can('edit', 'stock') && windowWidth < 1024"
                                         class="btn-gradient"
                                         @click="isConfirmTaskMobileDialogVisible = true">
                                         <VIcon icon="custom-plus" size="24" />
-                                        Lägg till åtgärd
+                                        Lägg till åtgärder/kostnader
                                     </VBtn>
                                 </div>
                                 <div v-if="tasks.length === 0" 
@@ -2236,7 +2248,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="btn-ghost"
                                         @click="isConfirmTaskDialogVisible = true"
                                         >
-                                        Lägg till åtgärd
+                                        Lägg till åtgärder/kostnader
                                         <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                     <VBtn
@@ -2244,7 +2256,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="btn-ghost"
                                         @click="isConfirmTaskMobileDialogVisible = true"
                                         >
-                                        Lägg till åtgärd
+                                        Lägg till åtgärder/kostnader
                                         <VIcon icon="custom-arrow-right" size="24" />
                                     </VBtn>
                                 </div>
@@ -2280,18 +2292,18 @@ onBeforeRouteLeave((to, from, next) => {
                                                 {{ task.description }}
                                             </div>
             
-                                            <div class="note-value-field my-4">
-                                                {{ formatNumber(task.cost ?? 0) }} (kr)
-                                            </div>    
-
-                                            <div class="d-flex gap-4 mb-4">
+                                            <div class="d-flex gap-4 my-4" v-if="!task.is_cost">
                                                 <span class="note-value-field w-100">
                                                     {{ formatDateDisplay(task.start_date) }}
                                                 </span>
                                                 <span class="note-value-field w-100">
                                                     {{ formatDateDisplay(task.end_date) }}
                                                 </span>
-                                            </div>         
+                                            </div>
+
+                                            <div class="note-value-field my-4">
+                                                {{ formatNumber(task.cost ?? 0) }} (kr)
+                                            </div>                                                         
 
                                             <div class="d-flex align-center px-0">
                                                 <div class="text-no-wrap">
@@ -2312,12 +2324,24 @@ onBeforeRouteLeave((to, from, next) => {
 
                                                 <VSpacer />
 
-                                                <div class="d-flex align-center">
+                                                <div class="d-flex align-center">                
+                                                    <VIcon 
+                                                        v-if="!task.is_cost"
+                                                        icon="custom-forward" 
+                                                        size="24" 
+                                                        class="cursor-pointer me-2"
+                                                    />
+                                                    <VIcon 
+                                                        icon="custom-pencil" 
+                                                        size="24" 
+                                                        class="cursor-pointer me-2"
+                                                        @click="showTask(task, windowWidth < 1024 ? true : false, true)"
+                                                    />
                                                     <VIcon 
                                                         icon="custom-comments" 
                                                         size="24" 
                                                         class="cursor-pointer"
-                                                        @click="showTask(task, windowWidth < 1024 ? true : false)"
+                                                        @click="showTask(task, windowWidth < 1024 ? true : false, false)"
                                                     />
 
                                                     <span class="ms-2 text-comments text-neutral-3">{{ task.comments.length }}</span>
@@ -2607,12 +2631,13 @@ onBeforeRouteLeave((to, from, next) => {
             :width="550"
             location="end"
             class="scrollable-content right-drawer rounded-left-4"
-            v-model="isConfirmTaskDialogVisible"
+            :model-value="isConfirmTaskDialogVisible"
+            @update:model-value="(val) => !val && closeTask()"
         >
             <!-- 👉 Title -->
             <div class="d-flex align-center pa-6 pb-1">
                 <h6 class="title-modal font-blauer">
-                    Lägg till åtgärd för fordonet
+                    Lägg till åtgärder/kostnader
                 </h6>
 
             <VSpacer />
@@ -2621,7 +2646,7 @@ onBeforeRouteLeave((to, from, next) => {
             <VBtn
                 icon
                 class="btn-white"
-                @click="isConfirmTaskDialogVisible = false"
+                @click="closeTask"
             >
                 <VIcon size="32" icon="custom-cancel" />
             </VBtn>
@@ -2661,7 +2686,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" v-if="!is_cost">
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="start_date"
@@ -2672,7 +2697,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         clearable
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" v-if="!is_cost">
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="end_date"
@@ -2683,9 +2708,17 @@ onBeforeRouteLeave((to, from, next) => {
                                     />
                                 </VCol>
                                 <VCol cols="12">
+                                    <VCheckbox
+                                        v-model="is_cost"
+                                        color="primary"
+                                        label="Är det en kostnad för fordonet?"
+                                        class="ms-2 w-100 text-center d-flex justify-start"
+                                    />
+                                </VCol>
+                                <VCol cols="12">
                                     <VBtn
                                         class="btn-light me-3"
-                                        @click="isConfirmTaskDialogVisible = false">
+                                        @click="closeTask">
                                         Avbryt
                                     </VBtn>
                                     <VBtn class="btn-gradient" type="submit">
@@ -2711,7 +2744,7 @@ onBeforeRouteLeave((to, from, next) => {
             <VBtn
                 icon
                 class="btn-white close-btn"
-                @click="isConfirmTaskMobileDialogVisible = false"
+                @click="closeTask"
             >
                 <VIcon size="16" icon="custom-close" />
             </VBtn>
@@ -2720,12 +2753,12 @@ onBeforeRouteLeave((to, from, next) => {
                 class="h-100 d-flex flex-column"
                 @submit.prevent="createTask">
                 <VCard flat class="card-drawer-form h-100 d-flex flex-column">
-                    <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
+                    <VCardText class="dialog-title-box mt-8 mb-2 pb-0 flex-0">
                         <div class="dialog-title">
-                           Lägg till åtgärd för fordonet
+                           Lägg till åtgärder/kostnader
                         </div>
                     </VCardText>
-                    <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+                    <VCardText class="py-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                         <VRow>
                             <VCol cols="12" md="12">
                                 <VTextField
@@ -2750,7 +2783,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="6" v-if="!is_cost">
                                 <div @click.stop>
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
@@ -2763,7 +2796,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     />
                                 </div>
                             </VCol>
-                            <VCol cols="12" md="6">
+                            <VCol cols="12" md="6" v-if="!is_cost">
                                 <div @click.stop>
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
@@ -2775,12 +2808,20 @@ onBeforeRouteLeave((to, from, next) => {
                                     />
                                 </div>
                             </VCol>
+                             <VCol cols="12">
+                                <VCheckbox
+                                    v-model="is_cost"
+                                    color="primary"
+                                    label="Är det en kostnad för fordonet?"
+                                    class="ms-2 w-100 text-center d-flex justify-start"
+                                />
+                            </VCol>
                         </VRow>  
                         
                         <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
                             <VBtn
                                 class="btn-light"
-                                @click="isConfirmTaskMobileDialogVisible = false">
+                                @click="closeTask">
                                 Avbryt
                             </VBtn>
                             <VBtn class="btn-gradient" type="submit">
@@ -2804,7 +2845,7 @@ onBeforeRouteLeave((to, from, next) => {
             <!-- 👉 Title -->
             <div class="d-flex align-center pa-6 pb-1">
                 <h6 class="title-modal font-blauer">
-                    Lägg till åtgärd för fordonet
+                    {{ isEdit ? 'Uppdatera åtgärder/kostnader' : 'Kommentera åtgärder/kostnader' }}
                 </h6>
 
                 <VSpacer />
@@ -2835,6 +2876,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         v-model="selectedTask.measure"
                                         label="Vad ska goras?*"
                                         :rules="[requiredValidator]"
+                                        :readonly="!isEdit"
                                     />
                                 </VCol>
                                 <VCol cols="12" md="12">
@@ -2842,6 +2884,8 @@ onBeforeRouteLeave((to, from, next) => {
                                         v-model="selectedTask.description"
                                         rows="4"
                                         label="Beskrivning"
+                                        :readonly="!isEdit"
+                                        persistent-placeholder
                                     />
                                 </VCol>
                                 <VCol cols="12" md="12">
@@ -2851,10 +2895,12 @@ onBeforeRouteLeave((to, from, next) => {
                                         min="0"
                                         label="Beräknad kostnad (kr)*"
                                         :rules="[requiredValidator]"
+                                        :readonly="!isEdit"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
                                     <AppDateTimePicker
+                                        v-if="isEdit"
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="selectedTask.start_date"
                                         density="compact"
@@ -2863,9 +2909,16 @@ onBeforeRouteLeave((to, from, next) => {
                                         label="Startdatum*"
                                         clearable
                                     />
+                                    <VTextField
+                                        v-else
+                                        :model-value="selectedTask.start_date"
+                                        label="Startdatum*"
+                                        readonly
+                                    />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
                                     <AppDateTimePicker
+                                        v-if="isEdit"
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="selectedTask.end_date"
                                         density="compact"
@@ -2873,8 +2926,14 @@ onBeforeRouteLeave((to, from, next) => {
                                         label="Slutdatum"
                                         clearable
                                     />
+                                    <VTextField
+                                        v-else
+                                        :model-value="selectedTask.end_date"
+                                        label="Slutdatum"
+                                        readonly
+                                    />
                                 </VCol>
-                                <VCol cols="12">
+                                <VCol cols="12" :class="isEdit ? '' : 'd-none'">
                                     <VBtn
                                         class="btn-light me-3"
                                         @click="closeTask">
@@ -2886,42 +2945,21 @@ onBeforeRouteLeave((to, from, next) => {
                                 </VCol>
                             </VRow>
 
-                            <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                            <VDivider 
+                                :class="[
+                                    windowWidth < 1024 ? 'my-4' : 'my-6',
+                                    isEdit ? 'd-none' : ''
+                                ]" 
+                            />
 
-                            <div class="d-flex gap-2 mb-6">
+                            <div class="mb-6" :class="isEdit ? 'd-none' : 'd-flex gap-2'">
                                 <VIcon size="24" icon="custom-comments-2" class="action-icon" />
                                 <span class="span-comments">
                                    Kommentarer
                                 </span>
                             </div>
-
-                            <VExpansionPanels class="d-none">
-                                <VExpansionPanel>
-                                    <VExpansionPanelTitle>Aktiviteter</VExpansionPanelTitle>
-                                    <VExpansionPanelText>
-                                        <div 
-                                            v-for="(history, index) in selectedTask.histories" 
-                                            :key="index" 
-                                            :class="selectedTask.histories.length > 1 && index !== selectedTask.histories.length - 1 ? 'py-2 border-bottom-secondary' : 'pt-2'"
-                                            class="d-flex flex-column">
-                                            <span v-if="history.is_created"><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> lade till detta kort till <strong>Övrigt.</strong></span>
-                                            <span v-else><strong>{{ history.user.name }} {{ history.user.last_name }}</strong> uppdaterade kortet.</span>
-                                            <span>  {{}}
-                                                {{ new Date(history.created_at).toLocaleString('sv-SE', { 
-                                                    year: 'numeric', 
-                                                    month: '2-digit', 
-                                                    day: '2-digit', 
-                                                    hour: '2-digit', 
-                                                    minute: '2-digit',
-                                                    hour12: false
-                                                }) }}
-                                            </span>                                        
-                                        </div>                                  
-                                    </VExpansionPanelText>
-                                </VExpansionPanel>
-                            </VExpansionPanels>
          
-                            <div class="d-flex flex-column gap-6">
+                            <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
                                 <VTextField
                                     v-model="comment"
                                     placeholder="Skriv en kommentar"
@@ -2931,12 +2969,19 @@ onBeforeRouteLeave((to, from, next) => {
                                 </VBtn>
                             </div>
 
-                            <VDivider v-if="selectedTask.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                            <VDivider 
+                                v-if="selectedTask.comments?.length > 0" :class="[
+                                windowWidth < 1024 ? 'my-4' : 'my-6',
+                                    isEdit ? 'd-none' : ''
+                                ]" 
+                            />
 
                             <div 
                                 v-for="(comment, index) in selectedTask.comments" 
                                 :key="index"
-                                class="d-flex flex-column gap-2 justify-center mb-4">
+                                class="mb-4"
+                                :class="isEdit ? 'd-none' : 'd-flex flex-column gap-2 justify-center'"
+                            > 
                                 <div class="text-no-wrap w-100">
                                     <VAvatar
                                         color="#E3DEEB"
@@ -2995,9 +3040,9 @@ onBeforeRouteLeave((to, from, next) => {
                 class="h-100 d-flex flex-column"
                 @submit.prevent="updateTask">
                 <VCard flat class="card-drawer-form h-100 d-flex flex-column">
-                    <VCardText class="dialog-title-box mt-8 mb-2 flex-shrink-0">
+                    <VCardText class="dialog-title-box mt-8 mb-2 pb-0 flex-0">
                         <div class="dialog-title">
-                           Lägg till åtgärd för fordonet
+                           {{ isEdit ? 'Uppdatera åtgärder/kostnader' : 'Kommentera åtgärder/kostnader' }}
                         </div>
                     </VCardText>
                     <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
@@ -3007,6 +3052,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     v-model="selectedTask.measure"
                                     label="Vad ska goras?*"
                                     :rules="[requiredValidator]"
+                                    :readonly="!isEdit"
                                 />
                             </VCol>
                             <VCol cols="12" md="12">
@@ -3014,6 +3060,8 @@ onBeforeRouteLeave((to, from, next) => {
                                     v-model="selectedTask.description"
                                     rows="4"
                                     label="Beskrivning"
+                                    :readonly="!isEdit"
+                                    persistent-placeholder
                                 />
                             </VCol>
                             <VCol cols="12" md="12">
@@ -3023,10 +3071,11 @@ onBeforeRouteLeave((to, from, next) => {
                                     min="0"
                                     label="Beräknad kostnad (kr)*"
                                     :rules="[requiredValidator]"
+                                    :readonly="!isEdit"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6">
-                                <div @click.stop>
+                            <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
+                                <div @click.stop v-if="isEdit">
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="selectedTask.start_date"
@@ -3037,9 +3086,15 @@ onBeforeRouteLeave((to, from, next) => {
                                         clearable
                                     />
                                 </div>
+                                <VTextField
+                                    v-else
+                                    :model-value="selectedTask.start_date"
+                                    label="Startdatum*"
+                                    readonly
+                                />
                             </VCol>
-                            <VCol cols="12" md="6">
-                                <div @click.stop>   
+                            <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
+                                <div @click.stop v-if="isEdit">   
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="selectedTask.end_date"
@@ -3049,10 +3104,16 @@ onBeforeRouteLeave((to, from, next) => {
                                         clearable
                                     />
                                 </div>
+                                <VTextField
+                                    v-else
+                                    :model-value="selectedTask.end_date"
+                                    label="Slutdatum"
+                                    readonly
+                                />
                             </VCol>
                         </VRow>
                         
-                        <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                        <div :class="isEdit ? 'd-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2' : 'd-none'">
                             <VBtn
                                 class="btn-light"
                                 @click="closeTask">
@@ -3063,16 +3124,21 @@ onBeforeRouteLeave((to, from, next) => {
                             </VBtn>
                         </div>
 
-                        <VDivider :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                        <VDivider 
+                            :class="[
+                                windowWidth < 1024 ? 'my-4' : 'my-6',
+                                isEdit ? 'd-none' : ''
+                            ]" 
+                        />
 
-                        <div class="d-flex gap-2 mb-6">
+                        <div class="mb-6" :class="isEdit ? 'd-none' : 'd-flex gap-2'">
                             <VIcon size="24" icon="custom-comments-2" class="action-icon" />
                             <span class="span-comments">
                                 Kommentarer
                             </span>
                         </div>
         
-                        <div class="d-flex flex-column gap-6">
+                        <div :class="isEdit ? 'd-none' : 'd-flex flex-column gap-6'">
                             <VTextField
                                 v-model="comment"
                                 placeholder="Skriv en kommentar"
@@ -3082,12 +3148,20 @@ onBeforeRouteLeave((to, from, next) => {
                             </VBtn>
                         </div>
 
-                        <VDivider v-if="selectedTask.comments?.length > 0" :class="windowWidth < 1024 ? 'my-4' : 'my-6'" />
+                        <VDivider 
+                            v-if="selectedTask.comments?.length > 0" 
+                            :class="[
+                                windowWidth < 1024 ? 'my-4' : 'my-6', 
+                                isEdit ? 'd-none' : ''
+                            ]"
+                        />
 
                         <div 
                             v-for="(comment, index) in selectedTask.comments" 
                             :key="index"
-                            class="d-flex flex-column gap-2 justify-center mb-4">
+                            class="mb-4"
+                            :class="isEdit ? 'd-none' : 'd-flex flex-column gap-2 justify-center'"
+                        >
                             <div class="text-no-wrap w-100">
                                 <VAvatar
                                     color="#E3DEEB"

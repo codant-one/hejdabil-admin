@@ -1,3 +1,14 @@
 .cursor-pointer {
   cursor: pointer;
 }
+
+.cursor-none {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.cursor-none .v-field__input,
+.cursor-none .v-field,
+.cursor-none input {
+  cursor: default !important;
+}

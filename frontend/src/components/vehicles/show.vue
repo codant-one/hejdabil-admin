@@ -675,7 +675,7 @@ const setThumbsSwiper = (swiper) => {
         font-weight: 400;
         font-size: 12px;
         line-height: 100%;
-        letter-spacing: 0%;
+        letter-spacing: 0;
         color: #878787;
     }
 

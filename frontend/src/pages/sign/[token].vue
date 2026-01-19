@@ -763,7 +763,7 @@ canvas {
     font-weight: 400;
     font-size: 14px;
     line-height: 24px;
-    letter-spacing: 0%;
+    letter-spacing: 0;
     color: #454545;
   }
 

@@ -1109,6 +1109,10 @@ body {
   justify-content: space-between !important;
 }
 
+.flex-0 {
+  flex: 0 0;
+} 
+
 .flex-1 {
   flex: 1 1;
 }
@@ -1181,7 +1185,7 @@ body {
     color: #5d5d5d !important;
     font-size: 16px;
     line-height: 16px;
-    letter-spacing: 0%;
+    letter-spacing: 0;
   }
 
   .v-snackbar__wrapper {
@@ -1351,7 +1355,7 @@ body {
     font-weight: 400;
     font-size: 14px;
     line-height: 24px;
-    letter-spacing: 0%;
+    letter-spacing: 0;
     color: #454545;
   }
   .v-input {
