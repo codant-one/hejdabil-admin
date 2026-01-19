@@ -648,6 +648,7 @@ const handleFocus = (element, fieldId) => {
                   v-model="invoice.due_date"
                   placeholder="YYYY-MM-DD"
                   readonly
+                  class="cursor-none"
                 />
               </div>
             </span>
@@ -658,7 +659,7 @@ const handleFocus = (element, fieldId) => {
             class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
           >
             <span class="me-2 text-start w-40 text-black">
-              Betalningsvillkor:
+              Betalningsvillkor
             </span>
 
             <span style="width: 10.5rem">
@@ -1203,6 +1204,7 @@ const handleFocus = (element, fieldId) => {
                       v-model="invoice.due_date"
                       placeholder="YYYY-MM-DD"
                       readonly
+                      class="cursor-none"
                     />
                   </div>
                 </span>
@@ -1213,7 +1215,7 @@ const handleFocus = (element, fieldId) => {
                 class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
               >
                 <span class="me-2 text-start w-40 text-black">
-                  Betalningsvillkor:
+                  Betalningsvillkor
                 </span>
 
                 <span style="width: 10.5rem">
@@ -1928,5 +1930,16 @@ const handleFocus = (element, fieldId) => {
 }
 .ghost-divider {
   border-color: #f6f6f6 !important;
+}
+
+.cursor-none {
+  cursor: default !important;
+  pointer-events: none !important;
+}
+
+.cursor-none :deep(.v-field__input),
+.cursor-none :deep(.v-field),
+.cursor-none :deep(input) {
+  cursor: default !important;
 }
 </style>
