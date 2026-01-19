@@ -101,10 +101,14 @@ class Billing extends Model
         }
 
         if ($filters->get('state_id') !== null) {
-            $query->where('state_id', $filters->get('state_id'));
-
-            if($filters->get('state_id') === '7')
-                $query->orWhere('state_id', 9);
+            if($filters->get('state_id') === '7') {
+                $query->where(function($q) {
+                    $q->where('state_id', 7)
+                      ->orWhere('state_id', 9);
+                });
+            } else {
+                $query->where('state_id', $filters->get('state_id'));
+            }
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {

@@ -801,7 +801,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Se detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id === 4"
+                    v-if="$can('edit', 'billings') && (billing.state_id === 4 || billing.state_id === 8)"
                     @click="updateBilling(billing)"
                   >
                     <template #prepend>
@@ -1297,7 +1297,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 4"
+            v-if="$can('edit', 'billings') && (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
