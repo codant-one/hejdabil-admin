@@ -146,7 +146,19 @@ class PersonInfoController extends Controller
         };
 
         $namn = $personData['Namn'] ?? [];
-        $adress = $personData['Folkbokforingsadress']['SvenskAdress'] ?? [];
+        
+        // Handle Folkbokforingsadress which can come in two formats:
+        // 1. Direct: ['SvenskAdress' => [...]]
+        // 2. Array list: [0 => ['SvenskAdress' => [...]], 1 => [...]]
+        $folkbokforing = $personData['Folkbokforingsadress'] ?? [];
+        if (!empty($folkbokforing) && array_is_list($folkbokforing)) {
+            // If it's a numeric indexed array, take the first element
+            $adress = $folkbokforing[0]['SvenskAdress'] ?? [];
+        } else {
+            // Otherwise, access SvenskAdress directly
+            $adress = $folkbokforing['SvenskAdress'] ?? [];
+        }
+        
         $personDetaljer = $personData['Persondetaljer'] ?? [];
         $personId = $personData['PersonId'] ?? [];
 
