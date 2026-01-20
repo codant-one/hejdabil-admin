@@ -3,7 +3,7 @@
 import { onBeforeRouteLeave } from "vue-router";
 import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount, computed, inject, watch } from 'vue'
 import { themeConfig } from '@themeConfig'
 import { avatarText, formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
@@ -1586,6 +1586,12 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Check for URL hash to activate specific tab
+  const hash = window.location.hash;
+  if (hash === '#tab-tasks') {
+    currentTab.value = 'tab-5';
+  }
 });
 
 onBeforeUnmount(() => {
@@ -1993,7 +1999,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <AppAutocomplete
                                                 v-model="client_type_id"
-                                                label="Köparen är*"
+                                                label="Säljaren är*"
                                                 :items="client_types"
                                                 :item-title="item => item.name"
                                                 :item-value="item => item.id"

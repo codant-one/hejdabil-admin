@@ -363,7 +363,7 @@ const setThumbsSwiper = (swiper) => {
                                 <VTab value="1"><span>Information om bilen</span></VTab>
                                 <VTab value="2"><span>Prisinformation</span></VTab>
                                 <VTab value="3"><span>Säljaren</span></VTab>
-                                <VTab value="4"><span>Kostnader</span></VTab>
+                                <VTab value="4"><span>Åtgärder / Kostnader</span></VTab>
                                 <VTab value="5" v-if="state_id === 12"><span>Försäljningsuppgifter</span></VTab>
                                 <VTab value="6" v-if="state_id === 12"><span>Köpare</span></VTab>
                             </VTabs>
@@ -515,7 +515,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2" v-if="vehicle.total_sale">
                                                     <span class="title-detail"> Vinst</span>
-                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} {{ currency_sale }}</span>
+                                                    <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_sale }}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -557,16 +557,34 @@ const setThumbsSwiper = (swiper) => {
                                 </VWindowItem>
                                 <VWindowItem value="4">
                                     <VContainer fluid class="px-3">
-                                        <div class="d-flex gap-6">
+                                        <div class="d-flex gap-6">                                            
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Totala kostnader </span>
-                                                    <span class="subtitle-detail">{{ formatNumber((tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_purchase }}</span>
+                                                    <span class="title-detail font-weight-bold"> Totala åtgärder </span>
+                                                    <span class="subtitle-detail font-weight-bold">
+                                                        {{ formatNumber((tasks ?? []).filter(t => t.is_cost == 0).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_purchase }}
+                                                    </span>
+                                                    <VDivider />
+                                                </div>
+                                                <div 
+                                                    v-for="(task, index) in tasks.filter(t => t.is_cost == 0)"
+                                                    :key="task.id"
+                                                    class="d-flex flex-column gap-2">
+                                                    <span class="title-detail"> {{ task.measure }} </span>
+                                                    <span class="subtitle-detail" v-if="task.description">{{ task.description }}</span>
+                                                    <span class="subtitle-detail">{{ formatNumber(task.cost ?? 0) }} {{ currency_purchase }}</span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <span class="title-detail font-weight-bold"> Totala kostnader </span>
+                                                    <span class="subtitle-detail font-weight-bold">
+                                                        {{ formatNumber((tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_purchase }}
+                                                    </span>
+                                                    <VDivider />
+                                                </div>
                                                 <div 
-                                                    v-for="(task, index) in tasks"
+                                                    v-for="(task, index) in tasks.filter(t => t.is_cost == 1)"
                                                     :key="task.id"
                                                     class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> {{ task.measure }} </span>

@@ -15,6 +15,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('billings:update-state')
                  ->daily()
                  ->at('00:00');
+
+        $schedule->command('notifications:send')
+                 ->daily()
+                 ->at('00:00');
     }
 
     /**

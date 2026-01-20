@@ -55,7 +55,7 @@ export const useNotificationsStore = defineStore('notifications', {
           if (userId) {
             this.subscribeToPrivateChannel(userId)
           } else {
-            console.warn('⚠️ No userId provided, skipping private channel subscription')
+            //console.warn('⚠️ No userId provided, skipping private channel subscription')
           }
           
         } else {
@@ -134,7 +134,7 @@ export const useNotificationsStore = defineStore('notifications', {
       if (globalNotificationCallback) {
         globalNotificationCallback(mapped)
       } else {
-        console.warn('⚠️ No global callback registered')
+        //console.warn('⚠️ No global callback registered')
       }
     },
 

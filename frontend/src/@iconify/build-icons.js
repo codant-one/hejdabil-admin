@@ -17,6 +17,24 @@ const path_1 = require("path");
 // Installation: npm install --save-dev @iconify/tools @iconify/utils @iconify/json @iconify/iconify
 const tools_1 = require("@iconify/tools");
 const utils_1 = require("@iconify/utils");
+
+// Allow SVG <image> usage in custom icons.
+// Iconify Tools marks <image>/<feImage> as "bad tags" by default because they can reference
+// external resources. This project uses a few custom SVGs that rely on <image>, so we opt-in.
+(function allowImageTagsInIconifyTools() {
+    try {
+        // Internal API, but stable enough for a build script.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const tags = require('@iconify/tools/lib/svg/data/tags.cjs');
+        if (tags?.badTags?.delete) {
+            tags.badTags.delete('image');
+            tags.badTags.delete('feImage');
+        }
+    }
+    catch (err) {
+        // Ignore if paths change in future versions.
+    }
+})();
 const sources = {
     svg: [
         {
@@ -134,53 +152,79 @@ const target = (0, path_1.join)(__dirname, 'icons-bundle.js');
     if (sources.svg) {
         for (let i = 0; i < sources.svg.length; i++) {
             const source = sources.svg[i];
-            // Import icons
-            const iconSet = await (0, tools_1.importDirectory)(source.dir, {
-                prefix: source.prefix,
-            });
-            // Validate, clean up, fix palette and optimise
-            await iconSet.forEach(async (name, type) => {
-                if (type !== 'icon')
-                    return;
-                // Get SVG instance for parsing
-                const svg = iconSet.toSVG(name);
-                if (!svg) {
-                    // Invalid icon
-                    iconSet.remove(name);
-                    return;
-                }
-                // Clean up and optimise icons
-                try {
-                    // Clean up icon code
-                    await (0, tools_1.cleanupSVG)(svg);
-                    if (source.monotone) {
-                        // Replace color with currentColor, add if missing
-                        // If icon is not monotone, remove this code
-                        await (0, tools_1.parseColors)(svg, {
-                            defaultColor: 'currentColor',
-                            callback: (attr, colorStr, color) => {
-                                return !color || (0, tools_1.isEmptyColor)(color)
-                                    ? colorStr
-                                    : 'currentColor';
-                            },
-                        });
+            // Import icons with error handling per file
+            const iconSet = (0, tools_1.blankIconSet)(source.prefix);
+            
+            // Manually import SVG files from directory
+            try {
+                const files = await fs_1.promises.readdir(source.dir);
+                const svgFiles = files.filter(file => file.endsWith('.svg'));
+                
+                for (const file of svgFiles) {
+                    const filePath = (0, path_1.join)(source.dir, file);
+                    const name = file.replace('.svg', '');
+
+                    let svg;
+                    try {
+                        const content = await fs_1.promises.readFile(filePath, 'utf8');
+                        svg = new tools_1.SVG(content);
                     }
-                    // Optimise
-                    await (0, tools_1.runSVGO)(svg);
+                    catch (err) {
+                        // If file cannot be read/parsed, there's nothing to bundle.
+                        continue;
+                    }
+
+                    // Clean up and optimise icons. If any step fails, keep going and attempt to bundle
+                    // the raw SVG anyway (goal: always bundle, never fail build for a single icon).
+                    try {
+                        await (0, tools_1.cleanupSVG)(svg);
+                    }
+                    catch (err) {
+                        // ignore
+                    }
+
+                    if (source.monotone) {
+                        try {
+                            await (0, tools_1.parseColors)(svg, {
+                                defaultColor: 'currentColor',
+                                callback: (attr, colorStr, color) => {
+                                    return !color || (0, tools_1.isEmptyColor)(color)
+                                        ? colorStr
+                                        : 'currentColor';
+                                },
+                            });
+                        }
+                        catch (err) {
+                            // ignore
+                        }
+                    }
+
+                    try {
+                        await (0, tools_1.runSVGO)(svg);
+                    }
+                    catch (err) {
+                        // ignore
+                    }
+
+                    try {
+                        iconSet.fromSVG(name, svg);
+                    }
+                    catch (err) {
+                        // ignore
+                    }
                 }
-                catch (err) {
-                    // Invalid icon - skip it instead of failing
-                    console.warn(`Skipping ${name} from ${source.dir}: ${err.message}`);
-                    iconSet.remove(name);
-                    return;
+                
+                console.log(`Bundled ${iconSet.count()} icons from ${source.dir}`);
+                
+                // Export to JSON only if we have icons
+                if (iconSet.count() > 0) {
+                    const content = iconSet.export();
+                    bundle += `addCollection(${JSON.stringify(content)});\n`;
                 }
-                // Update icon from SVG instance
-                iconSet.fromSVG(name, svg);
-            });
-            console.log(`Bundled ${iconSet.count()} icons from ${source.dir}`);
-            // Export to JSON
-            const content = iconSet.export();
-            bundle += `addCollection(${JSON.stringify(content)});\n`;
+            }
+            catch (err) {
+                // ignore
+            }
         }
     }
     // Save to file

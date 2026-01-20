@@ -489,8 +489,10 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
             
             <td class="text-center" v-if="isColVisible('sale_price')"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
-            <td class="text-center" v-if="isColVisible('profit')"> {{ formatNumber(vehicle.total_sale - vehicle.purchase_price) }} kr</td>         
-            <td class="text-center" v-if="isColVisible('costs')"> {{ formatNumber((vehicle.tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
+            <td class="text-center" v-if="isColVisible('profit')"> 
+              {{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr
+            </td>         
+            <td class="text-center" v-if="isColVisible('costs')"> {{ formatNumber((vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
             <td class="text-wrap" v-if="isColVisible('buyer')">
               <div v-if="vehicle.client_sale" class="d-flex flex-column">
                 <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer" @click="seeClient(vehicle.client_sale.client)">

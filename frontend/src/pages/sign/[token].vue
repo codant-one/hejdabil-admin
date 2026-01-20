@@ -379,7 +379,7 @@ const submitFinalSignature = async (signatureImage) => {
         color: 'primary',
         icon: 'custom-signature',
         route: `/dashboard/admin/documents?file_id=${fileId}` || null,
-        agreement_id: response.data.agreement_id?.toString() || null,
+        notification_id: response.data.agreement_id?.toString() || null,
         signed_by: response.data.signed_by || 'Användare',
         user_id: response.data.user_id || null // ID del usuario que recibirá la notificación
       })

@@ -95,6 +95,7 @@ const closeMenu = () => {
                     :color="notification.color || 'primary'"
                     :image="notification.img || undefined"
                     :icon="notification.icon || undefined"
+                    variant="tonal"
                     size="40"
                   >
                     <span v-if="notification.text">{{

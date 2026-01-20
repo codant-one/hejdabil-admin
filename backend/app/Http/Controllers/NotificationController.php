@@ -90,7 +90,7 @@ class NotificationController extends Controller
     {
         try {
             $userId = $request->input('user_id');
-            $agreementId = $request->input('agreement_id');
+            $notification_id = $request->input('notification_id');
             $title = $request->input('title');
             $text = $request->input('text');
             $subtitle = $request->input('subtitle', '');
@@ -102,7 +102,7 @@ class NotificationController extends Controller
             // Guardar en base de datos
             $dbNotification = Notification::create([
                 'user_id' => $userId,
-                'notification_id' => $agreementId,
+                'notification_id' => $notification_id,
                 'title' => $title,
                 'subtitle' => $subtitle,
                 'text' => $text,                
