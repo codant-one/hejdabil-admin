@@ -380,7 +380,16 @@ const formatDateTime = (dateString) => {
   const day = String(date.getDate()).padStart(2, '0');
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day} ${hours}:${minutes}`;
+  return `${year}/${month}/${day} ${hours}:${minutes}`;
+};
+
+const formatDateYMD = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}/${month}/${day}`;
 };
 
 const updateStateId = (newStateId) => {
@@ -1102,7 +1111,7 @@ const downloadImage = () => {
               </span>
               <div class="gap-2 title-organization">
                 <span>
-                  {{ payout.created_at ? formatDate(payout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}
+                  {{ formatDateYMD(payout.created_at) }}
                 </span>
                 <VIcon size="16" icon="custom-clock" />
                 <span>
@@ -1255,7 +1264,7 @@ const downloadImage = () => {
               <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
               <div class="d-flex gap-2 title-organization justify-center align-center">
                   <span class="text-date-swish">
-                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}
+                    {{ formatDateYMD(selectedPayout.created_at) }}
                   </span>
                   <VIcon size="16" icon="custom-clock" />
                   <span class="text-date-swish">
@@ -1373,7 +1382,7 @@ const downloadImage = () => {
               <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
               <div class="d-flex gap-2 title-organization justify-center align-center">
                   <span class="text-date-swish">
-                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { month: '2-digit', day: '2-digit', year: 'numeric' }) : ''}}
+                    {{ formatDateYMD(selectedPayout.created_at) }}
                   </span>
                   <VIcon size="16" icon="custom-clock" />
                   <span class="text-date-swish">
