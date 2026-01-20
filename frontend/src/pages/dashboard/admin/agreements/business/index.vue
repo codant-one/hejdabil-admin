@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from 'vue-router';
 import { ref, watchEffect, inject, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
@@ -12,6 +13,7 @@ import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { useToastsStores } from '@/stores/useToasts'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const router = useRouter()
 const emitter = inject("emitter")
@@ -25,6 +27,7 @@ const toastsStores = useToastsStores()
 const ability = useAppAbility()
 
 const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
 
 const isRequestOngoing = ref(false)
 const refForm = ref()
@@ -69,8 +72,15 @@ const postal_code = ref(null)
 const phone = ref(null)
 const disabled_client = ref(false)
 
+
+
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
+
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
 
 watchEffect(async () => {
     isRequestOngoing.value = true
@@ -105,6 +115,10 @@ watchEffect(async () => {
     identifications.value = agreementsStores.identifications
 
     isRequestOngoing.value = false
+
+    nextTick(() => {
+          initialData.value = JSON.parse(JSON.stringify(currentData.value))
+    })
    
 })
 
@@ -306,6 +320,11 @@ const onSubmit = () => {
 
                   // router.push({ name : 'dashboard-admin-agreements'})
                   // emitter.emit('toast', data)
+
+                  allowNavigation.value = true;
+
+                  // Save current state so the dirty-check stops blocking navigation
+                  initialData.value = JSON.parse(JSON.stringify(currentData.value));
 
                   skapatsDialog.value = true;
               }
@@ -610,7 +629,7 @@ onBeforeRouteLeave((to, from, next) => {
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namm*" />
-                      <VTextField v-model="fullname" label="Namn" :rules="[requiredValidator]" :disabled="disabled_client" />
+                      <VTextField v-model="fullname" :rules="[requiredValidator]" :disabled="disabled_client" />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress" />
@@ -656,14 +675,14 @@ onBeforeRouteLeave((to, from, next) => {
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="skapatsDialog = false"
+        @click="reloadPage"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-checkmark" />
+          <VIcon size="72" icon="custom-certificate" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
           <div class="dialog-title">Avtalet har skapats!</div>
@@ -676,7 +695,7 @@ onBeforeRouteLeave((to, from, next) => {
           <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
             Gå till avtalslistan
           </VBtn>
-          <VBtn class="btn-gradient" :to="{ name: 'dashboard-admin-agreements-business' }"> 
+          <VBtn class="btn-gradient" @click="reloadPage">
             Skapa ett till avtal 
           </VBtn>
         </VCardText>
@@ -693,21 +712,21 @@ onBeforeRouteLeave((to, from, next) => {
         class="btn-white close-btn"
         @click="inteSkapatsDialog = !inteSkapatsDialog"
       >
-        <VIcon size="16" icon="custom-close" />
+        <VIcon size="16" icon="custom-f-cancel" />
       </VBtn>
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">
           <VIcon size="72" icon="custom-f-cancel" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Betalningen har inte genomförts!</div>
+          <div class="dialog-title">Kunde inte skapa avtalet</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din betalning via Swich har inte behandlats korrekt, försök igen.
+          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="showError">
+          <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
             Stäng
           </VBtn>
         </VCardText>
