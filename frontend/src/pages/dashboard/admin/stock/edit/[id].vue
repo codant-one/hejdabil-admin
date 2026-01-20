@@ -1220,7 +1220,10 @@ const selectCl = client => {
         let _client = clients.value.find(item => item.id === client)
     
         mail.value = _client.email
-    }
+    } else {
+        mail.value = ''
+        refSend.value?.resetValidation()
+    }   
 }
 
 const selectClient = client => {
@@ -3499,7 +3502,7 @@ onBeforeRouteLeave((to, from, next) => {
                             Skicka pdf som e-post
                         </div>
                     </VCardText>
-                    <VCardText class="pb-0">
+                    <VCardText class="dialog-text pb-0">
                         <AppAutocomplete
                             prepend-icon="custom-profile"
                             :items="clients"
@@ -3510,18 +3513,16 @@ onBeforeRouteLeave((to, from, next) => {
                             clearable
                             clear-icon="tabler-x"
                             class="selector-user selector-truncate w-auto"
-                            @update:modelValue="selectCl"
-                            :rules="[requiredValidator]"/>
+                            @update:modelValue="selectCl"/>
                     </VCardText>
                     <VCardText class="card-form">
                         <VTextField
                             v-model="mail"
                             label="E-post"
-                            :rules="[emailValidator]"
+                            :rules="[requiredValidator, emailValidator]"
                         />                           
                     </VCardText>
-
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                   <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
                         <VBtn
                             class="btn-light"
                             @click="isConfirmSendDocumentDialogVisible = false">

@@ -260,6 +260,10 @@ const selectClient = (clientId) => {
     if (client && client.email) {
       sendDocumentEmail.value = client.email
     }
+  } else {
+    // Clear email when no client is selected
+    sendDocumentEmail.value = ''
+    sendDocumentForm.value?.resetValidation()
   }
 }
 
@@ -1496,7 +1500,7 @@ onBeforeUnmount(() => {
               Skicka PDF som e-post
             </div>
           </VCardText>
-          <VCardText class="pb-0">
+          <VCardText class="dialog-text pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="selectedClientId"
@@ -1519,8 +1523,7 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
             <VBtn
               class="btn-light"
               @click="isConfirmSendDocumentDialogVisible = false"
@@ -2095,9 +2098,7 @@ onBeforeUnmount(() => {
         .v-field {
           background-color: #f6f6f6;
           .v-field-label {
-            @media (max-width: 991px) {
-              top: 12px !important;
-            }
+            top: 12px !important;
           }
         }
       }

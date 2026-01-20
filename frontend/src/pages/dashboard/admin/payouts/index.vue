@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
@@ -9,8 +10,12 @@ import { formatDate } from '@/@core/utils/formatters'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { formatNumber } from '@/@core/utils/formatters'
+import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+
+import billogg from "@/assets/images/billogg_img.svg";
+import swish from "@/assets/images/swish_img.svg";
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -19,6 +24,7 @@ const sectionEl = ref(null);
 const hasLoaded = ref(false);
 
 const authStores = useAuthStores()
+const clientsStores = useClientsStores()
 const payoutsStores = usePayoutsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
@@ -39,9 +45,13 @@ const selectedPayout = ref({})
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const err = ref(null);
-const payoutReceiptRef = ref(null);
-const payoutReceiptMobileRef = ref(null);
-const showShareOptions = ref(false);
+
+const clients = ref([])
+const isConfirmSendPayoutDialogVisible = ref(false)
+const sendPayoutEmail = ref('')
+const sendPayoutForm = ref(null)
+const payoutToSend = ref(null)
+const selectedClientId = ref(null)
 
 const suppliers = ref([]);
 const supplier_id = ref(null);
@@ -127,9 +137,14 @@ async function fetchData(cleanFilters = false) {
 
   // Ensure suppliers are loaded once we know the user's role
   await payoutsStores.info();
+
   if (role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = payoutsStores.suppliers;
   }
+
+  // Fetch clients for send document dialog
+  await clientsStores.fetchClients({ limit: -1 })
+  clients.value = clientsStores.getClients
 
   payouts.value = payoutsStores.getPayouts
   totalPages.value = payoutsStores.last_page
@@ -157,7 +172,7 @@ const showCancelDialog = payoutData => {
 
 const seePayout = (payoutData, isMobile = false) => {
   selectedPayout.value = { ...payoutData }
-  showShareOptions.value = false
+
   if (isMobile) {
     isPayoutDetailMobileDialogVisible.value = true
   } else {
@@ -168,7 +183,7 @@ const seePayout = (payoutData, isMobile = false) => {
 const closePayoutDetailDialog = () => {
   isPayoutDetailDialogVisible.value = false
   isPayoutDetailMobileDialogVisible.value = false
-  showShareOptions.value = false
+
   // Retrasar el reset para evitar errores mientras el diálogo se cierra
   setTimeout(() => {
     selectedPayout.value = {}
@@ -503,277 +518,72 @@ onBeforeUnmount(() => {
 });
 
 const shareReceipt = (payout) => {
-  selectedPayout.value = { ...payout }
-  showShareOptions.value = true
-  // Open the appropriate detail dialog
-  if (windowWidth.value >= 1024) {
-    isPayoutDetailDialogVisible.value = true
+  payoutToSend.value = payout
+  sendPayoutEmail.value = ''
+  selectedClientId.value = null
+  isConfirmSendPayoutDialogVisible.value = true
+
+  isPayoutDetailDialogVisible.value = false
+  isPayoutDetailMobileDialogVisible.value = false
+}
+
+const selectClient = (clientId) => {
+  if (clientId) {
+    const client = clients.value.find(c => c.id === clientId)
+    if (client && client.email) {
+      sendPayoutEmail.value = client.email
+    }
   } else {
-    isPayoutDetailMobileDialogVisible.value = true
+    // Clear email when no client is selected
+    sendPayoutEmail.value = ''
+    sendPayoutForm.value?.resetValidation()
   }
 }
 
-const captureAndShare = async (method) => {
-  try {
-    // Check if image is already saved
-    showShareOptions.value = true
-    if (selectedPayout.value.image_url && method !== 'regenerate') {
-      // If image already exists, share directly
-      if (method === 'whatsapp') {
-        shareToWhatsApp()
-      } else if (method === 'email') {
-        shareToEmail()
-      } else if (method === 'download') {
-        downloadImage()
-      }
-      return
-    }
+const handleSendPayout = () => {
+  sendPayoutForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      let formData = new FormData()
+      formData.append('ids', payoutToSend.value.id)
+      formData.append('email', sendPayoutEmail.value)
 
-    // Show generation message
-    isRequestOngoing.value = true
-    advisor.value = {
-      type: 'info',
-      message: 'Skapa betalningskvitto',
-      show: true
-    }
+      isConfirmSendPayoutDialogVisible.value = false
+      isRequestOngoing.value = true
 
-    // Wait a moment for the DOM to be ready
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
-    // Dynamically import html2canvas
-    const html2canvas = (await import('html2canvas')).default
-    
-    // Determine which container to capture
-    let element = null
-    
-    if (isPayoutDetailDialogVisible.value && payoutReceiptRef.value) {
-      element = payoutReceiptRef.value.$el || payoutReceiptRef.value
-    } else if (isPayoutDetailMobileDialogVisible.value && payoutReceiptMobileRef.value) {
-      element = payoutReceiptMobileRef.value.$el || payoutReceiptMobileRef.value
-    }
-    
-    if (!element || !document.body.contains(element)) {
-      element = document.querySelector('.payout-receipt-card')
-    }
-    
-    if (!element || !document.body.contains(element)) {
-      console.error('Element to capture not found')
-      advisor.value = {
-        type: 'error',
-        message: 'Fel vid bildtagning',
-        show: true
-      }
-      setTimeout(() => {
-        advisor.value = { 
-          type: '', 
-          message: '', 
-          show: false 
-        }
-        isRequestOngoing.value = false
-      }, 3000)
-      return
-    }
-
-    // Capture the element as an image
-    const canvas = await html2canvas(element, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      logging: false,
-      useCORS: true,
-      allowTaint: true,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight
-    })
-
-    // Convert canvas to blob
-    canvas.toBlob(async (blob) => {
-      try {
-        // Send to backend to save
-        const formData = new FormData()
-        formData.append('image', blob, `${selectedPayout.value.reference}.png`)
-        formData.append('payout_id', selectedPayout.value.id)
-
-        const response = await payoutsStores.saveReceiptImage(selectedPayout.value.id, formData)
-        
-        if (response.data.success) {
-          // Update the payout with the new image
-          selectedPayout.value = response.data.data.payout
-          
-          advisor.value = {
-            type: 'success',
-            message: 'Kvitto genererat korrekt',
-            show: true
-          }
-          
-          setTimeout(() => {
-            advisor.value = { 
-              type: '', 
-              message: '', 
-              show: false 
+      payoutsStores.sendPayout(formData)
+        .then((res) => {
+          if (res.data.success) {
+            advisor.value = {
+              type: 'success',
+              message: 'Utbetalningen har skickats!',
+              show: true
             }
-            isRequestOngoing.value = false
-            
-            // Now share according to the method
-            if (method === 'whatsapp') {
-              shareToWhatsApp()
-            } else if (method === 'email') {
-              shareToEmail()
-            } else if (method === 'download') {
-              downloadImage()
-            }
-          }, 3000)
-        } else {
-          throw new Error('Could not save the image on server')
-        }
-      } catch (error) {
-        console.error('Error saving the image:', error)
-        advisor.value = {
-          type: 'error',
-          message: 'Fel vid sparande av kvittot',
-          show: true
-        }
-        setTimeout(() => {
-          advisor.value = { 
-            type: '', 
-            message: '', 
-            show: false 
           }
           isRequestOngoing.value = false
-        }, 3000)
-      }
-    }, 'image/png')
-  } catch (error) {
-    console.error('Error capturing the image:', error)
-    advisor.value = {
-      type: 'error',
-      message: 'Fel vid generering av kvittot',
-      show: true
-    }
-    setTimeout(() => {
-      advisor.value = { type: '', message: '', show: false }
-    }, 3000)
-  }
-}
+        })
+        .catch((err) => {
+          advisor.value = {
+            type: 'error',
+            message: err.message || 'Ett fel inträffade',
+            show: true
+          }
+          isRequestOngoing.value = false
+        })
 
-const shareToWhatsApp = async () => {
-  const imageUrl = selectedPayout.value.image_url
-  
-  // Detect if device is mobile
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  
-  // Try Web Share API first (works on mobile)
-  if (isMobile && navigator.share) {
-    try {
-      // Fetch the image from URL and convert to blob
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
-      
-      // Create file from blob
-      const file = new File(
-        [blob], 
-        `swish-kvitto-${selectedPayout.value.reference}.png`, 
-        { type: 'image/png' }
-      )
-      
-      // Prepare share data with image file
-      const shareData = {
-        title: 'Swish-betalningskvitto',
-        text: `Swish-betalningskvitto\nReferens: ${selectedPayout.value.reference}\nMeddelande: ${selectedPayout.value.message}\nBelopp: ${formatNumber(selectedPayout.value.amount)} kr\nDatum: ${formatDateTime(selectedPayout.value.created_at)}`,
-        files: [file]
-      }
-      
-      // Try to share with files
-      if (navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData)
-        
+      setTimeout(() => {
+        sendPayoutEmail.value = ''
+        payoutToSend.value = null
+        selectedClientId.value = null
         advisor.value = {
-          type: 'success',
-          message: 'Kvitto delat!',
-          show: true
+          type: '',
+          message: '',
+          show: false
         }
-        
-        setTimeout(() => {
-          advisor.value = { type: '', message: '', show: false }
-        }, 3000)
-        return
-      }
-    } catch (error) {
-      // If user cancelled or error, continue to fallback
-      if (error.name === 'AbortError') {
-        console.log('User cancelled share')
-        return
-      }
-      console.log('Web Share API failed, using fallback:', error)
+      }, 3000)
     }
-  }
-  
-  // Fallback: Open WhatsApp directly with message
-  const message = encodeURIComponent(
-    `Swish-betalningskvitto\n` +
-    `Referens: ${selectedPayout.value.reference}\n` +
-    `Meddelande: ${selectedPayout.value.message}\n` +
-    `Belopp: ${formatNumber(selectedPayout.value.amount)} kr\n` +
-    `Datum: ${formatDateTime(selectedPayout.value.created_at)}\n\n` +
-    `${imageUrl}`
-  )
-  
-  window.open(`https://wa.me/?text=${message}`, '_blank')
-  
-  advisor.value = {
-    type: 'success',
-    message: 'Öppnar WhatsApp...',
-    show: true
-  }
-
-  setTimeout(() => {
-    advisor.value = { 
-      type: '', 
-      message: '', 
-      show: false 
-    }
-  }, 3000)
+  })
 }
 
-const shareToEmail = () => {
-  const imageUrl = selectedPayout.value.image_url
-  const subject = encodeURIComponent('Swish-betalningskvitto')
-  const body = encodeURIComponent(
-    `Swish-betalningskvitto\n` +
-    `Referens: ${selectedPayout.value.reference}\n` +
-    `Meddelande: ${selectedPayout.value.message}\n` +
-    `Belopp: ${formatNumber(selectedPayout.value.amount)} kr\n` +
-    `Datum: ${formatDateTime(selectedPayout.value.created_at)}\n\n` +
-    `Se kvitto: ${imageUrl}`
-  )
-  
-  // Öppna e-postklient
-  window.location.href = `mailto:?subject=${subject}&body=${body}`
-}
-
-const downloadImage = () => {
-  const imageUrl = selectedPayout.value.image_url
-  const link = document.createElement('a')
-  link.href = imageUrl
-  link.download = `swish-kvitto-${selectedPayout.value.reference}.png`
-  link.target = '_blank'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  
-  advisor.value = {
-    type: 'success',
-    message: 'Laddar ner kvitto...',
-    show: true
-  }
-
-  setTimeout(() => {
-    advisor.value = { 
-      type: '', 
-      message: '',
-      show: false  
-    }
-  }, 3000)
-}
 </script>
 
 <template>
@@ -1034,7 +844,7 @@ const downloadImage = () => {
                     v-if="$can('view','payouts') && payout.state.id === 4"
                     @click="shareReceipt(payout)">
                     <template #prepend>
-                      <VIcon icon="custom-forward" size="24" />
+                      <VIcon icon="custom-paper-plane" size="24" />
                     </template>
                     <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
                   </VListItem>
@@ -1203,42 +1013,14 @@ const downloadImage = () => {
       <VCard ref="payoutReceiptRef" class="payout-receipt-card">
         <VCardText class="dialog-title-box" data-html2canvas-ignore="true">
           <div class="dialog-title">
-            {{ showShareOptions ? 'Dela' : 'Detaljer' }}
+            Detaljer
           </div>
         </VCardText>
 
-        <VCardText v-if="showShareOptions" class="dialog-text px-4 d-flex gap-2">
-            <VSpacer />
-            <VBtn
-              class="btn-light"
-              style="width: 48px!important;"
-              @click="captureAndShare('whatsapp')"
-              data-html2canvas-ignore="true"
-            >
-              <VIcon icon="mdi-whatsapp" size="20" />
-            </VBtn>
-            <VBtn
-              class="btn-light"
-              style="width: 48px!important;"
-              @click="captureAndShare('email')"
-              data-html2canvas-ignore="true"
-            >
-              <VIcon icon="mdi-email-outline" size="20" />
-            </VBtn>
-            <VBtn
-              class="btn-light"
-              style="width: 48px!important;"
-              @click="captureAndShare('download')"
-              data-html2canvas-ignore="true"
-            >
-              <VIcon icon="custom-download" size="20" />
-            </VBtn>
-        </VCardText>
         <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
           <div class="bg-alert">
             <div class="d-flex justify-between" data-html2canvas-ignore="true">
               <div
-                v-if="!showShareOptions"
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
               >
@@ -1247,10 +1029,10 @@ const downloadImage = () => {
 
               <div v-if="selectedPayout.payout_state_id === 4" class="d-flex gap-2">
                 <VBtn
-                  v-if="selectedPayout.payout_state_id === 4 && !showShareOptions"
+                  v-if="selectedPayout.payout_state_id === 4"
                   class="btn-light"
                   style="height: 40px !important;"
-                  @click="showShareOptions = true"
+                  @click="shareReceipt(selectedPayout)"
                 >
                   <VIcon icon="custom-forward" size="24" />
                   Dela kvitto
@@ -1296,12 +1078,12 @@ const downloadImage = () => {
 
         <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
           <img 
-            src="@/assets/images/billogg_img.png" 
+            :src="billogg" 
             alt="Billogg image"
           />
           <VDivider vertical />
           <img 
-            src="@/assets/images/swish_img.png" 
+            :src="swish" 
             alt="Swish image"
           />
         </VCardText>
@@ -1331,33 +1113,9 @@ const downloadImage = () => {
             </VBtn>
             <div v-if="selectedPayout.payout_state_id === 4" class="d-flex gap-2">
               <VBtn
-                v-if="showShareOptions"
+                v-if="selectedPayout.payout_state_id === 4"
                 class="btn-light"
-                style="width: 48px!important;"
-                @click="captureAndShare('whatsapp')"
-              >
-                <VIcon icon="mdi-whatsapp" size="20" />
-              </VBtn>
-              <VBtn
-                v-if="showShareOptions"
-                class="btn-light"
-                style="width: 48px!important;"
-                @click="captureAndShare('email')"
-              >
-                <VIcon icon="mdi-email-outline" size="20" />
-              </VBtn>
-              <VBtn
-                v-if="showShareOptions"
-                class="btn-light"
-                style="width: 48px!important;"
-                @click="captureAndShare('download')"
-              >
-                <VIcon icon="custom-download" size="20" />
-              </VBtn>
-              <VBtn
-                v-if="selectedPayout.payout_state_id === 4 && !showShareOptions"
-                class="btn-light"
-                @click="showShareOptions = true"
+                @click="shareReceipt(selectedPayout)"
               >
                 <VIcon icon="custom-forward" size="24" />
                 Dela kvitto
@@ -1369,7 +1127,6 @@ const downloadImage = () => {
         <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
           <div class="bg-alert">
             <div
-              v-if="!showShareOptions"
               class="status-chip"
               :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
             >
@@ -1414,16 +1171,79 @@ const downloadImage = () => {
 
         <VCardText class="dialog-text pa-4 d-flex justify-center align-center gap-4" style="height: 32px !important;">
           <img 
-            src="@/assets/images/billogg_img.png" 
+            :src="billogg" 
             alt="Billogg image"
           />
           <VDivider vertical class="my-auto"/>
           <img 
-            src="@/assets/images/swish_img.png" 
+            :src="swish"
             alt="Swish image"
           />
         </VCardText>
       </VCard>
+    </VDialog>
+
+    <!-- 👉 Send Payout Dialog -->
+    <VDialog
+      v-model="isConfirmSendPayoutDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendPayoutDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VForm
+        ref="sendPayoutForm"
+        @submit.prevent="handleSendPayout"
+      >
+        <VCard>
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+            <div class="dialog-title">
+              Skicka PDF som e-post
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text pb-0">
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="selectedClientId"
+              :items="clients"
+              :item-title="item => item.fullname"
+              :item-value="item => item.id"
+              placeholder="Kunder"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate w-auto"
+              @update:modelValue="selectClient"
+            />
+          </VCardText>
+          <VCardText class="card-form">
+            <VTextField
+              v-model="sendPayoutEmail"
+              label="E-post"
+              placeholder="Ange mottagarens e-postadress"
+              :rules="[requiredValidator, emailValidator]"
+            />
+          </VCardText>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+            <VBtn
+              class="btn-light"
+              @click="isConfirmSendPayoutDialogVisible = false"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+              Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- 👉 Add New Payout -->
@@ -1535,7 +1355,7 @@ const downloadImage = () => {
             v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4"
             @click="shareReceipt(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <VIcon icon="custom-forward" size="24" />
+              <VIcon icon="custom-paper-plane" size="24" />
             </template>
             <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
           </VListItem>
