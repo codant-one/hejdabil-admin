@@ -113,4 +113,13 @@ class VehicleTask extends Model
         
         return true;
     }
+
+    public static function updateType($task) {
+
+        $task->update([ 
+            'is_cost' => 1
+        ]);
+
+        return $task;
+    }   
 }

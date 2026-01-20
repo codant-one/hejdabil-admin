@@ -49,6 +49,7 @@ const company = ref(null)
 const role = ref(null)
 
 const isRequestOngoing = ref(true)
+const isConfirmStatusTaskDialogVisible = ref(false)
 const isConfirmStatusDialogVisible = ref(false)
 const isConfirmTaskDialogVisible = ref(false)
 const isConfirmTaskMobileDialogVisible = ref(false)
@@ -283,6 +284,14 @@ const formatDateDisplay = (dateString) => {
     // Parsear directamente el string para evitar problemas de zona horaria
     const [year, month, day] = dateString.split('T')[0].split('-')
     return `${year}/${month}/${day}`
+}
+
+const isDateOverdue = (dateString) => {
+    if (!dateString) return false
+    const taskDate = new Date(dateString.split('T')[0])
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    return taskDate < today
 }
 
 const formatCommentDate = (dateString) => {
@@ -718,6 +727,42 @@ const closeTask = () => {
     selectedTask.value.start_date = null
     selectedTask.value.end_date = null
     selectedTask.value.is_cost = 0
+}
+
+const showStatusModal = (taskData) => {
+    selectedTask.value = {
+        ...taskData,
+        start_date: taskData.start_date ?? null,
+        end_date: taskData.end_date ?? null
+    }
+    isConfirmStatusTaskDialogVisible.value = true
+}
+
+const updateTypeTask = async () => {
+    isRequestOngoing.value = true
+
+    await tasksStores.typeTask(selectedTask.value.id)
+
+    isRequestOngoing.value = false
+    isConfirmStatusTaskDialogVisible.value = false
+
+    advisor.value = {
+        type: 'success',
+        message: 'Uppgift uppdaterad!',
+        show: true
+    }
+
+    await fetchData()
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return true
 }
 
 const showTask = (taskData, isMobile = false, is_edit = false) => {
@@ -2296,7 +2341,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <span class="note-value-field w-100">
                                                     {{ formatDateDisplay(task.start_date) }}
                                                 </span>
-                                                <span class="note-value-field w-100">
+                                                <span 
+                                                    class="note-value-field w-100"
+                                                    :class="{ 'date-overdue': isDateOverdue(task.end_date) }"
+                                                >
                                                     {{ formatDateDisplay(task.end_date) }}
                                                 </span>
                                             </div>
@@ -2330,6 +2378,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         icon="custom-forward" 
                                                         size="24" 
                                                         class="cursor-pointer me-2"
+                                                        @click="showStatusModal(task)"
                                                     />
                                                     <VIcon 
                                                         icon="custom-pencil" 
@@ -2574,6 +2623,49 @@ onBeforeRouteLeave((to, from, next) => {
                 </VCardText>
             </VCard> 
         </VForm>
+
+        <!-- 👉 Confirm update state task -->
+        <VDialog
+            v-model="isConfirmStatusTaskDialogVisible"
+            persistent
+            class="action-dialog" >
+            
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="isConfirmStatusTaskDialogVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <!-- Dialog Content -->
+            <VForm
+                ref="refForm"
+                @submit.prevent="updateTypeTask">
+                <VCard flat class="card-form">
+                    <VCardText class="dialog-title-box">
+                        <VIcon size="32" icon="custom-forward" class="action-icon" />
+                        <div class="dialog-title">
+                            Redigera typ
+                        </div>
+                    </VCardText>
+                    <VCardText class="dialog-text">
+                        Är du säker på att du vill ändra planen <strong>{{ selectedTask.measure }}</strong> till kostnad?
+                    </VCardText>
+
+                    <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                        <VBtn
+                            class="btn-light"
+                            @click="isConfirmStatusTaskDialogVisible = false">
+                            Avbryt
+                        </VBtn>
+                        <VBtn class="btn-gradient" type="submit">
+                            Uppdatera
+                        </VBtn>
+                    </VCardText>
+                </VCard>
+            </VForm>
+        </VDialog>
 
         <!-- 👉 Confirm update state -->
         <VDialog
@@ -3200,7 +3292,6 @@ onBeforeRouteLeave((to, from, next) => {
             </VForm>
         </VDialog>
 
-
         <!-- 👉 Create document (Desktop) -->
         <VNavigationDrawer
             temporary
@@ -3673,6 +3764,11 @@ onBeforeRouteLeave((to, from, next) => {
         font-size: 16px;
         line-height: 24px;
         color: #878787;
+
+        &.date-overdue {
+            border-color: #FF4D4F;
+            color: #9B191B;
+        }
     }
 
     .v-tabs.vehicles-tabs {

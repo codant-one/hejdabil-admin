@@ -47,6 +47,19 @@ export const useTasksStores = defineStore('tasks', {
                     this.setLoading(false)
                 })  
         },
+        typeTask(id) {
+            this.setLoading(true)
+            
+            return Tasks.type(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
         sendComment(data) {
             this.setLoading(true)
 

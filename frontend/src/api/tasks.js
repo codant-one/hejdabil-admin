@@ -14,6 +14,10 @@ class Tasks {
         return axios.delete(`/tasks/${id}`)
     }
 
+    type(id) {
+        return axios.get(`/tasks/type/${id}`)
+    }
+
     comment(data) {
         return axios.post('/tasks/comment', data)
     }

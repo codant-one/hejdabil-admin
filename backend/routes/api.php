@@ -167,6 +167,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
 
     //Tasks
     Route::group(['prefix' => 'tasks'], function () {
+        Route::get('type/{id}', [VehicleTaskController::class, 'updateType']);
         Route::post('comment', [VehicleTaskController::class, 'comment']);
         Route::put('comment/{id}', [VehicleTaskController::class, 'updateComment']);
         Route::delete('comment/{id}', [VehicleTaskController::class, 'deleteComment']);
