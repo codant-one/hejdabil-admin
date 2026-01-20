@@ -630,7 +630,7 @@ onBeforeRouteLeave((to, from, next) => {
                     $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
                 ]"
             >
-                 <VCardText class="p-0">
+                <VCardText class="p-0">
                     <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
                 
                     <div class="d-flex flex-column gap-4">
