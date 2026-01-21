@@ -650,26 +650,27 @@ onBeforeUnmount(() => {
                   <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
                     {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
                   </span>
-                  <!--<span class="text-sm text-disabled">
-                    {{ vehicle.color }}
-                  </span>-->
                 </div>
               </div>
             </td>   
             <td class="text-center" v-if="isColVisible('reg_num')"> {{ vehicle.reg_num }} </td>             
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
             <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
-            <td class="text-center cursor-pointer" v-if="isColVisible('comments')">
-              <VTooltip location="bottom">
+            <td class="text-center" v-if="isColVisible('comments')">
+              <VTooltip 
+                v-if="vehicle.comments && vehicle.comments.length > 15"
+                location="bottom"
+                max-width="300">
                 <template #activator="{ props }">
-                  <span v-bind="props" v-if="vehicle.comments">
+                  <span v-bind="props" class="cursor-pointer">
                     {{ truncateText(vehicle.comments) }}
                   </span>
                 </template>
                 <span>{{ vehicle.comments }}</span>
               </VTooltip>
+              <span v-else>{{ vehicle.comments }}</span>
             </td>
-            <td class="text-center text-wrap d-flex justify-center align-center" v-if="isColVisible('state')"> 
+            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 120px;" v-if="isColVisible('state')"> 
               <div
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(vehicle.state.id)?.class}`"
@@ -679,7 +680,7 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center" v-if="isColVisible('vat')"> {{ vehicle.iva_purchase?.name }} </td>
             <td class="text-center" v-if="isColVisible('control_inspection')"> {{ vehicle.control_inspection }} </td>
-            <td class="text-wrap" v-if="isColVisible('seller')">
+            <td style="width: 1%; white-space: nowrap" v-if="isColVisible('seller')">
               <div class="d-flex flex-column">
                 <span v-if="vehicle.client_purchase?.client_id !== null" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_purchase?.client)">
                   {{ vehicle.client_purchase?.fullname }} 
@@ -690,7 +691,7 @@ onBeforeUnmount(() => {
                 <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone }}</span>
               </div>
             </td> 
-            <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
+            <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
               <span v-if="vehicle.supplier">
                 {{ vehicle.supplier.user.name }}
                 {{ vehicle.supplier.user.last_name ?? "" }}
@@ -714,9 +715,11 @@ onBeforeUnmount(() => {
                     {{ vehicle.user.name }} {{ vehicle.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="vehicle.user.email && vehicle.user.email.length > 20">
+                    <VTooltip 
+                      v-if="vehicle.user.email && vehicle.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(vehicle.user.email, 20) }}
                         </span>
                       </template>

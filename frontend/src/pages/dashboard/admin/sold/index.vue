@@ -461,7 +461,7 @@ onBeforeUnmount(() => {
             :key="vehicle.id"
             style="height: 3rem;">
             <td class="text-center" v-if="isColVisible('sale_date')"> {{ vehicle.sale_date }}</td>
-            <td class="text-wrap cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id)">
+            <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id)">
               <div class="d-flex align-center gap-x-3"> 
                 <VAvatar
                   v-if="vehicle.model?.brand?.logo"
@@ -493,19 +493,19 @@ onBeforeUnmount(() => {
               {{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr
             </td>         
             <td class="text-center" v-if="isColVisible('costs')"> {{ formatNumber((vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
-            <td class="text-wrap" v-if="isColVisible('buyer')">
+            <td style="width: 1%; white-space: nowrap" v-if="isColVisible('buyer')">
               <div v-if="vehicle.client_sale" class="d-flex flex-column">
-                <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer" @click="seeClient(vehicle.client_sale.client)">
+                <span v-if="vehicle.client_sale.client_id !== null" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_sale.client)">
                   {{ vehicle.client_sale.fullname }} 
                 </span>
-                <span v-else class="font-weight-medium ">
+                <span v-else class="font-weight-medium text-aqua">
                   {{ vehicle.client_sale.fullname }} 
                 </span>
                 <span class="text-sm text-disabled">{{ vehicle.client_sale.phone }}</span>
               </div>
               <span v-else class="text-sm text-disabled">—</span>
             </td> 
-            <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
+            <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
               <span v-if="vehicle.supplier">
                 {{ vehicle.supplier.user.name }}
                 {{ vehicle.supplier.user.last_name ?? "" }}
@@ -529,9 +529,11 @@ onBeforeUnmount(() => {
                     {{ vehicle.user.name }} {{ vehicle.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="vehicle.user.email && vehicle.user.email.length > 20">
+                    <VTooltip 
+                      v-if="vehicle.user.email && vehicle.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(vehicle.user.email, 20) }}
                         </span>
                       </template>

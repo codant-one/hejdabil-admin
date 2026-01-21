@@ -507,50 +507,24 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td class="text-center">
-              <span class="">
-                <VTooltip location="bottom" v-if="client.address && client.address.length > 20">
-                  <template #activator="{ props }">
-                    <span v-bind="props">
-                      {{ truncateText(client.address, 20) }}
-                    </span>
-                  </template>
-                  <span>{{ client.address }}</span>
-                </VTooltip>
-                <span v-else>{{ client.address }}</span>
-              </span>
+              <VTooltip 
+                v-if="client.address && client.address.length > 20"
+                location="bottom"
+                max-width="300">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer">
+                    {{ truncateText(client.address, 20) }}
+                  </span>
+                </template>
+                <span>{{ client.address }}</span>
+              </VTooltip>
+              <span v-else>{{ client.address }}</span>
             </td>
-            <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
-              <div class="d-flex align-center gap-x-1" v-if="client.supplier">
-                <VAvatar
-                  :variant="client.supplier.user.avatar ? 'outlined' : 'tonal'"
-                  size="38"
-                >
-                  <VImg
-                    v-if="client.supplier.user.avatar"
-                    style="border-radius: 50%"
-                    :src="themeConfig.settings.urlStorage + client.supplier.user.avatar"
-                  />
-                  <span v-else>{{
-                    avatarText(client.supplier.user.name)
-                  }}</span>
-                </VAvatar>
-                <div class="d-flex flex-column">
-                  <span class="font-weight-medium">
-                    {{ client.supplier.user.name }} {{ client.supplier.user.last_name ?? "" }}
-                  </span>
-                  <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="client.supplier.user.email && client.supplier.user.email.length > 20">
-                      <template #activator="{ props }">
-                        <span v-bind="props">
-                          {{ truncateText(client.supplier.user.email, 20) }}
-                        </span>
-                      </template>
-                      <span>{{ client.supplier.user.email }}</span>
-                    </VTooltip>
-                    <span class="text-sm text-disabled"v-else>{{ client.supplier.user.email }}</span>
-                  </span>
-                </div>
-              </div>
+            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+              <span v-if="client.supplier">
+                {{ client.supplier.user.name }}
+                {{ client.supplier.user.last_name ?? "" }}
+              </span>
             </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
@@ -570,9 +544,11 @@ onBeforeUnmount(() => {
                     {{ client.user.name }} {{ client.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="client.user.email && client.user.email.length > 20">
+                    <VTooltip 
+                      v-if="client.user.email && client.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(client.user.email, 20) }}
                         </span>
                       </template>

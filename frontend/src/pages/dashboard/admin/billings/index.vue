@@ -778,9 +778,11 @@ onBeforeUnmount(() => {
                     {{ billing.user.name }} {{ billing.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="billing.user.email && billing.user.email.length > 20">
+                    <VTooltip 
+                      v-if="billing.user.email && billing.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(billing.user.email, 20) }}
                         </span>
                       </template>

@@ -822,11 +822,11 @@ const resolveStatusAgreement = state => {
                     Signera Status 
                     <span>
                       <VIcon icon="custom-circle-help" class="ms-2" size="22" />
-                      <v-tooltip
+                      <VTooltip
                         activator="parent"
                         location="bottom"
-                        content-class="tooltip-content"
-                      >Klicka för att se hur signeringsprocessen fortskrider.</v-tooltip>
+                      >Klicka för att se hur signeringsprocessen fortskrider.
+                    </VTooltip>
                     </span>
                   </th>
                   <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>

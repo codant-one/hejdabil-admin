@@ -1695,17 +1695,6 @@ const goToTracker = (agreementData) => {
     background-color: transparent !important;
   }
 
-  :deep(.tooltip-content) {
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 1.5;
-      color: #454545;
-      background: transparent;
-      box-shadow: 0 0 40px 0 rgba(0, 0, 0, 0.1490196078);
-      background: rgb(var(--v-theme-surface));
-      border-radius: 8px;
-      padding: 16px;
-  }
 </style>
 <route lang="yaml">
   meta:

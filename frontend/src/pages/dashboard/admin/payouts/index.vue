@@ -833,8 +833,8 @@ const handleSendPayout = () => {
             <th scope="col" class="text-center"> Personnummer </th>
             <th scope="col" class="text-center"> Mobilnummer </th>
             <th scope="col" class="text-center"> Belopp </th>
-            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Skapad av </th>
             <th scope="col" class="text-center"> Status </th>
+            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Skapad av </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
           </tr>
         </thead>
@@ -849,6 +849,15 @@ const handleSendPayout = () => {
             <td class="text-center"> {{ payout.payee_ssn ?? ''}} </td>
             <td class="text-center"> +{{ payout.payee_alias ?? ''}} </td>
             <td class="text-center"> {{ formatNumber(payout.amount ?? 0) }} kr</td>
+            <!-- 😵 Statuses -->
+            <td class="text-center text-wrap d-flex justify-center align-center">
+              <div
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(payout.state.id)?.class}`"
+              >
+                {{ payout.state.name }}
+              </div>
+            </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
@@ -867,9 +876,11 @@ const handleSendPayout = () => {
                     {{ payout.user.name }} {{ payout.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="payout.user.email && payout.user.email.length > 20">
+                    <VTooltip 
+                      v-if="payout.user.email && payout.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(payout.user.email, 20) }}
                         </span>
                       </template>
@@ -879,16 +890,7 @@ const handleSendPayout = () => {
                   </span>
                 </div>
               </div>
-            </td>
-            <!-- 😵 Statuses -->
-            <td class="text-center text-wrap d-flex justify-center align-center">
-              <div
-                class="status-chip"
-                :class="`status-chip-${resolveStatus(payout.state.id)?.class}`"
-              >
-                {{ payout.state.name }}
-              </div>
-            </td>
+            </td>            
             <!-- 👉 Actions -->
             <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')">      
               <VMenu>

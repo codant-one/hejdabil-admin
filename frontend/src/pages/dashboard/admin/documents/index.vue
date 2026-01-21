@@ -1098,8 +1098,8 @@ onBeforeUnmount(() => {
             <th scope="col">Titel</th>
             <th scope="col" class="text-center">Skapad</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
-            <th scope="col">Skapad av</th>
             <th scope="col" class="text-center">Signera status</th>
+            <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
           </tr>
         </thead>
@@ -1128,36 +1128,28 @@ onBeforeUnmount(() => {
               </span>
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
-              <div class="d-flex align-center gap-x-1" v-if="document.supplier">
-                <VAvatar
-                  :variant="document.supplier.user.avatar ? 'outlined' : 'tonal'"
-                  size="38"
-                >
-                  <VImg
-                    v-if="document.supplier.user.avatar"
-                    style="border-radius: 50%"
-                    :src="themeConfig.settings.urlStorage + document.supplier.user.avatar"
-                  />
-                  <span v-else>{{
-                    avatarText(document.supplier.user.name)
-                  }}</span>
-                </VAvatar>
-                <div class="d-flex flex-column">
-                  <span class="font-weight-medium">
-                    {{ document.supplier.user.name }} {{ document.supplier.user.last_name ?? "" }}
-                  </span>
-                  <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="document.supplier.user.email && document.supplier.user.email.length > 20">
-                      <template #activator="{ props }">
-                        <span v-bind="props">
-                          {{ truncateText(document.supplier.user.email, 20) }}
-                        </span>
-                      </template>
-                      <span>{{ document.supplier.user.email }}</span>
-                    </VTooltip>
-                    <span class="text-sm text-disabled"v-else>{{ document.supplier.user.email }}</span>
-                  </span>
-                </div>
+               <span v-if="document.supplier">
+                {{ document.supplier.user.name }}
+                {{ document.supplier.user.last_name ?? "" }}
+              </span>
+            </td>
+            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 180px;">
+              <div
+                v-if="document.tokens && document.tokens.length > 0"
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+              </div>
+
+              <div
+                v-else
+                class="status-chip"
+                :class="`status-chip-${resolveStatus('pending')?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                 {{ resolveStatus('pending')?.name }}
               </div>
             </td>
             <td style="width: 1%; white-space: nowrap">
@@ -1178,9 +1170,11 @@ onBeforeUnmount(() => {
                     {{ document.user.name }} {{ document.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="document.user.email && document.user.email.length > 20">
+                    <VTooltip 
+                      v-if="document.user.email && document.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(document.user.email, 20) }}
                         </span>
                       </template>
@@ -1190,26 +1184,7 @@ onBeforeUnmount(() => {
                   </span>
                 </div>
               </div>
-            </td>
-            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 150px;">
-              <div
-                v-if="document.tokens && document.tokens.length > 0"
-                class="status-chip"
-                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
-              >
-                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
-              </div>
-
-              <div
-                v-else
-                class="status-chip"
-                :class="`status-chip-${resolveStatus('pending')?.class}`"
-              >
-                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
-                 {{ resolveStatus('pending')?.name }}
-              </div>
-            </td>
+            </td>            
             <!-- 👉 Actions -->
             <td
               class="text-center"
