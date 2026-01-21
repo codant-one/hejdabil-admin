@@ -700,30 +700,35 @@ onBeforeUnmount(() => {
                     {{ note.comment }}
                 </div>
 
-                <div class="text-comments mt-10">
-                  Datum
+                <div 
+                  class="d-flex gap-2 mt-10 mb-4"
+                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+                  <div :class="windowWidth < 1024 ? 'w-100' : 'w-50'">
+                    <div class="text-comments">
+                      Datum
+                    </div>
+                    <div class="note-value-field mt-4">
+                      {{ 
+                        new Date(note.created_at).toLocaleString('en-GB', { 
+                          year: 'numeric', 
+                          month: '2-digit', 
+                          day: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit'
+                        })
+                      }}
+                    </div>  
+                  </div>
+                  <div :class="windowWidth < 1024 ? 'w-100' : 'w-50'">
+                    <div class="text-comments">
+                      Egen värdering
+                    </div>
+                    <div class="note-value-field mt-4">
+                      {{ formatNumber(note.note ?? 0) }} (kr)
+                    </div> 
+                  </div>
                 </div>
-                <div class="note-value-field my-4">
-                  {{ 
-                    new Date(note.created_at).toLocaleString('en-GB', { 
-                      year: 'numeric', 
-                      month: '2-digit', 
-                      day: '2-digit', 
-                      hour: '2-digit', 
-                      minute: '2-digit', 
-                      second: '2-digit', 
-                      hour12: false 
-                    })
-                  }}
-                </div>  
-                <div class="text-comments my-4">
-                  Egen värdering
-                </div>
-
-                <div class="note-value-field my-4">
-                  {{ formatNumber(note.note ?? 0) }} (kr)
-                </div>       
-
+                
                 <div class="d-flex align-center px-0">
                     <div class="text-no-wrap">
                         <VAvatar
@@ -1323,7 +1328,7 @@ onBeforeUnmount(() => {
     background-color: #F6F6F6;
     border-radius: 8px;
     border: 1px solid #E7E7E7;
-    padding: 0 16px;
+    padding: 0 8px;
     height: 40px !important;
     align-items: center;
     display: flex;
@@ -1349,7 +1354,7 @@ onBeforeUnmount(() => {
     font-weight: 400;
     font-size: 16px;
     line-height: 100%;
-    color: #878787; 
+    color: #878787;
   }
 
   .text-comments {
