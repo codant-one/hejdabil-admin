@@ -89,10 +89,6 @@ async function fetchData() {
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
 
-  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
-    suppliers.value = agreementsStores.getSuppliers
-  }
-
   agreements.value = agreementsStores.getAgreements
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount  
@@ -579,9 +575,11 @@ const resolveStatusAgreement = state => {
                           {{ billing.user.name }} {{ billing.user.last_name ?? "" }}
                         </span>
                         <span class="text-sm text-disabled">
-                          <VTooltip location="bottom" v-if="billing.user.email && billing.user.email.length > 20">
+                          <VTooltip 
+                            v-if="billing.user.email && billing.user.email.length > 20"
+                            location="bottom" >
                             <template #activator="{ props }">
-                              <span v-bind="props">
+                              <span v-bind="props" class="cursor-pointer">
                                 {{ truncateText(billing.user.email, 20) }}
                               </span>
                             </template>

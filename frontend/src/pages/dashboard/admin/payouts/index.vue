@@ -6,7 +6,7 @@ import { usePayoutsStores } from '@/stores/usePayouts'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
-import { formatDate } from '@/@core/utils/formatters'
+import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { formatNumber } from '@/@core/utils/formatters'
@@ -397,26 +397,6 @@ const truncateText = (text, length = 15) => {
     return text.substring(0, length) + '...';
   }
   return text;
-};
-
-const formatDateTime = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}/${month}/${day} ${hours}:${minutes}`;
-};
-
-const formatDateYMD = (dateString) => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}/${month}/${day}`;
 };
 
 const updateStateId = (newStateId) => {

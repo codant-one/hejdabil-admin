@@ -6,7 +6,7 @@ import { useDisplay } from 'vuetify'
 import { useNotesStores } from '@/stores/useNotes'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText , formatNumber } from '@/@core/utils/formatters'
+import { avatarText , formatNumber, formatDateTime } from '@/@core/utils/formatters'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import AddNewNoteDrawer from './AddNewNoteDrawer.vue'
@@ -708,15 +708,7 @@ onBeforeUnmount(() => {
                       Datum
                     </div>
                     <div class="note-value-field mt-4">
-                      {{ 
-                        new Date(note.created_at).toLocaleString('en-GB', { 
-                          year: 'numeric', 
-                          month: '2-digit', 
-                          day: '2-digit', 
-                          hour: '2-digit', 
-                          minute: '2-digit'
-                        })
-                      }}
+                      {{ formatDateTime(note.created_at) }} 
                     </div>  
                   </div>
                   <div :class="windowWidth < 1024 ? 'w-100' : 'w-50'">

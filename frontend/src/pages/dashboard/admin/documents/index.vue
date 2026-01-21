@@ -7,7 +7,7 @@ import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from "@/@core/utils/formatters";
+import { avatarText, formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
 import logo from "@images/logos/billogg-logo.svg";
@@ -1113,19 +1113,7 @@ onBeforeUnmount(() => {
               <span>{{ document.title }}</span>
             </td>
             <td class="text-center">
-              <span>
-                {{ 
-                  new Date(document.created_at).toLocaleString('en-GB', { 
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit', 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit', 
-                    hour12: false 
-                  })
-                }}
-              </span>
+              {{ formatDateTime(document.created_at) }}
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
                <span v-if="document.supplier">
@@ -1297,8 +1285,14 @@ onBeforeUnmount(() => {
             <span class="order-id">{{ document.order_id }}</span>
             <div class="order-title-box">
               <span class="title-panel">{{ document.title }}</span>
-              <div class="title-organization">
-                {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+              <div class="gap-2 title-organization">
+                <span>
+                  {{ formatDateYMD(document.created_at) }}
+                </span>
+                <VIcon size="16" icon="custom-clock" />
+                <span>
+                  {{ document.created_at ? formatDate(document.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                </span>
               </div>
             </div>
           </VExpansionPanelTitle>
