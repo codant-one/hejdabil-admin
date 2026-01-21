@@ -130,7 +130,7 @@ class Payout extends Model
                 $pathToFile = storage_path('app/public/' . $payout->image);
                 $imageBase64 = null;
 
-                if (file_exists($pathToFile)) {
+                if ($payout->image && is_file($pathToFile)) {
                     $imageData = file_get_contents($pathToFile);
                     $mime = mime_content_type($pathToFile);
                     $imageBase64 = 'data:' . $mime . ';base64,' . base64_encode($imageData);
@@ -167,7 +167,7 @@ class Payout extends Model
                     foreach ($payouts as $payout) {
                         $pathToFile = storage_path('app/public/' . $payout->image);
 
-                        if (file_exists($pathToFile)) {
+                        if ($payout->image && is_file($pathToFile)) {
                             $mime = mime_content_type($pathToFile);
                             $message->attach($pathToFile, [
                                 'as' => \Illuminate\Support\Str::of($payout->image)->afterLast('/'),
