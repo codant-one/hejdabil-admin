@@ -13,6 +13,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import html2canvas from 'html2canvas';
 
 import billogg from "@/assets/images/billogg_img.svg";
 import swish from "@/assets/images/swish_img.svg";
@@ -65,6 +66,8 @@ const userData = ref(null)
 const role = ref(null)
 const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
+const payoutReceiptRef = ref(null)
+const payoutReceiptMobileRef = ref(null)
 
 const advisor = ref({
   type: '',
@@ -472,6 +475,13 @@ const viewReceipt = async () => {
 
     isPayoutDetailDialogVisible.value = windowWidth.value >= 1024 ? true : false
     isPayoutDetailMobileDialogVisible.value = windowWidth.value >= 1024 ? false : true
+
+    // Capturar imagen del recibo después de que el dialog se muestre
+    nextTick(() => {
+      setTimeout(() => {
+        captureAndSaveReceipt(selectedPayout.value);
+      }, 500);
+    });
   }
   
   advisor.value = {
@@ -487,6 +497,49 @@ const viewReceipt = async () => {
       show: false
     }
   }, 3000);
+};
+
+const captureAndSaveReceipt = async (payout) => {
+  // Solo capturar si el payout está en estado PAID (4) y no tiene imagen
+  if (payout.payout_state_id !== 4 || payout.image) {
+    return;
+  }
+
+  try {
+    const receiptElement = windowWidth.value >= 1024 
+      ? payoutReceiptRef.value?.$el 
+      : payoutReceiptMobileRef.value?.$el;
+    
+    if (!receiptElement) {
+      console.warn('Receipt element not found');
+      return;
+    }
+
+    const canvas = await html2canvas(receiptElement, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      const formData = new FormData();
+      formData.append('image', blob, `receipt_${payout.reference}.png`);
+
+      try {
+        await payoutsStores.saveReceiptImage(payout.id, formData);
+        // Refresh to get updated payout with image
+        await fetchData();
+      } catch (error) {
+        console.error('Error saving receipt image:', error);
+      }
+    }, 'image/png');
+
+  } catch (error) {
+    console.error('Error capturing receipt:', error);
+  }
 };
 
 function resizeSectionToRemainingViewport() {

@@ -8,6 +8,7 @@ use App\Models\PayoutState;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SwishPayoutController extends Controller
 {
@@ -74,6 +75,11 @@ class SwishPayoutController extends Controller
 
         $payout->save();
 
+        // Generar imagen del recibo si el pago fue exitoso (PAID)
+        if (strtoupper($status) === 'PAID') {
+            $this->generateReceiptImage($payout);
+        }
+
         $this->generateLog($reference, 'Payout updated successfully', [
             'payout_id' => $payout->id,
             'payout_state_id' => $payout->payout_state_id,
@@ -81,6 +87,61 @@ class SwishPayoutController extends Controller
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Generates a receipt image (PNG) for the payout using DomPDF.
+     */
+    private function generateReceiptImage(Payout $payout): void
+    {
+        try {
+            $pdf = Pdf::loadView('pdf.payout-receipt', [
+                'payout' => $payout,
+                'imageBase64' => null
+            ]);
+
+            // Guardar como imagen PNG
+            $fileName = 'payouts/' . $payout->reference . '_' . time() . '.png';
+            $storagePath = storage_path('app/public/' . $fileName);
+            
+            // Asegurar que el directorio existe
+            if (!file_exists(dirname($storagePath))) {
+                mkdir(dirname($storagePath), 0755, true);
+            }
+
+            // Obtener el PDF como string y convertir a imagen
+            $pdfContent = $pdf->output();
+            
+            // Usar Imagick si está disponible
+            if (extension_loaded('imagick')) {
+                $imagick = new \Imagick();
+                $imagick->setResolution(150, 150);
+                $imagick->readImageBlob($pdfContent);
+                $imagick->setImageFormat('png');
+                $imagick->writeImage($storagePath);
+                $imagick->destroy();
+            } else {
+                // Fallback: guardar el PDF directamente
+                $fileName = 'payouts/' . $payout->reference . '_' . time() . '.pdf';
+                $storagePath = storage_path('app/public/' . $fileName);
+                file_put_contents($storagePath, $pdfContent);
+            }
+
+            // Actualizar el payout con la ruta de la imagen
+            $payout->image = $fileName;
+            $payout->save();
+
+            $this->generateLog($payout->reference, 'Receipt image generated', [
+                'payout_id' => $payout->id,
+                'image_path' => $fileName
+            ]);
+
+        } catch (\Exception $e) {
+            $this->generateLog($payout->reference, 'Error generating receipt image', [
+                'payout_id' => $payout->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
