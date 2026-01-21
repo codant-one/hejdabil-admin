@@ -1,4 +1,6 @@
 <script setup>
+
+import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
@@ -12,6 +14,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["alert", "loading"]);
+
+const agreementsStores = useAgreementsStores()
 const billingsStores = useBillingsStores();
 
 const { width: windowWidth } = useWindowSize();
@@ -37,6 +41,9 @@ const tabBilling = ref("fakturor");
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 
+const agreements = ref([])
+const totalAgreements = ref(0)
+
 const advisor = ref({
   type: "",
   message: "",
@@ -52,6 +59,14 @@ const paginationData = computed(() => {
   return `${totalBillings.value} resultat`;
   // return `Visar ${firstIndex} till ${lastIndex} av ${totalBillings.value} register`;
 });
+
+// 👉 Computing pagination data
+const paginationData2 = computed(() => {
+  const firstIndex = agreements.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = agreements.value.length + (currentPage.value - 1) * rowPerPage.value
+
+  return `${totalAgreements.value} resultat`
+})
 
 watchEffect(fetchData);
 
@@ -71,13 +86,17 @@ async function fetchData() {
   totalPages.value = billingsStores.last_page;
   totalBillings.value = billingsStores.billingsTotalCount;
 
-  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-  role.value = userData.value.roles[0].name;
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value.roles[0].name
 
-  billings.value.forEach((billing) => {
-    billing.checked = false;
-    billing.sent = false;
-  });
+  if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
+    suppliers.value = agreementsStores.getSuppliers
+  }
+
+  agreements.value = agreementsStores.getAgreements
+  totalPages.value = agreementsStores.last_page
+  totalAgreements.value = agreementsStores.agreementsTotalCount  
+  
 }
 
 const updateBilling = (billingData) => {
@@ -283,6 +302,57 @@ const truncateText = (text, length = 15) => {
   }
   return text;
 };
+
+const resolveStatusAgreement = state => {
+  if (state === 'created')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'sent')
+    return { 
+      name: 'Skickad',
+      class: 'success',
+      icon: 'custom-forward'
+    }
+  if (state === 'signed')
+    return { 
+      name: 'Signerad',
+      class: 'success',
+      icon: 'custom-signature'
+    }
+  if (state === 'pending')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'delivered')
+    return { 
+      name: 'Levererad',
+      class: 'success',
+      icon: 'custom-check-mark-2'
+    }
+  if (state === 'reviewed')
+    return { 
+      name: 'Granskad',
+      class: 'info',
+      icon: 'custom-eye'
+    }
+  if (state === 'delivery_issues')
+    return { 
+      name: 'Leveransproblem',
+      class: 'pending',
+      icon: 'custom-risk'
+    }
+  if (state === 'failed')
+    return { 
+      name: 'Misslyckades',
+      class: 'error',
+      icon: 'custom-close'
+    }
+}
 
 </script>
 
@@ -733,77 +803,162 @@ const truncateText = (text, length = 15) => {
             </div>
           </VWindowItem>
           <VWindowItem value="avtal">
-            <VTable v-if="!$vuetify.display.smAndDown" class="text-no-wrap">
+            <VTable
+              v-if="!$vuetify.display.smAndDown"
+              v-show="agreements.length"
+              class="px-4 pb-6 text-no-wrap"
+            >
               <!-- 👉 table head -->
               <thead>
                 <tr>
-                  <th scope="col">Reg. NR</th>
-                  <th scope="col">Inbytesfordon Reg. NR</th>
-                  <th scope="col" class="text-center">Fakturadatum</th>
-                  <th scope="col" class="text-center">Typ</th>
-                  <th scope="col" class="text-center">Status</th>
-                  <th
-                    class="text-center"
-                    scope="col"
-                    v-if="$can('edit', 'billing') || $can('delete', 'billing')"
-                  ></th>
+                  <th scope="col"> Reg. Nr </th>
+                  <th scope="col"> Inbytesfordon Reg. Nr </th>
+                  <th scope="col" class="text-end"> Kredit / Leasing </th>
+                  <th scope="col"> Typ </th>
+                  <th scope="col"> Skapad </th>
+                  <th scope="col"> Skapad Av </th>
+                  <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+                  <th scope="col"> 
+                    Signera Status 
+                    <span>
+                      <VIcon icon="custom-circle-help" class="ms-2" size="22" />
+                      <v-tooltip
+                        activator="parent"
+                        location="bottom"
+                        content-class="tooltip-content"
+                      >Klicka för att se hur signeringsprocessen fortskrider.</v-tooltip>
+                    </span>
+                  </th>
+                  <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
                 </tr>
               </thead>
               <!-- 👉 table body -->
               <tbody>
-                <tr
-                  v-for="billing in billings"
-                  :key="billing.id"
-                  style="height: 3rem"
+                <tr 
+                  v-for="agreement in agreements"
+                  :key="agreement.id"
+                  style="height: 3rem;"
                 >
-                  <td>{{ billing.reg_nr }}</td>
-                  <td>{{ billing.trade_in_reg_nr }}</td>
-                  <td class="text-center">{{ billing.invoice_date }}</td>
-                  <td class="text-center">{{ billing.type }}</td>
-                  <td class="text-center">
-                    <span class="status-pill">
-                      {{ billing.state.name }}
+                   <td> 
+                    {{ agreement.agreement_type_id === 4 ?
+                      agreement.offer.reg_num : 
+                      (agreement.agreement_type_id === 3 ? 
+                        agreement.commission?.vehicle.reg_num   :
+                        agreement.vehicle_client?.vehicle.reg_num 
+                      )                    
+                    }} 
+                  </td>
+                  <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
+                  <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
+                  <td> {{ agreement.agreement_type.name  }}</td>          
+                  <td>  
+                    {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                    }) }}
+                  </td>
+                  <td class="text-wrap">
+                    <div class="d-flex align-center gap-x-3">
+                      <VAvatar
+                        :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                        size="38"
+                        >
+                        <VImg
+                          v-if="agreement.user.avatar"
+                          style="border-radius: 50%;"
+                          :src="themeConfig.settings.urlStorage + agreement.user.avatar"
+                        />
+                          <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                      </VAvatar>
+                      <div class="d-flex flex-column">
+                        <span class="font-weight-medium">
+                          {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }} 
+                        </span>
+                        <span class="text-sm text-disabled">{{ agreement.user.email }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+                    <span class="font-weight-medium"  v-if="agreement.supplier">
+                      {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
                     </span>
                   </td>
+                  <!-- 👉 Status -->
+                  <td class="text-center text-wrap d-flex justify-center align-center">
+                    <div
+                      v-if="agreement.tokens && agreement.tokens.length > 0"
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.class}`"
+                    >
+                      <VIcon size="16" :icon="resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                      {{ resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.name }}
+                    </div>
+
+                    <div
+                      v-else
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatusAgreement('pending')?.class}`"
+                    >
+                      <VIcon size="16" :icon="resolveStatusAgreement('pending')?.icon" class="action-icon" />
+                      {{ resolveStatusAgreement('pending')?.name }}
+                    </div>
+                  </td>
                   <!-- 👉 Actions -->
-                  <td
-                    class="text-center"
-                    style="width: 3rem"
-                    v-if="$can('edit', 'billing') || $can('delete', 'billing')"
-                  >
+                  <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
                     <VMenu>
                       <template #activator="{ props }">
-                        <VBtn
-                          v-bind="props"
-                          icon
-                          variant="text"
-                          class="btn-white"
-                        >
-                          <VIcon icon="custom-dots-vertical" size="24" />
+                        <VBtn v-bind="props" icon variant="text" class="btn-white">
+                          <VIcon icon="custom-dots-vertical" size="22" />
                         </VBtn>
                       </template>
                       <VList>
-                        <VListItem @click="showBilling(billing)">
+                        <VListItem
+                          v-if="$can('view','agreements')"
+                          @click="goToTracker(agreement)">
                           <template #prepend>
-                            <VIcon icon="custom-eye" size="24" />
+                            <VIcon icon="tabler-timeline" class="mr-2" />
                           </template>
-                          <VListItemTitle>Se detaljer</VListItemTitle>
+                          <VListItemTitle>Spårare</VListItemTitle>
+                        </VListItem>
+                        <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
+                          <template #prepend>
+                            <VIcon icon="custom-signature" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Signera</VListItemTitle>
                         </VListItem>
                         <VListItem
-                          v-if="$can('edit', 'billing')"
-                          @click="editBilling(billing)"
-                        >
+                          v-if="$can('view', 'agreements')"
+                          @click="openLink(agreement)">
                           <template #prepend>
-                            <VIcon icon="custom-edit" size="24" />
+                            <VIcon icon="custom-pdf" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Visa som PDF</VListItemTitle>
+                        </VListItem>
+                        <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
+                          <template #prepend>
+                            <VIcon icon="custom-send" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Sänd PDF</VListItemTitle>
+                        </VListItem>
+                        <VListItem v-if="$can('view','agreements')" @click="download(agreement)">
+                          <template #prepend>
+                            <VIcon icon="custom-download" class="mr-2"/>
+                          </template>
+                          <VListItemTitle>Ladda ner</VListItemTitle>
+                        </VListItem>
+                        <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
+                          <template #prepend>
+                            <img :src="editIcon" alt="Edit Icon" class="mr-2" />
                           </template>
                           <VListItemTitle>Redigera</VListItemTitle>
                         </VListItem>
-                        <VListItem
-                          v-if="$can('delete', 'billing')"
-                          @click="credit(billing)"
-                        >
+                        <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(agreement)">
                           <template #prepend>
-                            <VIcon icon="custom-waste" size="24" />
+                            <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                           </template>
                           <VListItemTitle>Ta bort</VListItemTitle>
                         </VListItem>
@@ -814,118 +969,175 @@ const truncateText = (text, length = 15) => {
               </tbody>
             </VTable>
 
-            <VExpansionPanels
-              class="expansion-panels"
-              v-if="billings.length && $vuetify.display.smAndDown"
+            <div
+              v-if="!agreements.length"
+              class="empty-state"
+              :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'"
             >
-              <VExpansionPanel v-for="billing in billings" :key="billing.id">
-                <VExpansionPanelTitle
-                  collapse-icon="custom-chevron-right"
-                  expand-icon="custom-chevron-down"
-                >
-                  <span class="order-id">{{ billing.id }}</span>
-                  <span class="title-panel">{{
-                    billing.client.fullname ?? ""
-                  }}</span>
-                </VExpansionPanelTitle>
-                <VExpansionPanelText>
-                  <div class="mb-6">
-                    <div class="expansion-panel-item-label">
-                      Inbytesfordon Reg. NR
-                    </div>
-                    <div class="expansion-panel-item-value">
-                      {{ billing.trade_in_reg_nr }}
-                    </div>
-                  </div>
-                  <div class="mb-6">
-                    <div class="expansion-panel-item-label">Fakturadatum</div>
-                    <div class="expansion-panel-item-value">
-                      {{ billing.invoice_date }}
-                    </div>
-                  </div>
-                  <div class="mb-6">
-                    <div class="expansion-panel-item-label">Typ</div>
-                    <div class="expansion-panel-item-value">
-                      {{ billing.type }}
-                    </div>
-                  </div>
-                  <div class="mb-6">
-                    <div class="expansion-panel-item-label">Status</div>
-                    <div class="expansion-panel-item-value">
-                      <span class="status-pill">{{ billing.state.name }}</span>
-                    </div>
-                  </div>
-                  <div class="d-flex">
-                    <VBtn
-                      class="btn-light flex-1 mr-4"
-                      @click="showBilling(billing)"
-                    >
-                      <VIcon icon="custom-eye" size="24" />
-                      Se detaljer
-                    </VBtn>
+              <VIcon
+                :size="$vuetify.display.smAndDown ? 80 : 120"
+                icon="custom-f-agreement"
+              />
+              <div class="empty-state-content">
+                <div class="empty-state-title">Du har inga sparade avtal</div>
+                <div class="empty-state-text">
+                  Här kommer alla dina köpeavtal och servicedokument att listas. Skapa ditt första avtal för att enkelt hantera och spåra dina överenskommelser.
+                </div>
+              </div>
+            </div>
 
-                    <VBtn
-                      class="btn-light"
-                      icon
-                      @click="billing.actionDialog = true"
+            <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-6 px-6">
+              <div v-for="agreement in agreements" :key="agreement.id" class="mobile-card-wrapper mb-4">
+                <div class="card-header-type">
+                  {{ agreement.agreement_type.name }}
+                </div>
+                <VExpansionPanels class="custom-expansion-panels">
+                  <VExpansionPanel elevation="0">
+                    <VExpansionPanelTitle
+                      collapse-icon="custom-chevron-right"
+                      expand-icon="custom-chevron-down"
                     >
-                      <VIcon icon="custom-dots-vertical" size="24" />
-                    </VBtn>
-                    <VDialog
-                      v-model="billing.actionDialog"
-                      transition="dialog-bottom-transition"
-                      content-class="dialog-bottom-full-width"
-                    >
-                      <VCard>
-                        <VList>
-                          <VListItem
-                            @click="
-                              showBilling(billing);
-                              billing.actionDialog = false;
-                            "
+                      <div class="d-flex align-center gap-3 w-100">
+                        <span class="font-weight-medium text-high-emphasis">{{ agreement.id }}</span>
+                        <span class="reg-nr-text">
+                          Reg. Nr. {{ agreement.agreement_type_id === 4 ?
+                              agreement.offer.reg_num : 
+                              (agreement.agreement_type_id === 3 ? 
+                                agreement.commission?.vehicle.reg_num   :
+                                agreement.vehicle_client?.vehicle.reg_num 
+                              )                    
+                          }}
+                        </span>
+                      </div>
+                    </VExpansionPanelTitle>
+                    <VExpansionPanelText>
+                      <div class="mb-4 mt-2">
+                        <div class="expansion-panel-item-label">Skapad Av</div>
+                        <div class="expansion-panel-item-value">
+                          {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }}
+                        </div>
+                      </div>
+                      
+                      <div class="mb-6">
+                        <div class="expansion-panel-item-label">Status:</div>
+                        <div class="expansion-panel-item-value">
+                          <div
+                            v-if="agreement.tokens && agreement.tokens.length > 0"
+                            class="status-chip"
+                            :class="`status-chip-${resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.class}`"
                           >
-                            <template #prepend>
-                              <VIcon icon="custom-eye" size="24" />
-                            </template>
-                            <VListItemTitle>Se detaljer</VListItemTitle>
-                          </VListItem>
-                          <VListItem
-                            v-if="$can('edit', 'billing')"
-                            @click="
-                              editBilling(billing);
-                              billing.actionDialog = false;
-                            "
+                            <VIcon size="16" :icon="resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                            {{ resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.name }}
+                          </div>
+
+                          <div
+                            v-else
+                            class="status-chip"
+                            :class="`status-chip-${resolveStatusAgreement('pending')?.class}`"
                           >
-                            <template #prepend>
-                              <VIcon icon="custom-pencil" size="24" />
-                            </template>
-                            <VListItemTitle>Redigera</VListItemTitle>
-                          </VListItem>
-                          <VListItem
-                            v-if="$can('delete', 'billing')"
-                            @click="
-                              credit(billing);
-                              billing.actionDialog = false;
-                            "
+                            <VIcon size="16" :icon="resolveStatusAgreement('pending')?.icon" class="action-icon" />
+                          {{ resolveStatusAgreement('pending')?.name }}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div class="d-flex align-center gap-3">
+                        <VBtn
+                          variant="outlined"
+                          color="#2F3438"
+                          class="flex-grow-1 btn-details"
+                          rounded="pill"
+                          @click="goToTracker(agreement)"
+                        >
+                          <VIcon icon="custom-eye" class="mr-2" />
+                          Se detaljer
+                        </VBtn>
+                        
+                        <VMenu>
+                          <template #activator="{ props }">
+                            <VBtn
+                              v-bind="props"
+                              icon
+                              variant="outlined"
+                              color="#2F3438"
+                              class="btn-actions"
+                              @click="actionsMobile=true"
+                            >
+                              <VIcon icon="custom-dots-vertical" />
+                            </VBtn>
+                          </template>
+                          <!-- 👉 Mobile Actions Dialog -->
+                          <VDialog
+                            v-model="actionsMobile"
+                            transition="dialog-bottom-transition"
+                            content-class="dialog-bottom-full-width"
                           >
-                            <template #prepend>
-                              <VIcon icon="custom-waste" size="24" />
-                            </template>
-                            <VListItemTitle>Ta bort</VListItemTitle>
-                          </VListItem>
-                        </VList>
-                      </VCard>
-                    </VDialog>
-                  </div>
-                </VExpansionPanelText>
-              </VExpansionPanel>
-            </VExpansionPanels>
+                            <VCard>
+                              <VList>
+                                <VListItem
+                                  v-if="$can('view','agreements')"
+                                  @click="goToTracker(agreement)">
+                                  <template #prepend>
+                                    <VIcon icon="tabler-timeline" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Spårare</VListItemTitle>
+                                </VListItem>
+                                <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
+                                  <template #prepend>
+                                    <VIcon icon="custom-signature" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Signera</VListItemTitle>
+                                </VListItem>
+                                <VListItem
+                                    v-if="$can('view', 'agreements')"
+                                    @click="openLink(agreement)">
+                                  <template #prepend>
+                                    <VIcon icon="custom-pdf" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Visa som PDF</VListItemTitle>
+                                </VListItem>
+                                <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
+                                  <template #prepend>
+                                    <VIcon icon="custom-send" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Sänd PDF</VListItemTitle>
+                                </VListItem>
+                                <VListItem v-if="$can('view','agreements')" @click="download(agreement)">
+                                  <template #prepend>
+                                    <VIcon icon="custom-download" class="mr-2"/>
+                                  </template>
+                                  <VListItemTitle>Ladda ner</VListItemTitle>
+                                </VListItem>
+                                <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
+                                  <template #prepend>
+                                    <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Redigera</VListItemTitle>
+                                </VListItem>
+                                <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(agreement)">
+                                  <template #prepend>
+                                    <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                                  </template>
+                                  <VListItemTitle>Ta bort</VListItemTitle>
+                                </VListItem>
+                              </VList>
+                            </VCard>
+                          </VDialog>
+                        </VMenu>
+                      </div>
+                    </VExpansionPanelText>
+                  </VExpansionPanel>
+                </VExpansionPanels>
+              </div>
+            </div>
 
             <div
-              class="d-block d-md-flex align-center flex-wrap mt-6 gap-4 pt-0 pb-1"
+              v-if="agreements.length"
+              :class="windowWidth < 1024 ? 'd-block px-2' : 'd-flex px-6'"
+              class="align-center flex-wrap gap-4 pt-0"
             >
               <span class="text-pagination-results">
-                {{ paginationData }}
+                {{ paginationData2 }}
               </span>
 
               <VSpacer class="d-none d-md-block" />

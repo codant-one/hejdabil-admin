@@ -1028,6 +1028,7 @@ onBeforeUnmount(() => {
 
         <VBtn
           class="btn-white-2 px-3"
+          v-if="role !== 'Supplier' && role !== 'User'"
           @click="isFilterDialogVisible = true"
           :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
         >
