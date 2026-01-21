@@ -13,6 +13,7 @@ import router from '@/router'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { useToastsStores } from '@/stores/useToasts'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -33,6 +34,13 @@ const isFormValid = ref(false)
 const refForm = ref()
 const currentTab = ref(0)
 const isMobile = ref(false)
+
+const isConfirmLeaveVisible = ref(false)
+const nextRoute = ref(null)
+const initialData = ref(null)
+const allowNavigation = ref(false)
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
 
 const userData = ref(null)
 const role = ref(null)
@@ -219,6 +227,10 @@ async function fetchData() {
     purchase_date.value = formatDate(new Date())
 
     isRequestOngoing.value = false
+
+    nextTick(() => {
+      initialData.value = JSON.parse(JSON.stringify(currentData.value))
+    })
 }
 
 const getPaymentTypes = computed(() => {
@@ -473,18 +485,18 @@ const searchVehicule = async () => {
 }
 
 const onSubmit = () => {
-    refForm.value?.validate().then(({ valid }) => {
-        if (valid && currentTab.value === 0 && refForm.value.items.length < 43) {
+    refForm.value?.validate().then(({ valid: isValid }) => {
+        if (isValid && currentTab.value === 0 && refForm.value.items.length < 43) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 43) {
+        } else if (!isValid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 43) {
             currentTab.value++
-        } else if (valid && currentTab.value === 1 && refForm.value.items.length < 43) {
+        } else if (isValid && currentTab.value === 1 && refForm.value.items.length < 43) {
             currentTab.value++
-        }  else if (!valid && currentTab.value === 1 && refForm.value.items.length > 26 && refForm.value.items.length < 43) {
+        }  else if (!isValid && currentTab.value === 1 && refForm.value.items.length > 26 && refForm.value.items.length < 43) {
             currentTab.value++
-        } else if (valid && currentTab.value === 2 && refForm.value.items.length < 46) {
+        } else if (isValid && currentTab.value === 2 && refForm.value.items.length < 46) {
             currentTab.value++
-        } else if (!valid && currentTab.value === 2 && refForm.value.items.length > 43 && refForm.value.items.length < 46) {
+        } else if (!isValid && currentTab.value === 2 && refForm.value.items.length > 43 && refForm.value.items.length < 46) {
             currentTab.value++
         } else if (currentTab.value === 3) {
 
@@ -562,25 +574,45 @@ const onSubmit = () => {
                 .then((res) => {
                     if (res.data.success) {
                         
-                        let data = {
-                            message: 'Kontrakt framgångsrikt skapat',
-                            error: false
-                        }
+                        // let data = {
+                        //     message: 'Kontrakt framgångsrikt skapat',
+                        //     error: false
+                        // }
 
-                        router.push({ name : 'dashboard-admin-agreements'})
-                        emitter.emit('toast', data)
+                        // router.push({ name : 'dashboard-admin-agreements'})
+                        // emitter.emit('toast', data)
+
+                        allowNavigation.value = true;
+
+                        // Save current state so the dirty-check stops blocking navigation
+                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                        skapatsDialog.value = true;
+                    } else {
+                    
+                        // Save current state so the dirty-check stops blocking navigation
+                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
+    
+                        inteSkapatsDialog.value = true;
                     }
                     isRequestOngoing.value = false
                 })
                 .catch((err) => {
                     
-                    let data = {
-                        message: err.message,
-                        error: true
-                    }
+                    // let data = {
+                    //     message: err.message,
+                    //     error: true
+                    // }
 
-                    router.push({ name : 'dashboard-admin-agreements'})
-                    emitter.emit('toast', data)
+                    // router.push({ name : 'dashboard-admin-agreements'})
+                    // emitter.emit('toast', data)
+
+                    // Save current state so the dirty-check stops blocking navigation
+                    initialData.value = JSON.parse(JSON.stringify(currentData.value));
+    
+                    inteSkapatsDialog.value = true;
+    
+                    isRequestOngoing.value = false
 
                     isRequestOngoing.value = false
                 })
@@ -589,6 +621,103 @@ const onSubmit = () => {
     })
 }
 
+
+/*
+    Campos `v-model` con la regla `requiredValidator` dentro de los tabs (class="vehicles-tabs")
+
+    Tab 1 (Inköpsavtal):
+    - reg_num
+    - brand_id
+    - model_id
+    - year
+    - color
+    - mileage
+    - purchase_date
+
+    Tab 2 (Kund):
+    - organization_number
+    - client_type_id
+    - fullname
+    - address
+    - postal_code
+    - street
+    - phone
+    - identification_id
+    - email
+
+    Tab 3 (Pris):
+    - price
+    - iva_id
+    - iva_sale_amount (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
+    - iva_sale_exclusive (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
+    - payment_type (campo alternativo visible cuando `payment_type_id === 0`, tiene `:rules="[requiredValidator]"`)
+
+    Reglas condicionales (computed que retornan `[requiredValidator]`):
+    - payment_type_id (usa `:rules="conditionalRules"` → requerido si `settled_by === 1`)
+    - loan_amount (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
+    - lessor (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
+    - bank, account, description (usan `:rules="conditionalRules"` → requeridos si `settled_by === 1`)
+
+    Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `vehicles-tabs`.
+*/
+const currentData = computed(() => ({
+    reg_num: reg_num.value,
+    brand_id: brand_id.value,
+    model_id: model_id.value,
+    year: year.value,
+    color: color.value,
+    mileage: mileage.value,
+    purchase_date: purchase_date.value,
+    organization_number: organization_number.value,
+    client_type_id: client_type_id.value,
+    fullname: fullname.value,
+    address: address.value,
+    postal_code: postal_code.value,
+    street: street.value,
+    phone: phone.value,
+    identification_id: identification_id.value,
+    email: email.value,
+    price: price.value,
+    iva_id: iva_id.value,
+    iva_sale_amount: iva_sale_amount.value,
+    iva_sale_exclusive: iva_sale_exclusive.value,
+    payment_type: payment_type.value,
+    payment_type_id: payment_type_id.value,
+    loan_amount: loan_amount.value,
+    lessor: lessor.value,
+    bank: bank.value,
+    account: account.value,
+    description: description.value
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+const confirmLeave = () => {
+    isConfirmLeaveVisible.value = false;
+    allowNavigation.value = true;
+
+    if (nextRoute.value) {
+        router.push(nextRoute.value);
+    }
+};
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 </script>
 
 <template>
@@ -628,7 +757,7 @@ const onSubmit = () => {
                                 block
                                 :to="{ name: 'dashboard-admin-agreements' }">
                                 <VIcon icon="custom-return" size="24" />
-                                Tillbaka
+                                Avbryt
                             </VBtn>
                         </div>
                     </div>
@@ -641,21 +770,21 @@ const onSubmit = () => {
                     :grow="windowWidth < 1024 ? true : false"                
                     :show-arrows="false"
                     class="vehicles-tabs" 
-                    disabled
+                    
                 >
-                    <VTab value="tab-1">
+                    <VTab>
                         <VIcon size="24" icon="custom-agreement" />
                         Inköpsavtal
                     </VTab>
-                    <VTab value="tab-1">
+                    <VTab>
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                    <VTab value="tab-1">
+                    <VTab>
                         <VIcon size="24" icon="custom-cash-2" />
                         Pris
                     </VTab>
-                    <VTab value="tab-1">
+                    <VTab>
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
@@ -664,7 +793,7 @@ const onSubmit = () => {
                 <VCardText class="px-0 px-md-2">
                     <VWindow v-model="currentTab">
                         <!--Inköpsavtal - Reg nr-->
-                        <VWindowItem value="tab-1" class="px-md-5">
+                        <VWindowItem class="px-md-5">
                             <VRow class="px-md-5">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
@@ -827,7 +956,7 @@ const onSubmit = () => {
                                                 </VCol>
                                                 <VCol cols="12" md="4">
                                                     <div class="d-flex flex-column">
-                                                        <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?" />
                                                         <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -865,17 +994,21 @@ const onSubmit = () => {
                         </VWindowItem>
 
                         <!--Kund-->
-                        <VWindowItem value="tab-2" class="px-md-5">
+                        <VWindowItem class="px-md-5">
                             <VRow class="px-md-5">
-                                <VCol cols="12" md="6">
-                                    <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
                                         Säljare
-                                    </h6>
-                                    <VRow>
-                                        <VCol cols="12" md="12">
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
                                             <AppAutocomplete
                                                 v-model="client_id"
-                                                label="Kunder"
                                                 :items="clients"
                                                 :item-title="item => item.fullname"
                                                 :item-value="item => item.id"
@@ -883,102 +1016,104 @@ const onSubmit = () => {
                                                 clearable
                                                 @click:clear="clearClient"
                                                 @update:modelValue="selectClient"/>
-                                        </VCol>
-                                        <VCol cols="10" md="11">
-                                            <VTextField
-                                                v-model="organization_number"
-                                                label="Org/personummer"
-                                                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                                minLength="11"
-                                                maxlength="13"
-                                                @input="formatOrgNumber()"
-                                            />
-                                        </VCol>
-                                        <VCol cols="2" md="1" class="px-0 d-flex align-start">
-                                            <VBtn
-                                                icon="tabler-search"
-                                                variant="tonal"
-                                                color="primary"
-                                                size="x-small"
-                                                class="mt-1"
-                                                @click="searchEntity"
-                                                :loading="isEntitySearchLoading"
-                                            />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
+                                            <div class="d-flex gap-2"> 
+                                                <VTextField
+                                                    v-model="organization_number"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="13"
+                                                    @input="formatOrgNumber()"
+                                                />
+                                                <VBtn
+                                                    class="btn-light w-auto px-4"
+                                                    @click="searchEntity"
+                                                    :loading="isEntitySearchLoading"
+                                                >
+                                                    <VIcon icon="custom-search" size="24" />
+                                                    Hämta
+                                                </VBtn>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
                                             <AppAutocomplete
                                                 v-model="client_type_id"
-                                                label="Köparen är"
                                                 :items="client_types"
                                                 :item-title="item => item.name"
                                                 :item-value="item => item.id"
                                                 :rules="[requiredValidator]"
                                                 autocomplete="off"/>
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
                                                 v-model="fullname"
                                                 :rules="[requiredValidator]"
-                                                label="Namn"
                                             />
-                                        </VCol>
-                                        <VCol cols="12" md="12">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                                             <VTextField
                                                 v-model="address"
                                                 :rules="[requiredValidator]"
-                                                label="Adress"
                                             />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
                                             <VTextField
                                                 v-model="postal_code"
                                                 :rules="[requiredValidator]"
-                                                label="Postnummer"
                                             />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" /> 
                                             <VTextField
                                                 v-model="street"
                                                 :rules="[requiredValidator]"
-                                                label="Stad"
                                             /> 
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                                             <VTextField
                                                 v-model="phone"
                                                 :rules="[requiredValidator, phoneValidator]"
-                                                label="Telefon"
                                             />
-                                        </VCol>
-                                        <VCol cols="12" md="6">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Legitimation*" />
                                             <AppAutocomplete
                                                 v-model="identification_id"
-                                                label="Legitimation"
                                                 :items="identifications"
                                                 :item-title="item => item.name"
                                                 :item-value="item => item.id"
                                                 :rules="[requiredValidator]"
                                                 autocomplete="off"/>
-                                        </VCol>
-                                        <VCol cols="12" md="12">
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
                                                 v-model="email"
                                                 :rules="[emailValidator, requiredValidator]"
-                                                label="E-post"
                                             />
-                                        </VCol>
-                                    </VRow>
+                                        </div>
+                                    </div>
                                 </VCol>
-                                <VCol cols="12" md="6">
-                                    <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
+
+                                <VDivider class="my-4" />
+
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
                                         Köpare
-                                    </h6>
+                                    </div>
                                     <VList class="card-list mt-2">
                                         <VListItem>
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Namn:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.name }} {{ company.last_name }}
                                                     </span>
                                                 </h6>
@@ -986,7 +1121,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Org/personummer:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.organization_number }}
                                                     </span>
                                                 </h6>
@@ -994,7 +1129,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Adress:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.address }}
                                                     </span>
                                                 </h6>
@@ -1002,7 +1137,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Postnr. ort:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.street + ' ' +  company.postal_code }}
                                                     </span>
                                                 </h6>
@@ -1010,7 +1145,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Telefon:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.phone }}
                                                     </span>
                                                 </h6>
@@ -1018,7 +1153,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     E-post
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.email }}
                                                     </span>
                                                 </h6>
@@ -1026,7 +1161,7 @@ const onSubmit = () => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Bilfirma:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.company }}
                                                     </span>
                                                 </h6>
@@ -1049,224 +1184,345 @@ const onSubmit = () => {
                         </VWindowItem>
 
                         <!--Pris-->
-                        <VWindowItem value="tab-3" class="px-md-5">
+                        <VWindowItem class="px-md-5">
                             <VRow class="px-md-5">
-                                <VCol cols="12" md="12">
-                                    <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                        Fordonsinformation
-                                    </h6>
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="price"
-                                        label="Inköpspris"
-                                        type="number"
-                                        min="0"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <AppAutocomplete
-                                        v-model="currency_id"
-                                        label="Valuta"
-                                        :items="currencies"
-                                        :item-title="item => item.name"
-                                        :item-value="item => item.id"
-                                        autocomplete="off"
-                                        disabled
-                                        clear-icon="tabler-x">
-                                        <template
-                                            v-if="currency_id"
-                                            #prepend
-                                            >
-                                                <VAvatar
-                                                start
-                                                style="margin-top: -8px;"
-                                                size="36"
-                                                :image="getFlag(currency_id)"
-                                            />
-                                        </template>
-                                    </AppAutocomplete>
-                                </VCol>                                        
-                                <VCol cols="12" md="6">
-                                    <AppAutocomplete
-                                        v-model="iva_id"
-                                        label="Moms / VMB"
-                                        :items="ivas"
-                                        :item-title="item => item.name"
-                                        :item-value="item => item.id"
-                                        autocomplete="off"
-                                        clearable
-                                        clear-icon="tabler-x"
-                                        :rules="[requiredValidator]"/>
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        type="number"
-                                        v-model="iva_sale_amount"
-                                        label="Varav moms"
-                                        min="0"
-                                        disabled
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        type="number"
-                                        v-model="iva_sale_exclusive"
-                                        label="Prix ex moms"
-                                        min="0"
-                                        disabled
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <div class="d-flex flex-column">
-                                        <label class="v-label text-body-2 text-wrap"> Har bilen Kredit/leasing?</label>
-                                        <VRadioGroup 
-                                            v-model="is_loan" 
-                                            inline 
-                                            class="radio-form"
-                                            @update:modelValue="handleChange">
-                                            <VRadio
-                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                :key="index"
-                                                :label="radio"
-                                                :value="index"
-                                            />
-                                        </VRadioGroup>
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                            Fordonsinformation
                                     </div>
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="loan_amount"
-                                        label="Kreditbelopp"
-                                        type="number"
-                                        min="0"
-                                        :rules="conditionalRulesJa"
-                                        :disabled="is_loan === 1 ? true : false"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="lessor"
-                                        label="Kredit/leasinggivare"
-                                        :rules="conditionalRulesJa"
-                                        :disabled="is_loan === 1 ? true : false"
-                                    />
-                                </VCol>           
-                                <VCol cols="12" md="6" class="d-flex align-center">
-                                    <span class="ms-1 ms-md-0">Restsumma: {{ remaining_amount }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</span>
-                                </VCol>                                 
-                                <VCol cols="12" md="6">
-                                    <div class="d-flex flex-column">
-                                        <label class="v-label text-body-2 text-wrap">Restskulden löses av</label>
-                                        <VRadioGroup v-model="settled_by" inline class="radio-form">
-                                            <VRadio
-                                                v-for="(radio, index) in optionsSettled"
-                                                :key="index"
-                                                :label="radio"
-                                                :value="index"
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpspris*" />
+                                            <VTextField
+                                                v-model="price"
+                                                type="number"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Valuta" />
+                                            <AppAutocomplete
+                                                v-model="currency_id"
+                                                :items="currencies"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                disabled
+                                                clear-icon="tabler-x">
+                                                <template
+                                                    v-if="currency_id"
+                                                    #prepend
+                                                    >
+                                                        <VAvatar
+                                                        start
+                                                        style="margin-top: -8px;"
+                                                        size="36"
+                                                        :image="getFlag(currency_id)"
+                                                    />
+                                                </template>
+                                            </AppAutocomplete>
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Moms / VMB*" />
+                                            <AppAutocomplete
+                                                v-model="iva_id"
+                                                :items="ivas"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="[requiredValidator]"/>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Varav moms*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="iva_sale_amount"
+                                                min="0"
+                                                disabled
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Prix ex moms*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="iva_sale_exclusive"
+                                                min="0"
+                                                disabled
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <div class="d-flex flex-column">
+                                                
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis mb-2" text="Har bilen Kredit/leasing?" />
+                                                <VRadioGroup 
+                                                    v-model="is_loan" 
+                                                    inline 
+                                                    class="radio-form ms-2"
+                                                    @update:modelValue="handleChange">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kreditbelopp" />
+                                            <VTextField
+                                                v-model="loan_amount"
+                                                type="number"
+                                                min="0"
+                                                :rules="conditionalRulesJa"
                                                 :disabled="is_loan === 1 ? true : false"
                                             />
-                                        </VRadioGroup>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kredit/leasinggivare" />
+                                            <VTextField
+                                                v-model="lessor"
+                                                :rules="conditionalRulesJa"
+                                                :disabled="is_loan === 1 ? true : false"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <h6 class="text-base font-weight-semibold">
+                                                Restsumma:
+                                                <span class="text-body-2 text-high-emphasis">
+                                                    {{ remaining_amount }} {{ currencies.filter(item => item.id === currency_id)[0].code }}
+                                                </span>
+                                            </h6>
+                                            
+                                        </div>                                 
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskulden löses av" />
+                                                <VRadioGroup v-model="settled_by" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsSettled"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                        :disabled="is_loan === 1 ? true : false"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ av utbetalning till säljaren" />
+                                            <AppAutocomplete
+                                                v-model="payment_type_id"
+                                                :items="getPaymentTypes"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="conditionalRules"
+                                                @update:modelValue="selectPaymentType"
+                                                @click:clear="selectPaymentType"
+                                                :disabled="settled_by !== 1 ? true : false"
+                                            />
+                                        </div>
+                                        <div v-if="payment_type_id === null" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalsätt*" />
+                                            <VTextField
+                                                v-model="payment_type"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn på banken" />
+                                            <VTextField
+                                                v-model="bank"
+                                                :rules="conditionalRules"
+                                                :disabled="settled_by !== 1 ? true : false"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Clearing/kontonummer" />
+                                            <VTextField
+                                                v-model="account"
+                                                :rules="conditionalRules"
+                                                :disabled="settled_by !== 1 ? true : false"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning" />
+                                            <VTextField
+                                                v-model="description"
+                                                :rules="conditionalRules"
+                                                :disabled="settled_by !== 1 ? true : false"
+                                            />
+                                        </div>
                                     </div>
-                                </VCol>
-                                <VCol cols="12" :md="payment_type_id !== 0 ? 6 : 3">
-                                    <AppAutocomplete
-                                        v-model="payment_type_id"
-                                        label="Typ av utbetalning till säljaren"
-                                        :items="getPaymentTypes"
-                                        autocomplete="off"
-                                        clearable
-                                        clear-icon="tabler-x"
-                                        :rules="conditionalRules"
-                                        @update:modelValue="selectPaymentType"
-                                        @click:clear="selectPaymentType"
-                                        :disabled="settled_by !== 1 ? true : false"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="3" v-if="payment_type_id === 0">
-                                    <VTextField
-                                        v-model="payment_type"
-                                        label="Betalsätt"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="bank"
-                                        label="Namn på banken"
-                                        :rules="conditionalRules"
-                                        :disabled="settled_by !== 1 ? true : false"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="account"
-                                        label="Clearing/kontonummer"
-                                        :rules="conditionalRules"
-                                        :disabled="settled_by !== 1 ? true : false"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextField
-                                        v-model="description"
-                                        label="Betalningsbeskrivning"
-                                        :rules="conditionalRules"
-                                        :disabled="settled_by !== 1 ? true : false"
-                                    />
                                 </VCol>
                             </VRow>
                         </VWindowItem>
 
                         <!--Villkor-->
-                        <VWindowItem value="tab-4" class="px-md-5">
+                        <VWindowItem class="px-md-5">
                             <VRow class="px-md-5">
-                                <VCol cols="12" md="12">
-                                    <h6 class="text-md-h4 text-h6 font-weight-medium">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
                                         Villkor
-                                    </h6>
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextarea
-                                        v-model="terms_other_conditions"
-                                        label="Övriga villkor inhämtas från mall"
-                                    />
-                                </VCol>
-                                <VCol cols="12" md="6">
-                                    <VTextarea
-                                        v-model="terms_other_information"
-                                        label="Övriga upplysningar"
-                                    />
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor inhämtas från mall" />
+                                            <VTextarea
+                                                v-model="terms_other_conditions"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga upplysningar" />
+                                            <VTextarea
+                                                v-model="terms_other_information"
+                                            />
+                                        </div>
+                                    </div>
                                 </VCol>
                             </VRow>
                         </VWindowItem>
                     </VWindow>
                 </VCardText>
 
-
-                <VRow class="mt-5">
-                    <!-- 👉 Submit and Cancel -->
-                    <VCol cols="12" md="12">
-                        <div class="text-center align-center justify-content-center">
-                            <VBtn
-                                v-if="currentTab > 0"
-                                variant="tonal"
-                                color="secondary"
-                                class="mb-3 mb-md-0 me-md-3 w-100 w-md-auto"
-                                @click="currentTab--"
-                                >
-                                Tillbaka
-                            </VBtn>
-                            <VBtn type="submit" class="w-100 w-md-auto">
-                                {{ (currentTab === 3) ? 'Skapa' : 'Nästa' }}
-                            </VBtn>
-                        </div>
-                    </VCol>
-                </VRow>
+                <VCardText class="p-0">
+                    <div 
+                        class="d-flex gap-4 mb-12"
+                        :class="windowWidth < 1024 ? 'w-100' : 'justify-content-end'"
+                    >
+                        <VBtn
+                            v-if="currentTab > 0"
+                            class="btn-light w-auto"
+                            :block="windowWidth < 1024"
+                            @click="currentTab--"
+                            >
+                            <VIcon icon="custom-return" size="24" />
+                            Tillbaka
+                        </VBtn>
+                        <VBtn 
+                            type="submit" 
+                            :block="windowWidth < 1024"
+                            class="btn-gradient"
+                        >
+                            <VIcon v-if="currentTab === 3" icon="custom-save"  size="24" />
+                            {{ (currentTab === 3) ? 'Skapa' : 'Nästa' }}
+                        </VBtn>
+                    </div>
+                </VCardText>
             </VCard>
         </VForm>
+
+        <!-- 👉 Dialogs Section -->
+
+        <!-- 👉 Skapats Dialogs -->
+        <VDialog
+        v-model="skapatsDialog"
+        persistent
+        class="action-dialog dialog-big-icon"
+        >
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="reloadPage"
+        >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
+
+        <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-certificate" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Avtalet har skapats!</div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+            Ditt nya avtal har sparats och finns nu i din avtalslista.
+            </VCardText>
+
+            <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
+                Gå till avtalslistan
+            </VBtn>
+            <VBtn class="btn-gradient" @click="reloadPage">
+                Skapa ett till avtal 
+            </VBtn>
+            </VCardText>
+        </VCard>
+        </VDialog>
+
+        <VDialog
+        v-model="inteSkapatsDialog"
+        persistent
+        class="action-dialog dialog-big-icon"
+        >
+        <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="inteSkapatsDialog = !inteSkapatsDialog"
+        >
+            <VIcon size="16" icon="custom-f-cancel" />
+        </VBtn>
+        <VCard>
+            <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-cancel" />
+            </VCardText>
+            <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Kunde inte skapa avtalet</div>
+            </VCardText>
+            <VCardText class="dialog-text text-center">
+            Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+            </VCardText>
+
+            <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
+                Stäng
+            </VBtn>
+            </VCardText>
+        </VCard>
+        </VDialog>
+
+        <!-- Confirm leave without saving -->
+        <VDialog
+            v-model="isConfirmLeaveVisible"
+            persistent
+            class="action-dialog"
+        >
+        <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmLeaveVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+        </VBtn>
+        <VCard>
+        <VCardText class="dialog-title-box">
+            <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+            <div class="dialog-title">Du har osparade ändringar</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+            Om du lämnar sidan nu kommer dina ändringar inte att sparas.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+            <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
+        </VCardText>
+        </VCard>
+        </VDialog>
     </section>
 </template>
 
