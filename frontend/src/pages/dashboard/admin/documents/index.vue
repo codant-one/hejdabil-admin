@@ -1,6 +1,6 @@
 <script setup>
 
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { useDisplay } from "vuetify";
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
@@ -46,8 +46,8 @@ const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
-const refSignatureForm = ref()              
-const isStaticSignatureFlow = ref(false)
+const textEmail = ref('Este mensaje esta por default')
+const refSignatureForm = ref()
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -61,7 +61,6 @@ const pdfPlacementContainer = ref(null)
 const isUploadModalVisible = ref(false)
 const uploadForm = ref(null)
 const uploadTitle = ref('')
-const uploadDescription = ref('')
 const uploadFile = ref(null)
 const uploadFileInput = ref(null)
 const hiddenFileInput = ref(null)
@@ -331,7 +330,6 @@ const downloadCSV = async () => {
 
     let data = {
       TITEL: element.title ?? '',
-      BESKRIVNING: element.description ?? '',
       SKAPAD: createdAt,
       SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
       SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
@@ -570,8 +568,9 @@ const handleAdminPdfClick = (event) => {
   }
 }
 
-const openSignatureDialog = (documentData) => {
+const openSignatureDialog = () => {
   signatureEmail.value = ''
+  textEmail.value = 'Este mensaje esta por default'
   isSignatureDialogVisible.value = true
 }
 
@@ -590,7 +589,7 @@ const openResendSignature = async (documentData) => {
   }
 }
 
-const submitPlacementSignatureRequest = async () => {
+const handleSignatureSubmit = async () => {
   const { valid } = await refSignatureForm.value?.validate()
 
   if (!valid) return
@@ -619,6 +618,7 @@ const submitPlacementSignatureRequest = async () => {
       y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
       alignment: 'left',
+      text: textEmail.value
     }
 
     const response = await documentsStores.requestSignature(payload)
@@ -640,57 +640,12 @@ const submitPlacementSignatureRequest = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
+    textEmail.value = 'Este mensaje esta por default'
     setTimeout(() => {
       advisor.value = { show: false } 
     }, 3000)
   }
 }
-
-const submitStaticSignatureRequest = async () => {
-  const { valid } = await refSignatureForm.value?.validate();
-  if (!valid) return;
-
-  isSignatureDialogVisible.value = false;
-  isRequestOngoing.value = true;
-
-  try {
-    const payload = {
-      documentId: selectedDocument.value.id,
-      email: signatureEmail.value,
-      alignment: 'left',
-    };
-
-    const response = await documentsStores.requestStaticSignature(payload);
-
-    advisor.value = {
-      type: 'success',
-      message: response.data.message || 'Signeringsförfrågan har skickats!',
-      show: true,
-    };
-
-  } catch (error) {
-    advisor.value = {
-      type: 'error',
-      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
-      show: true,
-    };
-  } finally {
-    isRequestOngoing.value = false;
-    signatureEmail.value = '';
-    await fetchData();
-    setTimeout(() => {
-      advisor.value = { show: false };
-    }, 3000);
-  }
-};
-
-const handleSignatureSubmit = async () => {
-  if (isStaticSignatureFlow.value) {
-    await submitStaticSignatureRequest();
-  } else {
-    await submitPlacementSignatureRequest(); 
-  }
-};
 
 const handlePlacementModalClose = (value) => {
   if (!value) {
@@ -704,7 +659,6 @@ const handlePlacementModalClose = (value) => {
 const openUploadModal = () => {
   isUploadModalVisible.value = true
   uploadTitle.value = ''
-  uploadDescription.value = ''
   uploadFile.value = null
   fileValidationError.value = ''
   if (uploadFileInput.value) {
@@ -767,7 +721,6 @@ const submitUpload = async () => {
   try {
     const formData = new FormData()
     formData.append('title', uploadTitle.value)
-    formData.append('description', uploadDescription.value || '')
     formData.append('file', uploadFile.value)
 
     const response = await documentsStores.addDocument(formData)
@@ -1142,8 +1095,7 @@ onBeforeUnmount(() => {
         <thead>
           <tr>
             <th scope="col">#ID</th>
-            <th scope="col" class="text-center">Titel</th>
-            <th scope="col" class="text-center">Beskrivning</th>
+            <th scope="col">Titel</th>
             <th scope="col" class="text-center">Skapad</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
@@ -1155,13 +1107,10 @@ onBeforeUnmount(() => {
         <tbody v-show="documents.length">
           <tr v-for="document in documents" :key="document.id">
             <td>
-              <span>{{ document.id }}</span>
+              <span>{{ document.order_id }}</span>
             </td>
-            <td class="text-center">
+            <td class="w-100">
               <span>{{ document.title }}</span>
-            </td>
-            <td class="text-center">
-              <span>{{ document.description || '-' }}</span>
             </td>
             <td class="text-center">
               <span>
@@ -1242,7 +1191,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
             </td>
-            <td class="text-center text-wrap d-flex justify-center align-center">
+            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 150px;">
               <div
                 v-if="document.tokens && document.tokens.length > 0"
                 class="status-chip"
@@ -1370,7 +1319,7 @@ onBeforeUnmount(() => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <span class="order-id">{{ document.id }}</span>
+            <span class="order-id">{{ document.order_id }}</span>
             <div class="order-title-box">
               <span class="title-panel">{{ document.title }}</span>
               <div class="title-organization">
@@ -1578,13 +1527,6 @@ onBeforeUnmount(() => {
                 />
               </div>
               <div>
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
-                <VTextField
-                  v-model="uploadDescription"
-                  placeholder="Ange beskrivning (valfritt)"
-                />
-              </div>
-              <div>
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                
                 <div 
                   class="file-upload-area"
@@ -1665,11 +1607,18 @@ onBeforeUnmount(() => {
           <VCardText class="dialog-text">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
           </VCardText>
+           <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande*" />                   
+            <VTextarea
+              v-model="textEmail"
+              rows="4"
+              :rules="[requiredValidator]"
+            />
+          </VCardText>
           <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />                                            
             <VTextField
               v-model="signatureEmail"
-              label="E-postadress"
-              placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
@@ -1738,7 +1687,7 @@ onBeforeUnmount(() => {
             <VBtn
               class="btn-green"
               :disabled="!signaturePlacement.visible"
-              @click="openSignatureDialog(selectedDocument)"
+              @click="openSignatureDialog()"
             >
               Skicka
             </VBtn>
@@ -2042,7 +1991,7 @@ onBeforeUnmount(() => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss">
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -2095,11 +2044,31 @@ onBeforeUnmount(() => {
       }
     }
     & .v-input {
-      & .v-input__control {
+      .v-input__control {
         .v-field {
-          background-color: #f6f6f6;
+          background-color: #f6f6f6 !important;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+              padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+              min-height: 48px !important;
+            }
+          }
+
           .v-field-label {
             top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
           }
         }
       }

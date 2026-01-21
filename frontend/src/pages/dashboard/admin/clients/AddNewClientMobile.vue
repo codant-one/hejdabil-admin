@@ -362,9 +362,7 @@ watch(currentData, () => {
       .v-field {
         background-color: #f6f6f6;
         .v-field-label {
-          @media (max-width: 991px) {
-            top: 12px !important;
-          }
+          top: 12px !important;
         }
       }
     }

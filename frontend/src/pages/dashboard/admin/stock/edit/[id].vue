@@ -3892,9 +3892,7 @@ onBeforeRouteLeave((to, from, next) => {
                     }
 
                     .v-field-label {
-                        @media (max-width: 991px) {
-                            top: 12px !important;
-                        }
+                        top: 12px !important;
                     }
 
                     .v-field__append-inner {

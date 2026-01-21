@@ -58,20 +58,7 @@
 
                         <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:14px;font-style:italic;">                            
                           Se bifogat kvitto för mer information.
-                        </p><br><br>
-                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">                            
-                          OBS! Detta mejl går inte att svara på.
-                        </p>
-                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">                            
-                          Har du några frågor eller funderingar?
-                        </p>
-                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">                            
-                          Kontakta oss på info@autoflow.nu
-                        </p><br><br><br>
-                        <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#2E0684;font-size:16px">
-                            Teamet på Zplit Payments AB
-                        </p><br>
-                        
+                        </p><br><br>        
                     </td>
                 </tr>                
             </table>

@@ -106,17 +106,8 @@ export const useSignableDocumentsStores = defineStore('signableDocuments', {
                     x: payload.x,
                     y: payload.y,
                     page: payload.page,
-                    alignment: payload.alignment || 'left'
-                })
-                .then(response => resolve(response))
-                .catch(error => reject(error))
-            })
-        },
-        requestStaticSignature(payload) {
-            return new Promise((resolve, reject) => {
-                SignableDocuments.sendStaticSignatureRequest(payload.documentId, {
-                    email: payload.email,
-                    alignment: payload.alignment || 'left'
+                    alignment: payload.alignment || 'left',
+                    text: payload.text
                 })
                 .then(response => resolve(response))
                 .catch(error => reject(error))
