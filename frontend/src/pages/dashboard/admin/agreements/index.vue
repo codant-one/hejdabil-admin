@@ -844,7 +844,7 @@ const goToTracker = (agreementData) => {
             <th scope="col"> 
               Signera Status 
               <span>
-                <VIcon icon="custom-circle-help" class="ms-2" size="22" />
+                <VIcon icon="custom-circle-help" class="ms-2" size="24" />
                 <v-tooltip
                   activator="parent"
                   location="bottom"
