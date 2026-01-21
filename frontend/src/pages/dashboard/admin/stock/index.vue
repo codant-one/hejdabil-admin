@@ -72,7 +72,7 @@ const isMobileActionDialogVisible = ref(false);
 const hasProcessedCreateAction = ref(false);
 
 const states = ref ([
-  { id: 10, name: "På lager" },
+  { id: 10, name: "I lager" },
   { id: 11, name: "På annons" },
   { id: 13, name: "Förmedlingsbil" }
 ])

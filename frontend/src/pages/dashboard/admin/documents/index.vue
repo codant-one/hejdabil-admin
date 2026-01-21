@@ -1447,7 +1447,7 @@ onBeforeUnmount(() => {
           <VCardText class="dialog-title-box">
             <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
             <div class="dialog-title">
-              Skicka PDF som e-post
+              Skicka PDF via e-post
             </div>
           </VCardText>
           <VCardText class="dialog-text pb-0">
