@@ -34,8 +34,12 @@ class Payouts {
         })
     }
 
-    info(){
+    info() {
         return axios.get(`/payouts/info/all`)
+    }
+
+    send(data) {
+        return axios.post('/payouts/send', data)
     }
     
 }

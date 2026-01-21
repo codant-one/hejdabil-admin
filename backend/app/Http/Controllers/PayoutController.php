@@ -650,4 +650,37 @@ class PayoutController extends Controller
             ], 500);
         }
     }
+
+      /**
+     * Send document(s) via email
+     */
+    public function send(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'ids' => 'required',
+                'email' => 'required|email',
+            ]);
+
+            $result = Payout::sendPayout($request);
+
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Utbetalningen har skickats via e-post'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Det gick inte att skicka betalningsbeviset.'
+            ], 400);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ett fel inträffade: ' . $ex->getMessage()
+            ], 500);
+        }
+    }
 }
