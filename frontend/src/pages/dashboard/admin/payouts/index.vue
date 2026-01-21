@@ -181,6 +181,15 @@ const seePayout = (payoutData, isMobile = false) => {
   } else {
     isPayoutDetailDialogVisible.value = true
   }
+
+  // Capturar imagen si el payout está PAID y no tiene imagen
+  if (payoutData.payout_state_id === 4 && !payoutData.image) {
+    nextTick(() => {
+      setTimeout(() => {
+        captureAndSaveReceipt(payoutData);
+      }, 500);
+    });
+  }
 }
 
 const closePayoutDetailDialog = () => {
@@ -506,9 +515,10 @@ const captureAndSaveReceipt = async (payout) => {
   }
 
   try {
+    // Acceder al elemento DOM del VCard
     const receiptElement = windowWidth.value >= 1024 
-      ? payoutReceiptRef.value?.$el 
-      : payoutReceiptMobileRef.value?.$el;
+      ? payoutReceiptRef.value?.$el || payoutReceiptRef.value
+      : payoutReceiptMobileRef.value?.$el || payoutReceiptMobileRef.value;
     
     if (!receiptElement) {
       console.warn('Receipt element not found');
@@ -519,7 +529,10 @@ const captureAndSaveReceipt = async (payout) => {
       scale: 2,
       useCORS: true,
       allowTaint: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      ignoreElements: (element) => {
+        return element.hasAttribute('data-html2canvas-ignore');
+      }
     });
 
     canvas.toBlob(async (blob) => {
