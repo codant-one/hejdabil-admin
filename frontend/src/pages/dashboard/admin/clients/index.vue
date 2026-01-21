@@ -435,7 +435,7 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
         
         <VBtn 
-          class="btn-white-2" 
+          class="btn-white-2 px-3" 
           v-if="role !== 'Supplier' && role !== 'User'"
           @click="isFilterDialogVisible = true"
         >

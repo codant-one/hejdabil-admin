@@ -405,7 +405,7 @@ onBeforeUnmount(() => {
         </VBtn>
 
         <VBtn 
-          class="btn-white-2"
+          class="btn-white-2 px-3"
           :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
           @click="filtreraMobile = true"
         >
@@ -766,7 +766,7 @@ onBeforeUnmount(() => {
         </VCardText>
         
         <VCardText class="pt-0">
-          <VRow>
+          <VRow class="pt-3">
             <VCol cols="12" md="12">
               <AppAutocomplete
                 v-model="brand_id"
@@ -812,8 +812,8 @@ onBeforeUnmount(() => {
           </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">

@@ -549,7 +549,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
@@ -573,7 +573,7 @@ onBeforeUnmount(() => {
         </VBtn>
 
         <VBtn 
-          class="btn-white-2"
+          class="btn-white-2 px-3"
           :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
           @click="filtreraMobile = true"
         >
@@ -931,8 +931,11 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <VCardText class="pt-0">
-        <VRow>
-          <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VRow class="pt-3">
+          <VCol 
+            cols="12" md="12" 
+            v-if="role === 'SuperAdmin' || role === 'Administrator'"
+            class="pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="supplier_id"
@@ -1002,7 +1005,7 @@ onBeforeUnmount(() => {
         </VRow>
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
         <VBtn
           class="btn-light"
           @click="fetchData(true); isFilterDialogVisible = false">
@@ -1165,7 +1168,7 @@ onBeforeUnmount(() => {
   >
     <VCard class="card-form">
       <VList>
-        <VListItem class="form pt-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
           <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -1306,7 +1309,7 @@ onBeforeUnmount(() => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss">
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -1340,6 +1343,7 @@ onBeforeUnmount(() => {
 
         .selector-user {
           .v-input__control {
+            background: white !important;
             padding-top: 0 !important;
           }
           .v-input__prepend, .v-input__append {
@@ -1359,11 +1363,34 @@ onBeforeUnmount(() => {
       }
     }
     & .v-input {
+      .v-input__prepend {
+        padding-top: 12px !important;
+      }
       & .v-input__control {
         .v-field {
-          background-color: #f6f6f6 !important;
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
           .v-field-label {
             top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
           }
         }
       }

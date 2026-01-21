@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
@@ -1071,7 +1071,7 @@ onBeforeUnmount(() => {
           >
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
             Avbryt
           </VBtn>
