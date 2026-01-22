@@ -995,6 +995,12 @@ const handleSendPayout = () => {
             </span>
           </VExpansionPanelTitle>
           <VExpansionPanelText>
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Namn:</div>
+              <div class="expansion-panel-item-value">
+                {{ payout.fullname }}
+              </div>
+            </div>
             <div class="mb-6 d-flex justify-between flex-wrap gap-4">
               <div>
                 <div class="expansion-panel-item-label">Personnummer:</div>
