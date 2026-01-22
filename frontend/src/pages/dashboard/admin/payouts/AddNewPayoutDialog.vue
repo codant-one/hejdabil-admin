@@ -1,5 +1,6 @@
 <script setup>
 
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 
 const props = defineProps({
@@ -16,6 +17,8 @@ const props = defineProps({
 const emit = defineEmits([
   'update:isDialogOpen',
   'payoutData',
+  'showError',
+  'showLoading'
 ])
 
 const currentStep = ref(1)
@@ -30,7 +33,11 @@ const payee_ssn = ref(null)
 const master_password = ref(null)
 const isMasterPasswordVisible = ref(false)
 
+const fullname = ref(null)
+
 const { width: windowWidth } = useWindowSize();
+
+const personInfoStores = usePersonInfoStores()
 
 const getTitle = computed(() => {
   return props.payoutData && Object.keys(props.payoutData).length > 0 
@@ -48,11 +55,13 @@ watchEffect(() => {
       amount.value = props.payoutData.amount || null
       payee_ssn.value = props.payoutData.payee_ssn || null
       message.value = props.payoutData.message || null
+      fullname.value = props.payoutData.fullname || null
     } else {
       payee_alias.value = null
       amount.value = null
       payee_ssn.value = null
       message.value = null
+      fullname.value = null
     }
     
     master_password.value = null
@@ -91,12 +100,38 @@ const nextStep = async () => {
   const { valid } = await refFormStep1.value.validate()
   
   if (valid) {
+    if(fullname.value === null) {
+      await searchPerson()
+    }
     currentStep.value = 2
   }
 }
 
 const prevStep = () => {
   currentStep.value = 1
+}
+
+/**
+ * Search for person information in SPAR (Statens Personadressregister) API.
+ */
+const searchPerson = async () => {
+    try {
+        emit('showLoading', true)
+
+        const response = await personInfoStores.getPersonInfo(payee_ssn.value)
+        
+        emit('showLoading', false)
+        if (response?.success && response?.data) {
+            const personData = response.data
+
+            fullname.value = personData.fullname || ''
+        }
+
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        
+        emit('showError', errorMessage)
+    }
 }
 
 const onSubmit = () => {
@@ -107,7 +142,8 @@ const onSubmit = () => {
         amount: amount.value,
         payee_ssn: payee_ssn.value,
         message: message.value,
-        master_password: master_password.value
+        master_password: master_password.value,
+        fullname: fullname.value
       }
 
       emit('payoutData', { data: payload })
@@ -230,13 +266,17 @@ const onSubmit = () => {
               <div class="mt-4 card-form d-flex flex-column gap-4">
                 <div class="bg-alert">
                   <span class="mb-2 d-flex justify-between text-neutral-3">
+                    Namn: <strong class="text-black">{{ fullname }}</strong>
+                  </span>
+                  <VDivider />
+                  <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
                     Mobilnummer: <strong class="text-black">+{{ payee_alias }}</strong>
                   </span>
                   <VDivider />
                   <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
                     Personnummer: <strong class="text-black">{{ payee_ssn }}</strong>
                   </span>
-                  <VDivider />
+                  <VDivider />                  
                   <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
                     Belopp: <strong class="text-black">{{ amount }} SEK</strong>
                   </span>

@@ -74,6 +74,7 @@ class Payout extends Model
             'user_id'                           => Auth::user()->id,
             'payout_state_id'                   => $request->payout_state_id ?? 1,
             'swish_id'                          => $request->swish_id ?? null,
+            'fullname'                          => $request->fullname === 'null' ? null : $request->fullname,
             'reference'                         => $request->reference ?? null,
             'amount'                            => $request->amount ?? 0,
             'payer_alias'                       => $request->payer_alias ?? null,

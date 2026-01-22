@@ -275,6 +275,19 @@ const showError = () => {
 
 };
 
+const showErrorMessage = (message) => {
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  advisor.value.message = message;
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+}
+
 const submitForm = async (payoutData) => {
   isRequestOngoing.value = true
 
@@ -1108,6 +1121,10 @@ const handleSendPayout = () => {
 
         <VCardText class="dialog-text">
           <span class="mb-2 d-flex justify-between text-neutral-3">
+            Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
+          </span>
+          <VDivider />
+          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
             Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
           </span>
           <VDivider />
@@ -1201,6 +1218,10 @@ const handleSendPayout = () => {
 
         <VCardText class="dialog-text">
           <span class="mb-2 d-flex justify-between text-neutral-3">
+            Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
+          </span>
+          <VDivider />
+          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
             Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
           </span>
           <VDivider />
@@ -1299,6 +1320,8 @@ const handleSendPayout = () => {
       v-if="payer_alias"
       v-model:isDialogOpen="isAddNewPayoutDrawerVisible"
       :payout-data="selectedPayout"
+      @show-loading="isRequestOngoing = $event"
+      @show-error="showErrorMessage"
       @payout-data="submitForm"
     />
 
