@@ -50,6 +50,7 @@ const redirectTo = (path) => {
       <span>Sälj</span>
     </VBtn>
     <VBtn
+      ref="menuBtn"
       aria-label="Open mobile nav menu"
       @click="showMenu = true"
       class="btn-ghost"
@@ -62,6 +63,7 @@ const redirectTo = (path) => {
       transition="dialog-bottom-transition"
       content-class="dialog-bottom-full-width"
       class="mobile-nav-menu"
+      @after-leave="$refs.menuBtn?.$el?.blur()"
     >
       <VCard>
         <div class="d-flex mobile-nav-sheet">

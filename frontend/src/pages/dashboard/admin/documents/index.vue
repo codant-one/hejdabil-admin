@@ -1,13 +1,13 @@
 <script setup>
 
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { useDisplay } from "vuetify";
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
-import { avatarText } from "@/@core/utils/formatters";
+import { avatarText, formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
 import logo from "@images/logos/billogg-logo.svg";
@@ -46,8 +46,8 @@ const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
-const refSignatureForm = ref()              
-const isStaticSignatureFlow = ref(false)
+const textEmail = ref('Este mensaje esta por default')
+const refSignatureForm = ref()
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
@@ -61,7 +61,6 @@ const pdfPlacementContainer = ref(null)
 const isUploadModalVisible = ref(false)
 const uploadForm = ref(null)
 const uploadTitle = ref('')
-const uploadDescription = ref('')
 const uploadFile = ref(null)
 const uploadFileInput = ref(null)
 const hiddenFileInput = ref(null)
@@ -260,6 +259,10 @@ const selectClient = (clientId) => {
     if (client && client.email) {
       sendDocumentEmail.value = client.email
     }
+  } else {
+    // Clear email when no client is selected
+    sendDocumentEmail.value = ''
+    sendDocumentForm.value?.resetValidation()
   }
 }
 
@@ -327,7 +330,6 @@ const downloadCSV = async () => {
 
     let data = {
       TITEL: element.title ?? '',
-      BESKRIVNING: element.description ?? '',
       SKAPAD: createdAt,
       SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
       SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
@@ -566,8 +568,9 @@ const handleAdminPdfClick = (event) => {
   }
 }
 
-const openSignatureDialog = (documentData) => {
+const openSignatureDialog = () => {
   signatureEmail.value = ''
+  textEmail.value = 'Este mensaje esta por default'
   isSignatureDialogVisible.value = true
 }
 
@@ -586,7 +589,7 @@ const openResendSignature = async (documentData) => {
   }
 }
 
-const submitPlacementSignatureRequest = async () => {
+const handleSignatureSubmit = async () => {
   const { valid } = await refSignatureForm.value?.validate()
 
   if (!valid) return
@@ -615,6 +618,7 @@ const submitPlacementSignatureRequest = async () => {
       y: y_percent.toFixed(4),
       page: signaturePlacement.value.page,
       alignment: 'left',
+      text: textEmail.value
     }
 
     const response = await documentsStores.requestSignature(payload)
@@ -636,57 +640,12 @@ const submitPlacementSignatureRequest = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
+    textEmail.value = 'Este mensaje esta por default'
     setTimeout(() => {
       advisor.value = { show: false } 
     }, 3000)
   }
 }
-
-const submitStaticSignatureRequest = async () => {
-  const { valid } = await refSignatureForm.value?.validate();
-  if (!valid) return;
-
-  isSignatureDialogVisible.value = false;
-  isRequestOngoing.value = true;
-
-  try {
-    const payload = {
-      documentId: selectedDocument.value.id,
-      email: signatureEmail.value,
-      alignment: 'left',
-    };
-
-    const response = await documentsStores.requestStaticSignature(payload);
-
-    advisor.value = {
-      type: 'success',
-      message: response.data.message || 'Signeringsförfrågan har skickats!',
-      show: true,
-    };
-
-  } catch (error) {
-    advisor.value = {
-      type: 'error',
-      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
-      show: true,
-    };
-  } finally {
-    isRequestOngoing.value = false;
-    signatureEmail.value = '';
-    await fetchData();
-    setTimeout(() => {
-      advisor.value = { show: false };
-    }, 3000);
-  }
-};
-
-const handleSignatureSubmit = async () => {
-  if (isStaticSignatureFlow.value) {
-    await submitStaticSignatureRequest();
-  } else {
-    await submitPlacementSignatureRequest(); 
-  }
-};
 
 const handlePlacementModalClose = (value) => {
   if (!value) {
@@ -700,7 +659,6 @@ const handlePlacementModalClose = (value) => {
 const openUploadModal = () => {
   isUploadModalVisible.value = true
   uploadTitle.value = ''
-  uploadDescription.value = ''
   uploadFile.value = null
   fileValidationError.value = ''
   if (uploadFileInput.value) {
@@ -763,7 +721,6 @@ const submitUpload = async () => {
   try {
     const formData = new FormData()
     formData.append('title', uploadTitle.value)
-    formData.append('description', uploadDescription.value || '')
     formData.append('file', uploadFile.value)
 
     const response = await documentsStores.addDocument(formData)
@@ -1024,6 +981,7 @@ onBeforeUnmount(() => {
 
         <VBtn
           class="btn-white-2 px-3"
+          v-if="role !== 'Supplier' && role !== 'User'"
           @click="isFilterDialogVisible = true"
           :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
         >
@@ -1137,12 +1095,11 @@ onBeforeUnmount(() => {
         <thead>
           <tr>
             <th scope="col">#ID</th>
-            <th scope="col" class="text-center">Titel</th>
-            <th scope="col" class="text-center">Beskrivning</th>
+            <th scope="col">Titel</th>
             <th scope="col" class="text-center">Skapad</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
-            <th scope="col">Skapad av</th>
             <th scope="col" class="text-center">Signera status</th>
+            <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'signed-documents') || $can('delete', 'signed-documents')"></th>
           </tr>
         </thead>
@@ -1150,60 +1107,37 @@ onBeforeUnmount(() => {
         <tbody v-show="documents.length">
           <tr v-for="document in documents" :key="document.id">
             <td>
-              <span>{{ document.id }}</span>
+              <span>{{ document.order_id }}</span>
             </td>
-            <td class="text-center">
+            <td class="w-100">
               <span>{{ document.title }}</span>
             </td>
             <td class="text-center">
-              <span>{{ document.description || '-' }}</span>
-            </td>
-            <td class="text-center">
-              <span>
-                {{ 
-                  new Date(document.created_at).toLocaleString('en-GB', { 
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit', 
-                    hour: '2-digit', 
-                    minute: '2-digit', 
-                    second: '2-digit', 
-                    hour12: false 
-                  })
-                }}
-              </span>
+              {{ formatDateTime(document.created_at) }}
             </td>
             <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
-              <div class="d-flex align-center gap-x-1" v-if="document.supplier">
-                <VAvatar
-                  :variant="document.supplier.user.avatar ? 'outlined' : 'tonal'"
-                  size="38"
-                >
-                  <VImg
-                    v-if="document.supplier.user.avatar"
-                    style="border-radius: 50%"
-                    :src="themeConfig.settings.urlStorage + document.supplier.user.avatar"
-                  />
-                  <span v-else>{{
-                    avatarText(document.supplier.user.name)
-                  }}</span>
-                </VAvatar>
-                <div class="d-flex flex-column">
-                  <span class="font-weight-medium">
-                    {{ document.supplier.user.name }} {{ document.supplier.user.last_name ?? "" }}
-                  </span>
-                  <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="document.supplier.user.email && document.supplier.user.email.length > 20">
-                      <template #activator="{ props }">
-                        <span v-bind="props">
-                          {{ truncateText(document.supplier.user.email, 20) }}
-                        </span>
-                      </template>
-                      <span>{{ document.supplier.user.email }}</span>
-                    </VTooltip>
-                    <span class="text-sm text-disabled"v-else>{{ document.supplier.user.email }}</span>
-                  </span>
-                </div>
+               <span v-if="document.supplier">
+                {{ document.supplier.user.name }}
+                {{ document.supplier.user.last_name ?? "" }}
+              </span>
+            </td>
+            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 180px;">
+              <div
+                v-if="document.tokens && document.tokens.length > 0"
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+              </div>
+
+              <div
+                v-else
+                class="status-chip"
+                :class="`status-chip-${resolveStatus('pending')?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                 {{ resolveStatus('pending')?.name }}
               </div>
             </td>
             <td style="width: 1%; white-space: nowrap">
@@ -1224,9 +1158,11 @@ onBeforeUnmount(() => {
                     {{ document.user.name }} {{ document.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="document.user.email && document.user.email.length > 20">
+                    <VTooltip 
+                      v-if="document.user.email && document.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(document.user.email, 20) }}
                         </span>
                       </template>
@@ -1236,26 +1172,7 @@ onBeforeUnmount(() => {
                   </span>
                 </div>
               </div>
-            </td>
-            <td class="text-center text-wrap d-flex justify-center align-center">
-              <div
-                v-if="document.tokens && document.tokens.length > 0"
-                class="status-chip"
-                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
-              >
-                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
-              </div>
-
-              <div
-                v-else
-                class="status-chip"
-                :class="`status-chip-${resolveStatus('pending')?.class}`"
-              >
-                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
-                 {{ resolveStatus('pending')?.name }}
-              </div>
-            </td>
+            </td>            
             <!-- 👉 Actions -->
             <td
               class="text-center"
@@ -1365,11 +1282,17 @@ onBeforeUnmount(() => {
             collapse-icon="custom-chevron-right"
             expand-icon="custom-chevron-down"
           >
-            <span class="order-id">{{ document.id }}</span>
+            <span class="order-id">{{ document.order_id }}</span>
             <div class="order-title-box">
               <span class="title-panel">{{ document.title }}</span>
-              <div class="title-organization">
-                {{ new Date(document.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) }}
+              <div class="gap-2 title-organization">
+                <span>
+                  {{ formatDateYMD(document.created_at) }}
+                </span>
+                <VIcon size="16" icon="custom-clock" />
+                <span>
+                  {{ document.created_at ? formatDate(document.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                </span>
               </div>
             </div>
           </VExpansionPanelTitle>
@@ -1493,10 +1416,10 @@ onBeforeUnmount(() => {
           <VCardText class="dialog-title-box">
             <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
             <div class="dialog-title">
-              Skicka PDF som e-post
+              Skicka PDF via e-post
             </div>
           </VCardText>
-          <VCardText class="pb-0">
+          <VCardText class="dialog-text pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="selectedClientId"
@@ -1519,8 +1442,7 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
             <VBtn
               class="btn-light"
               @click="isConfirmSendDocumentDialogVisible = false"
@@ -1571,13 +1493,6 @@ onBeforeUnmount(() => {
                   v-model="uploadTitle"
                   placeholder="Ange dokumenttitel"
                   :rules="[requiredValidator]"
-                />
-              </div>
-              <div>
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
-                <VTextField
-                  v-model="uploadDescription"
-                  placeholder="Ange beskrivning (valfritt)"
                 />
               </div>
               <div>
@@ -1661,11 +1576,18 @@ onBeforeUnmount(() => {
           <VCardText class="dialog-text">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
           </VCardText>
+           <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande*" />                   
+            <VTextarea
+              v-model="textEmail"
+              rows="4"
+              :rules="[requiredValidator]"
+            />
+          </VCardText>
           <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />                                            
             <VTextField
               v-model="signatureEmail"
-              label="E-postadress"
-              placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
@@ -1734,7 +1656,7 @@ onBeforeUnmount(() => {
             <VBtn
               class="btn-green"
               :disabled="!signaturePlacement.visible"
-              @click="openSignatureDialog(selectedDocument)"
+              @click="openSignatureDialog()"
             >
               Skicka
             </VBtn>
@@ -2038,7 +1960,7 @@ onBeforeUnmount(() => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss">
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -2091,13 +2013,31 @@ onBeforeUnmount(() => {
       }
     }
     & .v-input {
-      & .v-input__control {
+      .v-input__control {
         .v-field {
-          background-color: #f6f6f6;
-          .v-field-label {
-            @media (max-width: 991px) {
-              top: 12px !important;
+          background-color: #f6f6f6 !important;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+              padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+              min-height: 48px !important;
             }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
           }
         }
       }

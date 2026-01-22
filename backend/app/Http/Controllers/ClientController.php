@@ -111,11 +111,10 @@ class ClientController extends Controller
 
             $client = Client::with(['supplier.user'])->find($id);
 
-            // Total de sale_price de los vehículos vendidos (type = 1) a este cliente
+            // Cantidad de vehículos vendidos (se mantiene como conteo)
             $carsForSale = VehicleClient::where('client_id', $id)
                 ->where('type', 1)
-                ->join('vehicles', 'vehicle_clients.vehicle_id', '=', 'vehicles.id')
-                ->sum('vehicles.sale_price');
+                ->count();
 
             // Cantidad de vehículos comprados (se mantiene como conteo)
             $carsPurchased = VehicleClient::where('client_id', $id)

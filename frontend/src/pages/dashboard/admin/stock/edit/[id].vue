@@ -1220,7 +1220,10 @@ const selectCl = client => {
         let _client = clients.value.find(item => item.id === client)
     
         mail.value = _client.email
-    }
+    } else {
+        mail.value = ''
+        refSend.value?.resetValidation()
+    }   
 }
 
 const selectClient = client => {
@@ -2652,7 +2655,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <VCardText class="dialog-title-box">
                         <VIcon size="32" icon="custom-forward" class="action-icon" />
                         <div class="dialog-title">
-                            Redigera typ
+                            Redigera
                         </div>
                     </VCardText>
                     <VCardText class="dialog-text">
@@ -3496,10 +3499,10 @@ onBeforeRouteLeave((to, from, next) => {
                     <VCardText class="dialog-title-box">
                         <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
                         <div class="dialog-title">
-                            Skicka pdf som e-post
+                            Skicka PDF via e-post
                         </div>
                     </VCardText>
-                    <VCardText class="pb-0">
+                    <VCardText class="dialog-text pb-0">
                         <AppAutocomplete
                             prepend-icon="custom-profile"
                             :items="clients"
@@ -3510,18 +3513,16 @@ onBeforeRouteLeave((to, from, next) => {
                             clearable
                             clear-icon="tabler-x"
                             class="selector-user selector-truncate w-auto"
-                            @update:modelValue="selectCl"
-                            :rules="[requiredValidator]"/>
+                            @update:modelValue="selectCl"/>
                     </VCardText>
                     <VCardText class="card-form">
                         <VTextField
                             v-model="mail"
                             label="E-post"
-                            :rules="[emailValidator]"
+                            :rules="[requiredValidator, emailValidator]"
                         />                           
                     </VCardText>
-
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap">
+                   <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
                         <VBtn
                             class="btn-light"
                             @click="isConfirmSendDocumentDialogVisible = false">
@@ -3891,9 +3892,7 @@ onBeforeRouteLeave((to, from, next) => {
                     }
 
                     .v-field-label {
-                        @media (max-width: 991px) {
-                            top: 12px !important;
-                        }
+                        top: 12px !important;
                     }
 
                     .v-field__append-inner {

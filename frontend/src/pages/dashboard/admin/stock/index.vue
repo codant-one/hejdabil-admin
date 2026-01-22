@@ -72,7 +72,7 @@ const isMobileActionDialogVisible = ref(false);
 const hasProcessedCreateAction = ref(false);
 
 const states = ref ([
-  { id: 10, name: "På lager" },
+  { id: 10, name: "I lager" },
   { id: 11, name: "På annons" },
   { id: 13, name: "Förmedlingsbil" }
 ])
@@ -549,7 +549,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
@@ -573,7 +573,7 @@ onBeforeUnmount(() => {
         </VBtn>
 
         <VBtn 
-          class="btn-white-2"
+          class="btn-white-2 px-3"
           :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
           @click="filtreraMobile = true"
         >
@@ -650,26 +650,27 @@ onBeforeUnmount(() => {
                   <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
                     {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
                   </span>
-                  <!--<span class="text-sm text-disabled">
-                    {{ vehicle.color }}
-                  </span>-->
                 </div>
               </div>
             </td>   
             <td class="text-center" v-if="isColVisible('reg_num')"> {{ vehicle.reg_num }} </td>             
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
             <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
-            <td class="text-center cursor-pointer" v-if="isColVisible('comments')">
-              <VTooltip location="bottom">
+            <td class="text-center" v-if="isColVisible('comments')">
+              <VTooltip 
+                v-if="vehicle.comments && vehicle.comments.length > 15"
+                location="bottom"
+                max-width="300">
                 <template #activator="{ props }">
-                  <span v-bind="props" v-if="vehicle.comments">
+                  <span v-bind="props" class="cursor-pointer">
                     {{ truncateText(vehicle.comments) }}
                   </span>
                 </template>
                 <span>{{ vehicle.comments }}</span>
               </VTooltip>
+              <span v-else>{{ vehicle.comments }}</span>
             </td>
-            <td class="text-center text-wrap d-flex justify-center align-center" v-if="isColVisible('state')"> 
+            <td class="text-center text-wrap d-flex justify-center align-center" style="width: 120px;" v-if="isColVisible('state')"> 
               <div
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(vehicle.state.id)?.class}`"
@@ -679,7 +680,7 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center" v-if="isColVisible('vat')"> {{ vehicle.iva_purchase?.name }} </td>
             <td class="text-center" v-if="isColVisible('control_inspection')"> {{ vehicle.control_inspection }} </td>
-            <td class="text-wrap" v-if="isColVisible('seller')">
+            <td style="width: 1%; white-space: nowrap" v-if="isColVisible('seller')">
               <div class="d-flex flex-column">
                 <span v-if="vehicle.client_purchase?.client_id !== null" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_purchase?.client)">
                   {{ vehicle.client_purchase?.fullname }} 
@@ -690,7 +691,7 @@ onBeforeUnmount(() => {
                 <span class="text-sm text-disabled">{{ vehicle.client_purchase?.phone }}</span>
               </div>
             </td> 
-            <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
+            <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
               <span v-if="vehicle.supplier">
                 {{ vehicle.supplier.user.name }}
                 {{ vehicle.supplier.user.last_name ?? "" }}
@@ -714,9 +715,11 @@ onBeforeUnmount(() => {
                     {{ vehicle.user.name }} {{ vehicle.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="vehicle.user.email && vehicle.user.email.length > 20">
+                    <VTooltip 
+                      v-if="vehicle.user.email && vehicle.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(vehicle.user.email, 20) }}
                         </span>
                       </template>
@@ -931,8 +934,11 @@ onBeforeUnmount(() => {
       </VCardText>
       
       <VCardText class="pt-0">
-        <VRow>
-          <VCol cols="12" md="12" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VRow class="pt-3">
+          <VCol 
+            cols="12" md="12" 
+            v-if="role === 'SuperAdmin' || role === 'Administrator'"
+            class="pb-0">
             <AppAutocomplete
               prepend-icon="custom-profile"
               v-model="supplier_id"
@@ -1002,7 +1008,7 @@ onBeforeUnmount(() => {
         </VRow>
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
         <VBtn
           class="btn-light"
           @click="fetchData(true); isFilterDialogVisible = false">
@@ -1165,7 +1171,7 @@ onBeforeUnmount(() => {
   >
     <VCard class="card-form">
       <VList>
-        <VListItem class="form pt-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+        <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
           <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -1306,7 +1312,7 @@ onBeforeUnmount(() => {
   </section>
 </template>
 
-<style scope>
+<style lang="scss">
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
@@ -1340,6 +1346,7 @@ onBeforeUnmount(() => {
 
         .selector-user {
           .v-input__control {
+            background: white !important;
             padding-top: 0 !important;
           }
           .v-input__prepend, .v-input__append {
@@ -1359,13 +1366,34 @@ onBeforeUnmount(() => {
       }
     }
     & .v-input {
+      .v-input__prepend {
+        padding-top: 12px !important;
+      }
       & .v-input__control {
         .v-field {
-          background-color: #f6f6f6 !important;
-          .v-field-label {
-            @media (max-width: 991px) {
-              top: 12px !important;
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
             }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
           }
         }
       }

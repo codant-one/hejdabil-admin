@@ -238,7 +238,7 @@ watch(currentData, () => {
               <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
                 <VSelect                 
                   v-model="supplier_id"
-                  placeholder="Leverantörer*"
+                  placeholder="Leverantörer"
                   :items="suppliers"
                   :item-title="(item) => item.full_name"
                   :item-value="(item) => item.id"
@@ -364,12 +364,62 @@ watch(currentData, () => {
   </VDialog>
 </template>
 
-<style scoped>
+<style lang="scss">
   .btn-close-client {
     height: 32px !important;
   }
   .card-form {
-    border-radius: 0 !important;
+    .v-input {
+      .v-input__control {
+        .v-field {
+          background-color: #f6f6f6 !important;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+
+    .v-select .v-field {
+      .v-select__selection {
+          align-items: center;
+          color: #454545;
+      }
+
+      .v-field__input > input {
+        top: 0px;
+        left: 18px;
+
+      }
+
+      .v-field__input input::placeholder,
+      input.v-field__input::placeholder,
+      .v-field__input textarea::placeholder,
+      textarea.v-field__input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+    }
   }
   .border-img {
     border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));

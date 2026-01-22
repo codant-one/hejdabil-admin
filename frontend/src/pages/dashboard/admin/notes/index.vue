@@ -6,7 +6,7 @@ import { useDisplay } from 'vuetify'
 import { useNotesStores } from '@/stores/useNotes'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText , formatNumber } from '@/@core/utils/formatters'
+import { avatarText , formatNumber, formatDateTime } from '@/@core/utils/formatters'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import AddNewNoteDrawer from './AddNewNoteDrawer.vue'
@@ -94,7 +94,7 @@ async function fetchData(cleanFilters = false) {
 
   let data = {
     search: searchQuery.value,
-    orderByField: 'id',
+    orderByField: 'created_at',
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
@@ -630,7 +630,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2 pb-0"
+        class="d-flex align-center justify-space-between gap-1 pb-0"
         :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
@@ -641,7 +641,7 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <VBtn 
-          class="btn-white-2" 
+          class="btn-white-2 px-3" 
           v-if="role !== 'Supplier' && role !== 'User'"
           @click="isFilterDialogVisible = true"
         >
@@ -700,14 +700,27 @@ onBeforeUnmount(() => {
                     {{ note.comment }}
                 </div>
 
-                <div class="text-comments mt-10">
-                  Egen värdering
+                <div 
+                  class="d-flex gap-2 mt-10 mb-4"
+                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+                  <div :class="windowWidth < 1024 ? 'w-100' : 'w-50'">
+                    <div class="text-comments">
+                      Datum
+                    </div>
+                    <div class="note-value-field mt-4">
+                      {{ formatDateTime(note.created_at) }} 
+                    </div>  
+                  </div>
+                  <div :class="windowWidth < 1024 ? 'w-100' : 'w-50'">
+                    <div class="text-comments">
+                      Egen värdering
+                    </div>
+                    <div class="note-value-field mt-4">
+                      {{ formatNumber(note.note ?? 0) }} (kr)
+                    </div> 
+                  </div>
                 </div>
-
-                <div class="note-value-field my-4">
-                  {{ formatNumber(note.note ?? 0) }} (kr)
-                </div>       
-
+                
                 <div class="d-flex align-center px-0">
                     <div class="text-no-wrap">
                         <VAvatar
@@ -1307,7 +1320,7 @@ onBeforeUnmount(() => {
     background-color: #F6F6F6;
     border-radius: 8px;
     border: 1px solid #E7E7E7;
-    padding: 0 16px;
+    padding: 0 8px;
     height: 40px !important;
     align-items: center;
     display: flex;
@@ -1333,7 +1346,7 @@ onBeforeUnmount(() => {
     font-weight: 400;
     font-size: 16px;
     line-height: 100%;
-    color: #878787; 
+    color: #878787;
   }
 
   .text-comments {

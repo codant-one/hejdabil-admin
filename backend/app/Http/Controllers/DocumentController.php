@@ -84,6 +84,14 @@ class DocumentController extends Controller
 
             $document = Document::createDocument($request);
 
+            $order_id = Document::where('supplier_id', $document->supplier_id)
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $document->order_id = $order_id + 1;
+            $document->update();
+
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
                 $path = 'documents/';
@@ -258,12 +266,13 @@ class DocumentController extends Controller
      * Send signature request for a document
      */
     public function sendSignatureRequest(Document $document, Request $request)
-    {
+    {   
         $validated = $request->validate([
             'email' => 'required|email',
             'x' => 'required|numeric',
             'y' => 'required|numeric',
             'page' => 'required|integer',
+            'text' => 'required|string',
         ]);
 
         if (!$document->file) {
@@ -333,13 +342,20 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
+            $document->description = $request->text;
+            $document->save();
+
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Solicitud para Firmar su Contrato';
+            $subject = 'Solicitud para firmar su documento';
+            $data = [
+                'signingUrl' => $signingUrl,
+                'text' => $request->text
+            ];
 
             \Mail::send(
-                'emails.agreements.signature_request'
-                , ['signingUrl' => $signingUrl]
+                'emails.documents.signature_request'
+                , $data
                 , function ($message) use ($clientEmail, $subject) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                     $message->to($clientEmail)->subject($subject);
@@ -362,139 +378,6 @@ class DocumentController extends Controller
             ]);
         } catch (\Throwable $e) {
             \Log::error('Error sending signature email for document: ' . $e->getMessage(), [
-                'exception' => $e,
-                'document_id' => $document->id,
-                'email' => $validated['email']
-            ]);
-            
-            $token->update(['signature_status' => 'delivery_issues']);
-            
-            // Log 'delivery_issues' event
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
-                description: 'Fel vid sändning av e-post',
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: [
-                    'error' => $e->getMessage(),
-                    'error_type' => get_class($e),
-                    'recipient' => $validated['email']
-                ]
-            );
-            
-            return response()->json([
-                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Send static signature request (without coordinates)
-     */
-    public function sendStaticSignatureRequest(Document $document, Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-        ]);
-
-        if (!$document->file) {
-            return response()->json([
-                'message' => 'Det finns ännu ingen PDF-fil att underteckna för detta dokument.'
-            ], 422);
-        }
-
-        // Get or create token for this document
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $document->tokens()
-            ->whereIn('signature_status', ['created', 'delivery_issues'])
-            ->latest()
-            ->first();
-        
-        if (!$token) {
-            // If no 'created' or 'delivery_issues' token exists, create a new one
-            $signingToken = Str::uuid()->toString();
-            $token = $document->tokens()->create([
-                'signing_token' => $signingToken,
-                'recipient_email' => $validated['email'],
-                'token_expires_at' => now()->addDays(7),
-                'signature_status' => 'created',
-                'placement_x' => null,
-                'placement_y' => null,
-                'placement_page' => 1,
-                'signature_alignment' => $request->get('alignment', 'left'),
-            ]);
-
-            // Log 'created' event for new token
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_CREATED,
-                description: 'Dokument skapat i systemet',
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: [
-                    'document_id' => $document->id,
-                    'document_title' => $document->title,
-                    'recipient' => $validated['email'],
-                    'static_signature' => true,
-                ]
-            );
-        } else {
-            // Update existing token with signature details
-            $token->update([
-                'recipient_email' => $validated['email'],
-                'token_expires_at' => now()->addDays(7),
-                'placement_x' => null,
-                'placement_y' => null,
-                'placement_page' => 1,
-                'signature_alignment' => $request->get('alignment', 'left'),
-            ]);
-        }
-
-        try {
-            // Update status to 'sent'
-            $token->update(['signature_status' => 'sent']);
-            
-            // Log 'sent' event
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_SENT,
-                description: 'E-post skickad till ' . $validated['email'],
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
-            );
-
-            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
-            $clientEmail = $validated['email'];
-            $subject = 'Solicitud para Firmar su Contrato';
-
-            \Mail::send(
-                'emails.agreements.signature_request'
-                , ['signingUrl' => $signingUrl]
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
-
-            $token->update(['signature_status' => 'delivered']);
-            
-            // Log 'delivered' event
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
-                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: ['recipient' => $validated['email']]
-            );
-            
-            return response()->json([
-                'message' => 'Begäran om underskrift skickad med framgång.'
-            ]);
-        } catch (\Throwable $e) {
-            \Log::error('Error sending static signature email for document: ' . $e->getMessage(), [
                 'exception' => $e,
                 'document_id' => $document->id,
                 'email' => $validated['email']
@@ -558,11 +441,15 @@ class DocumentController extends Controller
             
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $token->recipient_email;
-            $subject = 'Solicitud para Firmar su Contrato';
+            $subject = 'Solicitud para firmar su documento';
+            $data = [
+                'signingUrl' => $signingUrl,
+                'text' => $document->description
+            ];
 
             \Mail::send(
-                'emails.agreements.signature_request'
-                , ['signingUrl' => $signingUrl]
+                'emails.documents.signature_request'
+                , $data
                 , function ($message) use ($clientEmail, $subject) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                     $message->to($clientEmail)->subject($subject);

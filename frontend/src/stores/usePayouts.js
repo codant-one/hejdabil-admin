@@ -138,5 +138,18 @@ export const usePayoutsStores = defineStore('payouts', {
                     this.setLoading(false)
                 })  
         },
+        sendPayout(data) {
+            this.setLoading(true)
+
+            return Payouts.send(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
     }
 })

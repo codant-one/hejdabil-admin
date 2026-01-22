@@ -74,6 +74,7 @@ class Payout extends Model
             'user_id'                           => Auth::user()->id,
             'payout_state_id'                   => $request->payout_state_id ?? 1,
             'swish_id'                          => $request->swish_id ?? null,
+            'fullname'                          => $request->fullname === 'null' ? null : $request->fullname,
             'reference'                         => $request->reference ?? null,
             'amount'                            => $request->amount ?? 0,
             'payer_alias'                       => $request->payer_alias ?? null,
@@ -108,6 +109,82 @@ class Payout extends Model
        $payout = self::find($id);
        $payout->payout_state_id = 3; // Cancelled
        $payout->save();
+    }
+
+    public static function sendPayout($request)
+    {
+        $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
+        $payouts = self::with('user')->whereIn('id', $ids)->get();
+
+        if ($payouts->isEmpty()) {
+            return false;
+        }
+
+        $data = ['payouts' => $payouts];
+
+        $subject = 'Swish-betalningskvitto';
+
+        try {
+            // Generate PDFs for each payout
+            $pdfAttachments = [];
+            foreach ($payouts as $payout) {
+                $pathToFile = storage_path('app/public/' . $payout->image);
+                $imageBase64 = null;
+
+                if ($payout->image && is_file($pathToFile)) {
+                    $imageData = file_get_contents($pathToFile);
+                    $mime = mime_content_type($pathToFile);
+                    $imageBase64 = 'data:' . $mime . ';base64,' . base64_encode($imageData);
+                }
+
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.payout-receipt', [
+                    'payout' => $payout,
+                    'imageBase64' => $imageBase64
+                ]);
+
+                $pdfAttachments[] = [
+                    'pdf' => $pdf->output(),
+                    'name' => 'kvitto_' . ($payout->reference ?? $payout->id) . '.pdf'
+                ];
+            }
+
+            \Mail::send(
+                'emails.payouts.receipt',
+                $data,
+                function ($message) use ($request, $pdfAttachments, $payouts, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($request->email)->subject($subject);
+
+                    // Adjuntar PDFs
+                    foreach ($pdfAttachments as $attachment) {
+                        $message->attachData(
+                            $attachment['pdf'],
+                            $attachment['name'],
+                            ['mime' => 'application/pdf']
+                        );
+                    }
+
+                    // Adjuntar imágenes originales
+                    foreach ($payouts as $payout) {
+                        $pathToFile = storage_path('app/public/' . $payout->image);
+
+                        if ($payout->image && is_file($pathToFile)) {
+                            $mime = mime_content_type($pathToFile);
+                            $message->attach($pathToFile, [
+                                'as' => \Illuminate\Support\Str::of($payout->image)->afterLast('/'),
+                                'mime' => $mime
+                            ]);
+                        }
+                    }
+                }
+            );
+
+            return true;
+
+        } catch (\Exception $e) {
+            \Log::error('Error al enviar correo:', ['error' => $e->getMessage()]);
+            return false;
+        }
     }
 
     /**** Accessors ****/

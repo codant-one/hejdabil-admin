@@ -195,7 +195,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
         Route::get('/{document}/get-admin-preview-pdf', [DocumentController::class, 'getAdminPreviewPdf'])->name('documents.getAdminPreviewPdf');
         Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
-        Route::post('/{document}/send-static-signature-request', [DocumentController::class, 'sendStaticSignatureRequest']);
         Route::post('/{document}/resend-signature-request', [DocumentController::class, 'resendSignatureRequest'])->name('documents.resendSignatureRequest');
     });
 
@@ -223,6 +222,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
         Route::get('/info/all', [PayoutController::class, 'info']);
         Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
         Route::post('/{payout}/save-receipt-image', [PayoutController::class, 'saveReceiptImage'])->name('payouts.saveReceiptImage');
+        Route::post('/send', [PayoutController::class, 'send']);
     });
 
     //Configs

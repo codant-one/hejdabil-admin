@@ -533,7 +533,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
@@ -778,9 +778,11 @@ onBeforeUnmount(() => {
                     {{ billing.user.name }} {{ billing.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="billing.user.email && billing.user.email.length > 20">
+                    <VTooltip 
+                      v-if="billing.user.email && billing.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(billing.user.email, 20) }}
                         </span>
                       </template>
@@ -1071,7 +1073,7 @@ onBeforeUnmount(() => {
           >
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
             Avbryt
           </VBtn>
@@ -1080,7 +1082,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
-     <!-- 👉 Confirm kreditera -->
+    <!-- 👉 Confirm kreditera -->
     <VDialog 
       v-model="isConfirmKreditera" 
       persistent

@@ -322,24 +322,6 @@ const downloadCSV = async () => {
 
 }
 
-/*const resolveStatus = state => {
-  if (state === 'created')
-    return { color: 'info' }
-  if (state === 'sent')
-    return { color: 'warning' }
-  if (state === 'signed')
-    return { color: 'info' }
-  if (state === 'pending')
-    return { color: 'warning' } 
-  if (state === 'delivered')
-    return { color: 'success' }
-  if (state === 'reviewed')
-    return { color: 'info' }
-  if (state === 'delivery_issues')
-    return { color: 'warning' }
-  if (state === 'failed')
-    return { color: 'error' }
-}*/
 const resolveStatus = state => {
   if (state === 'created')
     return { 
@@ -681,7 +663,7 @@ const goToTracker = (agreementData) => {
             v-if="$can('create','agreements') && $vuetify.display.mdAndDown"
             class="btn-gradient"
             block
-            @click="skapaMobile=true"
+            @click="skapaMobile = true"
           >
             <VIcon icon="custom-plus" size="24" />
             Skapa
@@ -723,40 +705,37 @@ const goToTracker = (agreementData) => {
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
-          <VTextField
-            v-model="searchQuery"
-            placeholder="Sök"
-            clearable
-          />
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-        <AppAutocomplete
-            v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            v-model="supplier_id"
-            prepend-icon="custom-profile"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="item => item.full_name"
-            :item-value="item => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-            class="selector-user selector-truncate"
+          <AppAutocomplete
+              v-if="role === 'SuperAdmin' || role === 'Administrator'"
+              v-model="supplier_id"
+              prepend-icon="custom-profile"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="item => item.full_name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              style="width: 200px"
+              :menu-props="{ maxHeight: '300px' }"
+              class="selector-user selector-truncate"
         />
         </div>
 
         <VBtn
           class="btn-white-2 px-3"
+          v-if="role !== 'Supplier' && role !== 'User'"
           @click="isFilterDialogVisible = true"
           :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
         >
@@ -855,17 +834,17 @@ const goToTracker = (agreementData) => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> REG. NR </th>
-            <th scope="col"> INBYTESFORDON REG. NR </th>
-            <th scope="col" class="text-end"> KREDIT / LEASING </th>
-            <th scope="col"> TYP </th>
-            <th scope="col"> SKAPAD </th>
-            <th scope="col"> SKAPAD AV </th>
+            <th scope="col"> Reg. Nr </th>
+            <th scope="col"> Inbytesfordon Reg. Nr </th>
+            <th scope="col" class="text-end"> Kredit / Leasing </th>
+            <th scope="col"> Typ </th>
+            <th scope="col"> Skapad </th>
+            <th scope="col"> Skapad Av </th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
             <th scope="col"> 
-              SIGNERA STATUS 
+              Signera Status 
               <span>
-                <VIcon icon="custom-circle-help" class="ms-2" size="22" />
+                <VIcon icon="custom-circle-help" class="ms-2" size="24" />
                 <v-tooltip
                   activator="parent"
                   location="bottom"
@@ -1029,12 +1008,21 @@ const goToTracker = (agreementData) => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'agreements')"
+          v-if="$can('create', 'agreements') && !$vuetify.display.mdAndDown"
           @click="isModalVisible = true"
         >
           Skapa nytt avtal
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'agreements')"
+          @click="skapaMobile = true"
+        >
+          Skapa nytt avtal
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>        
       </div>
 
       <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-6 px-6">
@@ -1309,11 +1297,12 @@ const goToTracker = (agreementData) => {
         ref="refVForm"
         @submit.prevent="addAgreements"
       >
-        <VCard>
+        <VCard flat class="card-form">
           <VCardText class="dialog-title-box">
-             <div class="dialog-title">Skapa</div>
+              <VIcon size="32" icon="custom-plus" class="action-icon" />
+              <div class="dialog-title">Skapa</div>
           </VCardText>
-          <VCardText>
+          <VCardText class="dialog-text">
             <VRow>
               <VCol cols="12">
                 <AppAutocomplete
@@ -1706,17 +1695,6 @@ const goToTracker = (agreementData) => {
     background-color: transparent !important;
   }
 
-  :deep(.tooltip-content) {
-      font-weight: 500;
-      font-size: 16px;
-      line-height: 1.5;
-      color: #454545;
-      background: transparent;
-      box-shadow: 0 0 40px 0 rgba(0, 0, 0, 0.1490196078);
-      background: rgb(var(--v-theme-surface));
-      border-radius: 8px;
-      padding: 16px;
-  }
 </style>
 <route lang="yaml">
   meta:

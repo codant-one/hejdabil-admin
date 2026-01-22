@@ -332,11 +332,13 @@
 
     &:hover {
       a {
-        background-color: #bdd2c8;
+        //background-color: #bdd2c8;
+        background-color: white;
         border-radius: 64px;
 
-        ::before {
+        &::before {
           display: none;
+          background-color: white !important;
         }
 
         span,
