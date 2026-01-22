@@ -120,6 +120,11 @@ const optionsSettled = ['Bilhandlare', 'Kund']
 const terms_other_conditions = ref(null)
 const terms_other_information = ref(null)
 
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
+
 const calculate = () => {
     const sale = Number(price.value) || 0
     const fee = Number(registration_fee.value) || 0
