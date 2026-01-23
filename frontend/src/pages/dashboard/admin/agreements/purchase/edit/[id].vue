@@ -119,6 +119,11 @@ const terms_other_information = ref(null)
 
 const vehicle_client_id = ref(null)
 
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
+
 const calculate = () => {
     const sale = Number(price.value) || 0
     const fee = Number(registration_fee.value) || 0
@@ -621,17 +626,72 @@ const onSubmit = () => {
 }
 
 
+/*
+    Campos `v-model` con la regla `requiredValidator` dentro de los tabs (class="vehicles-tabs")
+
+    Tab 1 (Inköpsavtal):
+    - reg_num
+    - brand_id
+    - model_id
+    - year
+    - color
+    - mileage
+    - purchase_date
+
+    Tab 2 (Kund):
+    - organization_number
+    - client_type_id
+    - fullname
+    - address
+    - postal_code
+    - street
+    - phone
+    - identification_id
+    - email
+
+    Tab 3 (Pris):
+    - price
+    - iva_id
+    - iva_sale_amount (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
+    - iva_sale_exclusive (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
+    - payment_type (campo alternativo visible cuando `payment_type_id === 0`, tiene `:rules="[requiredValidator]"`)
+
+    Reglas condicionales (computed que retornan `[requiredValidator]`):
+    - payment_type_id (usa `:rules="conditionalRules"` → requerido si `settled_by === 1`)
+    - loan_amount (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
+    - lessor (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
+    - bank, account, description (usan `:rules="conditionalRules"` → requeridos si `settled_by === 1`)
+
+    Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `vehicles-tabs`.
+*/
 const currentData = computed(() => ({
     reg_num: reg_num.value,
     brand_id: brand_id.value,
     model_id: model_id.value,
+    year: year.value,
+    color: color.value,
     mileage: mileage.value,
-    price: price.value,
+    purchase_date: purchase_date.value,
+    organization_number: organization_number.value,
+    client_type_id: client_type_id.value,
     fullname: fullname.value,
-    // address: address.value,
-    // postal_code: postal_code.value,
-    // phone: phone.value,
-    email: email.value
+    address: address.value,
+    postal_code: postal_code.value,
+    street: street.value,
+    phone: phone.value,
+    identification_id: identification_id.value,
+    email: email.value,
+    price: price.value,
+    iva_id: iva_id.value,
+    iva_sale_amount: iva_sale_amount.value,
+    iva_sale_exclusive: iva_sale_exclusive.value,
+    payment_type: payment_type.value,
+    payment_type_id: payment_type_id.value,
+    loan_amount: loan_amount.value,
+    lessor: lessor.value,
+    bank: bank.value,
+    account: account.value,
+    description: description.value
 }))
 
 const isDirty = computed(() => {

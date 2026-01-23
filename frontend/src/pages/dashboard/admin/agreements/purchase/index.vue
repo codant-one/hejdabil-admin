@@ -618,8 +618,6 @@ const onSubmit = () => {
                     inteSkapatsDialog.value = true;
     
                     isRequestOngoing.value = false
-
-                    isRequestOngoing.value = false
                 })
         }
 
@@ -1338,7 +1336,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :disabled="settled_by !== 1 ? true : false"
                                             />
                                         </div>
-                                        <div v-if="payment_type_id === null" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div v-if="payment_type_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalsätt*" />
                                             <VTextField
                                                 v-model="payment_type"
