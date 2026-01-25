@@ -1,7 +1,7 @@
 <script setup>
 
 import { useTheme } from 'vuetify'
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed, watchEffect, watch, onBeforeUnmount } from 'vue'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { useSignaturesStore } from '@/stores/useSignatures'
 import VuePdfEmbed from 'vue-pdf-embed'
@@ -9,6 +9,7 @@ import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
+import { useWindowSize } from '@vueuse/core'
 
 const props = defineProps({
   token: {
@@ -20,6 +21,7 @@ const props = defineProps({
 const notificationsStore = useNotificationsStore()
 const signaturesStore = useSignaturesStore()
 
+const { width: windowWidth } = useWindowSize()
 
 // --- Refs de Estado (Ahora más simples) ---
 const isLoading = ref(true)
@@ -32,12 +34,181 @@ const isSubmitting = ref(false)
 const isAlreadySigned = ref(false)
 const signedInfo = ref(null)
 const pdfContainer = ref(null)
-const computedPlacement = ref({ left: null, top: null })
+const computedPlacement = ref({ left: null, top: null, scale: 1 })
+const computedStaticPlacement = ref({ left: null, top: null, scale: 1 })
 // --- Refs de Elementos del DOM ---
 const signatureCanvas = ref(null)
 const isRequestOngoing = ref(false)
+
+// --- PDF Viewer Controls ---
+const pdfViewportEl = ref(null)
+const pdfViewerRef = ref(null)
+const pdfDoc = ref(null)
+const pdfNumPages = ref(0)
+const activePage = ref(1)
+const pdfViewportSize = ref({ width: 0, height: 0 })
+const pdfPageSize = ref({ width: 0, height: 0 })
+const pdfZoom = ref(1)
+const minZoom = 0.5
+const maxZoom = 3
+const zoomStep = 0.25
+
 // --- Lógica del Tema (para el lienzo de firma) ---
 const { global } = useTheme()
+
+// --- PDF Computed Properties ---
+const pdfQuality = computed(() => {
+  const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
+  return Math.min(3, Math.max(2, dpr))
+})
+
+const pdfPageAspect = computed(() => {
+  const w = Number(pdfPageSize.value?.width || 0)
+  const h = Number(pdfPageSize.value?.height || 0)
+  if (!w || !h) return 1
+  return w / h
+})
+
+const pdfFitPageWidth = computed(() => {
+  const isMobile = window.innerWidth < 1024
+  const vw = Math.max(100, Number(pdfViewportSize.value?.width || 0) - (isMobile ? 8 : 24))
+  const vh = Math.max(100, Number(pdfViewportSize.value?.height || 0) - 24)
+  const aspect = pdfPageAspect.value
+  const numPages = Number(pdfNumPages.value || 0)
+  
+  // Para múltiples páginas verticales en mobile, usar todo el ancho disponible
+  if (numPages > 1 && isMobile) {
+    return vw
+  }
+  
+  // Para múltiples páginas en desktop, solo constrain por el ancho
+  if (numPages > 1) {
+    return vw
+  }
+  
+  // Para una sola página, calcular basado en altura disponible
+  const heightBasedWidth = vh * aspect
+  return Math.min(vw, heightBasedWidth)
+})
+
+const pdfVisualWidth = computed(() => {
+  const isMobile = window.innerWidth < 1024
+  const viewportWidth = Number(pdfViewportSize.value?.width || 0)
+  const fitWidth = pdfFitPageWidth.value
+  
+  // If viewport is not ready, return safe default
+  if (viewportWidth < 100) return 700
+  
+  // En mobile, usar el 100% del ancho sin márgenes para evitar scroll horizontal
+  if (isMobile) {
+    return viewportWidth
+  }
+  
+  // Calculate final width for desktop
+  const calculatedWidth = Math.round(fitWidth * pdfZoom.value)
+  const margin = 40
+  return Math.max(300, Math.min(calculatedWidth, viewportWidth - margin))
+})
+
+const pdfRenderScale = computed(() => {
+  const pageW = Number(pdfPageSize.value?.width || 0)
+  if (!pageW) return 1
+  const visualScale = pdfVisualWidth.value / pageW
+  return visualScale * pdfQuality.value
+})
+
+// --- PDF Zoom Functions ---
+const zoomIn = () => {
+  if (pdfZoom.value < maxZoom) pdfZoom.value = Math.min(pdfZoom.value + zoomStep, maxZoom)
+}
+
+const zoomOut = () => {
+  if (pdfZoom.value > minZoom) pdfZoom.value = Math.max(pdfZoom.value - zoomStep, minZoom)
+}
+
+const resetZoom = () => {
+  pdfZoom.value = 1
+}
+
+let pdfResizeObserver
+const updatePdfViewportSize = () => {
+  const el = pdfViewportEl.value
+  if (!el) return
+  pdfViewportSize.value = { width: el.clientWidth, height: el.clientHeight }
+}
+
+const initPdfResizeObserver = () => {
+  const el = pdfViewportEl.value
+  if (!el || typeof ResizeObserver === 'undefined') return
+  if (pdfResizeObserver) pdfResizeObserver.disconnect()
+  pdfResizeObserver = new ResizeObserver(() => updatePdfViewportSize())
+  pdfResizeObserver.observe(el)
+  updatePdfViewportSize()
+}
+
+const handlePdfLoaded = async (doc) => {
+  try {
+    pdfDoc.value = doc
+    pdfNumPages.value = Number(doc?.numPages || 0)
+
+    const page = await doc.getPage(1)
+    const viewport = page.getViewport({ scale: 1 })
+    pdfPageSize.value = { width: viewport.width, height: viewport.height }
+    
+    await nextTick()
+    
+    // Calcular posición del placeholder después de que el PDF se haya cargado
+    if (!isAlreadySigned.value) {
+      setTimeout(() => calculatePlaceholderPosition(false), 300)
+      setTimeout(() => calculatePlaceholderPosition(true), 1500)
+    }
+    
+    // Forzar actualización del tamaño del viewport
+    updatePdfViewportSize()
+  } catch (e) {
+    console.error('Error loading PDF:', e)
+  }
+}
+
+const scrollToPage = async (page) => {
+  const nextPage = Math.max(1, Math.min(Number(page || 1), Number(pdfNumPages.value || 1)))
+  activePage.value = nextPage
+
+  await nextTick()
+
+  const container = pdfContainer.value
+  if (!container) return
+
+  const canvases = Array.from(container.querySelectorAll('canvas'))
+  const target = canvases[nextPage - 1]
+  if (!target) return
+
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+watchEffect(async () => {
+  if (!pdfSource.value || !pdfViewportEl.value) return
+  await nextTick()
+  initPdfResizeObserver()
+})
+
+// Watch zoom changes to trigger recalculation
+watch(pdfZoom, () => {
+  if (!isAlreadySigned.value && signaturePlacement.value.visible) {
+    setTimeout(() => calculatePlaceholderPosition(false), 100)
+  }
+})
+
+// Watch pdfPageSize to recalculate position when PDF loads
+watch(pdfPageSize, () => {
+  if (!isAlreadySigned.value && signaturePlacement.value.visible) {
+    setTimeout(() => calculatePlaceholderPosition(false), 100)
+  }
+}, { deep: true })
+
+onBeforeUnmount(() => {
+  if (pdfResizeObserver) pdfResizeObserver.disconnect()
+})
 
 // --- Funciones del Componente (Refactorizadas) ---
 
@@ -161,7 +332,7 @@ const loadSignatureDetails = async () => {
 // Calcula la posición del placeholder considerando múltiples páginas
 // y desplaza el scroll del contenedor para poner el placeholder en vista
 const calculatePlaceholderPosition = (shouldScroll = false) => {
-  if (signaturePlacement.value.isStatic || !signaturePlacement.value.visible) {
+  if (!signaturePlacement.value.visible) {
     return
   }
 
@@ -177,8 +348,17 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
     return
   }
 
-  const targetPageIndex = (signaturePlacement.value.page || 1) - 1
-  const targetPage = pages[targetPageIndex] || pages[0]
+  // Para posición estática, usar la última página
+  const targetPageIndex = signaturePlacement.value.isStatic 
+    ? pages.length - 1 
+    : Math.min(Math.max(0, (signaturePlacement.value.page || 1) - 1), pages.length - 1)
+  
+  const targetPage = pages[targetPageIndex]
+  
+  if (!targetPage) {
+    console.warn('Target page not found:', targetPageIndex, 'of', pages.length)
+    return
+  }
 
   const pageRect = targetPage.getBoundingClientRect()
   const containerRect = container.getBoundingClientRect()
@@ -192,25 +372,72 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
   // Esto da las dimensiones reales del contenido renderizado del PDF
   const contentWidth = targetPage.clientWidth
   const contentHeight = targetPage.clientHeight
-
-  // Convertir porcentajes a píxeles locales (inversa del cálculo del admin)
-  // Usando las dimensiones del contenido (sin border)
-  const x_percent = parseFloat(signaturePlacement.value.x)
-  const y_percent = parseFloat(signaturePlacement.value.y)
   
-  const localX = (x_percent / 100) * contentWidth
-  const localY = (y_percent / 100) * contentHeight
+  // Para mobile, necesitamos ajustar el cálculo considerando el padding del contenedor
+  const isMobile = window.innerWidth < 1024
+  const containerPaddingLeft = isMobile ? 0 : 0
+  const containerPaddingTop = isMobile ? 0 : 0
+  
+  // Detectar si el PDF es horizontal (landscape) o vertical (portrait)
+  const isLandscape = contentWidth > contentHeight
 
-  // Calcular posición absoluta incluyendo el offset del border
-  const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0)
-  const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0)
+  if (signaturePlacement.value.isStatic) {
+    // Calcular posición estática basada en el alineamiento
+    // Posición predefinida en la parte inferior del documento
+    const alignment = signaturePlacement.value.alignment || 'left'
+    
+    // Definir coordenadas en porcentajes (igual que en el admin)
+    let x_percent, y_percent
+    
+    if (alignment === 'left') {
+      x_percent = 25  // 25% desde la izquierda
+      y_percent = 88  // 88% desde arriba (12% desde abajo)
+    } else {
+      x_percent = 75  // 75% desde la izquierda
+      y_percent = 85  // 85% desde arriba (15% desde abajo)
+    }
+    
+    const localX = (x_percent / 100) * contentWidth
+    const localY = (y_percent / 100) * contentHeight
+    
+    const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0) - containerPaddingLeft
+    const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0) - containerPaddingTop
+    
+    // Escalar el botón según el zoom del PDF y la orientación
+    // En mobile con PDF horizontal (landscape), usar scale más pequeño
+    let baseScale = 1
+    if (isMobile) {
+      baseScale = isLandscape ? 0.4 : 0.7  // 40% para horizontal, 70% para vertical
+    }
+    const scale = pdfZoom.value * baseScale
+    computedStaticPlacement.value = { left: absoluteX, top: absoluteY, scale }
+  } else {
+    // Convertir porcentajes a píxeles locales (inversa del cálculo del admin)
+    // Usando las dimensiones del contenido (sin border)
+    const x_percent = parseFloat(signaturePlacement.value.x)
+    const y_percent = parseFloat(signaturePlacement.value.y)
+    
+    const localX = (x_percent / 100) * contentWidth
+    const localY = (y_percent / 100) * contentHeight
 
-  computedPlacement.value = { left: absoluteX, top: absoluteY }
+    // Calcular posición absoluta incluyendo el offset del border
+    const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0) - containerPaddingLeft
+    const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0) - containerPaddingTop
+
+    // Escalar el botón según el zoom del PDF y la orientación
+    // En mobile con PDF horizontal (landscape), usar scale más pequeño
+    let baseScale = 1
+    if (isMobile) {
+      baseScale = isLandscape ? 0.4 : 0.7  // 40% para horizontal, 70% para vertical
+    }
+    const scale = pdfZoom.value * baseScale
+    computedPlacement.value = { left: absoluteX, top: absoluteY, scale }
+  }
 
   // Desplazar la VENTANA para que el placeholder quede visible
   if (shouldScroll) {
     setTimeout(() => {
-      const placeholder = document.querySelector('.signature-placeholder')
+      const placeholder = document.querySelector('.signature-placeholder-admin')
       if (placeholder) {
         const rect = placeholder.getBoundingClientRect()
         const offsetFactor = window.innerWidth <= 768 ? 0.5 : 0.35
@@ -241,6 +468,19 @@ const loadSignatureData = async () => {
     
     // Cargar el PDF
     await loadPdf()
+    
+    // Inicializar el ResizeObserver después de cargar el PDF
+    await nextTick()
+    setTimeout(() => {
+      initPdfResizeObserver()
+    }, 100)
+    
+    // Si ya está firmado, solo esperar a que se renderice el PDF
+    if (isAlreadySigned.value) {
+      setTimeout(() => {
+        updatePdfViewportSize()
+      }, 300)
+    }
     
     // Solo cargar detalles de firma si no está firmado
     if (!isAlreadySigned.value) {
@@ -332,6 +572,8 @@ const submitFinalSignature = async (signatureImage) => {
   isSubmitting.value = true
   
   try {
+    // Solo enviamos la imagen de la firma
+    // El backend usa las coordenadas ya guardadas en la base de datos
     const payload = {
       signature: signatureImage,
     }
@@ -428,52 +670,81 @@ onMounted(loadSignatureData);
 </script>
 
 <template>
-  <VideoLoader />
-  <LoadingOverlay :is-loading="isRequestOngoing" />
-  <div class="signing-container">
-    <!-- Header con logo -->
-    <div class="signing-header">
-      <img :src="logo" width="121" height="40" alt="Billogg" />
-    </div>
+  <section>
+
+    <!--<VideoLoader />-->
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <!-- Visor de PDF cuando ya está firmado -->
-    <div v-if="isAlreadySigned" class="signing-content bg-white">
-      <VCard class="signing-card mt-4">
-        <!-- Banner informativo de documento firmado -->
-        <VAlert
-          color="success"
-          class="alert-no-shrink custom-alert"
-        >
-          <VAlertTitle>{{ finalState?.title || 'Ditt kontrakt är undertecknat.' }}</VAlertTitle>
-        </VAlert>
+    <div v-if="isAlreadySigned" class="signing-card placement-modal-card">
+      <div class="placement-content bg-page">
+        <div class="placement-body">
+          <!-- Sidebar izquierda con controles -->
+          <div class="placement-sidebar">
+            <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
+              <img :src="logo" width="121" height="40" alt="Billogg" />
+            </div>  
+            <VAlert
+              color="success"
+              class="alert-no-shrink custom-alert mt-4"
+              style="flex: none;"
+            >
+              <VAlertTitle>{{ finalState?.title || 'Ditt kontrakt är undertecknat.' }}</VAlertTitle>
+            </VAlert>
 
-        <div class="d-flex gap-2 my-4">
-          <VIcon icon="custom-help" size="24" />
-          <span class="text-help">Tryck för att visa dokumentet.</span>
-        </div>  
-         
-        <!-- Visor del PDF firmado (solo lectura) -->
-        <div class="pdf-container read-only">
-          <div style="position: relative;">
-            <VuePdfEmbed :source="pdfSource" />
+            <div class="d-flex gap-2 mt-4">
+              <VIcon icon="custom-help" size="24" />
+              <span class="text-help">Tryck för att visa dokumentet.</span>
+            </div>  
+
+            <VBtn
+              :class="windowWidth < 1024 ? 'd-none' : ''"
+              class="btn-gradient mt-auto"
+              @click="downloadSignedPdf"
+            >
+              Ladda ner
+            </VBtn>
           </div>
-        </div>
 
-        <VBtn
-          class="btn-gradient my-4"
-          @click="downloadSignedPdf"
-        >
-          Ladda ner
-        </VBtn>
-      </VCard>
+          <!-- Divisor vertical -->
+          <VDivider vertical class="ps-5 placement-divider" :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+          <!-- Área del PDF -->
+          <div ref="pdfViewportEl" class="placement-viewer">
+            <div
+              ref="pdfContainer"
+              class="pdf-container-admin"
+            >
+              <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
+                <VuePdfEmbed 
+                  :source="pdfSource"
+                  :scale="pdfRenderScale"
+                  @loaded="handlePdfLoaded"
+                />
+              </div>
+            </div>
+          </div>
+
+            <VBtn
+              :class="windowWidth >= 1024 ? 'd-none' : ''"
+              class="btn-gradient"
+              @click="downloadSignedPdf"
+            >
+              Ladda ner
+            </VBtn>
+        </div>
+      </div>
     </div>
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
-    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned" class="signing-content bg-white">
-      <VCard class="signing-card mt-4">
+    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned">
+      <VCard class="signing-card pa-4">
+        <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
+          <img :src="logo" width="121" height="40" alt="Billogg" />
+        </div>
         <VAlert
           color="error"
-          class="alert-no-shrink custom-alert"
+          class="alert-no-shrink custom-alert mt-4"
         >
           <VAlertTitle>{{ finalState.message }}</VAlertTitle>
         </VAlert>
@@ -481,46 +752,122 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
-    <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-content">
-      <VCard class="signing-card mt-4">
-        <div class="pdf-container">
-          <div ref="pdfContainer" style="position: relative;">
-            <VuePdfEmbed :source="pdfSource" />
-            
-            <!-- Placeholder de firma clickeable (posición dinámica) -->
-            <div 
-              v-if="signaturePlacement.visible && !signaturePlacement.isStatic && computedPlacement.left !== null"
-              class="signature-placeholder"
-              :style="{
-                left: computedPlacement.left + 'px', 
-                top: computedPlacement.top + 'px'
-              }"
-              @click.stop="openSignatureModal"
-            >
-              <span class="signature-placeholder-content btn-light">
-                <VIcon size="16" icon="custom-pencil" />
-                <span>Signera här</span>
-              </span>
+    <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
+      <div class="placement-content bg-page">
+        <div class="placement-body">
+          <!-- Sidebar izquierda con controles -->
+          <div class="placement-sidebar">
+            <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
+              <img :src="logo" width="121" height="40" alt="Billogg" />
             </div>
             
-            <!-- Placeholder de firma estática -->
+            <!-- Controles de zoom -->
             <div 
-              v-if="signaturePlacement.visible && signaturePlacement.isStatic"
-              class="signature-placeholder static-signature-position"
-              :class="{ 
-                'align-left': signaturePlacement.alignment === 'left',
-                'align-right': signaturePlacement.alignment === 'right'
-              }"
-              @click.stop="openSignatureModal"
+              class="sidebar-block justify-between gap-2"
+              :class="windowWidth < 1024 ? 'd-none' : 'd-flex flex-column align-items-center'">
+              <div class="sidebar-actions w-100">
+                <VBtn 
+                  class="btn-ghost mx-auto" 
+                  @click="zoomOut" 
+                  :disabled="pdfZoom <= minZoom"
+                >
+                  <VIcon size="16" icon="mdi-minus" />
+                </VBtn>
+                <div class="zoom-level">{{ Math.round(pdfZoom * 100) }}%</div>
+                <VBtn 
+                  class="btn-ghost mx-auto" 
+                  @click="zoomIn" 
+                  :disabled="pdfZoom >= maxZoom"
+                >
+                  <VIcon size="16" icon="mdi-plus" />
+                </VBtn>
+              </div>
+              <VBtn class="btn-light w-100" @click="resetZoom">Justera</VBtn>
+            </div>
+
+            <!-- Miniaturas de páginas -->
+            <div
+              v-if="pdfSource && pdfNumPages >= 1"
+              class="my-4 flex-grow-1 overflow-auto placement-thumbnails-scroll"
+              :class="windowWidth < 1024 ? 'd-none' : ''"
             >
-              <span class="signature-placeholder-content">
-                <VIcon size="16" icon="custom-pencil" />
-                <span>Signera här</span>
-              </span>
+              <div class="d-flex flex-column justify-center align-center gap-2">
+                <div
+                  v-for="page in pdfNumPages"
+                  :key="page"
+                  class="thumbnail-page-item"
+                  :class="{ 'is-active': page === activePage }"
+                  @click="scrollToPage(page)"
+                >
+                  <div class="thumbnail-number">{{ page }}</div>
+                  <VuePdfEmbed
+                    :source="pdfSource"
+                    :page="page"
+                    :width="130"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Divisor vertical -->
+          <VDivider vertical class="ps-5 placement-divider" :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+          <!-- Área del PDF -->
+          <div ref="pdfViewportEl" class="placement-viewer">
+            <div
+              ref="pdfContainer"
+              class="pdf-container-admin"
+            >
+              <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
+                <VuePdfEmbed
+                  :key="`pdf-${pdfSource}`"
+                  ref="pdfViewerRef"
+                  :source="pdfSource"
+                  :scale="pdfRenderScale"
+                  @loaded="handlePdfLoaded"
+                />
+              </div>
+              
+              <!-- Placeholder de firma clickeable (posición dinámica) -->
+              <div 
+                v-if="signaturePlacement.visible && !signaturePlacement.isStatic && computedPlacement.left !== null"
+                class="signature-placeholder-admin"
+                :style="{
+                  left: computedPlacement.left + 'px', 
+                  top: computedPlacement.top + 'px',
+                  transform: `scale(${computedPlacement.scale})`,
+                  transformOrigin: 'top left'
+                }"
+                @click.stop="openSignatureModal"
+              >
+                <span class="signature-placeholder-content btn-light">
+                  <VIcon size="16" icon="custom-pencil" />
+                  <span>Signera här</span>
+                </span>
+              </div>
+              
+              <!-- Placeholder de firma estática -->
+              <div 
+                v-if="signaturePlacement.visible && signaturePlacement.isStatic && computedStaticPlacement.left !== null"
+                class="signature-placeholder-admin"
+                :style="{
+                  left: computedStaticPlacement.left + 'px', 
+                  top: computedStaticPlacement.top + 'px',
+                  transform: `scale(${computedStaticPlacement.scale})`,
+                  transformOrigin: 'top left'
+                }"
+                @click.stop="openSignatureModal"
+              >
+                <span class="signature-placeholder-content btn-light">
+                  <VIcon size="16" icon="custom-pencil" />
+                  <span>Signera här</span>
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </VCard>
+      </div>
     </div>
 
     <!-- Diálogo para firmar (el lienzo) -->
@@ -553,7 +900,7 @@ onMounted(loadSignatureData);
         </VCardText>
       </VCard>
     </VDialog>
-  </div>
+  </section>
 </template>
 
 <style lang="scss">
@@ -602,6 +949,15 @@ onMounted(loadSignatureData);
 </style>
 <style scoped>
   
+.page-section {
+  min-height: 100vh;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+}
+
 .signing-container {
   display: flex;
   flex-direction: column;
@@ -621,94 +977,247 @@ onMounted(loadSignatureData);
   background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
 }
 
-.signing-content {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 0 24px 24px;
-  margin-bottom: 0;
-}
-
 .signing-card {
   width: 100%;
-  max-width: 1280px;
   display: flex;
   flex-direction: column;
   background: transparent;
   border-radius: 8px;
   box-shadow: none;
   overflow: visible;
+
+  &.placement-modal-card {
+    max-width: 100%;
+  }
+}
+
+.placement-modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
+
+  @media (max-width: 1023px) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+}
+
+.placement-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+
+  @media (max-width: 1023px) {
+    overflow: visible;
+  }
+}
+
+.placement-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.placement-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-block {
+  border-radius: 12px;
+  padding: 12px 0;
+}
+
+.sidebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: solid 1px #6e9383;
+  background: linear-gradient(
+    90deg,
+    #57f287 0%,
+    #00eeb0 50%,
+    #00ffff 100%
+  ) !important;
+  border-radius: 56px;
+}
+
+.zoom-level {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 14px;
+  color: #333;
+}
+
+.placement-viewer {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  overflow-x: hidden;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #57f287 0%, #00eeb0 50%, #00ffff 100%);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #3ed671 0%, #00d59a 50%, #00e6e6 100%);
+  }
+
+  @media (max-width: 1023px) {
+    overflow: visible;
+    overflow-x: visible;
+  }
+}
+
+.placement-divider {
+  border-color: #BDD2C8 !important;
+}
+
+.placement-thumbnails-scroll {
+  /* Custom scrollbar for thumbnails */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #57f287 0%, #00eeb0 50%, #00ffff 100%);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #3ed671 0%, #00d59a 50%, #00e6e6 100%);
+  }
+}
+
+.thumbnail-page-item {
+  cursor: pointer;
+  position: relative;
+  width: 150px;
+  flex-shrink: 0;
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  transition: all 0.2s ease;
+
+  .thumbnail-number {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    z-index: 1;
+  }
+
+  :deep(.vue-pdf-embed) {
+    > div {
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+  }
+
+  &.is-active {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  }
+
+  &:hover {
+    border-color: #4285f4;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+  }
+}
+
+.bg-page {
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
 }
 
 .alert-no-shrink {
   flex-shrink: 0;
 }
 
-.pdf-container {
+/* Estilos del contenedor PDF (similar al modal de placement) */
+:deep(.pdf-container-admin) {
   position: relative;
-  flex-grow: 1;
-  overflow: visible;
-  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   background-color: transparent;
 }
 
-.pdf-container.read-only {
-  background-color: transparent;
+.pdf-host {
+  margin: auto auto 0 auto;
+  max-width: 100%;
+  min-width: 200px;
 }
 
-/* Contenedor del vue-pdf-embed */
-:deep(.pdf-container > div) {
+:deep(.pdf-host .vue-pdf-embed > div) {
   width: 100% !important;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 12px;
 }
 
-/* Contenedor interno de vue-pdf-embed */
-:deep(.pdf-container .vue-pdf-embed) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-:deep(.pdf-container .vue-pdf-embed > div) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-}
-
-/* Cada página del PDF como una hoja separada con fondo blanco */
-:deep(.pdf-container .vue-pdf-embed canvas),
-:deep(.pdf-container .vue-pdf-embed img),
-:deep(.pdf-container .vue-pdf-embed svg) {
-  display: block !important;
+:deep(.pdf-host .vue-pdf-embed canvas) {
   width: 100% !important;
   height: auto !important;
-  background: #fff !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  border: 1px solid #E7E7E7;
+  display: block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  margin-bottom: 5px;
 }
 
-.signature-placeholder {
+/* Placeholder de firma (similar al modal de placement) */
+:deep(.signature-placeholder-admin) {
   position: absolute;
-  z-index: 10;
+  z-index: 1000;
   cursor: pointer;
   display: flex;
   justify-content: start;
 }
 
-.signature-placeholder-content {
+:deep(.signature-placeholder-content) {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   border: solid 1px #6e9383;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.9);
   border-radius: 56px;
   padding: 8px 16px;
   color: #6e9383;
@@ -717,12 +1226,11 @@ onMounted(loadSignatureData);
   white-space: nowrap;
   cursor: pointer;
   transition: all 0.2s ease;
-}
 
-.signature-placeholder-content:hover {
-  border-color: #416054;
-  color: #416054;
-  background-color: rgba(110, 147, 131, 0.1);
+  &:hover {
+    border-color: #416054;
+    color: #416054;
+  }
 }
 
 .signing-card-title {
@@ -770,37 +1278,47 @@ canvas {
   .signing-header {
     justify-content: center;
   }
-  
-  .signing-container {
-    padding: 0;
-  }
-
-  .signing-content {
-    padding: 0 16px 16px;
-    background-color: white;
-  }
 
   .signing-card {
     max-height: none;
     max-width: 100%;
   }
 
-  /* Asegurar que el PDF se escale correctamente en mobile */
-  .pdf-container {
-    width: 100%;
+  .placement-body {
+    flex-direction: column;
+    padding: 12px;
+    overflow: visible;
+    gap: 16px;
   }
 
-  .signature-placeholder-content {
-    padding: 0 3px;
-    font-size: 6px;
-    gap: 1px;
-    border-radius: 16px;
+  .placement-sidebar {
+    width: 100%;
+    flex-direction: column;
   }
-  
-  .signature-placeholder-content .v-icon {
-    font-size: 4px !important;
-    width: 4px !important;
-    height: 4px !important;
+
+  .placement-viewer {
+    padding: 0;
+    overflow: visible;
+  }
+
+  /* Asegurar que el PDF se escale correctamente en mobile */
+  :deep(.pdf-container-admin) {
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  .pdf-host {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  :deep(.pdf-host .vue-pdf-embed > div) {
+    gap: 8px;
+  }
+
+  :deep(.pdf-host .vue-pdf-embed canvas) {
+    box-shadow: none;
   }
 
   .static-signature-position.align-left {
