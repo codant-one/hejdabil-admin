@@ -125,7 +125,7 @@
             background-color: #F6F6F6;
             padding: 10px;
             border-radius: 8px;
-            border-left: 3px solid #008C91;
+            border-left: 1px solid #008C91;
             margin-bottom: 15px;
         }
         .signatures-table {
