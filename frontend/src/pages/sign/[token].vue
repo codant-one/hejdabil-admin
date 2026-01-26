@@ -231,7 +231,7 @@ const checkTokenStatus = async () => {
       isAlreadySigned.value = true
       signedInfo.value = {
         signedAt: response.data.signed_date_formatted,
-        agreementId: response.data.agreement_id,
+        file_id: response.data.agreement_id || response.data.document_id || 'unknown',
         message: response.data.message
       }
       return true
@@ -596,7 +596,7 @@ const submitFinalSignature = async (signatureImage) => {
     // Guardar información del documento firmado
     signedInfo.value = {
       signedAt: new Date().toLocaleString('sv-SE'),
-      agreementId: response.data.agreement_id || response.data.document_id || 'unknown',
+      file_id: response.data.agreement_id || response.data.document_id || 'unknown',
       documentId: response.data.document_id,
       message: response.data.message
     }
@@ -612,16 +612,19 @@ const submitFinalSignature = async (signatureImage) => {
 
     // Enviar notificación de firma completada
     try {
-      const fileId = signedInfo.value?.documentId || signedInfo.value?.agreementId || 'dokument'
+      const fileId = signedInfo.value?.file_id
+      const route = response.data.is_agreement ?
+        `/dashboard/admin/agreements?file_id=${fileId}` :
+        `/dashboard/admin/documents?file_id=${fileId}`
 
       await notificationsStore.send({
-        title: 'Dokument signerat',
-        subtitle: 'Ett dokument har signerats framgångsrikt',
-        text: `Dokumentet har signerats korrekt. Dokument ID: ${response.data.agreement_id || 'N/A'}`,
+        title: response.data.is_agreement ? 'Avtal signerat' : 'Dokument signerat',
+        subtitle: response.data.is_agreement ? 'Ett avtal har signerats framgångsrikt' : 'Ett dokument har signerats framgångsrikt',
+        text: response.data.is_agreement ? `Avtalet har signerats korrekt. Avtals ID: ${response.data.order_id || 'N/A'}` : `Dokumentet har signerats korrekt. Dokument ID: ${response.data.order_id || 'N/A'}`,
         color: 'primary',
-        icon: 'custom-signature',
-        route: `/dashboard/admin/documents?file_id=${fileId}` || null,
-        notification_id: response.data.agreement_id?.toString() || null,
+        icon: response.data.is_agreement ? 'custom-contract' : 'custom-signature',
+        route: route || null,
+        notification_id: fileId?.toString() || null,
         signed_by: response.data.signed_by || 'Användare',
         user_id: response.data.user_id || null // ID del usuario que recibirá la notificación
       })
@@ -672,7 +675,7 @@ onMounted(loadSignatureData);
 <template>
   <section>
 
-    <!--<VideoLoader />-->
+    <VideoLoader />
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <!-- Visor de PDF cuando ya está firmado -->

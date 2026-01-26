@@ -181,6 +181,19 @@ export const useAgreementsStores = defineStore('agreements', {
                 .then(response => resolve(response))
                 .catch(error => reject(error))
             })
-          },
+        },
+
+        getAdminPreviewPdf(id) {
+            this.setLoading(true)
+
+            return Agreements.getAdminPreviewPdf(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        }
     }
 })

@@ -513,7 +513,8 @@ class SignatureController extends Controller
     {
         try {
             // 1. Validate the token again for maximum security.
-            $token = Token::where('signing_token', $tokenString)
+            $token = Token::with(['agreement', 'document'])
+                          ->where('signing_token', $tokenString)
                           ->whereIn('signature_status', ['sent', 'delivered', 'reviewed'])
                           ->where('token_expires_at', '>', now())
                           ->firstOrFail();
@@ -587,7 +588,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SIGNED,
-                description: 'Dokumentet har undertecknats framgångsrikt',
+                description: $token->agreement_id ? 'Avtal har undertecknats framgångsrikt' : 'Dokumentet har undertecknats framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
@@ -654,8 +655,12 @@ class SignatureController extends Controller
             // Add document or agreement ID for download
             if ($token->agreement_id) {
                 $response['agreement_id'] = $token->agreement_id;
+                $response['order_id'] = $token->agreement->agreement_type_id === 4 ? $token->agreement->offer_id : $token->agreement->agreement_id;
+                $response['is_agreement'] = true;
             } elseif ($token->document_id) {
                 $response['document_id'] = $token->document_id;
+                $response['order_id'] = $token->document->order_id;
+                $response['is_agreement'] = false;
             }
 
             return response()->json($response);

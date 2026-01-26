@@ -1,12 +1,15 @@
 <script setup>
 
+import { watch } from 'vue'
 import { useDisplay } from "vuetify";
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
+import { useRoute } from 'vue-router'
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -14,7 +17,9 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 const { width: windowWidth } = useWindowSize();
 
 const agreementsStores = useAgreementsStores()
+const notificationsStore = useNotificationsStore()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const agreements = ref([])
 const searchQuery = ref('')
@@ -42,6 +47,13 @@ const skapaMobile = ref(false);
 const selectedAgreementForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 
+// Tracker Logic
+const isTrackerDialogVisible = ref(false)
+const trackerAgreement = ref(null)
+const isTrackerPreviewVisible = ref(false)
+const trackerPreviewPdfSource = ref(null)
+const trackerPreviewError = ref('')
+
 const agreementTypes = ref([])
 const agreement_type_id_select = ref(null)
 
@@ -54,7 +66,6 @@ const pdfPlacementContainer = ref(null) // Ref para el contenedor del PDF
 // Modal select type contract
 const isModalVisible = ref(false)
 const agreement_type_id = ref(null) 
-const refVForm = ref()
 
 const userData = ref(null)
 const role = ref(null)
@@ -87,6 +98,50 @@ watchEffect(() => {
 
 onMounted(async () => {
   await loadData()
+  
+  // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con agreements
+  notificationsStore.onNotificationReceived(async (notification) => {    
+    // Si la notificación tiene una ruta relacionada con agreements, refrescar
+    if (notification.route && notification.route.includes('/agreements')) {
+      
+      // Si el tracker está abierto, actualizar también el agreement actual
+      if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+        try {
+          const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+          trackerAgreement.value = response
+        } catch (e) {
+          console.error('Failed to refresh tracker agreement in real-time', e)
+        }
+      }
+    } else {
+      console.warn('Route does not match /agreements criteria')
+    }
+  })
+
+  // Polling para actualizar el tracker en tiempo real si está abierto
+  const pollingInterval = setInterval(async () => {
+    // Solo hacer polling si el tracker está visible
+    if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+      try {
+        const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+        // Solo actualizar si hay cambios en el historial
+        const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
+        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+        
+        if (newHistoryLength > currentHistoryLength) {
+          trackerAgreement.value = response
+          // También actualizar la lista principal de agreements
+          await fetchData()
+          //console.log('Tracker updated via polling - new events detected')
+        }
+      } catch (e) {
+        console.error('Failed to poll tracker updates:', e)
+      }
+    }
+  }, 3000) // Poll every 3 seconds
+
+  // Guardar el intervalo para limpiarlo después
+  window._trackerPollingInterval = pollingInterval
 })
 
 function resizeSectionToRemainingViewport() {
@@ -361,28 +416,6 @@ const resolveStatus = state => {
     }
 }
 
-const startPlacementProcess = async (agreementData) => {
-  selectedAgreement.value = { ...agreementData };
-  isPlacementModalVisible.value = true;
-  isLoadingPlacementPdf.value = true;
-  signaturePlacement.value.visible = false; // Resetea la posición
-
-  try {
-    // Usamos el endpoint que ya teníamos para obtener el PDF
-    const response = await axios.get(`/agreements/${agreementData.id}/get-admin-preview-pdf`, {
-        responseType: 'blob',
-    })
-    placementPdfSource.value = URL.createObjectURL(response.data);
-  } catch (error) {
-    // Si falla (ej. PDF no existe), mostramos un error y cerramos el modal
-    advisor.value = { type: 'error', message: 'Kunde inte ladda PDF-dokumentet.', show: true };
-    isPlacementModalVisible.value = false;
-    setTimeout(() => { advisor.value.show = false }, 3000);
-  } finally {
-    isLoadingPlacementPdf.value = false;
-  }
-}
-
 const handleAdminPdfClick = (event) => {
   const container = event.currentTarget; 
   if (!container) return;
@@ -548,30 +581,20 @@ const handleCloseModal = () => {
 }
 
 const addAgreements = () => {
-
-  //refVForm.value?.validate().then(({ valid: isValid }) => {
-  var isValid = true;
-
-    if (isValid) {
-
-      switch(agreement_type_id.value) {
-        case 1: 
-          router.push({ name : 'dashboard-admin-agreements-sales' })
-        break
-        case 2:
-          router.push({ name : 'dashboard-admin-agreements-purchase' })
-        break
-        case 3:
-          router.push({ name : 'dashboard-admin-agreements-mediation' })
-        break   
-        case 4:
-          router.push({ name : 'dashboard-admin-agreements-business' })
-        break 
-      }
-
-    }
-
-  // })
+  switch(agreement_type_id.value) {
+    case 1: 
+      router.push({ name : 'dashboard-admin-agreements-sales' })
+    break
+    case 2:
+      router.push({ name : 'dashboard-admin-agreements-purchase' })
+    break
+    case 3:
+      router.push({ name : 'dashboard-admin-agreements-mediation' })
+    break   
+    case 4:
+      router.push({ name : 'dashboard-admin-agreements-business' })
+    break 
+  }
 }
 
 const updateType = (newType) => {
@@ -601,10 +624,147 @@ const openLink = function (agreementData) {
   window.open(themeConfig.settings.urlStorage + agreementData.file)
 }
 
-// Navigate to agreement tracker (timeline)
 const goToTracker = (agreementData) => {
-  router.push(`/dashboard/admin/agreements/${agreementData.id}/sparare`)
+  openTracker(agreementData)
 }
+
+const trackerEvents = computed(() => {
+  if (!trackerAgreement.value) return []
+
+  const items = []
+  const latestToken = (trackerAgreement.value.tokens || []).length
+    ? [...trackerAgreement.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+    : null
+
+  // Si tenemos historial de token, usar esos registros
+  if (latestToken && latestToken.history && latestToken.history.length > 0) {
+    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+    
+    // Check if there's a 'signed' event in the history
+    const hasSignedEvent = history.some(event => event.event_type === 'signed')
+    
+    history.forEach(event => {
+      const eventConfig = getEventConfig(event.event_type, event)
+      if (eventConfig) {
+        items.push({
+          key: event.event_type,
+          title: eventConfig.title,
+          meta: new Date(event.created_at).toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+          }),
+          text: event.description || eventConfig.text,
+          color: eventConfig.color,
+          bgClass: eventConfig.bgClass,
+          icon: eventConfig.icon,
+          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+          ipAddress: event.ip_address,
+          userAgent: event.user_agent
+        })
+      }
+    })
+  }
+  
+  // Assign sides strictly alternating
+  return items.map((item, index) => ({
+    ...item,
+    side: index % 2 === 0 ? 'right' : 'left'
+  }))
+})
+
+const getEventConfig = (eventType, event) => {
+  const configs = {
+    'created': {
+      title: 'Avtal skapad',
+      text: trackerAgreement.value?.title || 'Avtal',
+      color: '#00EEB0',
+      bgClass: 'status-info',
+      icon: 'custom-star'
+    },
+    'sent': {
+      title: 'Signeringsförfrågan skickad',
+      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      color: '#1890FF',
+      bgClass: 'status-success',
+      icon: 'custom-forward'
+    },
+    'delivered': {
+      title: 'E-post levererad',
+      text: 'E-postmeddelandet har levererats framgångsrikt',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-check-mark-2'
+    },
+    'delivery_issues': {
+      title: 'Leveransproblem',
+      text: 'Det uppstod problem med e-postleveransen',
+      color: '#FAAD14',
+      bgClass: 'status-warning',
+      icon: 'custom-risk'
+    },
+    'reviewed': {
+      title: 'Avtal granskat',
+      text: 'Kunden har öppnat och granskat avtalet',
+      color: '#1890FF',
+      bgClass: 'status-info',
+      icon: 'custom-eye'
+    },
+    'signed': {
+      title: 'Avtal signerat',
+      text: 'Signeringen är slutförd',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-signature'
+    },
+    'failed': {
+      title: 'Signeringen misslyckades',
+      text: 'Ett fel inträffade under signeringsprocessen',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-close'
+    }
+  }
+  return configs[eventType] || null
+}
+
+const openTracker = async (agreement) => {
+  trackerAgreement.value = agreement
+  isTrackerDialogVisible.value = true
+  
+  try {
+    const response = await agreementsStores.showAgreement(agreement.id)
+    trackerAgreement.value = response
+  } catch (e) {
+    console.error('Failed to refresh agreement details', e)
+  }
+}
+
+const openTrackerPreview = async () => {
+  if (!trackerAgreement.value) return
+  isTrackerPreviewVisible.value = true
+  isRequestOngoing.value = true
+  trackerPreviewError.value = ''
+  try {
+    const response = await agreementsStores.getAdminPreviewPdf(trackerAgreement.value.id)
+    trackerPreviewPdfSource.value = URL.createObjectURL(response.data)
+  } catch (e) {
+    trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+watch(isTrackerPreviewVisible, val => {
+  if (!val && trackerPreviewPdfSource.value) {
+    URL.revokeObjectURL(trackerPreviewPdfSource.value)
+    trackerPreviewPdfSource.value = null
+  }
+})
 
 const truncateText = (text, length = 15) => {
   if (text && text.length > length) {
@@ -612,6 +772,65 @@ const truncateText = (text, length = 15) => {
   }
   return text;
 };
+
+// Watch for route changes to open tracker automatically
+watch(() => route.query.file_id, async (fileId) => {
+  if (fileId && hasLoaded.value) {
+    const agreementId = parseInt(fileId)
+    let agreement = agreements.value.find(agr => agr.id === agreementId)
+    
+    if (!agreement) {
+      // If not found in current page, try to fetch it directly
+      try {
+        agreement = await agreementsStores.showAgreement(agreementId)
+      } catch (error) {
+        console.error('Agreement not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Avtalet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (agreement) {
+      await goToTracker(agreement)
+    }
+  }
+}, { immediate: true })
+
+// Watch hasLoaded to trigger file_id check after data is loaded
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.file_id) {
+    const agreementId = parseInt(route.query.file_id)
+    let agreement = agreements.value.find(agr => agr.id === agreementId)
+    
+    if (!agreement) {
+      try {
+        agreement = await agreementsStores.showAgreement(agreementId)
+      } catch (error) {
+        console.error('Agreement not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Avtalet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (agreement) {
+      await goToTracker(agreement)
+    }
+  }
+})
 
 onMounted(() => {
   resizeSectionToRemainingViewport();
@@ -1197,27 +1416,39 @@ onBeforeUnmount(() => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
-        <VCardText class="dialog-title-box">
-           <div class="dialog-title">Skicka signeringsförfrågan</div>
-        </VCardText>
-        
-        <VForm
+      <VForm
           ref="refSignatureForm"
           @submit.prevent="handleSignatureSubmit"
         >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-signature" class="action-icon" />
+            <div class="dialog-title">
+              Skicka signeringsförfrågan
+            </div>
+          </VCardText>     
           <VCardText class="dialog-text">
-            Ange e-postadressen dit signeringslänken ska skickas för avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>.
+            Ange den e-postadress till vilken du vill att länken för att underteckna fordonsavtalet, 
+            Reg.nr
+            <strong>
+              {{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+              }}
+            </strong>
+            ska skickas.
           </VCardText>
-          <VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
             <VTextField
               v-model="signatureEmail"
-              label="E-postadress"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
@@ -1228,8 +1459,8 @@ onBeforeUnmount(() => {
                 Skicka
             </VBtn>
           </VCardText>
-        </VForm>
-      </VCard>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- Modal Select type Contract -->
@@ -1247,7 +1478,6 @@ onBeforeUnmount(() => {
       </VBtn>
     
       <VForm
-        ref="refVForm"
         @submit.prevent="addAgreements"
       >
         <VCard flat class="card-form">
@@ -1292,7 +1522,6 @@ onBeforeUnmount(() => {
       v-model="isConfirmSendMailVisible"
       persistent
       class="action-dialog" >
-      
       <VBtn
         icon
         class="btn-white close-btn"
@@ -1300,10 +1529,9 @@ onBeforeUnmount(() => {
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
-
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="28" icon="custom-sent" class="mr-2" />
+          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">Skicka avtal via e-post</div>
         </VCardText>
         <VCardText class="dialog-text">
@@ -1313,8 +1541,8 @@ onBeforeUnmount(() => {
           <VCheckbox
             v-model="emailDefault"
             :label="selectedAgreement.agreement_client?.email"
+            class="ml-2"
           />
-
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -1327,10 +1555,14 @@ onBeforeUnmount(() => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           /> 
-          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
+          <span 
+            class="text-xs text-error" 
+            v-if="isValid">
+            E-postadressen måste vara en giltig e-postadress
+          </span>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn
             class="btn-light"
             @click="isConfirmSendMailVisible = false">
@@ -1590,6 +1822,104 @@ onBeforeUnmount(() => {
         </VList>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Tracker Dialog -->
+    <VDialog 
+      v-model="isTrackerDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerDialogVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">
+            Signaturprocess
+          </div>
+        </VCardText>
+        
+        <VCardText class="tracker-body">
+          <div class="snake-timeline">
+            <div 
+              v-for="(item, index) in trackerEvents" 
+              :key="item.key"
+              class="snake-item"
+              :class="[
+                index % 2 === 0 ? 'icon-right' : 'icon-left',
+                { 'is-first': index === 0 },
+                { 'is-last': index === trackerEvents.length - 1 }
+              ]"
+            >
+              <!-- Curved Border Line -->
+              <div class="snake-curve"></div>
+              
+              <!-- Content Block (centered, covers the line) -->
+              <div class="snake-content">
+                <span class="snake-date">{{ item.meta }}</span>
+                <h4 class="snake-heading">{{ item.title }}</h4>
+                <p class="snake-text">{{ item.text }}</p>
+                <div 
+                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  class="snake-file-btn" 
+                  @click="openTrackerPreview"
+                >
+                  <VIcon icon="custom-pdf-2" size="14" />
+                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                </div>
+              </div>
+
+              <!-- Status Icon Circle -->
+              <div class="snake-icon-wrapper" :class="item.bgClass">
+                <VIcon :icon="item.icon" size="16" color="white" />
+              </div>
+            </div>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Tracker Preview Dialog -->
+    <VDialog 
+      v-model="isTrackerPreviewVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerPreviewVisible = !isTrackerPreviewVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-signature" class="action-icon" />
+          <div class="dialog-title">
+            Förhandsvisa avtal
+          </div>
+        </VCardText>
+        <VDivider />
+        <VCardText class="d-flex justify-center" style="min-height:400px;">
+          <VAlert 
+            v-if="trackerPreviewError" 
+            type="error" class="mb-4">
+            {{ trackerPreviewError }}
+          </VAlert>
+          <VuePdfEmbed 
+            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
+            :source="trackerPreviewPdfSource" 
+            :width="windowWidth < 1024 ? 300 : 450"
+            />
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -1689,6 +2019,355 @@ onBeforeUnmount(() => {
     font-weight: 500;
     border: solid 1px #6e9383 !important;
     background-color: transparent !important;
+  }
+
+  /* Tracker Styles */
+  .tracker-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.2rem;
+  }
+
+  .tracker-body {
+    padding: 24px 32px 32px !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari/Edge */
+    }
+  }
+
+  /* ===== SNAKE TIMELINE - PROD STYLE (Pixel Perfect Refinement) ===== */
+  .snake-timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px; 
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .snake-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: 140px;
+    box-sizing: border-box;
+    
+    /* SOLUCIÓN DOBLE LÍNEA */
+    & + .snake-item {
+      margin-top: -2px; 
+    }
+  }
+
+  /* Variables SASS Ajustadas */
+  $curve-width: 2px;
+  $curve-color: #E7E7E7;
+  $curve-radius: 70px; /* Aumentado para curva más pronunciada/circular */
+  $gap-to-center: 12px; /* 12px per Figma */
+
+  /* ===== LA CURVA (SNAKE LINE) ===== */
+  .snake-curve {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc(50% + 1px); 
+    border: 0 solid $curve-color;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* --- Ítem: Icono Derecha (Contenido Izquierda) --- */
+  .snake-item.icon-right {
+    flex-direction: row;
+    justify-content: flex-end; 
+    padding-right: 10%; 
+    text-align: right;
+
+    .snake-curve {
+      left: 50%; 
+      border-top-width: $curve-width;
+      border-right-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: 0 $curve-radius $curve-radius 0;
+    }
+
+    .snake-content {
+      align-items: flex-end; 
+      margin-right: $gap-to-center;
+    }
+  }
+
+  /* --- Ítem: Icono Izquierda (Contenido Derecha) --- */
+  .snake-item.icon-left {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding-left: 10%; 
+    text-align: left;
+
+    .snake-curve {
+      right: 50%; 
+      border-top-width: $curve-width;
+      border-left-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: $curve-radius 0 0 $curve-radius;
+    }
+
+    .snake-content {
+      align-items: flex-start; 
+      margin-left: $gap-to-center;
+    }
+  }
+
+  /* --- PRIMER ÍTEM (Corrección "Cola") --- */
+  .snake-item.is-first {
+    .snake-curve {
+      top: 50%; 
+      height: 50% !important;
+      border-top-width: 0; /* IMPORTANTE: Eliminar borde superior */
+      border-bottom-width: $curve-width;
+    }
+    
+    &.icon-right .snake-curve {
+      border-top-right-radius: 0; /* Eliminar curva superior */
+      border-bottom-right-radius: $curve-radius;
+      border-radius: 0 0 $curve-radius 0; /* Solo curva abajo-derecha */
+    }
+
+    &.icon-left .snake-curve {
+      border-top-left-radius: 0; /* Eliminar curva superior */
+      border-bottom-left-radius: $curve-radius;
+      border-radius: 0 0 0 $curve-radius; /* Solo curva abajo-izquierda */
+    }
+  }
+
+  /* --- ÚLTIMO ÍTEM (Final) --- */
+  .snake-item.is-last {
+    .snake-curve {
+      top: 0;
+      height: 50% !important; 
+      border-top-width: $curve-width;
+      border-bottom-width: 0; 
+    }
+
+    &.icon-right .snake-curve {
+      border-radius: 0 $curve-radius 0 0;
+    }
+    &.icon-left .snake-curve {
+      border-radius: $curve-radius 0 0 0;
+    }
+  }
+
+  /* --- CONTENIDO DE TEXTO --- */
+  .snake-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 320px; 
+    padding: 12px 0;
+  }
+
+  /* Typography */
+  .snake-date {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #878787;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .snake-heading {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 16px;
+    text-align: right;
+    color: #454545;
+    margin: 0 0 4px 0;
+  }
+
+  .snake-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    color: #454545;
+    margin: 0;
+  }
+
+  /* File Badge */
+  .snake-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E7E7E7;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+
+    span {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 16px;
+      color: #454545;
+
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    &:hover {
+      background: #E5E7EB;
+      border-color: #D1D5DB;
+    }
+  }
+
+  /* ===== ESTADO (ICONO) ===== */
+  .snake-icon-wrapper {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    z-index: 20;
+    top: 48%;
+  }
+
+  /* Icon Right */
+  .snake-item.icon-right .snake-icon-wrapper {
+    right: 0;
+    transform: translate(50%, -50%);
+  }
+
+  /* Icon Left */
+  .snake-item.icon-left .snake-icon-wrapper {
+    left: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Status Colors */
+  .snake-icon-wrapper.status-success {
+    background-color: #00EEB0;
+  }
+
+  .snake-icon-wrapper.status-info {
+    background-color: #1890FF;
+  }
+
+  .snake-icon-wrapper.status-warning {
+    background-color: #FAAD14;
+  }
+
+  .snake-icon-wrapper.status-error {
+    background-color: #EF4444;
+  }
+
+   /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .tracker-body {
+      padding: 16px 12px 24px !important;
+    }
+
+    .snake-timeline {
+      padding: 0 24px;
+    }
+
+    .snake-item {
+      min-height: 120px;
+    }
+    
+    .snake-content {
+      max-width: none; 
+    }
+
+    .snake-item.icon-right .snake-content { margin-right: 20px; }
+    .snake-item.icon-left .snake-content { margin-left: 20px; }
+
+    .snake-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      
+      .v-icon {
+        font-size: 16px !important;
+      }
+    }
+  }
+
+  .file-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed #E7E7E7;
+    border-radius: 8px;
+    min-height: 88px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #F6F6F6;
+    position: relative;
+
+    &.has-error {
+      border-color: rgb(var(--v-theme-error));
+      background-color: rgba(var(--v-theme-error), 0.04);
+    }
+  }
+
+  .file-upload-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    max-width: calc(100% - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-pdf-icon {
+    font-size: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .file-remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .file-error-message {
+    color: rgb(var(--v-theme-error));
+    font-size: 12px;
+    margin-top: 4px;
+    padding-left: 8px;
   }
 
 </style>

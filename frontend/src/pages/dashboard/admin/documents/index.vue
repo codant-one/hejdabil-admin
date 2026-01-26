@@ -502,7 +502,6 @@ const isTrackerDialogVisible = ref(false)
 const trackerDocument = ref(null)
 const isTrackerPreviewVisible = ref(false)
 const trackerPreviewPdfSource = ref(null)
-const isTrackerPreviewLoading = ref(false)
 const trackerPreviewError = ref('')
 
 const trackerEvents = computed(() => {
@@ -624,7 +623,7 @@ const openTracker = async (doc) => {
 const openTrackerPreview = async () => {
   if (!trackerDocument.value) return
   isTrackerPreviewVisible.value = true
-  isTrackerPreviewLoading.value = true
+  isRequestOngoing.value = true
   trackerPreviewError.value = ''
   try {
     const response = await documentsStores.getAdminPreviewPdf(trackerDocument.value.id)
@@ -632,7 +631,7 @@ const openTrackerPreview = async () => {
   } catch (e) {
     trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
   } finally {
-    isTrackerPreviewLoading.value = false
+    isRequestOngoing.value = false
   }
 }
 
@@ -2032,12 +2031,16 @@ onBeforeUnmount(() => {
         </VCardText>
         <VDivider />
         <VCardText class="d-flex justify-center" style="min-height:400px;">
-          <VProgressCircular v-if="isTrackerPreviewLoading" indeterminate color="primary" />
-          <div v-else class="w-100" style="height: 500px; overflow: auto;">
-            <VAlert v-if="trackerPreviewError" type="error" class="mb-4">{{ trackerPreviewError }}</VAlert>
-            <VuePdfEmbed v-if="trackerPreviewPdfSource && !trackerPreviewError" :source="trackerPreviewPdfSource" />
-            <VAlert v-else-if="!trackerPreviewError" type="warning">Ingen PDF tillgänglig.</VAlert>
-          </div>
+          <VAlert 
+            v-if="trackerPreviewError" 
+            type="error" class="mb-4">
+            {{ trackerPreviewError }}
+          </VAlert>
+          <VuePdfEmbed 
+            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
+            :source="trackerPreviewPdfSource" 
+            :width="windowWidth < 1024 ? 300 : 450"
+            />  
         </VCardText>
       </VCard>
     </VDialog>

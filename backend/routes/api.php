@@ -212,6 +212,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'agreements'], function () {
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
+        Route::get('/{agreement}/get-admin-preview-pdf', [AgreementController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
         Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');

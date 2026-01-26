@@ -39,7 +39,6 @@ class Agreement extends Model
         return $this->belongsTo(GuarantyType::class, 'guaranty_type_id', 'id');
     }
 
-
     public function insurance_type(){
         return $this->belongsTo(InsuranceType::class, 'insurance_type_id', 'id');
     }
@@ -84,14 +83,8 @@ class Agreement extends Model
         return $this->belongsTo(Commission::class, 'commission_id', 'id');
     }
 
-    public function tokens(): HasMany
-    {
-        return $this->hasMany(Token::class);
-    }
-
-    public function latestToken()
-    {
-        return $this->tokens()->latest()->first();
+    public function tokens() {
+        return $this->hasMany(Token::class, 'agreement_id');
     }
 
     /**** Scopes ****/
@@ -158,6 +151,12 @@ class Agreement extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('status') !== null) {
+            $query->whereHas('tokens', function($q) use ($filters) {
+                $q->where('signature_status', $filters->get('status'));
+            });
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
