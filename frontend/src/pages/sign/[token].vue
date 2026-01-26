@@ -1,6 +1,7 @@
 <script setup>
 
 import { useTheme } from 'vuetify'
+import { useWindowSize } from '@vueuse/core'
 import { ref, onMounted, nextTick, computed, watchEffect, watch, onBeforeUnmount } from 'vue'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { useSignaturesStore } from '@/stores/useSignatures'
@@ -9,7 +10,6 @@ import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
 import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
-import { useWindowSize } from '@vueuse/core'
 
 const props = defineProps({
   token: {

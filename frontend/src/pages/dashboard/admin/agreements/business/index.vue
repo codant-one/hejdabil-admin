@@ -2,7 +2,7 @@
 
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
-import { ref, watchEffect, inject, computed } from 'vue'
+import { ref, watchEffect, inject, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -11,7 +11,6 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { useToastsStores } from '@/stores/useToasts'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -23,11 +22,18 @@ const carInfoStores = useCarInfoStores()
 const agreementsStores = useAgreementsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
-const toastsStores = useToastsStores()
 const ability = useAppAbility()
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+const sectionEl = ref(null);
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const isRequestOngoing = ref(false)
 const refForm = ref()
@@ -71,8 +77,7 @@ const street = ref(null)
 const postal_code = ref(null)
 const phone = ref(null)
 const disabled_client = ref(false)
-
-
+const save_client = ref(true)
 
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
@@ -122,138 +127,195 @@ watchEffect(async () => {
    
 })
 
-  const formatOrgNumber = () => {
-    if (!organization_number.value) return
+const formatOrgNumber = () => {
+  if (!organization_number.value) return
 
-    let numbers = organization_number.value.replace(/\D/g, '')
-    if (numbers.length > 4) {
-      numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
-    }
-    organization_number.value = numbers
+  let numbers = organization_number.value.replace(/\D/g, '')
+  if (numbers.length > 4) {
+    numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
   }
+  organization_number.value = numbers
+}
 
-  const isCompanyNumber = value => {
-    const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
-    return cleanNumber.startsWith('5')
-  }
+const isCompanyNumber = value => {
+  const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+  return cleanNumber.startsWith('5')
+}
 
-  const isEntitySearchLoading = computed(() => {
-    return companyInfoStores.loading || personInfoStores.loading
-  })
-
-  const searchEntity = async () => {
+/**
+ * Search for entity information based on the organization/personal number.
+ * If the number starts with 5, searches in CompanyInfo (Bolagsverket).
+ * Otherwise, searches in SPAR (Statens Personadressregister).
+ */
+const searchEntity = async () => {
     if (!organization_number.value) return
 
     if (isCompanyNumber(organization_number.value)) {
-      await searchCompany()
+        await searchCompany()
     } else {
-      await searchPerson()
+        await searchPerson()
     }
-  }
+}
 
-  const searchCompany = async () => {
-    if (!organization_number.value) return
+const searchCompany = async () => {
+  try {
+    isRequestOngoing.value = true
 
-    try {
-      const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+    const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+    
+    isRequestOngoing.value = false
 
-      if (response) {
+    if (response) {
+          // Set Client Type to Företag
         const foretagType = client_types.value.find(t => t.name === 'Företag')
-        if (foretagType) client_type_id.value = foretagType.id
+        if (foretagType) {
+            client_type_id.value = foretagType.id
+        }
 
-        fullname.value = response.organisationsnamn?.organisationsnamnLista?.[0]?.namn || ''
-        postal_code.value = response.postadressOrganisation?.postadress?.postnummer || ''
-        address.value = response.postadressOrganisation?.postadress?.utdelningsadress || ''
-        street.value = response.postadressOrganisation?.postadress?.postort || ''
-      }
-    } catch (error) {
-      toastsStores.addToast({
-        message: 'Ingen företag hittades med det registreringsnumret',
-        type: 'error',
-      })
+        // Set Name
+        if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+            fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+        } else {
+            fullname.value = ''
+        }
+
+        // Set Postal Code
+        if (response.postadressOrganisation?.postadress?.postnummer) {
+            postal_code.value = response.postadressOrganisation.postadress.postnummer
+        } else {
+            postal_code.value = ''
+        }
+
+        // Set Address
+        if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+            address.value = response.postadressOrganisation.postadress.utdelningsadress
+        } else {
+            address.value = ''
+        }
+
+        // Set Street/City (Postort)
+        if (response.postadressOrganisation?.postadress?.postort) {
+            street.value = response.postadressOrganisation.postadress.postort
+        } else {
+            street.value = ''
+        }
     }
+
+  } catch (error) {
+      isRequestOngoing.value = false
+      advisor.value = {
+          type: 'error',
+          message: 'Ingen företag hittades med det registreringsnumret',
+          show: true
+      }
   }
+}
 
-  const searchPerson = async () => {
-    try {
-      const response = await personInfoStores.getPersonInfo(organization_number.value)
+/**
+ * Search for person information in SPAR (Statens Personadressregister) API.
+ */
+const searchPerson = async () => {
+  try {
+    isRequestOngoing.value = true
 
-      if (response?.success && response?.data) {
+    const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+    isRequestOngoing.value = false
+
+    if (response?.success && response?.data) {
+        const personData = response.data
+
+        // Set Client Type to Privat
         const privatType = client_types.value.find(t => t.name === 'Privat')
-        if (privatType) client_type_id.value = privatType.id
+        if (privatType) {
+            client_type_id.value = privatType.id
+        }
 
-        fullname.value = response.data.fullname || ''
-        postal_code.value = response.data.postnummer || ''
-        address.value = response.data.adress || ''
-        street.value = response.data.postort || ''
-      }
-    } catch (error) {
-      const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
-      toastsStores.addToast({
-        message: errorMessage,
+        // Set Name
+        fullname.value = personData.fullname || ''
+
+        // Set Postal Code
+        postal_code.value = personData.postnummer || ''
+
+        // Set Address
+        address.value = personData.adress || ''
+
+        // Set Street/City (Postort)
+        street.value = personData.postort || ''
+    }
+
+  } catch (error) {
+    isRequestOngoing.value = false
+
+    const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+    
+    advisor.value = {
         type: 'error',
-      })
+        message: errorMessage,
+        show: true
     }
   }
+}
 
-  const clearClient = () => {
-    fullname.value = null
-    email.value = null
-    organization_number.value = null
-    address.value = null
-    street.value = null
-    postal_code.value = null
-    phone.value = null
-    client_type_id.value = null
-    identification_id.value = null
-    disabled_client.value = false
-  }
+const clearClient = () => {
+  fullname.value = null
+  email.value = null
+  organization_number.value = null
+  address.value = null
+  street.value = null
+  postal_code.value = null
+  phone.value = null
 
-  const selectClient = client => {
-    if (!client) return
+  save_client.value = true
+  disabled_client.value = false
+}
 
-    const selected = clients.value.find(item => item.id === client)
-    if (!selected) return
+const selectClient = client => {
+  if (!client) return
 
-    fullname.value = selected.fullname
-    email.value = selected.email
-    organization_number.value = selected.organization_number
-    address.value = selected.address
-    street.value = selected.street
-    postal_code.value = selected.postal_code
-    phone.value = selected.phone
+  const selected = clients.value.find(item => item.id === client)
+  if (!selected) return
 
-    // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
-    client_type_id.value = selected.client_type_id ?? client_type_id.value
-    identification_id.value = selected.identification_id ?? identification_id.value
+  fullname.value = selected.fullname
+  email.value = selected.email
+  organization_number.value = selected.organization_number
+  address.value = selected.address
+  street.value = selected.street
+  postal_code.value = selected.postal_code
+  phone.value = selected.phone
 
-    disabled_client.value = true
-  }
+  // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
+  client_type_id.value = selected.client_type_id ?? client_type_id.value
+  identification_id.value = selected.identification_id ?? identification_id.value
+
+  disabled_client.value = true
+  save_client.value = false
+}
 
 const selectBrand = brand => {
-    if (brand) {
-        let _brand = brands.value.find(item => item.id === brand)
-    
-        model_id.value = ''
-        modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
-    }
+  if (brand) {
+      let _brand = brands.value.find(item => item.id === brand)
+  
+      model_id.value = ''
+      modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
+  }
 }
 
 const onClearBrand = () => {
-    modelsByBrand.value = []
+  modelsByBrand.value = []
 }
 
 const getModels = computed(() => {
-    const models = modelsByBrand.value.map((model) => ({
-        title: model.name,
-        value: model.id
-    }))
+  const models = modelsByBrand.value.map((model) => ({
+      title: model.name,
+      value: model.id
+  }))
 
-    if (modelsByBrand.value.length > 0) {
-        models.push({ title: 'En annan..', value: 0 })
-    }
+  if (modelsByBrand.value.length > 0) {
+      models.push({ title: 'En annan..', value: 0 })
+  }
 
-    return models
+  return models
 })
 
 const selectModel = selected => {
@@ -262,65 +324,218 @@ const selectModel = selected => {
 
 }
 
-const searchVehicule = async () => {
+/**
+ * Buscar información del vehículo por matrícula usando la API car.info
+ * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
+ */
+const searchVehicleByPlate = async () => {
+  if (!reg_num.value) {
+    advisor.value = {
+        type: 'warning',
+        message: 'Ange ett registreringsnummer',
+        show: true
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return
+  }
 
   isRequestOngoing.value = true
 
-  const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+  try {
+    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+    
+    await fetchData()
+    
+    // Verificar success (también manejar typo 'sucess' de la API)
+    const isSuccess = carRes.success === true || carRes.sucess === true
 
-  isRequestOngoing.value = false
+    if (isSuccess && carRes.result) {
+        
+        // Actualizar marca (Märke)
+        if (carRes.result.brand_id) {
+            brand_id.value = carRes.result.brand_id
+            selectBrand(brand_id.value)
+        }
+        
+        // Actualizar modelo (Modell)
+        if (carRes.result.model_id) {
+            model_id.value = carRes.result.model_id
+        } else if (carRes.result.model_name) {
+            // Si no se encontró el modelo en la DB, usar el campo de texto libre
+            model_id.value = 0
+            model.value = carRes.result.model_name
+        }
+        
+        if (carRes.result.mileage) {
+            mileage.value = carRes.result.mileage
+        }
+
+        advisor.value = {
+            type: 'success',
+            message: 'Fordonsdata hämtades framgångsrikt',
+            show: true
+        }   
+
+    } else {
+        advisor.value = {
+            type: 'warning',
+            message: 'Ingen information hittades för detta registreringsnummer',
+            show: true
+        }
+    }
+  } catch (error) {
+      advisor.value = {
+          type: 'error',
+          message: 'Fel vid hämtning av fordonsdata',
+          show: true
+      }
+  } finally {
+      setTimeout(() => {
+          advisor.value = {
+              type: '',
+              message: '',
+              show: false
+          }
+      }, 3000)
+
+      isRequestOngoing.value = false
+  }
 }
 
-const onSubmit = () => {
-  refForm.value?.validate().then(({ valid: isValid }) => {
-    if (isValid) {
-      let formData = new FormData()
+const goToAgreements = () => {
 
-      //vehicle
-      formData.append('reg_num', reg_num.value)
-      formData.append('brand_id', brand_id.value)
-      formData.append('model_id', model_id.value)
-      formData.append('model', model.value)
-      formData.append('offerId', offer_id.value)
-      formData.append('mileage', mileage.value)
-      formData.append('comment', comment.value)
-      formData.append('price', price.value)
-      formData.append('terms_other_conditions', terms_other_conditions.value)
+  let data = {
+      message: 'Erbjudande framgångsrikt skapat',
+      error: false
+  }
 
-      //kund (agreement_client)
-      formData.append('client_id', client_id.value)
-      formData.append('client_type_id', client_type_id.value)
-      formData.append('identification_id', identification_id.value)
-      formData.append('fullname', fullname.value)
-      formData.append('email', email.value)
-      formData.append('organization_number', organization_number.value)
-      formData.append('address', address.value)
-      formData.append('street', street.value)
-      formData.append('postal_code', postal_code.value)
-      formData.append('phone', phone.value)
+  router.push({ name : 'dashboard-admin-agreements'})
+  emitter.emit('toast', data)  
 
-      //agreement
-      formData.append('agreement_type_id', 4)
-      formData.append('currency_id', currency_id.value)
-      formData.append('price', price.value)
-      formData.append('residual_debt', 0)
-      formData.append('guaranty', 0)
-      formData.append('insurance_company', 0)
+};
 
-      isRequestOngoing.value = true
+const onSubmit = async () => {
+  // Validación manual ANTES de usar VForm.validate()
+  // Verificar tab-1 (Erbjudande)
+  const hasTab1Errors = !reg_num.value || 
+                        !brand_id.value || 
+                        !model_id.value || 
+                        (model_id.value === 0 && !model.value) ||
+                        !mileage.value || 
+                        !price.value
 
-      agreementsStores.addAgreement(formData)
+  // Verificar tab-2 (Kund)
+  const hasTab2Errors = !organization_number.value || 
+                        (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                        !client_type_id.value || 
+                        !fullname.value || 
+                        !address.value || 
+                        !postal_code.value || 
+                        !street.value || 
+                        !phone.value || 
+                        (phone.value && phoneValidator(phone.value) !== true) ||
+                        !identification_id.value || 
+                        !email.value || 
+                        (email.value && emailValidator(email.value) !== true)
+
+    // Si hay errores, ir al primer tab con error
+    if (hasTab1Errors) {
+        currentTab.value = 'tab-1'
+        
+        // Esperar a que el tab se monte y luego validar
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Erbjudande',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+    
+    if (hasTab2Errors) {
+        currentTab.value = 'tab-2'
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+
+    // Si no hay errores manuales, proceder con el submit
+    refForm.value?.validate().then(({ valid: isValid }) => {
+      if (isValid) {
+        let formData = new FormData()
+
+        //vehicle
+        formData.append('reg_num', reg_num.value)
+        formData.append('brand_id', brand_id.value)
+        formData.append('model_id', model_id.value)
+        formData.append('model', model.value)
+        formData.append('offerId', offer_id.value)
+        formData.append('mileage', mileage.value)
+        formData.append('comment', comment.value)
+        formData.append('price', price.value)
+        formData.append('terms_other_conditions', terms_other_conditions.value)
+
+        //kund (agreement_client)
+        formData.append('client_id', client_id.value)
+        formData.append('client_type_id', client_type_id.value)
+        formData.append('identification_id', identification_id.value)
+        formData.append('fullname', fullname.value)
+        formData.append('email', email.value)
+        formData.append('organization_number', organization_number.value)
+        formData.append('address', address.value)
+        formData.append('street', street.value)
+        formData.append('postal_code', postal_code.value)
+        formData.append('phone', phone.value)
+        formData.append('save_client', save_client.value);
+
+        //agreement
+        formData.append('agreement_type_id', 4)
+        formData.append('currency_id', currency_id.value)
+        formData.append('price', price.value)
+        formData.append('residual_debt', 0)
+        formData.append('guaranty', 0)
+        formData.append('insurance_company', 0)
+
+        isRequestOngoing.value = true
+
+        agreementsStores.addAgreement(formData)
           .then((res) => {
               if (res.data.success) {
-                  
-                  // let data = {
-                  //     message: 'Erbjudande framgångsrikt skapat',
-                  //     error: false
-                  // }
-
-                  // router.push({ name : 'dashboard-admin-agreements'})
-                  // emitter.emit('toast', data)
-
                   allowNavigation.value = true;
 
                   // Save current state so the dirty-check stops blocking navigation
@@ -328,7 +543,6 @@ const onSubmit = () => {
 
                   skapatsDialog.value = true;
               } else {
-
                   // Save current state so the dirty-check stops blocking navigation
                   initialData.value = JSON.parse(JSON.stringify(currentData.value));
 
@@ -337,57 +551,56 @@ const onSubmit = () => {
               isRequestOngoing.value = false
           })
           .catch((err) => {
-              
-              // let data = {
-              //     message: err.message,
-              //     error: true
-              // }
-
-              // router.push({ name : 'dashboard-admin-agreements'})
-              // emitter.emit('toast', data)
-
-              // Save current state so the dirty-check stops blocking navigation
               initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
               inteSkapatsDialog.value = true;
-
               isRequestOngoing.value = false
           })
-    }
-  })
+      }
+    })
 }
 
-// const showError = () => {
-//   inteSkapatsDialog.value = false;
+const showError = () => {
+    inteSkapatsDialog.value = false;
 
-//   advisor.value.show = true;
-//   advisor.value.type = "error";
-  
-//   if (err.value && !err.value.success) {
-//     advisor.value.message = err.value.message;
-//   } else {
-//     advisor.value.message = "Ett serverfel uppstod. Försök igen.";
-//   }
+    advisor.value.show = true;
+    advisor.value.type = "error";
+    
+    if (err.value && !err.value.success) {
+      advisor.value.message = err.value.message;
+    } else {
+      advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+    }
 
-//   setTimeout(() => {
-//     advisor.value.show = false;
-//     advisor.value.type = "";
-//     advisor.value.message = "";
-//   }, 3000);
+    setTimeout(() => {
+      advisor.value.show = false;
+      advisor.value.type = "";
+      advisor.value.message = "";
+    }, 3000);
 
-// };
+};
 
 const currentData = computed(() => ({
+    // Tab-1: Erbjudande
     reg_num: reg_num.value,
     brand_id: brand_id.value,
     model_id: model_id.value,
+    model: model.value,
     mileage: mileage.value,
     price: price.value,
+    comment: comment.value,
+    terms_other_conditions: terms_other_conditions.value,
+    // Tab-2: Kund
+    client_id: client_id.value,
+    organization_number: organization_number.value,
+    client_type_id: client_type_id.value,
+    identification_id: identification_id.value,
     fullname: fullname.value,
-    // address: address.value,
-    // postal_code: postal_code.value,
-    // phone: phone.value,
-    email: email.value
+    email: email.value,
+    address: address.value,
+    street: street.value,
+    postal_code: postal_code.value,
+    phone: phone.value,
+    save_client: save_client.value
 }))
 
 const isDirty = computed(() => {
@@ -408,6 +621,24 @@ const confirmLeave = () => {
     }
 };
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
 // Intercept all navigation attempts
 onBeforeRouteLeave((to, from, next) => {
   if (allowNavigation.value || !isDirty.value) {
@@ -421,8 +652,19 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-  <section>
+  <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
+
+    <VSnackbar
+        v-model="advisor.show"
+        transition="scroll-y-reverse-transition"
+        :location="snackbarLocation"
+        :color="advisor.type"
+        class="snackbar-alert snackbar-dashboard"
+    >
+        {{ advisor.message }}
+    </VSnackbar>
+
     <VForm
       ref="refForm"
       class="card-form"
@@ -438,11 +680,12 @@ onBeforeRouteLeave((to, from, next) => {
       >
         <VCardText class="p-0">
           <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
-            <div class="d-flex flex-column gap-4">
-                <span class="title-page">
-                    Prisförslag
-                </span>
-            </div>
+      
+          <div class="d-flex flex-column gap-4">
+              <span class="title-page">
+                  Prisförslag
+              </span>
+          </div>
 
             <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
@@ -462,7 +705,7 @@ onBeforeRouteLeave((to, from, next) => {
                     :loading="isRequestOngoing"
                     type="submit"
                 >
-                    <VIcon icon="custom-car-open"  size="24" />
+                    <VIcon icon="custom-save"  size="24" />
                     Skapa
                 </VBtn>
             </div>
@@ -475,7 +718,7 @@ onBeforeRouteLeave((to, from, next) => {
           v-model="currentTab"   
           :grow="windowWidth < 1024 ? true : false"                
           :show-arrows="false"
-          class="vehicles-tabs"
+          class="agreements-tabs"
         >
           <VTab value="tab-1">
             <VIcon size="24" icon="custom-autofordon" />
@@ -487,10 +730,11 @@ onBeforeRouteLeave((to, from, next) => {
           </VTab>
         </VTabs>
 
-        <VCardText class="px-0 px-md-2">
+        <VCardText class="px-0">
           <VWindow v-model="currentTab">
-            <VWindowItem value="tab-1" class="px-md-5">
-              <VRow class="px-md-5">
+            <!-- Erbjudande -->
+            <VWindowItem value="tab-1" class="px-md-0">
+              <VRow class="px-md-3">
                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                   <div class="title-tabs mb-5">
                     Detaljer om erbjudandet
@@ -509,7 +753,7 @@ onBeforeRouteLeave((to, from, next) => {
                         />
                         <VBtn
                           class="btn-light w-auto px-4"
-                          @click="searchVehicule"
+                          @click="searchVehicleByPlate"
                         >
                           <VIcon icon="custom-search" size="24" />
                           Hämta
@@ -542,7 +786,7 @@ onBeforeRouteLeave((to, from, next) => {
                         :menu-props="{ maxHeight: '300px' }"
                       />
                     </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
                       <VAutocomplete
                         v-model="model_id"
@@ -555,13 +799,19 @@ onBeforeRouteLeave((to, from, next) => {
                         :menu-props="{ maxHeight: '300px' }"
                       />
                     </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
-                      <VTextField v-model="model" />
+                      <VTextField
+                          v-model="model"
+                          :rules="[requiredValidator]"
+                      />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mätarställning*" />
-                      <VTextField v-model="mileage" :rules="[requiredValidator]" />
+                      <VTextField 
+                        v-model="mileage" 
+                        :rules="[requiredValidator]" 
+                      />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Belopp ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
@@ -572,21 +822,21 @@ onBeforeRouteLeave((to, from, next) => {
                         :rules="[requiredValidator]"
                       />
                     </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <div class="w-100">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anmärkning" />
                       <VTextarea v-model="comment" rows="3" />
                     </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <div class="w-100">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Villkor och bestämmelser" />
-                      <VTextarea v-model="terms_other_conditions" rows="5" />
+                      <VTextarea v-model="terms_other_conditions" rows="3" />
                     </div>
                   </div>
                 </VCol>
               </VRow>
             </VWindowItem>
-
-            <VWindowItem value="tab-2" class="px-md-5">
-              <VRow class="px-md-5">
+            <!-- Kund -->
+            <VWindowItem value="tab-2" class="px-md-0">
+              <VRow class="px-md-3">
                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                   <div class="title-tabs mb-5">
                     Kund
@@ -597,75 +847,109 @@ onBeforeRouteLeave((to, from, next) => {
                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                   >
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
-                      <VAutocomplete
-                        v-model="client_id"
-                        :items="clients"
-                        :item-title="item => item.fullname"
-                        :item-value="item => item.id"
-                        autocomplete="off"
-                        clearable
-                        @click:clear="clearClient"
-                        @update:modelValue="selectClient"
-                      />
+                        <AppAutocomplete
+                            v-model="client_id"
+                            label="Kunder"
+                            :items="clients"
+                            :item-title="item => item.fullname"
+                            :item-value="item => item.id"
+                            autocomplete="off"
+                            clearable
+                            @click:clear="clearClient"
+                            @update:modelValue="selectClient"/>
                     </div>
-
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer" />
-                      <div class="d-flex gap-2"> 
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
+                        <div class="d-flex gap-2">
+                            <VTextField
+                                v-model="organization_number"
+                                style="flex: 1;"
+                                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                minLength="11"
+                                maxlength="13"
+                                @input="formatOrgNumber()"
+                            />
+                            <VBtn
+                                class="btn-light w-auto px-4"
+                                @click="searchEntity"
+                            >
+                                <VIcon icon="custom-search" size="24" />
+                                Hämta
+                            </VBtn>
+                        </div>
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                        <AppAutocomplete
+                            v-model="client_type_id"
+                            label="Köparen är*"
+                            :items="client_types"
+                            :item-title="item => item.name"
+                            :item-value="item => item.id"
+                            :rules="[requiredValidator]"
+                            autocomplete="off"/>
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                         <VTextField
-                          v-model="organization_number"
-                          :rules="[minLengthDigitsValidator(10)]"
-                          minLength="11"
-                          maxlength="13"
-                          :disabled="disabled_client"
-                          @input="formatOrgNumber()"
+                            v-model="fullname"
+                            :rules="[requiredValidator]"
                         />
-                        <VBtn
-                          class="btn-light w-auto px-4"
-                          @click="searchEntity"
-                          :loading="isEntitySearchLoading"
-                          :disabled="disabled_client"
-                        >
-                            <VIcon icon="custom-search" size="24" />
-                            Hämta
-                        </VBtn>
-                      </div>
-                    </div>
-
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunden är" />
-                      <VAutocomplete v-model="client_type_id" :items="client_types" :item-title="item => item.name" :item-value="item => item.id" autocomplete="off" :disabled="disabled_client" />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namm*" />
-                      <VTextField v-model="fullname" :rules="[requiredValidator]" :disabled="disabled_client" />
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                        <VTextField
+                            v-model="address"
+                            :rules="[requiredValidator]"
+                        />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress" />
-                      <VTextField v-model="address" :disabled="disabled_client" />
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />                                            
+                        <VTextField
+                            v-model="postal_code"
+                            :rules="[requiredValidator]"
+                        />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer" />
-                      <VTextField v-model="postal_code" :disabled="disabled_client" />
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+                        <VTextField
+                            v-model="street"
+                            :rules="[requiredValidator]"
+                        /> 
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad" />
-                      <VTextField v-model="street" :disabled="disabled_client" />
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
+                        <VTextField
+                            v-model="phone"
+                            :rules="[requiredValidator, phoneValidator]"
+                        />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
-                      <VTextField v-model="phone" :rules="phone ? [phoneValidator] : []" :disabled="disabled_client" />
+                        <AppAutocomplete
+                            v-model="identification_id"
+                            label="Legitimation*"
+                            :items="identifications"
+                            :item-title="item => item.name"
+                            :item-value="item => item.id"
+                            :rules="[requiredValidator]"
+                            autocomplete="off"/>
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Legitimation" />
-                      <VAutocomplete v-model="identification_id" :items="identifications" :item-title="item => item.name" :item-value="item => item.id" autocomplete="off" :disabled="disabled_client" />
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />                                            
+                        <VTextField
+                            v-model="email"
+                            :rules="[emailValidator, requiredValidator]"
+                        />
                     </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
-                      <VTextField v-model="email" :rules="[requiredValidator, emailValidator]" :disabled="disabled_client" />
+                    <div class="ms-2">
+                        <VCheckbox
+                            v-model="save_client"
+                            :readonly="disabled_client"
+                            color="primary"
+                            label="Spara kund?"
+                            class="w-100 text-center d-flex justify-start"
+                        />
                     </div>
-                  </div>
+                </div>
                 </VCol>
               </VRow>
             </VWindowItem>
@@ -702,7 +986,7 @@ onBeforeRouteLeave((to, from, next) => {
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
+          <VBtn class="btn-light" @click="goToAgreements" >
             Gå till avtalslistan
           </VBtn>
           <VBtn class="btn-gradient" @click="reloadPage">
@@ -736,7 +1020,7 @@ onBeforeRouteLeave((to, from, next) => {
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
+          <VBtn class="btn-light" @click="showError">
             Stäng
           </VBtn>
         </VCardText>
@@ -822,7 +1106,7 @@ onBeforeRouteLeave((to, from, next) => {
     justify-content: end !important;
   }
 
-  .v-tabs.vehicles-tabs {
+  .v-tabs.agreements-tabs {
     .v-btn {
       min-width: 50px !important;
       .v-btn__content {
@@ -914,18 +1198,18 @@ onBeforeRouteLeave((to, from, next) => {
     }
   }
 
-  .vehicles-pills > div {
+  .agreements-pills > div {
     flex: 1 1;
   }
 
-  .vehicles-pill {
+  .agreements-pill {
     display: flex;
     align-items: center;
     padding: 16px;
     border-radius: 8px;
   }
 
-  .vehicles-pill-title {
+  .agreements-pill-title {
     font-family: "Blauer Nue";
     font-weight: 400;
     font-size: 16px;
@@ -933,7 +1217,7 @@ onBeforeRouteLeave((to, from, next) => {
     margin-right: 4px;
   }
 
-  .vehicles-pill-value {
+  .agreements-pill-value {
     font-family: "Blauer Nue";
     font-weight: 700;
     font-style: Bold;
@@ -942,12 +1226,12 @@ onBeforeRouteLeave((to, from, next) => {
   }
 
   @media (max-width: 991px) {
-    .vehicles-pills {
+    .agreements-pills {
       flex-direction: column;
       gap: 8px;
     }
 
-    .vehicles-pill {
+    .agreements-pill {
       padding: 8px 16px;
     }
   }

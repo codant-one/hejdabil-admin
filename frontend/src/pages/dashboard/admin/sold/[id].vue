@@ -573,6 +573,7 @@ const onSubmit = async () => {
 const getFlag = (currency_id) => {
     return currencies.value.filter(item => item.id === currency_id)[0].flag
 }
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -604,7 +605,7 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-    <section class="page-section stock-edit-page" ref="sectionEl">
+    <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
         <VSnackbar
             v-model="advisor.show"

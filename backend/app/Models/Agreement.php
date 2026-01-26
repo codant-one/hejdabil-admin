@@ -666,6 +666,19 @@ class Agreement extends Model
     
     public static function createOffer($request) {
 
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
         $offer = Offer::createOffer($request);
 
         $request->request->add([
