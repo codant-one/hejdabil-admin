@@ -117,7 +117,7 @@ watchEffect(async () => {
     isRequestOngoing.value = false
 
     nextTick(() => {
-          initialData.value = JSON.parse(JSON.stringify(currentData.value))
+      initialData.value = JSON.parse(JSON.stringify(currentData.value))
     })
    
 })
@@ -327,18 +327,29 @@ const onSubmit = () => {
                   initialData.value = JSON.parse(JSON.stringify(currentData.value));
 
                   skapatsDialog.value = true;
+              } else {
+
+                  // Save current state so the dirty-check stops blocking navigation
+                  initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                  inteSkapatsDialog.value = true;
               }
               isRequestOngoing.value = false
           })
           .catch((err) => {
               
-              let data = {
-                  message: err.message,
-                  error: true
-              }
+              // let data = {
+              //     message: err.message,
+              //     error: true
+              // }
 
-              router.push({ name : 'dashboard-admin-agreements'})
-              emitter.emit('toast', data)
+              // router.push({ name : 'dashboard-admin-agreements'})
+              // emitter.emit('toast', data)
+
+              // Save current state so the dirty-check stops blocking navigation
+              initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+              inteSkapatsDialog.value = true;
 
               isRequestOngoing.value = false
           })
@@ -346,25 +357,25 @@ const onSubmit = () => {
   })
 }
 
-const showError = () => {
-  inteSkapatsDialog.value = false;
+// const showError = () => {
+//   inteSkapatsDialog.value = false;
 
-  advisor.value.show = true;
-  advisor.value.type = "error";
+//   advisor.value.show = true;
+//   advisor.value.type = "error";
   
-  if (err.value && !err.value.success) {
-    advisor.value.message = err.value.message;
-  } else {
-    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
-  }
+//   if (err.value && !err.value.success) {
+//     advisor.value.message = err.value.message;
+//   } else {
+//     advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+//   }
 
-  setTimeout(() => {
-    advisor.value.show = false;
-    advisor.value.type = "";
-    advisor.value.message = "";
-  }, 3000);
+//   setTimeout(() => {
+//     advisor.value.show = false;
+//     advisor.value.type = "";
+//     advisor.value.message = "";
+//   }, 3000);
 
-};
+// };
 
 const currentData = computed(() => ({
     reg_num: reg_num.value,
@@ -427,35 +438,34 @@ onBeforeRouteLeave((to, from, next) => {
       >
         <VCardText class="p-0">
           <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
-      
-          <div class="d-flex flex-column gap-4">
-              <span class="title-page">
-                  Prisförslag
-              </span>
-          </div>
+            <div class="d-flex flex-column gap-4">
+                <span class="title-page">
+                    Prisförslag
+                </span>
+            </div>
 
-          <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-          <div 
-              class="d-flex gap-4"
-              :class="windowWidth < 1024 ? 'w-100' : 'align-center'">
-              <VBtn 
-                  class="btn-light w-auto" 
-                  block
-                  :to="{ name: 'dashboard-admin-agreements' }">
-                  <VIcon icon="custom-return" size="24" />
-                  Tillbaka
-              </VBtn>
-              <VBtn
-                  class="btn-gradient"
-                  block
-                  :loading="isRequestOngoing"
-                  type="submit"
-              >
-                  <VIcon icon="custom-car-open"  size="24" />
-                  Skapa
-              </VBtn>
-          </div>
+            <div 
+                class="d-flex gap-4"
+                :class="windowWidth < 1024 ? 'w-100' : 'align-center'">
+                <VBtn 
+                    class="btn-light w-auto" 
+                    block
+                    :to="{ name: 'dashboard-admin-agreements' }">
+                    <VIcon icon="custom-return" size="24" />
+                    Tillbaka
+                </VBtn>
+                <VBtn
+                    class="btn-gradient"
+                    block
+                    :loading="isRequestOngoing"
+                    type="submit"
+                >
+                    <VIcon icon="custom-car-open"  size="24" />
+                    Skapa
+                </VBtn>
+            </div>
           </div>                
         </VCardText>
 
