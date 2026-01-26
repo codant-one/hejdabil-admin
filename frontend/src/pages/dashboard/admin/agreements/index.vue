@@ -871,7 +871,7 @@ onBeforeUnmount(() => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
-            <td class="text-center">
+            <td class="text-center" @click="goToTracker(agreement)">
               <span class="font-weight-medium cursor-pointer text-aqua">
                 {{ agreement.agreement_type_id === 4 ?
                   agreement.offer.reg_num : 
@@ -1549,14 +1549,6 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <VList>
-          <VListItem
-            v-if="$can('view','agreements')"
-            @click="goToTracker(selectedAgreementForAction); isMobileActionDialogVisible = false;">
-            <template #prepend>
-              <VIcon icon="custom-eye" size="24" class="mr-2" />
-            </template>
-            <VListItemTitle>Spårare</VListItemTitle>
-          </VListItem>
           <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
