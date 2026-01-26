@@ -6,11 +6,11 @@ import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import router from '@/router'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { useToastsStores } from '@/stores/useToasts'
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
