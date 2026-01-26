@@ -1191,7 +1191,9 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(agreement)">
+                  <VListItem 
+                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-signature" class="mr-2" />
                     </template>
@@ -1205,7 +1207,8 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
+                  <VListItem v-if="$can('view','agreements') && agreement.tokens?.[0]?.signature_status === 'signed'"
+                    @click="send(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-send" class="mr-2" />
                     </template>
@@ -1217,7 +1220,9 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
+                  <VListItem 
+                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    @click="editAgreement(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
                     </template>
@@ -1782,7 +1787,9 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <VList>
-          <VListItem v-if="$can('edit','agreements')" @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'" 
+            @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
             </template>
@@ -1796,7 +1803,8 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('view','agreements')" @click="send(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+            @click="send(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-send" class="mr-2" />
             </template>
@@ -1808,7 +1816,9 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('edit','agreements')" @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
             </template>
