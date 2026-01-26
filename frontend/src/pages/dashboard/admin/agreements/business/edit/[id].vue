@@ -6,6 +6,7 @@ import { ref, watchEffect, inject, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -26,6 +27,7 @@ const advisor = ref({
 })
 
 const route = useRoute()
+const carInfoStores = useCarInfoStores()
 const agreementsStores = useAgreementsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
