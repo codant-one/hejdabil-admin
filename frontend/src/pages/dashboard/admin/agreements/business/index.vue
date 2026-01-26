@@ -800,7 +800,7 @@ onBeforeRouteLeave((to, from, next) => {
                       />
                     </div>
                     <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                       <VTextField
                           v-model="model"
                           :rules="[requiredValidator]"

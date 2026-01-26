@@ -747,7 +747,8 @@ const onSubmit = () => {
                                             <VCol cols="12" md="3" v-if="model_id === 0">
                                                 <VTextField
                                                     v-model="model"
-                                                    label="Modellens namn"
+                                                    label="Modellens namn*"
+                                                    :rules="[requiredValidator]"
                                                 />
                                             </VCol>
                                             <VCol cols="12" md="6">
