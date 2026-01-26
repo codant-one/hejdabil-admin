@@ -29,7 +29,7 @@
             font-size: 13px;
             color: #008C91;
             margin-top: 0;
-            margin-bottom: 8px; /* Un poco de espacio extra para los títulos de sección */
+            margin-bottom: 8px;
         }
 
         /* --- HEADER --- */
@@ -38,22 +38,27 @@
             display: inline-block;
             text-align: right;
         }
+
         .header-logo img {
             max-width: 100%;
         }
+
         .header-logo-cell {
             vertical-align: top;
             text-align: right;
         }
+
         .header-title-cell {
             text-align: left;
             vertical-align: top;
         }
+
         .header-title-cell h1 {
             margin: 0;
             font-size: 24px;
             color: #5D5D5D;
         }
+
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #5D5D5D;
@@ -63,11 +68,13 @@
         .section-cell {
             padding-top: 10px;
         }
+
         .column-cell {
             width: 50%;
             vertical-align: top;
             padding-top: 15px;
         }
+
         .column-cell-left { padding-right: 15px; }
         .column-cell-right { padding-left: 15px; }
 
@@ -76,10 +83,12 @@
             width: 100%;
             border-collapse: collapse;
         }
+
         .info-table td {
             padding: 0;
             padding-bottom: 6px;
         }
+
         .info-table .label {
             font-weight: 600;
             display: block;
@@ -87,6 +96,7 @@
             font-size: 10px;
             margin-bottom: 2px;
         }
+
         .info-table .value {
             font-size: 10px;
             background-color: #F6F6F6;
@@ -103,15 +113,18 @@
             border-collapse: collapse;
             margin-top: 5px;
         }
+
         .financials-table td {
             padding: 6px 0;
             text-align: left;
             border-bottom: 1px solid #E7E7E7;
         }
+
         .financials-table td:last-child {
             text-align: right;
             font-weight: 600;
         }
+
         .financials-table .total-row td {
             font-size: 13px;
             font-weight: 700;
@@ -131,6 +144,7 @@
             padding: 0;
             background: #FFFFFF;
         }
+
         .notes-text {
             font-size: 10px;
             color: #5D5D5D;
@@ -140,22 +154,26 @@
             border-left: 1px solid #008C91;
             margin-bottom: 15px;
         }
+
         .signatures-table {
             width: 100%;
             margin-top: 12px;
             table-layout: fixed;
             border-collapse: collapse;
         }
+        
         .signatures-table td {
             width: 50%;
             vertical-align: bottom;
         }
+
         .signature-box {
             border-top: 1px solid #454545;
             padding-top: 8px;
             font-size: 11px; /* Ajustado para consistencia */
             color: #454545;
         }
+        
         .thank-you-text {
             font-size: 14px;
             font-weight: bold;

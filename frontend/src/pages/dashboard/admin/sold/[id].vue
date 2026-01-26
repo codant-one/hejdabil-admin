@@ -798,6 +798,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="sale_price"
                                                 min="0"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -844,6 +845,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="iva_sale_amount"
                                                 min="0"
                                                 disabled
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -854,6 +856,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="iva_sale_exclusive"
                                                 min="0"
                                                 disabled
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -863,6 +866,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="discount"
                                                 min="0"
+                                                suffix="%"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -872,6 +876,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="registration_fee"
                                                 min="0"
+                                                suffix="%"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -1183,6 +1188,19 @@ onBeforeRouteLeave((to, from, next) => {
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
+            }
+        }
+    }
+
+    @media (max-width: 776px) {
+        .v-tabs.vehicles-tabs {
+            .v-icon {
+                display: none !important;
+            }
+            .v-btn {
+                .v-btn__content {
+                    white-space: break-spaces;
+                }
             }
         }
     }

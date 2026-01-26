@@ -206,6 +206,7 @@ watch(currentData, () => {
                       type="number"
                       min="0"
                       label="Egen värdering*"
+                      suffix="KR"
                       :rules="[requiredValidator]"
                   />
               </VCol>

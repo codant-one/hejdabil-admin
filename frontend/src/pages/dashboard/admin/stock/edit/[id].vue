@@ -1701,7 +1701,7 @@ onBeforeRouteLeave((to, from, next) => {
                     
                     <VTabs 
                         v-model="currentTab" 
-                        grow
+                        :grow="windowWidth < 1024 ? true : false"
                         :show-arrows="false"
                         class="vehicles-tabs"
                     >
@@ -1907,6 +1907,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             type="number"
                                             v-model="purchase_price"
                                             min="0"
+                                            suffix="KR"
                                             :rules="[requiredValidator]"
                                         />
                                     </div>
@@ -2784,6 +2785,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         type="number"
                                         min="0"
                                         label="Beräknad kostnad (kr)*"
+                                        suffix="KR"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
@@ -2881,6 +2883,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     type="number"
                                     min="0"
                                     label="Beräknad kostnad (kr)*"
+                                    suffix="KR"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -2995,6 +2998,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         type="number"
                                         min="0"
                                         label="Beräknad kostnad (kr)*"
+                                        suffix="KR"
                                         :rules="[requiredValidator]"
                                         :readonly="!isEdit"
                                     />
@@ -3171,6 +3175,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     type="number"
                                     min="0"
                                     label="Beräknad kostnad (kr)*"
+                                    suffix="KR"
                                     :rules="[requiredValidator]"
                                     :readonly="!isEdit"
                                 />

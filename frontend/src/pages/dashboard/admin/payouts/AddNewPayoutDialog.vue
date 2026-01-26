@@ -243,8 +243,8 @@ const onSubmit = () => {
                     <VTextField
                       v-model="amount"
                       type="number"
-                      suffix="SEK"
-                      placeholder="Belopp (SEK)"
+                      suffix="KR"
+                      placeholder="Belopp (kr)"
                       :rules="[requiredValidator]"
                       min="1"
                     />

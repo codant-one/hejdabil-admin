@@ -835,6 +835,7 @@ onBeforeRouteLeave((to, from, next) => {
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mätarställning*" />
                       <VTextField 
                         v-model="mileage" 
+                        suffix="Mil"
                         :rules="[requiredValidator]" 
                       />
                     </div>
@@ -844,6 +845,7 @@ onBeforeRouteLeave((to, from, next) => {
                         v-model="price"
                         type="number"
                         min="0"
+                        suffix="KR"
                         :rules="[requiredValidator]"
                       />
                     </div>
@@ -1133,6 +1135,19 @@ onBeforeRouteLeave((to, from, next) => {
     }
   }
 
+  @media (max-width: 776px) {
+      .v-tabs.agreements-tabs {
+          .v-icon {
+              display: none !important;
+          }
+          .v-btn {
+              .v-btn__content {
+                  white-space: break-spaces;
+              }
+          }
+      }
+  }
+  
   .info-grid {
     display: flex;
     flex-wrap: wrap;

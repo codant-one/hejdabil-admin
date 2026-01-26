@@ -985,6 +985,7 @@ onBeforeUnmount(() => {
                       type="number"
                       min="0"
                       label="Egen värdering*"
+                      suffix="KR"
                       :rules="[requiredValidator]"
                       :readonly="!isEdit"
                     />
@@ -1152,6 +1153,7 @@ onBeforeUnmount(() => {
                         type="number"
                         min="0"
                         label="Egen värdering*"
+                        suffix="KR"
                         :rules="[requiredValidator]"
                         :readonly="!isEdit"
                       />
