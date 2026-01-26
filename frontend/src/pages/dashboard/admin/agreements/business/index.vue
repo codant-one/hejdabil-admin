@@ -352,12 +352,10 @@ const searchVehicleByPlate = async () => {
   try {
     const carRes = await carInfoStores.getLicensePlate(reg_num.value)
     
-    await fetchData()
-    
     // Verificar success (también manejar typo 'sucess' de la API)
-    const isSuccess = carRes.success === true || carRes.sucess === true
-
-    if (isSuccess && carRes.result) {
+    const isSuccess = carRes?.success === true || carRes?.sucess === true
+    
+    if (isSuccess && carRes?.result) {
         
         // Actualizar marca (Märke)
         if (carRes.result.brand_id) {
@@ -391,12 +389,12 @@ const searchVehicleByPlate = async () => {
             show: true
         }
     }
-  } catch (error) {
-      advisor.value = {
-          type: 'error',
-          message: 'Fel vid hämtning av fordonsdata',
-          show: true
-      }
+  } catch (error) {    
+    advisor.value = {
+        type: 'error',
+        message: error?.response?.data?.message || error?.message || 'Fel vid hämtning av fordonsdata',
+        show: true
+    }
   } finally {
       setTimeout(() => {
           advisor.value = {
