@@ -58,6 +58,7 @@ class AgreementController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Agreement::with([
+                        'token',
                         'tokens',
                         'offer',
                         'commission.vehicle',
@@ -118,8 +119,8 @@ class AgreementController extends Controller
                 'recipient_email' => null, // Will be set when signature is requested
                 'token_expires_at' => now()->addDays(30),
                 'signature_status' => 'created',
-                'placement_x' => 0,
-                'placement_y' => 0,
+                'placement_x' => Agreement::coordinates($agreement, 'x'),
+                'placement_y' => Agreement::coordinates($agreement, 'y'),
                 'placement_page' => 1, // Default to page 1
                 'signature_alignment' => 'left',
             ]);

@@ -173,9 +173,9 @@ export const useAgreementsStores = defineStore('agreements', {
               .then(response => resolve(response))
               .catch(error => reject(error))
             })
-          },
+        },
 
-          requestStaticSignature(payload) {
+        requestStaticSignature(payload) {
             return new Promise((resolve, reject) => {
               axios.post(`/agreements/${payload.agreementId}/send-static-signature-request`, payload)
                 .then(response => resolve(response))

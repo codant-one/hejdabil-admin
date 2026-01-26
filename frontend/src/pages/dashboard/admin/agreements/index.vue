@@ -527,7 +527,7 @@ const submitStaticSignatureRequest = async () => {
     // 3. Prepara un payload más simple, sin coordenadas
     const payload = {
       agreementId: selectedAgreement.value.id,
-      email: signatureEmail.value,
+      email: signatureEmail.value
     };
 
     // 4. Llama a una NUEVA acción en el store de Pinia
@@ -733,9 +733,10 @@ const getEventConfig = (eventType, event) => {
 }
 
 const openTracker = async (agreement) => {
+  await fetchData()
   trackerAgreement.value = agreement
   isTrackerDialogVisible.value = true
-  
+
   try {
     const response = await agreementsStores.showAgreement(agreement.id)
     trackerAgreement.value = response

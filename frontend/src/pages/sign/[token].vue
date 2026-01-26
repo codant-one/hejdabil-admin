@@ -382,27 +382,18 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
   const isLandscape = contentWidth > contentHeight
 
   if (signaturePlacement.value.isStatic) {
-    // Calcular posición estática basada en el alineamiento
-    // Posición predefinida en la parte inferior del documento
-    const alignment = signaturePlacement.value.alignment || 'left'
-    
-    // Definir coordenadas en porcentajes (igual que en el admin)
-    let x_percent, y_percent
-    
-    if (alignment === 'left') {
-      x_percent = 25  // 25% desde la izquierda
-      y_percent = 88  // 88% desde arriba (12% desde abajo)
-    } else {
-      x_percent = 75  // 75% desde la izquierda
-      y_percent = 85  // 85% desde arriba (15% desde abajo)
-    }
+    // Convertir porcentajes a píxeles locales (inversa del cálculo del admin)
+    // Usando las dimensiones del contenido (sin border)
+    const x_percent = parseFloat(signaturePlacement.value.x)
+    const y_percent = parseFloat(signaturePlacement.value.y)
     
     const localX = (x_percent / 100) * contentWidth
     const localY = (y_percent / 100) * contentHeight
-    
+
+    // Calcular posición absoluta incluyendo el offset del border
     const absoluteX = (pageRect.left - containerRect.left) + localX + borderLeft + (container.scrollLeft || 0) - containerPaddingLeft
     const absoluteY = (pageRect.top - containerRect.top) + localY + borderTop + (container.scrollTop || 0) - containerPaddingTop
-    
+
     // Escalar el botón según el zoom del PDF y la orientación
     // En mobile con PDF horizontal (landscape), usar scale más pequeño
     let baseScale = 1

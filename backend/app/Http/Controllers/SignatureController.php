@@ -170,7 +170,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'Signature request email delivered successfully',
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
@@ -264,8 +264,6 @@ class SignatureController extends Controller
             $token->update([
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
-                'placement_x'   => null,
-                'placement_y'   => null,
                 'placement_page'=> 1,
             ]);
         }
@@ -301,7 +299,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Static signature request email sent to ' . $validated['email'],
+                description: 'E-post skickad till ' . $validated['email'],
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
@@ -326,7 +324,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'Static signature request email delivered successfully',
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]

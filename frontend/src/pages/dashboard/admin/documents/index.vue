@@ -609,6 +609,7 @@ const getEventConfig = (eventType, event) => {
 }
 
 const openTracker = async (doc) => {
+  await fetchData()
   trackerDocument.value = doc
   isTrackerDialogVisible.value = true
   

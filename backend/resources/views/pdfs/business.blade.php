@@ -353,7 +353,7 @@
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <tr>
                                         <td style="height: 70px; vertical-align: bottom;">
-                                            @if(isset($signature_url) && $signature_x === null)
+                                            @if(isset($signature_url))
                                                 <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
                                             @endif
                                         </td>
@@ -385,7 +385,7 @@
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="height: 15px; padding-top: 5px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
+                                        <td style="height: 15px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
                                     </tr>
                                 </table>
                             </td>

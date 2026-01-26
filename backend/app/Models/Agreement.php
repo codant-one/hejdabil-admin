@@ -695,5 +695,19 @@ class Agreement extends Model
         $commission = Commission::find($agreement->commission_id);
         $commission->updateCommission($request, $commission);
     }
+
+    public static function coordinates($agreement, $coordinateType) {
+        switch ($agreement->agreement_type_id) {
+            case 1: // Sales
+            case 2: // Purchase
+            case 3: // Commission
+            case 4: // Offer    
+                return $coordinateType === 'x' ? 11.5354 : 82.5772;
+                break;
+            default:
+                return null;
+        }
+
+    }
     
 }
