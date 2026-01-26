@@ -715,7 +715,7 @@ class Agreement extends Model
             case 2: // Purchase
             case 3: // Commission
             case 4: // Offer    
-                return $coordinateType === 'x' ? 11.5354 : 82.5772;
+                return $coordinateType === 'x' ? 12.9134 : 86.1954;
                 break;
             default:
                 return null;

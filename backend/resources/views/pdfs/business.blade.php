@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Prisförslag - PDF</title>
     <style>
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: 'gelion', 'dm sans', sans-serif !important;
             background-color: #FFFFFF;
@@ -12,6 +16,7 @@
             letter-spacing: 0 !important;
             word-spacing: normal !important;
             line-height: 1;
+            position: relative;
         }
         
         .main-container {
@@ -118,7 +123,14 @@
         }
 
         /* --- PIE DE PÁGINA --- */
-        .footer-section { padding-top: 25px; }
+        .footer-section {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0px;
+            padding: 0;
+            background: #FFFFFF;
+        }
         .notes-text {
             font-size: 10px;
             color: #5D5D5D;
@@ -130,7 +142,7 @@
         }
         .signatures-table {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 12px;
             table-layout: fixed;
             border-collapse: collapse;
         }
@@ -148,7 +160,7 @@
             font-size: 14px;
             font-weight: bold;
             color: #008C91;
-            margin-bottom: 20px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -340,61 +352,58 @@
                     @endif
                 </td>
             </tr>
+        </tbody>
+    </table>
 
-
-            <!-- === FOOTER & SIGNATURE === -->
+    <!-- === FOOTER & SIGNATURE (fixed for DOMPDF) === -->
+    <div class="footer-section">
+        <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
+        <table class="signatures-table">
             <tr>
-                <td colspan="2" class="footer-section">
-                    <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
-                    <table class="signatures-table">
+                <!-- Left: Kund (köpare) -->
+                <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
+                    <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <!-- Left: Kund (köpare) -->
-                            <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <tr>
-                                        <td style="height: 70px; vertical-align: bottom;">
-                                            @if(isset($signature_url))
-                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="signature-box">(Köparens underskrift)</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="height: 15px; font-size: 10px;">&nbsp;</td>
-                                    </tr>
-                                </table>
+                            <td style="height: 70px; vertical-align: bottom;">
+                                @if(isset($signature_url))
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                @endif
                             </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="signature-box">(Köparens underskrift)</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 15px; font-size: 10px;">&nbsp;</td>
+                        </tr>
+                    </table>
+                </td>
 
-                            <!-- Right: Säljföretaget -->
-                            <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <tr>
-                                        <td style="height: 70px; vertical-align: bottom; text-align: right;">
-                                            @if($company->img_signature)
-                                                <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="text-align: right;">
-                                            <div class="signature-box">(Säljföretagets underskrift)</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="height: 15px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
-                                    </tr>
-                                </table>
+                <!-- Right: Säljföretaget -->
+                <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="height: 70px; vertical-align: bottom; text-align: right;">
+                                @if($company->img_signature)
+                                    <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                @endif
                             </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: right;">
+                                <div class="signature-box">(Säljföretagets underskrift)</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 15px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
                         </tr>
                     </table>
                 </td>
             </tr>
-        </tbody>
-    </table>
+        </table>
+    </div>
 
 </body>
 </html>
