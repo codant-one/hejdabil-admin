@@ -951,13 +951,25 @@ const onSubmit = async () => {
 }
 
 const currentData = computed(() => ({
+    // Tab 0 - Inköpsavtal
     reg_num: reg_num.value,
     brand_id: brand_id.value,
     model_id: model_id.value,
+    model: model.value,
     year: year.value,
     color: color.value,
+    chassis: chassis.value,
     mileage: mileage.value,
     purchase_date: purchase_date.value,
+    gearbox_id: gearbox_id.value,
+    fuel_id: fuel_id.value,
+    number_keys: number_keys.value,
+    service_book: service_book.value,
+    summer_tire: summer_tire.value,
+    winter_tire: winter_tire.value,
+    comments: comments.value,
+    // Tab 1 - Kund
+    client_id: client_id.value,
     organization_number: organization_number.value,
     client_type_id: client_type_id.value,
     fullname: fullname.value,
@@ -967,17 +979,27 @@ const currentData = computed(() => ({
     phone: phone.value,
     identification_id: identification_id.value,
     email: email.value,
+    save_client: save_client.value,
+    // Tab 2 - Pris
     price: price.value,
     iva_id: iva_id.value,
     iva_sale_amount: iva_sale_amount.value,
     iva_sale_exclusive: iva_sale_exclusive.value,
-    payment_type: payment_type.value,
-    payment_type_id: payment_type_id.value,
+    registration_fee: registration_fee.value,
+    total_sale: total_sale.value,
+    is_loan: is_loan.value,
     loan_amount: loan_amount.value,
     lessor: lessor.value,
+    settled_by: settled_by.value,
+    payment_type_id: payment_type_id.value,
+    payment_type: payment_type.value,
     bank: bank.value,
     account: account.value,
-    description: description.value
+    description: description.value,
+    advance_id: advance_id.value,
+    // Tab 3 - Villkor
+    terms_other_conditions: terms_other_conditions.value,
+    terms_other_information: terms_other_information.value
 }))
 
 const isDirty = computed(() => {
