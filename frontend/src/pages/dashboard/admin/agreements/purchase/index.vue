@@ -10,7 +10,6 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { useToastsStores } from '@/stores/useToasts'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -32,9 +31,9 @@ const carInfoStores = useCarInfoStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
-const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const err = ref(null);
 
 const isRequestOngoing = ref(false)
 
@@ -653,8 +652,10 @@ const showError = () => {
     advisor.value.show = true;
     advisor.value.type = "error";
     
-    if (err.value && !err.value.success) {
-      advisor.value.message = err.value.message;
+    if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+      advisor.value.message = Object.values(err.value.response.data.errors)
+                .flat()
+                .join("<br>");
     } else {
       advisor.value.message = "Ett serverfel uppstod. Försök igen.";
     }
@@ -940,7 +941,8 @@ const onSubmit = async () => {
                         }
                         isRequestOngoing.value = false
                     })
-                    .catch((err) => {
+                    .catch((error) => {
+                        err.value = error;
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
                         inteSkapatsDialog.value = true;
                         isRequestOngoing.value = false
@@ -1748,14 +1750,14 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor inhämtas från mall" />
                                             <VTextarea
                                                 v-model="terms_other_conditions"
-                                                rows="3"
+                                                rows="4"
                                             />
                                         </div>
                                         <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga upplysningar" />
                                             <VTextarea
                                                 v-model="terms_other_information"
-                                                rows="3"
+                                                rows="4"
                                             />
                                         </div>
                                     </div>
@@ -1839,7 +1841,7 @@ onBeforeRouteLeave((to, from, next) => {
                 class="btn-white close-btn"
                 @click="inteSkapatsDialog = !inteSkapatsDialog"
             >
-                <VIcon size="16" icon="custom-f-cancel" />
+                <VIcon size="16" icon="custom-close" />
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
@@ -1889,6 +1891,7 @@ onBeforeRouteLeave((to, from, next) => {
         </VDialog>
     </section>
 </template>
+
 <style lang="scss" scoped>
     :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
         --v-input-control-height: 0 !important;
@@ -2131,7 +2134,6 @@ onBeforeRouteLeave((to, from, next) => {
         }
     }
 </style>
-
 <style lang="scss">
 
     .border-card-comment {

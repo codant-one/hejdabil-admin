@@ -81,6 +81,7 @@ const save_client = ref(true)
 
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
+const err = ref(null);
 
 // Recargar la página al crear otro acuerdo
 function reloadPage() {
@@ -548,7 +549,8 @@ const onSubmit = async () => {
               }
               isRequestOngoing.value = false
           })
-          .catch((err) => {
+          .catch((error) => {
+              err.value = error;
               initialData.value = JSON.parse(JSON.stringify(currentData.value));
               inteSkapatsDialog.value = true;
               isRequestOngoing.value = false
@@ -563,8 +565,10 @@ const showError = () => {
     advisor.value.show = true;
     advisor.value.type = "error";
     
-    if (err.value && !err.value.success) {
-      advisor.value.message = err.value.message;
+    if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+      advisor.value.message = Object.values(err.value.response.data.errors)
+                .flat()
+                .join("<br>");
     } else {
       advisor.value.message = "Ett serverfel uppstod. Försök igen.";
     }
@@ -1006,7 +1010,7 @@ onBeforeRouteLeave((to, from, next) => {
         class="btn-white close-btn"
         @click="inteSkapatsDialog = !inteSkapatsDialog"
       >
-        <VIcon size="16" icon="custom-f-cancel" />
+        <VIcon size="16" icon="custom-close" />
       </VBtn>
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">

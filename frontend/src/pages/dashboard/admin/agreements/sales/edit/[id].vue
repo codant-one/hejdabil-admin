@@ -1660,7 +1660,7 @@ onBeforeRouteLeave((to, from, next) => {
                 class="btn-white close-btn"
                 @click="inteSkapatsDialog = !inteSkapatsDialog"
             >
-                <VIcon size="16" icon="custom-f-cancel" />
+                <VIcon size="16" icon="custom-close" />
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">

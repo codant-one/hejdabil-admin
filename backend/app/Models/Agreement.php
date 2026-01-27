@@ -713,6 +713,8 @@ class Agreement extends Model
         switch ($agreement->agreement_type_id) {
             case 1: // Sales
             case 2: // Purchase
+                return $coordinateType === 'x' ? 60.3543 : 87.8653;
+                break;
             case 3: // Commission
             case 4: // Offer    
                 return $coordinateType === 'x' ? 12.9134 : 86.1954;
