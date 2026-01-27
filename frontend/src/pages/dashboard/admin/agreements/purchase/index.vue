@@ -488,7 +488,6 @@ const handleChange = (val) => {
 }
 
 const handleChangeTwo = (val) => {
-    console.log(val)
     if(val === 0) {
          payment_type_id.value = null
         payment_type.value = null
@@ -516,139 +515,216 @@ const searchVehicule = async () => {
     }
 }
 
-const onSubmit = () => {
-    refForm.value?.validate().then(({ valid: isValid }) => {
-        if (isValid && currentTab.value === 0 && refForm.value.items.length < 43) {
-            currentTab.value++
-        } else if (!isValid && currentTab.value === 0 && refForm.value.items.length > 16 && refForm.value.items.length < 43) {
-            currentTab.value++
-        } else if (isValid && currentTab.value === 1 && refForm.value.items.length < 43) {
-            currentTab.value++
-        }  else if (!isValid && currentTab.value === 1 && refForm.value.items.length > 26 && refForm.value.items.length < 43) {
-            currentTab.value++
-        } else if (isValid && currentTab.value === 2 && refForm.value.items.length < 46) {
-            currentTab.value++
-        } else if (!isValid && currentTab.value === 2 && refForm.value.items.length > 43 && refForm.value.items.length < 46) {
-            currentTab.value++
-        } else if (currentTab.value === 3) {
+const onSubmit = async () => {
+    // Validación manual ANTES de usar VForm.validate()
+    // Verificar tab 0 (Inköpsavtal)
+    const hasTab0Errors = !reg_num.value || 
+                          !brand_id.value || 
+                          !model_id.value || 
+                          (model_id.value === 0 && !model.value) ||
+                          !year.value ||
+                          !color.value ||
+                          !mileage.value || 
+                          !purchase_date.value
 
-            let formData = new FormData()
+    // Verificar tab 1 (Kund)
+    const hasTab1Errors = !organization_number.value || 
+                          (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                          !client_type_id.value || 
+                          !fullname.value || 
+                          !address.value || 
+                          !postal_code.value || 
+                          !street.value || 
+                          !phone.value || 
+                          (phone.value && phoneValidator(phone.value) !== true) ||
+                          !identification_id.value || 
+                          !email.value || 
+                          (email.value && emailValidator(email.value) !== true)
 
-            //vehicle
-            formData.append('reg_num', reg_num.value)
-            formData.append('brand_id', brand_id.value)
-            formData.append('model_id', model_id.value)
-            formData.append('model', model.value)
-            formData.append('year', year.value)
-            formData.append('color', color.value)
-            formData.append('chassis', chassis.value)
-            formData.append('mileage', mileage.value)
-            formData.append('purchase_date', purchase_date.value)
-            formData.append('vehicle_id', vehicle_id.value)
-            formData.append('purchase_price', price.value)
-            formData.append('iva_purchase_id', iva_id.value)
-            formData.append('gearbox_id', gearbox_id.value)
-            formData.append('number_keys', number_keys.value)
-            formData.append('service_book', service_book.value)
-            formData.append('summer_tire', summer_tire.value)
-            formData.append('winter_tire', winter_tire.value)
-            formData.append('fuel_id', fuel_id.value)
-            formData.append('comments', comments.value)
+    // Verificar tab 2 (Pris)
+    const hasTab2Errors = !price.value || 
+                          !iva_id.value ||
+                          (payment_type_id.value === 0 && !payment_type.value) ||
+                          (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
+                          (settled_by.value === 1 && (!payment_type_id.value || !bank.value || !account.value || !description.value))
 
-            //vehicle payment
-            formData.append('is_loan', is_loan.value)
-            formData.append('loan_amount', loan_amount.value === 0 ? null : loan_amount.value)
-            formData.append('lessor', lessor.value)
-            formData.append('remaining_amount', remaining_amount.value)
-            formData.append('settled_by', settled_by.value)
-            formData.append('bank', bank.value)
-            formData.append('account', account.value)
-            formData.append('description', description.value)
-
-            //client
-            formData.append('type', 2)
-            formData.append('save_client', save_client.value)
-            formData.append('client_type_id', client_type_id.value)
-            formData.append('identification_id', identification_id.value)
-            formData.append('client_id', client_id.value)
-            formData.append('fullname', fullname.value)
-            formData.append('email', email.value)
-            formData.append('organization_number', organization_number.value)
-            formData.append('address', address.value)
-            formData.append('street', street.value)
-            formData.append('postal_code', postal_code.value)
-            formData.append('phone', phone.value)
-
-            //agreement
-            formData.append('agreement_type_id', 2)
-            formData.append('currency_id', currency_id.value)
-            formData.append('agreement_id', agreement_id.value)
-            formData.append('price', price.value)
-            formData.append('residual_debt', 0)
-            formData.append('guaranty', 0)
-            formData.append('insurance_company', 0)
-            formData.append('iva_id', iva_id.value)
-            formData.append('iva_sale_amount', iva_sale_amount.value)
-            formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
-            formData.append('registration_fee', registration_fee.value)
-            formData.append('total_sale', total_sale.value)
-            formData.append('payment_type', payment_type.value)
-            formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
-            formData.append('advance_id', advance_id.value)
-
-            formData.append('terms_other_conditions', terms_other_conditions.value)
-            formData.append('terms_other_information', terms_other_information.value)
-            
-
-            isRequestOngoing.value = true
-
-            agreementsStores.addAgreement(formData)
-                .then((res) => {
-                    if (res.data.success) {
-                        
-                        // let data = {
-                        //     message: 'Kontrakt framgångsrikt skapat',
-                        //     error: false
-                        // }
-
-                        // router.push({ name : 'dashboard-admin-agreements'})
-                        // emitter.emit('toast', data)
-
-                        allowNavigation.value = true;
-
-                        // Save current state so the dirty-check stops blocking navigation
-                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                        skapatsDialog.value = true;
-                    } else {
-                    
-                        // Save current state so the dirty-check stops blocking navigation
-                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
-    
-                        inteSkapatsDialog.value = true;
-                    }
-                    isRequestOngoing.value = false
-                })
-                .catch((err) => {
-                    
-                    // let data = {
-                    //     message: err.message,
-                    //     error: true
-                    // }
-
-                    // router.push({ name : 'dashboard-admin-agreements'})
-                    // emitter.emit('toast', data)
-
-                    // Save current state so the dirty-check stops blocking navigation
-                    initialData.value = JSON.parse(JSON.stringify(currentData.value));
-    
-                    inteSkapatsDialog.value = true;
-    
-                    isRequestOngoing.value = false
-                })
+    // Si hay errores, ir al primer tab con error
+    if (hasTab0Errors && currentTab.value !== 0) {
+        currentTab.value = 0
+        
+        // Esperar a que el tab se monte y luego validar
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Inköpsavtal',
+            show: true
         }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+    
+    if (hasTab1Errors && currentTab.value !== 1) {
+        currentTab.value = 1
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
 
-    })
+    if (hasTab2Errors && currentTab.value !== 2) {
+        currentTab.value = 2
+        
+        await nextTick()
+        refForm.value?.validate()
+        
+        advisor.value = {
+            type: 'warning',
+            message: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
+            show: true
+        }
+        
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+        
+        return
+    }
+
+    // Lógica de navegación entre tabs
+    if (currentTab.value === 0 && !hasTab0Errors) {
+        currentTab.value++
+        return
+    } else if (currentTab.value === 1 && !hasTab1Errors) {
+        currentTab.value++
+        return
+    } else if (currentTab.value === 2 && !hasTab2Errors) {
+        currentTab.value++
+        return
+    }
+
+    // Si estamos en el último tab (3), proceder con el submit final
+    if (currentTab.value === 3) {
+        refForm.value?.validate().then(({ valid: isValid }) => {
+            if (isValid) {
+                let formData = new FormData()
+
+                //vehicle
+                formData.append('reg_num', reg_num.value)
+                formData.append('brand_id', brand_id.value)
+                formData.append('model_id', model_id.value)
+                formData.append('model', model.value)
+                formData.append('year', year.value)
+                formData.append('color', color.value)
+                formData.append('chassis', chassis.value)
+                formData.append('mileage', mileage.value)
+                formData.append('purchase_date', purchase_date.value)
+                formData.append('vehicle_id', vehicle_id.value)
+                formData.append('purchase_price', price.value)
+                formData.append('iva_purchase_id', iva_id.value)
+                formData.append('gearbox_id', gearbox_id.value)
+                formData.append('number_keys', number_keys.value)
+                formData.append('service_book', service_book.value)
+                formData.append('summer_tire', summer_tire.value)
+                formData.append('winter_tire', winter_tire.value)
+                formData.append('fuel_id', fuel_id.value)
+                formData.append('comments', comments.value)
+
+                //vehicle payment
+                formData.append('is_loan', is_loan.value)
+                formData.append('loan_amount', loan_amount.value === 0 ? null : loan_amount.value)
+                formData.append('lessor', lessor.value)
+                formData.append('remaining_amount', remaining_amount.value)
+                formData.append('settled_by', settled_by.value)
+                formData.append('bank', bank.value)
+                formData.append('account', account.value)
+                formData.append('description', description.value)
+
+                //client
+                formData.append('type', 2)
+                formData.append('save_client', save_client.value)
+                formData.append('client_type_id', client_type_id.value)
+                formData.append('identification_id', identification_id.value)
+                formData.append('client_id', client_id.value)
+                formData.append('fullname', fullname.value)
+                formData.append('email', email.value)
+                formData.append('organization_number', organization_number.value)
+                formData.append('address', address.value)
+                formData.append('street', street.value)
+                formData.append('postal_code', postal_code.value)
+                formData.append('phone', phone.value)
+
+                //agreement
+                formData.append('agreement_type_id', 2)
+                formData.append('currency_id', currency_id.value)
+                formData.append('agreement_id', agreement_id.value)
+                formData.append('price', price.value)
+                formData.append('residual_debt', 0)
+                formData.append('guaranty', 0)
+                formData.append('insurance_company', 0)
+                formData.append('iva_id', iva_id.value)
+                formData.append('iva_sale_amount', iva_sale_amount.value)
+                formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+                formData.append('registration_fee', registration_fee.value)
+                formData.append('total_sale', total_sale.value)
+                formData.append('payment_type', payment_type.value)
+                formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
+                formData.append('advance_id', advance_id.value)
+
+                formData.append('terms_other_conditions', terms_other_conditions.value)
+                formData.append('terms_other_information', terms_other_information.value)
+                
+
+                isRequestOngoing.value = true
+
+                agreementsStores.addAgreement(formData)
+                    .then((res) => {
+                        if (res.data.success) {
+                            allowNavigation.value = true;
+                            initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                            skapatsDialog.value = true;
+                        } else {
+                            initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                            inteSkapatsDialog.value = true;
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((err) => {
+                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                        inteSkapatsDialog.value = true;
+                        isRequestOngoing.value = false
+                    })
+            }
+        })
+    }
 }
 
 
