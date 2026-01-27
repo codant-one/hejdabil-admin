@@ -26,7 +26,6 @@ const advisor = ref({
   show: false
 })
 
-
 const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
 const initialData = ref(null)
@@ -2228,7 +2227,7 @@ onBeforeRouteLeave((to, from, next) => {
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                         >
                             <VIcon v-if="currentTab === 4" icon="custom-save"  size="24" />
-                            {{ (currentTab === 4) ? 'Skapa' : 'Nästa' }}
+                            {{ (currentTab === 4) ? 'Uppdatering' : 'Nästa' }}
                         </VBtn>
                     </div>
                 </VCardText>

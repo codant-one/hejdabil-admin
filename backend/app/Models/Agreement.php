@@ -718,6 +718,8 @@ class Agreement extends Model
                 return $coordinateType === 'x' ? 60.3543 : 87.8653;
                 break;
             case 3: // Commission
+                return $coordinateType === 'x' ? 16.9134 : 88.5772;
+                break;
             case 4: // Offer    
                 return $coordinateType === 'x' ? 12.9134 : 86.1954;
                 break;

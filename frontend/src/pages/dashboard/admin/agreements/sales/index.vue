@@ -1221,7 +1221,7 @@ onBeforeRouteLeave((to, from, next) => {
     <section class="page-section agreements-page" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
-         <VSnackbar
+        <VSnackbar
             v-model="advisor.show"
             transition="scroll-y-reverse-transition"
             :location="snackbarLocation"

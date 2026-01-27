@@ -10,12 +10,20 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { useToastsStores } from '@/stores/useToasts'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+const sectionEl = ref(null);
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
@@ -30,9 +38,9 @@ const carInfoStores = useCarInfoStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
-const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const err = ref(null);
 
 const isRequestOngoing = ref(false)
 
@@ -50,6 +58,8 @@ const commission_id = ref(null)
 const currency_id = ref(1)
 
 //const tab 1
+const clients = ref([])
+const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
@@ -61,6 +71,8 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
+const save_client = ref(true)
+const disabled_client = ref(false)
 
 //const tab 2
 const brands = ref([])
@@ -174,12 +186,20 @@ async function fetchData() {
         company.value.email = user_data.email
         company.value.name = user_data.name
         company.value.last_name = user_data.last_name
+
+        bank_name.value = user_data.user_detail.bank
+        account_number.value = user_data.user_detail.account_number
+
         commission_id.value = user_data.supplier.user.commissions.length + 1
     } else if(role.value === 'User') {
         company.value = user_data.supplier.boss.user.user_detail
         company.value.email = user_data.supplier.boss.user.email
         company.value.name = user_data.supplier.boss.user.name
         company.value.last_name = user_data.supplier.boss.user.last_name
+
+        bank_name.value = user_data.supplier.boss.user.user_detail.bank
+        account_number.value = user_data.supplier.boss.user.user_detail.account_number
+
         commission_id.value = user_data.supplier.boss.user.commissions.length + 1
     } else {
         await configsStores.getFeature('company')
@@ -187,6 +207,9 @@ async function fetchData() {
 
         company.value = configsStores.getFeaturedConfig('company')
         company.value.logo = configsStores.getFeaturedConfig('logo').logo
+
+        bank_name.value = company.value.bank
+        account_number.value = company.value.account_number
 
         commission_id.value = agreementsStores.commission_id + 1
     }
@@ -197,6 +220,7 @@ async function fetchData() {
     gearboxes.value = agreementsStores.gearboxes
     fuels.value = agreementsStores.fuels
     currencies.value = agreementsStores.currencies
+    clients.value = agreementsStores.clients
     client_types.value = agreementsStores.client_types
     identifications.value = agreementsStores.identifications
     commission_types.value = agreementsStores.commission_types
@@ -250,6 +274,36 @@ const formatOrgNumber = () => {
     organization_number.value = numbers
 }
 
+const clearClient = () => {
+    fullname.value = null
+    email.value = null
+    organization_number.value = null
+    address.value = null
+    street.value = null
+    postal_code.value = null
+    phone.value = null
+
+    save_client.value = true
+    disabled_client.value = false
+}
+
+const selectClient = client => {
+    if (client) {
+        let _client = clients.value.find(item => item.id === client)
+    
+        fullname.value = _client.fullname
+        email.value = _client.email
+        organization_number.value = _client.organization_number
+        address.value = _client.address
+        street.value = _client.street
+        postal_code.value = _client.postal_code
+        phone.value = _client.phone
+
+        save_client.value = false
+        disabled_client.value = true
+    }
+}
+
 /**
  * Determines if the given number belongs to a company (starts with 5) or a person.
  * Swedish organization numbers start with 5, personal identity numbers do not.
@@ -276,8 +330,6 @@ const isEntitySearchLoading = computed(() => {
 const searchEntity = async () => {
     if (!organization_number.value) return
 
-    const cleanNumber = organization_number.value.replace(/[\s\-]/g, '')
-    
     if (isCompanyNumber(organization_number.value)) {
         await searchCompany()
     } else {
@@ -285,262 +337,630 @@ const searchEntity = async () => {
     }
 }
 
-/**
- * Search for company information in Bolagsverket API.
- */
 const searchCompany = async () => {
-    try {
-        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
-        
-        if (response) {
-            // Set Client Type to Företag
-            const foretagType = client_types.value.find(t => t.name === 'Företag')
-            if (foretagType) {
-                client_type_id.value = foretagType.id
-            }
+  try {
+    isRequestOngoing.value = true
 
-            // Set Name
-            if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
-                fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
-            } else {
-                fullname.value = ''
-            }
+    const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+    
+    isRequestOngoing.value = false
 
-            // Set Postal Code
-            if (response.postadressOrganisation?.postadress?.postnummer) {
-                postal_code.value = response.postadressOrganisation.postadress.postnummer
-            } else {
-                postal_code.value = ''
-            }
-
-            // Set Address
-            if (response.postadressOrganisation?.postadress?.utdelningsadress) {
-                address.value = response.postadressOrganisation.postadress.utdelningsadress
-            } else {
-                address.value = ''
-            }
-
-            // Set Street/City (Postort)
-            if (response.postadressOrganisation?.postadress?.postort) {
-                street.value = response.postadressOrganisation.postadress.postort
-            } else {
-                street.value = ''
-            }
+    if (response) {
+          // Set Client Type to Företag
+        const foretagType = client_types.value.find(t => t.name === 'Företag')
+        if (foretagType) {
+            client_type_id.value = foretagType.id
         }
 
-    } catch (error) {
-        toastsStores.addToast({
-            message: 'Ingen företag hittades med det registreringsnumret',
-            type: 'error'
-        })
+        // Set Name
+        if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+            fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+        } else {
+            fullname.value = ''
+        }
+
+        // Set Postal Code
+        if (response.postadressOrganisation?.postadress?.postnummer) {
+            postal_code.value = response.postadressOrganisation.postadress.postnummer
+        } else {
+            postal_code.value = ''
+        }
+
+        // Set Address
+        if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+            address.value = response.postadressOrganisation.postadress.utdelningsadress
+        } else {
+            address.value = ''
+        }
+
+        // Set Street/City (Postort)
+        if (response.postadressOrganisation?.postadress?.postort) {
+            street.value = response.postadressOrganisation.postadress.postort
+        } else {
+            street.value = ''
+        }
     }
+
+  } catch (error) {
+      isRequestOngoing.value = false
+      advisor.value = {
+          type: 'error',
+          message: 'Ingen företag hittades med det registreringsnumret',
+          show: true
+      }
+  }
 }
 
 /**
  * Search for person information in SPAR (Statens Personadressregister) API.
  */
 const searchPerson = async () => {
-    try {
-        const response = await personInfoStores.getPersonInfo(organization_number.value)
-        
-        if (response?.success && response?.data) {
-            const personData = response.data
+  try {
+    isRequestOngoing.value = true
 
-            // Set Client Type to Privat
-            const privatType = client_types.value.find(t => t.name === 'Privat')
-            if (privatType) {
-                client_type_id.value = privatType.id
-            }
+    const response = await personInfoStores.getPersonInfo(organization_number.value)
 
-            // Set Name
-            if (personData.fullname) {
-                fullname.value = personData.fullname
-            } else {
-                fullname.value = ''
-            }
+    isRequestOngoing.value = false
 
-            // Set Postal Code
-            if (personData.postnummer) {
-                postal_code.value = personData.postnummer
-            } else {
-                postal_code.value = ''
-            }
+    if (response?.success && response?.data) {
+        const personData = response.data
 
-            // Set Address
-            if (personData.adress) {
-                address.value = personData.adress
-            } else {
-                address.value = ''
-            }
-
-            // Set Street/City (Postort)
-            if (personData.postort) {
-                street.value = personData.postort
-            } else {
-                street.value = ''
-            }
+        // Set Client Type to Privat
+        const privatType = client_types.value.find(t => t.name === 'Privat')
+        if (privatType) {
+            client_type_id.value = privatType.id
         }
 
-    } catch (error) {
-        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
-        toastsStores.addToast({
-            message: errorMessage,
-            type: 'error'
+        // Set Name
+        fullname.value = personData.fullname || ''
+
+        // Set Postal Code
+        postal_code.value = personData.postnummer || ''
+
+        // Set Address
+        address.value = personData.adress || ''
+
+        // Set Street/City (Postort)
+        street.value = personData.postort || ''
+    }
+
+  } catch (error) {
+    isRequestOngoing.value = false
+
+    const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+    
+    advisor.value = {
+        type: 'error',
+        message: errorMessage,
+        show: true
+    }
+  }
+}
+
+/**
+ * Buscar información del vehículo por matrícula usando la API car.info
+ * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
+ */
+const searchVehicleByPlate = async () => {
+  if (!reg_num.value) {
+    advisor.value = {
+        type: 'warning',
+        message: 'Ange ett registreringsnummer',
+        show: true
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+    
+    // Verificar success (también manejar typo 'sucess' de la API)
+    const isSuccess = carRes?.success === true || carRes?.sucess === true
+    
+    if (isSuccess && carRes?.result) {
+        // Actualizar año del modelo
+        if (carRes.result.model_year) {
+            year.value = carRes.result.model_year
+        }                    
+
+        if (carRes.result.color) {
+            color.value = carRes.result.color
+        }
+
+        if (carRes.result.chassis_number) {
+            chassis.value = carRes.result.chassis_number
+        }
+
+        // Actualizar marca (Märke)
+        if (carRes.result.brand_id) {
+            brand_id.value = carRes.result.brand_id
+            selectBrand(brand_id.value)
+        }
+        
+        // Actualizar modelo (Modell)
+        if (carRes.result.model_id) {
+            model_id.value = carRes.result.model_id
+        } else if (carRes.result.model_name) {
+            // Si no se encontró el modelo en la DB, usar el campo de texto libre
+            model_id.value = 0
+            model.value = carRes.result.model_name
+        }
+        
+        if (carRes.result.mileage) {
+            mileage.value = carRes.result.mileage
+        }
+
+        // Actualizar tipo de combustible (Drivmedel)
+        if (carRes.result.fuel_id) {
+            fuel_id.value = carRes.result.fuel_id
+        }
+
+        // Actualizar caja de cambios (Växellåda)
+        if (carRes.result.gearbox_id) {
+            gearbox_id.value = carRes.result.gearbox_id
+        }
+
+        advisor.value = {
+            type: 'success',
+            message: 'Fordonsdata hämtades framgångsrikt',
+            show: true
+        }   
+
+    } else {
+        advisor.value = {
+            type: 'warning',
+            message: 'Ingen information hittades för detta registreringsnummer',
+            show: true
+        }
+    }
+  } catch (error) {    
+    advisor.value = {
+        type: 'error',
+        message: error?.response?.data?.message || error?.message || 'Fel vid hämtning av fordonsdata',
+        show: true
+    }
+  } finally {
+      setTimeout(() => {
+          advisor.value = {
+              type: '',
+              message: '',
+              show: false
+          }
+      }, 3000)
+
+      isRequestOngoing.value = false
+  }
+}
+
+const goToAgreements = () => {
+
+  let data = {
+      message: 'Förmedlingsavtal framgångsrikt skapat',
+      error: false
+  }
+
+  router.push({ name : 'dashboard-admin-agreements'})
+  emitter.emit('toast', data)  
+
+};
+
+const showError = () => {
+    inteSkapatsDialog.value = false;
+
+    advisor.value.show = true;
+    advisor.value.type = "error";
+    
+    if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+      advisor.value.message = Object.values(err.value.response.data.errors)
+                .flat()
+                .join("<br>");
+    } else {
+      advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+    }
+
+    setTimeout(() => {
+      advisor.value.show = false;
+      advisor.value.type = "";
+      advisor.value.message = "";
+    }, 3000);
+
+};
+
+const onSubmit = async () => {
+    // Validación manual ANTES de usar VForm.validate()
+    // Verificar tab 0 (Kund)
+    const hasTab0Errors = !organization_number.value || 
+                          (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                          !client_type_id.value || 
+                          !fullname.value || 
+                          !address.value || 
+                          !postal_code.value || 
+                          !street.value || 
+                          !phone.value || 
+                          (phone.value && phoneValidator(phone.value) !== true) ||
+                          !identification_id.value || 
+                          !email.value || 
+                          (email.value && emailValidator(email.value) !== true)
+
+    // Verificar tab 1 (Fordonsinformation)
+    const hasTab1Errors = !reg_num.value || 
+                          !brand_id.value || 
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
+                          !year.value ||
+                          !chassis.value ||
+                          !mileage.value || 
+                          !fuel_id.value ||
+                          !gearbox_id.value ||
+                          !number_keys.value
+
+    // Verificar tab 2 (Förmedlingsavgift)
+    const hasTab2Errors = !commission_type_id.value || 
+                          !commission_fee.value ||
+                          !selling_price.value
+
+    // Verificar tab 3 (Betalningsinformation)
+    const hasTab3Errors = !payment_days.value
+
+    // Verificar tab 4 (Förmedlingsdatum)
+    const hasTab4Errors = !start_date.value || 
+                          !end_date.value
+
+    // Tab 5 (Tillägg) no tiene campos obligatorios
+
+    // Lógica de navegación entre tabs (0, 1, 2, 3, 4)
+    if (currentTab.value === 0) {
+        if (hasTab0Errors) {
+            // Validar el formulario para mostrar errores visuales
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
+    }
+    
+    if (currentTab.value === 1) {
+        if (hasTab1Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
+    }
+
+    if (currentTab.value === 2) {
+        if (hasTab2Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Förmedlingsavgift',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
+    }
+
+    if (currentTab.value === 3) {
+        if (hasTab3Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Betalningsinformation',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
+    }
+
+    if (currentTab.value === 4) {
+        if (hasTab4Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Förmedlingsdatum',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
+    }
+
+    // Si estamos en el último tab (5), verificar TODOS los tabs antes de enviar
+    if (currentTab.value === 5) {
+        // Si hay errores en tabs anteriores, regresar al primero con error
+        if (hasTab0Errors) {
+            currentTab.value = 0
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+        
+        if (hasTab1Errors) {
+            currentTab.value = 1
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        if (hasTab2Errors) {
+            currentTab.value = 2
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Förmedlingsavgift',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        if (hasTab3Errors) {
+            currentTab.value = 3
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Betalningsinformation',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        if (hasTab4Errors) {
+            currentTab.value = 4
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Förmedlingsdatum',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        // Si no hay errores en ningún tab, proceder con el submit final
+        refForm.value?.validate().then(({ valid: isValid }) => {
+            if (isValid) {
+                let formData = new FormData()
+
+                //client
+                formData.append('save_client', save_client.value)
+                formData.append('client_type_id', client_type_id.value)
+                formData.append('client_id', client_id.value)
+                formData.append('identification_id', identification_id.value)
+                formData.append('fullname', fullname.value)
+                formData.append('email', email.value)
+                formData.append('organization_number', organization_number.value)
+                formData.append('address', address.value)
+                formData.append('street', street.value)
+                formData.append('postal_code', postal_code.value)
+                formData.append('phone', phone.value)
+
+                //vehicle
+                formData.append('reg_num', reg_num.value)
+                formData.append('brand_id', brand_id.value)
+                formData.append('model_id', model_id.value)
+                formData.append('model', model.value)
+                formData.append('year', year.value)
+                formData.append('color', color.value)
+                formData.append('chassis', chassis.value)
+                formData.append('mileage', mileage.value)
+                formData.append('gearbox_id', gearbox_id.value)
+                formData.append('fuel_id', fuel_id.value)
+                formData.append('number_keys', number_keys.value)
+                formData.append('service_book', service_book.value)
+                formData.append('summer_tire', summer_tire.value)
+                formData.append('winter_tire', winter_tire.value)
+                formData.append('comments', comments.value)
+
+                // commission
+                formData.append('commission_type_id', commission_type_id.value)
+                formData.append('commissionId', commission_id.value)
+                formData.append('commission_fee', commission_fee.value)
+                formData.append('start_date', start_date.value)
+                formData.append('end_date', end_date.value)
+                formData.append('outstanding_debt', outstanding_debt.value)
+                formData.append('remaining_debt', remaining_debt.value)
+                formData.append('residual_debt', residual_debt.value)
+                formData.append('paid_bank', paid_bank.value)
+                formData.append('selling_price', selling_price.value)
+                formData.append('payment_days', payment_days.value)
+                formData.append('payment_description', payment_description.value)
+
+                //agreement
+                formData.append('agreement_type_id', 3)
+                formData.append('currency_id', currency_id.value)
+                formData.append('price', selling_price.value)
+                formData.append('residual_debt', 0)
+                formData.append('guaranty', 0)
+                formData.append('insurance_company', 0)
+                formData.append('terms_other_conditions', terms_other_conditions.value)
+                formData.append('terms_other_information', terms_other_information.value)
+
+                isRequestOngoing.value = true
+
+                agreementsStores.addAgreement(formData)
+                    .then((res) => {
+                        if (res.data.success) {
+                            allowNavigation.value = true;
+                            initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                            skapatsDialog.value = true;
+                        } else {
+                            initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                            inteSkapatsDialog.value = true;
+                        }
+                        isRequestOngoing.value = false
+                    })
+                    .catch((error) => {
+                        err.value = error;
+                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
+                        inteSkapatsDialog.value = true;
+                        isRequestOngoing.value = false
+                    })
+            }
         })
     }
 }
 
-const searchVehicule = async () => {
-
-    isRequestOngoing.value = true
-
-    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
-
-    isRequestOngoing.value = false
-
-    if (carRes.success) {
-        chassis.value = carRes.result.chassis
-        year.value = carRes.result.model_year
-    }
-}
-
-const onSubmit = () => {
-    const tab = currentTab.value
-    const itemsLength = refForm.value.items.length
-
-    refForm.value?.validate().then(({ valid: isValid }) => {
-        if (tab === 0) {
-            if (isValid || (!isValid && itemsLength > 16 && itemsLength < 60)) {
-                currentTab.value++
-            }
-        } else if (tab === 1) {
-            if (isValid || (!isValid && itemsLength > 24 && itemsLength < 60)) {
-                currentTab.value++
-            }
-        } else if (tab === 2) {
-            if (isValid || (!isValid && itemsLength > 28 && itemsLength < 60)) {
-                currentTab.value++
-            }
-        } else if (tab === 3) {
-            if (isValid || (!isValid && itemsLength > 33 && itemsLength < 60)) {
-                currentTab.value++
-            }
-        } else if (tab === 4) {
-            if (isValid || (!isValid && itemsLength > 37 && itemsLength < 60)) {
-                currentTab.value++
-            }
-        } else if (tab === 5) {
-            let formData = new FormData()
-
-            //client
-            formData.append('client_type_id', client_type_id.value)
-            formData.append('identification_id', identification_id.value)
-            formData.append('fullname', fullname.value)
-            formData.append('email', email.value)
-            formData.append('organization_number', organization_number.value)
-            formData.append('address', address.value)
-            formData.append('street', street.value)
-            formData.append('postal_code', postal_code.value)
-            formData.append('phone', phone.value)
-
-            //vehicle
-            formData.append('reg_num', reg_num.value)
-            formData.append('brand_id', brand_id.value)
-            formData.append('model_id', model_id.value)
-            formData.append('model', model.value)
-            formData.append('year', year.value)
-            formData.append('color', color.value)
-            formData.append('chassis', chassis.value)
-            formData.append('mileage', mileage.value)
-            formData.append('gearbox_id', gearbox_id.value)
-            formData.append('fuel_id', fuel_id.value)
-            formData.append('number_keys', number_keys.value)
-            formData.append('service_book', service_book.value)
-            formData.append('summer_tire', summer_tire.value)
-            formData.append('winter_tire', winter_tire.value)
-            formData.append('comments', comments.value)
-
-            // commission
-            formData.append('commission_type_id', commission_type_id.value)
-            formData.append('commissionId', commission_id.value)
-            formData.append('commission_fee', commission_fee.value)
-            formData.append('start_date', start_date.value)
-            formData.append('end_date', end_date.value)
-            formData.append('outstanding_debt', outstanding_debt.value)
-            formData.append('remaining_debt', remaining_debt.value)
-            formData.append('residual_debt', residual_debt.value)
-            formData.append('paid_bank', paid_bank.value)
-            formData.append('selling_price', selling_price.value)
-            formData.append('payment_days', payment_days.value)
-            formData.append('payment_description', payment_description.value)
-
-            //agreement
-            formData.append('agreement_type_id', 3)
-            formData.append('currency_id', currency_id.value)
-            formData.append('price', selling_price.value)
-            formData.append('residual_debt', 0)
-            formData.append('guaranty', 0)
-            formData.append('insurance_company', 0)
-            formData.append('terms_other_conditions', terms_other_conditions.value)
-            formData.append('terms_other_information', terms_other_information.value)
-
-            isRequestOngoing.value = true
-
-            agreementsStores.addAgreement(formData)
-                .then((res) => {
-                    if (res.data.success) {
-                        
-                        // let data = {
-                        //     message: 'Kontrakt framgångsrikt skapat',
-                        //     error: false
-                        // }
-
-                        // router.push({ name : 'dashboard-admin-agreements'})
-                        // emitter.emit('toast', data)
-
-                        allowNavigation.value = true;
-
-                        // Save current state so the dirty-check stops blocking navigation
-                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                        skapatsDialog.value = true;
-                    } else {
-                                            
-                        // Save current state so the dirty-check stops blocking navigation
-                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                        inteSkapatsDialog.value = true;
-                    }
-                    isRequestOngoing.value = false
-                })
-                .catch((err) => {
-                    
-                    // let data = {
-                    //     message: err.message,
-                    //     error: true
-                    // }
-
-                    // router.push({ name : 'dashboard-admin-agreements'})
-                    // emitter.emit('toast', data)
-
-                    // Save current state so the dirty-check stops blocking navigation
-                    initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                    inteSkapatsDialog.value = true;
-
-                    isRequestOngoing.value = false
-                })
-        }
-    })
-}
-
-/*
-    Campos `v-model` dentro de los tabs (class="vehicles-tabs")
-
-    Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `vehicles-tabs`.
-*/
 const currentData = computed(() => ({
     // Tab 1: Cliente
+    client_id: client_id.value,
     organization_number: organization_number.value,
     client_type_id: client_type_id.value,
     fullname: fullname.value,
@@ -550,6 +970,8 @@ const currentData = computed(() => ({
     phone: phone.value,
     identification_id: identification_id.value,
     email: email.value,
+    save_client: save_client.value,
+    disabled_client: disabled_client.value,
 
     // Tab 2: Vehículo
     reg_num: reg_num.value,
@@ -610,6 +1032,30 @@ const confirmLeave = () => {
     }
 };
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Check for URL hash to activate specific tab
+  const hash = window.location.hash;
+  if (hash === '#tab-tasks') {
+    currentTab.value = 'tab-5';
+  }
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
 // Intercept all navigation attempts
 onBeforeRouteLeave((to, from, next) => {
   if (allowNavigation.value || !isDirty.value) {
@@ -624,9 +1070,19 @@ onBeforeRouteLeave((to, from, next) => {
 </script>
 
 <template>
-    <section>
+    <section class="page-section agreements-page" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
+        <VSnackbar
+            v-model="advisor.show"
+            transition="scroll-y-reverse-transition"
+            :location="snackbarLocation"
+            :color="advisor.type"
+            class="snackbar-alert snackbar-dashboard"
+        >
+            {{ advisor.message }}
+        </VSnackbar>
+        
         <VForm
             ref="refForm"
             class="card-form"
@@ -641,8 +1097,22 @@ onBeforeRouteLeave((to, from, next) => {
                     $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
                 ]"
             >
-                <VCardText class="p-0">
-                    <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
+                  <VCardText class="p-0">
+                    <div 
+                        class="d-flex  gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between"
+                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-wrap'"
+                    >
+                
+                        <VBtn
+                            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
+                            class="btn-light"
+                            style="width: 120px;"
+                            :to="{ name: 'dashboard-admin-agreements' }"
+                        >
+                            <VIcon icon="custom-return" size="24" />
+                            Gå ut
+                        </VBtn>
+                        
                         <div class="d-flex flex-column gap-4">
                             <span class="title-page">
                                 Förmedlingsavtal
@@ -652,8 +1122,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
                         <div 
-                            class="d-flex gap-4"
-                            :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
+                            :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-4 align-center'"
                         >
                             <VBtn
                                 class="btn-light w-auto" 
@@ -670,10 +1139,9 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VTabs 
                     v-model="currentTab" 
-                    :grow="windowWidth < 1024 ? true : false"                
+                    :grow="windowWidth < 1024 ? true : false"             
                     :show-arrows="false"
-                    class="vehicles-tabs" 
-                    disabled
+                    class="agreements-tabs" 
                 >
                     <VTab>
                         <VIcon size="24" icon="custom-clients" />
@@ -704,8 +1172,8 @@ onBeforeRouteLeave((to, from, next) => {
                 <VCardText class="px-0 px-md-2">
                     <VWindow v-model="currentTab">
                         <!--Kund-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Fordonsägare
@@ -714,15 +1182,18 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="d-flex flex-wrap"
                                         :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                                    >                                        
+                                    >
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Avtalsnummer" />
-                                            <VTextField
-                                                v-model="commission_id"
-                                                disabled
-                                                prefix="#"
-                                                density="compact"
-                                            />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
+                                            <AppAutocomplete
+                                                v-model="client_id"
+                                                :items="clients"
+                                                :item-title="item => item.fullname"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                @click:clear="clearClient"
+                                                @update:modelValue="selectClient"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
@@ -734,7 +1205,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                     maxlength="13"
                                                     @input="formatOrgNumber()"
                                                 />
-
                                                 <VBtn
                                                     class="btn-light w-auto px-4"
                                                     @click="searchEntity"
@@ -746,7 +1216,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fordonsägaren är*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
                                             <AppAutocomplete
                                                 v-model="client_type_id"
                                                 :items="client_types"
@@ -777,17 +1247,17 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" /> 
                                             <VTextField
                                                 v-model="street"
                                                 :rules="[requiredValidator]"
                                             /> 
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                                             <VTextField
                                                 v-model="phone"
-                                                :rules="[phoneValidator]"
+                                                :rules="[requiredValidator, phoneValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -804,83 +1274,87 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
                                                 v-model="email"
-                                                :rules="[emailValidator,requiredValidator]"
+                                                :rules="[emailValidator, requiredValidator]"
+                                            />
+                                        </div>
+                                        <div class="ms-2">
+                                            <VCheckbox
+                                                v-model="save_client"
+                                                :readonly="disabled_client"
+                                                color="primary"
+                                                label="Spara kund?"
+                                                class="w-100 text-center d-flex justify-start"
                                             />
                                         </div>
                                     </div>
                                 </VCol>
-                                
-                                <VCol v-if="userData" cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
-                                    <div class="title-tabs mb-5">
-                                        Förmedlare
+
+                                <VDivider class="my-4" />
+
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column gap-1' : 'flex-row gap-4'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%; margin-bottom: 8px;' : 'width: calc(20%);'">
+                                            <span class="title-kopare mb-5">
+                                                Förmedlare
+                                            </span>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(28%);'">
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Namn:
+                                                <span>
+                                                    {{ company.name }} {{ company.last_name }}
+                                                </span>
+                                            </h6>
+                                              <h6 class="list-kopare text-neutral-3">
+                                                Org/personummer:
+                                                <span>
+                                                    {{ company.organization_number }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Adress:
+                                                <span>
+                                                    {{ company.address }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Postnr. ort:
+                                                <span>
+                                                    {{ (company.street ?? '') + ' ' +  (company.postal_code ?? '') }}
+                                                </span>
+                                            </h6>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1" :style="windowWidth < 1024 ? 'width: 100%;; margin-bottom: 8px;' : 'width: calc(45% - 12px);'">
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Telefon:
+                                                <span>
+                                                    {{ company.phone }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                E-post:
+                                                <span>
+                                                    {{ company.email }}
+                                                </span>
+                                            </h6>
+                                            <h6 class="list-kopare text-neutral-3">
+                                                Bilfirma:
+                                                <span>
+                                                    {{ company.company }}
+                                                </span>
+                                            </h6>
+                                        </div>
                                     </div>
-                                    <VList class="card-list mt-2">
-                                        <VListItem>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Namn:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.name }} {{ company.last_name }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Org/personummer:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.organization_number }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Adress:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.address }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Postnr. ort:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.street + ' ' +  company.postal_code }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Telefon:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.phone }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    E-post
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.email }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                            <VListItemTitle>
-                                                <h6 class="text-base font-weight-semibold">
-                                                    Bilfirma:
-                                                    <span class="text-body-2 text-high-emphasis">
-                                                        {{ company.company }}
-                                                    </span>
-                                                </h6>
-                                            </VListItemTitle>
-                                        </VListItem>
-                                    </VList>
                                 </VCol>
                             </VRow>
                         </VWindowItem>
 
                         <!--Fordonsinformation-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Fordonsinformation
@@ -900,7 +1374,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                                                 <VBtn
                                                     class="btn-light w-auto px-4"
-                                                    @click="searchVehicule"
+                                                    @click="searchVehicleByPlate"
                                                 >
                                                     <VIcon icon="custom-search" size="24" />
                                                     Hämta
@@ -922,7 +1396,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @click:clear="onClearBrand"
                                                 :menu-props="{ maxHeight: '300px' }"/>
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
                                             <AppAutocomplete
                                                 v-model="model_id"
@@ -934,10 +1408,11 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectModel"
                                                 :menu-props="{ maxHeight: '300px' }"/> 
                                         </div>
-                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                                             <VTextField
                                                 v-model="model"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1047,6 +1522,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
                                             <VTextarea
                                                 v-model="comments"
+                                                rows="3"
                                             />
                                         </div>
                                     </div>
@@ -1055,8 +1531,8 @@ onBeforeRouteLeave((to, from, next) => {
                         </VWindowItem>
 
                         <!--Förmedlingsavgift-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Förmedlingsavgift
@@ -1083,13 +1559,27 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="commission_fee"
                                                 type="number"
                                                 min="0"
+                                                suffix="KR"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Försäljningspris ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
+                                            <VTextField
+                                                v-model="selling_price"
+                                                type="number"
+                                                min="0"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <div class="d-flex flex-column">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Har fordonet restskuld" />
-                                                <VRadioGroup v-model="outstanding_debt" inline class="radio-form ms-2">
+                                                <VRadioGroup 
+                                                    v-model="outstanding_debt" 
+                                                    inline 
+                                                    class="radio-form ms-2 mt-2">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                         :key="index"
@@ -1099,19 +1589,13 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </VRadioGroup>
                                             </div>
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Försäljningspris ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
-                                            <VTextField
-                                                v-model="selling_price"
-                                                type="number"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </div>
                                         <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" >
                                             <div class="d-flex flex-column">
                                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskulden löses av" />
-                                                <VRadioGroup v-model="residual_debt" inline class="radio-form ms-2">
+                                                <VRadioGroup 
+                                                    v-model="residual_debt" 
+                                                    inline 
+                                                    class="radio-form ms-2 mt-2">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsSettled"
                                                         :key="index"
@@ -1122,15 +1606,16 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
                                             <VTextField
                                                 v-model="remaining_debt"
                                                 type="number"
                                                 min="0"
+                                                suffix="KR"
                                             />
                                         </div>
                                         <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskuld betalas till" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskuld betalas till*" />
                                             <VTextField
                                                 v-model="paid_bank"
                                             />
@@ -1141,8 +1626,8 @@ onBeforeRouteLeave((to, from, next) => {
                         </VWindowItem>
 
                         <!--Betalningsinformation-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Betalningsinformation
@@ -1156,7 +1641,6 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankens namn" />
                                             <VTextField
                                                 v-model="bank_name"
-                                                label="Bankens namn"
                                                 disabled
                                             />
                                         </div>                                          
@@ -1180,18 +1664,18 @@ onBeforeRouteLeave((to, from, next) => {
                                                                                 
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning" />
-                                            <VTextarea
+                                            <VTextField
                                                 v-model="payment_description"
-                                                rows="3"
                                             />
                                         </div>
                                     </div>
                                 </VCol>
                             </VRow>
                         </VWindowItem>
+
                         <!--Förmedlingsdatum-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Förmedlingsdatum och giltighetstid
@@ -1215,7 +1699,6 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum*" />
                                             <AppDateTimePicker
-                                                :key="start_date"
                                                 v-model="end_date"
                                                 :rules="[requiredValidator]"
                                                 :config="endDateTimePickerConfig"
@@ -1227,8 +1710,8 @@ onBeforeRouteLeave((to, from, next) => {
                         </VWindowItem>
 
                         <!--Tillägg-->
-                        <VWindowItem class="px-md-5">
-                            <VRow class="px-md-5">
+                        <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
                                         Tillägg
@@ -1238,16 +1721,18 @@ onBeforeRouteLeave((to, from, next) => {
                                         :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga upplysningar" />
                                             <VTextarea
                                                 v-model="terms_other_conditions"
+                                                rows="4"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor" />
                                             <VTextarea
                                                 v-model="terms_other_information"
+                                                rows="4"
                                             />
                                         </div>
                                     </div>
@@ -1257,15 +1742,13 @@ onBeforeRouteLeave((to, from, next) => {
                     </VWindow>
                 </VCardText>
 
-                <VCardText class="p-0">
-                    <!-- 👉 Submit and Cancel -->
-                    <div 
-                        class="d-flex gap-4 mb-12"
-                        :class="windowWidth < 1024 ? 'w-100' : 'justify-content-end'"
-                    >
+                <VCardText class="p-0 d-flex w-100">
+                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'"/>
+                    <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                         <VBtn
                             v-if="currentTab > 0"
-                            class="btn-light w-auto"
+                            class="btn-light"
+                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                             :block="windowWidth < 1024"
                             @click="currentTab--"
                             >
@@ -1276,6 +1759,7 @@ onBeforeRouteLeave((to, from, next) => {
                             type="submit" 
                             :block="windowWidth < 1024"
                             class="btn-gradient"
+                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                         >
                             <VIcon v-if="currentTab === 5" icon="custom-save"  size="24" />
                             {{ (currentTab === 5) ? 'Skapa' : 'Nästa' }}
@@ -1286,13 +1770,12 @@ onBeforeRouteLeave((to, from, next) => {
         </VForm>
 
         <!-- 👉 Dialogs Section -->
-
         <!-- 👉 Skapats Dialogs -->
         <VDialog
             v-model="skapatsDialog"
             persistent
             class="action-dialog dialog-big-icon"
-            >
+        >
             <VBtn
                 icon
                 class="btn-white close-btn"
@@ -1313,7 +1796,7 @@ onBeforeRouteLeave((to, from, next) => {
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
+                    <VBtn class="btn-light" @click="goToAgreements" >
                         Gå till avtalslistan
                     </VBtn>
                     <VBtn class="btn-gradient" @click="reloadPage">
@@ -1327,13 +1810,13 @@ onBeforeRouteLeave((to, from, next) => {
             v-model="inteSkapatsDialog"
             persistent
             class="action-dialog dialog-big-icon"
-            >
+        >
             <VBtn
                 icon
                 class="btn-white close-btn"
                 @click="inteSkapatsDialog = !inteSkapatsDialog"
             >
-                <VIcon size="16" icon="custom-f-cancel" />
+                <VIcon size="16" icon="custom-close" />
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
@@ -1347,7 +1830,7 @@ onBeforeRouteLeave((to, from, next) => {
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
+                    <VBtn class="btn-light" @click="showError">
                         Stäng
                     </VBtn>
                 </VCardText>
@@ -1384,7 +1867,32 @@ onBeforeRouteLeave((to, from, next) => {
     </section>
 </template>
 
+<style lang="scss" scoped>
+    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
+        --v-input-control-height: 0 !important;
+    }
+
+    :deep(.radio-form .v-selection-control__wrapper) {
+        height: 20px !important;
+    }
+
+    :deep(.radio-form .v-icon--size-default) {
+        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
+    }
+
+    :deep(.radio-form .v-selection-control--dirty) {
+        .v-selection-control__input > .v-icon {
+            color: #00E1E2 !important;
+        }
+    }
+
+    :deep(.radio-form .v-label) {
+        color: #5D5D5D;
+        font-size: 12px;
+    }
+</style>
 <style lang="scss">
+
     .card-info {
         background-color: #F6F6F6;
         border-radius: 16px;
@@ -1395,6 +1903,28 @@ onBeforeRouteLeave((to, from, next) => {
         font-size: 24px;
         line-height: 100%;
         color: #454545;
+
+        @media (max-width: 1023px) {
+            font-size: 16px
+        }
+    }
+
+    .list-kopare {
+        font-size: 16px;
+        line-height: 100%;
+        font-weight: 700;
+
+        span {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+    
+    .title-kopare {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #878787;
 
         @media (max-width: 1023px) {
             font-size: 16px
@@ -1432,7 +1962,7 @@ onBeforeRouteLeave((to, from, next) => {
         justify-content: end !important;
     }
 
-    .v-tabs.vehicles-tabs {
+    .v-tabs.agreements-tabs {
         .v-btn {
             min-width: 50px !important;
             .v-btn__content {
@@ -1440,7 +1970,22 @@ onBeforeRouteLeave((to, from, next) => {
                 color: #454545;
             }
         }
+
+        
     }
+
+    @media (max-width: 776px) {
+            .v-tabs.agreements-tabs {
+                .v-icon {
+                    display: none !important;
+                }
+                .v-btn {
+                    .v-btn__content {
+                        white-space: break-spaces;
+                    }
+                }
+            }
+        }
 
     .info-grid {
         display: flex;
@@ -1526,18 +2071,18 @@ onBeforeRouteLeave((to, from, next) => {
         }
     }
 
-    .vehicles-pills > div {
+    .agreements-pills > div {
         flex: 1 1;
     }
 
-    .vehicles-pill {
+    .agreements-pill {
         display: flex;
         align-items: center;
         padding: 16px;
         border-radius: 8px;
     }
 
-    .vehicles-pill-title {
+    .agreements-pill-title {
         font-family: "Blauer Nue";
         font-weight: 400;
         font-size: 16px;
@@ -1545,7 +2090,7 @@ onBeforeRouteLeave((to, from, next) => {
         margin-right: 4px;
     }
 
-    .vehicles-pill-value {
+    .agreements-pill-value {
         font-family: "Blauer Nue";
         font-weight: 700;
         font-style: Bold;
@@ -1554,14 +2099,40 @@ onBeforeRouteLeave((to, from, next) => {
     }
 
     @media (max-width: 991px) {
-        .vehicles-pills {
+        .agreements-pills {
             flex-direction: column;
             gap: 8px;
         }
 
-        .vehicles-pill {
+        .agreements-pill {
             padding: 8px 16px;
         }
+    }
+</style>
+<style lang="scss">
+
+    .border-card-comment {
+        border: 1px solid #E7E7E7;
+        border-radius: 16px !important;
+    }
+
+    .agreements-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
+        margin-inline-end: 12rem !important;
+
+        @media (max-width: 991px) {
+        margin-inline-end: 5rem !important;
+        }
+    }
+
+    :deep(.right-drawer.v-navigation-drawer) {
+        border-color: transparent !important;
+        border-width: 0 !important;
+        border-style: none !important;
+        box-shadow: none !important;
+    }
+
+    :deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
+        border: none !important;
     }
 </style>
 
