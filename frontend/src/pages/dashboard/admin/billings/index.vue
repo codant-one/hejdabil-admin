@@ -1068,9 +1068,11 @@ onBeforeUnmount(() => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           />
-          <span class="text-xs text-error" v-if="isValid"
-            >E-postadressen måste vara en giltig e-postadress</span
-          >
+          <span 
+            class="text-xs text-error" 
+            v-if="isValid">
+            E-postadressen måste vara en giltig e-postadress
+          </span>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">

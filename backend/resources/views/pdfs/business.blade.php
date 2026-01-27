@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Prisförslag - PDF</title>
-    <!-- ESTILOS COPIADOS EXACTAMENTE DEL CONTRATO 1 -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-        @page {
-            margin: 1.5cm;
+        html, body {
+            height: 100%;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
+            font-family: 'gelion', 'dm sans', sans-serif !important;
+            background-color: #FFFFFF;
             padding: 0;
-            font-size: 11px;
-            color: #333;
-            background-color: #fff;
+            margin: 0;
+            letter-spacing: 0 !important;
+            word-spacing: normal !important;
+            line-height: 1;
+            position: relative;
         }
         
         .main-container {
@@ -28,42 +27,54 @@
 
         h2 {
             font-size: 13px;
-            color: #0056b3;
+            color: #008C91;
             margin-top: 0;
-            margin-bottom: 8px; /* Un poco de espacio extra para los títulos de sección */
+            margin-bottom: 8px;
         }
 
         /* --- HEADER --- */
         .header-logo {
             width: 150px;
+            display: inline-block;
+            text-align: right;
         }
+
         .header-logo img {
             max-width: 100%;
         }
-        .header-title-cell {
+
+        .header-logo-cell {
+            vertical-align: top;
             text-align: right;
+        }
+
+        .header-title-cell {
+            text-align: left;
             vertical-align: top;
         }
+
         .header-title-cell h1 {
             margin: 0;
             font-size: 24px;
-            color: #111;
+            color: #5D5D5D;
         }
+
         .header-title-cell .contract-details {
             font-size: 10px;
-            color: #555;
-            margin-top: 5px;
+            color: #5D5D5D;
         }
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 20px;
+            padding-top: 10px;
         }
+
         .column-cell {
             width: 50%;
             vertical-align: top;
             padding-top: 15px;
         }
+
         .column-cell-left { padding-right: 15px; }
         .column-cell-right { padding-left: 15px; }
 
@@ -72,24 +83,28 @@
             width: 100%;
             border-collapse: collapse;
         }
+
         .info-table td {
             padding: 0;
             padding-bottom: 6px;
         }
+
         .info-table .label {
             font-weight: 600;
             display: block;
-            margin-bottom: 3px;
-            color: #555;
+            color: #454545;
             font-size: 10px;
+            margin-bottom: 2px;
         }
+
         .info-table .value {
             font-size: 10px;
-            background-color: #f9f9f9;
+            background-color: #F6F6F6;
             padding: 5px;
-            border-radius: 4px;
-            border: 1px solid #eee;
-            min-height: 12px
+            border-radius: 8px;
+            border: 1px solid #E7E7E7;
+            min-height: 12px;
+            color: #5D5D5D;
         }
 
         /* --- TABLA FINANCIERA --- */
@@ -98,57 +113,72 @@
             border-collapse: collapse;
             margin-top: 5px;
         }
+
         .financials-table td {
-            padding: 6px;
+            padding: 6px 0;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #E7E7E7;
         }
+
         .financials-table td:last-child {
             text-align: right;
             font-weight: 600;
         }
+
         .financials-table .total-row td {
             font-size: 13px;
             font-weight: 700;
-            color: #0056b3;
-            border-top: 2px solid #ccc;
+            color: #008C91;
+            border-top: 2px solid #E7E7E7;
             border-bottom: none;
             padding-top: 8px;
             padding-bottom: 8px;
         }
 
         /* --- PIE DE PÁGINA --- */
-        .footer-section { padding-top: 25px; }
+        .footer-section {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0px;
+            padding: 0;
+            background: #FFFFFF;
+        }
+
         .notes-text {
             font-size: 10px;
-            color: #666;
-            background-color: #f9f9f9;
+            color: #5D5D5D;
+            background-color: #F6F6F6;
             padding: 10px;
-            border-radius: 4px;
-            border-left: 3px solid #0056b3;
+            border-radius: 8px;
+            border-left: 1px solid #008C91;
             margin-bottom: 15px;
         }
+
         .signatures-table {
             width: 100%;
-            margin-top: 30px;
+            margin-top: 12px;
             table-layout: fixed;
             border-collapse: collapse;
         }
+        
         .signatures-table td {
             width: 50%;
             vertical-align: bottom;
         }
+
         .signature-box {
-            border-top: 1px solid #333;
+            border-top: 1px solid #454545;
             padding-top: 8px;
             font-size: 11px; /* Ajustado para consistencia */
-            color: #333;
+            color: #454545;
         }
+        
         .thank-you-text {
             font-size: 14px;
             font-weight: bold;
-            color: #0056b3;
-            margin-bottom: 20px;
+            color: #008C91;
+            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -158,23 +188,23 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #e0e0e0;">
+                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #E7E7E7;">
                     <table style="width: 100%;">
-                        <tr>
-                            <td style="vertical-align: top;">
+                        <tr>                            
+                            <td class="header-title-cell">
+                                <h1>Prisförslag</h1>
+                                <div class="contract-details">
+                                    Offert nr: {{ $agreement->offer->id }} <br>
+                                    Datum: {{ $agreement->offer->created_at->format('Y-m-d')}}
+                                </div>
+                            </td>
+                            <td class="header-logo-cell">
                                 <div class="header-logo">
                                     @if($company->logo)
                                         <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                     @else
                                         <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
                                     @endif
-                                </div>
-                            </td>
-                            <td class="header-title-cell">
-                                <h1>Prisförslag</h1>
-                                <div class="contract-details">
-                                    Offert nr: {{ $agreement->offer->id }} <br>
-                                    Datum: {{ $agreement->offer->created_at->format('Y-m-d')}}
                                 </div>
                             </td>
                         </tr>
@@ -327,7 +357,7 @@
                 <td colspan="2" class="section-cell">
                     @if($agreement->offer->comment)
                         <h2>Anmärkning</h2>
-                        <div class="notes-text" style="margin-bottom: 20px;">
+                        <div class="notes-text">
                             {{ $agreement->offer->comment }}
                         </div>
                     @endif
@@ -340,61 +370,58 @@
                     @endif
                 </td>
             </tr>
+        </tbody>
+    </table>
 
-
-            <!-- === FOOTER & SIGNATURE === -->
+    <!-- === FOOTER & SIGNATURE (fixed for DOMPDF) === -->
+    <div class="footer-section">
+        <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
+        <table class="signatures-table">
             <tr>
-                <td colspan="2" class="footer-section">
-                    <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
-                    <table class="signatures-table">
+                <!-- Left: Kund (köpare) -->
+                <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
+                    <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <!-- Left: Kund (köpare) -->
-                            <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <tr>
-                                        <td style="height: 70px; vertical-align: bottom;">
-                                            @if(isset($signature_url) && $signature_x === null)
-                                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="signature-box">(Köparens underskrift)</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="height: 15px; font-size: 10px;">&nbsp;</td>
-                                    </tr>
-                                </table>
+                            <td style="height: 70px; vertical-align: bottom;">
+                                @if(isset($signature_url))
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                @endif
                             </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="signature-box">(Köparens underskrift)</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 15px; font-size: 10px;">&nbsp;</td>
+                        </tr>
+                    </table>
+                </td>
 
-                            <!-- Right: Säljföretaget -->
-                            <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
-                                <table style="width: 100%; border-collapse: collapse;">
-                                    <tr>
-                                        <td style="height: 70px; vertical-align: bottom; text-align: right;">
-                                            @if($company->img_signature)
-                                                <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="text-align: right;">
-                                            <div class="signature-box">(Säljföretagets underskrift)</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="height: 15px; padding-top: 5px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
-                                    </tr>
-                                </table>
+                <!-- Right: Säljföretaget -->
+                <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="height: 70px; vertical-align: bottom; text-align: right;">
+                                @if($company->img_signature)
+                                    <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                @endif
                             </td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: right;">
+                                <div class="signature-box">(Säljföretagets underskrift)</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="height: 15px; font-size: 10px; text-align: right;">{{ $company->name }} {{ $company->last_name }}</td>
                         </tr>
                     </table>
                 </td>
             </tr>
-        </tbody>
-    </table>
+        </table>
+    </div>
 
 </body>
 </html>

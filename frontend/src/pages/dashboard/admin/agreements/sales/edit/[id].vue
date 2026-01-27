@@ -965,9 +965,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :menu-props="{ maxHeight: '300px' }"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 12px);'" v-if="model_id === 0">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                                             <VTextField
-                                                v-model="model"
+                                                v-model="model" 
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1132,9 +1133,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :menu-props="{ maxHeight: '300px' }"/> 
                                         </div>
                                         <div v-if="model_id_interchange === null" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                                             <VTextField
                                                 v-model="model_interchange"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

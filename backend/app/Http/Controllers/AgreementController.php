@@ -5,11 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AgreementRequest;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
@@ -59,6 +59,7 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'token',
+                        'tokens',
                         'offer',
                         'commission.vehicle',
                         'agreement_type',
@@ -111,6 +112,33 @@ class AgreementController extends Controller
 
             $agreement = Agreement::createAgreement($request);
 
+            // Create initial token with 'created' status when document is created
+            $signingToken = Str::uuid()->toString();
+            $token = $agreement->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => null, // Will be set when signature is requested
+                'token_expires_at' => now()->addDays(30),
+                'signature_status' => 'created',
+                'placement_x' => Agreement::coordinates($agreement, 'x'),
+                'placement_y' => Agreement::coordinates($agreement, 'y'),
+                'placement_page' => 1, // Default to page 1
+                'signature_alignment' => 'left',
+            ]);
+
+            // Log 'created' event when document is created
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Avtal skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'agreement_id' => $agreement->id,
+                    'agreement_title' => $agreement->title,
+                    'user_id' => $agreement->user_id,
+                ]
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -152,7 +180,10 @@ class AgreementController extends Controller
                         'vehicle_client.vehicle.fuel',
                         'vehicle_client.vehicle.gearbox',
                         'vehicle_client.vehicle.payment.payment_types',
-                        'supplier.user'
+                        'supplier.user',
+                        'tokens.history' => function($query) {
+                            $query->orderBy('created_at', 'asc');
+                        }
                     ])->find($id);
 
             if (!$agreement)

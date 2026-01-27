@@ -35,7 +35,20 @@ class SignatureController extends Controller
      * Positive value = move the signature up in the final PDF.
      * Adjust this value if the signature appears vertically offset.
      */
-    private const SIGNATURE_Y_CORRECTION_FACTOR = 0.045;
+    private const SIGNATURE_Y_CORRECTION_FACTOR = 0.025; // 2.5% upward adjustment for desktop
+    private const SIGNATURE_Y_CORRECTION_FACTOR_MOBILE = 0.045; // 4.5% upward adjustment for mobile
+
+    /**
+     * Detect if the request comes from a mobile device
+     */
+    private function isMobileDevice($userAgent)
+    {
+        if (empty($userAgent)) {
+            return false;
+        }
+        
+        return preg_match('/(android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini)/i', $userAgent);
+    }
 
     /**
      * Method 1: Start the signing process (Triggered from your Vue Dashboard).
@@ -157,7 +170,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'Signature request email delivered successfully',
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
@@ -251,8 +264,6 @@ class SignatureController extends Controller
             $token->update([
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
-                'placement_x'   => null,
-                'placement_y'   => null,
                 'placement_page'=> 1,
             ]);
         }
@@ -288,7 +299,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SENT,
-                description: 'Static signature request email sent to ' . $validated['email'],
+                description: 'E-post skickad till ' . $validated['email'],
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
@@ -313,7 +324,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_DELIVERED,
-                description: 'Static signature request email delivered successfully',
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
@@ -500,7 +511,8 @@ class SignatureController extends Controller
     {
         try {
             // 1. Validate the token again for maximum security.
-            $token = Token::where('signing_token', $tokenString)
+            $token = Token::with(['agreement', 'document'])
+                          ->where('signing_token', $tokenString)
                           ->whereIn('signature_status', ['sent', 'delivered', 'reviewed'])
                           ->where('token_expires_at', '>', now())
                           ->firstOrFail();
@@ -519,13 +531,16 @@ class SignatureController extends Controller
 
             // 4. Regenerate the PDF with the signature
             $signedPdfPath = null;
+            $userAgent = $request->userAgent();
+            
             if ($token->agreement_id) {
                 $agreement = $token->agreement;
                 $signedPdfPath = $this->regeneratePdfWithSignature(
                     $agreement,
                     $signaturePath,
                     $token->placement_x,
-                    $token->placement_y
+                    $token->placement_y,
+                    $userAgent
                 );
 
                 if (!$signedPdfPath) {
@@ -545,7 +560,8 @@ class SignatureController extends Controller
                     $signaturePath,
                     $token->placement_x,
                     $token->placement_y,
-                    $token->placement_page ?? 1
+                    $token->placement_page ?? 1,
+                    $userAgent
                 );
                 if (!$signedPdfPath) {
                     // Change status to failed if the PDF cannot be regenerated
@@ -570,7 +586,7 @@ class SignatureController extends Controller
             TokenHistory::logEvent(
                 tokenId: $token->id,
                 eventType: TokenHistory::EVENT_SIGNED,
-                description: 'Dokumentet har undertecknats framgångsrikt',
+                description: $token->agreement_id ? 'Avtal har undertecknats framgångsrikt' : 'Dokumentet har undertecknats framgångsrikt',
                 ipAddress: $request->ip(),
                 userAgent: $request->userAgent(),
                 metadata: [
@@ -637,8 +653,12 @@ class SignatureController extends Controller
             // Add document or agreement ID for download
             if ($token->agreement_id) {
                 $response['agreement_id'] = $token->agreement_id;
+                $response['order_id'] = $token->agreement->agreement_type_id === 4 ? $token->agreement->offer_id : $token->agreement->agreement_id;
+                $response['is_agreement'] = true;
             } elseif ($token->document_id) {
                 $response['document_id'] = $token->document_id;
+                $response['order_id'] = $token->document->order_id;
+                $response['is_agreement'] = false;
             }
 
             return response()->json($response);
@@ -678,7 +698,7 @@ class SignatureController extends Controller
      * Private helper to regenerate the PDF with the signature.
      * This function adapts the logic from your Agreement::generatePdf() method.
      */
-    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, ?float $x, ?float $y)
+    private function regeneratePdfWithSignature(Agreement $agreement, string $signatureUrl, ?float $x, ?float $y, ?string $userAgent = null)
     {
         // 1. Load all necessary relationships.
         $agreement->load([
@@ -859,7 +879,7 @@ class SignatureController extends Controller
      * Private helper to regenerate the PDF of a document with the signature.
      * Uses FPDI to add the signature image to the existing PDF.
      */
-    private function regenerateDocumentPdfWithSignature(Document $document, string $signatureUrl, ?float $x, ?float $y, int $targetPage = 1)
+    private function regenerateDocumentPdfWithSignature(Document $document, string $signatureUrl, ?float $x, ?float $y, int $targetPage = 1, ?string $userAgent = null)
     {
         // Read the original PDF
         $originalPdfPath = storage_path('app/public/' . $document->file);
@@ -889,13 +909,13 @@ class SignatureController extends Controller
         try {
             // Try to use FPDI if available
             if (class_exists('\\setasign\\Fpdi\\Fpdi')) {
-                return $this->addSignatureWithFPDI($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage);
+                return $this->addSignatureWithFPDI($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage, $userAgent);
             }
             
             // If FPDI is not available, try using Imagick as an alternative
             // Only if it is really available (not just loaded in php.ini)
             if (extension_loaded('imagick') && class_exists('Imagick')) {
-                return $this->addSignatureWithImagick($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage);
+                return $this->addSignatureWithImagick($originalPdfPath, $signatureImagePath, $destinationPath, $x, $y, $filePath, $targetPage, $userAgent);
             }
             
             // If no library is available, throw an exception
@@ -910,12 +930,15 @@ class SignatureController extends Controller
     /**
      * Adds the signature using FPDI
      */
-    private function addSignatureWithFPDI($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1)
+    private function addSignatureWithFPDI($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1, ?string $userAgent = null)
     {
         $pdf = new \setasign\Fpdi\Fpdi();
         
         // Get the number of pages in the original PDF
         $pageCount = $pdf->setSourceFile($pdfPath);
+        
+        // Detect if request comes from mobile device
+        $isMobile = $this->isMobileDevice($userAgent);
         
         // Process all pages
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
@@ -929,20 +952,26 @@ class SignatureController extends Controller
             
             // Add the signature on the target page
             if ($pageNo === $targetPage) {
+                // Detect PDF orientation (landscape vs portrait)
+                $isLandscape = $size['width'] > $size['height'];
+                
+                // Apply same scale factors as frontend button
+                // These factors match the visual size of the button shown to users
+                $scaleFactor = $isLandscape ? 0.4 : 0.7; // 40% for landscape, 70% for portrait
+                
                 // Convert coordinates from percentage to PDF units (mm by default)
                 $xPoint = ($x / 100) * $size['width'];
                 $yPoint = ($y / 100) * $size['height'];
 
                 // CORRECTION: Adjust the Y coordinate to compensate for the difference 
                 // between the rendering of vue-pdf-embed and the actual PDF coordinates.
-                // vue-pdf-embed (PDF.js) may render with a small offset.
-                // This correction factor has been empirically calibrated.
-                // Negative value = move the signature upwards
-                $yCorrection = $size['height'] * self::SIGNATURE_Y_CORRECTION_FACTOR;
+                // Apply different correction based on device: 4.5% for mobile, 2.5% for desktop
+                $yCorrectionFactor = $isMobile ? self::SIGNATURE_Y_CORRECTION_FACTOR_MOBILE : self::SIGNATURE_Y_CORRECTION_FACTOR;
+                $yCorrection = $size['height'] * $yCorrectionFactor;
                 $yPoint = max(0, $yPoint - $yCorrection);
 
-                // Calculate signature size: 20% of page width, maintaining the real image proportion
-                $sigWidth = max(5, $size['width'] * 0.20);
+                // Calculate signature size: 35% of page width * scale factor, maintaining the real image proportion
+                $sigWidth = max(5, $size['width'] * 0.35 * $scaleFactor);
                 $sigHeight = 0; // will be calculated by proportion
                 if (function_exists('getimagesize')) {
                     $imgSize = @getimagesize($signaturePath);
@@ -980,7 +1009,7 @@ class SignatureController extends Controller
     /**
      * Adds the signature using Imagick (alternative if FPDI is not available)
      */
-    private function addSignatureWithImagick($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1)
+    private function addSignatureWithImagick($pdfPath, $signaturePath, $outputPath, $x, $y, $filePath, int $targetPage = 1, ?string $userAgent = null)
     {
         // Read the PDF with Imagick
         $pdf = new \Imagick();
@@ -999,8 +1028,18 @@ class SignatureController extends Controller
         $pageWidth = $page->getImageWidth();
         $pageHeight = $page->getImageHeight();
 
-        // Calculate signature size: 20% of page width, maintaining the real image proportion
-        $sigWidthPx = (int) max(30, $pageWidth * 0.20);
+        // Detect PDF orientation (landscape vs portrait)
+        $isLandscape = $pageWidth > $pageHeight;
+        
+        // Detect if request comes from mobile device
+        $isMobile = $this->isMobileDevice($userAgent);
+        
+        // Apply same scale factors as frontend button
+        // These factors match the visual size of the button shown to users
+        $scaleFactor = $isLandscape ? 0.4 : 0.7; // 40% for landscape, 70% for portrait
+
+        // Calculate signature size: 35% of page width * scale factor, maintaining the real image proportion
+        $sigWidthPx = (int) max(30, $pageWidth * 0.35 * $scaleFactor);
         $sigRatio = 0.4;
         try {
             $sigRatio = $signature->getImageHeight() > 0 ? ($signature->getImageHeight() / $signature->getImageWidth()) : 0.4;
@@ -1016,8 +1055,9 @@ class SignatureController extends Controller
 
         // CORRECTION: Adjust the Y coordinate to compensate for the difference 
         // between the rendering of vue-pdf-embed and the actual PDF coordinates.
-        // This correction factor has been empirically calibrated (~4.5% upwards)
-        $yCorrection = $pageHeight * self::SIGNATURE_Y_CORRECTION_FACTOR;
+        // Apply different correction based on device: 4.5% for mobile, 2.5% for desktop
+        $yCorrectionFactor = $isMobile ? self::SIGNATURE_Y_CORRECTION_FACTOR_MOBILE : self::SIGNATURE_Y_CORRECTION_FACTOR;
+        $yCorrection = $pageHeight * $yCorrectionFactor;
         $yPixel = max(0, $yPixel - $yCorrection);
         
         // Use the clicked point as the top-left corner

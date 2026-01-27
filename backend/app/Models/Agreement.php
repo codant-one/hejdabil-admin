@@ -39,7 +39,6 @@ class Agreement extends Model
         return $this->belongsTo(GuarantyType::class, 'guaranty_type_id', 'id');
     }
 
-
     public function insurance_type(){
         return $this->belongsTo(InsuranceType::class, 'insurance_type_id', 'id');
     }
@@ -84,14 +83,8 @@ class Agreement extends Model
         return $this->belongsTo(Commission::class, 'commission_id', 'id');
     }
 
-    public function tokens(): HasMany
-    {
-        return $this->hasMany(Token::class);
-    }
-
-    public function latestToken()
-    {
-        return $this->tokens()->latest()->first();
+    public function tokens() {
+        return $this->hasMany(Token::class, 'agreement_id');
     }
 
     /**** Scopes ****/
@@ -158,6 +151,12 @@ class Agreement extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('status') !== null) {
+            $query->whereHas('tokens', function($q) use ($filters) {
+                $q->where('signature_status', $filters->get('status'));
+            });
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -667,6 +666,19 @@ class Agreement extends Model
     
     public static function createOffer($request) {
 
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
         $offer = Offer::createOffer($request);
 
         $request->request->add([
@@ -695,6 +707,20 @@ class Agreement extends Model
     public static function updateCommission($request, $agreement) {
         $commission = Commission::find($agreement->commission_id);
         $commission->updateCommission($request, $commission);
+    }
+
+    public static function coordinates($agreement, $coordinateType) {
+        switch ($agreement->agreement_type_id) {
+            case 1: // Sales
+            case 2: // Purchase
+            case 3: // Commission
+            case 4: // Offer    
+                return $coordinateType === 'x' ? 12.9134 : 86.1954;
+                break;
+            default:
+                return null;
+        }
+
     }
     
 }

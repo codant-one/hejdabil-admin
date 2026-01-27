@@ -491,8 +491,6 @@ const searchVehicleByPlate = async () => {
     try {
         const carRes = await carInfoStores.getLicensePlate(reg_num.value)
         
-        await fetchData()
-        
         // Verificar success (también manejar typo 'sucess' de la API)
         const isSuccess = carRes.success === true || carRes.sucess === true
 
@@ -1361,8 +1359,8 @@ const onSubmit = async () => {
     const hasTab1Errors = !reg_num.value || 
                           !mileage.value || 
                           !brand_id.value || 
-                          !model_id.value || 
-                          (model_id.value === 0 && !model.value) ||
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                           !car_body_id.value || 
                           !year.value || 
                           !chassis.value ||
@@ -1701,7 +1699,7 @@ onBeforeRouteLeave((to, from, next) => {
                     
                     <VTabs 
                         v-model="currentTab" 
-                        grow
+                        :grow="windowWidth < 1024 ? true : false"
                         :show-arrows="false"
                         class="vehicles-tabs"
                     >
@@ -1799,7 +1797,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         />
                                     </div>
                                     <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                                         <VTextField
                                             v-model="model"
                                             :rules="[requiredValidator]"
@@ -1907,6 +1905,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             type="number"
                                             v-model="purchase_price"
                                             min="0"
+                                            suffix="KR"
                                             :rules="[requiredValidator]"
                                         />
                                     </div>
@@ -2784,6 +2783,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         type="number"
                                         min="0"
                                         label="Beräknad kostnad (kr)*"
+                                        suffix="KR"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
@@ -2881,6 +2881,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     type="number"
                                     min="0"
                                     label="Beräknad kostnad (kr)*"
+                                    suffix="KR"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
@@ -2995,6 +2996,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         type="number"
                                         min="0"
                                         label="Beräknad kostnad (kr)*"
+                                        suffix="KR"
                                         :rules="[requiredValidator]"
                                         :readonly="!isEdit"
                                     />
@@ -3171,6 +3173,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     type="number"
                                     min="0"
                                     label="Beräknad kostnad (kr)*"
+                                    suffix="KR"
                                     :rules="[requiredValidator]"
                                     :readonly="!isEdit"
                                 />
