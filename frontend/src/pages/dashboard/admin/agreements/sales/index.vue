@@ -709,36 +709,82 @@ const onSubmit = () => {
 }
 
 /*
-    Campos `v-model` con la regla `requiredValidator` dentro de los tabs (class="vehicles-tabs")
+    Campos `v-model` dentro de los tabs (class="vehicles-tabs")
 
     Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `vehicles-tabs`.
 */
 const currentData = computed(() => ({
+    // Tab 1: Venta
+    vehicle_id: vehicle_id.value,
     reg_num: reg_num.value,
+    agreement_id: agreement_id.value,
     brand_id: brand_id.value,
     model_id: model_id.value,
+    model: model.value,
     year: year.value,
     color: color.value,
+    chassis: chassis.value,
     mileage: mileage.value,
     sale_date: sale_date.value,
     guaranty: guaranty.value,
+    guaranty_description: guaranty_description.value,
+    guaranty_type_id: guaranty_type_id.value,
     insurance_company: insurance_company.value,
-    organization_number: organization_number.value,
+    insurance_company_description: insurance_company_description.value,
+    insurance_type_id: insurance_type_id.value,
+
+    // Tab 2: Inbytesfordon
+    reg_num_interchange: reg_num_interchange.value,
+    brand_id_interchange: brand_id_interchange.value,
+    model_id_interchange: model_id_interchange.value,
+    model_interchange: model_interchange.value,
+    year_interchange: year_interchange.value,
+    meter_reading_interchange: meter_reading_interchange.value,
+    car_body_id_interchange: car_body_id_interchange.value,
+    color_interchange: color_interchange.value,
+    chassis_interchange: chassis_interchange.value,
+    sale_date_interchange: sale_date_interchange.value,
+    trade_price: trade_price.value,
+    residual_debt: residual_debt.value,
+    residual_price: residual_price.value,
+    iva_purchase_id_interchange: iva_purchase_id_interchange.value,
+
+    // Tab 3: Cliente
+    client_id: client_id.value,
     client_type_id: client_type_id.value,
-    fullname: fullname.value,
-    address: address.value,
-    postal_code: postal_code.value,
-    street: street.value,
-    phone: phone.value,
     identification_id: identification_id.value,
+    organization_number: organization_number.value,
+    address: address.value,
+    street: street.value,
+    postal_code: postal_code.value,
+    phone: phone.value,
+    fullname: fullname.value,
     email: email.value,
+    save_client: save_client.value,
+    disabled_client: disabled_client.value,
+
+    // Tab 4: Precio
     price: price.value,
     iva_id: iva_id.value,
     iva_sale_amount: iva_sale_amount.value,
     iva_sale_exclusive: iva_sale_exclusive.value,
     discount: discount.value,
     registration_fee: registration_fee.value,
-    payment_type_id: payment_type_id.value
+    total_sale: total_sale.value,
+    payment_type: payment_type.value,
+    payment_type_id: payment_type_id.value,
+    advances: advances.value,
+    advance_id: advance_id.value,
+    payment_received: payment_received.value,
+    payment_method_forcash: payment_method_forcash.value,
+    installment_amount: installment_amount.value,
+    installment_contract_upon_delivery: installment_contract_upon_delivery.value,
+    payment_description: payment_description.value,
+    middle_price: middle_price.value,
+
+    // Tab 5: Términos
+    terms_other_conditions: terms_other_conditions.value,
+    terms_other_information: terms_other_information.value,
 }))
 
 const isDirty = computed(() => {
@@ -1358,7 +1404,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VListItemTitle>
                                                 <h6 class="text-base font-weight-semibold">
                                                     Bilfirma:
-                                                    <span class="text-body-2">
+                                                    <span class="text-body-2 text-high-emphasis">
                                                         {{ company.company }}
                                                     </span>
                                                 </h6>
