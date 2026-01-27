@@ -712,7 +712,7 @@ class Agreement extends Model
     public static function coordinates($agreement, $coordinateType) {
         switch ($agreement->agreement_type_id) {
             case 1: // Sales
-                return $coordinateType === 'x' ? 12.9134 : 86.1954;
+                return $coordinateType === 'x' ? 12.9134 : 88.1954;
                 break;
             case 2: // Purchase
                 return $coordinateType === 'x' ? 60.3543 : 87.8653;

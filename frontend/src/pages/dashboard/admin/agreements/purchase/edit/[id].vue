@@ -1546,7 +1546,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                                 <VDivider class="my-4" />
 
-                                <VCol cols="12">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div 
                                         class="d-flex flex-wrap"
                                         :class="windowWidth < 1024 ? 'flex-column gap-1' : 'flex-row gap-4'"

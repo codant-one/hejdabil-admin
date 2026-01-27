@@ -478,15 +478,14 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    @if($agreement->residual_debt === 1)
                                     <tr>
-                                        @if($agreement->residual_debt === 1)
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Restskuld</div>
                                             <div class="value">
                                                 {{ formatCurrency($agreement->residual_price) }} kr
                                             </div>
                                         </td>
-                                        @endif
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Verkligt värde</div>
                                             <div class="value">
@@ -494,6 +493,16 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    @else
+                                    <tr>
+                                        <td colspan="2">
+                                            <div class="label">Verkligt värde</div>
+                                            <div class="value">
+                                                {{ formatCurrency($agreement->fair_value) }} kr
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endif
                                 </table>
                             </td>
                         </tr>
@@ -660,8 +669,7 @@
                     <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->
                     <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
                         <div style="min-height: 70px;">
-                            {{-- Lógica para la firma estática del cliente (comprador) --}}
-                            @if(isset($signature_url) && $signature_x === null)  
+                            @if(isset($signature_url))  
                                 <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
                             @endif
                         </div>
