@@ -380,6 +380,11 @@ const isEntitySearchLoading = computed(() => {
     return companyInfoStores.loading || personInfoStores.loading
 })
 
+/**
+ * Search for entity information based on the organization/personal number.
+ * If the number starts with 5, searches in CompanyInfo (Bolagsverket).
+ * Otherwise, searches in SPAR (Statens Personadressregister).
+ */
 const searchEntity = async () => {
     if (!organization_number.value) return
 
@@ -391,80 +396,103 @@ const searchEntity = async () => {
 }
 
 const searchCompany = async () => {
-    if (!organization_number.value) return
+  try {
+    isRequestOngoing.value = true
 
-    try {
-        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
-        
-        if (response) {
-             // Set Client Type to Företag
-            const foretagType = client_types.value.find(t => t.name === 'Företag')
-            if (foretagType) {
-                client_type_id.value = foretagType.id
-            }
+    const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+    
+    isRequestOngoing.value = false
 
-            // Set Name
-            if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
-                fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
-            } else {
-                fullname.value = ''
-            }
-
-            // Set Postal Code
-            if (response.postadressOrganisation?.postadress?.postnummer) {
-                postal_code.value = response.postadressOrganisation.postadress.postnummer
-            } else {
-                postal_code.value = ''
-            }
-
-            // Set Address
-            if (response.postadressOrganisation?.postadress?.utdelningsadress) {
-                address.value = response.postadressOrganisation.postadress.utdelningsadress
-            } else {
-                address.value = ''
-            }
-
-            // Set City (Postort)
-            if (response.postadressOrganisation?.postadress?.postort) {
-                street.value = response.postadressOrganisation.postadress.postort
-            } else {
-                street.value = ''
-            }
+    if (response) {
+          // Set Client Type to Företag
+        const foretagType = client_types.value.find(t => t.name === 'Företag')
+        if (foretagType) {
+            client_type_id.value = foretagType.id
         }
 
-    } catch (error) {
-        toastsStores.addToast({
-            message: 'Ingen företag hittades med det registreringsnumret',
-            type: 'error'
-        })
+        // Set Name
+        if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+            fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+        } else {
+            fullname.value = ''
+        }
+
+        // Set Postal Code
+        if (response.postadressOrganisation?.postadress?.postnummer) {
+            postal_code.value = response.postadressOrganisation.postadress.postnummer
+        } else {
+            postal_code.value = ''
+        }
+
+        // Set Address
+        if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+            address.value = response.postadressOrganisation.postadress.utdelningsadress
+        } else {
+            address.value = ''
+        }
+
+        // Set Street/City (Postort)
+        if (response.postadressOrganisation?.postadress?.postort) {
+            street.value = response.postadressOrganisation.postadress.postort
+        } else {
+            street.value = ''
+        }
     }
+
+  } catch (error) {
+      isRequestOngoing.value = false
+      advisor.value = {
+          type: 'error',
+          message: 'Ingen företag hittades med det registreringsnumret',
+          show: true
+      }
+  }
 }
 
+/**
+ * Search for person information in SPAR (Statens Personadressregister) API.
+ */
 const searchPerson = async () => {
-    try {
-        const response = await personInfoStores.getPersonInfo(organization_number.value)
+  try {
+    isRequestOngoing.value = true
 
-        if (response?.success && response?.data) {
-            const personData = response.data
+    const response = await personInfoStores.getPersonInfo(organization_number.value)
 
-            // Set Client Type to Privat
-            const privatType = client_types.value.find(t => t.name === 'Privat')
-            if (privatType) {
-                client_type_id.value = privatType.id
-            }
+    isRequestOngoing.value = false
 
-            fullname.value = personData.fullname || ''
-            postal_code.value = personData.postnummer || ''
-            address.value = personData.adress || ''
-            street.value = personData.postort || ''
+    if (response?.success && response?.data) {
+        const personData = response.data
+
+        // Set Client Type to Privat
+        const privatType = client_types.value.find(t => t.name === 'Privat')
+        if (privatType) {
+            client_type_id.value = privatType.id
         }
-    } catch (error) {
-        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
-        toastsStores.addToast({
-            message: errorMessage,
-            type: 'error'
-        })
+
+        // Set Name
+        fullname.value = personData.fullname || ''
+
+        // Set Postal Code
+        postal_code.value = personData.postnummer || ''
+
+        // Set Address
+        address.value = personData.adress || ''
+
+        // Set Street/City (Postort)
+        street.value = personData.postort || ''
     }
+
+  } catch (error) {
+    isRequestOngoing.value = false
+
+    const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+    
+    advisor.value = {
+        type: 'error',
+        message: errorMessage,
+        show: true
+    }
+  }
 }
 
 const handleChange = (val) => {
@@ -1341,6 +1369,15 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextField
                                                 v-model="email"
                                                 :rules="[emailValidator, requiredValidator]"
+                                            />
+                                        </div>
+                                        <div class="ms-2">
+                                            <VCheckbox
+                                                v-model="save_client"
+                                                :readonly="disabled_client"
+                                                color="primary"
+                                                label="Spara kund?"
+                                                class="w-100 text-center d-flex justify-start"
                                             />
                                         </div>
                                     </div>
