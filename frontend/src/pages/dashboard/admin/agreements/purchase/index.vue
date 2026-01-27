@@ -533,7 +533,19 @@ const searchVehicleByPlate = async () => {
     const isSuccess = carRes?.success === true || carRes?.sucess === true
     
     if (isSuccess && carRes?.result) {
-        
+        // Actualizar año del modelo
+        if (carRes.result.model_year) {
+            year.value = carRes.result.model_year
+        }                    
+
+        if (carRes.result.color) {
+            color.value = carRes.result.color
+        }
+
+        if (carRes.result.chassis_number) {
+            chassis.value = carRes.result.chassis_number
+        }
+
         // Actualizar marca (Märke)
         if (carRes.result.brand_id) {
             brand_id.value = carRes.result.brand_id
@@ -551,6 +563,16 @@ const searchVehicleByPlate = async () => {
         
         if (carRes.result.mileage) {
             mileage.value = carRes.result.mileage
+        }
+
+        // Actualizar tipo de combustible (Drivmedel)
+        if (carRes.result.fuel_id) {
+            fuel_id.value = carRes.result.fuel_id
+        }
+
+        // Actualizar caja de cambios (Växellåda)
+        if (carRes.result.gearbox_id) {
+            gearbox_id.value = carRes.result.gearbox_id
         }
 
         advisor.value = {
@@ -1053,7 +1075,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </VBtn>
                                             </div>
                                         </div>
-
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
@@ -1069,7 +1090,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @click:clear="onClearBrand"
                                                 :menu-props="{ maxHeight: '300px' }"/>
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
                                             <AppAutocomplete
                                                 v-model="model_id"
@@ -1081,7 +1102,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectModel"
                                                 :menu-props="{ maxHeight: '300px' }"/> 
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="model_id === 0">
+                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
                                             <VTextField
                                                 v-model="model"

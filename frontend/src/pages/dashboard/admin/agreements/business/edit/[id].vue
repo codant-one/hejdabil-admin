@@ -797,7 +797,7 @@ onBeforeRouteLeave((to, from, next) => {
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
-                      <VAutocomplete
+                      <AppAutocomplete
                         v-model="brand_id"
                         :items="brands"
                         :item-title="item => item.name"
@@ -813,7 +813,7 @@ onBeforeRouteLeave((to, from, next) => {
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
-                      <VAutocomplete
+                      <AppAutocomplete
                         v-model="model_id"
                         :items="getModels"
                         autocomplete="off"
