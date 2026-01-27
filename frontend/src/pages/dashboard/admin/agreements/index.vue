@@ -1068,7 +1068,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center"> Inbytesfordon Reg. Nr </th>
             <th scope="col" class="text-center"> Kredit / Leasing </th>
             <th scope="col" class="text-center"> Typ </th>
-            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
+            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
             <th scope="col" class="text-center"> Skapad </th>
             <th scope="col" class="text-center"> 
               Signera status                            
