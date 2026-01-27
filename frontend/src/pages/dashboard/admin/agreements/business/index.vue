@@ -425,8 +425,8 @@ const onSubmit = async () => {
   // Verificar tab-1 (Erbjudande)
   const hasTab1Errors = !reg_num.value || 
                         !brand_id.value || 
-                        !model_id.value || 
-                        (model_id.value === 0 && !model.value) ||
+                        (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                        (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                         !mileage.value || 
                         !price.value
 

@@ -635,14 +635,45 @@ const searchVehicleByPlate = async () => {
   }
 }
 
+const goToAgreements = () => {
+
+  let data = {
+      message: 'Inköpsavtal framgångsrikt skapat',
+      error: false
+  }
+
+  router.push({ name : 'dashboard-admin-agreements'})
+  emitter.emit('toast', data)  
+
+};
+
+const showError = () => {
+    inteSkapatsDialog.value = false;
+
+    advisor.value.show = true;
+    advisor.value.type = "error";
+    
+    if (err.value && !err.value.success) {
+      advisor.value.message = err.value.message;
+    } else {
+      advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+    }
+
+    setTimeout(() => {
+      advisor.value.show = false;
+      advisor.value.type = "";
+      advisor.value.message = "";
+    }, 3000);
+
+};
 
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab 0 (Inköpsavtal)
     const hasTab0Errors = !reg_num.value || 
                           !brand_id.value || 
-                          !model_id.value || 
-                          (model_id.value === 0 && !model.value) ||
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                           !year.value ||
                           !color.value ||
                           !mileage.value || 
@@ -669,91 +700,162 @@ const onSubmit = async () => {
                           (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
                           (settled_by.value === 1 && (!payment_type_id.value || !bank.value || !account.value || !description.value))
 
-    // Si hay errores, ir al primer tab con error
-    if (hasTab0Errors && currentTab.value !== 0) {
-        currentTab.value = 0
-        
-        // Esperar a que el tab se monte y luego validar
-        await nextTick()
-        refForm.value?.validate()
-        
-        advisor.value = {
-            type: 'warning',
-            message: 'Vänligen fyll i alla obligatoriska fält i fliken Inköpsavtal',
-            show: true
-        }
-        
-        setTimeout(() => {
+    // Lógica de navegación entre tabs (0, 1, 2)
+    if (currentTab.value === 0) {
+        if (hasTab0Errors) {
+            // Validar el formulario para mostrar errores visuales
+            await nextTick()
+            refForm.value?.validate()
+            
             advisor.value = {
-                type: '',
-                message: '',
-                show: false
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Inköpsavtal',
+                show: true
             }
-        }, 3000)
-        
-        return
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
     }
     
-    if (hasTab1Errors && currentTab.value !== 1) {
-        currentTab.value = 1
-        
-        await nextTick()
-        refForm.value?.validate()
-        
-        advisor.value = {
-            type: 'warning',
-            message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
-            show: true
-        }
-        
-        setTimeout(() => {
+    if (currentTab.value === 1) {
+        if (hasTab1Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
             advisor.value = {
-                type: '',
-                message: '',
-                show: false
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                show: true
             }
-        }, 3000)
-        
-        return
-    }
-
-    if (hasTab2Errors && currentTab.value !== 2) {
-        currentTab.value = 2
-        
-        await nextTick()
-        refForm.value?.validate()
-        
-        advisor.value = {
-            type: 'warning',
-            message: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
-            show: true
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
         }
-        
-        setTimeout(() => {
+    }
+
+    if (currentTab.value === 2) {
+        if (hasTab2Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
             advisor.value = {
-                type: '',
-                message: '',
-                show: false
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
+                show: true
             }
-        }, 3000)
-        
-        return
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        } else {
+            // Avanzar al siguiente tab
+            currentTab.value++
+            return
+        }
     }
 
-    // Lógica de navegación entre tabs
-    if (currentTab.value === 0 && !hasTab0Errors) {
-        currentTab.value++
-        return
-    } else if (currentTab.value === 1 && !hasTab1Errors) {
-        currentTab.value++
-        return
-    } else if (currentTab.value === 2 && !hasTab2Errors) {
-        currentTab.value++
-        return
-    }
-
-    // Si estamos en el último tab (3), proceder con el submit final
+    // Si estamos en el último tab (3), verificar TODOS los tabs antes de enviar
     if (currentTab.value === 3) {
+        // Si hay errores en tabs anteriores, regresar al primero con error
+        if (hasTab0Errors) {
+            currentTab.value = 0
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Inköpsavtal',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+        
+        if (hasTab1Errors) {
+            currentTab.value = 1
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        if (hasTab2Errors) {
+            currentTab.value = 2
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        // Si no hay errores en ningún tab, proceder con el submit final
         refForm.value?.validate().then(({ valid: isValid }) => {
             if (isValid) {
                 let formData = new FormData()
@@ -848,45 +950,6 @@ const onSubmit = async () => {
     }
 }
 
-
-/*
-    Campos `v-model` con la regla `requiredValidator` dentro de los tabs (class="agreements-tabs")
-
-    Tab 1 (Inköpsavtal):
-    - reg_num
-    - brand_id
-    - model_id
-    - year
-    - color
-    - mileage
-    - purchase_date
-
-    Tab 2 (Kund):
-    - organization_number
-    - client_type_id
-    - fullname
-    - address
-    - postal_code
-    - street
-    - phone
-    - identification_id
-    - email
-
-    Tab 3 (Pris):
-    - price
-    - iva_id
-    - iva_sale_amount (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
-    - iva_sale_exclusive (tiene `:rules="[requiredValidator]"` aunque está deshabilitado)
-    - payment_type (campo alternativo visible cuando `payment_type_id === 0`, tiene `:rules="[requiredValidator]"`)
-
-    Reglas condicionales (computed que retornan `[requiredValidator]`):
-    - payment_type_id (usa `:rules="conditionalRules"` → requerido si `settled_by === 1`)
-    - loan_amount (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
-    - lessor (usa `:rules="conditionalRulesJa"` → requerido si `is_loan === 0`)
-    - bank, account, description (usan `:rules="conditionalRules"` → requeridos si `settled_by === 1`)
-
-    Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `agreements-tabs`.
-*/
 const currentData = computed(() => ({
     reg_num: reg_num.value,
     brand_id: brand_id.value,
@@ -1734,7 +1797,7 @@ onBeforeRouteLeave((to, from, next) => {
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
+                    <VBtn class="btn-light" @click="goToAgreements" >
                         Gå till avtalslistan
                     </VBtn>
                     <VBtn class="btn-gradient" @click="reloadPage">
@@ -1768,7 +1831,7 @@ onBeforeRouteLeave((to, from, next) => {
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
+                    <VBtn class="btn-light" @click="showError">
                         Stäng
                     </VBtn>
                 </VCardText>

@@ -491,8 +491,6 @@ const searchVehicleByPlate = async () => {
     try {
         const carRes = await carInfoStores.getLicensePlate(reg_num.value)
         
-        await fetchData()
-        
         // Verificar success (también manejar typo 'sucess' de la API)
         const isSuccess = carRes.success === true || carRes.sucess === true
 
@@ -1361,8 +1359,8 @@ const onSubmit = async () => {
     const hasTab1Errors = !reg_num.value || 
                           !mileage.value || 
                           !brand_id.value || 
-                          !model_id.value || 
-                          (model_id.value === 0 && !model.value) ||
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                           !car_body_id.value || 
                           !year.value || 
                           !chassis.value ||
