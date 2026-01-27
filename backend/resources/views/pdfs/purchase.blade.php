@@ -32,7 +32,7 @@
             margin-bottom: 8px;
         }
 
-         /* --- HEADER --- */
+        /* --- HEADER --- */
         .header-logo {
             width: 150px;
             display: inline-block;
@@ -377,7 +377,7 @@
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Miltal</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->mileage }}
+                                                {{ $agreement->vehicle_client->vehicle->mileage }} Mil
                                             </div>
                                         </td>
                                     </tr>
