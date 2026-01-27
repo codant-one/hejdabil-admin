@@ -501,19 +501,90 @@ const handleChangeTwo = (val) => {
     }
 }
 
-const searchVehicule = async () => {
-
-    isRequestOngoing.value = true
-
-    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
-
-    isRequestOngoing.value = false
-
-    if (carRes.success) {
-        chassis.value = carRes.result.chassis
-        year.value = carRes.result.model_year
+/**
+ * Buscar información del vehículo por matrícula usando la API car.info
+ * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
+ */
+const searchVehicleByPlate = async () => {
+  if (!reg_num.value) {
+    advisor.value = {
+        type: 'warning',
+        message: 'Ange ett registreringsnummer',
+        show: true
     }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+    }, 3000)
+
+    return
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+    
+    // Verificar success (también manejar typo 'sucess' de la API)
+    const isSuccess = carRes?.success === true || carRes?.sucess === true
+    
+    if (isSuccess && carRes?.result) {
+        
+        // Actualizar marca (Märke)
+        if (carRes.result.brand_id) {
+            brand_id.value = carRes.result.brand_id
+            selectBrand(brand_id.value)
+        }
+        
+        // Actualizar modelo (Modell)
+        if (carRes.result.model_id) {
+            model_id.value = carRes.result.model_id
+        } else if (carRes.result.model_name) {
+            // Si no se encontró el modelo en la DB, usar el campo de texto libre
+            model_id.value = 0
+            model.value = carRes.result.model_name
+        }
+        
+        if (carRes.result.mileage) {
+            mileage.value = carRes.result.mileage
+        }
+
+        advisor.value = {
+            type: 'success',
+            message: 'Fordonsdata hämtades framgångsrikt',
+            show: true
+        }   
+
+    } else {
+        advisor.value = {
+            type: 'warning',
+            message: 'Ingen information hittades för detta registreringsnummer',
+            show: true
+        }
+    }
+  } catch (error) {    
+    advisor.value = {
+        type: 'error',
+        message: error?.response?.data?.message || error?.message || 'Fel vid hämtning av fordonsdata',
+        show: true
+    }
+  } finally {
+      setTimeout(() => {
+          advisor.value = {
+              type: '',
+              message: '',
+              show: false
+          }
+      }, 3000)
+
+      isRequestOngoing.value = false
+  }
 }
+
 
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
@@ -975,7 +1046,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 />
                                                 <VBtn
                                                     class="btn-light w-auto px-4"
-                                                    @click="searchVehicule"
+                                                    @click="searchVehicleByPlate"
                                                 >
                                                     <VIcon icon="custom-search" size="24" />
                                                     Hämta
