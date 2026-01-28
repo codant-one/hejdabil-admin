@@ -640,11 +640,12 @@ const searchVehicleByPlate = async (type) => {
   isRequestOngoing.value = true
 
   try {
-    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+    const regNum = type === 1 ? reg_num.value : reg_num_interchange.value
+    const carRes = await carInfoStores.getLicensePlate(regNum)
     
     // Verificar success (también manejar typo 'sucess' de la API)
     const isSuccess = carRes?.success === true || carRes?.sucess === true
-    
+
     if (isSuccess && carRes?.result) {
 
         if (type === 1) {
