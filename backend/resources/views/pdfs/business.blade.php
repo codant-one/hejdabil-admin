@@ -15,7 +15,7 @@
             margin: 0;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 1;
+            line-height: 0.6;
             position: relative;
         }
         
@@ -28,8 +28,8 @@
         h2 {
             font-size: 13px;
             color: #008C91;
-            margin-top: 0;
-            margin-bottom: 8px;
+            margin-top: 10px;
+            margin-bottom: 4px;
         }
 
         /* --- HEADER --- */
@@ -66,17 +66,19 @@
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 10px;
+            padding-top: 4px;
         }
 
         .column-cell {
             width: 50%;
             vertical-align: top;
-            padding-top: 15px;
+            padding-top: 4px;
         }
 
-        .column-cell-left { padding-right: 15px; }
-        .column-cell-right { padding-left: 15px; }
+        .column-cell-left { padding-right: 4px; }
+        .column-cell-right { padding-left: 4px; }
+        .column-cell-left-2 { padding-right: 4px !important; }
+        .column-cell-right-2 { padding-left: 4px !important; }
 
         /* --- Tablas de información (Key-Value) --- */
         .info-table {
@@ -100,7 +102,7 @@
         .info-table .value {
             font-size: 10px;
             background-color: #F6F6F6;
-            padding: 5px;
+            padding: 6px 5px 0px 5px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
@@ -320,7 +322,7 @@
                                 <div class="value">
                                     {{ $agreement->agreement_client->address ?? '' }}
                                     @if(!empty($agreement->agreement_client->postal_code) || !empty($agreement->agreement_client->street))
-                                        <br>
+                                        , 
                                         {{ $agreement->agreement_client->postal_code ?? '' }} {{ $agreement->agreement_client->street ?? '' }}
                                     @endif
                                 </div>

@@ -80,7 +80,7 @@
         .column-cell-left-2 { padding-right: 4px !important; }
         .column-cell-right-2 { padding-left: 4px !important; }
 
-         /* --- Tablas de información (Key-Value) --- */
+        /* --- Tablas de información (Key-Value) --- */
         .info-table {
             width: 100%;
             border-collapse: collapse;
@@ -165,13 +165,14 @@
         }
 
         .consent-text {
-            font-size: 10px;
+            font-size: 8px;
             background-color: #F6F6F6;
             padding: 10px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             border-left: 1px solid #008C91;
             margin-bottom: 30px;
+            line-height: 0.8;
         }
 
         .signatures-table {
@@ -317,199 +318,187 @@
             <!-- === VEHICLE INFORMATION === -->
             <tr>
                 <td class="column-cell column-cell-left">
-                    <h2>Fordonsinformation</h2>
-                    <table style="width: 100%;">
+                    <h2>Fordonsinformation</h2>                    
+                    <table class="info-table">
                         <tr>
-                            <td style="padding:0;">
-                                <table class="info-table">
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Märke & Modell</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->model->brand->name }},
-                                                {{ $agreement->vehicle_client->vehicle->model->name }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Färg</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->color }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Årsmodell</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->year }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Chassinummer (VIN)</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->chassis }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Reg nr</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->reg_num }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Försäljningsdatum</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->sale_date }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @if($agreement->guaranty === 1)
-                                    <tr>                                        
-                                        <td colspan="2">
-                                            <div class="label">Garanti</div>
-                                            <div class="value">
-                                                {{ $agreement->guaranty_description }}
-                                            </div>
-                                        </td>                                        
-                                    </tr>
-                                    @endif
-                                    @if($agreement->insurance_company === 1)
-                                    <tr>
-                                        <td colspan="2">
-                                            <div class="label">Försäkring</div>
-                                            <div class="value">
-                                                {{ $agreement->insurance_company_description }} 
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                    <tr>
-                                        <td colspan="2">
-                                            <div class="label">Miltal</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->mileage }} Mil
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Märke & Modell</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->model->brand->name }},
+                                    {{ $agreement->vehicle_client->vehicle->model->name }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Färg</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->color }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Årsmodell</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->year }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Chassinummer (VIN)</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->chassis }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Reg nr</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->reg_num }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Försäljningsdatum</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->sale_date }}
+                                </div>
+                            </td>
+                        </tr>
+                        @if($agreement->guaranty === 1)
+                        <tr>                                        
+                            <td colspan="2">
+                                <div class="label">Garanti</div>
+                                <div class="value">
+                                    {{ $agreement->guaranty_description }}
+                                </div>
+                            </td>                                        
+                        </tr>
+                        @endif
+                        @if($agreement->insurance_company === 1)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Försäkring</div>
+                                <div class="value">
+                                    {{ $agreement->insurance_company_description }} 
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Miltal</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->mileage }} Mil
+                                </div>
                             </td>
                         </tr>
                     </table>
                 </td>
                 <td class="column-cell column-cell-right">
-                    <h2>Inbytesfordon</h2>
-                    <table style="width: 100%;">
+                    <h2>Inbytesfordon</h2>                    
+                    <table class="info-table">
                         <tr>
-                            <td style="padding:0;">
-                                <table class="info-table">
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Märke & Modell</div>
-                                            <div class="value">
-                                                {{ collect([
-                                                    $agreement->vehicle_interchange?->model?->brand?->name,
-                                                    $agreement->vehicle_interchange?->model?->name
-                                                ])->filter()->implode(', ') }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Färg</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->color }}
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Årsmodell</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->year }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Chassinummer (VIN)</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->chassis }}
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Reg nr</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->reg_num }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Försäljningsdatum</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->created_at->format('Y-m-d') }}
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Inbytespris</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Mätarställning</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->meter_reading }}
-                                            </div>
-                                        </td>
-                                    </tr>
-
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Kaross</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->carbody?->name }}
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Avdragbar moms</div>
-                                            <div class="value">
-                                                {{ $agreement->vehicle_interchange?->iva_purchase?->name }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @if($agreement->residual_debt === 1)
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2">
-                                            <div class="label">Restskuld</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->residual_price) }} kr
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2">
-                                            <div class="label">Verkligt värde</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->fair_value) }} kr
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @else
-                                    <tr>
-                                        <td colspan="2">
-                                            <div class="label">Verkligt värde</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->fair_value) }} kr
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endif
-                                </table>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Märke & Modell</div>
+                                <div class="value">
+                                    {{ collect([
+                                        $agreement->vehicle_interchange?->model?->brand?->name,
+                                        $agreement->vehicle_interchange?->model?->name
+                                    ])->filter()->implode(', ') }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Färg</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->color }}
+                                </div>
                             </td>
                         </tr>
-                    </table>
+
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Årsmodell</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->year }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Chassinummer (VIN)</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->chassis }}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Reg nr</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->reg_num }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Försäljningsdatum</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->created_at->format('Y-m-d') }}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Inbytespris</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Mätarställning</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->meter_reading }}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->carbody?->name }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Avdragbar moms</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_interchange?->iva_purchase?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @if($agreement->residual_debt === 1)
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Restskuld</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->residual_price) }} kr
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Verkligt värde</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->fair_value) }} kr
+                                </div>
+                            </td>
+                        </tr>
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Verkligt värde</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->fair_value) }} kr
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                    </table>                            
                 </td>
             </tr>
 
@@ -574,68 +563,67 @@
             <tr>
                 <td colspan="2" class="section-cell">
                     <h2>Betalningsinformation</h2>
-                    <table style="width:100%;">
+                    
+                </td>
+            </tr>
+            <tr>
+                <td class="column-cell column-cell-left">                    
+                    <table class="info-table">
                         <tr>
-                            <td class="column-cell" style="padding-top:0; padding-right:15px; padding-left:0;">
-                                <table class="info-table">
-                                    <tr>
-                                        <td>
-                                            <div class="label">Kontant / Handpenning</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->payment_received) }} kr
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Återstående belopp / Finansiering</div>
-                                            <div class="value">
-                                                {{ formatCurrency($agreement->installment_amount) }} kr
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Plusgiro</div>
-                                            <div class="value">
-                                                {{ $company->plus_spin }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <td>
+                                <div class="label">Kontant / Handpenning</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->payment_received) }} kr
+                                </div>
                             </td>
-                            <td class="column-cell" style="padding-top:0; padding-left:15px; padding-right:0;">
-                                <table class="info-table">
-                                    <tr>
-                                        <td>
-                                            <div class="label">Betalsätt för handpenning</div>
-                                            <div class="value">
-                                                {{ $agreement->payment_types->name }} 
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Bank för inbetalning</div>
-                                            <div class="value">
-                                                {{ $company->bank }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <div class="label">Kontonummer</div>
-                                            <div class="value">
-                                                {{ $company->account_number }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Återstående belopp / Finansiering</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->installment_amount) }} kr
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Plusgiro</div>
+                                <div class="value">
+                                    {{ $company->plus_spin }}
+                                </div>
                             </td>
                         </tr>
                     </table>
                 </td>
-            </tr>
+                <td class="column-cell column-cell-right">         
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="label">Betalsätt för handpenning</div>
+                                <div class="value">
+                                    {{ $agreement->payment_types->name }} 
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Bank för inbetalning</div>
+                                <div class="value">
+                                    {{ $company->bank }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Kontonummer</div>
+                                <div class="value">
+                                    {{ $company->account_number }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>                           
+                </td>
+            </tr>            
 
             @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
             <tr>
@@ -680,7 +668,7 @@
         <div class="footer-section">
             <div class="consent-text">
                 <p style="margin: 0;">
-                    Köparen samtycker till att dennes uppgifter lagras för lagstadgad räkenskapsinformation, Kap.2§ första stycket 8b BFL 2010:1514.
+                    Köparen samtycker till att personuppgifter behandlas och lagras för att uppfylla rättsliga skyldigheter avseende räkenskapsinformation enligt bokföringslagen (2010:1514), 2 kap. 8 § första stycket 8 b.
                 </p>
             </div>
             <table class="signatures-table" style="width: 100%;">

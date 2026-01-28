@@ -15,10 +15,10 @@
             margin: 0;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 0.8;
+            line-height: 0.6;
             position: relative;
         }
-
+        
         .main-container {
             width: 100%;
             border-collapse: collapse;
@@ -28,8 +28,8 @@
         h2 {
             font-size: 13px;
             color: #008C91;
-            margin-top: 0;
-            margin-bottom: 8px;
+            margin-top: 10px;
+            margin-bottom: 4px;
         }
 
         /* --- HEADER --- */
@@ -66,13 +66,13 @@
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 10px;
+            padding-top: 4px;
         }
 
         .column-cell {
             width: 50%;
             vertical-align: top;
-            padding-top: 8px;
+            padding-top: 4px;
         }
 
         .column-cell-left { padding-right: 4px; }
@@ -81,7 +81,7 @@
         .column-cell-right-2 { padding-left: 4px !important; }
 
         /* --- Tablas de información (Key-Value) --- */
-        .info-table {
+         .info-table {
             width: 100%;
             border-collapse: collapse;
         }
@@ -102,7 +102,7 @@
         .info-table .value {
             font-size: 10px;
             background-color: #F6F6F6;
-            padding: 5px;
+            padding: 6px 5px 0px 5px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
@@ -115,6 +115,7 @@
             padding: 5px 6px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
+            line-height: 0.8;
             min-height: 60px;
             border-left: 1px solid #008C91;
         }
