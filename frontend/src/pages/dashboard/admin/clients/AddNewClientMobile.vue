@@ -177,10 +177,10 @@ watch(currentData, () => {
     @submit.prevent="onSubmit"
   >
     <VList>
-      <VListItem v-if="role !== 'Supplier' && role !== 'User'">
+      <VListItem v-if="role !== 'Supplier' && role !== 'User'" class="pb-2">
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Leverantörer" />
         <VSelect
-          v-model="supplier_id"
-          placeholder="Leverantörer"
+          v-model="supplier_id"          
           :items="suppliers"
           :item-title="(item) => item.full_name"
           :item-value="(item) => item.id"
@@ -191,23 +191,23 @@ watch(currentData, () => {
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />        
         <VTextField
           v-model="fullname"
-          label="Fullständigt namn*"
           :rules="[requiredValidator]"
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />        
         <VTextField
           v-model="email"
           :rules="[emailValidator, requiredValidator]"
-          label="E-post*"
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />        
         <VTextField
           v-model="organization_number"
-          label="Org/personummer*"
           :rules="[requiredValidator, minLengthDigitsValidator(10)]"
           minLength="11"
           maxlength="13"
@@ -215,38 +215,40 @@ watch(currentData, () => {
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />        
         <VTextField
           v-model="address"
           :rules="[requiredValidator]"
-          label="Adress*"
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />        
         <VTextField
           v-model="postal_code"
           :rules="[requiredValidator]"
-          label="Postnummer*"
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />        
         <VTextField
           v-model="street"
           :rules="[requiredValidator]"
-          label="Stad*"
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />        
         <VTextField
           v-model="phone"
           :rules="[requiredValidator, phoneValidator]"
-          label="Telefon*"
         />
       </VListItem>
       <VListItem>
-        <VTextField v-model="reference" label="Vår referens" />
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />        
+        <VTextField v-model="reference" />
       </VListItem>
       <VListItem>
-        <VTextarea v-model="comments" label="Beskrivning" />
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />        
+        <VTextarea v-model="comments" />
       </VListItem>
     </VList>
     <div class="pb-6 px-6 d-flex gap-4 form-actions">
@@ -323,7 +325,7 @@ watch(currentData, () => {
 
     .v-list-item {
       margin-bottom: 0px;
-      padding: 0px !important;
+      padding: 4px 0 !important;
       gap: 0px !important;
 
       .v-input--density-compact {
@@ -348,7 +350,7 @@ watch(currentData, () => {
 
       .v-text-field {
         .v-input__control {
-          padding-top: 16px;
+          padding-top: 0;
           input {
             min-height: 48px;
             padding: 12px 16px;

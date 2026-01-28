@@ -1698,7 +1698,7 @@ onBeforeRouteLeave((to, from, next) => {
                     
                     <VTabs 
                         v-model="currentTab" 
-                        :grow="windowWidth < 1024 ? true : false"
+                        grow
                         :show-arrows="false"
                         class="vehicles-tabs"
                     >
@@ -2759,51 +2759,50 @@ onBeforeRouteLeave((to, from, next) => {
                         <!-- 👉 Form -->
                         <VForm
                             ref="refTask"
-                            @submit.prevent="createTask">
-                            
+                            @submit.prevent="createTask">                            
                             <VRow>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vad ska goras?*" />
                                     <VTextField
                                         v-model="measure"
-                                        label="Vad ska goras?*"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
                                     <VTextarea
                                         v-model="description"
                                         rows="4"
-                                        label="Beskrivning"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beräknad kostnad (kr)*" />
                                     <VTextField
                                         v-model="cost"
                                         type="number"
                                         min="0"
-                                        label="Beräknad kostnad (kr)*"
                                         suffix="KR"
                                         :rules="[requiredValidator]"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6" v-if="!is_cost">
+                                <VCol cols="12" md="6" v-if="!is_cost" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Startdatum*" />
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="start_date"
                                         density="compact"
                                         :config="endDateTimePickerConfig"
                                         :rules="[requiredValidator]"
-                                        label="Startdatum*"
                                         clearable
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6" v-if="!is_cost">
+                                <VCol cols="12" md="6" v-if="!is_cost" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum" />
                                     <AppDateTimePicker
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="end_date"
                                         density="compact"
                                         :config="endDateTimePickerConfig"
-                                        label="Slutdatum"
                                         clearable
                                     />
                                 </VCol>
@@ -2860,66 +2859,62 @@ onBeforeRouteLeave((to, from, next) => {
                     </VCardText>
                     <VCardText class="py-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                         <VRow>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Vad ska goras?*" />
                                 <VTextField
                                     v-model="measure"
-                                    label="Vad ska goras?*"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Beskrivning" />
                                 <VTextarea
                                     v-model="description"
-                                    rows="4"
-                                    label="Beskrivning"
+                                    rows="3"
                                 />
                             </VCol>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Beräknad kostnad (kr)*" />
                                 <VTextField
                                     v-model="cost"
                                     type="number"
                                     min="0"
-                                    label="Beräknad kostnad (kr)*"
                                     suffix="KR"
                                     :rules="[requiredValidator]"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6" v-if="!is_cost">
-                                <div @click.stop>
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="start_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        :rules="[requiredValidator]"
-                                        label="Startdatum*"
-                                        clearable
-                                    />
-                                </div>
+                            <VCol cols="12" md="6" v-if="!is_cost" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Startdatum*" />
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="start_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    :rules="[requiredValidator]"
+                                    clearable
+                                />
                             </VCol>
-                            <VCol cols="12" md="6" v-if="!is_cost">
-                                <div @click.stop>
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="end_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        label="Slutdatum"
-                                        clearable
-                                    />
-                                </div>
+                            <VCol cols="12" md="6" v-if="!is_cost" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Slutdatum" />
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="end_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    clearable
+                                />
                             </VCol>
-                             <VCol cols="12">
+                            <VCol cols="12">
                                 <VCheckbox
                                     v-model="is_cost"
                                     color="primary"
                                     label="Är det en kostnad för fordonet?"
                                     class="ms-2 w-100 text-center d-flex justify-start"
                                 />
-                            </VCol>
+                            </VCol>                            
                         </VRow>  
                         
-                        <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2">
+                        <div class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0 pt-2 pb-0">
                             <VBtn
                                 class="btn-light"
                                 @click="closeTask">
@@ -2969,38 +2964,38 @@ onBeforeRouteLeave((to, from, next) => {
                         <!-- 👉 Form -->
                         <VForm
                             ref="refUpdate"
-                            @submit.prevent="updateTask">
-                            
+                            @submit.prevent="updateTask">                            
                             <VRow>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vad ska goras?*" />
                                     <VTextField
                                         v-model="selectedTask.measure"
-                                        label="Vad ska goras?*"
                                         :rules="[requiredValidator]"
                                         :readonly="!isEdit"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />                                    
                                     <VTextarea
                                         v-model="selectedTask.description"
                                         rows="4"
-                                        label="Beskrivning"
                                         :readonly="!isEdit"
                                         persistent-placeholder
                                     />
                                 </VCol>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beräknad kostnad (kr)*" />                                    
                                     <VTextField
                                         v-model="selectedTask.cost"
                                         type="number"
                                         min="0"
-                                        label="Beräknad kostnad (kr)*"
                                         suffix="KR"
                                         :rules="[requiredValidator]"
                                         :readonly="!isEdit"
                                     />
                                 </VCol>
                                 <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Startdatum*" />                                    
                                     <AppDateTimePicker
                                         v-if="isEdit"
                                         :key="JSON.stringify(endDateTimePickerConfig)"
@@ -3008,30 +3003,27 @@ onBeforeRouteLeave((to, from, next) => {
                                         density="compact"
                                         :config="endDateTimePickerConfig"
                                         :rules="[requiredValidator]"
-                                        label="Startdatum*"
                                         clearable
                                     />
                                     <VTextField
                                         v-else
                                         :model-value="selectedTask.start_date"
-                                        label="Startdatum*"
                                         readonly
                                     />
                                 </VCol>
                                 <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum" />
                                     <AppDateTimePicker
                                         v-if="isEdit"
                                         :key="JSON.stringify(endDateTimePickerConfig)"
                                         v-model="selectedTask.end_date"
                                         density="compact"
                                         :config="endDateTimePickerConfig"
-                                        label="Slutdatum"
                                         clearable
                                     />
                                     <VTextField
                                         v-else
                                         :model-value="selectedTask.end_date"
-                                        label="Slutdatum"
                                         readonly
                                     />
                                 </VCol>
@@ -3046,7 +3038,6 @@ onBeforeRouteLeave((to, from, next) => {
                                     </VBtn>
                                 </VCol>
                             </VRow>
-
                             <VDivider 
                                 :class="[
                                     windowWidth < 1024 ? 'my-4' : 'my-6',
@@ -3147,76 +3138,72 @@ onBeforeRouteLeave((to, from, next) => {
                            {{ isEdit ? 'Uppdatera åtgärder/kostnader' : 'Kommentera åtgärder/kostnader' }}
                         </div>
                     </VCardText>
-                    <VCardText class="pt-5 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+                    <VCardText class="pt-5 pb-0 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                         <VRow>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Vad ska goras?*" />
                                 <VTextField
                                     v-model="selectedTask.measure"
-                                    label="Vad ska goras?*"
                                     :rules="[requiredValidator]"
                                     :readonly="!isEdit"
                                 />
                             </VCol>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Beskrivning" />                                    
                                 <VTextarea
                                     v-model="selectedTask.description"
-                                    rows="4"
-                                    label="Beskrivning"
+                                    rows="3"
                                     :readonly="!isEdit"
                                     persistent-placeholder
                                 />
                             </VCol>
-                            <VCol cols="12" md="12">
+                            <VCol cols="12" md="12" class="pb-0">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Beräknad kostnad (kr)*" />                                    
                                 <VTextField
                                     v-model="selectedTask.cost"
                                     type="number"
                                     min="0"
-                                    label="Beräknad kostnad (kr)*"
                                     suffix="KR"
                                     :rules="[requiredValidator]"
                                     :readonly="!isEdit"
                                 />
                             </VCol>
-                            <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
-                                <div @click.stop v-if="isEdit">
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="selectedTask.start_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        :rules="[requiredValidator]"
-                                        label="Startdatum*"
-                                        clearable
-                                    />
-                                </div>
+                            <VCol cols="12" md="12" class="pb-0" v-if="!selectedTask.is_cost">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Startdatum*" />                                    
+                                <AppDateTimePicker
+                                    v-if="isEdit"
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="selectedTask.start_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    :rules="[requiredValidator]"
+                                    clearable
+                                />
                                 <VTextField
                                     v-else
                                     :model-value="selectedTask.start_date"
-                                    label="Startdatum*"
                                     readonly
                                 />
                             </VCol>
-                            <VCol cols="12" md="6" v-if="!selectedTask.is_cost">
-                                <div @click.stop v-if="isEdit">   
-                                    <AppDateTimePicker
-                                        :key="JSON.stringify(endDateTimePickerConfig)"
-                                        v-model="selectedTask.end_date"
-                                        density="compact"
-                                        :config="endDateTimePickerConfig"
-                                        label="Slutdatum"
-                                        clearable
-                                    />
-                                </div>
+                            <VCol cols="12" md="12" class="pb-0" v-if="!selectedTask.is_cost">
+                                <VLabel class="text-body-2 text-high-emphasis" text="Slutdatum" />
+                                <AppDateTimePicker
+                                    v-if="isEdit"
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="selectedTask.end_date"
+                                    density="compact"
+                                    :config="endDateTimePickerConfig"
+                                    clearable
+                                />
                                 <VTextField
                                     v-else
                                     :model-value="selectedTask.end_date"
-                                    label="Slutdatum"
                                     readonly
                                 />
                             </VCol>
                         </VRow>
                         
-                        <div :class="isEdit ? 'd-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-2' : 'd-none'">
+                        <div :class="isEdit ? 'd-flex justify-end gap-3 flex-wrap dialog-actions px-0 pb-0' : 'd-none'">
                             <VBtn
                                 class="btn-light"
                                 @click="closeTask">
@@ -3229,7 +3216,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                         <VDivider 
                             :class="[
-                                windowWidth < 1024 ? 'my-4' : 'my-6',
+                                windowWidth < 1024 ? 'mt-6 mb-4' : 'my-6',
                                 isEdit ? 'd-none' : ''
                             ]" 
                         />
@@ -3349,35 +3336,34 @@ onBeforeRouteLeave((to, from, next) => {
                                 {{alertFile}}
                             </VAlert>
                             <VRow>
-                                <VCol cols="12" md="12">
+                                <VCol cols="12" md="12" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Dokumenttyp*" />
                                     <AppAutocomplete
                                         v-model="document_type_id"
-                                        placeholder="Dokumenttyp*"
                                         :items="document_types"
                                         :item-title="item => item.name"
                                         :item-value="item => item.id"
                                         autocomplete="off"
                                         :rules="[requiredValidator]"/>
                                 </VCol>
-                                <VCol cols="12" md="12" v-if="document_type_id === 4">
+                                <VCol cols="12" md="12" class="pb-0"v-if="document_type_id === 4">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övrigt" />
                                     <VTextField
                                         v-model="reference"
-                                        label="Övrigt"
                                         :rules="document_type_id === 4 ? [requiredValidator] : []"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Datum" />
                                     <VTextField
                                         :model-value="formattedDate"
                                         disabled
-                                        label="Datum"
                                     />
                                 </VCol>
-                                <VCol cols="12" md="6">
+                                <VCol cols="12" md="6" class="pb-0">
+                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Ladda upp fil*" />
                                     <VFileInput       
-                                        v-model="filename"                   
-                                        label="Ladda upp fil*"
-                                        placeholder="Ladda upp fil*"
+                                        v-model="filename"
                                         prepend-icon=""
                                         append-inner-icon="custom-upload"
                                         :rules="[requiredValidator]"
@@ -3423,9 +3409,9 @@ onBeforeRouteLeave((to, from, next) => {
                     </VAlert>
                     <VList>
                         <VListItem>
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Dokumenttyp*" />
                             <AppAutocomplete
                                 v-model="document_type_id"
-                                placeholder="Dokumenttyp*"
                                 :items="document_types"
                                 :item-title="item => item.name"
                                 :item-value="item => item.id"
@@ -3433,27 +3419,25 @@ onBeforeRouteLeave((to, from, next) => {
                                 :rules="[requiredValidator]"/>
                         </VListItem>
                         <VListItem v-if="document_type_id === 4">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övrigt*" />
                             <VTextField
                                 v-model="reference"
-                                label="Övrigt"
                                 :rules="document_type_id === 4 ? [requiredValidator] : []"
                             />
                         </VListItem>
                         <VListItem>
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Datum" /> 
                             <VTextField
                                 :model-value="formattedDate"
                                 disabled
-                                label="Datum"
                             />
                         </VListItem>
                         <VListItem>
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Ladda upp fil*" />                                            
                             <VFileInput       
-                                v-model="filename"                   
-                                label="Ladda upp fil*"
-                                placeholder="Ladda upp fil*"
+                                v-model="filename"           
                                 prepend-icon=""
                                 append-inner-icon="custom-upload"
-                                class="mt-4"
                                 :rules="[requiredValidator]"
                             />
                         </VListItem>
@@ -3517,14 +3501,15 @@ onBeforeRouteLeave((to, from, next) => {
                             class="selector-user selector-truncate w-auto"
                             @update:modelValue="selectCl"/>
                     </VCardText>
-                    <VCardText class="card-form">
+                    <VCardText class="dialog-text card-form">
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                         <VTextField
-                            v-model="mail"
-                            label="E-post"
+                            v-model="mail"                           
+                            placeholder="Ange mottagarens e-postadress"
                             :rules="[requiredValidator, emailValidator]"
                         />                           
                     </VCardText>
-                   <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+                   <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
                         <VBtn
                             class="btn-light"
                             @click="isConfirmSendDocumentDialogVisible = false">
@@ -3970,7 +3955,7 @@ onBeforeRouteLeave((to, from, next) => {
 
     .v-list-item {
       margin-bottom: 0px;
-      padding: 0px !important;
+      padding: 4px 0 !important;
       gap: 0px !important;
 
       .v-input--density-compact {
@@ -3995,7 +3980,7 @@ onBeforeRouteLeave((to, from, next) => {
 
       .v-text-field {
         .v-input__control {
-          padding-top: 16px;
+          padding-top: 0;
           input {
             min-height: 48px;
             padding: 12px 16px;

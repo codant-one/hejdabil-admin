@@ -129,7 +129,7 @@ const searchPerson = async () => {
 
     } catch (error) {
         const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
-        
+        emit('showLoading', false)
         emit('showError', errorMessage)
     }
 }

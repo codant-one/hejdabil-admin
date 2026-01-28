@@ -1584,7 +1584,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Du är på väg att permanent radera "{{ selectedDocument.title }}". All
+          Du är på väg att permanent radera <strong>"{{ selectedDocument.title }}"</strong>. All
           associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>
 
@@ -1637,15 +1637,15 @@ onBeforeUnmount(() => {
               @update:modelValue="selectClient"
             />
           </VCardText>
-          <VCardText class="card-form">
-            <VTextField
+          <VCardText class="dialog-text card-form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
+              <VTextField
               v-model="sendDocumentEmail"
-              label="E-post"
               placeholder="Ange mottagarens e-postadress"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
               @click="isConfirmSendDocumentDialogVisible = false"
@@ -2260,7 +2260,7 @@ onBeforeUnmount(() => {
 
       .v-list-item {
         margin-bottom: 0px;
-        padding: 0px !important;
+        padding: 4px 0 !important;
         gap: 0px !important;
 
         .v-input--density-compact {
@@ -2296,7 +2296,7 @@ onBeforeUnmount(() => {
 
         .v-text-field {
           .v-input__control {
-            padding-top: 16px;
+            padding-top: 0;
             input {
               min-height: 48px;
               padding: 12px 16px;

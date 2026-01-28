@@ -732,7 +732,7 @@ onBeforeUnmount(() => {
           <!-- Är du säker att du vill ta bort klienten
           <strong>{{ selectedClient.fullname }}</strong
           >? -->
-          Detta raderar permanent posten för det sålda fordonet "{{ selectedVehicle.reg_num }}" från 
+          Detta raderar permanent posten för det sålda fordonet <strong>"{{ selectedVehicle.reg_num }}"</strong> från 
           din försäljningshistorik. Åtgärden kan inte ångras.
         </VCardText>
 
@@ -769,10 +769,10 @@ onBeforeUnmount(() => {
         
         <VCardText class="pt-0">
           <VRow class="pt-3">
-            <VCol cols="12" md="12">
+            <VCol cols="12" md="12" class="pb-0">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
               <AppAutocomplete
                 v-model="brand_id"
-                placeholder="Märke"
                 :items="brands"
                 :item-title="item => item.name"
                 :item-value="item => item.id"
@@ -782,28 +782,28 @@ onBeforeUnmount(() => {
                 @update:modelValue="selectBrand"
                 :menu-props="{ maxHeight: '300px' }"/>
             </VCol>
-            <VCol cols="12" md="12">
+            <VCol cols="12" md="12" class="pb-0">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell" />
               <AppAutocomplete
                 v-model="model_id"
-                placeholder="Modell"
                 :items="getModels"
                 autocomplete="off"
                 clearable
                 clear-icon="tabler-x"
                 :menu-props="{ maxHeight: '300px' }"/>
             </VCol>
-            <VCol cols="12" md="12">
+            <VCol cols="12" md="12" class="pb-0">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell" />
               <VTextField
                 v-model="year"
                 :rules="[yearValidator]"
-                label="Årsmodell"
                 clearable
             />
             </VCol>
             <VCol cols="12" md="12">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Biltyp" />
               <AppAutocomplete
                 v-model="gearbox_id"
-                placeholder="Biltyp"
                 :items="gearboxes"
                 :item-title="item => item.name"
                 :item-value="item => item.id"
@@ -834,9 +834,9 @@ onBeforeUnmount(() => {
       <VCard class="card-form">
         <VList>
           <VListItem class="form pt-6">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
             <AppAutocomplete
               v-model="brand_id"
-              placeholder="Märke"
               :items="brands"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -847,9 +847,9 @@ onBeforeUnmount(() => {
               :menu-props="{ maxHeight: '300px' }"/>
           </VListItem>
           <VListItem class="form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell" />
             <AppAutocomplete
               v-model="model_id"
-              placeholder="Modell"
               :items="getModels"
               autocomplete="off"
               clearable
@@ -857,17 +857,17 @@ onBeforeUnmount(() => {
               :menu-props="{ maxHeight: '300px' }"/>
           </VListItem>
           <VListItem class="form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell" />
             <VTextField
               v-model="year"
               :rules="[yearValidator]"
-              label="Årsmodell"
               clearable
             />
           </VListItem>
           <VListItem class="form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Biltyp" />
             <AppAutocomplete
               v-model="gearbox_id"
-              placeholder="Biltyp"
               :items="gearboxes"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -948,14 +948,14 @@ onBeforeUnmount(() => {
     cursor: no-drop !important;
   }
 </style>
-<style scope>
+<style lang="scss">
   .card-form {
     .v-list {
       padding: 28px 24px 40px !important;
 
       .v-list-item {
         margin-bottom: 0px;
-        padding: 0px !important;
+        padding: 4px 0 !important;
         gap: 0px !important;
 
         .v-input--density-compact {
@@ -991,7 +991,7 @@ onBeforeUnmount(() => {
 
         .v-text-field {
           .v-input__control {
-            padding-top: 16px;
+            padding-top: 0;
             input {
               min-height: 48px;
               padding: 12px 16px;

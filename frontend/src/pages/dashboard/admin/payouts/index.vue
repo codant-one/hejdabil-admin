@@ -902,7 +902,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Visa detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 4"
+                    v-if="$can('view','payouts') && payout.state.id === 4 && role === 'Supplier'"
                     @click="shareReceipt(payout)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" />
@@ -910,7 +910,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    v-if="$can('view','payouts') && payout.state.id === 1 && role === 'Supplier'"
                     @click="editPayout(payout)">
                     <template #prepend>
                       <VIcon icon="custom-check-mark" size="24" />
@@ -918,7 +918,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Bekräfta betalning</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1"
+                    v-if="$can('view','payouts') && payout.state.id === 1 && role === 'Supplier'"
                     @click="showCancelDialog(payout)">
                     <template #prepend>
                       <VIcon icon="custom-unavailable" size="24" />
@@ -926,7 +926,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Avbryt</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','payouts')"
+                    v-if="$can('delete','payouts') && role === 'Supplier'"
                     @click="showDeleteDialog(payout)"
                     class="d-none">
                     <template #prepend>
@@ -1094,7 +1094,7 @@ const handleSendPayout = () => {
                 {{ selectedPayout.state.name }}
               </div>
 
-              <div v-if="selectedPayout.payout_state_id === 4" class="d-flex gap-2">
+              <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
                 <VBtn
                   v-if="selectedPayout.payout_state_id === 4"
                   class="btn-light"
@@ -1182,7 +1182,7 @@ const handleSendPayout = () => {
               <VIcon icon="custom-return" size="24" />
               Gå ut
             </VBtn>
-            <div v-if="selectedPayout.payout_state_id === 4" class="d-flex gap-2">
+            <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
               <VBtn
                 v-if="selectedPayout.payout_state_id === 4"
                 class="btn-light"
@@ -1298,15 +1298,15 @@ const handleSendPayout = () => {
               @update:modelValue="selectClient"
             />
           </VCardText>
-          <VCardText class="card-form">
-            <VTextField
+          <VCardText class="dialog-text card-form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
+              <VTextField
               v-model="sendPayoutEmail"
-              label="E-post"
               placeholder="Ange mottagarens e-postadress"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
               @click="isConfirmSendPayoutDialogVisible = false"
@@ -1429,7 +1429,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Visa detaljer</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4 && role === 'Supplier'"
             @click="shareReceipt(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-paper-plane" size="24" />
@@ -1437,7 +1437,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && role === 'Supplier'"
             @click="editPayout(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-check-mark" size="24" />
@@ -1445,7 +1445,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Bekräfta betalning</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && role === 'Supplier'"
             @click="showCancelDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-unavailable" size="24" />
@@ -1453,7 +1453,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Avbryt</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete', 'payouts')"
+            v-if="$can('delete', 'payouts') && role === 'Supplier'"
             class="d-none"
             @click="showDeleteDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;"
           >

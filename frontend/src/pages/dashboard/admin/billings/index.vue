@@ -1055,11 +1055,10 @@ onBeforeUnmount(() => {
             :label="selectedBilling.client.email"
             class="ml-2"
           />
-
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Ange e-postadresser för att skicka fakturan"
             multiple
             chips
             deletable-chips

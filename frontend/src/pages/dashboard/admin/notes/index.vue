@@ -971,54 +971,54 @@ onBeforeUnmount(() => {
               @submit.prevent="submitFormFromDrawer"
             >
               <VRow>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                     <VTextField
                       v-model="selectedNote.reg_num"
-                      label="Reg nr*"
                       :rules="[requiredValidator]"
                       :readonly="!isEdit"
                       @input="selectedNote.reg_num = selectedNote.reg_num.toUpperCase()"
                     />
                 </VCol>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Egen värdering*" />
                     <VTextField
                       v-model="selectedNote.note"
                       type="number"
                       min="0"
-                      label="Egen värdering*"
                       suffix="KR"
                       :rules="[requiredValidator]"
                       :readonly="!isEdit"
                     />
                 </VCol>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kundnamn" />
                     <VTextField
                       v-model="selectedNote.name"
-                      label="Kundnamn"
                       :readonly="!isEdit"
                     />
                 </VCol>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                     <VTextField
                       v-model="selectedNote.phone"
                       :rules="[phoneValidator]"
-                      label="Tel nr"
                       :readonly="!isEdit"
                     />
                 </VCol>
-                <VCol cols="12" md="12">
+                <VCol cols="12" md="12" class="pb-0">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
                     <VTextField
                       v-model="selectedNote.email"
                       :rules="[emailValidator]"
-                      label="E-post"
                       :readonly="!isEdit"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kommentar" />
                     <VTextarea
                       v-model="selectedNote.comment"
                       rows="3"
-                      label="Kommentar"
                       :readonly="!isEdit"
                     />
                 </VCol>
@@ -1140,54 +1140,54 @@ onBeforeUnmount(() => {
             </VCardText>
             <VCardText class="pt-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
                 <VRow>
-                    <VCol cols="12" md="12">
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                       <VTextField
                         v-model="selectedNote.reg_num"
-                        label="Reg nr*"
                         :rules="[requiredValidator]"
                         :readonly="!isEdit"
                         @input="selectedNote.reg_num = selectedNote.reg_num.toUpperCase()"
                       />
                     </VCol>
-                    <VCol cols="12" md="12">
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Egen värdering*" />
                       <VTextField
                         v-model="selectedNote.note"
                         type="number"
                         min="0"
-                        label="Egen värdering*"
                         suffix="KR"
                         :rules="[requiredValidator]"
                         :readonly="!isEdit"
                       />
                     </VCol>
-                    <VCol cols="12" md="12">
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kundnamn" />
                       <VTextField
                           v-model="selectedNote.name"
-                          label="Kundnamn"
                           :readonly="!isEdit"
                       />
                     </VCol>
-                    <VCol cols="12" md="12">
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                       <VTextField
                         v-model="selectedNote.phone"
                         :rules="[phoneValidator]"
-                        label="Tel nr"
                         :readonly="!isEdit"
                       />
                     </VCol>
-                    <VCol cols="12" md="12">
+                    <VCol cols="12" md="12" class="pb-0">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
                       <VTextField
                         v-model="selectedNote.email"
                         :rules="[emailValidator]"
-                        label="E-post"
                         :readonly="!isEdit"
                       />
                     </VCol>
                     <VCol cols="12" md="12">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kommentar" />
                       <VTextarea
                         v-model="selectedNote.comment"
                         rows="3"
-                        label="Kommentar"
                         :readonly="!isEdit"
                       />
                     </VCol>
@@ -1206,7 +1206,7 @@ onBeforeUnmount(() => {
 
                 <VDivider 
                   :class="[
-                    windowWidth < 1024 ? 'my-4' : 'my-6',
+                    windowWidth < 1024 ? 'mt-6 mb-4' : 'my-6',
                     isEdit ? 'd-none' : ''
                   ]" 
                 />

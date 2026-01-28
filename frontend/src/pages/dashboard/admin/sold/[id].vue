@@ -1192,19 +1192,6 @@ onBeforeRouteLeave((to, from, next) => {
         }
     }
 
-    @media (max-width: 776px) {
-        .v-tabs.vehicles-tabs {
-            .v-icon {
-                display: none !important;
-            }
-            .v-btn {
-                .v-btn__content {
-                    white-space: break-spaces;
-                }
-            }
-        }
-    }
-
     .info-grid {
         display: flex;
         flex-wrap: wrap;

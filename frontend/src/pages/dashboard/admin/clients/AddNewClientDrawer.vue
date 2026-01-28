@@ -235,10 +235,10 @@ watch(currentData, () => {
             v-model="isFormValid" 
             @submit.prevent="onSubmit">
             <VRow>
-              <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
+              <VCol cols="12" md="12" class="py-0" v-if="role !== 'Supplier' && role !== 'User'">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Leverantörer" />
                 <VSelect                 
                   v-model="supplier_id"
-                  placeholder="Leverantörer"
                   :items="suppliers"
                   :item-title="(item) => item.full_name"
                   :item-value="(item) => item.id"
@@ -248,70 +248,71 @@ watch(currentData, () => {
                   :menu-props="{ maxHeight: '300px' }"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />
                 <VTextField
                   v-model="fullname"
-                  label="Fullständigt namn*"
                   :rules="[requiredValidator]"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                 <VTextField
                   v-model="email"
                   :rules="[emailValidator, requiredValidator]"
-                  label="E-post*"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
                 <VTextField
                   v-model="organization_number"
-                  label="Org/personummer*"
                   :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                   minLength="11"
                   maxlength="13"
                   @input="formatOrgNumber()"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress**" />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
-                  label="Adress*"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
                 <VTextField
                   v-model="postal_code"
                   :rules="[requiredValidator]"
-                  label="Postnummer*"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                 <VTextField
                   v-model="street"
                   :rules="[requiredValidator]"
-                  label="Stad*"
                 />
               </VCol>
-              <VCol cols="12" md="6">
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                 <VTextField
                   v-model="phone"
                   :rules="[requiredValidator, phoneValidator]"
-                  label="Telefon*"
                 />
               </VCol>
-              <VCol cols="12" md="6">
-                <VTextField v-model="reference" label="Vår referens" />
+              <VCol cols="12" md="6" class="pb-0">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
+                <VTextField v-model="reference" />
               </VCol>
               <VCol cols="12" md="12">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Beskrivning" />
                 <VTextarea 
                   v-model="comments"
-                  label="Beskrivning"
-                />
-              </VCol>
-            
+                  rows="3"
+                  />
+              </VCol>            
               <!-- 👉 Submit and Cancel -->
-              <VCol cols="12">
+              <VCol cols="12" class="pb-0">
                 <VBtn
                   type="reset"
                   class="btn-light me-3"
