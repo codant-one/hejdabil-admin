@@ -149,7 +149,10 @@
             padding-bottom: 8px;
         }
 
-        .financials-table .moms-row td { font-weight: normal; }
+        .financials-table .moms-row td { 
+            font-weight: normal; 
+            padding-top: 0;
+        }
 
         /* --- PIE DE PÁGINA --- */
         .footer-section {
@@ -524,13 +527,29 @@
                                 <td>Inbytespris</td>
                                 @if($agreement->residual_debt === 1)
                                 <td>{{ formatCurrency($agreement->fair_value) }} kr</td>
+                                @else   
+                                    @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->purchase_price !== null && $agreement->vehicle_interchange->purchase_price > 0)
+                                    <td>- {{ formatCurrency($agreement->vehicle_interchange->purchase_price) }} kr</td>
+                                    @else
+                                    <td>{{ formatCurrency($agreement->vehicle_interchange?->purchase_price ?? 0) }} kr</td>
+                                    @endif
+                                @endif
+                            </tr>
+                            <tr>
+                                <td>Kontant / Handpenning</td>
+                                @if($agreement->payment_received !== null && $agreement->payment_received > 0)
+                                <td>- {{ formatCurrency($agreement->payment_received) }} kr</td>
                                 @else
-                                <td>- {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr</td>
+                                <td>{{ formatCurrency($agreement->payment_received ?? 0) }} kr</td>
                                 @endif
                             </tr>
                             <tr>
                                 <td>Avgår rabatt</td>
-                                <td>{{ formatCurrency($agreement->discount) }} kr</td>
+                                @if($agreement->discount !== null && $agreement->discount > 0)
+                                <td>- {{ formatCurrency($agreement->discount) }} kr</td>
+                                @else
+                                <td>{{ formatCurrency($agreement->discount ?? 0) }} kr</td>
+                                @endif
                             </tr>
                             <tr>
                                 <td>Registreringsavgift</td>

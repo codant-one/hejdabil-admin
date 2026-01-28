@@ -139,7 +139,7 @@ const paymentTypes = ref([])
 const payment_type_id = ref(null)
 const advances = ref([])
 const advance_id = ref(null)
-const payment_received = ref(null)
+const payment_received = ref(0)
 const payment_method_forcash = ref(null)
 const installment_amount = ref(null)
 const installment_contract_upon_delivery = ref(false)
@@ -158,7 +158,8 @@ const calculate = () => {
     const sale = Number(price.value) || 0
     const fee = Number(registration_fee.value) || 0
     const disc = Number(discount.value) || 0
-    const value = (sale + fee) - disc 
+    const cash = Number(payment_received.value) || 0
+    const value = (sale + fee) - disc - cash
 
     if(iva_id.value === 2)
         iva_sale_amount.value = ((Number(value) || 0) * 0.2)
@@ -206,6 +207,9 @@ watch(() => registration_fee.value, (val) => {
     calculate()
 })
 
+watch(() => payment_received.value, (val) => {
+    calculate()
+})
 
 watchEffect(fetchData)
 
@@ -1949,7 +1953,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="discount"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>                                        
@@ -1989,7 +1993,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="registration_fee"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>

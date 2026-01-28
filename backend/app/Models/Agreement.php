@@ -564,9 +564,40 @@ class Agreement extends Model
             $request->merge(['chassis' => $request->chassis_interchange ]);
             $request->merge(['sale_date' => $request->sale_date_interchange ]);
 
-            $vehicleInterchange = Vehicle::find($request->vehicle_interchange_id);
-            $request->request->add(['state_id' => $vehicleInterchange->state_id]);
-            $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+            // Verificar si vehicle_interchange_id existe y no es null
+            if ($request->vehicle_interchange_id !== null && $request->vehicle_interchange_id !== 'null') {
+                // Buscar y actualizar vehículo existente
+                $vehicleInterchange = Vehicle::find($request->vehicle_interchange_id);
+                
+                if ($vehicleInterchange) {
+                    $request->request->add(['state_id' => $vehicleInterchange->state_id]);
+                    $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+                }
+            } else {
+                // Crear nuevo vehículo interchange
+                $vehicleRequest = VehicleRequest::createFrom($request);
+
+                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+                if($validate->fails()){
+                    $vehicleRequest->failedValidation($validate);
+                }
+
+                //Set Vehicle State ID on InStock
+                $vehicleRequest->request->add(['state_id' => 10]);
+                $vehicleRequest->request->add(['type' => '2']);
+
+                $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
+                $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
+
+                if ($request->has("vehicle_interchange_id"))
+                    $request->merge([
+                        "vehicle_interchange_id" => $vehicleInterchange->id
+                    ]);
+                else
+                    $request->request->add([
+                        'vehicle_interchange_id' => $vehicleInterchange->id
+                    ]);
+            }
         }
 
         //Update Agreement Client.
