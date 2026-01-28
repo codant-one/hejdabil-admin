@@ -46,13 +46,13 @@
         }
 
         .header-logo-cell {
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: top;
+            vertical-align: bottom;
         }
 
         .header-title-cell h1 {
