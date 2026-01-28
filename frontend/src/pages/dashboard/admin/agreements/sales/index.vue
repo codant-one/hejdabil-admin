@@ -1197,12 +1197,6 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
-  
-  // Check for URL hash to activate specific tab
-  const hash = window.location.hash;
-  if (hash === '#tab-tasks') {
-    currentTab.value = 'tab-5';
-  }
 });
 
 onBeforeUnmount(() => {
