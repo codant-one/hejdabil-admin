@@ -254,6 +254,9 @@ async function fetchData() {
         mileage.value = agreement.value.vehicle_client.vehicle.mileage
         purchase_date.value = agreement.value.vehicle_client.vehicle.purchase_date === null ? formatDate(new Date()) : agreement.value.vehicle_client.vehicle.purchase_date
         comments.value = agreement.value.vehicle_client.vehicle.comments
+        summer_tire.value = agreement.value.vehicle_client.vehicle.summer_tire
+        winter_tire.value = agreement.value.vehicle_client.vehicle.winter_tire
+        service_book.value = agreement.value.vehicle_client.vehicle.service_book
 
         if(agreement.value.vehicle_client.vehicle.model_id !== null) {
             let modelId = agreement.value.vehicle_client.vehicle.model_id

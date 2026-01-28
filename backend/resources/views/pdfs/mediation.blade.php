@@ -104,7 +104,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 5px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
             color: #5D5D5D;
@@ -114,7 +114,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 5px 6px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 60px;
             border-left: 1px solid #008C91;

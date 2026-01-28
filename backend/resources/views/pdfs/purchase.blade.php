@@ -103,7 +103,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 5px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
             color: #5D5D5D;
@@ -113,7 +113,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 5px 6px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 60px;
             border-left: 1px solid #008C91;
@@ -215,27 +215,21 @@
                     <h2>Köpare</h2>
                     <table class="info-table">
                         <tr>
-                            <td>
-                                <table class="info-table">
-                                    <tr>
-                                        <td class="column-cell column-cell-left-2 pb-0">
-                                            <div class="label">Företag</div>
-                                            <div class="value">
-                                                {{ $company->company }} 
-                                            </div>
-                                        </td>
-                                        <td class="column-cell column-cell-right-2 pb-0">
-                                            <div class="label">Namn</div>
-                                            <div class="value">
-                                                {{ $company->name }} {{ $company->last_name }}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </table>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Företag</div>
+                                <div class="value">
+                                    {{ $company->company }} 
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2 pb-0">
+                                <div class="label">Namn</div>
+                                <div class="value">
+                                    {{ $company->name }} {{ $company->last_name }}
+                                </div>
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td colspan="2">
                                 <div class="label">Adress</div>
                                 <div class="value">
                                     {{ $company->address }} 
@@ -243,7 +237,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td colspan="2">
                                 <div class="label">Postnr. ort</div>
                                 <div class="value">
                                     {{ $company->postal_code }} {{ $company->street }}  
@@ -251,26 +245,24 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Org/person nr.</div>
                                 <div class="value">
                                     {{ $company->organization_number }} 
                                 </div>
                             </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">E-post</div>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Mobil</div>
                                 <div class="value">
-                                    {{ $company->email }} 
+                                    {{ $company->phone }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td>
-                                <div class="label">Mobil</div>
-                                    <div class="value">
-                                    {{ $company->phone }}
+                            <td colspan="2">
+                                <div class="label">E-post</div>
+                                <div class="value">
+                                    {{ $company->email }} 
                                 </div>
                             </td>
                         </tr>
@@ -280,7 +272,7 @@
                     <h2>Säljare</h2>
                     <table class="info-table">
                         <tr>
-                            <td>
+                            <td colspan="2">
                                 <div class="label">Namn</div>
                                 <div class="value">
                                     {{ $agreement->agreement_client->fullname }}
@@ -288,7 +280,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td colspan="2">    
                                 <div class="label">Adress</div>
                                 <div class="value">
                                     {{ $agreement->agreement_client->address }}
@@ -296,7 +288,7 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td colspan="2">
                                 <div class="label">Postnr. ort</div>
                                 <div class="value">
                                     {{ $agreement->agreement_client->postal_code }} {{ $agreement->agreement_client->street }} 
@@ -304,26 +296,24 @@
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Org/person nr.</div>
                                 <div class="value">
                                     {{ $agreement->agreement_client->organization_number }}
                                 </div>
                             </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">E-post</div>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Mobil</div>
                                 <div class="value">
-                                    {{ $agreement->agreement_client->email }}
+                                    {{ $agreement->agreement_client->phone }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td>
-                                <div class="label">Mobil</div>
+                            <td colspan="2">
+                                <div class="label">E-post</div>
                                 <div class="value">
-                                    {{ $agreement->agreement_client->phone }}
+                                    {{ $agreement->agreement_client->email }}
                                 </div>
                             </td>
                         </tr>
@@ -421,13 +411,19 @@
                             <td style="padding:0;">
                                 <table class="info-table">
                                     <tr>
-                                        <td colspan="2">
-                                            <div class="label">Anteckningar</div>
+                                        <td>
+                                            <div class="label">Sommardäck finns?</div>
                                             <div class="value">
-                                                {{ $agreement->vehicle_client->vehicle->comments }}
+                                                {{ $agreement->vehicle_client->vehicle->summer_tire === 0 ? 'Ja' : 'Nej' }}
                                             </div>
                                         </td>
-                                    </tr>
+                                        <td class="column-cell column-cell-right-2">
+                                            <div class="label">Vinterdäck finns?</div>
+                                            <div class="value">
+                                                {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                            </div>
+                                        </td>
+                                    </tr>                                   
                                     <tr>
                                         <td class="column-cell column-cell-left-2">
                                             <div class="label">Inköpspris</div>
@@ -493,8 +489,24 @@
                             </td>
                         </tr>
                     </table>
+                </td>                
+            </tr>
+            @if($agreement->vehicle_client->vehicle->comments)
+            <tr>
+                <td colspan="2">
+                    <table class="info-table">
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Anteckningar</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->comments }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
                 </td>
             </tr>
+            @endif
             <!-- Kontantfaktura -->
             <tr>
                 <td colspan="2" class="section-cell">

@@ -103,7 +103,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 6px 5px 0px 5px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
             color: #5D5D5D;
@@ -113,7 +113,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 5px 6px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             line-height: 0.8;
             min-height: 40px;
@@ -165,7 +165,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             border-left: 1px solid #008C91;
             margin-bottom: 30px;
