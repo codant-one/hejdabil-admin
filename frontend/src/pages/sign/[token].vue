@@ -208,6 +208,11 @@ onBeforeUnmount(() => {
   if (pdfResizeObserver) pdfResizeObserver.disconnect()
 })
 
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
+
 // --- Funciones del Componente (Refactorizadas) ---
 
 // Registrar la visita a la página de firma
@@ -728,16 +733,32 @@ onMounted(loadSignatureData);
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
     <div v-if="!isRequestOngoing && finalState && finalState.type === 'error' && !isAlreadySigned">
-      <VCard class="signing-card pa-4">
+      <VCard class="signing-card pa-4 d-flex flex-column" style="min-height: 100vh;">
         <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
           <img :src="logo" width="121" height="40" alt="Billogg" />
         </div>
-        <VAlert
-          color="error"
-          class="alert-no-shrink custom-alert mt-4"
-        >
-          <VAlertTitle>{{ finalState.message }}</VAlertTitle>
-        </VAlert>
+
+        <div 
+          class="empty-state my-auto"
+          :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'">
+          <VIcon
+            :size="$vuetify.display.smAndDown ? 80 : 120"
+            icon="custom-f-cancel"
+          />
+          <div class="empty-state-content">
+            <div class="empty-state-title">{{ finalState.message }}</div>
+            <div class="empty-state-text">
+              Sessionen kunde inte valideras korrekt. Försök att logga in igen eller kontakta administratörerna.
+            </div>
+          </div>
+          <VBtn
+            class="btn-ghost"
+            @click="reloadPage"
+          >
+            Försök att signera igen
+            <VIcon icon="custom-arrow-right" size="24" />
+          </VBtn>
+        </div>
       </VCard>
     </div>
 
