@@ -41,6 +41,8 @@
 
         .header-logo img {
             max-width: 100%;
+            height: auto;
+            max-height: 60px;
         }
 
         .header-logo-cell {
@@ -203,9 +205,9 @@
                             <td class="header-logo-cell">
                                 <div class="header-logo">
                                     @if($company->logo)
-                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
                                     @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">
                                     @endif
                                 </div>
                             </td>
