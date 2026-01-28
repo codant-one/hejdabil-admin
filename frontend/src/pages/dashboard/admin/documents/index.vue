@@ -46,7 +46,7 @@ const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
-const textEmail = ref('Este mensaje esta por default')
+const textEmail = ref(null)
 const refSignatureForm = ref()
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
@@ -764,7 +764,7 @@ const handleAdminPdfClick = (event) => {
 
 const openSignatureDialog = () => {
   signatureEmail.value = ''
-  textEmail.value = 'Este mensaje esta por default'
+  textEmail.value = null
   isSignatureDialogVisible.value = true
 }
 
@@ -834,7 +834,7 @@ const handleSignatureSubmit = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
-    textEmail.value = 'Este mensaje esta por default'
+    textEmail.value = null
     setTimeout(() => {
       advisor.value = { show: false } 
     }, 3000)
@@ -1778,15 +1778,7 @@ onBeforeUnmount(() => {
           </VCardText>
           <VCardText class="dialog-text">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
-          </VCardText>
-           <VCardText class="dialog-text mt-4">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande*" />                   
-            <VTextarea
-              v-model="textEmail"
-              rows="4"
-              :rules="[requiredValidator]"
-            />
-          </VCardText>
+          </VCardText>           
           <VCardText class="dialog-text mt-4">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />                                            
             <VTextField
@@ -1794,7 +1786,15 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
+          <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande" />                   
+            <VTextarea
+              v-model="textEmail"
+              placeholder="Valfritt meddelande som skickas tillsammans med signaturlänken"
+              rows="3"
+              persistent-placeholder
+            />
+          </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"

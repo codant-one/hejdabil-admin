@@ -271,8 +271,7 @@ class DocumentController extends Controller
             'email' => 'required|email',
             'x' => 'required|numeric',
             'y' => 'required|numeric',
-            'page' => 'required|integer',
-            'text' => 'required|string',
+            'page' => 'required|integer'
         ]);
 
         if (!$document->file) {
@@ -342,7 +341,7 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            $document->description = $request->text;
+            $document->description = $request->text === 'null' ? null : $request->text;
             $document->save();
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
@@ -350,7 +349,7 @@ class DocumentController extends Controller
             $subject = 'Solicitud para firmar su documento';
             $data = [
                 'signingUrl' => $signingUrl,
-                'text' => $request->text
+                'text' => $request->text === 'null' ? null : $request->text
             ];
 
             \Mail::send(
