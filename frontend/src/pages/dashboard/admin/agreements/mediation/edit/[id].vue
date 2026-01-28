@@ -1416,11 +1416,12 @@ onBeforeRouteLeave((to, from, next) => {
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Regnr*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
                                                     v-model="reg_num"
                                                     :rules="[requiredValidator]"
+                                                    @input="reg_num = reg_num.toUpperCase()"
                                                 />
 
                                                 <VBtn

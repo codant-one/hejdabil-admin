@@ -260,7 +260,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="label">Regnr</div>
+                                <div class="label">Reg nr</div>
                                 <div class="value">{{ $agreement->offer->reg_num }}</div>
                             </td>
                         </tr>

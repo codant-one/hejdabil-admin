@@ -146,6 +146,7 @@ watch(currentData, () => {
                     v-model="reg_num"
                     label="Reg nr*"
                     :rules="[requiredValidator]"
+                    @input="reg_num = reg_num.toUpperCase()"
                 />
             </VListItem>
             <VListItem>

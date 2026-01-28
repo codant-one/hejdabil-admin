@@ -265,7 +265,7 @@ const setThumbsSwiper = (swiper) => {
                     <div class="d-flex flex-column gap-2" :class="[windowWidth < 1024 ? 'w-100' : 'w-40']">
                         <span class="px-1 py-0 title-vehicle"> {{ title }} </span>
                         <span class="mb-3 px-1 py-0 subtitle-vehicle"> 
-                            Reg Nr: {{ reg_num }}
+                            Reg nr: {{ reg_num }}
                         </span>
 
                         <VRow no-gutters>

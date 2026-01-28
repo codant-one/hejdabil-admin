@@ -47,7 +47,7 @@ const didInitVisibleColumns = ref(false)
 const columnOptions = [
   { id: 'sale_date', label: 'Försäljningsdatum' },
   { id: 'info', label: 'Bilinfo' },
-  { id: 'reg_num', label: 'Regnr' },
+  { id: 'reg_num', label: 'Reg nr' },
   { id: 'purchase_price', label: 'Inköpspris' },  
   { id: 'sale_price', label: 'Försäljningspris' },
   { id: 'profit', label: 'Vinst' },
@@ -443,7 +443,7 @@ onBeforeUnmount(() => {
           <tr>
             <th class="text-center" scope="col" v-if="isColVisible('sale_date')"> Försäljningsdatum </th>
             <th scope="col" v-if="isColVisible('info')"> Bilinfo </th>
-            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Regnr </th>
+            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Reg nr </th>
             <th class="text-center" scope="col" v-if="isColVisible('purchase_price')"> Inköpspris </th>
             <th class="text-center" scope="col" v-if="isColVisible('sale_price')"> Försäljningspris </th>
             <th class="text-center" scope="col" v-if="isColVisible('profit')"> Vinst </th>

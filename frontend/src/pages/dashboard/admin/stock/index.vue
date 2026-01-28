@@ -96,7 +96,7 @@ const didInitVisibleColumns = ref(false)
 const columnOptions = [
   { id: 'purchase_date', label: 'Inköpsdatum' },
   { id: 'info', label: 'Bilinfo' },
-  { id: 'reg_num', label: 'Regnr' },
+  { id: 'reg_num', label: 'Reg nr' },
   { id: 'purchase_price', label: 'Inköpspris' },
   { id: 'mileage', label: 'Miltal' },
   { id: 'comments', label: 'Anteckningar' },
@@ -612,7 +612,7 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col" v-if="isColVisible('purchase_date')"> Inköpsdatum </th>
             <th scope="col" v-if="isColVisible('info')"> Bilinfo</th>
-            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Regnr </th>
+            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Reg nr </th>
             <th class="text-center" scope="col" v-if="isColVisible('purchase_price')"> Inköpspris </th>
             <th class="text-center" scope="col" v-if="isColVisible('mileage')"> Miltal </th>
             <th class="text-center" scope="col" v-if="isColVisible('comments')"> Anteckningar </th>
@@ -1104,7 +1104,7 @@ onBeforeUnmount(() => {
               v-model="plate"
               :rules="[requiredValidator]"
               placeholder="ABC12X"
-              style="text-transform: uppercase !important"
+              @input="reg_num = reg_num.toUpperCase()"
           />
         </VCardText>
 

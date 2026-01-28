@@ -350,7 +350,7 @@
                                     </tr>
                                     <tr>
                                         <td class="column-cell column-cell-left-2">
-                                            <div class="label">Regnr</div>
+                                            <div class="label">Reg nr</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_client->vehicle->reg_num }}
                                             </div>
@@ -436,7 +436,7 @@
 
                                     <tr>
                                         <td class="column-cell column-cell-left-2">
-                                            <div class="label">Regnr</div>
+                                            <div class="label">Reg nr</div>
                                             <div class="value">
                                                 {{ $agreement->vehicle_interchange?->reg_num }}
                                             </div>

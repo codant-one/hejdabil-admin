@@ -977,6 +977,7 @@ onBeforeUnmount(() => {
                       label="Reg nr*"
                       :rules="[requiredValidator]"
                       :readonly="!isEdit"
+                      @input="selectedNote.reg_num = selectedNote.reg_num.toUpperCase()"
                     />
                 </VCol>
                 <VCol cols="12" md="12">
@@ -1145,6 +1146,7 @@ onBeforeUnmount(() => {
                         label="Reg nr*"
                         :rules="[requiredValidator]"
                         :readonly="!isEdit"
+                        @input="selectedNote.reg_num = selectedNote.reg_num.toUpperCase()"
                       />
                     </VCol>
                     <VCol cols="12" md="12">
