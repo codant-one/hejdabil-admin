@@ -8,7 +8,6 @@ import { useSignaturesStore } from '@/stores/useSignatures'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
-import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
 
 const props = defineProps({
@@ -24,7 +23,6 @@ const signaturesStore = useSignaturesStore()
 const { width: windowWidth } = useWindowSize()
 
 // --- Refs de Estado (Ahora más simples) ---
-const isLoading = ref(true)
 const pdfSource = ref(null)
 const signaturePlacement = ref({ x: null, y: null, page: 1, isStatic: false, visible: false, alignment: 'left' })
 const isSignatureModalVisible = ref(false)
@@ -441,14 +439,14 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
 // Carga tanto el PDF como los detalles de la firma
 const loadSignatureData = async () => {
-  isLoading.value = true
+  isRequestOngoing.value = true
   
   try {
     // Primero verificar el estado del token
     const canProceed = await checkTokenStatus()
     
     if (!canProceed && !isAlreadySigned.value) {
-      isLoading.value = false
+      isRequestOngoing.value = false
       return
     }
     
@@ -523,7 +521,7 @@ const loadSignatureData = async () => {
       }
     }
   } finally {
-    isLoading.value = false
+    isRequestOngoing.value = false
   }
 }
 
@@ -665,8 +663,6 @@ onMounted(loadSignatureData);
 
 <template>
   <section>
-
-    <VideoLoader />
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <!-- Visor de PDF cuando ya está firmado -->
@@ -731,7 +727,7 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
-    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned">
+    <div v-if="!isRequestOngoing && finalState && finalState.type === 'error' && !isAlreadySigned">
       <VCard class="signing-card pa-4">
         <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
           <img :src="logo" width="121" height="40" alt="Billogg" />
@@ -746,7 +742,7 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
-    <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
+    <div v-if="!isRequestOngoing && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
       <div class="placement-content bg-page">
         <div class="placement-body">
           <!-- Sidebar izquierda con controles -->
