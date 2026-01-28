@@ -34,15 +34,13 @@
 
         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
             display: inline-block;
             text-align: right;
         }
 
         .header-logo img {
-            max-width: 100%;
-            height: auto;
-            max-height: 60px;
+            height: 60px;
+            width: auto;
         }
 
         .header-logo-cell {
