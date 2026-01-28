@@ -1139,7 +1139,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VTabs 
                     v-model="currentTab" 
-                    :grow="windowWidth < 1024 ? true : false"             
+                    grow           
                     :show-arrows="false"
                     class="agreements-tabs" 
                 >
