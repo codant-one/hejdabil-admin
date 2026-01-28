@@ -733,7 +733,7 @@ const searchVehicleByPlate = async (type) => {
     
     // Verificar success (también manejar typo 'sucess' de la API)
     const isSuccess = carRes?.success === true || carRes?.sucess === true
-    
+
     if (isSuccess && carRes?.result) {
 
         if (type === 1) {
@@ -2182,7 +2182,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
-                                        Villkor
+                                        Övriga villkor
                                     </div>
                                     <div 
                                         class="d-flex flex-wrap"
