@@ -19,12 +19,6 @@
             position: relative;
         }
 
-        h1 {
-            margin: 0;
-            font-size: 16px;
-            color: #5D5D5D;
-        }
-
         h2 {
             font-size: 13px;
             color: #008C91;
@@ -61,17 +55,17 @@
         }
         
         .header-title-cell h1 {
-            margin: 0;
+            margin: 0 0 6px 0;
             font-size: 24px;
-            color: #5D5D5D;
+            color: #454545;
         }
 
         .header-title-cell .contract-details {
             font-size: 10px;
-            color: #5D5D5D;
+            color: #454545;
         }
 
-/* --- Celdas principales de las secciones --- */
+        /* --- Celdas principales de las secciones --- */
         .section-cell {
             padding-top: 10px;
         }

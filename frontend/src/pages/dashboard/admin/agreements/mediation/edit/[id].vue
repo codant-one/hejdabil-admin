@@ -2105,6 +2105,10 @@ onBeforeRouteLeave((to, from, next) => {
                         align-items: center;
                         padding-top: 0px;
                     }
+
+                    .v-text-field__prefix {
+                        padding-top: 12px !important  ;
+                    }
                 }
             }
         }
