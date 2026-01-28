@@ -1014,7 +1014,7 @@ onBeforeUnmount(() => {
         <VPagination
           v-model="currentPage"
           size="small"
-          :total-visible="5"
+          :total-visible="4"
           :length="totalPages"
           next-icon="custom-chevron-right"
           prev-icon="custom-chevron-left"
