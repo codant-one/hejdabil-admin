@@ -62,6 +62,7 @@
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #454545;
+            line-height: 0.8;
         }
 
         /* --- Celdas principales de las secciones --- */
@@ -201,7 +202,7 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #E7E7E7;">
+                <td colspan="2" style="padding-bottom: 4px; border-bottom: 2px solid #E7E7E7;">
                     <table style="width: 100%;">
                         <tr>
                             <td class="header-title-cell">
