@@ -287,7 +287,7 @@ const onSubmitKey = async () => {
     <VRow>
       <VCol cols="12" class="pb-0">
         <VCard>
-          <VCardText>
+          <VCardText class="px-0">
             <div class="title-tabs mb-5">
               Ändra lösenord
             </div>
@@ -354,7 +354,7 @@ const onSubmitKey = async () => {
         <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-4'" />
 
         <VCard>
-          <VCardText>
+          <VCardText class="px-0">
             <div class="title-tabs mb-5">
               Authenticator
             </div>
@@ -389,7 +389,7 @@ const onSubmitKey = async () => {
               v-model="isFormValid"
               @submit.prevent="onSubmitKey">
 
-              <VCardText class="pt-0">
+              <VCardText class="px-0 pt-0">
                 <div class="title-tabs mb-5">
                   Säkerhetslösenord
                 </div>
@@ -430,7 +430,7 @@ const onSubmitKey = async () => {
         <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
 
         <VCard class="mt-5 mb-8" v-if="role === 'Supplier'">
-          <VCardText>
+          <VCardText class="px-0">
             <div class="title-tabs mb-5">
               Certifikat
             </div>

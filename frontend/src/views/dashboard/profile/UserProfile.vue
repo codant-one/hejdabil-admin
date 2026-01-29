@@ -169,7 +169,7 @@ const closeUserEditDialog = ()=>{
 
       <VCol cols="12">
         <VCard>
-          <VCardText class="pt-6">
+          <VCardText class="pt-6 px-0">
             <div class="bg-alert">
               <VRow class="px-md-3 ">
                 <!-- 👉 Details -->
@@ -221,7 +221,7 @@ const closeUserEditDialog = ()=>{
                   md="8" 
                   :class="windowWidth < 1024 ? '' : 'px-4'"
                 >
-                  <VRow class="px-md-3 ">
+                  <VRow>
                     <VCol 
                       cols="6" 
                       sm="6" 
