@@ -148,7 +148,7 @@
             border-top: 2px solid #E7E7E7;
             border-bottom: none;
             padding-top: 4px;
-            padding-bottom: 8px;
+            padding-bottom: 4px;
         }
 
         .financials-table .moms-row td { 
@@ -169,7 +169,7 @@
         .consent-text {
             font-size: 8px;
             background-color: #F6F6F6;
-            padding: 10px;
+            padding: 8px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             border-left: 1px solid #008C91;
