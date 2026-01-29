@@ -3796,7 +3796,7 @@ onBeforeRouteLeave((to, from, next) => {
         display: flex;
         align-items: center;
         height: 48px;
-        margin-left: 8px;
+        margin-left: 6px;
 
         :deep(.v-selection-control-group) {
             gap: 16px;

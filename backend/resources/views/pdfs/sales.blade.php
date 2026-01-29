@@ -29,30 +29,30 @@
             font-size: 13px;
             color: #008C91;
             margin-top: 0;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
 
         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
             display: inline-block;
             text-align: right;
         }
 
         .header-logo img {
-            max-width: 100%;
+            height: 60px;
+            width: auto;
         }
 
         .header-logo-cell {
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: top;
+            vertical-align: bottom;
         }
-        
+
         .header-title-cell h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
@@ -115,9 +115,10 @@
             padding: 5px 6px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
-            line-height: 0.8;
+            line-height: 1;
             min-height: 40px;
             border-left: 1px solid #008C91;
+            white-space: pre-line;
         }
 
         /* --- TABLA FINANCIERA --- */
@@ -171,7 +172,7 @@
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             border-left: 1px solid #008C91;
-            margin-bottom: 30px;
+            margin-bottom: 4px;
             line-height: 0.8;
         }
 
@@ -213,9 +214,9 @@
                             <td class="header-logo-cell">
                                 <div class="header-logo">
                                     @if($company->logo)
-                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
                                     @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">
                                     @endif
                                 </div>
                             </td>
@@ -639,9 +640,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="value2">
-                                    {{ $agreement->terms_other_conditions }}
-                                </div>
+                                <div class="value2">{{ $agreement->terms_other_conditions }}</div>
                             </td>
                         </tr>
                     </table>
@@ -653,9 +652,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="value2">
-                                {{ $agreement->terms_other_information }}
-                                </div>
+                                <div class="value2">{{ $agreement->terms_other_information }}</div>
                             </td>
                         </tr>
                     </table>
