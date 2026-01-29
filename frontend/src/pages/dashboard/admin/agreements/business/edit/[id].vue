@@ -784,11 +784,11 @@ onBeforeRouteLeave((to, from, next) => {
           :show-arrows="false"
           class="agreements-tabs"
         >
-          <VTab :value="0">
+          <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
             <VIcon size="24" icon="custom-autofordon" />
             Erbjudande
           </VTab>
-          <VTab :value="1">
+          <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
             <VIcon size="24" icon="custom-clients" />
             Kund
           </VTab>
@@ -1191,9 +1191,24 @@ onBeforeRouteLeave((to, from, next) => {
   .v-tabs.agreements-tabs {
     .v-btn {
       min-width: 50px !important;
+      pointer-events: none;
       .v-btn__content {
         font-size: 14px !important;
         color: #454545;
+      }
+    }
+
+    .v-btn.tab-completed {
+      .v-tab__slider {
+        display: block;
+        opacity: 1;
+        block-size: 1px;
+        background: linear-gradient(
+          90deg,
+          #57f287 0%,
+          #00eeb0 50%,
+          #00ffff 100%
+        );
       }
     }
   }

@@ -1137,27 +1137,27 @@ onBeforeRouteLeave((to, from, next) => {
                     :show-arrows="false"
                     class="agreements-tabs" 
                 >
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-car" />
                         Fordonsinformation
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 2 }">
                         <VIcon size="24" icon="custom-pris-information" />
                         Förmedlingsavgift
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 3 }">
                         <VIcon size="24" icon="custom-cash-2" />
                         Betalningsinformation
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 4 }">
                         <VIcon size="24" icon="custom-calendar" />
                         Förmedlingsdatum
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 5 }">
                         <VIcon size="24" icon="custom-add-column" />
                         Tillägg
                     </VTab>
@@ -1960,13 +1960,26 @@ onBeforeRouteLeave((to, from, next) => {
     .v-tabs.agreements-tabs {
         .v-btn {
             min-width: 50px !important;
+            pointer-events: none;
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
             }
         }
 
-        
+        .v-btn.tab-completed {
+            .v-tab__slider {
+                display: block;
+                opacity: 1;
+                block-size: 1px;
+                background: linear-gradient(
+                    90deg,
+                    #57f287 0%,
+                    #00eeb0 50%,
+                    #00ffff 100%
+                );
+            }
+        }
     }
 
     @media (max-width: 776px) {
