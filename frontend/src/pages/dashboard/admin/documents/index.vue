@@ -1698,8 +1698,7 @@ onBeforeUnmount(() => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div>
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                
+              <div>               
                 <div 
                   class="file-upload-area"
                   :class="{ 'has-file': uploadFile, 'has-error': fileValidationError }"
@@ -1787,7 +1786,7 @@ onBeforeUnmount(() => {
             />
           </VCardText>
           <VCardText class="dialog-text mt-4">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande" />                   
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                   
             <VTextarea
               v-model="textEmail"
               placeholder="Valfritt meddelande som skickas tillsammans med signaturlänken"
