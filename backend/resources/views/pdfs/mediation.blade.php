@@ -32,27 +32,27 @@
             margin-bottom: 4px;
         }
 
-        /* --- HEADER --- */
+         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
             display: inline-block;
             text-align: right;
         }
 
         .header-logo img {
-            max-width: 100%;
+            height: 60px;
+            width: auto;
         }
 
         .header-logo-cell {
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: top;
+            vertical-align: bottom;
         }
-        
+
         .header-title-cell h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
@@ -62,6 +62,7 @@
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #454545;
+            line-height: 1;
         }
 
         /* --- Celdas principales de las secciones --- */
@@ -115,9 +116,10 @@
             padding: 5px 6px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
-            line-height: 0.8;
+            line-height: 1;
             min-height: 40px;
             border-left: 1px solid #008C91;
+            white-space: pre-line;
         }
 
         /* --- PIE DE PÁGINA --- */
@@ -156,7 +158,7 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #E7E7E7;">
+                <td colspan="2" style="padding-bottom: 4px; border-bottom: 2px solid #E7E7E7;">
                     <table style="width: 100%;">
                         <tr>
                             <td class="header-title-cell">
@@ -646,9 +648,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="value2">
-                                    {{ $agreement->terms_other_conditions }}
-                                </div>
+                                <div class="value2">{{ $agreement->terms_other_conditions }}</div>
                             </td>
                         </tr>
                     </table>
@@ -659,9 +659,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="value2">
-                                {{ $agreement->terms_other_information }}
-                                </div>
+                                <div class="value2">{{ $agreement->terms_other_information }}</div>
                             </td>
                         </tr>
                     </table>
