@@ -1759,7 +1759,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="residual_debt" 
                                                     inline 
-                                                    class="radio-form ms-2 mt-3"
+                                                    class="radio-form mt-3"
                                                     @update:modelValue="onChangeRadio">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio"
@@ -2191,6 +2191,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_conditions"
                                                 rows="4"
+                                                counter="400"
+                                                maxlength="400"
                                             />
                                         </div>
                                         <div class="w-100">
@@ -2198,6 +2200,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_information"
                                                 rows="4"
+                                                counter="400"
+                                                maxlength="400"
                                             />
                                         </div>
                                     </div>

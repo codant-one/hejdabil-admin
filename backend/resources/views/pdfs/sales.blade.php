@@ -62,7 +62,7 @@
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #454545;
-            line-height: 0.9;
+            line-height: 1;
         }
 
         /* --- Celdas principales de las secciones --- */
