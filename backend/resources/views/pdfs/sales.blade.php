@@ -62,7 +62,7 @@
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #454545;
-            line-height: 0.8;
+            line-height: 0.9;
         }
 
         /* --- Celdas principales de las secciones --- */
@@ -173,13 +173,13 @@
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             border-left: 1px solid #008C91;
-            margin-bottom: 4px;
+            margin-bottom: 0;
             line-height: 0.8;
         }
 
         .signatures-table {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 6px;
             table-layout: fixed;
             border-collapse: collapse;
         }
