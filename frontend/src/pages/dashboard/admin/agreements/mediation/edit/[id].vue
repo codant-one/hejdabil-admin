@@ -1772,8 +1772,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_conditions"
                                                 rows="4"
-                                                counter="400"
-                                                maxlength="400"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                         <div class="w-100">
@@ -1781,8 +1781,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_information"
                                                 rows="4"
-                                                counter="400"
-                                                maxlength="400"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                     </div>
