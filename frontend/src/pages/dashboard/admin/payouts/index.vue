@@ -1064,9 +1064,7 @@ const handleSendPayout = () => {
     <VDialog
       :model-value="isPayoutDetailDialogVisible"
       persistent
-      scrollable
       class="action-dialog"
-      content-class="scrollable-dialog-content"
     >
       <!-- Dialog close btn -->
       <VBtn
@@ -1084,80 +1082,82 @@ const handleSendPayout = () => {
           </div>
         </VCardText>
 
-        <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
-          <div class="bg-alert">
-            <div class="d-flex justify-between" data-html2canvas-ignore="true">
-              <div
-                class="status-chip"
-                :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
-              >
-                {{ selectedPayout.state.name }}
-              </div>
-
-              <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
-                <VBtn
-                  v-if="selectedPayout.payout_state_id === 4"
-                  class="btn-light"
-                  style="height: 40px !important;"
-                  @click="shareReceipt(selectedPayout)"
+        <div class="dialog-scroll-content">
+          <VCardText class="dialog-text pa-4" v-if="selectedPayout.state">
+            <div class="bg-alert">
+              <div class="d-flex justify-between" data-html2canvas-ignore="true">
+                <div
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(selectedPayout.state.id)?.class}`"
                 >
-                  <VIcon icon="custom-forward" size="24" />
-                  Dela kvitto
-                </VBtn>                
-              </div>
-            </div>
-            <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3">
-              <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
-              <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
-              <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
-              <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
-              <div class="d-flex gap-2 title-organization justify-center align-center">
-                  <span class="text-date-swish">
-                    {{ formatDateYMD(selectedPayout.created_at) }}
-                  </span>
-                  <VIcon size="16" icon="custom-clock" />
-                  <span class="text-date-swish">
-                    {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
-                  </span>
-              </div>
-              <span class="text-reference">{{ selectedPayout.reference }}</span>
-            </VCardText>
-          </div>      
-        </VCardText>
+                  {{ selectedPayout.state.name }}
+                </div>
 
-        <VCardText class="dialog-text">
-          <span class="mb-2 d-flex justify-between text-neutral-3">
-            Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
-          </span>
-          <VDivider />
-          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
-            Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
-          </span>
-          <VDivider />
-          <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
-            Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
-          </span>
-          <VDivider v-if="selectedPayout.message" class="mb-2"/>
-          <span v-if="selectedPayout.message">
-            Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
-          </span>
-          <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
-          <span v-if="selectedPayout.error_message">
-            Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
-          </span>
-        </VCardText>
+                <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
+                  <VBtn
+                    v-if="selectedPayout.payout_state_id === 4"
+                    class="btn-light"
+                    style="height: 40px !important;"
+                    @click="shareReceipt(selectedPayout)"
+                  >
+                    <VIcon icon="custom-forward" size="24" />
+                    Dela kvitto
+                  </VBtn>                
+                </div>
+              </div>
+              <VCardText class="big-icon justify-center d-flex flex-column align-center gap-3">
+                <VIcon v-if="selectedPayout.payout_state_id === 4" size="96" icon="custom-f-checkmark" />
+                <VIcon v-if="selectedPayout.payout_state_id === 1" size="96" icon="custom-f-info" />
+                <VIcon v-if="selectedPayout.payout_state_id === 3 || selectedPayout.payout_state_id === 5" size="96" icon="custom-f-cancel" />
+                <span class="text-amount">{{ formatNumber(selectedPayout.amount) }} kr</span>
+                <div class="d-flex gap-2 title-organization justify-center align-center">
+                    <span class="text-date-swish">
+                      {{ formatDateYMD(selectedPayout.created_at) }}
+                    </span>
+                    <VIcon size="16" icon="custom-clock" />
+                    <span class="text-date-swish">
+                      {{ selectedPayout.created_at ? formatDate(selectedPayout.created_at, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                    </span>
+                </div>
+                <span class="text-reference">{{ selectedPayout.reference }}</span>
+              </VCardText>
+            </div>      
+          </VCardText>
 
-        <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
-          <img 
-            :src="billogg" 
-            alt="Billogg image"
-          />
-          <VDivider vertical />
-          <img 
-            :src="swish" 
-            alt="Swish image"
-          />
-        </VCardText>
+          <VCardText class="dialog-text">
+            <span class="mb-2 d-flex justify-between text-neutral-3">
+              Namn: <strong class="text-black">{{ selectedPayout.fullname }}</strong>
+            </span>
+            <VDivider />
+            <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+              Mobilnummer: <strong class="text-black">+{{ selectedPayout.payee_alias }}</strong>
+            </span>
+            <VDivider />
+            <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
+              Personnummer: <strong class="text-black">{{ selectedPayout.payee_ssn }}</strong>
+            </span>
+            <VDivider v-if="selectedPayout.message" class="mb-2"/>
+            <span v-if="selectedPayout.message">
+              Meddelande: <br> <strong class="text-black">{{ selectedPayout.message }}</strong>
+            </span>
+            <VDivider v-if="selectedPayout.error_message" class="mb-2"/>
+            <span v-if="selectedPayout.error_message">
+              Felinformation: <br> <strong class="text-black">{{ selectedPayout.error_message }} ({{ selectedPayout.error_code }})</strong>
+            </span>
+          </VCardText>
+
+          <VCardText class="dialog-text my-4 pa-4 d-flex justify-center align-center gap-4">
+            <img 
+              :src="billogg" 
+              alt="Billogg image"
+            />
+            <VDivider vertical />
+            <img 
+              :src="swish" 
+              alt="Swish image"
+            />
+          </VCardText>
+        </div>
       </VCard>
     </VDialog>
 
@@ -1639,6 +1639,11 @@ const handleSendPayout = () => {
   </section>
 </template>
 <style>
+  .dialog-scroll-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   .text-amount {
     font-weight: 600;
     font-size: 24px;
