@@ -2,6 +2,7 @@
 
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { requiredValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
+import { formatNumber } from '@/@core/utils/formatters'
 
 const props = defineProps({
   isDialogOpen: {
@@ -83,7 +84,7 @@ const closeDialog = () => {
   })
 }
 
-const formatNumber = (value) => {
+const format_number = (value) => {
   
   if  (value === 'payee_alias') {
     let numbers = payee_alias.value.replace(/\D/g, '')
@@ -224,7 +225,7 @@ const onSubmit = () => {
                       :rules="[requiredValidator, minLengthDigitsValidator(11)]"
                       minLength="11"
                       maxlength="11"
-                      @input="formatNumber('payee_alias')"
+                      @input="format_number('payee_alias')"
                     />
                   </div>
                   <div>
@@ -235,7 +236,7 @@ const onSubmit = () => {
                       :rules="[requiredValidator, minLengthDigitsValidator(12)]"
                       minLength="12"
                       maxlength="12"
-                      @input="formatNumber('payee_ssn')"
+                      @input="format_number('payee_ssn')"
                     />
                   </div>
                   <div>
@@ -278,7 +279,7 @@ const onSubmit = () => {
                   </span>
                   <VDivider />                  
                   <span class="mb-2 d-flex justify-between mt-2 text-neutral-3">
-                    Belopp: <strong class="text-black">{{ amount }} SEK</strong>
+                    Belopp: <strong class="text-black">{{ formatNumber(amount ?? 0) }} SEK</strong>
                   </span>
                   <VDivider v-if="message" class="mb-2"/>
                   <span v-if="message">

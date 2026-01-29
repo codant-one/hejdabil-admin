@@ -6,7 +6,7 @@ import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
@@ -440,7 +440,7 @@ const downloadCSV = async () => {
       BILINFO: bilinfo,
       REGNR: element.reg_num,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
+      MILTAL: element.mileage === null ? '' : formatNumberInteger(element.mileage ?? '0,00') + ' Mil',
       ANTECKNINGAR:  element.comments ?? '',
       STATUS: element.state.name,
       VAT: element.iva_purchase?.name,
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
             </td>   
             <td class="text-center" v-if="isColVisible('reg_num')"> {{ vehicle.reg_num }} </td>             
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
-            <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
+            <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : formatNumberInteger(vehicle.mileage ?? '0,00') + ' Mil' }}</td>
             <td class="text-center" v-if="isColVisible('comments')">
               <VTooltip 
                 v-if="vehicle.comments && vehicle.comments.length > 15"

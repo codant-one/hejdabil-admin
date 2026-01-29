@@ -1,7 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { onBeforeRouteLeave } from 'vue-router';
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators';
 import { useVehiclesStores } from '@/stores/useVehicles';
@@ -705,7 +705,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div class="info-item d-flex flex-column gap-2">
                                             <span>Miltal</span>
                                             <div class="value-field">
-                                                {{ mileage ?? '' }} Mil
+                                                {{formatNumberInteger(mileage ?? '0,00') }} Mil
                                             </div>
                                         </div>
                                         <div class="info-item d-flex flex-column gap-2">

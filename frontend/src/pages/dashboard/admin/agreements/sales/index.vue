@@ -10,6 +10,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { formatNumber } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -1958,7 +1959,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Totalpris</div>
-                                                <div class="agreements-pill-value">{{ total_sale }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(total_sale ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
                                             </div>                                            
                                         </div> 
                                         <div class="w-100">
@@ -1968,7 +1969,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Pris på inbytesbil</div>
-                                                <div class="agreements-pill-value"> {{ trade_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value"> {{ formatNumber(trade_price ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
                                             </div>                                            
                                         </div> 
                                         <div class="w-100">
@@ -1978,7 +1979,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Mellanpris</div>
-                                                <div class="agreements-pill-value">{{ middle_price }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(middle_price ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
                                             </div>                                            
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

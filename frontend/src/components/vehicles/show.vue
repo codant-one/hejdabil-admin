@@ -3,7 +3,7 @@
 import { FreeMode, Navigation, Thumbs, Scrollbar } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Carousel, Slide } from 'vue3-carousel'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import car from '@images/car3.png'
 
 import 'swiper/css';
@@ -374,7 +374,7 @@ const setThumbsSwiper = (swiper) => {
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Miltal </span>
-                                                    <span class="subtitle-detail">{{ mileage }} Mil</span>
+                                                    <span class="subtitle-detail">{{ formatNumberInteger(mileage ?? '0,00') }} Mil</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Generation </span>
