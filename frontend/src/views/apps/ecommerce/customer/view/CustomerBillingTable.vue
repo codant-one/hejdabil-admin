@@ -25,7 +25,9 @@ const billings = ref([]);
 const searchQuery = ref("");
 const rowPerPage = ref(10);
 const currentPage = ref(1);
+const currentPageAgreements = ref(1);
 const totalPages = ref(1);
+const totalPagesAgreements = ref(1);
 const totalBillings = ref(0);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
@@ -66,8 +68,8 @@ const paginationData = computed(() => {
 
 // 👉 Computing pagination data
 const paginationData2 = computed(() => {
-  const firstIndex = agreements.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = agreements.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = agreements.value.length ? (currentPageAgreements.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = agreements.value.length + (currentPageAgreements.value - 1) * rowPerPage.value
 
   return `${totalAgreements.value} resultat`
 })
@@ -87,7 +89,7 @@ const checkForUpdates = async () => {
       orderByField: "id",
       orderBy: "desc",
       limit: rowPerPage.value,
-      page: currentPage.value,
+      page: currentPageAgreements.value,
       client_id: props.client_id,
     }
 
@@ -106,37 +108,54 @@ const checkForUpdates = async () => {
   }
 }
 
+// Limpiar búsqueda al cambiar de pestaña
+watch(tabBilling, () => {
+  searchQuery.value = "";
+  currentPage.value = 1;
+  currentPageAgreements.value = 1;
+});
+
 watchEffect(fetchData);
 
 async function fetchData() {
-  let data = {
-    search: searchQuery.value,
-    orderByField: "id",
-    orderBy: "desc",
-    limit: rowPerPage.value,
-    page: currentPage.value,
-    client_id: props.client_id,
-  };
-
   emit("loading", true);
-  
-  await billingsStores.fetchBillings(data);
 
-  billings.value = billingsStores.getBillings;
-  totalPages.value = billingsStores.last_page;
-  totalBillings.value = billingsStores.billingsTotalCount;
-
+  // Obtener datos de usuario
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData.value.roles[0].name
 
-  await agreementsStores.fetchAgreements(data)
+  // Solo buscar en la pestaña activa
+  if (tabBilling.value === "fakturor") {
+    let data = {
+      search: searchQuery.value,
+      orderByField: "id",
+      orderBy: "desc",
+      limit: rowPerPage.value,
+      page: currentPage.value,
+      client_id: props.client_id,
+    };
+
+    await billingsStores.fetchBillings(data);
+    billings.value = billingsStores.getBillings;
+    totalPages.value = billingsStores.last_page;
+    totalBillings.value = billingsStores.billingsTotalCount;
+  } else if (tabBilling.value === "avtal") {
+    let data = {
+      search: searchQuery.value,
+      orderByField: "id",
+      orderBy: "desc",
+      limit: rowPerPage.value,
+      page: currentPageAgreements.value,
+      client_id: props.client_id,
+    };
+
+    await agreementsStores.fetchAgreements(data);
+    agreements.value = agreementsStores.getAgreements
+    totalPagesAgreements.value = agreementsStores.last_page
+    totalAgreements.value = agreementsStores.agreementsTotalCount
+  }
   
   emit("loading", false);
-  
-  agreements.value = agreementsStores.getAgreements
-  totalPages.value = agreementsStores.last_page
-  totalAgreements.value = agreementsStores.agreementsTotalCount  
-  
 }
 
 const updateBilling = (billingData) => {
@@ -811,7 +830,12 @@ onBeforeUnmount(() => {
   <section class="billing-panel border rounded-lg pa-4 h-100">
     <VCard>
       <VCardText class="d-flex flex-column pa-0 gap-6">
-        <div class="d-flex">
+        <div class="d-flex" :class="windowWidth < 1024 ? 'flex-column gap-2' : 'flex-row'">
+
+          <div class="search" :class="windowWidth < 1024 ? 'd-flex' : 'd-none'">
+            <VTextField v-model="searchQuery" placeholder="Sök" clearable />
+          </div>
+
           <VTabs v-model="tabBilling" class="billing-tabs" :show-arrows="false">
             <VTab value="fakturor">
               <svg
@@ -957,7 +981,7 @@ onBeforeUnmount(() => {
 
           <VSpacer class="d-none d-md-block" />
 
-          <div class="search d-none d-md-block">
+          <div class="search" :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">
             <VTextField v-model="searchQuery" placeholder="Sök" clearable />
           </div>
 
@@ -1543,10 +1567,10 @@ onBeforeUnmount(() => {
               <VSpacer class="d-none d-md-block" />
 
               <VPagination
-                v-model="currentPage"
+                v-model="currentPageAgreements"
                 size="small"
                 :total-visible="4"
-                :length="totalPages"
+                :length="totalPagesAgreements"
               />
             </div>
           </VWindowItem>

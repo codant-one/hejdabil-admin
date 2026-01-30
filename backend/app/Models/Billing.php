@@ -73,7 +73,8 @@ class Billing extends Model
             ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
             ->orWhere('invoice_date', 'LIKE', '%' . $search . '%')
             ->orWhere('due_date', 'LIKE', '%' . $search . '%')
-            ->orWhere('detail', 'LIKE', '%' . $search . '%');
+            ->orWhere('detail', 'LIKE', '%' . $search . '%')
+            ->orWhere('total', 'LIKE', '%' . $search . '%');
         });
     }
 
