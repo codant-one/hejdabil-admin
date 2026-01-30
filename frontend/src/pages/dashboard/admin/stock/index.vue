@@ -1104,7 +1104,6 @@ onBeforeUnmount(() => {
               v-model="plate"
               :rules="[requiredValidator]"
               placeholder="ABC12X"
-              @input="reg_num = reg_num.toUpperCase()"
           />
         </VCardText>
 
