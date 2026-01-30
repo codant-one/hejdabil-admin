@@ -58,7 +58,11 @@ class AgreementController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Agreement::with([
-                        'token.histories',
+                        'token' => function($query) {
+                            $query->with(['histories' => function($q) {
+                                $q->orderBy('created_at', 'asc');
+                            }]);
+                        },
                         'offer',
                         'commission.vehicle',
                         'agreement_type',
@@ -181,8 +185,10 @@ class AgreementController extends Controller
                         'vehicle_client.vehicle.gearbox',
                         'vehicle_client.vehicle.payment.payment_types',
                         'supplier.user',
-                        'token.histories' => function($query) {
-                            $query->orderBy('created_at', 'asc');
+                        'token' => function($query) {
+                            $query->with(['histories' => function($q) {
+                                $q->orderBy('created_at', 'asc');
+                            }]);
                         }
                     ])->find($id);
 

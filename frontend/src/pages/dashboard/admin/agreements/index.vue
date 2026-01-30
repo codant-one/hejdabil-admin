@@ -713,8 +713,15 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  const latestToken = (trackerAgreement.value.token || []).length
-    ? [...trackerAgreement.value.token].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  let tokens = []
+  if (Array.isArray(trackerAgreement.value.token)) {
+    tokens = trackerAgreement.value.token
+  } else if (trackerAgreement.value.token) {
+    tokens = [trackerAgreement.value.token]
+  }
+  
+  const latestToken = tokens.length > 0
+    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
 
   // Si tenemos historial de token, usar esos registros

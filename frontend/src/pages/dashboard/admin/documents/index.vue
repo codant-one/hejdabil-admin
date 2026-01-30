@@ -633,8 +633,6 @@ const trackerEvents = computed(() => {
 
   const items = []
   const latestToken = trackerDocument.value.token ?? null
-    ? [...trackerDocument.value.token].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
 
   // Si tenemos historial de token, usar esos registros
   if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
