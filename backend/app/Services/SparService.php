@@ -78,18 +78,6 @@ class SparService
             $statusCode = $response->getStatusCode();
             $xmlResponse = (string) $response->getBody();
 
-            if ($this->debug) {
-                Log::info('SPAR response received', [
-                    'endpoint' => $this->endpoint,
-                    'status' => $statusCode,
-                    'kundNrLeveransMottagare' => $this->customerId,
-                    'kundNrSlutkund' => $this->slutkundId ?? null,
-                    'uppdragId' => $this->assignmentId,
-                    'personId_masked' => $this->maskPersonId($personId),
-                    'response_snippet' => mb_substr($xmlResponse, 0, 500),
-                ]);
-            }
-
             if ($statusCode >= 400) {
                 $snippet = mb_substr($xmlResponse, 0, 500);
                 throw new Exception("SPAR HTTP error {$statusCode}: {$snippet}");

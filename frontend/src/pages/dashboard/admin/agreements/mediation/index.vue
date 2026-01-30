@@ -1513,7 +1513,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </VRadioGroup>
                                             </div>
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                                        <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
                                             <VTextarea
                                                 v-model="comments"

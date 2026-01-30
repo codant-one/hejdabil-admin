@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 use Carbon\Carbon;
 use PDF;
 
@@ -442,28 +444,6 @@ class Agreement extends Model
     // agremment types
     public static function salesAgreement($request) {
 
-        if($request->save_client === 'true') {
-            $request->supplier_id = 'null';
-            $client = Client::createClient($request);
-            $order_id = Client::where('supplier_id', $client->supplier_id)
-                            ->withTrashed()
-                            ->latest('order_id')
-                            ->first()
-                            ->order_id ?? 0;
-
-            $client->order_id = $order_id + 1;
-            $client->update();
-        }
-
-        if ($request->has("client_id"))
-            $request->merge([
-                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
-            ]);
-        else
-            $request->request->add([
-                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
-            ]);
-
         if ($request->vehicle_id === 'null') {//no existe
 
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -489,8 +469,30 @@ class Agreement extends Model
                     'vehicle_id' => $vehicle->id
                 ]);
 
-            VehicleClient::createClient($request);
-        } else {// existe pero no esta vendido 
+            if($request->save_client === 'true') {//guarda cliente si no existe vehiculo
+                $request->supplier_id = 'null';
+                $client = Client::createClient($request);
+                $order_id = Client::where('supplier_id', $client->supplier_id)
+                                ->withTrashed()
+                                ->latest('order_id')
+                                ->first()
+                                ->order_id ?? 0;
+
+                $client->order_id = $order_id + 1;
+                $client->update();
+            }
+
+            if ($request->has("client_id"))
+                $request->merge([
+                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+                ]);
+            else
+                $request->request->add([
+                    'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+                ]);
+
+            
+        } else {// existe pero no esta vendido, aqui agrega el cliente con save_client en caso de 
             $vehicle = Vehicle::find($request->vehicle_id);
             Vehicle::sendVehicle($request, $vehicle); 
         }
@@ -738,6 +740,28 @@ class Agreement extends Model
     }
 
     public static function createCommission($request) {
+
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
+        if ($request->has("client_id"))
+            $request->merge([
+                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+        else
+            $request->request->add([
+                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
 
         $commission = Commission::createCommission($request);
 
