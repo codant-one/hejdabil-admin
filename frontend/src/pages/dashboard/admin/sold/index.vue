@@ -769,6 +769,23 @@ onBeforeUnmount(() => {
         
         <VCardText class="pt-0">
           <VRow class="pt-3">
+            <VCol 
+              cols="12" md="12" 
+              v-if="role === 'SuperAdmin' || role === 'Administrator'"
+              class="pb-0">
+              <AppAutocomplete
+                prepend-icon="custom-profile"
+                v-model="supplier_id"
+                placeholder="Leverantörer"
+                :items="suppliers"
+                :item-title="item => item.full_name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"
+                class="selector-user selector-truncate"
+              />
+            </VCol>
             <VCol cols="12" md="12" class="pb-0">
               <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
               <AppAutocomplete
@@ -833,6 +850,20 @@ onBeforeUnmount(() => {
     >
       <VCard class="card-form">
         <VList>
+          <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="supplier_id"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="item => item.full_name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate"
+            />
+          </VListItem>
           <VListItem class="form pt-6">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
             <AppAutocomplete
