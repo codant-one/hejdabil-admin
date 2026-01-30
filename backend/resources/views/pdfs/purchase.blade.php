@@ -34,25 +34,25 @@
 
         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
             display: inline-block;
             text-align: right;
         }
 
         .header-logo img {
-            max-width: 100%;
+            height: 60px;
+            width: auto;
         }
 
         .header-logo-cell {
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: top;
+            vertical-align: bottom;
         }
-        
+
         .header-title-cell h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
@@ -62,6 +62,7 @@
         .header-title-cell .contract-details {
             font-size: 10px;
             color: #454545;
+            line-height: 1;
         }
 
         /* --- Celdas principales de las secciones --- */
@@ -187,7 +188,7 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #E7E7E7;">
+                <td colspan="2" style="padding-bottom: 4px; border-bottom: 2px solid #E7E7E7;">
                     <table style="width: 100%;">
                         <tr>
                             <td class="header-title-cell">
@@ -200,12 +201,12 @@
                             <td class="header-logo-cell">
                                 <div class="header-logo">
                                     @if($company->logo)
-                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
                                     @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
+                                        <img src="{{ asset('/logos/logo_black.png') }}" alt="logo-main">
                                     @endif
                                 </div>
-                            </td>                        
+                            </td>                       
                         </tr>
                     </table>
                 </td>

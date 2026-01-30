@@ -1383,7 +1383,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VCol cols="12" md="4">
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?" />
-                                                        <VRadioGroup v-model="service_book" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1397,7 +1397,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?" />
 
-                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1410,7 +1410,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VCol cols="12" md="4">
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?" />
-                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1691,7 +1691,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="is_loan" 
                                                     inline 
-                                                    class="radio-form ms-2 mt-3"
+                                                    class="radio-form mt-3"
                                                     @update:modelValue="handleChange">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1741,7 +1741,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="settled_by" 
                                                     inline 
-                                                    class="radio-form ms-2" 
+                                                    class="radio-form" 
                                                     @update:modelValue="handleChangeTwo">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsSettled"
@@ -1824,6 +1824,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_conditions"
                                                 rows="4"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                         <div class="w-100">
@@ -1831,6 +1833,8 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextarea
                                                 v-model="terms_other_information"
                                                 rows="4"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                     </div>
