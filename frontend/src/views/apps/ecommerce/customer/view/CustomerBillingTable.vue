@@ -1339,7 +1339,7 @@ const resolveStatusAgreement = state => {
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.token?.signature_status === 'signed'"
             @click="send(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-send" class="mr-2" />
@@ -1353,7 +1353,7 @@ const resolveStatusAgreement = state => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
