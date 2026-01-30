@@ -87,6 +87,10 @@ class Agreement extends Model
         return $this->hasMany(Token::class, 'agreement_id');
     }
 
+    public function token(){
+        return $this->hasOne(Token::class, 'agreement_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
@@ -128,10 +132,6 @@ class Agreement extends Model
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
         $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
-    }
-
-    public function token(){
-        return $this->hasOne(Token::class, 'agreement_id', 'id');
     }
 
     public function scopeApplyFilters($query, array $filters) {

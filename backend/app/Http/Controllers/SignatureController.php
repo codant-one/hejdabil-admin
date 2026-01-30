@@ -446,16 +446,21 @@ class SignatureController extends Controller
         
         // Support both agreements and documents
         if ($token->agreement_id) {
-            $response['agreement_id'] = $token->agreement->agreement_id;
+            $response['agreement_id'] = $token->agreement->id;
         } elseif ($token->document_id) {
             $response['document_id'] = $token->document->id;
             $response['document_title'] = $token->document->title;
         }
         
         if ($token->signature_status === 'signed') {
-            $response['message'] = 'Este documento ya fue firmado';
-            $response['signed_date_formatted'] = $token->signed_at ? 
-                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : null;
+            $response['message'] = 
+                $token->agreement_id ? 
+                'Ditt kontrakt är undertecknat.' : 
+                'Ditt dokument är undertecknat.';
+            $response['signed_date_formatted'] = 
+                $token->signed_at ? 
+                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : 
+                null;
         }
         
         return response()->json($response);

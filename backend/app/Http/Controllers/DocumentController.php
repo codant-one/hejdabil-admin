@@ -40,6 +40,7 @@ class DocumentController extends Controller
                         'supplier' => function ($q) {
                             $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
                         },
+                        'token',
                         'tokens',
                         'user'
                     ])

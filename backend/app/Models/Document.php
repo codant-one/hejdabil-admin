@@ -17,6 +17,10 @@ class Document extends Model
         return $this->hasMany(Token::class, 'document_id');
     }
 
+    public function token(){
+        return $this->hasOne(Token::class, 'document_id', 'id');
+    }
+
     public function user(){
         return $this->belongsTo(User::class, 'user_id', 'id');
     }

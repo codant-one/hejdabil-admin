@@ -235,6 +235,50 @@ watchEffect(() => {
     currentPage.value = totalPages.value
 })
 
+// Computed para detectar si hay documentos activos esperando interacción
+const hasActiveDocuments = computed(() => {
+  return documents.value.some(doc => 
+    ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
+  )
+})
+
+// Verificación silenciosa de cambios sin activar spinner
+const checkForUpdates = async () => {
+  try {
+    let data = {
+      search: searchQuery.value,
+      orderByField: 'created_at',
+      orderBy: 'desc',
+      limit: rowPerPage.value,
+      page: currentPage.value,
+      supplier_id: supplier_id.value,
+      status: documentsStores.getStatus ?? status.value
+    }
+
+    // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
+    await documentsStores.fetchDocuments(data)
+    
+    const newDocuments = documentsStores.getDocuments
+    
+    // Verificar si hay cambios relevantes (excluyendo cambios a 'signed')
+    // Solo nos interesan cambios en documentos con status activos (sent, delivered, reviewed)
+    const activeOldDocs = documents.value.filter(doc => 
+      ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
+    )
+    const activeNewDocs = newDocuments.filter(doc => 
+      ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
+    )
+    
+    // Comparar solo documentos activos
+    const hasChanges = JSON.stringify(activeOldDocs) !== JSON.stringify(activeNewDocs)
+    
+    return hasChanges
+  } catch (error) {
+    console.error('Error checking for updates:', error)
+    return false
+  }
+}
+
 onMounted(async () => {
   status.value = documentsStores.getStatus ?? status.value;
   updateStatus(status.value);
@@ -245,7 +289,6 @@ onMounted(async () => {
   notificationsStore.onNotificationReceived(async (notification) => {    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
-      
       // Si el tracker está abierto, actualizar también el documento actual
       if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
         try {
@@ -260,30 +303,76 @@ onMounted(async () => {
     }
   })
 
-  // Polling para actualizar el tracker en tiempo real si está abierto
-  const pollingInterval = setInterval(async () => {
-    // Solo hacer polling si el tracker está visible
-    if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
-      try {
-        const response = await documentsStores.showDocument(trackerDocument.value.id)
-        // Solo actualizar si hay cambios en el historial
-        const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
-        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
-        
-        if (newHistoryLength > currentHistoryLength) {
-          trackerDocument.value = response
-          // También actualizar la lista principal de documentos
-          await fetchData()
-          //console.log('Tracker updated via polling - new events detected')
+  // Polling inteligente: solo activo cuando hay documentos esperando firma
+  let pollingInterval = null
+  
+  const startPolling = () => {
+    if (pollingInterval) return // Ya está corriendo
+    
+    pollingInterval = setInterval(async () => {
+      // Solo hacer polling si:
+      // 1. El tracker está visible O
+      // 2. Hay documentos activos esperando interacción
+      if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+        try {
+          const response = await documentsStores.showDocument(trackerDocument.value.id)
+          const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
+          const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+          
+          if (newHistoryLength > currentHistoryLength) {
+            trackerDocument.value = response
+            // Llamar a fetchData con spinner ya que sabemos que hay cambios
+            await fetchData()
+          }
+        } catch (e) {
+          console.error('Failed to poll tracker updates:', e)
         }
-      } catch (e) {
-        console.error('Failed to poll tracker updates:', e)
+      } else if (hasActiveDocuments.value) {
+        // Verificar cambios sin spinner
+        const hasChanges = await checkForUpdates()
+        // Si hay cambios, llamar a fetchData para actualización completa
+        if (hasChanges) {
+          await fetchData()
+        }
+      }
+    }, 5000) // Poll every 5 seconds
+    
+    window._trackerPollingInterval = pollingInterval
+  }
+  
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      pollingInterval = null
+      window._trackerPollingInterval = null
+    }
+  }
+  
+  // Iniciar polling si hay documentos activos
+  if (hasActiveDocuments.value) {
+    startPolling()
+  }
+  
+  // Watch para iniciar/detener polling según haya documentos activos
+  watch(hasActiveDocuments, (hasActive) => {
+    if (hasActive) {
+      startPolling()
+    } else {
+      stopPolling()
+    }
+  })
+  
+  // Detener polling cuando la pestaña está oculta, reanudar cuando vuelve
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling()
+    } else {
+      // Reiniciar polling si es necesario
+      if (hasActiveDocuments.value) {
+        startPolling()
       }
     }
-  }, 3000) // Poll every 3 seconds
-
-  // Guardar el intervalo para limpiarlo después
-  window._trackerPollingInterval = pollingInterval
+  })
 })
 
 watchEffect(fetchData)

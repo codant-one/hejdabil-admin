@@ -232,35 +232,43 @@ const checkTokenStatus = async () => {
     if (response.data.status === 'signed') {
       // El documento ya está firmado
       isAlreadySigned.value = true
+
       signedInfo.value = {
         signedAt: response.data.signed_date_formatted,
         file_id: response.data.agreement_id || response.data.document_id || 'unknown',
         message: response.data.message
       }
+
+      finalState.value = {
+        type: 'success',
+        title: response.data.message,
+        message: response.data.message
+      }
+
       return true
     } else if (response.data.status === 'expired') {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Länk utgången',
         message: 'Denna signeringslänk har löpt ut.',
       }
+
       return false
     } else if (response.data.status === 'failed') {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Signeringen misslyckades',
         message: 'Ett fel uppstod under signeringsprocessen. Vänligen kontakta support.',
       }
+
       return false
     } else if (response.data.status === 'delivery_issues') {
       finalState.value = {
         type: 'warning',
-        icon: 'mdi-email-alert-outline',
         title: 'Problem med e-postleverans',
         message: 'Det fanns problem med att leverera signeringsförfrågan. Vänligen kontakta avsändaren.',
       }
+      
       return false
     }
     
@@ -271,7 +279,6 @@ const checkTokenStatus = async () => {
 
     finalState.value = {
       type: 'error',
-      icon: 'mdi-alert-circle-outline',
       title: 'Ogiltig länk',
       message: error.message || 'Denna signeringslänk är ogiltig.',
     }
@@ -520,7 +527,6 @@ const loadSignatureData = async () => {
     if (!finalState.value) {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Fel',
         message: 'Kunde inte ladda dokumentet.',
       }
@@ -597,10 +603,8 @@ const submitFinalSignature = async (signatureImage) => {
 
     finalState.value = {
       type: 'success',
-      icon: 'mdi-check-circle-outline',
       title: 'Signering slutförd!',
-      message: response.data.message,
-      downloadUrl: response.data.download_url,
+      message: response.data.message
     }
     isAlreadySigned.value = true
 
@@ -632,7 +636,6 @@ const submitFinalSignature = async (signatureImage) => {
     
     finalState.value = {
       type: 'error',
-      icon: 'mdi-alert-circle-outline',
       title: isServerError ? 'Serverfel' : 'Ett fel uppstod',
       message: error.response?.data?.message || (isServerError 
         ? 'Ett oväntat fel uppstod på servern. Vänligen försök igen senare.' 
@@ -684,7 +687,7 @@ onMounted(loadSignatureData);
               class="alert-no-shrink custom-alert mt-4"
               style="flex: none;"
             >
-              <VAlertTitle>{{ finalState?.title || 'Ditt kontrakt är undertecknat.' }}</VAlertTitle>
+              <VAlertTitle>{{ finalState.title }}</VAlertTitle>
             </VAlert>
 
             <div class="d-flex gap-2 mt-4">
@@ -746,9 +749,9 @@ onMounted(loadSignatureData);
             icon="custom-f-cancel"
           />
           <div class="empty-state-content">
-            <div class="empty-state-title">{{ finalState.message }}</div>
+            <div class="empty-state-title">{{ finalState.title }}</div>
             <div class="empty-state-text">
-              Sessionen kunde inte valideras korrekt. Försök att logga in igen eller kontakta administratörerna.
+              {{ finalState.message }}
             </div>
           </div>
           <VBtn

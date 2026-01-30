@@ -96,6 +96,41 @@ watchEffect(() => {
     currentPage.value = totalPages.value
 })
 
+// Computed para detectar si hay agreements activos esperando interacción
+const hasActiveAgreements = computed(() => {
+  return agreements.value.some(agr => 
+    ['sent', 'delivered', 'reviewed'].includes(agr.tokens?.[0]?.signature_status)
+  )
+})
+
+// Verificación silenciosa de cambios sin activar spinner
+const checkForUpdates = async () => {
+  try {
+    let data = {
+      search: searchQuery.value,
+      orderByField: 'created_at',
+      orderBy: 'desc',
+      limit: rowPerPage.value,
+      page: currentPage.value,
+      supplier_id: supplier_id.value,
+      agreement_type_id: agreement_type_id_select.value
+    }
+
+    // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
+    await agreementsStores.fetchAgreements(data)
+    
+    const newAgreements = agreementsStores.getAgreements
+    
+    // Solo comparar si hay cambios, NO actualizar aquí
+    const hasChanges = JSON.stringify(agreements.value) !== JSON.stringify(newAgreements)
+    
+    return hasChanges
+  } catch (error) {
+    console.error('Error checking for updates:', error)
+    return false
+  }
+}
+
 onMounted(async () => {
   await loadData()
   
@@ -118,30 +153,76 @@ onMounted(async () => {
     }
   })
 
-  // Polling para actualizar el tracker en tiempo real si está abierto
-  const pollingInterval = setInterval(async () => {
-    // Solo hacer polling si el tracker está visible
-    if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
-      try {
-        const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
-        // Solo actualizar si hay cambios en el historial
-        const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
-        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
-        
-        if (newHistoryLength > currentHistoryLength) {
-          trackerAgreement.value = response
-          // También actualizar la lista principal de agreements
-          await fetchData()
-          //console.log('Tracker updated via polling - new events detected')
+  // Polling inteligente: solo activo cuando hay agreements esperando firma
+  let pollingInterval = null
+  
+  const startPolling = () => {
+    if (pollingInterval) return // Ya está corriendo
+    
+    pollingInterval = setInterval(async () => {
+      // Solo hacer polling si:
+      // 1. El tracker está visible O
+      // 2. Hay agreements activos esperando interacción
+      if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+        try {
+          const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+          const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
+          const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+          
+          if (newHistoryLength > currentHistoryLength) {
+            trackerAgreement.value = response
+            // Llamar a fetchData con spinner ya que sabemos que hay cambios
+            await fetchData()
+          }
+        } catch (e) {
+          console.error('Failed to poll tracker updates:', e)
         }
-      } catch (e) {
-        console.error('Failed to poll tracker updates:', e)
+      } else if (hasActiveAgreements.value) {
+        // Verificar cambios sin spinner
+        const hasChanges = await checkForUpdates()
+        // Si hay cambios, llamar a fetchData para actualización completa
+        if (hasChanges) {
+          await fetchData()
+        }
+      }
+    }, 5000) // Poll every 5 seconds
+    
+    window._trackerPollingInterval = pollingInterval
+  }
+  
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      pollingInterval = null
+      window._trackerPollingInterval = null
+    }
+  }
+  
+  // Iniciar polling si hay agreements activos
+  if (hasActiveAgreements.value) {
+    startPolling()
+  }
+  
+  // Watch para iniciar/detener polling según haya agreements activos
+  watch(hasActiveAgreements, (hasActive) => {
+    if (hasActive) {
+      startPolling()
+    } else {
+      stopPolling()
+    }
+  })
+  
+  // Detener polling cuando la pestaña está oculta, reanudar cuando vuelve
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling()
+    } else {
+      // Reiniciar polling si es necesario
+      if (hasActiveAgreements.value) {
+        startPolling()
       }
     }
-  }, 3000) // Poll every 3 seconds
-
-  // Guardar el intervalo para limpiarlo después
-  window._trackerPollingInterval = pollingInterval
+  })
 })
 
 function resizeSectionToRemainingViewport() {
@@ -352,7 +433,7 @@ const downloadCSV = async () => {
       FÖRETAG: element.company ?? '',
       ORGANISATIONSNUMMER: element.organization_number ?? '',
       REGISTRERADE_KUNDER:  element.client_count,
-      STATU: element.state.name
+      SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
     }
 
     dataArray.push(data)
