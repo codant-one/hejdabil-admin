@@ -1275,7 +1275,7 @@ onBeforeUnmount(() => {
         </VBtn>        
       </div>
 
-      <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-6 px-6">
+      <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-2 px-6">
         <div v-for="agreement in agreements" :key="agreement.id" class="mobile-card-wrapper mb-4">
           <div class="card-header-type">
             {{ agreement.agreement_type.name }}
@@ -1350,7 +1350,8 @@ onBeforeUnmount(() => {
 
       <VCardText
         v-if="agreements.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}

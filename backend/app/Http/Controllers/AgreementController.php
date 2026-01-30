@@ -76,7 +76,8 @@ class AgreementController extends Controller
                             'orderByField',
                             'orderBy',
                             'supplier_id',
-                            'agreement_type_id'
+                            'agreement_type_id',
+                            'client_id'
                         ])
                     );
 
