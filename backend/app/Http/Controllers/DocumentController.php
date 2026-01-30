@@ -40,8 +40,7 @@ class DocumentController extends Controller
                         'supplier' => function ($q) {
                             $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
                         },
-                        'token',
-                        'tokens',
+                        'token.histories',
                         'user'
                     ])
                     ->applyFilters(
@@ -104,7 +103,7 @@ class DocumentController extends Controller
 
             // Create initial token with 'created' status when document is created
             $signingToken = Str::uuid()->toString();
-            $token = $document->tokens()->create([
+            $token = $document->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => null, // Will be set when signature is requested
                 'token_expires_at' => now()->addDays(30),
@@ -132,7 +131,7 @@ class DocumentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dokumentet har skapats',
-                'data' => ['document' => $document->load('tokens')]
+                'data' => ['document' => $document->load('token')]
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -150,7 +149,7 @@ class DocumentController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $document = Document::with(['tokens.history' => function($query) {
+            $document = Document::with(['token.histories' => function($query) {
                 $query->orderBy('created_at', 'asc');
             }])->find($id);
 
@@ -282,8 +281,8 @@ class DocumentController extends Controller
         }
 
         // Get or create token for this document
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $document->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $document->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -291,7 +290,7 @@ class DocumentController extends Controller
         if (!$token) {
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
-            $token = $document->tokens()->create([
+            $token = $document->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => $validated['email'],
                 'token_expires_at' => now()->addDays(7),
@@ -412,7 +411,7 @@ class DocumentController extends Controller
     public function resendSignatureRequest(Document $document, Request $request)
     {
         // Find the most recent token with allowed statuses for this document
-        $token = $document->tokens()
+        $token = $document->token()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
             ->latest()
             ->first();

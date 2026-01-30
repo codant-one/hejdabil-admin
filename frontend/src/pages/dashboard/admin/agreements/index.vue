@@ -99,7 +99,7 @@ watchEffect(() => {
 // Computed para detectar si hay agreements activos esperando interacción
 const hasActiveAgreements = computed(() => {
   return agreements.value.some(agr => 
-    ['sent', 'delivered', 'reviewed'].includes(agr.tokens?.[0]?.signature_status)
+    ['sent', 'delivered', 'reviewed'].includes(agr.token?.signature_status)
   )
 })
 
@@ -166,8 +166,8 @@ onMounted(async () => {
       if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
         try {
           const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
-          const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
-          const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+          const currentHistoryLength = trackerAgreement.value?.token?.histories?.length || 0
+          const newHistoryLength = response?.token?.histories?.length || 0
           
           if (newHistoryLength > currentHistoryLength) {
             trackerAgreement.value = response
@@ -433,7 +433,7 @@ const downloadCSV = async () => {
       FÖRETAG: element.company ?? '',
       ORGANISATIONSNUMMER: element.organization_number ?? '',
       REGISTRERADE_KUNDER:  element.client_count,
-      SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
+      SIGNATUR_STATUS: element.token ? (element.token.signature_status ?? '') : 'pending',
     }
 
     dataArray.push(data)
@@ -713,13 +713,13 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  const latestToken = (trackerAgreement.value.tokens || []).length
-    ? [...trackerAgreement.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  const latestToken = (trackerAgreement.value.token || []).length
+    ? [...trackerAgreement.value.token].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
 
   // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.history && latestToken.history.length > 0) {
-    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
+    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
     
     // Check if there's a 'signed' event in the history
     const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -1205,12 +1205,12 @@ onBeforeUnmount(() => {
             <!-- 👉 Status -->
             <td class="text-center text-wrap d-flex justify-center align-center">
               <div
-                v-if="agreement.tokens && agreement.tokens.length > 0"
+                v-if="agreement.token"
                 class="status-chip"
-                :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
               >
-                <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(agreement.token?.signature_status)?.name }}
               </div>
 
               <div
@@ -1273,7 +1273,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
                     @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-signature" class="mr-2" />
@@ -1288,7 +1288,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','agreements') && agreement.tokens?.[0]?.signature_status === 'signed'"
+                  <VListItem v-if="$can('view','agreements') && agreement.token?.signature_status === 'signed'"
                     @click="send(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-send" class="mr-2" />
@@ -1302,7 +1302,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
                     @click="editAgreement(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -1393,12 +1393,12 @@ onBeforeUnmount(() => {
                   <div class="expansion-panel-item-label">Status:</div>
                   <div class="expansion-panel-item-value">
                     <div
-                      v-if="agreement.tokens && agreement.tokens.length > 0"
+                      v-if="agreement.token"
                       class="status-chip"
-                      :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                      :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
                     >
-                      <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                      {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                      <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                      {{ resolveStatus(agreement.token?.signature_status)?.name }}
                     </div>
 
                     <div
@@ -1870,7 +1870,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -1885,7 +1885,7 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.token?.signature_status === 'signed'"
             @click="send(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-send" class="mr-2" />
@@ -1899,7 +1899,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />

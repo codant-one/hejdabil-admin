@@ -83,10 +83,6 @@ class Agreement extends Model
         return $this->belongsTo(Commission::class, 'commission_id', 'id');
     }
 
-    public function tokens() {
-        return $this->hasMany(Token::class, 'agreement_id');
-    }
-
     public function token(){
         return $this->hasOne(Token::class, 'agreement_id', 'id');
     }
@@ -154,7 +150,7 @@ class Agreement extends Model
         }
 
         if ($filters->get('status') !== null) {
-            $query->whereHas('tokens', function($q) use ($filters) {
+            $query->whereHas('token', function($q) use ($filters) {
                 $q->where('signature_status', $filters->get('status'));
             });
         }

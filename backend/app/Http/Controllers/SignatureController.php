@@ -74,8 +74,8 @@ class SignatureController extends Controller
         }
 
         // 3. Get or create token for this agreement
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $agreement->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $agreement->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -84,8 +84,8 @@ class SignatureController extends Controller
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             
-            // 4. Create the record in the 'tokens' table.
-            $token = $agreement->tokens()->create([
+            // 4. Create the record in the 'token' table.
+            $token = $agreement->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
@@ -225,8 +225,8 @@ class SignatureController extends Controller
         }
 
         // 3. Get or create token for this agreement
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $agreement->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $agreement->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -235,8 +235,8 @@ class SignatureController extends Controller
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             
-            // 4. Create the record in 'tokens' WITHOUT coordinates.
-            $token = $agreement->tokens()->create([
+            // 4. Create the record in 'token' WITHOUT coordinates.
+            $token = $agreement->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),

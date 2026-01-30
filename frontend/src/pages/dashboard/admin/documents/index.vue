@@ -238,7 +238,7 @@ watchEffect(() => {
 // Computed para detectar si hay documentos activos esperando interacción
 const hasActiveDocuments = computed(() => {
   return documents.value.some(doc => 
-    ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
+    ['sent', 'delivered', 'reviewed'].includes(doc.token?.signature_status)
   )
 })
 
@@ -260,20 +260,55 @@ const checkForUpdates = async () => {
     
     const newDocuments = documentsStores.getDocuments
     
-    // Verificar si hay cambios relevantes (excluyendo cambios a 'signed')
-    // Solo nos interesan cambios en documentos con status activos (sent, delivered, reviewed)
-    const activeOldDocs = documents.value.filter(doc => 
-      ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
-    )
-    const activeNewDocs = newDocuments.filter(doc => 
-      ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
-    )
+    console.log('[Documents] Total old docs:', documents.value.length)
+    console.log('[Documents] Total new docs:', newDocuments.length)
     
-    console.log('[Documents] Active old docs:', activeOldDocs.length)
-    console.log('[Documents] Active new docs:', activeNewDocs.length)
+    // Crear un mapa de documentos viejos por ID con su signature_status
+    const oldDocsMap = new Map()
+    documents.value.forEach(doc => {
+      const oldStatus = doc.token?.signature_status || 'pending'
+      const oldHistoryLength = doc.token?.histories?.length || 0
+      console.log(`[Documents] Old doc ${doc.id}: status=${oldStatus}, historyLength=${oldHistoryLength}`)
+      oldDocsMap.set(doc.id, {
+        status: oldStatus,
+        historyLength: oldHistoryLength
+      })
+    })
     
-    // Comparar solo documentos activos
-    const hasChanges = JSON.stringify(activeOldDocs) !== JSON.stringify(activeNewDocs)
+    // Verificar cambios en signature_status o historial
+    let hasChanges = false
+    
+    for (const newDoc of newDocuments) {
+      const newStatus = newDoc.token?.signature_status || 'pending'
+      const newHistoryLength = newDoc.token?.histories?.length || 0
+      console.log(`[Documents] New doc ${newDoc.id}: status=${newStatus}, historyLength=${newHistoryLength}`)
+      const oldDoc = oldDocsMap.get(newDoc.id)
+      
+      // Si es un documento nuevo en la lista
+      if (!oldDoc) {
+        console.log('[Documents] New document detected:', newDoc.id, newStatus)
+        hasChanges = true
+        break
+      }
+      
+      // Si cambió el status y es un status activo (no signed)
+      if (oldDoc.status !== newStatus) {
+        console.log(`[Documents] Status change detected for doc ${newDoc.id}: ${oldDoc.status} -> ${newStatus}`)
+        // Solo nos interesan cambios hacia estados activos o desde estados activos
+        if (['sent', 'delivered', 'reviewed'].includes(newStatus) || 
+            ['sent', 'delivered', 'reviewed'].includes(oldDoc.status)) {
+          hasChanges = true
+          break
+        }
+      }
+      
+      // Si cambió el historial (nuevo evento como 'reviewed')
+      if (oldDoc.historyLength !== newHistoryLength) {
+        console.log(`[Documents] History change detected for doc ${newDoc.id}: ${oldDoc.historyLength} -> ${newHistoryLength}`)
+        hasChanges = true
+        break
+      }
+    }
     
     console.log('[Documents] Has changes:', hasChanges)
     
@@ -330,8 +365,8 @@ onMounted(async () => {
       if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
         try {
           const response = await documentsStores.showDocument(trackerDocument.value.id)
-          const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
-          const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+          const currentHistoryLength = trackerDocument.value?.token?.histories?.length || 0
+          const newHistoryLength = response?.token?.histories?.length || 0
           
           if (newHistoryLength > currentHistoryLength) {
             trackerDocument.value = response
@@ -582,8 +617,8 @@ const downloadCSV = async () => {
       TITEL: element.title ?? '',
       SKAPAD: createdAt,
       SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
-      SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
-      MOTTAGARE: element.tokens && element.tokens.length > 0 ? element.tokens.map(t => t.email).join(', ') : '',
+      SIGNATUR_STATUS: element.token?.signature_status ?? 'pending',
+      MOTTAGARE: element.token ? element.token.recipient_email : '',
       FIL: element.file ? element.file.split('/').pop() : ''
     }
 
@@ -619,13 +654,13 @@ const trackerEvents = computed(() => {
   if (!trackerDocument.value) return []
 
   const items = []
-  const latestToken = (trackerDocument.value.tokens || []).length
-    ? [...trackerDocument.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  const latestToken = trackerDocument.value.token ?? null
+    ? [...trackerDocument.value.token].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
 
   // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.history && latestToken.history.length > 0) {
-    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
+    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
     
     // Check if there's a 'signed' event in the history
     const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -1431,12 +1466,12 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center text-wrap d-flex justify-center align-center" style="width: 180px;">
               <div
-                v-if="document.tokens && document.tokens.length > 0"
+                v-if="document.token"
                 class="status-chip"
-                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+                :class="`status-chip-${resolveStatus(document.token?.signature_status)?.class}`"
               >
-                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+                <VIcon size="16" :icon="resolveStatus(document.token?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(document.token?.signature_status)?.name }}
               </div>
 
               <div
@@ -1505,10 +1540,10 @@ onBeforeUnmount(() => {
                   <VListItem
                     v-if="
                       $can('edit','signed-documents') && (
-                        document.tokens?.[0]?.signature_status !== 'sent' && 
-                        document.tokens?.[0]?.signature_status !== 'signed' && 
-                        document.tokens?.[0]?.signature_status !== 'delivered' &&
-                        document.tokens?.[0]?.signature_status !== 'reviewed'
+                        document.token?.signature_status !== 'sent' && 
+                        document.token?.signature_status !== 'signed' && 
+                        document.token?.signature_status !== 'delivered' &&
+                        document.token?.signature_status !== 'reviewed'
                       )"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
@@ -1517,7 +1552,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'delivered'"
+                    v-if="$can('edit','signed-documents') && document.token?.signature_status === 'delivered'"
                     @click="openResendSignature(document)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" class="mr-2" />
@@ -1538,7 +1573,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','signed-documents') && document.tokens?.[0]?.signature_status === 'signed'"
+                  <VListItem v-if="$can('view','signed-documents') && document.token?.signature_status === 'signed'"
                     @click="openSendDocumentDialog(document)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
@@ -1621,12 +1656,12 @@ onBeforeUnmount(() => {
               <div class="expansion-panel-item-label">Status:</div>
               <div class="expansion-panel-item-value">
                 <div
-                  v-if="document.tokens && document.tokens.length > 0"
+                  v-if="document.token"
                   class="status-chip"
-                  :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+                  :class="`status-chip-${resolveStatus(document.token?.signature_status)?.class}`"
                 >
-                  <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                  {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+                  <VIcon size="16" :icon="resolveStatus(document.token?.signature_status)?.icon" class="action-icon" />
+                  {{ resolveStatus(document.token?.signature_status)?.name }}
                 </div>
 
                 <div
@@ -2224,10 +2259,10 @@ onBeforeUnmount(() => {
           <VListItem
             v-if="
               $can('edit', 'signed-documents') && (
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && 
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed' && 
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'delivered' &&
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'reviewed'
+                selectedDocumentForAction.token?.signature_status !== 'sent' && 
+                selectedDocumentForAction.token?.signature_status !== 'signed' && 
+                selectedDocumentForAction.token?.signature_status !== 'delivered' &&
+                selectedDocumentForAction.token?.signature_status !== 'reviewed'
               )"
             @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
@@ -2237,7 +2272,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'delivered'"
+            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'delivered'"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2264,7 +2299,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'signed'"
+            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'signed'"
             @click="openSendDocumentDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

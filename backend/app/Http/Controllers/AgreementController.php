@@ -58,8 +58,7 @@ class AgreementController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Agreement::with([
-                        'token',
-                        'tokens',
+                        'token.histories',
                         'offer',
                         'commission.vehicle',
                         'agreement_type',
@@ -115,7 +114,7 @@ class AgreementController extends Controller
 
             // Create initial token with 'created' status when document is created
             $signingToken = Str::uuid()->toString();
-            $token = $agreement->tokens()->create([
+            $token = $agreement->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => null, // Will be set when signature is requested
                 'token_expires_at' => now()->addDays(30),
@@ -182,7 +181,7 @@ class AgreementController extends Controller
                         'vehicle_client.vehicle.gearbox',
                         'vehicle_client.vehicle.payment.payment_types',
                         'supplier.user',
-                        'tokens.history' => function($query) {
+                        'token.histories' => function($query) {
                             $query->orderBy('created_at', 'asc');
                         }
                     ])->find($id);
