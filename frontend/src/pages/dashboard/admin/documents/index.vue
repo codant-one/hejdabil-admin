@@ -260,15 +260,12 @@ const checkForUpdates = async () => {
     
     const newDocuments = documentsStores.getDocuments
     
-    console.log('[Documents] Total old docs:', documents.value.length)
-    console.log('[Documents] Total new docs:', newDocuments.length)
-    
     // Crear un mapa de documentos viejos por ID con su signature_status
     const oldDocsMap = new Map()
     documents.value.forEach(doc => {
       const oldStatus = doc.token?.signature_status || 'pending'
       const oldHistoryLength = doc.token?.histories?.length || 0
-      console.log(`[Documents] Old doc ${doc.id}: status=${oldStatus}, historyLength=${oldHistoryLength}`)
+      
       oldDocsMap.set(doc.id, {
         status: oldStatus,
         historyLength: oldHistoryLength
@@ -281,19 +278,16 @@ const checkForUpdates = async () => {
     for (const newDoc of newDocuments) {
       const newStatus = newDoc.token?.signature_status || 'pending'
       const newHistoryLength = newDoc.token?.histories?.length || 0
-      console.log(`[Documents] New doc ${newDoc.id}: status=${newStatus}, historyLength=${newHistoryLength}`)
       const oldDoc = oldDocsMap.get(newDoc.id)
       
       // Si es un documento nuevo en la lista
       if (!oldDoc) {
-        console.log('[Documents] New document detected:', newDoc.id, newStatus)
         hasChanges = true
         break
       }
       
       // Si cambió el status y es un status activo (no signed)
       if (oldDoc.status !== newStatus) {
-        console.log(`[Documents] Status change detected for doc ${newDoc.id}: ${oldDoc.status} -> ${newStatus}`)
         // Solo nos interesan cambios hacia estados activos o desde estados activos
         if (['sent', 'delivered', 'reviewed'].includes(newStatus) || 
             ['sent', 'delivered', 'reviewed'].includes(oldDoc.status)) {
@@ -304,13 +298,10 @@ const checkForUpdates = async () => {
       
       // Si cambió el historial (nuevo evento como 'reviewed')
       if (oldDoc.historyLength !== newHistoryLength) {
-        console.log(`[Documents] History change detected for doc ${newDoc.id}: ${oldDoc.historyLength} -> ${newHistoryLength}`)
         hasChanges = true
         break
       }
     }
-    
-    console.log('[Documents] Has changes:', hasChanges)
     
     return hasChanges
   } catch (error) {
@@ -326,15 +317,10 @@ onMounted(async () => {
   await fetchData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
-  notificationsStore.onNotificationReceived(async (notification) => {    
-    console.log('[Documents] Notification received:', notification)
+  notificationsStore.onNotificationReceived(async (notification) => {
     
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
-      console.log('[Documents] Processing notification for documents')
-      
-      // Refrescar datos inmediatamente cuando llega una notificación
-      await fetchData()
       
       // Si el tracker está abierto, actualizar también el documento actual
       if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
@@ -356,8 +342,6 @@ onMounted(async () => {
   const startPolling = () => {
     if (pollingInterval) return // Ya está corriendo
     
-    console.log('[Documents] Starting polling interval')
-    
     pollingInterval = setInterval(async () => {
       // Solo hacer polling si:
       // 1. El tracker está visible O
@@ -370,7 +354,6 @@ onMounted(async () => {
           
           if (newHistoryLength > currentHistoryLength) {
             trackerDocument.value = response
-            console.log('[Documents] Tracker updated - new history detected')
             // Llamar a fetchData con spinner ya que sabemos que hay cambios
             await fetchData()
           }
@@ -378,12 +361,10 @@ onMounted(async () => {
           console.error('Failed to poll tracker updates:', e)
         }
       } else if (hasActiveDocuments.value) {
-        console.log('[Documents] Checking for updates (has active documents)')
         // Verificar cambios sin spinner
         const hasChanges = await checkForUpdates()
         // Si hay cambios, llamar a fetchData para actualización completa
         if (hasChanges) {
-          console.log('[Documents] Changes detected - refreshing data')
           await fetchData()
         }
       }
@@ -394,7 +375,6 @@ onMounted(async () => {
   
   const stopPolling = () => {
     if (pollingInterval) {
-      console.log('[Documents] Stopping polling interval')
       clearInterval(pollingInterval)
       pollingInterval = null
       window._trackerPollingInterval = null
@@ -403,7 +383,6 @@ onMounted(async () => {
   
   // Iniciar polling si hay documentos activos
   if (hasActiveDocuments.value) {
-    console.log('[Documents] Has active documents on mount - starting polling')
     startPolling()
   } else {
     console.log('[Documents] No active documents on mount')
@@ -411,7 +390,6 @@ onMounted(async () => {
   
   // Watch para iniciar/detener polling según haya documentos activos
   watch(hasActiveDocuments, (hasActive) => {
-    console.log('[Documents] hasActiveDocuments changed:', hasActive)
     if (hasActive) {
       startPolling()
     } else {
