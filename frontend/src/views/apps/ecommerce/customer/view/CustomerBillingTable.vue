@@ -874,12 +874,12 @@ const resolveStatusAgreement = state => {
                   <!-- 👉 Status -->
                   <td class="text-center text-wrap d-flex justify-center align-center">
                     <div
-                      v-if="agreement.tokens && agreement.tokens.length > 0"
+                      v-if="agreement.token"
                       class="status-chip"
-                      :class="`status-chip-${resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.class}`"
+                      :class="`status-chip-${resolveStatusAgreement(agreement.token?.signature_status)?.class}`"
                     >
-                      <VIcon size="16" :icon="resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                      {{ resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.name }}
+                      <VIcon size="16" :icon="resolveStatusAgreement(agreement.token?.signature_status)?.icon" class="action-icon" />
+                      {{ resolveStatusAgreement(agreement.token?.signature_status)?.name }}
                     </div>
 
                     <div
@@ -941,6 +941,14 @@ const resolveStatusAgreement = state => {
                           </template>
                           <VListItemTitle>Spårare</VListItemTitle>
                         </VListItem>
+                        <VListItem 
+                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
+                          @click="openStaticSignatureDialog(agreement)">
+                          <template #prepend>
+                            <VIcon icon="custom-signature" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Signera</VListItemTitle>
+                        </VListItem>
                         <VListItem
                           v-if="$can('view', 'agreements')"
                           @click="openLink(agreement)">
@@ -949,7 +957,7 @@ const resolveStatusAgreement = state => {
                           </template>
                           <VListItemTitle>Visa som PDF</VListItemTitle>
                         </VListItem>
-                        <VListItem v-if="$can('view','agreements') && agreement.tokens?.[0]?.signature_status === 'signed'"
+                        <VListItem v-if="$can('view','agreements') && agreement.token?.signature_status === 'signed'"
                           @click="send(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-send" class="mr-2" />
@@ -963,7 +971,7 @@ const resolveStatusAgreement = state => {
                           <VListItemTitle>Ladda ner</VListItemTitle>
                         </VListItem>
                         <VListItem 
-                          v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                          v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
                           @click="editAgreement(agreement)">
                           <template #prepend>
                             <VIcon icon="custom-pencil" size="24" />
@@ -1037,12 +1045,12 @@ const resolveStatusAgreement = state => {
                         <div class="expansion-panel-item-label">Status:</div>
                         <div class="expansion-panel-item-value">
                           <div
-                            v-if="agreement.tokens && agreement.tokens.length > 0"
+                            v-if="agreement.token"
                             class="status-chip"
-                            :class="`status-chip-${resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.class}`"
+                            :class="`status-chip-${resolveStatusAgreement(agreement.token?.signature_status)?.class}`"
                           >
-                            <VIcon size="16" :icon="resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                            {{ resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.name }}
+                            <VIcon size="16" :icon="resolveStatusAgreement(agreement.token?.signature_status)?.icon" class="action-icon" />
+                            {{ resolveStatusAgreement(agreement.token?.signature_status)?.name }}
                           </div>
 
                           <div
@@ -1063,7 +1071,7 @@ const resolveStatusAgreement = state => {
                           Se detaljer
                         </VBtn>
                         
-                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
+                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
                           <VIcon icon="custom-dots-vertical" size="24" />
                         </VBtn>
                       </div>
