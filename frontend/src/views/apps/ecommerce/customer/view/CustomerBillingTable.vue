@@ -5,6 +5,7 @@ import { useBillingsStores } from "@/stores/useBillings";
 import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
 import router from "@/router";
+import VuePdfEmbed from 'vue-pdf-embed'
 
 const props = defineProps({
   client_id: {
@@ -83,6 +84,8 @@ async function fetchData() {
     client_id: props.client_id,
   };
 
+  emit("loading", true);
+  
   await billingsStores.fetchBillings(data);
 
   billings.value = billingsStores.getBillings;
@@ -93,7 +96,9 @@ async function fetchData() {
   role.value = userData.value.roles[0].name
 
   await agreementsStores.fetchAgreements(data)
-
+  
+  emit("loading", false);
+  
   agreements.value = agreementsStores.getAgreements
   totalPages.value = agreementsStores.last_page
   totalAgreements.value = agreementsStores.agreementsTotalCount  
@@ -227,8 +232,15 @@ const kreditera = () => {
 
 
 const send = (billingData) => {
-  isConfirmSendMailVisible.value = true;
-  selectedBilling.value = { ...billingData };
+  // Si es un agreement (tiene agreement_type_id), manejar como agreement
+  if (billingData.agreement_type_id) {
+    isConfirmSendMailVisible.value = true
+    selectedAgreement.value = { ...billingData }
+  } else {
+    // Es un billing
+    isConfirmSendMailVisible.value = true
+    selectedBilling.value = { ...billingData }
+  }
 };
 
 const addTag = (event) => {
@@ -248,19 +260,32 @@ const sendMails = async () => {
     isConfirmSendMailVisible.value = false;
     emit("loading", true);
 
-    let data = {
-      id: selectedBilling.value.id,
-      emailDefault: emailDefault.value,
-      emails: selectedTags.value,
-    };
-
-    let res = await billingsStores.sendMails(data);
+    // Determinar si es billing o agreement
+    let data, res;
+    
+    if (selectedAgreement.value.id) {
+      // Es un agreement
+      data = {
+        id: selectedAgreement.value.id,
+        emailDefault: emailDefault.value,
+        emails: selectedTags.value,
+      };
+      res = await agreementsStores.sendMails(data);
+    } else {
+      // Es un billing
+      data = {
+        id: selectedBilling.value.id,
+        emailDefault: emailDefault.value,
+        emails: selectedTags.value,
+      };
+      res = await billingsStores.sendMails(data);
+    }
 
     emit("loading", false);
 
     advisor.value = {
       type: res.data.success ? "success" : "error",
-      message: res.data.success ? "Fakturan är skickad!" : res.data.message,
+      message: res.data.success ? (selectedAgreement.value.id ? "Avtalan är skickad!" : "Fakturan är skickad!") : res.data.message,
       show: true,
     };
 
@@ -270,6 +295,7 @@ const sendMails = async () => {
       selectedTags.value = [];
       existingTags.value = [];
       emailDefault.value = true;
+      selectedAgreement.value = {};
 
       advisor.value = {
         type: "",
@@ -353,6 +379,315 @@ const resolveStatusAgreement = state => {
       class: 'error',
       icon: 'custom-close'
     }
+}
+
+// ========================================
+// 👉 Agreement Actions
+// ========================================
+
+const isTrackerDialogVisible = ref(false)
+const trackerAgreement = ref(null)
+const isTrackerPreviewVisible = ref(false)
+const trackerPreviewPdfSource = ref(null)
+const trackerPreviewError = ref('')
+
+const isSignatureDialogVisible = ref(false)
+const signatureEmail = ref('')
+const refSignatureForm = ref()
+const isStaticSignatureFlow = ref(false)
+const selectedAgreement = ref({})
+const isConfirmDeleteDialogVisible = ref(false)
+
+const goToTracker = (agreementData) => {
+  openTracker(agreementData)
+}
+
+const openTracker = async (agreement) => {
+  await fetchData()
+  trackerAgreement.value = agreement
+  isTrackerDialogVisible.value = true
+
+  try {
+    const response = await agreementsStores.showAgreement(agreement.id)
+    trackerAgreement.value = response
+  } catch (e) {
+    console.error('Failed to refresh agreement details', e)
+  }
+}
+
+const openTrackerPreview = async () => {
+  if (!trackerAgreement.value) return
+  isTrackerPreviewVisible.value = true
+  emit("loading", true)
+  trackerPreviewError.value = ''
+  try {
+    const response = await agreementsStores.getAdminPreviewPdf(trackerAgreement.value.id)
+    trackerPreviewPdfSource.value = URL.createObjectURL(response.data)
+  } catch (e) {
+    trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
+  } finally {
+    emit("loading", false)
+  }
+}
+
+watch(isTrackerPreviewVisible, val => {
+  if (!val && trackerPreviewPdfSource.value) {
+    URL.revokeObjectURL(trackerPreviewPdfSource.value)
+    trackerPreviewPdfSource.value = null
+  }
+})
+
+const openStaticSignatureDialog = (agreementData) => {
+  selectedAgreement.value = { ...agreementData }
+  isStaticSignatureFlow.value = true
+  
+  // Intentar obtener el email de diferentes fuentes según el tipo de agreement
+  let email = ''
+  if (agreementData.agreement_client?.email) {
+    email = agreementData.agreement_client.email
+  } else if (agreementData.offer?.client?.email) {
+    email = agreementData.offer.client.email
+  } else if (agreementData.commission?.client?.email) {
+    email = agreementData.commission.client.email
+  } else if (agreementData.vehicle_client?.client?.email) {
+    email = agreementData.vehicle_client.client.email
+  }
+  
+  signatureEmail.value = email
+  isSignatureDialogVisible.value = true
+}
+
+const submitStaticSignatureRequest = async () => {
+  const { valid } = await refSignatureForm.value?.validate()
+  if (!valid) return
+
+  isSignatureDialogVisible.value = false
+  emit("loading", true)
+
+  try {
+    const payload = {
+      agreementId: selectedAgreement.value.id,
+      email: signatureEmail.value
+    }
+
+    const response = await agreementsStores.requestStaticSignature(payload)
+
+    advisor.value = {
+      type: 'success',
+      message: response.data.message || 'Signeringsförfrågan har skickats!',
+      show: true,
+    }
+    
+    emit("alert", advisor)
+    
+    await fetchData()
+
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Ett fel uppstod när begäran skickades.',
+      show: true,
+    }
+    
+    emit("alert", advisor)
+  } finally {
+    emit("loading", false)
+    signatureEmail.value = ''
+    setTimeout(() => {
+      advisor.value = { show: false }
+      emit("alert", advisor)
+    }, 3000)
+  }
+}
+
+const download = async(agreement) => {
+  try {
+    const response = await fetch(themeConfig.settings.urlbase + 'proxy-image?url=' + themeConfig.settings.urlStorage + agreement.file)
+    const blob = await response.blob()
+    
+    const blobUrl = URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = blobUrl
+    a.download = agreement.file.replace('pdfs/', '')
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+
+  } catch (error) {
+    console.error('Error:', error)
+  }
+}
+
+const editAgreement = agreementData => {
+  var route = ''
+
+  switch(agreementData.agreement_type_id) {
+    case 1: 
+      route = 'dashboard-admin-agreements-sales-edit-id'
+    break
+    case 2:
+      route = 'dashboard-admin-agreements-purchase-edit-id'
+    break
+    case 3:
+      route = 'dashboard-admin-agreements-mediation-edit-id'
+    break   
+    case 4:
+      route = 'dashboard-admin-agreements-business-edit-id'
+    break 
+  }
+
+  router.push({ name : route , params: { id: agreementData.id } })
+}
+
+const showDeleteDialog = agreementData => {
+  isConfirmDeleteDialogVisible.value = true
+  selectedAgreement.value = { ...agreementData }
+}
+
+const deleteAgreement = async () => {
+  isConfirmDeleteDialogVisible.value = false
+  emit("loading", true)
+
+  try {
+    await agreementsStores.deleteAgreement(selectedAgreement.value.id)
+    
+    advisor.value = {
+      type: 'success',
+      message: 'Avtalet har tagits bort!',
+      show: true,
+    }
+    
+    emit("alert", advisor)
+    
+    await fetchData()
+  } catch (error) {
+    advisor.value = {
+      type: 'error',
+      message: 'Ett fel uppstod när avtalet skulle tas bort.',
+      show: true,
+    }
+    
+    emit("alert", advisor)
+  } finally {
+    emit("loading", false)
+    selectedAgreement.value = {}
+    setTimeout(() => {
+      advisor.value = { show: false }
+      emit("alert", advisor)
+    }, 3000)
+  }
+}
+
+const trackerEvents = computed(() => {
+  if (!trackerAgreement.value) return []
+
+  const items = []
+  let tokens = []
+  if (Array.isArray(trackerAgreement.value.token)) {
+    tokens = trackerAgreement.value.token
+  } else if (trackerAgreement.value.token) {
+    tokens = [trackerAgreement.value.token]
+  }
+  
+  const latestToken = tokens.length > 0
+    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+    : null
+
+  // Si tenemos historial de token, usar esos registros
+  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
+    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
+    
+    // Check if there's a 'signed' event in the history
+    const hasSignedEvent = history.some(event => event.event_type === 'signed')
+    
+    history.forEach(event => {
+      const eventConfig = getEventConfig(event.event_type, event)
+      if (eventConfig) {
+        items.push({
+          key: event.event_type,
+          title: eventConfig.title,
+          meta: new Date(event.created_at).toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+          }),
+          text: event.description || eventConfig.text,
+          color: eventConfig.color,
+          bgClass: eventConfig.bgClass,
+          icon: eventConfig.icon,
+          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+          ipAddress: event.ip_address,
+          userAgent: event.user_agent
+        })
+      }
+    })
+  }
+  
+  // Assign sides strictly alternating
+  return items.map((item, index) => ({
+    ...item,
+    side: index % 2 === 0 ? 'right' : 'left'
+  }))
+})
+
+const getEventConfig = (eventType, event) => {
+  const configs = {
+    'created': {
+      title: 'Avtal skapad',
+      text: trackerAgreement.value?.title || 'Avtal',
+      color: '#00EEB0',
+      bgClass: 'status-info',
+      icon: 'custom-star'
+    },
+    'sent': {
+      title: 'Signeringsförfrågan skickad',
+      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      color: '#1890FF',
+      bgClass: 'status-success',
+      icon: 'custom-forward'
+    },
+    'delivered': {
+      title: 'E-post levererad',
+      text: 'E-postmeddelandet har levererats framgångsrikt',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-check-mark-2'
+    },
+    'delivery_issues': {
+      title: 'Leveransproblem',
+      text: 'Det uppstod problem med e-postleveransen',
+      color: '#FAAD14',
+      bgClass: 'status-warning',
+      icon: 'custom-risk'
+    },
+    'reviewed': {
+      title: 'Avtal granskat',
+      text: 'Kunden har öppnat och granskat avtalet',
+      color: '#1890FF',
+      bgClass: 'status-info',
+      icon: 'custom-eye'
+    },
+    'signed': {
+      title: 'Avtal signerat',
+      text: 'Signeringen är slutförd',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-signature'
+    },
+    'failed': {
+      title: 'Signeringen misslyckades',
+      text: 'Ett fel inträffade under signeringsprocessen',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-close'
+    }
+  }
+  return configs[eventType] || null
 }
 
 </script>
@@ -1124,20 +1459,20 @@ const resolveStatusAgreement = state => {
         <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
-            Skicka fakturan via e-post
+            {{ selectedAgreement.id ? 'Skicka avtal via e-post' : 'Skicka fakturan via e-post' }}
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker på att du vill skicka fakturor till följande
+          Är du säker på att du vill skicka {{ selectedAgreement.id ? 'avtal' : 'fakturor' }} till följande
           e-postadresser?
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
           <VCheckbox
             v-model="emailDefault"
-            :label="selectedBilling.client.email"
+            :label="selectedAgreement.id ? (selectedAgreement.agreement_client?.email || 'N/A') : (selectedBilling.client?.email || 'N/A')"
             class="ml-2"
           />
-          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
+          <VLabel class="text-body-2 text-high-emphasis" :text="selectedAgreement.id ? 'Ange e-postadresser för att skicka avtal' : 'Ange e-postadresser för att skicka fakturan'" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -1367,6 +1702,211 @@ const resolveStatusAgreement = state => {
             <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
         </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm Delete Agreement -->
+    <VDialog
+      v-model="isConfirmDeleteDialogVisible"
+      persistent
+      class="action-dialog" >
+      
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+          <div class="dialog-title">
+            Ta bort avtal
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill radera kontraktet för fordonet
+          <strong>
+            #{{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+            }}
+          </strong>?.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            @click="isConfirmDeleteDialogVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="deleteAgreement">
+              Acceptera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Signature Dialog -->
+    <VDialog
+      v-model="isSignatureDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isSignatureDialogVisible = !isSignatureDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VForm
+          ref="refSignatureForm"
+          @submit.prevent="submitStaticSignatureRequest"
+        >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-signature" class="action-icon" />
+            <div class="dialog-title">
+              Skicka signeringsförfrågan
+            </div>
+          </VCardText>     
+          <VCardText class="dialog-text">
+            Ange den e-postadress till vilken du vill att länken för att underteckna fordonsavtalet, 
+            Reg.nr
+            <strong>
+              {{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer?.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+              }}
+            </strong>
+            ska skickas.
+          </VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
+            <VTextField
+              v-model="signatureEmail"
+              placeholder="kund@exempel.com"
+            />
+          </VCardText>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="isSignatureDialogVisible = false">
+                Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" type="submit">
+                Skicka
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VForm>
+    </VDialog>
+
+    <!-- 👉 Tracker Dialog -->
+    <VDialog
+      v-model="isTrackerDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerDialogVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">
+            Signaturprocess
+          </div>
+        </VCardText>
+        
+        <VCardText class="tracker-body">
+          <div class="snake-timeline">
+            <div 
+              v-for="(item, index) in trackerEvents" 
+              :key="item.key"
+              class="snake-item"
+              :class="[
+                index % 2 === 0 ? 'icon-right' : 'icon-left',
+                { 'is-first': index === 0 },
+                { 'is-last': index === trackerEvents.length - 1 }
+              ]"
+            >
+              <!-- Curved Border Line -->
+              <div class="snake-curve"></div>
+              
+              <!-- Content Block (centered, covers the line) -->
+              <div class="snake-content">
+                <span class="snake-date">{{ item.meta }}</span>
+                <h4 class="snake-heading">{{ item.title }}</h4>
+                <p class="snake-text">{{ item.text }}</p>
+                <div 
+                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  class="snake-file-btn" 
+                  @click="openTrackerPreview"
+                >
+                  <VIcon icon="custom-pdf-2" size="14" />
+                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                </div>
+              </div>
+
+              <!-- Status Icon Circle -->
+              <div class="snake-icon-wrapper" :class="item.bgClass">
+                <VIcon :icon="item.icon" size="16" color="white" />
+              </div>
+            </div>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Tracker Preview Dialog -->
+    <VDialog 
+      v-model="isTrackerPreviewVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerPreviewVisible = !isTrackerPreviewVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-signature" class="action-icon" />
+          <div class="dialog-title">
+            Förhandsvisa avtal
+          </div>
+        </VCardText>
+        <VDivider />
+        <VCardText class="d-flex justify-center" style="min-height:400px;">
+          <VAlert 
+            v-if="trackerPreviewError" 
+            type="error" class="mb-4">
+            {{ trackerPreviewError }}
+          </VAlert>
+          <VuePdfEmbed 
+            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
+            :source="trackerPreviewPdfSource" 
+            :width="windowWidth < 1024 ? 300 : 450"
+            />
+        </VCardText>
       </VCard>
     </VDialog>
   </section>

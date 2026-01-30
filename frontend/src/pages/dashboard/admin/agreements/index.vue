@@ -13,6 +13,7 @@ import { useRoute } from 'vue-router'
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { se } from 'date-fns/locale';
 
 const { width: windowWidth } = useWindowSize();
 
@@ -1481,7 +1482,16 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker att du vill ta bort avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>?.
+          Är du säker på att du vill radera kontraktet för fordonet
+          <strong>
+            #{{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+            }}
+          </strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1638,10 +1648,10 @@ onBeforeUnmount(() => {
             :label="selectedAgreement.agreement_client?.email"
             class="ml-2"
           />
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka avtal" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Ange e-postadresser för att skicka avtal"
             multiple
             chips
             deletable-chips
@@ -1733,7 +1743,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
   
-  <!-- 👉 Mobile Skapa Dialog -->
+    <!-- 👉 Mobile Skapa Dialog -->
     <VDialog
       v-model="skapaMobile"
       transition="dialog-bottom-transition"
