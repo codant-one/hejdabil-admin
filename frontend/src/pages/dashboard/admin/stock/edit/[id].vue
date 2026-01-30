@@ -2325,11 +2325,18 @@ onBeforeRouteLeave((to, from, next) => {
                                         class="border-card-comment py-2 px-4 readonly-form d-flex flex-column"
                                     >
                                         <VCardText 
-                                            class="d-flex align-center px-0 border-comments" 
+                                            class="d-flex align-center px-0 border-comments gap-2" 
                                             style="min-height: 48px; max-height: 48px;"
                                             > 
                                             <span class="title-comments" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">{{ task.measure }}</span>
                                             <VSpacer />
+                                            <VIcon 
+                                                v-if="!task.is_cost"
+                                                icon="custom-finance" 
+                                                size="24" 
+                                                class="cursor-pointer"
+                                                @click="showStatusModal(task)"
+                                            />
                                             <VIcon 
                                                 icon="custom-waste" 
                                                 size="24" 
@@ -2379,14 +2386,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                                                 <VSpacer />
 
-                                                <div class="d-flex align-center">                
-                                                    <VIcon 
-                                                        v-if="!task.is_cost"
-                                                        icon="custom-forward" 
-                                                        size="24" 
-                                                        class="cursor-pointer me-2"
-                                                        @click="showStatusModal(task)"
-                                                    />
+                                                <div class="d-flex align-center">
                                                     <VIcon 
                                                         icon="custom-pencil" 
                                                         size="24" 
@@ -2651,7 +2651,7 @@ onBeforeRouteLeave((to, from, next) => {
                 @submit.prevent="updateTypeTask">
                 <VCard flat class="card-form">
                     <VCardText class="dialog-title-box">
-                        <VIcon size="32" icon="custom-forward" class="action-icon" />
+                        <VIcon size="32" icon="custom-finance" class="action-icon" />
                         <div class="dialog-title">
                             Redigera
                         </div>
