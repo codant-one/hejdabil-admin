@@ -41,6 +41,9 @@ const tabBilling = ref("fakturor");
 const selectedBillingForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 
+const selectedAgreementForAction = ref({});
+const isMobileActionDialogVisibleAgreement = ref(false);
+
 const agreements = ref([])
 const totalAgreements = ref(0)
 
@@ -1036,19 +1039,19 @@ const resolveStatusAgreement = state => {
                           <div
                             v-if="agreement.tokens && agreement.tokens.length > 0"
                             class="status-chip"
-                            :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                            :class="`status-chip-${resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.class}`"
                           >
-                            <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                            {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                            <VIcon size="16" :icon="resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                            {{ resolveStatusAgreement(agreement.tokens[0]?.signature_status)?.name }}
                           </div>
 
                           <div
                             v-else
                             class="status-chip"
-                            :class="`status-chip-${resolveStatus('pending')?.class}`"
+                            :class="`status-chip-${resolveStatusAgreement('pending')?.class}`"
                           >
-                            <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
-                          {{ resolveStatus('pending')?.name }}
+                            <VIcon size="16" :icon="resolveStatusAgreement('pending')?.icon" class="action-icon" />
+                          {{ resolveStatusAgreement('pending')?.name }}
                           </div>
                         </div>
                       </div>
@@ -1060,7 +1063,7 @@ const resolveStatusAgreement = state => {
                           Se detaljer
                         </VBtn>
                         
-                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
+                        <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisibleAgreement = true">
                           <VIcon icon="custom-dots-vertical" size="24" />
                         </VBtn>
                       </div>
@@ -1307,6 +1310,53 @@ const resolveStatusAgreement = state => {
               <VIcon icon="custom-cancel-contract" size="24" />
             </template>
             <VListItemTitle>Kreditera</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisibleAgreement"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+              v-if="$can('view', 'agreements')"
+              @click="openLink(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-pdf" class="mr-2" />
+            </template>
+            <VListItemTitle>Visa som PDF</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+            @click="send(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-send" class="mr-2" />
+            </template>
+            <VListItemTitle>Sänd PDF</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('view','agreements')" @click="download(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-download" class="mr-2"/>
+            </template>
+            <VListItemTitle>Ladda ner</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(selectedAgreementForAction); isMobileActionDialogVisibleAgreement = false;">
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>
