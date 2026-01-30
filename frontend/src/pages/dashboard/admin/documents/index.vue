@@ -269,12 +269,17 @@ const checkForUpdates = async () => {
       ['sent', 'delivered', 'reviewed'].includes(doc.tokens?.[0]?.signature_status)
     )
     
+    console.log('[Documents] Active old docs:', activeOldDocs.length)
+    console.log('[Documents] Active new docs:', activeNewDocs.length)
+    
     // Comparar solo documentos activos
     const hasChanges = JSON.stringify(activeOldDocs) !== JSON.stringify(activeNewDocs)
     
+    console.log('[Documents] Has changes:', hasChanges)
+    
     return hasChanges
   } catch (error) {
-    console.error('Error checking for updates:', error)
+    console.error('[Documents] Error checking for updates:', error)
     return false
   }
 }
@@ -287,8 +292,15 @@ onMounted(async () => {
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
   notificationsStore.onNotificationReceived(async (notification) => {    
+    console.log('[Documents] Notification received:', notification)
+    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
+      console.log('[Documents] Processing notification for documents')
+      
+      // Refrescar datos inmediatamente cuando llega una notificación
+      await fetchData()
+      
       // Si el tracker está abierto, actualizar también el documento actual
       if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
         try {
@@ -299,7 +311,7 @@ onMounted(async () => {
         }
       }
     } else {
-      console.warn('Route does not match /documents criteria')
+      console.warn('[Documents] Route does not match /documents criteria:', notification.route)
     }
   })
 
@@ -308,6 +320,8 @@ onMounted(async () => {
   
   const startPolling = () => {
     if (pollingInterval) return // Ya está corriendo
+    
+    console.log('[Documents] Starting polling interval')
     
     pollingInterval = setInterval(async () => {
       // Solo hacer polling si:
@@ -321,6 +335,7 @@ onMounted(async () => {
           
           if (newHistoryLength > currentHistoryLength) {
             trackerDocument.value = response
+            console.log('[Documents] Tracker updated - new history detected')
             // Llamar a fetchData con spinner ya que sabemos que hay cambios
             await fetchData()
           }
@@ -328,10 +343,12 @@ onMounted(async () => {
           console.error('Failed to poll tracker updates:', e)
         }
       } else if (hasActiveDocuments.value) {
+        console.log('[Documents] Checking for updates (has active documents)')
         // Verificar cambios sin spinner
         const hasChanges = await checkForUpdates()
         // Si hay cambios, llamar a fetchData para actualización completa
         if (hasChanges) {
+          console.log('[Documents] Changes detected - refreshing data')
           await fetchData()
         }
       }
@@ -342,6 +359,7 @@ onMounted(async () => {
   
   const stopPolling = () => {
     if (pollingInterval) {
+      console.log('[Documents] Stopping polling interval')
       clearInterval(pollingInterval)
       pollingInterval = null
       window._trackerPollingInterval = null
@@ -350,11 +368,15 @@ onMounted(async () => {
   
   // Iniciar polling si hay documentos activos
   if (hasActiveDocuments.value) {
+    console.log('[Documents] Has active documents on mount - starting polling')
     startPolling()
+  } else {
+    console.log('[Documents] No active documents on mount')
   }
   
   // Watch para iniciar/detener polling según haya documentos activos
   watch(hasActiveDocuments, (hasActive) => {
+    console.log('[Documents] hasActiveDocuments changed:', hasActive)
     if (hasActive) {
       startPolling()
     } else {
