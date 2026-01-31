@@ -77,7 +77,7 @@ const street = ref(null)
 const postal_code = ref(null)
 const phone = ref(null)
 const disabled_client = ref(false)
-const save_client = ref(true)
+const save_client = ref(false)
 
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);

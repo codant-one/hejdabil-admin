@@ -156,7 +156,7 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
-const save_client = ref(true)
+const save_client = ref(false)
 const disabled_client = ref(false)
 
 const tasks = ref([])
