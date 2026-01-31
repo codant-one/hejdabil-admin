@@ -13,7 +13,6 @@ import { useRoute } from 'vue-router'
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { se } from 'date-fns/locale';
 
 const { width: windowWidth } = useWindowSize();
 

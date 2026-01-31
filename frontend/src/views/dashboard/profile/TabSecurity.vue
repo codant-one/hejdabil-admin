@@ -288,20 +288,9 @@ const onSubmitKey = async () => {
       <VCol cols="12" class="pb-0">
         <VCard>
           <VCardText class="px-0">
-            <div class="title-tabs mb-5">
+            <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
               Ändra lösenord
             </div>
-
-            <VAlert
-              variant="tonal"
-              color="warning"
-              class="mb-4"
-            >
-              <VAlertTitle class="mb-1">
-                Se till att dessa krav är uppfyllda
-              </VAlertTitle>
-              <span>Minst 8 tecken, stora och små bokstäver samt siffror</span>
-            </VAlert>
 
             <VForm
               ref="refVForm"
@@ -335,7 +324,7 @@ const onSubmitKey = async () => {
                 </div>
 
                 <VCardText class="p-0 d-flex w-100">
-                  <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                  <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                       <VBtn 
                           type="submit" 
                           :block="windowWidth < 1024"
@@ -351,18 +340,18 @@ const onSubmitKey = async () => {
           </VCardText>
         </VCard>
 
-        <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-4'" />
+        <VDivider />
 
         <VCard>
           <VCardText class="px-0">
-            <div class="title-tabs mb-5">
+            <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
               Authenticator
             </div>
             <VTable class="text-no-wrap rounded">
               <thead>
                 <tr>
-                  <th scope="col"> TYP </th>
-                  <th scope="col" class="w-5 text-end">AKTIVERA</th>
+                  <th scope="col"> Typ </th>
+                  <th scope="col" class="w-5 text-end">Aktivera</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,17 +369,17 @@ const onSubmitKey = async () => {
           </VCardText>
         </VCard>
 
-        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
+        <VDivider v-if="role === 'Supplier'" />
 
-        <VCard class="mt-8" v-if="role === 'Supplier'">
+        <VCard v-if="role === 'Supplier'">
           <VForm
               ref="refForm"
               class="card-form"
               v-model="isFormValid"
               @submit.prevent="onSubmitKey">
 
-              <VCardText class="px-0 pt-0">
-                <div class="title-tabs mb-5">
+              <VCardText class="px-0">
+                <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
                   Säkerhetslösenord
                 </div>
                 <!-- 👉 Current Password -->
@@ -400,7 +389,7 @@ const onSubmitKey = async () => {
                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
                   <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord" />
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord*" />
                     <VTextField
                       v-model="masterPassword"
                       :type="isMasterPasswordVisible ? 'text' : 'password'"
@@ -411,7 +400,7 @@ const onSubmitKey = async () => {
                   </div>
 
                   <VCardText class="p-0 d-flex w-100">
-                    <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                    <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                         <VBtn 
                             type="submit" 
                             :block="windowWidth < 1024"
@@ -425,21 +414,21 @@ const onSubmitKey = async () => {
                 </div>
               </VCardText>
           </VForm>
-        </VCard>
+          </VCard>
 
-        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
+        <VDivider v-if="role === 'Supplier'" />
 
-        <VCard class="mt-5 mb-8" v-if="role === 'Supplier'">
+        <VCard v-if="role === 'Supplier'">
           <VCardText class="px-0">
-            <div class="title-tabs mb-5">
+            <div class="title-tabs-profile mb-5">
               Certifikat
             </div>
             <VCardText class="p-0 d-flex w-100">
-              <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+              <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                   <VBtn 
                       type="button" 
                       :block="windowWidth < 1024"
-                      class="btn-light"
+                      class="btn-light mb-4"
                       :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                       @click="downloadFile(csrUrl)"
                   >
@@ -498,15 +487,11 @@ const onSubmitKey = async () => {
         border-radius: 16px;
     }
 
-    .title-tabs {
-        font-weight: 700;
-        font-size: 24px;
-        line-height: 100%;
-        color: #454545;
-
-        @media (max-width: 1023px) {
-            font-size: 16px
-        }
+    .title-tabs-profile {
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 100%;
+      color: #454545;
     }
 
     .list-kopare {

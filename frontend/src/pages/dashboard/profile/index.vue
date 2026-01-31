@@ -6,8 +6,10 @@ import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
+const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const avatar = ref('')
 const avatarOld = ref('')
@@ -27,12 +29,10 @@ const advisor = ref({
 
 const tabs = [
   {
-    // icon: 'tabler-lock',
     icon: 'custom-agreement',
     title: 'Säkerhet',
   },
   {
-    // icon: 'tabler-building-store',
     icon: 'custom-clients',
     title: 'Företag',
   },
@@ -145,76 +145,86 @@ const onImageSelected = event => {
       avatar.value = 'data:image/jpeg;base64,' + r
     })
 }
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
 </script>
 
 <template>
-  <section>
+    <section class="page-section agreements-page" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
     
-    <VAlert
-      v-if="advisor.show"
-      :type="advisor.type"
-      class="mb-6">
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
         {{ advisor.message }}
-    </VAlert>
+    </VSnackbar>
 
     <VCard
       flat 
-      class="card-fill"
+      class="card-fill pa-6"
       :class="[
-          windowWidth < 1024 ? 'flex-column' : 'flex-row',
-          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+          windowWidth < 1024 ? 'flex-column' : 'flex-row'
       ]"
     >
       <VCardText class="p-0">
-        <VRow>
-          <VCol
-            cols="12"
-            md="12"
-            lg="12"
+        
+        <UserProfile
+          :user="userData"
+          :avatarOld="avatarOld"
+          :avatar="avatar"
+          @onImageSelected="onImageSelected" 
+        />
+        
+        <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
+          <VTabs 
+            v-model="userTab" 
+            grow            
+            :show-arrows="false"
+            class="profile-tabs mt-4" 
           >
-            <UserProfile
-              :user="userData"
-              :avatarOld="avatarOld"
-              :avatar="avatar"
-              @onImageSelected="onImageSelected" />
-          </VCol>
+            <VTab v-for="tab in tabs" :key="tab.title">
+                <VIcon size="24" :icon="'' + tab.icon" />
+                {{ tab.title }}
+            </VTab>
+          </VTabs>
 
-          <VCol
-            cols="12"
-            md="12"
-            lg="12"
+          <VWindow
+            v-model="userTab"
+            :touch="false"
           >
-            <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
-              <VTabs 
-                    v-model="userTab" 
-                    :grow="windowWidth < 1024 ? true : false"             
-                    :show-arrows="false"
-                    class="profile-tabs" 
-              >
-                <VTab v-for="tab in tabs" >
-                    <VIcon size="18" :icon="'' + tab.icon" />
-                    {{ tab.title }}
-                </VTab>
-              </VTabs>
-
-              <VWindow
-                v-model="userTab"
-                :touch="false"
-              >
-                <VWindowItem>
-                  <TabSecurity @alert="showAlert"/>
-                </VWindowItem>
-                <VWindowItem>
-                  <TabDealer 
-                    @alert="showAlert"
-                    @window="showWindow"/>
-                </VWindowItem>
-              </VWindow>
-            </div>
-            <TabSecurity @alert="showAlert" v-else/>
-          </VCol>
-        </VRow>
+            <VWindowItem>
+              <TabSecurity @alert="showAlert"/>
+            </VWindowItem>
+            <VWindowItem>
+              <TabDealer 
+                @alert="showAlert"
+                @window="showWindow"/>
+            </VWindowItem>
+          </VWindow>
+        </div>
+        
+        <TabSecurity @alert="showAlert" v-else/>
+          
       </VCardText>
     </VCard>
 
@@ -264,9 +274,6 @@ const onImageSelected = event => {
 
   @media (max-width: 776px) {
     .v-tabs.profile-tabs {
-      .v-icon {
-        display: none !important;
-      }
       .v-btn {
         .v-btn__content {
             white-space: break-spaces;
