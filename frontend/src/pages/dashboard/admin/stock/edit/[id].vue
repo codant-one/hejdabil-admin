@@ -2653,7 +2653,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <VCardText class="dialog-title-box">
                         <VIcon size="32" icon="custom-finance" class="action-icon" />
                         <div class="dialog-title">
-                            Redigera
+                            Flytta till kostnader
                         </div>
                     </VCardText>
                     <VCardText class="dialog-text">
