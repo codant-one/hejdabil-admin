@@ -54,3 +54,4 @@ Route::get('/notifications-websocket', function (Request $request) {
 
     return 'Evento disparado: ' . $message->text . '. Revisa tu navegador y la terminal de websockets.';
 });
+Route::get('/email-preview', function () { return view('emails.test_template'); });
