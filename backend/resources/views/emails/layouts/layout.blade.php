@@ -43,6 +43,17 @@
                 text-align: center;
             }
 
+            .btn-ghost {
+                background: #FFFFFF;
+                border-radius: 30px;
+                padding: 12px 30px;
+                text-decoration: none;
+                font-weight: 500;
+                display: inline-block;
+                mso-padding-alt: 0;
+                text-align: center;
+            }
+
             .text-footer {
                 font-weight: 400;
                 font-size: 16px;

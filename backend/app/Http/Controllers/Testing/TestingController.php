@@ -32,16 +32,19 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Ditt lösenord har uppdaterats';
+        $title = 'Välkommen till Billogg';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Nedladdningar';
+        $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/reset-password.png');
+        $icon = asset('/images/users.png');
+        
+        $password = 'test1234';
 
-        return view('emails.auth.reset_password', 
+        return view('emails.auth.user_created', 
             compact(
                 'buttonLink',
                 'buttonText',
@@ -50,7 +53,9 @@ class TestingController extends Controller
                 'text_info',
                 'user',
                 'pdfFile',
-                'icon'
+                'icon',
+                'email',
+                'password'
             )
         );
     }
