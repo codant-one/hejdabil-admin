@@ -26,42 +26,31 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Begäran om ändring av lösenord',
+            'subject' => 'Återställ ditt lösenord i Billogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
         
         $buttonLink = $url;
-        $title = 'testing';
+        $title = 'Återställ ditt lösenord';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Nedladdningar';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $billing = Billing::with(['client', 'supplier.user'])->find(33);
         $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
+        $icon = asset('/images/forgot-password.png');
 
-        // $data = [
-        //     'title' => $info['title'] ?? null,
-        //     'user' => $user->name . ' ' . $user->last_name,
-        //     'email' => $user->email,
-        //     'password' => Str::random(10),
-        //     'text' => $info['text'] ?? null,
-        //     'buttonLink' =>  $info['buttonLink'] ?? null,
-        //     'buttonText' =>  $info['buttonText'] ?? null
-        // ];
-
-        return view('emails.invoices.notifications', 
+        return view('emails.auth.forgot_pass_confirmation', 
             compact(
-                'invoice',
-                'billing',
                 'buttonLink',
                 'buttonText',
                 'title',
                 'text',
                 'text_info',
                 'user',
-                'pdfFile'
+                'pdfFile',
+                'icon'
             )
         );
     }
@@ -153,7 +142,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Begäran om ändring av lösenord',
+            'subject' => 'Återställ ditt lösenord i Billogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
