@@ -88,6 +88,7 @@ const insuranceCompanies = ref([
 const insurance_company_description = ref(null);
 const insurance_type_id = ref(5)                                 
 const insuranceTypes = ref([])
+const purchase_price = ref(null)
 
 //const tab 2
 const brands = ref([])
@@ -286,6 +287,7 @@ async function fetchData() {
         insurance_company.value = agreement.value.insurance_company
         insurance_company_description.value = agreement.value.insurance_company_description
         insurance_type_id.value = agreement.value.insurance_type_id
+        purchase_price.value = agreement.value.vehicle_client.vehicle.purchase_price
 
         if(agreement.value.vehicle_client.vehicle.model_id !== null) {
             let modelId = agreement.value.vehicle_client.vehicle.model_id
@@ -1108,6 +1110,7 @@ const onSubmit = async () => {
                 formData.append('mileage', mileage.value)
                 formData.append('sale_date', sale_date.value)
                 formData.append('vehicle_id', vehicle_id.value)
+                formData.append('purchase_price', purchase_price.value)
 
                 //vehicle interchange
                 formData.append('interchange', reg_num_interchange.value !== null ? true : false)
@@ -1135,6 +1138,7 @@ const onSubmit = async () => {
                 formData.append('residual_debt', residual_debt.value)
                 formData.append('residual_price', residual_price.value)
                 formData.append('price', price.value)
+                formData.append('sale_price', price.value)
                 formData.append('iva_id', iva_id.value)
                 formData.append('iva_sale_amount', iva_sale_amount.value)
                 formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
@@ -1654,7 +1658,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
                                                     v-model="reg_num_interchange"
-                                                    @input="reg_num = reg_num.toUpperCase()"
+                                                    @input="reg_num_interchange = reg_num_interchange.toUpperCase()"
                                                 />
                                                 <VBtn
                                                     class="btn-light w-auto px-4"

@@ -238,6 +238,8 @@ class Agreement extends Model
             'price' => $request->price === 'null' ? null : $request->price,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
@@ -305,6 +307,8 @@ class Agreement extends Model
             'price' => $request->price === 'null' ? null : $request->price,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
@@ -456,6 +460,7 @@ class Agreement extends Model
 
             //Set Vehicle State ID on Sold
             $vehicleRequest->request->add(['state_id' => 12]);
+            $vehicleRequest->request->add(['iva_sale_id' => $request->iva_id ]);            
 
             $vehicle = Vehicle::createVehicle($vehicleRequest);
             $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
@@ -491,8 +496,9 @@ class Agreement extends Model
                     'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
                 ]);
 
-            
+            VehicleClient::createClient($request);
         } else {// existe pero no esta vendido, aqui agrega el cliente con save_client en caso de 
+            $request->request->add(['iva_sale_id' => $request->iva_id ]); 
             $vehicle = Vehicle::find($request->vehicle_id);
             Vehicle::sendVehicle($request, $vehicle); 
         }
@@ -522,7 +528,10 @@ class Agreement extends Model
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
             $request->merge(['chassis' => $request->chassis_interchange ]);
-            $request->merge(['sale_date' => $request->sale_date_interchange ]);           
+            $request->merge(['sale_date' => null ]);           
+            $request->merge(['iva_sale_amount' => null ]);
+            $request->merge(['iva_sale_exclusive' => null ]);
+            $request->merge(['total_sale' => null ]);
 
             //Create Vehicle Interchange
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -534,7 +543,7 @@ class Agreement extends Model
 
             //Set Vehicle State ID on InStock
             $vehicleRequest->request->add(['state_id' => 10]);
-            $vehicleRequest->request->add(['type' => '2']);
+            $vehicleRequest->request->add(['type' => '2']);//purchase
 
             $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
             $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
@@ -561,6 +570,7 @@ class Agreement extends Model
         //Update Vehicle.
         $vehicle = Vehicle::find($vehicleClient->vehicle_id);
         $request->request->add(['state_id' => $vehicle->state_id]);
+        $request->request->add(['iva_sale_id' => $request->iva_id ]);  
         $vehicle->updateVehicle($request, $vehicle);
 
         //Update Vehicle interchange.
@@ -576,8 +586,10 @@ class Agreement extends Model
             $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
-            $request->merge(['chassis' => $request->chassis_interchange ]);
-            $request->merge(['sale_date' => $request->sale_date_interchange ]);
+            $request->merge(['sale_date' => null ]);           
+            $request->merge(['iva_sale_amount' => null ]);
+            $request->merge(['iva_sale_exclusive' => null ]);
+            $request->merge(['total_sale' => null ]);
 
             // Verificar si vehicle_interchange_id existe y no es null
             if ($request->vehicle_interchange_id !== null && $request->vehicle_interchange_id !== 'null') {

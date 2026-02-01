@@ -106,8 +106,8 @@ const email = ref('')
 const ivas = ref([])
 const price = ref(null)
 const iva_id = ref(null)
-const iva_sale_amount = ref(0)
-const iva_sale_exclusive = ref(0)
+const iva_purchase_amount = ref(0)
+const iva_purchase_exclusive = ref(0)
 const is_loan = ref(1)
 const loan_amount = ref(null)
 const lessor = ref(null)
@@ -116,7 +116,6 @@ const bank = ref(null)
 const account = ref(null)
 const description = ref(null)
 const registration_fee = ref(0)
-const total_sale = ref(0)
 const payment_type = ref(null)
 const paymentTypes = ref([])
 const payment_type_id = ref(null)
@@ -136,17 +135,16 @@ function reloadPage() {
 }
 
 const calculate = () => {
-    const sale = Number(price.value) || 0
+    const prince_ = Number(price.value) || 0
     const fee = Number(registration_fee.value) || 0
-    const value = (sale + fee)
+    const value = (prince_ + fee)
 
     if(iva_id.value === 2)
-        iva_sale_amount.value = ((Number(value) || 0) * 0.2)
+        iva_purchase_amount.value = ((Number(value) || 0) * 0.2)
     else
-        iva_sale_amount.value = 0
+        iva_purchase_amount.value = 0
 
-    iva_sale_exclusive.value = value - iva_sale_amount.value
-    total_sale.value = value
+    iva_purchase_exclusive.value = value - iva_purchase_amount.value
 }
 
 const remaining_amount = computed(()=>{
@@ -280,10 +278,9 @@ async function fetchData() {
 
         price.value = formatDecimal(agreement.value.price)
         iva_id.value = agreement.value.iva_id
-        iva_sale_amount.value = formatDecimal(agreement.value.iva_sale_amount ?? 0)
-        iva_sale_exclusive.value = formatDecimal(agreement.value.iva_sale_exclusive ?? 0)
+        iva_purchase_amount.value = formatDecimal(agreement.value.iva_purchase_amount ?? 0)
+        iva_purchase_exclusive.value = formatDecimal(agreement.value.iva_purchase_exclusive ?? 0)
         registration_fee.value = formatDecimal(agreement.value.registration_fee ?? 0)
-        total_sale.value = agreement.value.total_sale
         payment_type.value = agreement.value.payment_type
         payment_type_id.value = agreement.value.payment_type_id
         advance_id.value = agreement.value.advance_id
@@ -991,10 +988,9 @@ const onSubmit = async () => {
                 formData.append('guaranty', 0)
                 formData.append('insurance_company', 0)
                 formData.append('iva_id', iva_id.value)
-                formData.append('iva_sale_amount', iva_sale_amount.value)
-                formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+                formData.append('iva_purchase_amount', iva_purchase_amount.value)
+                formData.append('iva_purchase_exclusive', iva_purchase_exclusive.value)
                 formData.append('registration_fee', registration_fee.value)
-                formData.append('total_sale', total_sale.value)
                 formData.append('payment_type', payment_type.value)
                 formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
                 formData.append('advance_id', advance_id.value)
@@ -1071,10 +1067,9 @@ const currentData = computed(() => ({
     // Tab 2 - Pris
     price: price.value,
     iva_id: iva_id.value,
-    iva_sale_amount: iva_sale_amount.value,
-    iva_sale_exclusive: iva_sale_exclusive.value,
+    iva_purchase_amount: iva_purchase_amount.value,
+    iva_purchase_exclusive: iva_purchase_exclusive.value,
     registration_fee: registration_fee.value,
-    total_sale: total_sale.value,
     is_loan: is_loan.value,
     loan_amount: loan_amount.value,
     lessor: lessor.value,
@@ -1667,7 +1662,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Varav moms*" />
                                             <VTextField
                                                 type="number"
-                                                v-model="iva_sale_amount"
+                                                v-model="iva_purchase_amount"
                                                 min="0"
                                                 disabled
                                                 suffix="KR"
@@ -1678,7 +1673,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Prix ex moms*" />
                                             <VTextField
                                                 type="number"
-                                                v-model="iva_sale_exclusive"
+                                                v-model="iva_purchase_exclusive"
                                                 min="0"
                                                 disabled
                                                 suffix="KR"

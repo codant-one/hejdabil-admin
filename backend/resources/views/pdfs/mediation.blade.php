@@ -245,7 +245,7 @@
                                             </div>
                                         </td>
                                         <td class="column-cell column-cell-right-2">
-                                            <div class="label">Fordonsägaren är:</div>
+                                            <div class="label">Fordonsägaren är</div>
                                             <div class="value">
                                                 {{ $agreement->commission->client->client_type->name }}
                                             </div>

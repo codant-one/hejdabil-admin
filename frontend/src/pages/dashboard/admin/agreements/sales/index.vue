@@ -1046,6 +1046,7 @@ const onSubmit = async () => {
                 formData.append('residual_debt', residual_debt.value)
                 formData.append('residual_price', residual_price.value)
                 formData.append('price', price.value)
+                formData.append('sale_price', price.value)
                 formData.append('iva_id', iva_id.value)
                 formData.append('iva_sale_amount', iva_sale_amount.value)
                 formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
@@ -1531,7 +1532,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
                                                     v-model="reg_num_interchange"
-                                                    @input="reg_num = reg_num.toUpperCase()"
+                                                    @input="reg_num_interchange = reg_num_interchange.toUpperCase()"
                                                 />
                                                 <VBtn
                                                     class="btn-light w-auto px-4"

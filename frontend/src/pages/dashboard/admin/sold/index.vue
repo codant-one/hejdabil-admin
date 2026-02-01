@@ -489,8 +489,11 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr</td>
             
             <td class="text-center" v-if="isColVisible('sale_price')"> {{ formatNumber(vehicle.total_sale ?? 0) }} kr</td>
-            <td class="text-center" v-if="isColVisible('profit')"> 
-              {{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr
+            <td class="text-center" v-if="isColVisible('profit')">
+              <span v-if="vehicle.purchase_price === null"> 0.00 kr </span>
+              <span v-else>
+                {{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr
+              </span>              
             </td>         
             <td class="text-center" v-if="isColVisible('costs')"> {{ formatNumber((vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('buyer')">

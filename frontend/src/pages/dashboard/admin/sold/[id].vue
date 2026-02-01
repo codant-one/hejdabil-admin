@@ -866,7 +866,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="discount"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -876,7 +876,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="registration_fee"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>

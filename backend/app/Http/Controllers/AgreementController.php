@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -114,41 +115,43 @@ class AgreementController extends Controller
     {
         try {
 
-            $agreement = Agreement::createAgreement($request);
+            return DB::transaction(function () use ($request) {
+                $agreement = Agreement::createAgreement($request);
 
-            // Create initial token with 'created' status when document is created
-            $signingToken = Str::uuid()->toString();
-            $token = $agreement->token()->create([
-                'signing_token' => $signingToken,
-                'recipient_email' => null, // Will be set when signature is requested
-                'token_expires_at' => now()->addDays(30),
-                'signature_status' => 'created',
-                'placement_x' => Agreement::coordinates($agreement, 'x'),
-                'placement_y' => Agreement::coordinates($agreement, 'y'),
-                'placement_page' => 1, // Default to page 1
-                'signature_alignment' => 'left',
-            ]);
+                // Create initial token with 'created' status when document is created
+                $signingToken = Str::uuid()->toString();
+                $token = $agreement->token()->create([
+                    'signing_token' => $signingToken,
+                    'recipient_email' => null, // Will be set when signature is requested
+                    'token_expires_at' => now()->addDays(30),
+                    'signature_status' => 'created',
+                    'placement_x' => Agreement::coordinates($agreement, 'x'),
+                    'placement_y' => Agreement::coordinates($agreement, 'y'),
+                    'placement_page' => 1, // Default to page 1
+                    'signature_alignment' => 'left',
+                ]);
 
-            // Log 'created' event when document is created
-            \App\Models\TokenHistory::logEvent(
-                tokenId: $token->id,
-                eventType: \App\Models\TokenHistory::EVENT_CREATED,
-                description: 'Avtal skapat i systemet',
-                ipAddress: $request->ip(),
-                userAgent: $request->userAgent(),
-                metadata: [
-                    'agreement_id' => $agreement->id,
-                    'agreement_title' => $agreement->title,
-                    'user_id' => $agreement->user_id,
-                ]
-            );
+                // Log 'created' event when document is created
+                \App\Models\TokenHistory::logEvent(
+                    tokenId: $token->id,
+                    eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                    description: 'Avtal skapat i systemet',
+                    ipAddress: $request->ip(),
+                    userAgent: $request->userAgent(),
+                    metadata: [
+                        'agreement_id' => $agreement->id,
+                        'agreement_title' => $agreement->title,
+                        'user_id' => $agreement->user_id,
+                    ]
+                );
 
-            return response()->json([
-                'success' => true,
-                'data' => [ 
-                    'agreement' => Agreement::find($agreement->id)
-                ]
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'data' => [ 
+                        'agreement' => Agreement::find($agreement->id)
+                    ]
+                ]);
+            });
 
         } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
@@ -234,14 +237,16 @@ class AgreementController extends Controller
                     'message' => 'Avtalet hittades inte'
                 ], 404);
             
-            $agreement->updateAgreement($request, $agreement); 
+            return DB::transaction(function () use ($request, $agreement) {
+                $agreement->updateAgreement($request, $agreement); 
 
-            return response()->json([
-                'success' => true,
-                'data' => [ 
-                    'agreement' => $agreement
-                ]
-            ], 200);
+                return response()->json([
+                    'success' => true,
+                    'data' => [ 
+                        'agreement' => $agreement
+                    ]
+                ], 200);
+            });
 
         } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([

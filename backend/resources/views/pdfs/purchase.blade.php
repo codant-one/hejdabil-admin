@@ -436,7 +436,7 @@
                                         <td class="column-cell column-cell-right-2">
                                             <div class="label">Varav moms</div>
                                             <div class="value">
-                                                {{ formatCurrency($agreement->iva_sale_amount) }} kr
+                                                {{ formatCurrency($agreement->iva_purchase_amount) }} kr
                                             </div>
                                         </td>
                                     </tr>
@@ -525,13 +525,13 @@
                             <tr>
                                 <td>{{ $agreement->vehicle_client->vehicle->reg_num }}</td>
                                 <td>{{ formatCurrency($agreement->vehicle_client->vehicle->purchase_price) }} kr</td>
-                                <td>{{ formatCurrency($agreement->iva_sale_amount) }} kr</td>
+                                <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
                             </tr>
                         </tbody>
                         <tfoot>
                             <tr>
                                 <td colspan="2">Varav moms</td>
-                                <td>{{ formatCurrency($agreement->iva_sale_amount) }} kr</td>
+                                <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
                             </tr>
                             <tr class="total-row">
                                 <td colspan="2">Totalsumma</td>
