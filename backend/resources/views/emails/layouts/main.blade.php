@@ -104,7 +104,7 @@
                                     <td align="center">
                                         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 16px; width: 100%;" role="presentation">
                                             <tr>
-                                                <td class="card-padding" style="padding: 34px; font-family: 'Titillium Web', sans-serif; font-size: 16px; color: #454545; line-height: 1.5;">
+                                                <td class="card-padding" style="border-radius:16px; padding: 34px; font-family: 'Titillium Web', sans-serif; font-size: 16px; color: #454545; line-height: 1.5;">
                                                     @yield('content')
 
                                                     @if(isset($actionUrl) && isset($actionText))

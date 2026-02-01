@@ -3,7 +3,7 @@
                             <tr>
                                 <td align="center" style="padding-bottom: 20px;">
                                     <!-- Billogg Logo/Text -->
-                                    <span style="font-family: 'Titillium Web', sans-serif; font-size: 24px; font-weight: 700; color: #333333;">Billogg</span>
+                                    <img src="{{ asset('images/billogg-mail-logo-footer.png') }}" alt="Billogg Logo" width="100" height="33" style="display: block; border: 0;">
                                 </td>
                             </tr>
                             <tr>
