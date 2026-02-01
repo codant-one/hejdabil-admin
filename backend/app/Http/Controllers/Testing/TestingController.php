@@ -32,19 +32,63 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Välkommen till Billogg';
+        $title = 'Ny faktura';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
-        $buttonText = 'Nedladdningar';
+        $buttonText = 'Ladda ner faktura';
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/users.png');
+        $icon = asset('/images/invoices.png');
         
         $password = 'test1234';
 
-        return view('emails.auth.client_created', 
+         $billing = Billing::with(['client', 'supplier.user.userDetail'])->find(1);
+    
+       $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+  // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
+
+        $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
+        return view('emails.invoices.notifications', 
             compact(
+                'company',
                 'buttonLink',
                 'buttonText',
                 'title',
@@ -54,7 +98,9 @@ class TestingController extends Controller
                 'icon',
                 'email',
                 'password',
-                'url'
+                'url',
+                'billing',
+                'text_info'
             )
         );
     }
