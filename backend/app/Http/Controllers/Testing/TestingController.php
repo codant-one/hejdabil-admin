@@ -32,16 +32,16 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Återställ ditt lösenord';
+        $title = 'Ditt lösenord har uppdaterats';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Nedladdningar';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/forgot-password.png');
+        $icon = asset('/images/reset-password.png');
 
-        return view('emails.auth.forgot_pass_confirmation', 
+        return view('emails.auth.reset_password', 
             compact(
                 'buttonLink',
                 'buttonText',

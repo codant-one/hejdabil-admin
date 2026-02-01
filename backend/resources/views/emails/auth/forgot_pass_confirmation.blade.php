@@ -1,9 +1,9 @@
 @extends("emails.layouts.layout")
 
 @section("content")
-<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#FFFFFF" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:separate;border-spacing:0px;border-width:10px;border-style:solid;border-color:transparent;background-color:#ffffff;border-radius:16px; min-height: 450px;">
+<table cellpadding="0" cellspacing="0" width="100%" bgcolor="#FFFFFF" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:separate;border-spacing:0px;border-width:10px;border-style:solid;border-color:transparent;background-color:#ffffff;border-radius:16px; min-height: 300px; padding: 8px;">
     <tr>
-        <td align="center" style="padding:0;margin:0;padding-bottom:15px;padding-top:15px;">
+        <td align="center" style="padding:0;margin:0;padding-bottom:15px;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#000000;font-size:16px">         
                 Hej,<br>
                 Vi har mottagit en begäran om att återställa lösenordet för ditt Billogg-konto.<br>
@@ -12,7 +12,7 @@
         </td>
     </tr>
     <tr>
-        <td align="center" style="padding:0;margin:0;padding-left:40px;padding-right:40px">
+        <td align="center" style="padding:0;margin:0;padding:24px;">
             <span class="es-button-border" style="border-style:solid;border-width:0px 0px 2px 0px;display:block;border-radius:48px;width:auto;border-bottom-width:0px">
                 <a href="{{ $buttonLink }}" class="btn-gradient" style="font-family: 'Titillium Web', sans-serif; font-size: 16px; color: #416054;">
                     Återställ lösenord

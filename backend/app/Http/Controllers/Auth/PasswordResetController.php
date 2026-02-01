@@ -111,8 +111,10 @@ class PasswordResetController extends Controller
         $user->update();
 
         $info = [
-            'subject' => 'Hej '.$user->name.'!. Ditt lösenord har uppdaterats.',
+            'subject' => 'Ditt lösenord har uppdaterats',
+            'title' => 'Ditt lösenord har uppdaterats',
             'buttonLink' => env('APP_DOMAIN'),
+            'icon' => asset('/images/reset-password.png'),
             'email' => 'emails.auth.reset_password'
         ];     
         

@@ -2,7 +2,7 @@
     <td>
         <table width="100%">
             <tr>
-                <td colspan="2" align="center" style="padding:0;margin:0;padding-bottom:15px;padding-top:15px;">
+                <td colspan="2" align="center" style="padding:0;margin:0;padding-bottom:15px;padding-top:30px;">
                     <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#000000;font-size:16px">         
                         Vänliga hälsningar, <br>
                         Billogg-teamet
