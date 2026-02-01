@@ -96,21 +96,22 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg';
-            
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+
             $data = [
-                'title' => 'Konto skapat framgångsrikt!!!',
+                'title' => 'Välkommen till Billogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email'=> $email,
                 'password' => $password,
-                'url'=> env("APP_DOMAIN").'/login',
-                'text-url'=>'Administrative panel'
+                'buttonLink' => env('APP_DOMAIN'),
+                'text-url' => 'Administrative panel',
+                'icon' => asset('/images/users.png'),
             ];
             
             try {
                 \Mail::send(
                     'emails.auth.client_created'
-                    , ['data' => $data]
+                    , $data
                     , function ($message) use ($email, $subject) {
                         $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                         $message->to($email)->subject($subject);

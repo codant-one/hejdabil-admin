@@ -38,24 +38,25 @@ class TestingController extends Controller
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
+        $text_url = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
         $icon = asset('/images/users.png');
         
         $password = 'test1234';
 
-        return view('emails.auth.user_created', 
+        return view('emails.auth.client_created', 
             compact(
                 'buttonLink',
                 'buttonText',
                 'title',
                 'text',
-                'text_info',
+                'text_url',
                 'user',
                 'pdfFile',
                 'icon',
                 'email',
-                'password'
+                'password',
+                'url'
             )
         );
     }
