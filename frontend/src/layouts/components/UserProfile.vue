@@ -274,7 +274,7 @@ const logout = async () => {
     .v-list-item-title {
       font-size: 14px !important;
       font-weight: 400 !important;
-      color: #1c2925 !important;
+      color: #6E9383 !important;
     }
   }
 }
