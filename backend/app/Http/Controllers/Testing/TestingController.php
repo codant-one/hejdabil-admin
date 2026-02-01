@@ -38,7 +38,6 @@ class TestingController extends Controller
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $text_url = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
         $icon = asset('/images/users.png');
         
@@ -50,7 +49,6 @@ class TestingController extends Controller
                 'buttonText',
                 'title',
                 'text',
-                'text_url',
                 'user',
                 'pdfFile',
                 'icon',

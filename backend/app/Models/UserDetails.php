@@ -39,6 +39,15 @@ class UserDetails extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    /**** Accessors ****/
+    public function getLogoUrlAttribute() {
+        return $this->logo ? asset('storage/' . $this->logo) : null;
+    }
+
+    public function getImgSignatureUrlAttribute() {
+        return $this->img_signature ? asset('storage/' . $this->img_signature) : null;
+    }
+
      /**** Public methods ****/
     public static function updateOrCreateUser($request, $user) {
         $userD = UserDetails::updateOrCreate(

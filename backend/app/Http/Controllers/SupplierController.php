@@ -415,11 +415,6 @@ class SupplierController extends Controller
     {
         try{
             
-            // $user = User::createUser($request);
-
-            // $password = Str::random(8);
-            // $request->merge(['password' => $password]);
-
             $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
                                 ->max('order_id');
 
@@ -445,6 +440,7 @@ class SupplierController extends Controller
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
 
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
             $subject = 'Välkommen till Billogg - ditt konto är skapat';
     
@@ -454,7 +450,8 @@ class SupplierController extends Controller
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
-                'icon' => asset('/images/users.png')
+                'icon' => asset('/images/users.png'),
+                'logo' => $logo
             ];
     
             try {
