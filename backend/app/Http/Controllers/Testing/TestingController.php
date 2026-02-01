@@ -32,7 +32,7 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Ny faktura';
+        $title = 'Förfallen faktura';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Ladda ner faktura';
         $email = $user->email;
@@ -43,11 +43,11 @@ class TestingController extends Controller
         
         $password = 'test1234';
 
-         $billing = Billing::with(['client', 'supplier.user.userDetail'])->find(1);
+        $billing = Billing::with(['client', 'supplier.user.userDetail'])->find(2);
     
-       $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
         $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
-  // Extraer el "value" soportando array u object
+        // Extraer el "value" soportando array u object
         $getValue = function ($cfg) {
             if (is_array($cfg)) {
                 return $cfg['value'] ?? '[]';
@@ -86,7 +86,7 @@ class TestingController extends Controller
         $company->logo = $logoObj->logo ?? null;
 
         $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
-        return view('emails.invoices.notifications', 
+        return view('emails.invoices.reminder', 
             compact(
                 'company',
                 'buttonLink',
@@ -203,7 +203,7 @@ class TestingController extends Controller
         $buttonText = 'Nedladdningar';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $billing = Billing::with(['client', 'supplier.user'])->find(33);
+        $billing = Billing::with(['client', 'supplier.user'])->find(2);
         $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
         $pdfFile = 'pdfFile';
 
