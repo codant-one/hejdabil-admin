@@ -385,7 +385,7 @@ onMounted(async () => {
   if (hasActiveDocuments.value) {
     startPolling()
   } else {
-    console.log('[Documents] No active documents on mount')
+    //console.log('[Documents] No active documents on mount')
   }
   
   // Watch para iniciar/detener polling según haya documentos activos
