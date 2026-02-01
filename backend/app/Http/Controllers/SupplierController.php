@@ -104,7 +104,6 @@ class SupplierController extends Controller
                 'email'=> $email,
                 'password' => $password,
                 'buttonLink' => env('APP_DOMAIN'),
-                'text-url' => 'Administrative panel',
                 'icon' => asset('/images/users.png'),
             ];
             
@@ -447,21 +446,21 @@ class SupplierController extends Controller
             $user->givePermissionTo('view dashboard');
 
             $email = $user->email;
-            $subject = 'Välkommen till Billogg';
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Konto skapat framgångsrikt!!!',
+                'title' => 'Välkommen till Billogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
-                'text-url'=>'Administrative panel'
+                'icon' => asset('/images/users.png')
             ];
     
             try {
                 \Mail::send(
                     'emails.auth.user_created'
-                    , ['data' => $data]
+                    , $data
                     , function ($message) use ($email, $subject) {
                         $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                         $message->to($email)->subject($subject);
