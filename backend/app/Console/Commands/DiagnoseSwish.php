@@ -8,14 +8,14 @@ use Illuminate\Support\Facades\Storage;
 
 class DiagnoseSwish extends Command
 {
-    protected $signature = 'swish:diagnose {payer_alias=1235453436}';
+    protected $signature = 'swish:diagnose {payout_number=1235-453436}';
     protected $description = 'Diagnose Swish configuration differences';
 
     public function handle()
     {
-        $payerAlias = $this->argument('payer_alias');
+        $payoutNumber = $this->argument('payout_number');
         
-        $this->info("=== SWISH DIAGNOSTIC FOR {$payerAlias} ===\n");
+        $this->info("=== SWISH DIAGNOSTIC FOR {$payoutNumber} ===\n");
 
         // 1. ENV Variables
         $this->info("📋 ENV CONFIGURATION:");
@@ -38,14 +38,18 @@ class DiagnoseSwish extends Command
 
         // 2. Database - Supplier
         $this->line("\n🏢 SUPPLIER DATABASE:");
-        $supplier = Supplier::where('payer_alias', $payerAlias)->first();
+        $supplier = Supplier::where('payout_number', $payoutNumber)->first();
         
         if (!$supplier) {
-            $this->error("❌ Supplier with payer_alias '{$payerAlias}' NOT FOUND in database!");
+            $this->error("❌ Supplier with payout_number '{$payoutNumber}' NOT FOUND in database!");
             return 1;
         }
         
+        $payerAliasForSwish = str_replace('-', '', $supplier->payout_number);
+        
         $this->info("✅ Supplier found: {$supplier->name} (ID: {$supplier->id})");
+        $this->line("payout_number (DB): " . ($supplier->payout_number ?? 'NULL'));
+        $this->line("payer_alias (for Swish): {$payerAliasForSwish}");
         $this->line("pem_url: " . ($supplier->pem_url ?? 'NULL'));
         $this->line("key_url: " . ($supplier->key_url ?? 'NULL'));
         $this->line("master_password: " . ($supplier->master_password ? 'SET' : 'NOT SET'));
