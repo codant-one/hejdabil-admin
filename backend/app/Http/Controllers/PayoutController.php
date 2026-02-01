@@ -41,7 +41,12 @@ class PayoutController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Payout::with(['state', 'user'])
+            $query = Payout::with(['state', 'user' => function($query) {
+                                $query->whereNull('deleted_at');
+                            }])
+                           ->whereHas('user', function($query) {
+                                $query->whereNull('deleted_at');
+                            })
                            ->applyFilters(
                                 $request->only([
                                     'search',
