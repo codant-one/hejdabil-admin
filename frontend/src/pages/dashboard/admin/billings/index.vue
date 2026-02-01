@@ -919,19 +919,10 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'clients') && !$vuetify.display.mdAndDown"
-          @click="isAddNewClientDrawerVisible = true"
+          v-if="$can('create', 'billings')"
+          @click="addInvoice"
         >
           Skapa ny faktura
-          <VIcon icon="custom-arrow-right" size="24" />
-        </VBtn>
-
-        <VBtn
-          class="btn-ghost"
-          v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
-          @click="isDialogOpen = true"
-        >
-           Skapa ny faktura
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>

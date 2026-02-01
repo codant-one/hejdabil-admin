@@ -174,132 +174,130 @@ const closeUserEditDialog = ()=>{
   <section>
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
-    <VCard>
-      <VCardText class="p-0">
-        <div class="bg-alert">
+    <VCardText class="p-0">
+      <div class="bg-alert">
+        <div 
+          class="d-flex"
+          :class="windowWidth < 1024 ? 'flex-column gap-4' : 'justify-between gap-7'">
+          <!-- 👉 Details -->
           <div 
-            class="d-flex"
-            :class="windowWidth < 1024 ? 'flex-column gap-4' : 'justify-between gap-7'">
-            <!-- 👉 Details -->
-            <div 
-              :class="windowWidth < 1024 ? 'justify-center' : 'px-0'"
-              class="d-flex align-center"
+            :class="windowWidth < 1024 ? 'justify-center' : 'px-0'"
+            class="d-flex align-center"
+          >
+            <VAvatar
+              rounded
+              :size="144"
+              :color="avatar ? 'default' : 'primary'"
+              variant="tonal"
             >
-              <VAvatar
-                rounded
-                :size="144"
-                :color="avatar ? 'default' : 'primary'"
-                variant="tonal"
+              <VImg
+                v-if="avatar"
+                style="border-radius: 16px;"
+                :src="avatar"
+              />
+              <span
+                v-else
+                class="text-5xl font-weight-semibold"
               >
-                <VImg
-                  v-if="avatar"
-                  style="border-radius: 16px;"
-                  :src="avatar"
-                />
-                <span
-                  v-else
-                  class="text-5xl font-weight-semibold"
-                >
-                  {{ avatarText(name) }}
-                </span>
-              </VAvatar>
-            </div>
-          
-            <!-- 👉 Details -->
-            <div
-              class="d-flex align-center w-100"
-              :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-4'"
-            >
-              <div class="profile-info-grid">
-                <div class="profile-info-item profile-info-col-3">
-                  <span class="text-body-profile">
-                    <VIcon
-                      class="me-1"
-                        icon="custom-user-profile"
-                        size="16"
-                    />
-                    Namn
-                  </span>
-                  <span class="span-body-profile">
-                    {{ name }}
-                  </span>
-                </div>
-                <div class="profile-info-item profile-info-col-3">
-                  <span class="text-body-profile">
-                    <VIcon
-                      class="me-1"
+                {{ avatarText(name) }}
+              </span>
+            </VAvatar>
+          </div>
+        
+          <!-- 👉 Details -->
+          <div
+            class="d-flex align-center w-100"
+            :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-4'"
+          >
+            <div class="profile-info-grid">
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
                       icon="custom-user-profile"
                       size="16"
-                    />
-                    Efternamn
-                  </span>
-                  <span class="span-body-profile">
-                    {{ last_name }}
-                  </span>
-                </div>
-                <div class="profile-info-item profile-info-col-6">
-                  <span class="text-body-profile">
-                    <VIcon
-                      class="me-1"
-                      icon="custom-email-profile"
-                      size="16"
-                    />
-                    E-post
-                  </span>
-                  <span class="span-body-profile">
-                    {{ email }}
-                  </span>
-                </div>
-                <div class="profile-info-item profile-info-col-3">
-                  <span class="text-body-profile">
-                    <VIcon
-                      class="me-1"
-                      icon="custom-phone-profile"
-                      size="16"
-                    />
-                    Telefon
-                  </span>
-                  <span class="span-body-profile">
-                    {{ phone }}
-                  </span>
-                </div>
-                <div class="profile-info-item profile-info-col-8">
-                  <span class="text-body-profile">
-                    <VIcon
-                      class="me-1"
-                      icon="custom-location-profile"
-                      size="16"
-                    />
-                    Adress
-                  </span>
-                  <span class="span-body-profile">
-                    {{ address }}
-                  </span>
-                </div>                
+                  />
+                  Namn
+                </span>
+                <span class="span-body-profile">
+                  {{ name }}
+                </span>
               </div>
-            </div>
-
-            <!-- 👉 Edit and Suspend button -->
-            <div
-              :class="windowWidth < 1024 ? 'w-100' : 'px-0'"
-            >
-              <div class="d-flex gap-4"
-                :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
-              >
-                <VBtn 
-                  class="btn-light w-auto" 
-                  block
-                  @click="showUserEditDialog()"
-                >
-                  <VIcon icon="custom-pencil" size="24" />
-                  Redigera
-                </VBtn>
-            </div>
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-user-profile"
+                    size="16"
+                  />
+                  Efternamn
+                </span>
+                <span class="span-body-profile">
+                  {{ last_name }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-6">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-email-profile"
+                    size="16"
+                  />
+                  E-post
+                </span>
+                <span class="span-body-profile">
+                  {{ email }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-phone-profile"
+                    size="16"
+                  />
+                  Telefon
+                </span>
+                <span class="span-body-profile">
+                  {{ phone }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-8">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-location-profile"
+                    size="16"
+                  />
+                  Adress
+                </span>
+                <span class="span-body-profile">
+                  {{ address }}
+                </span>
+              </div>                
             </div>
           </div>
+
+          <!-- 👉 Edit and Suspend button -->
+          <div
+            :class="windowWidth < 1024 ? 'w-100' : 'px-0'"
+          >
+            <div class="d-flex gap-4"
+              :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
+            >
+              <VBtn 
+                class="btn-light w-auto" 
+                block
+                @click="showUserEditDialog()"
+              >
+                <VIcon icon="custom-pencil" size="24" />
+                Redigera
+              </VBtn>
+          </div>
+          </div>
         </div>
-      </VCardText>
-    </VCard>
+      </div>
+    </VCardText>
       
     <!-- DIALOG Edit personal information -->
     <VDialog

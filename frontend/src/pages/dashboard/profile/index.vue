@@ -5,6 +5,7 @@ import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
@@ -186,74 +187,81 @@ onBeforeUnmount(() => {
           windowWidth < 1024 ? 'flex-column' : 'flex-row'
       ]"
     >
-      <VCardText class="p-0">
-        
-        <UserProfile
-          :user="userData"
-          :avatarOld="avatarOld"
-          :avatar="avatar"
-          @onImageSelected="onImageSelected" 
-        />
-        
-        <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
-          <VTabs 
-            v-model="userTab" 
-            grow            
-            :show-arrows="false"
-            class="profile-tabs mt-4" 
-          >
-            <VTab v-for="tab in tabs" :key="tab.title">
-                <VIcon size="24" :icon="'' + tab.icon" />
-                {{ tab.title }}
-            </VTab>
-          </VTabs>
 
-          <VWindow
-            v-model="userTab"
-            :touch="false"
-          >
-            <VWindowItem>
-              <TabSecurity @alert="showAlert"/>
-            </VWindowItem>
-            <VWindowItem>
-              <TabDealer 
-                @alert="showAlert"
-                @window="showWindow"/>
-            </VWindowItem>
-          </VWindow>
-        </div>
+      <UserProfile
+        :user="userData"
+        :avatarOld="avatarOld"
+        :avatar="avatar"
+        @onImageSelected="onImageSelected" 
+      />
+  
+      <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
+        <VTabs 
+          v-model="userTab" 
+          grow            
+          :show-arrows="false"
+          class="profile-tabs mt-4" 
+        >
+          <VTab v-for="tab in tabs" :key="tab.title">
+              <VIcon size="24" :icon="'' + tab.icon" />
+              {{ tab.title }}
+          </VTab>
+        </VTabs>
+
+        <VWindow
+          v-model="userTab"
+          :touch="false"
+        >
+          <VWindowItem>
+            <TabSecurity @alert="showAlert"/>
+          </VWindowItem>
+          <VWindowItem>
+            <TabDealer 
+              @alert="showAlert"
+              @window="showWindow"/>
+          </VWindowItem>
+        </VWindow>
+      </div>
         
-        <TabSecurity @alert="showAlert" v-else/>
+      <TabSecurity @alert="showAlert" v-else/>
           
-      </VCardText>
     </VCard>
 
-
-     <!-- 👉 Confirm Delete -->
-     <VDialog
+    <VDialog
       v-model="dialog"
-      persistent
-      class="v-dialog-sm" >
+      persistent 
+      class="action-dialog">
       <!-- Dialog close btn -->
         
-      <DialogCloseBtn @click="cancelLeave" />
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="cancelLeave"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Avsluta utan att spara">
-        <VDivider class="mt-4"/>
-        <VCardText>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">
+            Avsluta utan att spara
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           <strong>Du har osparade ändringar.</strong> Är du säker på att du vill lämna sidan?
         </VCardText>
-
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn 
+            class="btn-light"
             @click="cancelLeave">
               Avbryt
           </VBtn>
-          <VBtn @click="confirmLeave">
-              Ja, fortsätt
+          <VBtn 
+            class="btn-gradient"
+            @click="confirmLeave">
+              Ja, fortsätt
           </VBtn>
         </VCardText>
       </VCard>

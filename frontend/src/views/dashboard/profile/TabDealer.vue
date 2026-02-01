@@ -499,234 +499,230 @@ const onSubmit = () => {
   <section>
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
-    <VRow>
-        <VCol cols="12" class="pb-0">
-            <VCardText class="px-0">
-                <VRow class="px-md-3">
-                    <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
-                        <div 
-                            class="d-flex flex-wrap"
-                            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                            :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                        >
-                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                                <VImg :src="banner" class="banner-img" cover/>
-                            </div>
-                            <div class="d-flex justify-center" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                                <div class="logo-store">
-                                    <VBtn 
-                                        v-if="role !== 'User'"
-                                        type="button" 
-                                        :block="windowWidth < 1024"
-                                        class="logo-button btn-ghost btn-white-logo "
-                                        :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                                        @click="isConfirmChangeLogoVisible = true"
-                                    >
-                                        <div class="btn-white-logo v-btn__content">
-                                            <VIcon icon="custom-pencil" size="24" />
-                                        </div>
-                                    </VBtn>
-                                    <VImg 
-                                        :src="logo" 
-                                        class="logo-store-img" 
-                                        contain/>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-center mb-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                                <div class="info-store">
-                                    <span class="store-name pb-3">{{ form.company }}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="title-tabs mb-5">
-                            Redigera företagsinformation
-                        </div>
-
-                        <VForm
-                            ref="refVForm"
-                            class="card-form"
-                            @submit.prevent="onSubmit"
-                        >
-                            <div 
-                                class="d-flex flex-wrap"
-                                :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                                :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+    <VCardText class="px-0">
+        <VRow class="px-md-3">
+            <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                <div 
+                    class="d-flex flex-wrap"
+                    :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                >
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                        <VImg :src="banner" class="banner-img" cover/>
+                    </div>
+                    <div class="d-flex justify-center" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                        <div class="logo-store">
+                            <VBtn 
+                                v-if="role !== 'User'"
+                                type="button" 
+                                :block="windowWidth < 1024"
+                                class="logo-button btn-ghost btn-white-logo "
+                                :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                                @click="isConfirmChangeLogoVisible = true"
                             >
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.company"
-                                        :rules="[requiredValidator]"
-                                    />
+                                <div class="btn-white-logo v-btn__content">
+                                    <VIcon icon="custom-pencil" size="24" />
                                 </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Organisationsnummer*" />
-                                    <VTextField
-                                        v-model="form.organization_number"
-                                        :disabled="role === 'Supplier' || role === 'User'"
-                                        :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                        minLength="11"
-                                        maxlength="11"
-                                        @input="formatOrgNumber()"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.address"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.postal_code"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.street"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </div>                            
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.phone"
-                                        :rules="[requiredValidator, phoneValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Hemsida" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.link"
-                                        :rules="[urlValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bank*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.bank"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankgiro" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.iban"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontonummer*" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.account_number"
-                                        :rules="[requiredValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Iban nummer" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.iban_number"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="BIC" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.bic"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Plusgiro" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.plus_spin"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Swish" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.swish"
-                                        :rules="[phoneValidator]"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vat" />
-                                    <VTextField
-                                        :disabled="role === 'User'"
-                                        v-model="form.vat"
-                                    />
-                                </div>
-                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Payout number" />
-                                    <VTextField
-                                        disabled
-                                        v-model="form.payout_number"
-                                    />
-                                </div>
-                                <div class="w-100">
-                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Signatur" />
-                                    <div class="d-flex align-center gap-4">
-                                        <div style="width: 50%;">
-                                            <VImg :src="signature" class="signature-image" />
-                                        </div>
-                                        <div class="d-flex flex-column gap-2" style="width: 50%;">
-                                            <VBtn 
-                                                class="btn-light w-auto" 
-                                                block
-                                                :disabled="role === 'User'"
-                                                @click="isConfirmChangeSignatureVisible = true"
-                                            >
-                                                <VIcon icon="custom-upload" size="24" />
-                                                Ladda upp fil
-                                            </VBtn>
-                                            <VBtn 
-                                                :disabled="role === 'User'"
-                                                class="btn-ghost w-auto" 
-                                                @click="openSignaturePadDialog">
-                                                <VIcon icon="custom-pencil" size="24" />
-                                                Rita signatur
-                                            </VBtn>
-                                        </div>
-                                    </div>
-                                </div>
+                            </VBtn>
+                            <VImg 
+                                :src="logo" 
+                                class="logo-store-img" 
+                                contain/>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-center mb-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                        <div class="info-store">
+                            <span class="store-name pb-3">{{ form.company }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="title-tabs mb-5">
+                    Redigera företagsinformation
+                </div>
 
-                                <VCardText class="p-0 d-flex w-100" v-if="role !== 'User'">
-                                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'"/>
-                                    <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
-                                        <VBtn 
-                                            type="submit" 
-                                            :block="windowWidth < 1024"
-                                            class="btn-gradient"
-                                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                                        >
-                                            Nästa
-                                        </VBtn>
-                                    </div>
-                                </VCardText>
+                <VForm
+                    ref="refVForm"
+                    class="card-form"
+                    @submit.prevent="onSubmit"
+                >
+                    <div 
+                        class="d-flex flex-wrap"
+                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                    >
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.company"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Organisationsnummer*" />
+                            <VTextField
+                                v-model="form.organization_number"
+                                :disabled="role === 'Supplier' || role === 'User'"
+                                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                minLength="11"
+                                maxlength="11"
+                                @input="formatOrgNumber()"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.address"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.postal_code"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.street"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>                            
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.phone"
+                                :rules="[requiredValidator, phoneValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Hemsida" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.link"
+                                :rules="[urlValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bank*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.bank"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankgiro" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.iban"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontonummer*" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.account_number"
+                                :rules="[requiredValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Iban nummer" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.iban_number"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="BIC" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.bic"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Plusgiro" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.plus_spin"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Swish" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.swish"
+                                :rules="[phoneValidator]"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vat" />
+                            <VTextField
+                                :disabled="role === 'User'"
+                                v-model="form.vat"
+                            />
+                        </div>
+                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Payout number" />
+                            <VTextField
+                                disabled
+                                v-model="form.payout_number"
+                            />
+                        </div>
+                        <div class="w-100">
+                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Signatur" />
+                            <div class="d-flex align-center gap-4">
+                                <div style="width: 50%;">
+                                    <VImg :src="signature" class="signature-image" />
+                                </div>
+                                <div class="d-flex flex-column gap-2" style="width: 50%;">
+                                    <VBtn 
+                                        class="btn-light w-auto" 
+                                        block
+                                        :disabled="role === 'User'"
+                                        @click="isConfirmChangeSignatureVisible = true"
+                                    >
+                                        <VIcon icon="custom-upload" size="24" />
+                                        Ladda upp fil
+                                    </VBtn>
+                                    <VBtn 
+                                        :disabled="role === 'User'"
+                                        class="btn-ghost w-auto" 
+                                        @click="openSignaturePadDialog">
+                                        <VIcon icon="custom-pencil" size="24" />
+                                        Rita signatur
+                                    </VBtn>
+                                </div>
                             </div>
-                        </VForm>                       
-                    </VCol>
-                </VRow>
-            </VCardText>
-        </VCol>
-    </VRow>
+                        </div>
 
-     <!-- 👉 Confirm change logo -->
+                        <VCardText class="p-0 d-flex w-100" v-if="role !== 'User'">
+                            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'"/>
+                            <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                                <VBtn 
+                                    type="submit" 
+                                    :block="windowWidth < 1024"
+                                    class="btn-gradient"
+                                    :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                                >
+                                    Nästa
+                                </VBtn>
+                            </div>
+                        </VCardText>
+                    </div>
+                </VForm>                       
+            </VCol>
+        </VRow>
+    </VCardText>
+    
+    <!-- 👉 Confirm change logo -->
     <VDialog
       v-model="isConfirmChangeLogoVisible"
       persistent
@@ -882,9 +878,7 @@ const onSubmit = () => {
         </VCard>
     </VDialog>
 
-    <!-- ======================================================= -->
     <!-- DIÁLOGO PARA DIBUJAR LA FIRMA DEL SUPPLIER -->
-    <!-- ======================================================= -->
     <VDialog 
         v-model="isSignaturePadDialogVisible" 
         persistent 
@@ -933,7 +927,6 @@ const onSubmit = () => {
             </VCardText>
         </VCard>
     </VDialog>
-
   </section>
 </template>
 

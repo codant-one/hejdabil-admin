@@ -213,126 +213,100 @@ async function fetchData() {
   email.value = userData.value.email;
   name.value = userData.value.name;
   last_name.value = userData.value.last_name;
-  phone.value = userData.value.user_detail.personal_phone;
-  address.value = userData.value.user_detail.personal_address;
+  phone.value = userData.value.user_detail?.personal_phone || "";
+  address.value = userData.value.user_detail?.personal_address || "";
 
   //company
   form.value.company =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.company
-      : userData.value.user_detail.company;
+      ? userData.value.supplier?.boss?.user?.user_detail?.company || ""
+      : userData.value.user_detail?.company || "";
   form.value.organization_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.organization_number
-      : userData.value.user_detail.organization_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.organization_number || ""
+      : userData.value.user_detail?.organization_number || "";
   form.value.link =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.link
-      : userData.value.user_detail.link;
+      ? userData.value.supplier?.boss?.user?.user_detail?.link || ""
+      : userData.value.user_detail?.link || "";
   form.value.address =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.address
-      : userData.value.user_detail.address;
+      ? userData.value.supplier?.boss?.user?.user_detail?.address || ""
+      : userData.value.user_detail?.address || "";
   form.value.street =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.street
-      : userData.value.user_detail.street;
+      ? userData.value.supplier?.boss?.user?.user_detail?.street || ""
+      : userData.value.user_detail?.street || "";
   form.value.postal_code =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.postal_code
-      : userData.value.user_detail.postal_code;
+      ? userData.value.supplier?.boss?.user?.user_detail?.postal_code || ""
+      : userData.value.user_detail?.postal_code || "";
   form.value.phone =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.phone
-      : userData.value.user_detail.phone;
+      ? userData.value.supplier?.boss?.user?.user_detail?.phone || ""
+      : userData.value.user_detail?.phone || "";
 
   //bank
   form.value.bank =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.bank
-      : userData.value.user_detail.bank;
+      ? userData.value.supplier?.boss?.user?.user_detail?.bank || ""
+      : userData.value.user_detail?.bank || "";
   form.value.account_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.account_number
-      : userData.value.user_detail.account_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.account_number || ""
+      : userData.value.user_detail?.account_number || "";
 
   form.value.iban =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.iban
-      : userData.value.user_detail.iban;
+      ? userData.value.supplier?.boss?.user?.user_detail?.iban || ""
+      : userData.value.user_detail?.iban || "";
   form.value.iban_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.iban_number
-      : userData.value.user_detail.iban_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.iban_number || ""
+      : userData.value.user_detail?.iban_number || "";
   form.value.bic =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.bic
-      : userData.value.user_detail.bic;
+      ? userData.value.supplier?.boss?.user?.user_detail?.bic || ""
+      : userData.value.user_detail?.bic || "";
   form.value.plus_spin =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.plus_spin
-      : userData.value.user_detail.plus_spin;
+      ? userData.value.supplier?.boss?.user?.user_detail?.plus_spin || ""
+      : userData.value.user_detail?.plus_spin || "";
   form.value.swish =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.swish
-      : userData.value.user_detail.swish;
+      ? userData.value.supplier?.boss?.user?.user_detail?.swish || ""
+      : userData.value.user_detail?.swish || "";
   form.value.vat =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.vat
-      : userData.value.user_detail.vat;
+      ? userData.value.supplier?.boss?.user?.user_detail?.vat || ""
+      : userData.value.user_detail?.vat || "";
 
   form.value.payout_number = 
     role.value === 'User' 
       ? userData.value.supplier.boss?.payout_number 
       : userData.value.supplier?.payout_number 
 
-  logo.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.logo !== null
-        ? themeConfig.settings.urlStorage +
-          userData.value.supplier.boss.user.user_detail.logo
-        : null
-      : userData.value.user_detail.logo !== null
-      ? themeConfig.settings.urlStorage + userData.value.user_detail.logo
-      : null;
-  logoCropped.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.logo !== null
-        ? await fetchImageAsBlob(
-            themeConfig.settings.urlStorage +
-              userData.value.supplier.boss.user.user_detail.logo
-          )
-        : null
-      : userData.value.user_detail.logo !== null
-      ? await fetchImageAsBlob(
-          themeConfig.settings.urlStorage + userData.value.user_detail.logo
-        )
-      : null;
+  const userLogo = role.value === "User"
+    ? userData.value.supplier?.boss?.user?.user_detail?.logo
+    : userData.value.user_detail?.logo;
+  
+  logo.value = userLogo
+    ? themeConfig.settings.urlStorage + userLogo
+    : null;
+  logoCropped.value = userLogo
+    ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userLogo)
+    : null;
 
-  signature.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.img_signature !== null
-        ? themeConfig.settings.urlStorage +
-          userData.value.supplier.boss.user.user_detail.img_signature
-        : null
-      : userData.value.user_detail.img_signature !== null
-      ? themeConfig.settings.urlStorage +
-        userData.value.user_detail.img_signature
-      : null;
-  signatureCropped.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.img_signature !== null
-        ? await fetchImageAsBlob(
-            themeConfig.settings.urlStorage +
-              userData.value.supplier.boss.user.user_detail.img_signature
-          )
-        : null
-      : userData.value.user_detail.img_signature !== null
-      ? await fetchImageAsBlob(
-          themeConfig.settings.urlStorage +
-            userData.value.user_detail.img_signature
-        )
-      : null;
+  const userSignature = role.value === "User"
+    ? userData.value.supplier?.boss?.user?.user_detail?.img_signature
+    : userData.value.user_detail?.img_signature;
+  
+  signature.value = userSignature
+    ? themeConfig.settings.urlStorage + userSignature
+    : null;
+  signatureCropped.value = userSignature
+    ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userSignature)
+    : null;
 
   avatarOld.value = userData.value.avatar;
   avatar.value = userData.value.avatar;
