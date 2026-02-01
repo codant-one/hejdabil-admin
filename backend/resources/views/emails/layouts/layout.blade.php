@@ -36,7 +36,6 @@
                 background-color: #00EEB0; /* Fallback */
                 border-radius: 30px;
                 padding: 12px 30px;
-                color: #454545;
                 text-decoration: none;
                 font-weight: 700;
                 display: inline-block;

@@ -14,7 +14,7 @@
     <tr>
         <td align="center" style="padding:0;margin:0;padding-left:40px;padding-right:40px">
             <span class="es-button-border" style="border-style:solid;border-width:0px 0px 2px 0px;display:block;border-radius:48px;width:auto;border-bottom-width:0px">
-                <a href="{{ $buttonLink }}" class="btn-gradient" style="color:#454545; font-family: 'Titillium Web', sans-serif; font-size: 16px;">
+                <a href="{{ $buttonLink }}" class="btn-gradient" style="font-family: 'Titillium Web', sans-serif; font-size: 16px; color: #416054;">
                     Återställ lösenord
                 </a>
             </span>
