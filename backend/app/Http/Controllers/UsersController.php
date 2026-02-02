@@ -265,6 +265,28 @@ class UsersController extends Controller
             $user->password = Hash::make($request->password);
             $user->save();
 
+            $email = $user->email;
+            $subject = 'Ditt lösenord har uppdaterats';
+    
+            $data = [
+                'title' => 'Ditt lösenord har uppdaterats',
+                'buttonLink' => env('APP_DOMAIN'),
+                'icon' => asset('/images/reset-password.png')
+            ];
+    
+            try {
+                \Mail::send(
+                    'emails.auth.reset_password'
+                    , $data
+                    , function ($message) use ($email, $subject) {
+                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                        $message->to($email)->subject($subject);
+                });
+            } catch (\Exception $e) {    
+                Log::info("Failed to send email to user ". $e);
+            } 
+
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
