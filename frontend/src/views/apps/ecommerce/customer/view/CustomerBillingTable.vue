@@ -32,6 +32,7 @@ const totalBillings = ref(0);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
 const isConfirmKreditera = ref(false)
+const isConfirmSendMailReminder = ref(false);
 const emailDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
@@ -249,6 +250,61 @@ const duplicate = (billing) => {
 
 const credit = (billingData) => {
   isConfirmKreditera.value = true;
+  selectedBilling.value = { ...billingData };
+};
+
+const reminder = async () => {
+  emit("loading", true);
+  isConfirmSendMailReminder.value = false;
+
+  billingsStores
+    .reminder(Number(selectedBilling.value.id))
+    .then((res) => {
+      emit("loading", false);
+      selectedBilling.value = {};
+
+      advisor.value = {
+        type: res.data.success ? "success" : "error",
+        message: res.data.success
+          ? "Påminnelse skickad framgångsrikt"
+          : res.data.message,
+        show: true,
+      };
+
+      emit("alert", advisor);
+
+      setTimeout(() => {
+        advisor.value = {
+          type: "",
+          message: "",
+          show: false,
+        };
+        emit("alert", advisor);
+      }, 3000);
+    })
+    .catch((err) => {
+      advisor.value = {
+        type: "error",
+        message: err.message,
+        show: true,
+      };
+      emit("alert", advisor);
+
+      setTimeout(() => {
+        advisor.value = {
+          type: "",
+          message: "",
+          show: false,
+        };
+        emit("alert", advisor);
+      }, 3000);
+
+      emit("loading", false);
+    });
+};
+
+const sendReminder = (billingData) => {
+  isConfirmSendMailReminder.value = true;
   selectedBilling.value = { ...billingData };
 };
 
@@ -2045,6 +2101,44 @@ onBeforeUnmount(() => {
             :source="trackerPreviewPdfSource" 
             :width="windowWidth < 1024 ? 300 : 450"
             />
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm send reminder -->
+    <VDialog 
+      v-model="isConfirmSendMailReminder" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendMailReminder = !isConfirmSendMailReminder"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-alarm" class="action-icon" />
+          <div class="dialog-title">
+            Skicka påminnelse via e-post
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Vill du skicka ett påminnelsemeddelande för faktura
+          <strong>#{{ selectedBilling.invoice_id }}</strong
+          >?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailReminder = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="reminder"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
