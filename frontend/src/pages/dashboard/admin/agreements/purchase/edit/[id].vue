@@ -1815,7 +1815,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
                                         <div class="w-100">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor inhämtas från mall" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor" />
                                             <VTextarea
                                                 v-model="terms_other_conditions"
                                                 rows="4"

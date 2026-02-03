@@ -226,7 +226,7 @@ const onSubmit = () => {
             </div>
           </div>
           <div class="bio-right">
-            <div class="bio-label">Produktbeskrivning</div>
+            <div class="bio-label">Kundbeskrivning</div>
             <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
           </div>
         </div>
