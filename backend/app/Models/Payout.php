@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+use App\Models\UserDetails;
+use App\Models\User;
+use App\Models\Config;
+
 class Payout extends Model
 {
     use HasFactory;
@@ -120,7 +124,57 @@ class Payout extends Model
             return false;
         }
 
-        $data = ['payouts' => $payouts];
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
+
+        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+
+        $data = [
+            'company' => $company,
+            'payouts' => $payouts,
+            'title' => 'Swish-betalningskvitto',
+            'icon' => asset('/images/payouts.png'),
+            'logo' => $logo
+        ];
 
         $subject = 'Swish-betalningskvitto';
 

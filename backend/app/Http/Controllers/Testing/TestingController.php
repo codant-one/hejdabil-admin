@@ -17,6 +17,7 @@ use App\Models\Agreement;
 use App\Models\UserDetails;
 use App\Models\Config;
 use App\Models\Document;
+use App\Models\Payout;
 
 class TestingController extends Controller
 {
@@ -33,14 +34,14 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Nytt avtal';
+        $title = 'Swish-betalningskvitto';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Ladda ner faktura';
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/agreements-two.png');
+        $icon = asset('/images/payouts.png');
         
         $password = 'test1234';
 
@@ -96,8 +97,9 @@ class TestingController extends Controller
         $downloadUrl = '1234';
         $titles = 'Ditt signerade dokument är nu tillgängligt';
         $fullname = $agreement->agreement_client->fullname ?? null;
+        $payouts = Payout::with('user')->whereIn('id', [1])->get();
 
-        return view('emails.agreements.notifications', 
+        return view('emails.payouts.receipt', 
             compact(
                 'company',
                 'buttonLink',
@@ -118,7 +120,8 @@ class TestingController extends Controller
                 'document',
                 'downloadUrl'  ,
                 'titles',
-                'fullname'
+                'fullname',
+                'payouts'
             )
         );
     }
