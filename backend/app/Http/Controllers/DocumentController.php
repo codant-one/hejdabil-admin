@@ -355,7 +355,7 @@ class DocumentController extends Controller
                 'signingUrl' => $signingUrl,
                 'text' => $request->text === 'null' ? null : $request->text,
                 'title' => 'Dokument för digital signering',
-                'icon' => asset('/images/documents.png'),
+                'icon' => asset('/images/signature.png'),
                 'logo' => $logo
             ];
 

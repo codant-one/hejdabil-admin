@@ -414,6 +414,7 @@ class AgreementController extends Controller
             }
 
             $data = [
+                'company' => $company,
                 'title' => 'Nytt avtal',
                 'icon' => asset('/images/agreements-two.png'),
                 'user' => $agreement->agreement_client->fullname,
@@ -424,7 +425,7 @@ class AgreementController extends Controller
 
             if($request->emailDefault === true) {
                 $clientEmail = $agreement->agreement_client->email;
-                $subject = 'Nytt avtal från' . $company->company;
+                $subject = 'Nytt avtal från ' . $company->company;
                     
                 try {
                     \Mail::send(

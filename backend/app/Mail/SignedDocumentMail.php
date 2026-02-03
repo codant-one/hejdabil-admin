@@ -104,10 +104,12 @@ class SignedDocumentMail extends Mailable
         
         if ($this->agreement) {
             $this->title = 'Avtal signerat';
-            $this->icon = asset('/images/agreements.png');
+            $this->icon = asset('/images/agreements-two.png');
+            $this->fullname = $this->agreement->agreement_client->fullname ?? null;
         } elseif ($this->document) {
             $this->title = 'Dokumentet är nu signerat';
-            $this->icon = asset('/images/documents.png');
+            $this->icon = asset('/images/check.png');
+            $this->fullname = null;
         }
         
         // Obtain the logo of the user who owns the document/agreement
@@ -119,7 +121,6 @@ class SignedDocumentMail extends Mailable
         }
         
         $this->logo = $user && $user->userDetail ? $user->userDetail->logo_url : null;
-        $this->fullname = $this->agreement->agreement_client->fullname ?? null;
     }
 
     /**
