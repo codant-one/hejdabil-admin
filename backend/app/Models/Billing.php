@@ -579,7 +579,7 @@ class Billing extends Model
             'buttonText' => 'Ladda ner faktura',
             'pdfFile' => asset('storage/'.$billing->reminder),
             'title' => 'Förfallen faktura',
-            'icon' => asset('/images/invoices.png'),
+            'icon' => asset('/images/invoice-failed.png'),
             'logo' => $logo
         ];
 

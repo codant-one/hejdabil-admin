@@ -33,14 +33,14 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Avtal signerat';
+        $title = 'Nytt avtal';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Ladda ner faktura';
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/agreements.png');
+        $icon = asset('/images/agreements-two.png');
         
         $password = 'test1234';
 
@@ -96,8 +96,8 @@ class TestingController extends Controller
         $downloadUrl = '1234';
         $titles = 'Ditt signerade dokument är nu tillgängligt';
         $fullname = $agreement->agreement_client->fullname ?? null;
-        
-        return view('emails.agreements.signed-document', 
+
+        return view('emails.agreements.notifications', 
             compact(
                 'company',
                 'buttonLink',
