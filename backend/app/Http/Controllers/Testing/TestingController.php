@@ -33,14 +33,14 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Dokument för digital signering';
+        $title = 'Avtal signerat';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Ladda ner faktura';
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/documents.png');
+        $icon = asset('/images/agreements.png');
         
         $password = 'test1234';
 
@@ -91,12 +91,13 @@ class TestingController extends Controller
         $signingUrl = '1234';
         $token = '1234';
 
-        $agreement = null;
+        $agreement = Agreement::with('agreement_client')->find(11);
         $document = Document::find(2);
         $downloadUrl = '1234';
         $titles = 'Ditt signerade dokument är nu tillgängligt';
-
-        return view('emails.documents.signable', 
+        $fullname = $agreement->agreement_client->fullname ?? null;
+        
+        return view('emails.agreements.signed-document', 
             compact(
                 'company',
                 'buttonLink',
@@ -116,8 +117,8 @@ class TestingController extends Controller
                 'agreement',
                 'document',
                 'downloadUrl'  ,
-                'titles'
-
+                'titles',
+                'fullname'
             )
         );
     }

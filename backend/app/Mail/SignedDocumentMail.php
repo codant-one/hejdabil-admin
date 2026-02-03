@@ -73,27 +73,42 @@ class SignedDocumentMail extends Mailable
      */
     public $logo;
 
+     /**
+     * Fullname.
+     *
+     * @var string|null
+     */
+    public $fullname;
+
+    /**
+     * Company information.
+     *
+     * @var mixed|null
+     */
+    public $company;
+
     /**
      * Create a new message instance.
      */
-    public function __construct(?Agreement $agreement, string $pdfPath = '', ?Document $document = null, ?string $downloadUrl = null, bool $attachFile = true)
+    public function __construct(?Agreement $agreement, string $pdfPath = '', ?Document $document = null, ?string $downloadUrl = null, bool $attachFile = true, $company = null)
     {
         $this->agreement = $agreement;
         $this->document = $document;
         $this->pdfPath = $pdfPath;
         $this->downloadUrl = $downloadUrl;
         $this->attachFile = $attachFile;
+        $this->company = $company;
 
         // Configure variables for the view
         $this->title = 'Dokumentet är nu signerat';
         
         if ($this->agreement) {
-            $this->title = 'Ditt signerade avtal: #' . $this->agreement->agreement_id;
+            $this->title = 'Avtal signerat';
+            $this->icon = asset('/images/agreements.png');
         } elseif ($this->document) {
             $this->title = 'Dokumentet är nu signerat';
+            $this->icon = asset('/images/documents.png');
         }
-        
-        $this->icon = asset('/images/documents.png');
         
         // Obtain the logo of the user who owns the document/agreement
         $user = null;
@@ -104,6 +119,7 @@ class SignedDocumentMail extends Mailable
         }
         
         $this->logo = $user && $user->userDetail ? $user->userDetail->logo_url : null;
+        $this->fullname = $this->agreement->agreement_client->fullname ?? null;
     }
 
     /**
@@ -114,7 +130,7 @@ class SignedDocumentMail extends Mailable
         $subject = 'Dokumentet är nu signerat';
 
         if ($this->agreement) {
-            $subject = 'Ditt signerade avtal: #' . $this->agreement->agreement_id;
+            $subject = 'Avtal signerat - bekräftelse';
         } elseif ($this->document) {
             $subject = 'Dokumentet är nu signerat';
         }
