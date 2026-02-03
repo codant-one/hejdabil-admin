@@ -125,9 +125,15 @@ class Document extends Model
         }
 
         $titles = $documents->pluck('title')->unique()->implode(', ');
-        $data = ['titles' => $titles];
-
+        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
         $subject = 'Dokument: ' . $titles;
+
+        $data = [
+            'titles' => $titles,
+            'title' => 'Dokument: ' . $titles,
+            'icon' => asset('/images/documents.png'),
+            'logo' => $logo
+        ];        
 
         try {
             \Mail::send(

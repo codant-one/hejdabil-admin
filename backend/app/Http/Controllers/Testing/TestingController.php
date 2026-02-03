@@ -16,6 +16,7 @@ use App\Models\VehicleDocument;
 use App\Models\Agreement;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\Document;
 
 class TestingController extends Controller
 {
@@ -32,14 +33,14 @@ class TestingController extends Controller
         ]; 
         
         $buttonLink = $url;
-        $title = 'Förfallen faktura';
+        $title = 'Dokument för digital signering';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
         $buttonText = 'Ladda ner faktura';
         $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
         $pdfFile = 'pdfFile';
-        $icon = asset('/images/invoices.png');
+        $icon = asset('/images/documents.png');
         
         $password = 'test1234';
 
@@ -86,7 +87,16 @@ class TestingController extends Controller
         $company->logo = $logoObj->logo ?? null;
 
         $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
-        return view('emails.invoices.reminder', 
+
+        $signingUrl = '1234';
+        $token = '1234';
+
+        $agreement = null;
+        $document = Document::find(2);
+        $downloadUrl = '1234';
+        $titles = 'Ditt signerade dokument är nu tillgängligt';
+
+        return view('emails.documents.signable', 
             compact(
                 'company',
                 'buttonLink',
@@ -100,7 +110,14 @@ class TestingController extends Controller
                 'password',
                 'url',
                 'billing',
-                'text_info'
+                'text_info',
+                'signingUrl',
+                'token',
+                'agreement',
+                'document',
+                'downloadUrl'  ,
+                'titles'
+
             )
         );
     }

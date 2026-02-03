@@ -6,6 +6,7 @@ use App\Http\Requests\DocumentRequest;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -344,12 +345,18 @@ class DocumentController extends Controller
             $document->description = $request->text === 'null' ? null : $request->text;
             $document->save();
 
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Solicitud para firmar su documento';
+            $subject = 'Dokument för digital signering';
+
             $data = [
                 'signingUrl' => $signingUrl,
-                'text' => $request->text === 'null' ? null : $request->text
+                'text' => $request->text === 'null' ? null : $request->text,
+                'title' => 'Dokument för digital signering',
+                'icon' => asset('/images/documents.png'),
+                'logo' => $logo
             ];
 
             \Mail::send(
