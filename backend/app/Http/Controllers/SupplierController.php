@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SupplierRequest;
+use App\Http\Requests\SupplierSwishRequest;
+use App\Http\Requests\UserRequest;
+
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\JsonResponse;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
-use App\Http\Requests\SupplierRequest;
-use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Log;
-
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
@@ -274,7 +276,7 @@ class SupplierController extends Controller
         }
     }
 
-    public function swish(Request $request, $id)
+    public function swish(SupplierSwishRequest $request, $id)
     {
         try {
 
