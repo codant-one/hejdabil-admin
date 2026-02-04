@@ -374,19 +374,7 @@ class Agreement extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($agreement->supplier_id === null) {
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -421,6 +409,12 @@ class Agreement extends Model
 
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         switch ($request->agreement_type_id) {

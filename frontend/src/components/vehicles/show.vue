@@ -4,7 +4,7 @@ import { FreeMode, Navigation, Thumbs, Scrollbar } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Carousel, Slide } from 'vue3-carousel'
 import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
-import car from '@images/car3.png'
+import car from '@images/car.png'
 
 import 'swiper/css';
 import 'swiper/css/navigation';

@@ -128,7 +128,7 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(1);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(4);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -341,7 +341,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(36);
+        ])->find(8);
 
         $user = User::with(['userDetail','roles'])->find(1);
  

@@ -32,7 +32,7 @@
             margin-bottom: 4px;
         }
 
-         /* --- HEADER --- */
+        /* --- HEADER --- */
         .header-logo {
             display: inline-block;
             text-align: right;
@@ -53,13 +53,13 @@
             vertical-align: bottom;
         }
 
-        .header-title-cell h1 {
+        .header-title-cell h1, .header-logo-cell h1 {
             margin: 0 0 6px 0;
             font-size: 24px;
             color: #454545;
         }
 
-        .header-title-cell .contract-details {
+        .header-title-cell .contract-details, .header-logo-cell .contract-details {
             font-size: 10px;
             color: #454545;
             line-height: 1;
@@ -169,13 +169,17 @@
                                 </div>
                             </td>
                             <td class="header-logo-cell">
-                                <div class="header-logo">
-                                    @if($company->logo)
-                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
-                                    @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                    @endif
-                                </div>
+                                @if($company->logo)
+                                    <div class="header-logo">
+                                        <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
+                                    </div>
+                                @else
+                                    <h1>{{ $company->company }} </h1>
+                                    <div class="contract-details">
+                                        {{ $company->name }} {{ $company->last_name }} <br>
+                                        {{ $company->email }}
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     </table>

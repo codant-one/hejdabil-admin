@@ -183,10 +183,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -323,6 +327,8 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find($billing->supplier->user_id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         foreach($details as $row)
@@ -390,10 +396,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -453,10 +463,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -530,10 +544,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];

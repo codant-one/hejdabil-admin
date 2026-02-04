@@ -21,7 +21,6 @@ export const createLayouts = userConfig => {
   config.app.title = userConfig.app.title
   config.app.logo = userConfig.app.logo
   config.app.logoFull = userConfig.app.logoFull
-  config.app.logoBlack = userConfig.app.logoBlack
   config.app.logoSlogan = userConfig.app.logoSlogan
   config.app.logoWhite = userConfig.app.logoWhite
   config.app.contentWidth.value = localStorageContentWidth || userConfig.app.contentWidth
