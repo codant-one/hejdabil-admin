@@ -16,6 +16,9 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Models\Document;
 use App\Models\Token;
 use App\Models\Supplier;
+use App\Models\User;
+use App\Models\UserDetails;
+use App\Models\Config;
 
 class DocumentController extends Controller
 {
@@ -345,6 +348,56 @@ class DocumentController extends Controller
             $document->description = $request->text === 'null' ? null : $request->text;
             $document->save();
 
+            if ($document->supplier && is_null($document->supplier->boss_id)) {//supplier
+                $user = UserDetails::with(['user'])->find($document->supplier->user_id);
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+            } else if ($document->supplier && !is_null($document->supplier->boss_id)) {//user
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($document->supplier->user_id);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+                $company->name = $user->supplier->boss->user->name;
+                $company->last_name = $user->supplier->boss->user->last_name;
+            } else { //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                $signatureRaw    = $getValue($configSignature);
+
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                $signatureObj    = $decodeSafe($signatureRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+                $company->img_signature = $signatureObj->img_signature ?? null;
+            }
+
             $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
@@ -352,6 +405,7 @@ class DocumentController extends Controller
             $subject = 'Dokument för digital signering';
 
             $data = [
+                'company' => $company,
                 'signingUrl' => $signingUrl,
                 'text' => $request->text === 'null' ? null : $request->text,
                 'title' => 'Dokument för digital signering',

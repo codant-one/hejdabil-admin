@@ -7,8 +7,7 @@
         <td align="center" style="padding:0;margin:0;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">  
                 Hej, {{$fullname}}<br>
-                Vi bekräftar härmed att avtalet har signerats digitalt av samtliga parter via Billogg.
-            </p>
+                Vi bekräftar härmed att avtalet har signerats digitalt av samtliga parter.            </p>
         <td>
     </tr>
     <tr>
@@ -34,7 +33,7 @@
     <tr>
         <td align="center" style="padding:0;margin:0;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">  
-               Det signerade avtalet finns nu tillgängligt i PDF-format och kan laddas ner via knappen nedan. <br>
+                Det signerade avtalet finns nu tillgängligt i PDF-format och kan laddas ner via knappen nedan. <br>
                 Avtalet är juridiskt bindande och innehåller tidsstämpel samt signeringsinformation.
             </p>
         <td>
@@ -51,7 +50,7 @@
     <tr>
         <td align="center" style="padding:0;margin:0;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">  
-                Har du frågor kring avtalets innehåll eller nästa steg, vänligen kontakta företaget som har skickat avtalet.<br><br>
+                Har du frågor kring avtalets innehåll eller nästa steg, vänligen kontakta företaget som har skickat avtalet. <br>
                 Observera: Detta är ett automatiskt mejl och kan inte besvaras.
             </p>
         <td>
@@ -61,7 +60,7 @@
         <td align="center" style="padding:0;margin:0;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">  
                 Hej,<br>
-                Dokumentet som skickades till dig via Billogg har nu signerats av samtliga parter.<br>
+                Dokumentet som skickades till dig har nu signerats av samtliga parter.<br>
                 Det signerade dokumentet är juridiskt bindande och finns tillgängligt för nedladdning.
             </p>
         <td>

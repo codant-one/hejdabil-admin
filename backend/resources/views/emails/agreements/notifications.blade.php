@@ -6,8 +6,7 @@
         <td align="center" style="padding:0;margin:0;padding-bottom:15px;">
             <p style="margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:19px;color:#454545;font-size:16px">         
                 Hej {{$user}}, <br>
-                Vi hoppas att detta meddelande når dig väl. <br>
-                Ett nytt avtal har skickats till dig via Billogg.
+                Ett nytt avtal har skickats till dig.
             </p>
         </td>
     </tr>
