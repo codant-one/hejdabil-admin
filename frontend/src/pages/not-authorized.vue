@@ -2,17 +2,15 @@
 
 import { initialAbility } from '@/plugins/casl/ability'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
-import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import { useAuthStores } from '@/stores/useAuth'
 
-import page401 from '@images/pages/401.png'
-import miscMaskDark from '@images/pages/misc-mask-dark.png'
-import miscMaskLight from '@images/pages/misc-mask-light.png'
+import logo from "@images/logos/billogg-logo.svg";
 
 const router = useRouter()
 const ability = useAppAbility()
-const authThemeMask = useGenerateImageVariant(miscMaskLight, miscMaskDark)
 const authStores = useAuthStores()
+
+const { width: windowWidth } = useWindowSize()
 
 const back = function(){
   const abilities = localStorage.getItem('userAbilities')
@@ -50,38 +48,35 @@ const back = function(){
 </script>
 
 <template>
-  <div class="misc-wrapper">
-    <div class="misc-center-content text-center mb-12">
-      <!-- 👉 Title and subtitle -->
-      <h4 class="text-h4 font-weight-medium mb-3">
-        Du är inte behörig! 🔐
-      </h4>
-      <p>Du har inte behörighet att komma åt den här sidan!</p>
-      <VBtn @click="back">
-        Tillbaka till början
+  <VCard class="bg-gradient pa-4 d-flex flex-column" style="min-height: 100vh;">
+    <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
+      <img :src="logo" width="121" height="40" alt="Billogg" />
+    </div>
+
+    <div 
+      class="empty-state my-auto"
+      :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'">
+      <VIcon
+        :size="$vuetify.display.smAndDown ? 80 : 120"
+        icon="custom-f-cancel"
+      />
+      <div class="empty-state-content">
+        <div class="empty-state-title">Du saknar behörighet</div>
+        <div class="empty-state-text">
+          Du har inte rättigheter att se den här sidan. 
+          Kontakta din administratör om du behöver tillgång till denna funktion.
+        </div>
+      </div>
+      <VBtn
+        class="btn-ghost"
+        @click="back"
+      >
+        Gå tillbaka till översikten
+        <VIcon icon="custom-arrow-right" size="24" />
       </VBtn>
     </div>
-
-    <!-- 👉 Image -->
-    <div class="misc-avatar w-100 text-center">
-      <VImg
-        :src="page401"
-        alt="Coming Soon"
-        :max-width="170"
-        class="mx-auto"
-      />
-    </div>
-
-    <VImg
-      :src="authThemeMask"
-      class="misc-footer-img d-none d-md-block"
-    />
-  </div>
+  </VCard>
 </template>
-
-<style lang="scss">
-@use "@core/scss/template/pages/misc.scss";
-</style>
 
 <route lang="yaml">
 meta:
