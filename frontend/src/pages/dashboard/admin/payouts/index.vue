@@ -114,7 +114,7 @@ async function fetchData(cleanFilters = false) {
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
-    user_id: supplier_id.value,
+    supplier_id: supplier_id.value,
     state_id: payoutsStores.getStateId ?? state_id.value,
   }
 
@@ -713,7 +713,7 @@ const handleSendPayout = () => {
             placeholder="Leverantörer"
             :items="suppliers"
             :item-title="(item) => item.full_name"
-            :item-value="(item) => item.user_id"
+            :item-value="(item) => item.id"
             autocomplete="off"
             clearable
             clear-icon="tabler-x"
@@ -1561,7 +1561,7 @@ const handleSendPayout = () => {
             placeholder="Leverantörer"
             :items="suppliers"
             :item-title="(item) => item.full_name"
-            :item-value="(item) => item.user_id"
+            :item-value="(item) => item.id"
             autocomplete="off"
             clearable
             clear-icon="tabler-x"
