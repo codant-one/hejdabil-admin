@@ -24,7 +24,7 @@ class SwishPayout
         // Si el usuario tiene rol supplier, usar sus propios datos
         // Si es rol usuarios, obtener los datos del boss del supplier asociado
         if ($user->hasRole('supplier')) {
-            $supplier = $user;
+            $supplier = $user->supplier;
         } else {
             $supplier = $user->supplier->boss;
         }
