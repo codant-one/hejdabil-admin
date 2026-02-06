@@ -2,7 +2,7 @@ import { canNavigate } from '@layouts/plugins/casl'
 import { setupLayouts } from 'virtual:generated-layouts'
 import { createRouter, createWebHistory } from 'vue-router'
 import { isUserLoggedIn } from './utils'
-import { pendingRequests } from '@/plugins/axios'; // Importa el mapa de peticiones
+
 import routes from '~pages'
 
 const router = createRouter({
@@ -61,15 +61,28 @@ const router = createRouter({
   ],
 })
 
-// Antes de cada navegación
-router.beforeEach((to, from, next) => {
-    // Cancelar todas las peticiones pendientes
-    pendingRequests.forEach((controller) => {
-        controller.abort();
-    });
-    pendingRequests.clear();
-    
-    next();
+router.beforeEach((to) => {
+  const isLoggedIn = isUserLoggedIn()
+  if (to.meta?.redirectIfLoggedIn === false || to.meta?.public === true) {
+    return true
+  }
+
+  if (to.meta?.redirectIfLoggedIn && isLoggedIn) {
+    return { name: 'info' }
+  }
+
+  if (!canNavigate(to)) {
+    if (isLoggedIn) {
+      return { name: 'not-authorized' }
+    } else {
+      return { 
+        name: 'login', 
+        query: to.fullPath !== '/' ? { to: to.fullPath } : {} 
+      }
+    }
+  }
+
+  return true
 })
 
 export default router

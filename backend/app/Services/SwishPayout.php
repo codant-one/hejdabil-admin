@@ -36,6 +36,21 @@ class SwishPayout
         $this->signingKeyPassword  = config('services.swish_payout.signing_key_password', 'swish');
         $this->clientKeyPassword   = config('services.swish_payout.client_key_password');
         $this->clientCertPassword  = config('services.swish_payout.client_cert_password');
+        
+        // Log temporal para debug
+        Log::info('SwishPayout Constructor Debug', [
+            'user_id' => $user->id,
+            'user_role' => $user->hasRole('supplier') ? 'supplier' : 'user',
+            'supplier_id' => $supplier->id ?? null,
+            'pem_url' => $supplier->pem_url ?? null,
+            'key_url' => $supplier->key_url ?? null,
+            'signingCert_path' => $this->signingCert,
+            'signingKey_path' => $this->signingKey,
+            'cert_exists' => file_exists($this->signingCert),
+            'cert_is_file' => is_file($this->signingCert),
+            'key_exists' => file_exists($this->signingKey),
+            'key_is_file' => is_file($this->signingKey),
+        ]);
     }
 
     protected function client()
