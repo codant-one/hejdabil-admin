@@ -13,8 +13,8 @@ class Document extends Model
     protected $guarded = [];
 
     /**** Relationships ****/
-    public function tokens(){
-        return $this->hasMany(Token::class, 'document_id');
+    public function token(){
+        return $this->hasOne(Token::class, 'document_id', 'id');
     }
 
     public function user(){
@@ -62,7 +62,7 @@ class Document extends Model
         }
 
         if ($filters->get('status') !== null) {
-            $query->whereHas('tokens', function($q) use ($filters) {
+            $query->whereHas('token', function($q) use ($filters) {
                 $q->where('signature_status', $filters->get('status'));
             });
         }
@@ -125,9 +125,15 @@ class Document extends Model
         }
 
         $titles = $documents->pluck('title')->unique()->implode(', ');
-        $data = ['titles' => $titles];
-
+        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
         $subject = 'Dokument: ' . $titles;
+
+        $data = [
+            'titles' => $titles,
+            'title' => 'Dokument: ' . $titles,
+            'icon' => asset('/images/documents.png'),
+            'logo' => $logo
+        ];        
 
         try {
             \Mail::send(

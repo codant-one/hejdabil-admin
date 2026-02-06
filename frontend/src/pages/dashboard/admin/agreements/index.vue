@@ -96,6 +96,41 @@ watchEffect(() => {
     currentPage.value = totalPages.value
 })
 
+// Computed para detectar si hay agreements activos esperando interacción
+const hasActiveAgreements = computed(() => {
+  return agreements.value.some(agr => 
+    ['sent', 'delivered', 'reviewed'].includes(agr.token?.signature_status)
+  )
+})
+
+// Verificación silenciosa de cambios sin activar spinner
+const checkForUpdates = async () => {
+  try {
+    let data = {
+      search: searchQuery.value,
+      orderByField: 'created_at',
+      orderBy: 'desc',
+      limit: rowPerPage.value,
+      page: currentPage.value,
+      supplier_id: supplier_id.value,
+      agreement_type_id: agreement_type_id_select.value
+    }
+
+    // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
+    await agreementsStores.fetchAgreements(data)
+    
+    const newAgreements = agreementsStores.getAgreements
+    
+    // Solo comparar si hay cambios, NO actualizar aquí
+    const hasChanges = JSON.stringify(agreements.value) !== JSON.stringify(newAgreements)
+    
+    return hasChanges
+  } catch (error) {
+    console.error('Error checking for updates:', error)
+    return false
+  }
+}
+
 onMounted(async () => {
   await loadData()
   
@@ -118,30 +153,76 @@ onMounted(async () => {
     }
   })
 
-  // Polling para actualizar el tracker en tiempo real si está abierto
-  const pollingInterval = setInterval(async () => {
-    // Solo hacer polling si el tracker está visible
-    if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
-      try {
-        const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
-        // Solo actualizar si hay cambios en el historial
-        const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
-        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
-        
-        if (newHistoryLength > currentHistoryLength) {
-          trackerAgreement.value = response
-          // También actualizar la lista principal de agreements
-          await fetchData()
-          //console.log('Tracker updated via polling - new events detected')
+  // Polling inteligente: solo activo cuando hay agreements esperando firma
+  let pollingInterval = null
+  
+  const startPolling = () => {
+    if (pollingInterval) return // Ya está corriendo
+    
+    pollingInterval = setInterval(async () => {
+      // Solo hacer polling si:
+      // 1. El tracker está visible O
+      // 2. Hay agreements activos esperando interacción
+      if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+        try {
+          const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+          const currentHistoryLength = trackerAgreement.value?.token?.histories?.length || 0
+          const newHistoryLength = response?.token?.histories?.length || 0
+          
+          if (newHistoryLength > currentHistoryLength) {
+            trackerAgreement.value = response
+            // Llamar a fetchData con spinner ya que sabemos que hay cambios
+            await fetchData()
+          }
+        } catch (e) {
+          console.error('Failed to poll tracker updates:', e)
         }
-      } catch (e) {
-        console.error('Failed to poll tracker updates:', e)
+      } else if (hasActiveAgreements.value) {
+        // Verificar cambios sin spinner
+        const hasChanges = await checkForUpdates()
+        // Si hay cambios, llamar a fetchData para actualización completa
+        if (hasChanges) {
+          await fetchData()
+        }
+      }
+    }, 5000) // Poll every 5 seconds
+    
+    window._trackerPollingInterval = pollingInterval
+  }
+  
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      pollingInterval = null
+      window._trackerPollingInterval = null
+    }
+  }
+  
+  // Iniciar polling si hay agreements activos
+  if (hasActiveAgreements.value) {
+    startPolling()
+  }
+  
+  // Watch para iniciar/detener polling según haya agreements activos
+  watch(hasActiveAgreements, (hasActive) => {
+    if (hasActive) {
+      startPolling()
+    } else {
+      stopPolling()
+    }
+  })
+  
+  // Detener polling cuando la pestaña está oculta, reanudar cuando vuelve
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling()
+    } else {
+      // Reiniciar polling si es necesario
+      if (hasActiveAgreements.value) {
+        startPolling()
       }
     }
-  }, 3000) // Poll every 3 seconds
-
-  // Guardar el intervalo para limpiarlo después
-  window._trackerPollingInterval = pollingInterval
+  })
 })
 
 function resizeSectionToRemainingViewport() {
@@ -352,7 +433,7 @@ const downloadCSV = async () => {
       FÖRETAG: element.company ?? '',
       ORGANISATIONSNUMMER: element.organization_number ?? '',
       REGISTRERADE_KUNDER:  element.client_count,
-      STATU: element.state.name
+      SIGNATUR_STATUS: element.token ? (element.token.signature_status ?? '') : 'pending',
     }
 
     dataArray.push(data)
@@ -632,13 +713,20 @@ const trackerEvents = computed(() => {
   if (!trackerAgreement.value) return []
 
   const items = []
-  const latestToken = (trackerAgreement.value.tokens || []).length
-    ? [...trackerAgreement.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+  let tokens = []
+  if (Array.isArray(trackerAgreement.value.token)) {
+    tokens = trackerAgreement.value.token
+  } else if (trackerAgreement.value.token) {
+    tokens = [trackerAgreement.value.token]
+  }
+  
+  const latestToken = tokens.length > 0
+    ? [...tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
     : null
 
   // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.history && latestToken.history.length > 0) {
-    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
+    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
     
     // Check if there's a 'signed' event in the history
     const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -1124,12 +1212,12 @@ onBeforeUnmount(() => {
             <!-- 👉 Status -->
             <td class="text-center text-wrap d-flex justify-center align-center">
               <div
-                v-if="agreement.tokens && agreement.tokens.length > 0"
+                v-if="agreement.token"
                 class="status-chip"
-                :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
               >
-                <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(agreement.token?.signature_status)?.name }}
               </div>
 
               <div
@@ -1192,7 +1280,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
                     @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-signature" class="mr-2" />
@@ -1207,7 +1295,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','agreements') && agreement.tokens?.[0]?.signature_status === 'signed'"
+                  <VListItem v-if="$can('view','agreements') && agreement.token?.signature_status === 'signed'"
                     @click="send(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-send" class="mr-2" />
@@ -1221,7 +1309,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    v-if="$can('edit','agreements') && agreement.token?.signature_status === 'created'"
                     @click="editAgreement(agreement)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -1275,7 +1363,7 @@ onBeforeUnmount(() => {
         </VBtn>        
       </div>
 
-      <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-6 px-6">
+      <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-2 px-6">
         <div v-for="agreement in agreements" :key="agreement.id" class="mobile-card-wrapper mb-4">
           <div class="card-header-type">
             {{ agreement.agreement_type.name }}
@@ -1312,12 +1400,12 @@ onBeforeUnmount(() => {
                   <div class="expansion-panel-item-label">Status:</div>
                   <div class="expansion-panel-item-value">
                     <div
-                      v-if="agreement.tokens && agreement.tokens.length > 0"
+                      v-if="agreement.token"
                       class="status-chip"
-                      :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                      :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
                     >
-                      <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                      {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                      <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                      {{ resolveStatus(agreement.token?.signature_status)?.name }}
                     </div>
 
                     <div
@@ -1350,7 +1438,8 @@ onBeforeUnmount(() => {
 
       <VCardText
         v-if="agreements.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
@@ -1361,7 +1450,7 @@ onBeforeUnmount(() => {
         <VPagination
           v-model="currentPage"
           size="small"
-          :total-visible="5"
+          :total-visible="4"
           :length="totalPages"
           next-icon="custom-chevron-right"
           prev-icon="custom-chevron-left"
@@ -1392,7 +1481,16 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Är du säker att du vill ta bort avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>?.
+          Är du säker på att du vill radera kontraktet för fordonet
+          <strong>
+            #{{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+            }}
+          </strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1549,10 +1647,10 @@ onBeforeUnmount(() => {
             :label="selectedAgreement.agreement_client?.email"
             class="ml-2"
           />
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka avtal" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Ange e-postadresser för att skicka avtal"
             multiple
             chips
             deletable-chips
@@ -1644,7 +1742,7 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
   
-  <!-- 👉 Mobile Skapa Dialog -->
+    <!-- 👉 Mobile Skapa Dialog -->
     <VDialog
       v-model="skapaMobile"
       transition="dialog-bottom-transition"
@@ -1788,7 +1886,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'" 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'" 
             @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-signature" class="mr-2" />
@@ -1803,7 +1901,7 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
-          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.token?.signature_status === 'signed'"
             @click="send(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-send" class="mr-2" />
@@ -1817,7 +1915,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            v-if="$can('edit','agreements') && selectedAgreementForAction.token?.signature_status === 'created'"
             @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />

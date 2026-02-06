@@ -232,7 +232,7 @@ class Vehicle extends Model
             'color' => $request->color === 'null' ? null : $request->color,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
-            'purchase_date' => now()->format('Y-m-d')
+            'purchase_date' => $request->purchase_date ?? now()->format('Y-m-d')
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase'])->find($vehicle->id);
@@ -339,6 +339,8 @@ class Vehicle extends Model
             'sale_comments' => $request->sale_comments === 'null' ? null : $request->sale_comments,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee
@@ -419,6 +421,8 @@ class Vehicle extends Model
             'sale_comments' => $request->sale_comments === 'null' ? null : $request->sale_comments,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee

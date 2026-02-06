@@ -142,46 +142,47 @@ watch(currentData, () => {
     >
         <VList>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                 <VTextField
                     v-model="reg_num"
-                    label="Reg nr*"
                     :rules="[requiredValidator]"
+                    @input="reg_num = reg_num.toUpperCase()"
                 />
             </VListItem>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Egen värdering*" />
                 <VTextField
                     v-model="note"
                     type="number"
                     min="0"
-                    label="Egen värdering*"
                     :rules="[requiredValidator]"
                 />
             </VListItem>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kundnamn" />
                 <VTextField
                     v-model="name"
-                    label="Kundnamn"
                 />
             </VListItem>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                 <VTextField
                     v-model="phone"
                     :rules="[phoneValidator]"
-                    label="Tel nr"
                 />
             </VListItem>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
                 <VTextField
                     v-model="email"
                     :rules="[emailValidator]"
-                    label="E-post"
                 />
             </VListItem>
             <VListItem>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kommentar" />
                 <VTextarea
                     v-model="comment"
                     rows="3"
-                    label="Kommentar"
                 />
             </VListItem>
         </VList>
@@ -259,7 +260,7 @@ watch(currentData, () => {
 
     .v-list-item {
       margin-bottom: 0px;
-      padding: 0px !important;
+      padding: 4px 0 !important;
       gap: 0px !important;
 
       .v-input--density-compact {
@@ -284,7 +285,7 @@ watch(currentData, () => {
 
       .v-text-field {
         .v-input__control {
-          padding-top: 16px;
+          padding-top: 0;
           input {
             min-height: 48px;
             padding: 12px 16px;

@@ -46,7 +46,7 @@ const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isSignatureDialogVisible = ref(false) 
 const signatureEmail = ref('')              
-const textEmail = ref('Este mensaje esta por default')
+const textEmail = ref(null)
 const refSignatureForm = ref()
 const selectedDocument = ref({})
 const selectedDocumentForAction = ref({});
@@ -235,6 +235,81 @@ watchEffect(() => {
     currentPage.value = totalPages.value
 })
 
+// Computed para detectar si hay documentos activos esperando interacción
+const hasActiveDocuments = computed(() => {
+  return documents.value.some(doc => 
+    ['sent', 'delivered', 'reviewed'].includes(doc.token?.signature_status)
+  )
+})
+
+// Verificación silenciosa de cambios sin activar spinner
+const checkForUpdates = async () => {
+  try {
+    let data = {
+      search: searchQuery.value,
+      orderByField: 'created_at',
+      orderBy: 'desc',
+      limit: rowPerPage.value,
+      page: currentPage.value,
+      supplier_id: supplier_id.value,
+      status: documentsStores.getStatus ?? status.value
+    }
+
+    // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
+    await documentsStores.fetchDocuments(data)
+    
+    const newDocuments = documentsStores.getDocuments
+    
+    // Crear un mapa de documentos viejos por ID con su signature_status
+    const oldDocsMap = new Map()
+    documents.value.forEach(doc => {
+      const oldStatus = doc.token?.signature_status || 'pending'
+      const oldHistoryLength = doc.token?.histories?.length || 0
+      
+      oldDocsMap.set(doc.id, {
+        status: oldStatus,
+        historyLength: oldHistoryLength
+      })
+    })
+    
+    // Verificar cambios en signature_status o historial
+    let hasChanges = false
+    
+    for (const newDoc of newDocuments) {
+      const newStatus = newDoc.token?.signature_status || 'pending'
+      const newHistoryLength = newDoc.token?.histories?.length || 0
+      const oldDoc = oldDocsMap.get(newDoc.id)
+      
+      // Si es un documento nuevo en la lista
+      if (!oldDoc) {
+        hasChanges = true
+        break
+      }
+      
+      // Si cambió el status y es un status activo (no signed)
+      if (oldDoc.status !== newStatus) {
+        // Solo nos interesan cambios hacia estados activos o desde estados activos
+        if (['sent', 'delivered', 'reviewed'].includes(newStatus) || 
+            ['sent', 'delivered', 'reviewed'].includes(oldDoc.status)) {
+          hasChanges = true
+          break
+        }
+      }
+      
+      // Si cambió el historial (nuevo evento como 'reviewed')
+      if (oldDoc.historyLength !== newHistoryLength) {
+        hasChanges = true
+        break
+      }
+    }
+    
+    return hasChanges
+  } catch (error) {
+    console.error('[Documents] Error checking for updates:', error)
+    return false
+  }
+}
+
 onMounted(async () => {
   status.value = documentsStores.getStatus ?? status.value;
   updateStatus(status.value);
@@ -242,7 +317,8 @@ onMounted(async () => {
   await fetchData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con documentos
-  notificationsStore.onNotificationReceived(async (notification) => {    
+  notificationsStore.onNotificationReceived(async (notification) => {
+    
     // Si la notificación tiene una ruta relacionada con documentos, refrescar
     if (notification.route && notification.route.includes('/documents')) {
       
@@ -256,34 +332,82 @@ onMounted(async () => {
         }
       }
     } else {
-      console.warn('Route does not match /documents criteria')
+      console.warn('[Documents] Route does not match /documents criteria:', notification.route)
     }
   })
 
-  // Polling para actualizar el tracker en tiempo real si está abierto
-  const pollingInterval = setInterval(async () => {
-    // Solo hacer polling si el tracker está visible
-    if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
-      try {
-        const response = await documentsStores.showDocument(trackerDocument.value.id)
-        // Solo actualizar si hay cambios en el historial
-        const currentHistoryLength = trackerDocument.value?.tokens?.[0]?.history?.length || 0
-        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
-        
-        if (newHistoryLength > currentHistoryLength) {
-          trackerDocument.value = response
-          // También actualizar la lista principal de documentos
-          await fetchData()
-          //console.log('Tracker updated via polling - new events detected')
+  // Polling inteligente: solo activo cuando hay documentos esperando firma
+  let pollingInterval = null
+  
+  const startPolling = () => {
+    if (pollingInterval) return // Ya está corriendo
+    
+    pollingInterval = setInterval(async () => {
+      // Solo hacer polling si:
+      // 1. El tracker está visible O
+      // 2. Hay documentos activos esperando interacción
+      if (isTrackerDialogVisible.value && trackerDocument.value?.id) {
+        try {
+          const response = await documentsStores.showDocument(trackerDocument.value.id)
+          const currentHistoryLength = trackerDocument.value?.token?.histories?.length || 0
+          const newHistoryLength = response?.token?.histories?.length || 0
+          
+          if (newHistoryLength > currentHistoryLength) {
+            trackerDocument.value = response
+            // Llamar a fetchData con spinner ya que sabemos que hay cambios
+            await fetchData()
+          }
+        } catch (e) {
+          console.error('Failed to poll tracker updates:', e)
         }
-      } catch (e) {
-        console.error('Failed to poll tracker updates:', e)
+      } else if (hasActiveDocuments.value) {
+        // Verificar cambios sin spinner
+        const hasChanges = await checkForUpdates()
+        // Si hay cambios, llamar a fetchData para actualización completa
+        if (hasChanges) {
+          await fetchData()
+        }
+      }
+    }, 5000) // Poll every 5 seconds
+    
+    window._trackerPollingInterval = pollingInterval
+  }
+  
+  const stopPolling = () => {
+    if (pollingInterval) {
+      clearInterval(pollingInterval)
+      pollingInterval = null
+      window._trackerPollingInterval = null
+    }
+  }
+  
+  // Iniciar polling si hay documentos activos
+  if (hasActiveDocuments.value) {
+    startPolling()
+  } else {
+    //console.log('[Documents] No active documents on mount')
+  }
+  
+  // Watch para iniciar/detener polling según haya documentos activos
+  watch(hasActiveDocuments, (hasActive) => {
+    if (hasActive) {
+      startPolling()
+    } else {
+      stopPolling()
+    }
+  })
+  
+  // Detener polling cuando la pestaña está oculta, reanudar cuando vuelve
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopPolling()
+    } else {
+      // Reiniciar polling si es necesario
+      if (hasActiveDocuments.value) {
+        startPolling()
       }
     }
-  }, 3000) // Poll every 3 seconds
-
-  // Guardar el intervalo para limpiarlo después
-  window._trackerPollingInterval = pollingInterval
+  })
 })
 
 watchEffect(fetchData)
@@ -471,8 +595,8 @@ const downloadCSV = async () => {
       TITEL: element.title ?? '',
       SKAPAD: createdAt,
       SKAPAD_AV: (element.user?.name ?? '') + ' ' + (element.user?.last_name ?? ''),
-      SIGNATUR_STATUS: element.tokens && element.tokens.length > 0 ? (element.tokens[0].signature_status ?? '') : 'pending',
-      MOTTAGARE: element.tokens && element.tokens.length > 0 ? element.tokens.map(t => t.email).join(', ') : '',
+      SIGNATUR_STATUS: element.token?.signature_status ?? 'pending',
+      MOTTAGARE: element.token ? element.token.recipient_email : '',
       FIL: element.file ? element.file.split('/').pop() : ''
     }
 
@@ -508,13 +632,11 @@ const trackerEvents = computed(() => {
   if (!trackerDocument.value) return []
 
   const items = []
-  const latestToken = (trackerDocument.value.tokens || []).length
-    ? [...trackerDocument.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-    : null
+  const latestToken = trackerDocument.value.token ?? null
 
   // Si tenemos historial de token, usar esos registros
-  if (latestToken && latestToken.history && latestToken.history.length > 0) {
-    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+  if (latestToken && latestToken.histories && latestToken.histories.length > 0) {
+    const history = [...latestToken.histories].sort((a, b) => new Date(a.id) - new Date(b.id))
     
     // Check if there's a 'signed' event in the history
     const hasSignedEvent = history.some(event => event.event_type === 'signed')
@@ -764,7 +886,7 @@ const handleAdminPdfClick = (event) => {
 
 const openSignatureDialog = () => {
   signatureEmail.value = ''
-  textEmail.value = 'Este mensaje esta por default'
+  textEmail.value = null
   isSignatureDialogVisible.value = true
 }
 
@@ -834,7 +956,7 @@ const handleSignatureSubmit = async () => {
     await fetchData()
     isRequestOngoing.value = false
     signatureEmail.value = ''
-    textEmail.value = 'Este mensaje esta por default'
+    textEmail.value = null
     setTimeout(() => {
       advisor.value = { show: false } 
     }, 3000)
@@ -1320,12 +1442,12 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-center text-wrap d-flex justify-center align-center" style="width: 180px;">
               <div
-                v-if="document.tokens && document.tokens.length > 0"
+                v-if="document.token"
                 class="status-chip"
-                :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+                :class="`status-chip-${resolveStatus(document.token?.signature_status)?.class}`"
               >
-                <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+                <VIcon size="16" :icon="resolveStatus(document.token?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(document.token?.signature_status)?.name }}
               </div>
 
               <div
@@ -1394,10 +1516,10 @@ onBeforeUnmount(() => {
                   <VListItem
                     v-if="
                       $can('edit','signed-documents') && (
-                        document.tokens?.[0]?.signature_status !== 'sent' && 
-                        document.tokens?.[0]?.signature_status !== 'signed' && 
-                        document.tokens?.[0]?.signature_status !== 'delivered' &&
-                        document.tokens?.[0]?.signature_status !== 'reviewed'
+                        document.token?.signature_status !== 'sent' && 
+                        document.token?.signature_status !== 'signed' && 
+                        document.token?.signature_status !== 'delivered' &&
+                        document.token?.signature_status !== 'reviewed'
                       )"
                     @click="startPlacementProcess(document)">
                     <template #prepend>
@@ -1406,7 +1528,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>                  
                   <VListItem
-                    v-if="$can('edit','signed-documents') && document.tokens?.[0]?.signature_status === 'delivered'"
+                    v-if="$can('edit','signed-documents') && document.token?.signature_status === 'delivered'"
                     @click="openResendSignature(document)">
                     <template #prepend>
                       <VIcon icon="custom-forward" size="24" class="mr-2" />
@@ -1427,7 +1549,7 @@ onBeforeUnmount(() => {
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','signed-documents') && document.tokens?.[0]?.signature_status === 'signed'"
+                  <VListItem v-if="$can('view','signed-documents') && document.token?.signature_status === 'signed'"
                     @click="openSendDocumentDialog(document)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" class="mr-2" />
@@ -1510,12 +1632,12 @@ onBeforeUnmount(() => {
               <div class="expansion-panel-item-label">Status:</div>
               <div class="expansion-panel-item-value">
                 <div
-                  v-if="document.tokens && document.tokens.length > 0"
+                  v-if="document.token"
                   class="status-chip"
-                  :class="`status-chip-${resolveStatus(document.tokens[0]?.signature_status)?.class}`"
+                  :class="`status-chip-${resolveStatus(document.token?.signature_status)?.class}`"
                 >
-                  <VIcon size="16" :icon="resolveStatus(document.tokens[0]?.signature_status)?.icon" class="action-icon" />
-                  {{ resolveStatus(document.tokens[0]?.signature_status)?.name }}
+                  <VIcon size="16" :icon="resolveStatus(document.token?.signature_status)?.icon" class="action-icon" />
+                  {{ resolveStatus(document.token?.signature_status)?.name }}
                 </div>
 
                 <div
@@ -1554,7 +1676,7 @@ onBeforeUnmount(() => {
         <VPagination
           v-model="currentPage"
           size="small"
-          :total-visible="5"
+          :total-visible="4"
           :length="totalPages"
           next-icon="custom-chevron-right"
           prev-icon="custom-chevron-left"
@@ -1584,7 +1706,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          Du är på väg att permanent radera "{{ selectedDocument.title }}". All
+          Du är på väg att permanent radera <strong>"{{ selectedDocument.title }}"</strong>. All
           associerad data kommer att försvinna och åtgärden kan inte ångras.
         </VCardText>
 
@@ -1637,15 +1759,15 @@ onBeforeUnmount(() => {
               @update:modelValue="selectClient"
             />
           </VCardText>
-          <VCardText class="card-form">
-            <VTextField
+          <VCardText class="dialog-text card-form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
+              <VTextField
               v-model="sendDocumentEmail"
-              label="E-post"
               placeholder="Ange mottagarens e-postadress"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
               @click="isConfirmSendDocumentDialogVisible = false"
@@ -1698,8 +1820,7 @@ onBeforeUnmount(() => {
                   :rules="[requiredValidator]"
                 />
               </div>
-              <div>
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                
+              <div>               
                 <div 
                   class="file-upload-area"
                   :class="{ 'has-file': uploadFile, 'has-error': fileValidationError }"
@@ -1778,15 +1899,7 @@ onBeforeUnmount(() => {
           </VCardText>
           <VCardText class="dialog-text">
             Ange e-postadressen dit signeringslänken ska skickas för dokumentet <strong>{{ selectedDocument.title }}</strong>.
-          </VCardText>
-           <VCardText class="dialog-text mt-4">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postmeddelande*" />                   
-            <VTextarea
-              v-model="textEmail"
-              rows="4"
-              :rules="[requiredValidator]"
-            />
-          </VCardText>
+          </VCardText>           
           <VCardText class="dialog-text mt-4">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />                                            
             <VTextField
@@ -1794,7 +1907,15 @@ onBeforeUnmount(() => {
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
+          <VCardText class="dialog-text mt-4">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Meddelande" />                   
+            <VTextarea
+              v-model="textEmail"
+              placeholder="Valfritt meddelande som skickas tillsammans med signaturlänken"
+              rows="3"
+              persistent-placeholder
+            />
+          </VCardText>
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
@@ -2114,10 +2235,10 @@ onBeforeUnmount(() => {
           <VListItem
             v-if="
               $can('edit', 'signed-documents') && (
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'sent' && 
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'signed' && 
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'delivered' &&
-                selectedDocumentForAction.tokens?.[0]?.signature_status !== 'reviewed'
+                selectedDocumentForAction.token?.signature_status !== 'sent' && 
+                selectedDocumentForAction.token?.signature_status !== 'signed' && 
+                selectedDocumentForAction.token?.signature_status !== 'delivered' &&
+                selectedDocumentForAction.token?.signature_status !== 'reviewed'
               )"
             @click="startPlacementProcess(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
@@ -2127,7 +2248,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Signera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'delivered'"
+            v-if="$can('edit', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'delivered'"
             @click="openResendSignature(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2154,7 +2275,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.tokens?.[0]?.signature_status === 'signed'"
+            v-if="$can('view', 'signed-documents') && selectedDocumentForAction.token?.signature_status === 'signed'"
             @click="openSendDocumentDialog(selectedDocumentForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2260,7 +2381,7 @@ onBeforeUnmount(() => {
 
       .v-list-item {
         margin-bottom: 0px;
-        padding: 0px !important;
+        padding: 4px 0 !important;
         gap: 0px !important;
 
         .v-input--density-compact {
@@ -2296,7 +2417,7 @@ onBeforeUnmount(() => {
 
         .v-text-field {
           .v-input__control {
-            padding-top: 16px;
+            padding-top: 0;
             input {
               min-height: 48px;
               padding: 12px 16px;

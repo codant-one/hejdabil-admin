@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SupplierRequest;
+use App\Http\Requests\SupplierSwishRequest;
+use App\Http\Requests\UserRequest;
+
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Http\JsonResponse;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
-use App\Http\Requests\SupplierRequest;
-use App\Http\Requests\UserRequest;
 use Illuminate\Support\Facades\Log;
-
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 
@@ -96,21 +98,21 @@ class SupplierController extends Controller
             );
 
             $email = $supplier->user->email;
-            $subject = 'Välkommen till Billogg';
-            
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+
             $data = [
-                'title' => 'Konto skapat framgångsrikt!!!',
+                'title' => 'Välkommen till Billogg',
                 'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
                 'email'=> $email,
                 'password' => $password,
-                'url'=> env("APP_DOMAIN").'/login',
-                'text-url'=>'Administrative panel'
+                'buttonLink' => env('APP_DOMAIN'),
+                'icon' => asset('/images/users.png'),
             ];
             
             try {
                 \Mail::send(
                     'emails.auth.client_created'
-                    , ['data' => $data]
+                    , $data
                     , function ($message) use ($email, $subject) {
                         $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                         $message->to($email)->subject($subject);
@@ -274,7 +276,7 @@ class SupplierController extends Controller
         }
     }
 
-    public function swish(Request $request, $id)
+    public function swish(SupplierSwishRequest $request, $id)
     {
         try {
 
@@ -415,11 +417,6 @@ class SupplierController extends Controller
     {
         try{
             
-            // $user = User::createUser($request);
-
-            // $password = Str::random(8);
-            // $request->merge(['password' => $password]);
-
             $order_id = Supplier::where('boss_id', Auth::user()->supplier->id)
                                 ->max('order_id');
 
@@ -445,22 +442,24 @@ class SupplierController extends Controller
             $user->syncPermissions($request->permissions);
             $user->givePermissionTo('view dashboard');
 
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $email = $user->email;
-            $subject = 'Välkommen till Billogg';
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Konto skapat framgångsrikt!!!',
+                'title' => 'Välkommen till Billogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
-                'text-url'=>'Administrative panel'
+                'icon' => asset('/images/users.png'),
+                'logo' => $logo
             ];
     
             try {
                 \Mail::send(
                     'emails.auth.user_created'
-                    , ['data' => $data]
+                    , $data
                     , function ($message) use ($email, $subject) {
                         $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                         $message->to($email)->subject($subject);

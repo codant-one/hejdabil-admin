@@ -919,19 +919,10 @@ onBeforeUnmount(() => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'clients') && !$vuetify.display.mdAndDown"
-          @click="isAddNewClientDrawerVisible = true"
+          v-if="$can('create', 'billings')"
+          @click="addInvoice"
         >
           Skapa ny faktura
-          <VIcon icon="custom-arrow-right" size="24" />
-        </VBtn>
-
-        <VBtn
-          class="btn-ghost"
-          v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
-          @click="isDialogOpen = true"
-        >
-           Skapa ny faktura
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -1014,7 +1005,7 @@ onBeforeUnmount(() => {
         <VPagination
           v-model="currentPage"
           size="small"
-          :total-visible="5"
+          :total-visible="4"
           :length="totalPages"
           next-icon="custom-chevron-right"
           prev-icon="custom-chevron-left"
@@ -1055,11 +1046,10 @@ onBeforeUnmount(() => {
             :label="selectedBilling.client.email"
             class="ml-2"
           />
-
+          <VLabel class="text-body-2 text-high-emphasis" text="Ange e-postadresser för att skicka fakturan" />
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Ange e-postadresser för att skicka fakturan"
             multiple
             chips
             deletable-chips

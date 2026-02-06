@@ -41,7 +41,12 @@ class PayoutController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Payout::with(['state', 'user'])
+            $query = Payout::with(['state', 'user' => function($query) {
+                                $query->whereNull('deleted_at');
+                            }])
+                           ->whereHas('user', function($query) {
+                                $query->whereNull('deleted_at');
+                            })
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -86,6 +91,15 @@ class PayoutController extends Controller
             
             if ($role === 'Supplier') {
                 $supplier = $user->supplier;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } elseif ($role === 'User') {
+                $supplier = $user->supplier->boss;
                 if (!$supplier || !$supplier->master_password) {
                     return response()->json([
                         'success' => false,
@@ -347,6 +361,15 @@ class PayoutController extends Controller
             
             if ($role === 'Supplier') {
                 $supplier = $user->supplier;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } elseif ($role === 'User') {
+                $supplier = $user->supplier->boss;
                 if (!$supplier || !$supplier->master_password) {
                     return response()->json([
                         'success' => false,

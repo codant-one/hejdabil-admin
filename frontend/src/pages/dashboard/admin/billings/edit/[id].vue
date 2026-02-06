@@ -159,6 +159,8 @@ async function fetchData() {
       company.value = billing.value.supplier.user.user_detail;
       company.value.email = billing.value.supplier.user.email;
       company.value.billings = billing.value.supplier.billings;
+      company.value.name = billing.value.supplier.user.name;
+      company.value.last_name = billing.value.supplier.user.last_name;
     }
 
     JSON.parse(billing.value.detail).forEach((details) => {

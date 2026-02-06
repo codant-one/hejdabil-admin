@@ -8,7 +8,6 @@ import { useSignaturesStore } from '@/stores/useSignatures'
 import VuePdfEmbed from 'vue-pdf-embed'
 import SignaturePad from 'signature_pad'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue"
-import VideoLoader from "@/components/common/VideoLoader.vue";
 import logo from "@images/logos/billogg-logo.svg";
 
 const props = defineProps({
@@ -24,7 +23,6 @@ const signaturesStore = useSignaturesStore()
 const { width: windowWidth } = useWindowSize()
 
 // --- Refs de Estado (Ahora más simples) ---
-const isLoading = ref(true)
 const pdfSource = ref(null)
 const signaturePlacement = ref({ x: null, y: null, page: 1, isStatic: false, visible: false, alignment: 'left' })
 const isSignatureModalVisible = ref(false)
@@ -210,6 +208,11 @@ onBeforeUnmount(() => {
   if (pdfResizeObserver) pdfResizeObserver.disconnect()
 })
 
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
+
 // --- Funciones del Componente (Refactorizadas) ---
 
 // Registrar la visita a la página de firma
@@ -229,35 +232,43 @@ const checkTokenStatus = async () => {
     if (response.data.status === 'signed') {
       // El documento ya está firmado
       isAlreadySigned.value = true
+
       signedInfo.value = {
         signedAt: response.data.signed_date_formatted,
         file_id: response.data.agreement_id || response.data.document_id || 'unknown',
         message: response.data.message
       }
+
+      finalState.value = {
+        type: 'success',
+        title: response.data.message,
+        message: response.data.message
+      }
+
       return true
     } else if (response.data.status === 'expired') {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Länk utgången',
         message: 'Denna signeringslänk har löpt ut.',
       }
+
       return false
     } else if (response.data.status === 'failed') {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Signeringen misslyckades',
         message: 'Ett fel uppstod under signeringsprocessen. Vänligen kontakta support.',
       }
+
       return false
     } else if (response.data.status === 'delivery_issues') {
       finalState.value = {
         type: 'warning',
-        icon: 'mdi-email-alert-outline',
         title: 'Problem med e-postleverans',
         message: 'Det fanns problem med att leverera signeringsförfrågan. Vänligen kontakta avsändaren.',
       }
+      
       return false
     }
     
@@ -268,7 +279,6 @@ const checkTokenStatus = async () => {
 
     finalState.value = {
       type: 'error',
-      icon: 'mdi-alert-circle-outline',
       title: 'Ogiltig länk',
       message: error.message || 'Denna signeringslänk är ogiltig.',
     }
@@ -441,14 +451,14 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
 // Carga tanto el PDF como los detalles de la firma
 const loadSignatureData = async () => {
-  isLoading.value = true
+  isRequestOngoing.value = true
   
   try {
     // Primero verificar el estado del token
     const canProceed = await checkTokenStatus()
     
     if (!canProceed && !isAlreadySigned.value) {
-      isLoading.value = false
+      isRequestOngoing.value = false
       return
     }
     
@@ -517,13 +527,12 @@ const loadSignatureData = async () => {
     if (!finalState.value) {
       finalState.value = {
         type: 'error',
-        icon: 'mdi-alert-circle-outline',
         title: 'Fel',
         message: 'Kunde inte ladda dokumentet.',
       }
     }
   } finally {
-    isLoading.value = false
+    isRequestOngoing.value = false
   }
 }
 
@@ -594,10 +603,8 @@ const submitFinalSignature = async (signatureImage) => {
 
     finalState.value = {
       type: 'success',
-      icon: 'mdi-check-circle-outline',
       title: 'Signering slutförd!',
-      message: response.data.message,
-      downloadUrl: response.data.download_url,
+      message: response.data.message
     }
     isAlreadySigned.value = true
 
@@ -629,7 +636,6 @@ const submitFinalSignature = async (signatureImage) => {
     
     finalState.value = {
       type: 'error',
-      icon: 'mdi-alert-circle-outline',
       title: isServerError ? 'Serverfel' : 'Ett fel uppstod',
       message: error.response?.data?.message || (isServerError 
         ? 'Ett oväntat fel uppstod på servern. Vänligen försök igen senare.' 
@@ -665,8 +671,6 @@ onMounted(loadSignatureData);
 
 <template>
   <section>
-
-    <VideoLoader />
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <!-- Visor de PDF cuando ya está firmado -->
@@ -683,7 +687,7 @@ onMounted(loadSignatureData);
               class="alert-no-shrink custom-alert mt-4"
               style="flex: none;"
             >
-              <VAlertTitle>{{ finalState?.title || 'Ditt kontrakt är undertecknat.' }}</VAlertTitle>
+              <VAlertTitle>{{ finalState.title }}</VAlertTitle>
             </VAlert>
 
             <div class="d-flex gap-2 mt-4">
@@ -731,22 +735,38 @@ onMounted(loadSignatureData);
     </div>
 
     <!-- Estado de error (enlace inválido, expirado, etc.) -->
-    <div v-if="!isLoading && finalState && finalState.type === 'error' && !isAlreadySigned">
-      <VCard class="signing-card pa-4">
+    <div v-if="!isRequestOngoing && finalState && finalState.type === 'error' && !isAlreadySigned">
+      <VCard class="signing-card pa-4 d-flex flex-column" style="min-height: 100vh;">
         <div class="d-flex align-center flex-0" :class="windowWidth < 1024 ? 'justify-center' : ''">
           <img :src="logo" width="121" height="40" alt="Billogg" />
         </div>
-        <VAlert
-          color="error"
-          class="alert-no-shrink custom-alert mt-4"
-        >
-          <VAlertTitle>{{ finalState.message }}</VAlertTitle>
-        </VAlert>
+
+        <div 
+          class="empty-state my-auto"
+          :class="$vuetify.display.smAndDown ? 'px-6 py-0' : 'pa-4'">
+          <VIcon
+            :size="$vuetify.display.smAndDown ? 80 : 120"
+            icon="custom-f-cancel"
+          />
+          <div class="empty-state-content">
+            <div class="empty-state-title">{{ finalState.title }}</div>
+            <div class="empty-state-text">
+              {{ finalState.message }}
+            </div>
+          </div>
+          <VBtn
+            class="btn-ghost"
+            @click="reloadPage"
+          >
+            Försök att signera igen
+            <VIcon icon="custom-arrow-right" size="24" />
+          </VBtn>
+        </div>
       </VCard>
     </div>
 
     <!-- Visor de PDF para firma (cuando no está firmado) -->
-    <div v-if="!isLoading && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
+    <div v-if="!isRequestOngoing && !finalState && !isAlreadySigned" class="signing-card placement-modal-card">
       <div class="placement-content bg-page">
         <div class="placement-body">
           <!-- Sidebar izquierda con controles -->

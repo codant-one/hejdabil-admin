@@ -6,6 +6,7 @@ use App\Http\Requests\DocumentRequest;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -15,6 +16,9 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Models\Document;
 use App\Models\Token;
 use App\Models\Supplier;
+use App\Models\User;
+use App\Models\UserDetails;
+use App\Models\Config;
 
 class DocumentController extends Controller
 {
@@ -40,7 +44,7 @@ class DocumentController extends Controller
                         'supplier' => function ($q) {
                             $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
                         },
-                        'tokens',
+                        'token.histories',
                         'user'
                     ])
                     ->applyFilters(
@@ -103,7 +107,7 @@ class DocumentController extends Controller
 
             // Create initial token with 'created' status when document is created
             $signingToken = Str::uuid()->toString();
-            $token = $document->tokens()->create([
+            $token = $document->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => null, // Will be set when signature is requested
                 'token_expires_at' => now()->addDays(30),
@@ -131,7 +135,7 @@ class DocumentController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Dokumentet har skapats',
-                'data' => ['document' => $document->load('tokens')]
+                'data' => ['document' => $document->load('token')]
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -149,7 +153,7 @@ class DocumentController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $document = Document::with(['tokens.history' => function($query) {
+            $document = Document::with(['token.histories' => function($query) {
                 $query->orderBy('created_at', 'asc');
             }])->find($id);
 
@@ -271,8 +275,7 @@ class DocumentController extends Controller
             'email' => 'required|email',
             'x' => 'required|numeric',
             'y' => 'required|numeric',
-            'page' => 'required|integer',
-            'text' => 'required|string',
+            'page' => 'required|integer'
         ]);
 
         if (!$document->file) {
@@ -282,8 +285,8 @@ class DocumentController extends Controller
         }
 
         // Get or create token for this document
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $document->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $document->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -291,7 +294,7 @@ class DocumentController extends Controller
         if (!$token) {
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
-            $token = $document->tokens()->create([
+            $token = $document->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email' => $validated['email'],
                 'token_expires_at' => now()->addDays(7),
@@ -342,15 +345,72 @@ class DocumentController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            $document->description = $request->text;
+            $document->description = $request->text === 'null' ? null : $request->text;
             $document->save();
+
+            if ($document->supplier && is_null($document->supplier->boss_id)) {//supplier
+                $user = UserDetails::with(['user'])->find($document->supplier->user_id);
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+            } else if ($document->supplier && !is_null($document->supplier->boss_id)) {//user
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($document->supplier->user_id);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+                $company->name = $user->supplier->boss->user->name;
+                $company->last_name = $user->supplier->boss->user->last_name;
+            } else { //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                $signatureRaw    = $getValue($configSignature);
+
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                $signatureObj    = $decodeSafe($signatureRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+                $company->img_signature = $signatureObj->img_signature ?? null;
+            }
+
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Solicitud para firmar su documento';
+            $subject = 'Dokument för digital signering';
+
             $data = [
+                'company' => $company,
                 'signingUrl' => $signingUrl,
-                'text' => $request->text
+                'text' => $request->text === 'null' ? null : $request->text,
+                'title' => 'Dokument för digital signering',
+                'icon' => asset('/images/signature.png'),
+                'logo' => $logo
             ];
 
             \Mail::send(
@@ -412,7 +472,7 @@ class DocumentController extends Controller
     public function resendSignatureRequest(Document $document, Request $request)
     {
         // Find the most recent token with allowed statuses for this document
-        $token = $document->tokens()
+        $token = $document->token()
             ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
             ->latest()
             ->first();

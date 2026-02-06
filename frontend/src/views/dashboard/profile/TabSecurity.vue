@@ -284,173 +284,151 @@ const onSubmitKey = async () => {
   <section>
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
-    <VRow>
-      <VCol cols="12" class="pb-0">
-        <VCard>
-          <VCardText class="px-0">
-            <div class="title-tabs mb-5">
-              Ändra lösenord
-            </div>
+    <VCardText class="px-0">
+      <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
+        Ändra lösenord
+      </div>
 
-            <VAlert
-              variant="tonal"
-              color="warning"
-              class="mb-4"
-            >
-              <VAlertTitle class="mb-1">
-                Se till att dessa krav är uppfyllda
-              </VAlertTitle>
-              <span>Minst 8 tecken, stora och små bokstäver samt siffror</span>
-            </VAlert>
+      <VForm
+        ref="refVForm"
+        class="card-form"
+        @submit.prevent="onSubmit"
+      >
+        <div 
+            class="d-flex flex-wrap"
+            :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+            :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+        >
+          <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord" />
+            <VTextField
+              v-model="password"
+              :type="isNewPasswordVisible ? 'text' : 'password'"
+              :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+              :rules="[requiredValidator, passwordValidator]"
+              @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
+            />
+          </div>
+          <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord" />
+            <VTextField
+              v-model="passwordConfirmation"
+              :type="isConfirmPasswordVisible ? 'text' : 'password'"
+              :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+              :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
+              @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
+            />
+          </div>
 
-            <VForm
-              ref="refVForm"
-              class="card-form"
-              @submit.prevent="onSubmit"
-            >
-              <div 
-                  class="d-flex flex-wrap"
-                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                  :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-              >
-                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord" />
-                  <VTextField
-                    v-model="password"
-                    :type="isNewPasswordVisible ? 'text' : 'password'"
-                    :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                    :rules="[requiredValidator, passwordValidator]"
-                    @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
-                  />
-                </div>
-                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord" />
-                  <VTextField
-                    v-model="passwordConfirmation"
-                    :type="isConfirmPasswordVisible ? 'text' : 'password'"
-                    :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                    :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
-                    @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
-                  />
-                </div>
-
-                <VCardText class="p-0 d-flex w-100">
-                  <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
-                      <VBtn 
-                          type="submit" 
-                          :block="windowWidth < 1024"
-                          class="btn-gradient"
-                          :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                      >
-                          Ändra lösenord
-                      </VBtn>
-                  </div>
-                </VCardText>
-              </div>
-            </VForm>
-          </VCardText>
-        </VCard>
-
-        <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-4'" />
-
-        <VCard>
-          <VCardText class="px-0">
-            <div class="title-tabs mb-5">
-              Authenticator
-            </div>
-            <VTable class="text-no-wrap rounded">
-              <thead>
-                <tr>
-                  <th scope="col"> TYP </th>
-                  <th scope="col" class="w-5 text-end">AKTIVERA</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td> Tvåfaktorsautentisering (2FA)  </td>
-                  <td>
-                    <VCheckbox 
-                      v-model="is_2fa"
-                      class="two_class"
-                      @update:model-value="enabled2fa" />
-                  </td>
-                </tr>
-              </tbody>
-            </VTable>
-          </VCardText>
-        </VCard>
-
-        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
-
-        <VCard class="mt-8" v-if="role === 'Supplier'">
-          <VForm
-              ref="refForm"
-              class="card-form"
-              v-model="isFormValid"
-              @submit.prevent="onSubmitKey">
-
-              <VCardText class="px-0 pt-0">
-                <div class="title-tabs mb-5">
-                  Säkerhetslösenord
-                </div>
-                <!-- 👉 Current Password -->
-                <div 
-                    class="d-flex flex-wrap"
-                    :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+          <VCardText class="p-0 d-flex w-100">
+            <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                <VBtn 
+                    type="submit" 
+                    :block="windowWidth < 1024"
+                    class="btn-gradient"
+                    :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                 >
-                  <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord" />
-                    <VTextField
-                      v-model="masterPassword"
-                      :type="isMasterPasswordVisible ? 'text' : 'password'"
-                      :append-inner-icon="isMasterPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                      :rules="[requiredValidator]"
-                      @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
-                    />
-                  </div>
-
-                  <VCardText class="p-0 d-flex w-100">
-                    <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
-                        <VBtn 
-                            type="submit" 
-                            :block="windowWidth < 1024"
-                            class="btn-gradient"
-                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                        >
-                            Spara
-                        </VBtn>
-                    </div>
-                  </VCardText>
-                </div>
-              </VCardText>
-          </VForm>
-        </VCard>
-
-        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
-
-        <VCard class="mt-5 mb-8" v-if="role === 'Supplier'">
-          <VCardText class="px-0">
-            <div class="title-tabs mb-5">
-              Certifikat
+                    Ändra lösenord
+                </VBtn>
             </div>
+          </VCardText>
+        </div>
+      </VForm>
+    </VCardText>
+
+    <VDivider />
+
+    <VCardText class="px-0">
+      <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
+        Authenticator
+      </div>
+      <VTable class="text-no-wrap rounded">
+        <thead>
+          <tr>
+            <th scope="col"> Typ </th>
+            <th scope="col" class="w-5 text-end">Aktivera</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td> Tvåfaktorsautentisering (2FA)  </td>
+            <td>
+              <VCheckbox 
+                v-model="is_2fa"
+                class="two_class"
+                @update:model-value="enabled2fa" />
+            </td>
+          </tr>
+        </tbody>
+      </VTable>
+    </VCardText>
+   
+    <VDivider v-if="role === 'Supplier'" />
+
+    <VForm
+        v-if="role === 'Supplier'"
+        ref="refForm"
+        class="card-form"
+        v-model="isFormValid"
+        @submit.prevent="onSubmitKey">
+
+        <VCardText class="px-0">
+          <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
+            Säkerhetslösenord
+          </div>
+          <!-- 👉 Current Password -->
+          <div 
+              class="d-flex flex-wrap"
+              :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+              :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+          >
+            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord*" />
+              <VTextField
+                v-model="masterPassword"
+                :type="isMasterPasswordVisible ? 'text' : 'password'"
+                :append-inner-icon="isMasterPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+                :rules="[requiredValidator]"
+                @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
+              />
+            </div>
+
             <VCardText class="p-0 d-flex w-100">
-              <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+              <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                   <VBtn 
-                      type="button" 
+                      type="submit" 
                       :block="windowWidth < 1024"
-                      class="btn-light"
+                      class="btn-gradient"
                       :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                      @click="downloadFile(csrUrl)"
                   >
-                      Ladda ner CSR
+                      Spara
                   </VBtn>
               </div>
             </VCardText>
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
+          </div>
+        </VCardText>
+    </VForm>
+
+    <VDivider v-if="role === 'Supplier'" />
+
+    <VCardText class="px-0" v-if="role === 'Supplier'">
+      <div class="title-tabs-profile mb-5">
+        Certifikat
+      </div>
+      <VCardText class="p-0 d-flex w-100">
+        <div class="d-flex" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+            <VBtn 
+                type="button" 
+                :block="windowWidth < 1024"
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                @click="downloadFile(csrUrl)"
+            >
+                Ladda ner CSR
+            </VBtn>
+        </div>
+      </VCardText>
+    </VCardText>
 
     <VDialog v-model="isFileMissingDialogVisible" width="500">
       <VCard title="Information">
@@ -498,15 +476,11 @@ const onSubmitKey = async () => {
         border-radius: 16px;
     }
 
-    .title-tabs {
-        font-weight: 700;
-        font-size: 24px;
-        line-height: 100%;
-        color: #454545;
-
-        @media (max-width: 1023px) {
-            font-size: 16px
-        }
+    .title-tabs-profile {
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 100%;
+      color: #454545;
     }
 
     .list-kopare {

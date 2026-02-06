@@ -53,7 +53,7 @@ const handleKeyDown = (event, index) => {
     </label>
     <div
       ref="refOtpComp"
-      class="d-flex align-center justify-center gap-2"
+      class="d-flex align-center justify-start gap-2"
     >
       <VTextField
         v-for="i in props.totalInput"

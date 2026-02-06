@@ -193,48 +193,49 @@ watch(currentData, () => {
             @submit.prevent="onSubmit"
           >
             <VRow>
-              <VCol cols="12" md="12">
+              <VCol cols="12" md="12" class="pb-0">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                   <VTextField
                       v-model="reg_num"
-                      label="Reg nr*"
                       :rules="[requiredValidator]"
+                      @input="reg_num = reg_num.toUpperCase()"
                   />
               </VCol>
-              <VCol cols="12" md="12">
+              <VCol cols="12" md="12" class="pb-0">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Egen värdering*" />
                   <VTextField
                       v-model="note"
                       type="number"
                       min="0"
-                      label="Egen värdering*"
                       suffix="KR"
                       :rules="[requiredValidator]"
                   />
               </VCol>
-              <VCol cols="12" md="12">
+              <VCol cols="12" md="12" class="pb-0">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kundnamn" />
                   <VTextField
                       v-model="name"
-                      label="Kundnamn"
                   />
               </VCol>
-              <VCol cols="12" md="12">
+              <VCol cols="12" md="12" class="pb-0">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tel nr" />
                   <VTextField
                       v-model="phone"
                       :rules="[phoneValidator]"
-                      label="Tel nr"
                   />
               </VCol>
-              <VCol cols="12" md="12">
+              <VCol cols="12" md="12" class="pb-0">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
                   <VTextField
                       v-model="email"
                       :rules="[emailValidator]"
-                      label="E-post"
                   />
               </VCol>
               <VCol cols="12" md="12">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kommentar" />
                   <VTextarea
                       v-model="comment"
                       rows="3"
-                      label="Kommentar"
                   />
               </VCol>
               <!-- 👉 Submit and Cancel -->

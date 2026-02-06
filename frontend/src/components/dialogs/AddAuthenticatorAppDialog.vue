@@ -52,26 +52,31 @@ const handleOtp = (value) => {
 
 <template>
   <VDialog
-    max-width="787"
     :model-value="props.isDialogVisible"
     @update:model-value="(val) => $emit('update:isDialogVisible', val)"
+    class="action-dialog"    
   >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="resetAuthCode" />
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="resetAuthCode"
+      >
+        <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
-    <VCard class="pa-4 pa-sm-8">
-      <VCardItem>
-        <VCardTitle class="text-h5 font-weight-medium text-center">
-          Lägg till autentiseringsapp
-        </VCardTitle>
-      </VCardItem>
+    <VCard>
+      <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-auth" class="action-icon" />
+          <div class="dialog-title">Lägg till autentiseringsapp</div>
+      </VCardText>
 
-      <VCardText class="pt-3 px-3">
-        <h6 class="text-lg font-weight-medium mb-2 text-center text-md-start">
+      <VCardText class="dialog-text">
+        <h6 class="text-lg font-weight-medium mb-2 text-start">
           Appar för autentisering
         </h6>
 
-        <p class="mb-6">
+        <p class="mb-0">
           Använd en autentiseringsapp som Google Authenticator, Microsoft Authenticator, Authy eller 1Password och skanna QR-koden. Det kommer att generera en 6-siffrig kod som du ska ange nästa.
         </p>
 
@@ -84,8 +89,8 @@ const handleOtp = (value) => {
         </div>
 
         <VAlert
-          color="light-warning"
-          class="text-warning"
+          color="warning"
+          class="alert-no-shrink custom-alert mt-4"
         >
           <span class="text-lg font-weight-medium">{{ props.token }}</span>
           <p class="mb-0">
@@ -93,36 +98,24 @@ const handleOtp = (value) => {
           </p>
         </VAlert>
         <VForm @submit.prevent="() => {}">
-            <AppOtpInput @updateOtp="handleOtp"  class="my-2"/>
-          <!-- <AppTextField
-            v-model="authCode"
-            name="auth-code"
-            label="Ingrese el código de autenticación"
-            placeholder="123 456"
-            class="mb-4"
-          /> -->
+            <AppOtpInput @updateOtp="handleOtp"  class="my-4"/>
 
-          <div class="d-flex justify-end flex-wrap gap-3">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0 px-0">
             <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="resetAuthCode"
-            >
+              class="btn-light"
+                @click="resetAuthCode"
+              >
               Avbryt
             </VBtn>
 
             <VBtn
               type="submit"
+              class="btn-gradient"
               @click="formSubmit"
             >
               {{ props.is_2fa ? 'Aktivera' : 'Avaktivera' }}
-              <VIcon
-                end
-                icon="tabler-arrow-right"
-                class="flip-in-rtl"
-              />
             </VBtn>
-          </div>
+          </VCardText>
         </VForm>
       </VCardText>
     </VCard>

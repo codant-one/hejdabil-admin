@@ -73,7 +73,8 @@ class Billing extends Model
             ->orWhere('invoice_id', 'LIKE', '%' . $search . '%')
             ->orWhere('invoice_date', 'LIKE', '%' . $search . '%')
             ->orWhere('due_date', 'LIKE', '%' . $search . '%')
-            ->orWhere('detail', 'LIKE', '%' . $search . '%');
+            ->orWhere('detail', 'LIKE', '%' . $search . '%')
+            ->orWhere('total', 'LIKE', '%' . $search . '%');
         });
     }
 
@@ -182,10 +183,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -322,6 +327,8 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find($billing->supplier->user_id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         foreach($details as $row)
@@ -389,10 +396,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -452,10 +463,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -529,10 +544,14 @@ class Billing extends Model
             $user = UserDetails::with(['user'])->find(Auth::user()->id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         } else if (Auth::user()->getRoleNames()[0] === 'User') {
             $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
         } else { //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -567,19 +586,24 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
         }
 
+        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+        
         $data = [
             'company' => $company,
             'user' => $billing->client->fullname,
             'text' =>  'Vi hoppas att detta meddelande är till hjälp. <br> Vi skulle vilja informera dig om att följande faktura har förfallit på grund av utebliven betalning inom den fastställda tidsfristen:',
             'billing' => $billing,
             'text_info' => 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.',
-            'buttonText' => 'Nedladdningar',
-            'pdfFile' => asset('storage/'.$billing->reminder)
+            'buttonText' => 'Ladda ner faktura',
+            'pdfFile' => asset('storage/'.$billing->reminder),
+            'title' => 'Förfallen faktura',
+            'icon' => asset('/images/invoice-failed.png'),
+            'logo' => $logo
         ];
 
         $clientEmail = $billing->client->email;
-        $subject = 'Din faktura #'. $billing->invoice_id . ' har löpt ut';
-            
+        $subject = 'Påminnelse: förfallen faktura från ' . $company->company;
+
         try {
             \Mail::send(
                 'emails.invoices.reminder'

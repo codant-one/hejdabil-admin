@@ -405,21 +405,26 @@ class BillingController extends Controller
                 $company->logo = $logoObj->logo ?? null;
             }
 
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+
             $data = [
                 'company' => $company,
                 'user' => $billing->client->fullname,
                 'text' => 'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:',
                 'billing' => $billing,
                 'text_info' => 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.',
-                'buttonText' => 'Nedladdningar',
-                'pdfFile' => asset('storage/'.$billing->file)
+                'buttonText' => 'Ladda ner faktura',
+                'pdfFile' => asset('storage/'.$billing->file),
+                'title' => 'Ny faktura',
+                'icon' => asset('/images/invoices.png'),
+                'logo' => $logo
             ];
 
             $errors = [];
 
             if($request->emailDefault === true) {
                 $clientEmail = $billing->client->email;
-                $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
+                $subject = 'Ny faktura från ' . $company->company;
                     
                 try {
                     \Mail::send(

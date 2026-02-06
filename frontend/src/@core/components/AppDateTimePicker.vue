@@ -23,6 +23,10 @@ const props = defineProps({
     variant: 'outlined',
     color: 'secondary',
   }),
+  config: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits([
@@ -46,17 +50,28 @@ const { focused } = useFocus(refFlatPicker)
 const isCalendarOpen = ref(false)
 const isInlinePicker = ref(false)
 
-// locale
-if (compAttrs.config) {
+const datepickerConfig = computed(() => {
+  const config = { ...props.config }
+
   svLocale.sv.time_24hr = false
-  compAttrs.config.locale = svLocale.sv
+  config.locale = svLocale.sv
+
+  return config
+})
+
+if (props.config.inline) {
+  isInlinePicker.value = props.config.inline
 }
 
-// flat picker prop manipulation
-if (compAttrs.config && compAttrs.config.inline) {
-  isInlinePicker.value = compAttrs.config.inline
-  Object.assign(compAttrs, { altInputClass: 'inlinePicker' })
-}
+const datepickerAttrs = computed(() => {
+  const customAttrs = { ...compAttrs }
+
+  if (props.config.inline) {
+    customAttrs.altInputClass = 'inlinePicker'
+  }
+
+  return customAttrs
+})
 
 const onClear = el => {
   el.stopPropagation()
@@ -119,7 +134,8 @@ const emitModelValue = val => {
             <!-- flat-picker  -->
             <FlatPickr
               v-if="!isInlinePicker"
-              v-bind="compAttrs"
+              v-bind="datepickerAttrs"
+              :config="datepickerConfig"
               ref="refFlatPicker"
               :model-value="modelValue"
               class="flat-picker-custom-style"
@@ -145,7 +161,8 @@ const emitModelValue = val => {
   <!-- flat picker for inline props -->
   <FlatPickr
     v-if="isInlinePicker"
-    v-bind="compAttrs"
+    v-bind="datepickerAttrs"
+    :config="datepickerConfig"
     ref="refFlatPicker"
     :model-value="modelValue"
     @update:model-value="emitModelValue"

@@ -85,7 +85,7 @@ Route::group([
 Broadcast::routes(['middleware' => ['cors', 'jwt']]);
 
 //Private Endpoints
-Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
+Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
      
     //Resources 
     Route::apiResource('users', UsersController::class);

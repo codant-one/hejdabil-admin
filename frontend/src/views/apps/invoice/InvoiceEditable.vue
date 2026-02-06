@@ -3,7 +3,6 @@
 import { themeConfig } from "@themeConfig";
 import { formatNumber } from "@/@core/utils/formatters";
 import { requiredValidator } from "@validators";
-import logoBlack from "@images/logo_black.png";
 import sampleFaktura from "@images/sample-faktura.jpg";
 import VuePdfEmbed from "vue-pdf-embed";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -564,12 +563,13 @@ const handleFocus = (element, fieldId) => {
               :width="isMobile ? '200' : '200'"
               :src="themeConfig.settings.urlStorage + company.logo"
             />
-            <img
-              v-else
-              :width="isMobile ? '200' : '200'"
-              :src="logoBlack"
-              class="me-3"
-            />
+            <div v-else>    
+              <h1 class="mb-0">{{ company.company }}</h1>   
+              <span class="me-2 text-start w-40 text-black">
+                {{ company.name }} {{ company.last_name }} <br />
+                {{ company.email }}
+              </span>
+            </div>
           </div>
           <!-- 👉 Invoice Id -->
           <div

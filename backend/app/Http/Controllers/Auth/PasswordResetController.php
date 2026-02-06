@@ -43,8 +43,10 @@ class PasswordResetController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.$passwordReset['token'].'&user='.$email;
         
         $info = [
-            'subject' => 'Begäran om ändring av lösenord',
+            'subject' => 'Återställ ditt lösenord i Billogg',
+            'title' => 'Återställ ditt lösenord',
             'buttonLink' =>  $url ?? null,
+            'icon' => asset('/images/forgot-password.png'),
             'email' => 'emails.auth.forgot_pass_confirmation'
         ];     
         
@@ -109,8 +111,10 @@ class PasswordResetController extends Controller
         $user->update();
 
         $info = [
-            'subject' => 'Hej '.$user->name.'!. Ditt lösenord har uppdaterats.',
+            'subject' => 'Ditt lösenord har uppdaterats',
+            'title' => 'Ditt lösenord har uppdaterats',
             'buttonLink' => env('APP_DOMAIN'),
+            'icon' => asset('/images/reset-password.png'),
             'email' => 'emails.auth.reset_password'
         ];     
         
@@ -134,7 +138,8 @@ class PasswordResetController extends Controller
             'user' => $user->name . ' ' . $user->last_name,
             'text' => $info['text'] ?? null,
             'buttonLink' =>  $info['buttonLink'] ?? null,
-            'buttonText' =>  $info['buttonText'] ?? null
+            'buttonText' =>  $info['buttonText'] ?? null,
+            'icon' =>  $info['icon'] ?? null
         ];
 
         $clientEmail = $user->email;

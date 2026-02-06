@@ -54,7 +54,7 @@ class Token extends Model
         return $this->morphTo();
     }
 
-    public function history(): HasMany
+    public function histories(): HasMany
     {
         return $this->hasMany(TokenHistory::class);
     }

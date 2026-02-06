@@ -1,7 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { onBeforeRouteLeave } from 'vue-router';
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators';
 import { useVehiclesStores } from '@/stores/useVehicles';
@@ -78,7 +78,7 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
-const save_client = ref(true)
+const save_client = ref(false)
 const disabled_client = ref(false)
 
 const clients = ref([])
@@ -705,7 +705,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div class="info-item d-flex flex-column gap-2">
                                             <span>Miltal</span>
                                             <div class="value-field">
-                                                {{ mileage ?? '' }} Mil
+                                                {{formatNumberInteger(mileage ?? '0,00') }} Mil
                                             </div>
                                         </div>
                                         <div class="info-item d-flex flex-column gap-2">
@@ -866,7 +866,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="discount"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -876,7 +876,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 v-model="registration_fee"
                                                 min="0"
-                                                suffix="%"
+                                                suffix="KR"
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
@@ -1188,19 +1188,6 @@ onBeforeRouteLeave((to, from, next) => {
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
-            }
-        }
-    }
-
-    @media (max-width: 776px) {
-        .v-tabs.vehicles-tabs {
-            .v-icon {
-                display: none !important;
-            }
-            .v-btn {
-                .v-btn__content {
-                    white-space: break-spaces;
-                }
             }
         }
     }

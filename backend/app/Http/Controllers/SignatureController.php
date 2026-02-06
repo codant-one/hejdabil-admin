@@ -74,8 +74,8 @@ class SignatureController extends Controller
         }
 
         // 3. Get or create token for this agreement
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $agreement->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $agreement->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -84,8 +84,8 @@ class SignatureController extends Controller
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             
-            // 4. Create the record in the 'tokens' table.
-            $token = $agreement->tokens()->create([
+            // 4. Create the record in the 'token' table.
+            $token = $agreement->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
@@ -151,13 +151,75 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
+            if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
+                $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+            } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+                $company->name = $user->supplier->boss->user->name;
+                $company->last_name = $user->supplier->boss->user->last_name;
+            } else { //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                $signatureRaw    = $getValue($configSignature);
+
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                $signatureObj    = $decodeSafe($signatureRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+                $company->img_signature = $signatureObj->img_signature ?? null;
+            }
+
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Solicitud para Firmar su Contrato';
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+            $subject = $agreement->agreement_type_id === 4 ? 'Prisförslag från ' . $company->company : 'Avtal för digital signering från ' . $company->company;
+            $agreement = Agreement::with('agreement_client')->find($agreement->id); // Refresh agreement data
+
+            $data = [
+                'agreement' => $agreement,
+                'signingUrl' => $signingUrl,
+                'company' => $company,
+                'user' => $agreement->agreement_client->fullname,
+                'title' => 'Avtal ' . strtolower($agreement->agreement_type->name),
+                'icon' => asset('/images/agreements.png'),
+                'logo' => $logo
+            ]; 
 
             \Mail::send(
                 'emails.agreements.signature_request'
-                , ['signingUrl' => $signingUrl]
+                , $data
                 , function ($message) use ($clientEmail, $subject) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                     $message->to($clientEmail)->subject($subject);
@@ -225,8 +287,8 @@ class SignatureController extends Controller
         }
 
         // 3. Get or create token for this agreement
-        // First check for tokens with 'created' or 'delivery_issues' status
-        $token = $agreement->tokens()
+        // First check for token with 'created' or 'delivery_issues' status
+        $token = $agreement->token()
             ->whereIn('signature_status', ['created', 'delivery_issues'])
             ->latest()
             ->first();
@@ -235,8 +297,8 @@ class SignatureController extends Controller
             // If no 'created' or 'delivery_issues' token exists, create a new one
             $signingToken = Str::uuid()->toString();
             
-            // 4. Create the record in 'tokens' WITHOUT coordinates.
-            $token = $agreement->tokens()->create([
+            // 4. Create the record in 'token' WITHOUT coordinates.
+            $token = $agreement->token()->create([
                 'signing_token' => $signingToken,
                 'recipient_email'     => $validated['email'],
                 'token_expires_at'    => now()->addDays(7),
@@ -305,13 +367,75 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
+            if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
+                $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+            } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
+                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
+                $company = $user->supplier->boss->user->userDetail;
+                $company->email = $user->supplier->boss->user->email;
+                $company->name = $user->supplier->boss->user->name;
+                $company->last_name = $user->supplier->boss->user->last_name;
+            } else { //Admin
+                $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '[]';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '[]';
+                };
+                
+                $companyRaw = $getValue($configCompany);
+                $logoRaw    = $getValue($configLogo);
+                $signatureRaw    = $getValue($configSignature);
+
+                $decodeSafe = function ($raw) {
+                    $decoded = json_decode($raw);
+
+                    if (is_string($decoded))
+                        $decoded = json_decode($decoded);
+                
+                    if (!is_object($decoded)) 
+                        $decoded = (object) [];
+                
+                    return $decoded;
+                };
+                
+                $company = $decodeSafe($companyRaw);
+                $logoObj    = $decodeSafe($logoRaw);
+                $signatureObj    = $decodeSafe($signatureRaw);
+                
+                $company->logo = $logoObj->logo ?? null;
+                $company->img_signature = $signatureObj->img_signature ?? null;
+            }
+
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Solicitud para Firmar su Contrato';
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+            $subject = $agreement->agreement_type_id === 4 ? 'Prisförslag från ' . $company->company : 'Avtal för digital signering från ' . $company->company;
+            $agreement = Agreement::with('agreement_client')->find($agreement->id); // Refresh agreement data
+
+            $data = [
+                'agreement' => $agreement,
+                'signingUrl' => $signingUrl,
+                'company' => $company,
+                'user' => $agreement->agreement_client->fullname,
+                'title' => 'Avtal ' . strtolower($agreement->agreement_type->name),
+                'icon' => asset('/images/agreements.png'),
+                'logo' => $logo
+            ]; 
 
             \Mail::send(
                 'emails.agreements.signature_request'
-                , ['signingUrl' => $signingUrl]
+                , $data
                 , function ($message) use ($clientEmail, $subject) {
                     $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                     $message->to($clientEmail)->subject($subject);
@@ -446,16 +570,21 @@ class SignatureController extends Controller
         
         // Support both agreements and documents
         if ($token->agreement_id) {
-            $response['agreement_id'] = $token->agreement->agreement_id;
+            $response['agreement_id'] = $token->agreement->id;
         } elseif ($token->document_id) {
             $response['document_id'] = $token->document->id;
             $response['document_title'] = $token->document->title;
         }
         
         if ($token->signature_status === 'signed') {
-            $response['message'] = 'Este documento ya fue firmado';
-            $response['signed_date_formatted'] = $token->signed_at ? 
-                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : null;
+            $response['message'] = 
+                $token->agreement_id ? 
+                'Ditt kontrakt är undertecknat.' : 
+                'Ditt dokument är undertecknat.';
+            $response['signed_date_formatted'] = 
+                $token->signed_at ? 
+                \Carbon\Carbon::parse($token->signed_at)->format('d/m/Y H:i') : 
+                null;
         }
         
         return response()->json($response);
@@ -615,10 +744,61 @@ class SignatureController extends Controller
 
                     if ($token->agreement_id) {
                         $agreement = $token->agreement;
-                        Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $attachFile ? $pdfFullPath : '', null, $downloadUrl, $attachFile));
+
+                        if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
+                            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+                            $company = $user->user->userDetail;
+                            $company->email = $user->user->email;
+                            $company->name = $user->user->name;
+                            $company->last_name = $user->user->last_name;
+                        } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
+                            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
+                            $company = $user->supplier->boss->user->userDetail;
+                            $company->email = $user->supplier->boss->user->email;
+                            $company->name = $user->supplier->boss->user->name;
+                            $company->last_name = $user->supplier->boss->user->last_name;
+                        } else { //Admin
+                            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                            // Extract the "value" supporting array or object
+                            $getValue = function ($cfg) {
+                                if (is_array($cfg)) 
+                                    return $cfg['value'] ?? '[]';
+                                if (is_object($cfg) && isset($cfg->value))
+                                    return $cfg->value;
+                                return '[]';
+                            };
+                            
+                            $companyRaw = $getValue($configCompany);
+                            $logoRaw    = $getValue($configLogo);
+                            $signatureRaw    = $getValue($configSignature);
+
+                            $decodeSafe = function ($raw) {
+                                $decoded = json_decode($raw);
+
+                                if (is_string($decoded))
+                                    $decoded = json_decode($decoded);
+                            
+                                if (!is_object($decoded)) 
+                                    $decoded = (object) [];
+                            
+                                return $decoded;
+                            };
+                            
+                            $company = $decodeSafe($companyRaw);
+                            $logoObj    = $decodeSafe($logoRaw);
+                            $signatureObj    = $decodeSafe($signatureRaw);
+                            
+                            $company->logo = $logoObj->logo ?? null;
+                            $company->img_signature = $signatureObj->img_signature ?? null;
+                        }
+
+                        Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $attachFile ? $pdfFullPath : '', null, $downloadUrl, $attachFile, $company));
                     } elseif ($token->document_id) {
                         $document = $token->document;
-                        Mail::to($recipientEmail)->send(new SignedDocumentMail(null, $attachFile ? $pdfFullPath : '', $document, $downloadUrl, $attachFile));
+                        Mail::to($recipientEmail)->send(new SignedDocumentMail(null, $attachFile ? $pdfFullPath : '', $document, $downloadUrl, $attachFile, null));
                     }
                 }
             } catch (\Exception $e) {

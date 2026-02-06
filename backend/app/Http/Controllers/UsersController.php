@@ -92,21 +92,21 @@ class UsersController extends Controller
             );
 
             $email = $user->email;
-            $subject = 'Välkommen till Billogg';
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
     
             $data = [
-                'title' => 'Konto skapat framgångsrikt!!!',
+                'title' => 'Välkommen till Billogg',
                 'user' => $user->name . ' ' . $user->last_name,
                 'email'=> $email,
                 'password' => $request->password,
                 'buttonLink' => env('APP_DOMAIN'),
-                'text-url' => 'Administrative panel'
+                'icon' => asset('/images/users.png'),
             ];
     
             try {
                 \Mail::send(
                     'emails.auth.user_created'
-                    , ['data' => $data]
+                    , $data
                     , function ($message) use ($email, $subject) {
                         $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
                         $message->to($email)->subject($subject);
@@ -264,6 +264,28 @@ class UsersController extends Controller
             $user = Auth::user()->load(['userDetail']);
             $user->password = Hash::make($request->password);
             $user->save();
+
+            $email = $user->email;
+            $subject = 'Ditt lösenord har uppdaterats';
+    
+            $data = [
+                'title' => 'Ditt lösenord har uppdaterats',
+                'buttonLink' => env('APP_DOMAIN'),
+                'icon' => asset('/images/reset-password.png')
+            ];
+    
+            try {
+                \Mail::send(
+                    'emails.auth.reset_password'
+                    , $data
+                    , function ($message) use ($email, $subject) {
+                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                        $message->to($email)->subject($subject);
+                });
+            } catch (\Exception $e) {    
+                Log::info("Failed to send email to user ". $e);
+            } 
+
 
             return response()->json([
                 'success' => true,

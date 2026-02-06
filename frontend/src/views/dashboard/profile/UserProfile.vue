@@ -29,6 +29,7 @@ const { width: windowWidth } = useWindowSize();
 const profileStores = useProfileStores()
 
 const refVForm = ref()
+const refAlert = ref()
 const isUserEditDialog = ref(false)
 const isRequestOngoing = ref(false)
 
@@ -42,7 +43,6 @@ const address = ref('')
 const avatar = ref(props.avatar)
 
 const avatarOld = ref(props.avatarOld)
-const roles = ref('')
 
 const alert = ref({
     message: '',
@@ -59,6 +59,14 @@ watch(() =>
   props.avatarOld, (avatarOld_) => {
     avatarOld.value = avatarOld_
   });
+
+watch(() => alert.value.show, (show) => {
+  if (show) {
+    nextTick(() => {
+      refAlert.value?.$el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+})
 
 watchEffect(fetchData)
 
@@ -164,362 +172,307 @@ const closeUserEditDialog = ()=>{
 
 <template>
   <section>
-    <VRow>
-      <LoadingOverlay :is-loading="isRequestOngoing" />
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
-      <VCol cols="12">
-        <VCard>
-          <VCardText class="pt-6 px-0">
-            <div class="bg-alert">
-              <VRow class="px-md-3 ">
-                <!-- 👉 Details -->
-                <VCol 
-                  cols="12" 
-                  sm="12" 
-                  md="2" 
-                  :class="windowWidth < 1024 ? '' : 'px-0'"
-                  class="d-flex align-center justify-center"
-                >
-                  <VAvatar
-                    rounded
-                    :size="100"
-                    :color="avatar ? 'default' : 'primary'"
-                    variant="tonal"
-                  >
-                    <VImg
-                      v-if="avatar"
-                      style="border-radius: 6px;"
-                      :src="avatar"
-                    />
-                    <span
-                      v-else
-                      class="text-5xl font-weight-semibold"
-                    >
-                      {{ avatarText(name) }}
-                    </span>
-                  </VAvatar>
-                  <h6 class="text-h6 mt-4" style="display: none;">
-                    {{ name.toUpperCase() }} {{ last_name.toUpperCase() }}
-                  </h6>
-
-                  <!-- 👉 Role chip -->
-                  <VChip
-                    v-for="rol in roles"
-                    :key="rol"
-                    label
-                    size="small"
-                    class="text-capitalize mt-4 mr-1"
-                  >
-                    {{ rol.name }}
-                  </VChip>
-                </VCol>
-              
-                <!-- 👉 Details -->
-                <VCol 
-                  cols="12" 
-                  sm="12" 
-                  md="8" 
-                  :class="windowWidth < 1024 ? '' : 'px-4'"
-                >
-                  <VRow>
-                    <VCol 
-                      cols="6" 
-                      sm="6" 
-                      md="3" 
-                      :class="windowWidth < 1024 ? '' : 'px-0'"
-                    >
-                      <span class="text-body-2">
-                        <VIcon
-                          class="me-1"
-                          icon="mdi-account"
-                          size="17"
-                        />
-                        Namn:
-                      </span>
-                      <h6 class="text-base font-weight-semibold">
-                        {{ name }}
-                      </h6>
-                    </VCol>
-                    <VCol 
-                      cols="6" 
-                      sm="6" 
-                      md="3" 
-                      :class="windowWidth < 1024 ? '' : 'px-0'"
-                    >
-                      <span class="text-body-2">
-                        <VIcon
-                          class="me-1"
-                          icon="mdi-account"
-                          size="17"
-                        />
-                        Efternamn:
-                      </span>
-                      <h6 class="text-base font-weight-semibold">
-                        {{ last_name }}
-                      </h6>
-                    </VCol>
-                    <VCol 
-                      cols="6" 
-                      sm="6" 
-                      md="6" 
-                      :class="windowWidth < 1024 ? '' : 'px-0'"
-                    >
-                      <span class="text-body-2">
-                        <VIcon
-                          class="me-1"
-                          icon="mdi-email"
-                          size="17"
-                        />
-                        E-post:
-                      </span>
-                      <h6 class="text-base font-weight-semibold">
-                        {{ email }}
-                      </h6>
-                    </VCol>
-                    <VCol 
-                      cols="6" 
-                      sm="6" 
-                      md="3" 
-                      :class="windowWidth < 1024 ? '' : 'px-0'"
-                    >
-                      <span class="text-body-2">
-                        <VIcon
-                          class="me-1"
-                          icon="mdi-phone"
-                          size="17"
-                        />
-                        Telefon:
-                      </span>
-                      <h6 class="text-base font-weight-semibold">
-                        {{ phone }}
-                      </h6>
-                    </VCol>
-                    <VCol 
-                      cols="12" 
-                      sm="12" 
-                      md="8" 
-                      :class="windowWidth < 1024 ? '' : 'px-0'"
-                    >
-                      <span class="text-body-2">
-                        <VIcon
-                          class="me-1"
-                          icon="mdi-map-marker"
-                          size="17"
-                        />
-                        Adress:
-                      </span>
-                      <h6 class="text-base font-weight-semibold">
-                        {{ address }}
-                      </h6>
-                    </VCol>
-                    
-                  </VRow>
-                </VCol>
-
-                <!-- 👉 Edit and Suspend button -->
-                <VCol 
-                  cols="12" 
-                  sm="12" 
-                  md="2" 
-                  :class="windowWidth < 1024 ? 'w-100' : 'px-0'"
-                >
-                  <div class="d-flex gap-4"
-                    :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
-                  >
-                    <VBtn 
-                      class="btn-light w-auto" 
-                      block
-                      @click="showUserEditDialog()"
-                    >
-                      <VIcon icon="custom-pencil" size="24" />
-                      Redigera
-                    </VBtn>
-                </div>
-                </VCol>
-              </VRow>
-            </div>
-          </VCardText>
-        </VCard>
-      </VCol>
-
-      <!-- DIALOG Edit personal information -->
-      <VDialog
-        v-model="isUserEditDialog"
-        max-width="800"
-        :width="windowWidth < 1024 ? '' : '800'"
-        class="action-dialog"
-        persistent
-      >
-        <!-- Dialog close btn -->
-        <VBtn
-          icon
-          class="btn-white close-btn"
-          @click="closeUserEditDialog"
+    <VCardText class="p-0">
+      <div class="bg-alert">
+        <div 
+          class="d-flex"
+          :class="windowWidth < 1024 ? 'flex-column gap-4' : 'justify-between gap-7'">
+          <!-- 👉 Details -->
+          <div 
+            :class="windowWidth < 1024 ? 'justify-center' : 'px-0'"
+            class="d-flex align-center"
           >
-          <VIcon size="16" icon="custom-close" />
-        </VBtn>
+            <VAvatar
+              rounded
+              :size="144"
+              :color="avatar ? 'default' : 'primary'"
+              variant="tonal"
+            >
+              <VImg
+                v-if="avatar"
+                style="border-radius: 16px;"
+                :src="avatar"
+              />
+              <span
+                v-else
+                class="text-5xl font-weight-semibold"
+              >
+                {{ avatarText(name) }}
+              </span>
+            </VAvatar>
+          </div>
+        
+          <!-- 👉 Details -->
+          <div
+            class="d-flex align-center w-100"
+            :class="windowWidth < 1024 ? 'flex-column py-2' : 'px-4'"
+          >
+            <div class="profile-info-grid">
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                      icon="custom-user-profile"
+                      size="16"
+                  />
+                  Namn
+                </span>
+                <span class="span-body-profile">
+                  {{ name }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-user-profile"
+                    size="16"
+                  />
+                  Efternamn
+                </span>
+                <span class="span-body-profile">
+                  {{ last_name }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-6">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-email-profile"
+                    size="16"
+                  />
+                  E-post
+                </span>
+                <span class="span-body-profile">
+                  {{ email }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-3">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-phone-profile"
+                    size="16"
+                  />
+                  Telefon
+                </span>
+                <span class="span-body-profile">
+                  {{ phone }}
+                </span>
+              </div>
+              <div class="profile-info-item profile-info-col-8">
+                <span class="text-body-profile">
+                  <VIcon
+                    class="me-1"
+                    icon="custom-location-profile"
+                    size="16"
+                  />
+                  Adress
+                </span>
+                <span class="span-body-profile">
+                  {{ address }}
+                </span>
+              </div>                
+            </div>
+          </div>
 
-        <!-- Dialog Content -->
-        <VCard>    
-          <VCardText class="dialog-title-box mt-2">
-            <VIcon size="32" icon="custom-pdf-2" />
-            <div class="dialog-title">Redigera personlig information</div>
-          </VCardText>
+          <!-- 👉 Edit and Suspend button -->
+          <div
+            :class="windowWidth < 1024 ? 'w-100' : 'px-0'"
+          >
+            <div class="d-flex gap-4"
+              :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
+            >
+              <VBtn 
+                class="btn-light w-auto" 
+                block
+                @click="showUserEditDialog()"
+              >
+                <VIcon icon="custom-pencil" size="24" />
+                Redigera
+              </VBtn>
+          </div>
+          </div>
+        </div>
+      </div>
+    </VCardText>
+      
+    <!-- DIALOG Edit personal information -->
+    <VDialog
+      v-model="isUserEditDialog"
+      :width="windowWidth < 1024 ? '' : '1022'"
+      class="action-dialog"
+      scrollable
+      persistent
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="closeUserEditDialog"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
+      <!-- Dialog Content -->
+      <VCard>    
+        <VCardTitle class="dialog-title-box mt-2">
+          <VIcon size="32" icon="custom-user-outlined" />
+          <div class="dialog-title" style="white-space: pre-line">Redigera personlig information</div>
+        </VCardTitle>
+        
+        <VCardText class="p-0">
           <VCol 
             v-if="alert.show" 
-            cols="12" 
+            cols="12"
+            class="px-4 py-0 mb-4"
           >
             <VAlert
+              ref="refAlert"
               v-if="alert.show"
-              :type="alert.type"
+              :color="alert.type"
+              class="alert-no-shrink custom-alert mt-4"
+              style="flex: none;"
             >
-              {{ alert.message }}
+              <VAlertTitle>{{ alert.message }}</VAlertTitle>
             </VAlert>
+
           </VCol>
+
           <VForm
             ref="refVForm"
             class="card-form"
             @submit.prevent="onSubmit"
           >
-            <VCardText class="p-0">
-              <VRow>
-                <VCol
-                  cols="12"
-                  sm="12"
-                  md="5"
+            <div class="dialog-form-grid">
+              <div class="dialog-form-col-5">
+                <div 
+                    class="bg-alert ms-4"
+                    :class="windowWidth < 1024 ? 'flex-column me-4' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
-                  <div 
-                      class="bg-alert ms-4"
-                      :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                      :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                  >
-                    <span class="d-block d-md-flex text-center justify-center">
-                      <VAvatar
-                        rounded
-                        :size="120"
-                        class="me-md-6 mb-2"
-                        :color="avatar ? 'default' : 'primary'"
-                        variant="tonal"
+                  <span class="d-block d-md-flex text-center justify-start">
+                    <VAvatar
+                      rounded
+                      :size="120"
+                      class="me-md-6 mb-2"
+                      :color="avatar ? 'default' : 'primary'"
+                      variant="tonal"
+                    >
+                      <VImg
+                        v-if="avatar"
+                        style="border-radius: 6px;"
+                        :src="avatar"
+                      />
+                      <span
+                        v-else
+                        class="text-5xl font-weight-semibold"
                       >
-                        <VImg
-                          v-if="avatar"
-                          style="border-radius: 6px;"
-                          :src="avatar"
-                        />
-                        <span
-                          v-else
-                          class="text-5xl font-weight-semibold"
-                        >
-                          {{ avatarText(name) }}
-                        </span>
-                      </VAvatar>
-                    </span>
-                    <!-- 👉 Upload Photo -->
-                    <div class="d-flex flex-column justify-center gap-2 my-2 my-md-0">
-                      <div class="d-flex flex-wrap gap-2">
-                        <VIcon size="32" icon="custom-camera" />
-                        <VFileInput                          
-                          accept="image/png, image/jpeg, image/bmp"
-                          placeholder="Avatar"
-                          prepend-icon=""
-                          @change="$emit('onImageSelected', $event)"
-                          @click:clear="resetAvatar"
-                        />
-                      </div>
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Tillåtna format JPG, GIF, PNG." />
-                      <VBtn 
-                        class="btn-light w-auto" 
-                        block
-                        @click="deleteAvatar"
-                      >
-                        <VIcon icon="custom-waste" size="24" />
-                        Ta bort avatar
-                      </VBtn>            
+                        {{ avatarText(name) }}
+                      </span>
+                    </VAvatar>
+                  </span>
+                  <!-- 👉 Upload Photo -->
+                  <div class="d-flex flex-column justify-center gap-2 my-2 my-md-0">
+                    <div class="d-flex flex-wrap gap-2">
+                      <VIcon size="48" icon="custom-camera" />
+                      <VFileInput                          
+                        accept="image/png, image/jpeg, image/bmp"
+                        placeholder="Avatar"
+                        prepend-icon=""
+                        @change="$emit('onImageSelected', $event)"
+                        @click:clear="resetAvatar"
+                      />
                     </div>
+                    <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Tillåtna format JPG, GIF, PNG." />
+                    <VBtn 
+                      class="btn-light w-auto" 
+                      block
+                      @click="deleteAvatar"
+                    >
+                      <VIcon icon="custom-waste" size="24" />
+                      Ta bort avatar
+                    </VBtn>            
                   </div>
-                </VCol>
+                </div>
+              </div>
 
-                <VCol
-                  cols="12"
-                  sm="12"
-                  md="7"
+              <div class="dialog-form-col-7">
+                <div 
+                    class="d-flex flex-wrap me-4"
+                    :class="windowWidth < 1024 ? 'ms-4 flex-column' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
-                  <div 
-                      class="d-flex flex-wrap me-4 mb-4"
-                      :class="windowWidth < 1024 ? 'ms-4 flex-column' : 'flex-row'"
-                      :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                  >
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
-                        <VTextField
-                          v-model="name"
-                          :rules="[requiredValidator]"
-                        />
-                      </div>
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Efternamn*" />
-                        <VTextField
-                          v-model="last_name"
-                          :rules="[requiredValidator]"
-                        />
-                      </div>
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
-                        <VTextField
-                          v-model="email"
-                          type="email"
-                          :rules="[requiredValidator, emailValidator]"
-                          disabled
-                        />
-                      </div>
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
-                        <VTextField
-                          v-model="phone"
-                          placeholder="+(XX) XXXXXXXXX"
-                          :rules="[requiredValidator, phoneValidator]"
-                        />
-                      </div>
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
-                        <VTextarea
-                          v-model="address"
-                          rows="3"
-                          :rules="[requiredValidator]"
-                        />
-                      </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Namn*" />
+                      <VTextField
+                        v-model="name"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Efternamn*" />
+                      <VTextField
+                        v-model="last_name"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="E-post*" />
+                      <VTextField
+                        v-model="email"
+                        type="email"
+                        :rules="[requiredValidator, emailValidator]"
+                        disabled
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Telefon*" />
+                      <VTextField
+                        v-model="phone"
+                        placeholder="+(XX) XXXXXXXXX"
+                        :rules="[requiredValidator, phoneValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Adress*" />
+                      <VTextField
+                        v-model="address"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                </div>
+              </div>
+            </div>
 
-                      <!-- 👉 Form Actions -->
-                      <div 
-                        class="d-flex justify-end gap-3 flex-wrap dialog-actions"
-                        :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'"
-                      >
-                        <VBtn
-                          class="btn-light"
-                          :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
-                          @click="closeUserEditDialog"
-                          >
-                          <VIcon icon="custom-return" size="24" />
-                          Avbryt
-                        </VBtn>
-                        <VBtn 
-                          type="submit" 
-                          class="btn-gradient"
-                          :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
-                        >
-                          <VIcon icon="custom-save"  size="24" />
-                          Spara ändringar
-                        </VBtn>
-                      </div>
-                  </div>
-                </VCol>
-              </VRow>
-            </VCardText>
+            <!-- 👉 Form Actions -->
+            <div 
+              class="d-flex justify-end gap-3 flex-wrap dialog-actions"
+              :class="windowWidth < 1024 ? 'px-4' : 'my-4 me-4'"
+            >
+              <VBtn
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                @click="closeUserEditDialog"
+                >
+                <VIcon icon="custom-return" size="24" />
+                Avbryt
+              </VBtn>
+              <VBtn 
+                type="submit" 
+                class="btn-gradient"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+              >
+                <VIcon icon="custom-save"  size="24" />
+                Spara
+              </VBtn>
+            </div>
           </VForm>
-        </VCard>      
-      </VDialog> 
-    </VRow>
+        </VCardText>
+      </VCard>
+    </VDialog> 
   </section>
 </template>
 
@@ -533,10 +486,100 @@ const closeUserEditDialog = ()=>{
     border-radius: 16px;
     gap: 16px;
     opacity: 1;
-    padding-top: 16px;
-    padding-right: 24px;
-    padding-bottom: 16px;
-    padding-left: 24px;
+    padding: 16px;
+  }
+
+  .text-body-profile {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #878787 !important;
+  }
+
+  .span-body-profile {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545 !important;
+
+    @media (max-width: 1024px) {
+      font-size: 14px;
+    }
+  }
+
+  .profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    width: 100%;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(12, 1fr);
+    }
+  }
+
+  .profile-info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    @media (max-width: 1023px) {
+      grid-column: span 1;
+    }
+
+    &.profile-info-col-3 {
+      @media (min-width: 1024px) {
+        grid-column: span 3;
+      }
+    }
+
+    &.profile-info-col-6 {
+      grid-column: span 2;
+
+      @media (min-width: 1024px) {
+        grid-column: span 6;
+      }
+    }
+
+    &.profile-info-col-8 {
+      grid-column: span 2;
+
+      @media (min-width: 1024px) {
+        grid-column: span 8;
+      }
+    }
+  }
+
+  .dialog-form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+
+    @media (min-width: 1024px) {
+      grid-template-columns: repeat(12, 1fr);
+    }
+  }
+
+  .dialog-form-col-5 {
+    @media (max-width: 1023px) {
+      grid-column: span 1;
+    }
+
+    @media (min-width: 1024px) {
+      grid-column: span 5;
+    }
+  }
+
+  .dialog-form-col-7 {
+    @media (max-width: 1023px) {
+      grid-column: span 1;
+    }
+
+    @media (min-width: 1024px) {
+      grid-column: span 7;
+    }
   }
 
   .card-info {

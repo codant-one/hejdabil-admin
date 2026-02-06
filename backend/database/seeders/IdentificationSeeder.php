@@ -21,8 +21,8 @@ class IdentificationSeeder extends Seeder
         // $names = ['Pass', 'Körkort', 'Mobilt bank-ID'];
         // $labels = ['passport', 'driver_license', 'mobile_bank_id'];
 							
-        $names = ['Pass', 'Körkort'];
-        $labels = ['passport', 'driver_license'];
+        $names = ['Pass', 'Körkort', 'ID Kort'];
+        $labels = ['passport', 'driver_license', 'id_card'];
 
         foreach($names as $key => $name) {
             Identification::updateOrCreate(

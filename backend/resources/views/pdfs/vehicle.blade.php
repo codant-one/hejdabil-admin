@@ -163,7 +163,11 @@
                                         @if($company->logo)
                                             <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
-                                            <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
+                                            <h1>{{ $company->company }} </h1>
+                                            <div class="contract-details">
+                                                {{ $company->name }} {{ $company->last_name }} <br>
+                                                {{ $company->email }}
+                                            </div>
                                         @endif
                                     </div>
                                 </td>

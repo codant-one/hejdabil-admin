@@ -150,10 +150,6 @@ const onSubmit = () => {
         <h4 class="avatar-username" v-else>
           {{ props.customerData.fullname }}
         </h4>
-        <!-- <span class="text-sm">
-          {{ props.isSupplier ? "Leverantör" : "Klient" }} ID #{{
-            props.customerData.id
-          }}</span> -->
       </VAvatar>
 
       <VAvatar
@@ -171,25 +167,7 @@ const onSubmit = () => {
         <h4 class="avatar-username" v-else>
           {{ props.customerData.fullname }}
         </h4>
-        <!-- <span class="text-sm">
-          {{ props.isSupplier ? "Leverantör" : "Klient" }} ID #{{
-            props.customerData.id
-          }}</span> -->
       </VAvatar>
-
-      <!-- 👉 Customer fullName -->
-      <!-- <h4 class="text-h4 mt-4" v-if="props.isSupplier">
-        {{ props.customerData.user.name }}
-        {{ props.customerData.user.last_name ?? "" }}
-      </h4>
-      <h4 class="text-h4 mt-4" v-else>
-        {{ props.customerData.fullname }}
-      </h4>
-      <span class="text-sm">
-        {{ props.isSupplier ? "Leverantör" : "Klient" }} ID #{{
-          props.customerData.id
-        }}</span
-      > -->
 
       <div class="user-bio">
         <div class="bio-grid">
@@ -226,149 +204,12 @@ const onSubmit = () => {
             </div>
           </div>
           <div class="bio-right">
-            <div class="bio-label">Produktbeskrivning</div>
+            <div class="bio-label">Kundbeskrivning</div>
             <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
           </div>
         </div>
       </div>
 
-      <!-- <div class="d-flex justify-center gap-x-5 mt-6">
-        <div class="d-flex align-center">
-          <VAvatar variant="tonal" color="primary" rounded class="me-3">
-            <VIcon :icon="icon" />
-          </VAvatar>
-          <div class="d-flex flex-column align-start">
-            <span class="text-body-1 font-weight-medium">
-              {{ valueCount }}
-            </span>
-            <span class="text-body-2">{{ valueText }}</span>
-          </div>
-        </div>
-        <div class="d-flex align-center">
-          <VAvatar variant="tonal" color="primary" rounded class="me-3">
-            <VIcon icon="tabler-currency-dollar" />
-          </VAvatar>
-          <div class="d-flex flex-column align-start">
-            <span class="text-body-1 font-weight-medium"
-              >{{ formatNumber(sales) ?? "0,00" }} kr</span
-            >
-            <span class="text-body-2">Total försäljning</span>
-          </div>
-        </div>
-      </div> -->
-
-      <!-- <VDivider class="my-4" />
-      <div class="text-disabled text-uppercase text-sm">Detaljer</div> -->
-
-      <!-- <VList class="card-list mt-2">
-        <VListItem>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Namn:
-              <span class="text-body-2">
-                {{
-                  props.isSupplier
-                    ? props.customerData.user.name
-                    : props.customerData.fullname
-                }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle v-if="props.isSupplier">
-            <h6 class="text-base font-weight-semibold">
-              Efternamn:
-              <span class="text-body-2">
-                {{ props.customerData.user.last_name ?? "" }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              E-post:
-              <span class="text-body-2">
-                {{
-                  props.isSupplier
-                    ? props.customerData.user.email
-                    : props.customerData.email
-                }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Telefon:
-              <span class="text-body-2">
-                {{
-                  props.isSupplier
-                    ? props.customerData.user.user_detail.phone
-                    : props.customerData.phone
-                }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Adress:
-              <span class="text-body-2">
-                {{ props.customerData.address }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Postnummer:
-              <span class="text-body-2">
-                {{ props.customerData.postal_code }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Stad:
-              <span class="text-body-2">
-                {{ props.customerData.street }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle>
-            <h6 class="text-base font-weight-semibold">
-              Organisationsnummer:
-              <span class="text-body-2">
-                {{ props.customerData.organization_number }}
-              </span>
-            </h6>
-          </VListItemTitle>
-          <VListItemTitle
-            v-if="
-              role !== 'Supplier' &&
-              route.name.includes('clients-id') &&
-              suppliers.length > 0 &&
-              props.customerData.supplier_id !== null
-            "
-          >
-            <h6 class="text-base font-weight-semibold">
-              Leverantör:
-              <span class="text-body-2">
-                {{ props.customerData.supplier.user.name }}
-                {{ props.customerData.supplier.user.last_name }}
-              </span>
-            </h6>
-          </VListItemTitle>
-        </VListItem>
-      </VList> -->
-      <!-- 
-      <VCardText
-        class="d-flex justify-center"
-        v-if="route.name.includes('clients')"
-      >
-        <VBtn
-          variant="elevated"
-          class="me-3 w-100 w-md-auto"
-          @click="showUserEditDialog()"
-        >
-          Redigera
-        </VBtn>
-      </VCardText> -->
     </VCol>
     <!-- Optionally, show a loader or message if customerData is not loaded -->
     <VCol cols="12" v-else>

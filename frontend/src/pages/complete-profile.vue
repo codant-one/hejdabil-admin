@@ -213,126 +213,100 @@ async function fetchData() {
   email.value = userData.value.email;
   name.value = userData.value.name;
   last_name.value = userData.value.last_name;
-  phone.value = userData.value.user_detail.personal_phone;
-  address.value = userData.value.user_detail.personal_address;
+  phone.value = userData.value.user_detail?.personal_phone || "";
+  address.value = userData.value.user_detail?.personal_address || "";
 
   //company
   form.value.company =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.company
-      : userData.value.user_detail.company;
+      ? userData.value.supplier?.boss?.user?.user_detail?.company || ""
+      : userData.value.user_detail?.company || "";
   form.value.organization_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.organization_number
-      : userData.value.user_detail.organization_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.organization_number || ""
+      : userData.value.user_detail?.organization_number || "";
   form.value.link =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.link
-      : userData.value.user_detail.link;
+      ? userData.value.supplier?.boss?.user?.user_detail?.link || ""
+      : userData.value.user_detail?.link || "";
   form.value.address =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.address
-      : userData.value.user_detail.address;
+      ? userData.value.supplier?.boss?.user?.user_detail?.address || ""
+      : userData.value.user_detail?.address || "";
   form.value.street =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.street
-      : userData.value.user_detail.street;
+      ? userData.value.supplier?.boss?.user?.user_detail?.street || ""
+      : userData.value.user_detail?.street || "";
   form.value.postal_code =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.postal_code
-      : userData.value.user_detail.postal_code;
+      ? userData.value.supplier?.boss?.user?.user_detail?.postal_code || ""
+      : userData.value.user_detail?.postal_code || "";
   form.value.phone =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.phone
-      : userData.value.user_detail.phone;
+      ? userData.value.supplier?.boss?.user?.user_detail?.phone || ""
+      : userData.value.user_detail?.phone || "";
 
   //bank
   form.value.bank =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.bank
-      : userData.value.user_detail.bank;
+      ? userData.value.supplier?.boss?.user?.user_detail?.bank || ""
+      : userData.value.user_detail?.bank || "";
   form.value.account_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.account_number
-      : userData.value.user_detail.account_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.account_number || ""
+      : userData.value.user_detail?.account_number || "";
 
   form.value.iban =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.iban
-      : userData.value.user_detail.iban;
+      ? userData.value.supplier?.boss?.user?.user_detail?.iban || ""
+      : userData.value.user_detail?.iban || "";
   form.value.iban_number =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.iban_number
-      : userData.value.user_detail.iban_number;
+      ? userData.value.supplier?.boss?.user?.user_detail?.iban_number || ""
+      : userData.value.user_detail?.iban_number || "";
   form.value.bic =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.bic
-      : userData.value.user_detail.bic;
+      ? userData.value.supplier?.boss?.user?.user_detail?.bic || ""
+      : userData.value.user_detail?.bic || "";
   form.value.plus_spin =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.plus_spin
-      : userData.value.user_detail.plus_spin;
+      ? userData.value.supplier?.boss?.user?.user_detail?.plus_spin || ""
+      : userData.value.user_detail?.plus_spin || "";
   form.value.swish =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.swish
-      : userData.value.user_detail.swish;
+      ? userData.value.supplier?.boss?.user?.user_detail?.swish || ""
+      : userData.value.user_detail?.swish || "";
   form.value.vat =
     role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.vat
-      : userData.value.user_detail.vat;
+      ? userData.value.supplier?.boss?.user?.user_detail?.vat || ""
+      : userData.value.user_detail?.vat || "";
 
   form.value.payout_number = 
     role.value === 'User' 
       ? userData.value.supplier.boss?.payout_number 
       : userData.value.supplier?.payout_number 
 
-  logo.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.logo !== null
-        ? themeConfig.settings.urlStorage +
-          userData.value.supplier.boss.user.user_detail.logo
-        : null
-      : userData.value.user_detail.logo !== null
-      ? themeConfig.settings.urlStorage + userData.value.user_detail.logo
-      : null;
-  logoCropped.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.logo !== null
-        ? await fetchImageAsBlob(
-            themeConfig.settings.urlStorage +
-              userData.value.supplier.boss.user.user_detail.logo
-          )
-        : null
-      : userData.value.user_detail.logo !== null
-      ? await fetchImageAsBlob(
-          themeConfig.settings.urlStorage + userData.value.user_detail.logo
-        )
-      : null;
+  const userLogo = role.value === "User"
+    ? userData.value.supplier?.boss?.user?.user_detail?.logo
+    : userData.value.user_detail?.logo;
+  
+  logo.value = userLogo
+    ? themeConfig.settings.urlStorage + userLogo
+    : null;
+  logoCropped.value = userLogo
+    ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userLogo)
+    : null;
 
-  signature.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.img_signature !== null
-        ? themeConfig.settings.urlStorage +
-          userData.value.supplier.boss.user.user_detail.img_signature
-        : null
-      : userData.value.user_detail.img_signature !== null
-      ? themeConfig.settings.urlStorage +
-        userData.value.user_detail.img_signature
-      : null;
-  signatureCropped.value =
-    role.value === "User"
-      ? userData.value.supplier.boss.user.user_detail.img_signature !== null
-        ? await fetchImageAsBlob(
-            themeConfig.settings.urlStorage +
-              userData.value.supplier.boss.user.user_detail.img_signature
-          )
-        : null
-      : userData.value.user_detail.img_signature !== null
-      ? await fetchImageAsBlob(
-          themeConfig.settings.urlStorage +
-            userData.value.user_detail.img_signature
-        )
-      : null;
+  const userSignature = role.value === "User"
+    ? userData.value.supplier?.boss?.user?.user_detail?.img_signature
+    : userData.value.user_detail?.img_signature;
+  
+  signature.value = userSignature
+    ? themeConfig.settings.urlStorage + userSignature
+    : null;
+  signatureCropped.value = userSignature
+    ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userSignature)
+    : null;
 
   avatarOld.value = userData.value.avatar;
   avatar.value = userData.value.avatar;
@@ -859,15 +833,15 @@ const dataURLtoBlob = (dataURL) => {
                 Ladda upp ett foto
               </p>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Namn*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                 <VTextField v-model="name" :rules="[requiredValidator]" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Efternamn*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Efternamn*" />
                 <VTextField v-model="last_name" :rules="[requiredValidator]" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>E-post</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />
                 <VTextField
                   v-model="email"
                   type="email"
@@ -876,7 +850,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Telefon*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                 <VTextField
                   v-model="phone"
                   type="tel"
@@ -885,7 +859,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Adress*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
@@ -926,7 +900,7 @@ const dataURLtoBlob = (dataURL) => {
               </p>
 
               <div class="form-field d-flex flex-column gap-1">
-                <label>Företagsnamn*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.company"
@@ -934,7 +908,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Organisationsnummer*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Organisationsnummer*" />
                 <VTextField
                   v-model="form.organization_number"
                   :disabled="role === 'Supplier' || role === 'User'"
@@ -945,7 +919,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Adress*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.address"
@@ -953,7 +927,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Postnummer*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.postal_code"
@@ -961,7 +935,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Stad*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.street"
@@ -969,7 +943,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Telefon*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.phone"
@@ -977,7 +951,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Hemsida*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Hemsida*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.link"
@@ -985,7 +959,7 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Bank*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bank*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.bank"
@@ -993,11 +967,11 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Bankgiro</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankgiro" />
                 <VTextField :disabled="role === 'User'" v-model="form.iban" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Namn*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.account_number"
@@ -1006,25 +980,25 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Iban nummer</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Iban nummer" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.iban_number"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>BIC</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="BIC" />
                 <VTextField :disabled="role === 'User'" v-model="form.bic" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Plusgiro</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Plusgiro" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.plus_spin"
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Swish</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Swish" />
                 <VTextField
                   :disabled="role === 'User'"
                   v-model="form.swish"
@@ -1032,11 +1006,11 @@ const dataURLtoBlob = (dataURL) => {
                 />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Vat</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vat" />
                 <VTextField :disabled="role === 'User'" v-model="form.vat" />
               </div>
               <div class="form-field d-flex flex-column gap-1">
-                <label>Payout Number*</label>
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Payout Number*" />
                 <VTextField
                   v-model="form.payout_number"
                   disabled
@@ -1055,9 +1029,7 @@ const dataURLtoBlob = (dataURL) => {
                   true-icon="custom-checked-checkbox"
                   false-icon="custom-unchecked-checkbox"
                 />
-                <label
-                  >Jag godkänner sekretesspolicyn och databehandlingen.</label
-                >
+                <VLabel>Jag godkänner sekretesspolicyn och databehandlingen.</VLabel>
               </div>
               <div
                 class="form-field d-flex flex-column gap-1"
@@ -1137,16 +1109,16 @@ const dataURLtoBlob = (dataURL) => {
           </div>
 
           <div class="form-field d-flex flex-column gap-1">
-            <label>Namn*</label>
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
             <VTextField v-model="name" :rules="[requiredValidator]" />
           </div>
           <div class="form-field d-flex flex-column gap-1">
-            <label>Efternamn*</label>
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Efternamn*" />
             <VTextField v-model="last_name" :rules="[requiredValidator]" />
           </div>
 
           <div class="form-field d-flex flex-column gap-1">
-            <label>E-post*</label>
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
             <VTextField
               v-model="email"
               type="email"
@@ -1155,7 +1127,7 @@ const dataURLtoBlob = (dataURL) => {
             />
           </div>
           <div class="form-field d-flex flex-column gap-1">
-            <label>Telefon*</label>
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
             <VTextField
               v-model="phone"
               type="tel"
@@ -1164,7 +1136,7 @@ const dataURLtoBlob = (dataURL) => {
             />
           </div>
           <div class="form-field d-flex flex-column gap-1">
-            <label>Adress*</label>
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
             <VTextField
               v-model="address"
               :rules="[requiredValidator]"
@@ -1189,20 +1161,23 @@ const dataURLtoBlob = (dataURL) => {
   <VDialog
     v-model="isConfirmChangeLogoVisible"
     persistent
-    class="signature-dialog"
+    class="action-dialog"
   >
     <!-- Dialog close btn -->
-
-    <DialogCloseBtn
-      @click="isConfirmChangeLogoVisible = !isConfirmChangeLogoVisible"
-    />
+    <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmChangeLogoVisible = !isConfirmChangeLogoVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
     <!-- Dialog Content -->
     <VCard>
-      <VCardText class="without-padding v-card-custom-title">
-        Byt logotyp
+      <VCardText class="dialog-title-box">
+          <div class="dialog-title">Byt logotyp</div>
       </VCardText>
-      <VCardText class="d-flex flex-column gap-2 without-padding">
+      <VCardText class="dialog-text">
         <VRow>
           <VCol cols="12" md="12">
             <Cropper
@@ -1218,23 +1193,25 @@ const dataURLtoBlob = (dataURL) => {
               @change="onCropChange"
             />
           </VCol>
-          <VCol cols="12" md="12">
-            <div class="form-field d-flex flex-column gap-1 mb-2">
-              <label>Logotyp</label>
-              <VFileInput
-                v-model="filename"
-                accept="image/png, image/jpeg, image/bmp, image/webp"
-                @change="onLogoSelected"
-                @click:clear="resetLogo"
-                prepend-icon=""
-              />
+          <VCol cols="12" md="12" class="pt-0">
+            <div class="form-field d-flex flex-column gap-1">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Logotyp" />
+              <div class="d-flex flex-wrap gap-2">
+                <VIcon size="40" icon="custom-camera" />
+                <VFileInput
+                  v-model="filename"
+                  accept="image/png, image/jpeg, image/bmp, image/webp"
+                  @change="onLogoSelected"
+                  @click:clear="resetLogo"
+                  prepend-icon=""
+                />
+              </div>
             </div>
           </VCol>
         </VRow>
       </VCardText>
-
-      <VCardText class="d-flex justify-end gap-4 btn-box">
-        <VBtn class="btn-ghost" @click="isConfirmChangeLogoVisible = false">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="isConfirmChangeLogoVisible = false">
           Avbryt
         </VBtn>
         <VBtn class="btn-gradient" @click="cropImage">Acceptera & Spara</VBtn>
@@ -1246,22 +1223,25 @@ const dataURLtoBlob = (dataURL) => {
   <VDialog
     v-model="isConfirmChangeSignatureVisible"
     persistent
-    class="signature-dialog"
+    class="action-dialog" 
   >
     <!-- Dialog close btn -->
-
-    <DialogCloseBtn
-      @click="
-        isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible
-      "
-    />
+    <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmChangeSignatureVisible = !isConfirmChangeSignatureVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+    </VBtn>
     <!-- Dialog Content -->
     <VCard>
-      <VCardText class="without-padding v-card-custom-title">
-        <VIcon icon="custom-signature" class="mr-4" size="32"></VIcon>
-        Byt signatur
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-signature" class="action-icon" />
+        <div class="dialog-title">
+          Byt signatur
+        </div>
       </VCardText>
-      <VCardText class="d-flex flex-column gap-2 without-padding">
+      <VCardText class="dialog-text">
         <VRow>
           <VCol cols="12" md="12">
             <Cropper
@@ -1276,23 +1256,25 @@ const dataURLtoBlob = (dataURL) => {
               }"
             />
           </VCol>
-          <VCol cols="12" md="12">
+          <VCol cols="12" md="12" class="pt-0">
             <div class="form-field d-flex flex-column gap-1">
-              <label>Firm</label>
-              <VFileInput
-                v-model="signatureFilename"
-                class="mb-2"
-                accept="image/png, image/jpeg, image/bmp, image/webp"
-                prepend-icon=""
-                @change="onSignatureImageSelected"
-                @click:clear="resetSignature"
-              />
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Firm" />
+              <div class="d-flex flex-wrap gap-2">
+                <VIcon size="40" icon="custom-camera" />
+                <VFileInput
+                  v-model="signatureFilename"
+                  class="mb-2"
+                  accept="image/png, image/jpeg, image/bmp, image/webp"
+                  prepend-icon=""
+                  @change="onSignatureImageSelected"
+                  @click:clear="resetSignature"
+                />
+              </div>
             </div>
           </VCol>
         </VRow>
       </VCardText>
-
-      <VCardText class="d-flex justify-end gap-4 btn-box">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-3">
         <VBtn
           class="btn-light"
           @click="isConfirmChangeSignatureVisible = false"
@@ -1312,19 +1294,27 @@ const dataURLtoBlob = (dataURL) => {
   <VDialog
     v-model="isSignaturePadDialogVisible"
     persistent
-    class="signature-dialog"
-  >
+    class="action-dialog" >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isSignaturePadDialogVisible = !isSignaturePadDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
     <VCard>
-      <VCardText class="without-padding v-card-custom-title">
-        <VIcon icon="custom-signature" class="mr-4" size="32"></VIcon>Rita din
-        signatur
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-signature" class="action-icon" />
+        <div class="dialog-title">
+          Rita din signatur
+        </div>
       </VCardText>
-      <VCardText class="without-padding">
+      <VCardText class="dialog-text">
         <div class="signature-pad-wrapper">
           <canvas ref="signaturePadCanvas"></canvas>
         </div>
       </VCardText>
-      <VCardText class="d-flex justify-end gap-4 btn-box">
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
         <VBtn class="btn-ghost" @click="isSignaturePadDialogVisible = false">
           Avbryt
         </VBtn>

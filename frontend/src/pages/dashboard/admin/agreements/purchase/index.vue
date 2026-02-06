@@ -10,7 +10,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { useToastsStores } from '@/stores/useToasts'
+import { formatNumber } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -32,9 +32,9 @@ const carInfoStores = useCarInfoStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
-const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const err = ref(null);
 
 const isRequestOngoing = ref(false)
 
@@ -99,15 +99,15 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
-const save_client = ref(true)
+const save_client = ref(false)
 const disabled_client = ref(false)
 
 //const tab 3
 const ivas = ref([])
 const price = ref(null)
 const iva_id = ref(null)
-const iva_sale_amount = ref(0)
-const iva_sale_exclusive = ref(0)
+const iva_purchase_amount = ref(0)
+const iva_purchase_exclusive = ref(0)
 const is_loan = ref(1)
 const loan_amount = ref(0)
 const lessor = ref(null)
@@ -116,7 +116,6 @@ const bank = ref(null)
 const account = ref(null)
 const description = ref(null)
 const registration_fee = ref(0)
-const total_sale = ref(0)
 const payment_type = ref(null)
 const paymentTypes = ref([])
 const payment_type_id = ref(null)
@@ -134,17 +133,16 @@ function reloadPage() {
 }
 
 const calculate = () => {
-    const sale = Number(price.value) || 0
+    const prince_ = Number(price.value) || 0
     const fee = Number(registration_fee.value) || 0
-    const value = (sale + fee)
+    const value = (prince_ + fee)
 
     if(iva_id.value === 2)
-        iva_sale_amount.value = ((Number(value) || 0) * 0.2)
+        iva_purchase_amount.value = ((Number(value) || 0) * 0.2)
     else
-        iva_sale_amount.value = 0
+        iva_purchase_amount.value = 0
 
-    iva_sale_exclusive.value = value - iva_sale_amount.value
-    total_sale.value = value
+    iva_purchase_exclusive.value = value - iva_purchase_amount.value
 }
 
 const remaining_amount = computed(()=>{
@@ -653,8 +651,10 @@ const showError = () => {
     advisor.value.show = true;
     advisor.value.type = "error";
     
-    if (err.value && !err.value.success) {
-      advisor.value.message = err.value.message;
+    if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+      advisor.value.message = Object.values(err.value.response.data.errors)
+                .flat()
+                .join("<br>");
     } else {
       advisor.value.message = "Ett serverfel uppstod. Försök igen.";
     }
@@ -914,10 +914,9 @@ const onSubmit = async () => {
                 formData.append('guaranty', 0)
                 formData.append('insurance_company', 0)
                 formData.append('iva_id', iva_id.value)
-                formData.append('iva_sale_amount', iva_sale_amount.value)
-                formData.append('iva_sale_exclusive', iva_sale_exclusive.value)
+                formData.append('iva_purchase_amount', iva_purchase_amount.value)
+                formData.append('iva_purchase_exclusive', iva_purchase_exclusive.value)
                 formData.append('registration_fee', registration_fee.value)
-                formData.append('total_sale', total_sale.value)
                 formData.append('payment_type', payment_type.value)
                 formData.append('payment_type_id', payment_type_id.value === 0 ? null : payment_type_id.value)
                 formData.append('advance_id', advance_id.value)
@@ -940,7 +939,8 @@ const onSubmit = async () => {
                         }
                         isRequestOngoing.value = false
                     })
-                    .catch((err) => {
+                    .catch((error) => {
+                        err.value = error;
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
                         inteSkapatsDialog.value = true;
                         isRequestOngoing.value = false
@@ -983,10 +983,9 @@ const currentData = computed(() => ({
     // Tab 2 - Pris
     price: price.value,
     iva_id: iva_id.value,
-    iva_sale_amount: iva_sale_amount.value,
-    iva_sale_exclusive: iva_sale_exclusive.value,
+    iva_purchase_amount: iva_purchase_amount.value,
+    iva_purchase_exclusive: iva_purchase_exclusive.value,
     registration_fee: registration_fee.value,
-    total_sale: total_sale.value,
     is_loan: is_loan.value,
     loan_amount: loan_amount.value,
     lessor: lessor.value,
@@ -1032,12 +1031,6 @@ function resizeSectionToRemainingViewport() {
 onMounted(() => {
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
-  
-  // Check for URL hash to activate specific tab
-  const hash = window.location.hash;
-  if (hash === '#tab-tasks') {
-    currentTab.value = 'tab-5';
-  }
 });
 
 onBeforeUnmount(() => {
@@ -1126,23 +1119,23 @@ onBeforeRouteLeave((to, from, next) => {
              
                 <VTabs 
                     v-model="currentTab" 
-                    :grow="windowWidth < 1024 ? true : false"             
+                    grow             
                     :show-arrows="false"
                     class="agreements-tabs" 
                 >
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-agreement" />
                         Inköpsavtal
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 2 }">
                         <VIcon size="24" icon="custom-cash-2" />
                         Pris
                     </VTab>
-                    <VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 3 }">
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
@@ -1173,11 +1166,12 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Regnr*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
                                                     v-model="reg_num"
                                                     :rules="[requiredValidator]"
+                                                    @input="reg_num = reg_num.toUpperCase()"
                                                 />
                                                 <VBtn
                                                     class="btn-light w-auto px-4"
@@ -1299,7 +1293,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VCol cols="12" md="4">
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?" />
-                                                        <VRadioGroup v-model="service_book" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1313,7 +1307,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?" />
 
-                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1326,7 +1320,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VCol cols="12" md="4">
                                                     <div class="d-flex flex-column">
                                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?" />
-                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form ms-2">
+                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
                                                                 :key="index"
@@ -1470,7 +1464,7 @@ onBeforeRouteLeave((to, from, next) => {
 
                                 <VDivider class="my-4" />
 
-                                <VCol cols="12">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div 
                                         class="d-flex flex-wrap"
                                         :class="windowWidth < 1024 ? 'flex-column gap-1' : 'flex-row gap-4'"
@@ -1592,7 +1586,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Varav moms*" />
                                             <VTextField
                                                 type="number"
-                                                v-model="iva_sale_amount"
+                                                v-model="iva_purchase_amount"
                                                 min="0"
                                                 disabled
                                                 suffix="KR"
@@ -1603,7 +1597,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Prix ex moms*" />
                                             <VTextField
                                                 type="number"
-                                                v-model="iva_sale_exclusive"
+                                                v-model="iva_purchase_exclusive"
                                                 min="0"
                                                 disabled
                                                 suffix="KR"
@@ -1616,7 +1610,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="is_loan" 
                                                     inline 
-                                                    class="radio-form ms-2 mt-3"
+                                                    class="radio-form mt-3"
                                                     @update:modelValue="handleChange">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1655,7 +1649,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Restsumma</div>
-                                                <div class="agreements-pill-value">{{ remaining_amount }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(remaining_amount ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
                                             </div>
                                             
                                         </div>                                 
@@ -1666,7 +1660,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="settled_by" 
                                                     inline 
-                                                    class="radio-form ms-2" 
+                                                    class="radio-form" 
                                                     @update:modelValue="handleChangeTwo">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsSettled"
@@ -1737,7 +1731,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
-                                        Villkor
+                                        Övriga villkor
                                     </div>
                                     <div 
                                         class="d-flex flex-wrap"
@@ -1745,17 +1739,21 @@ onBeforeRouteLeave((to, from, next) => {
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
                                         <div class="w-100">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor inhämtas från mall" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor" />
                                             <VTextarea
                                                 v-model="terms_other_conditions"
-                                                rows="3"
+                                                rows="4"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                         <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga upplysningar" />
                                             <VTextarea
                                                 v-model="terms_other_information"
-                                                rows="3"
+                                                rows="4"
+                                                counter="560"
+                                                maxlength="560"
                                             />
                                         </div>
                                     </div>
@@ -1839,7 +1837,7 @@ onBeforeRouteLeave((to, from, next) => {
                 class="btn-white close-btn"
                 @click="inteSkapatsDialog = !inteSkapatsDialog"
             >
-                <VIcon size="16" icon="custom-f-cancel" />
+                <VIcon size="16" icon="custom-close" />
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
@@ -1889,6 +1887,7 @@ onBeforeRouteLeave((to, from, next) => {
         </VDialog>
     </section>
 </template>
+
 <style lang="scss" scoped>
     :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
         --v-input-control-height: 0 !important;
@@ -1987,13 +1986,26 @@ onBeforeRouteLeave((to, from, next) => {
     .v-tabs.agreements-tabs {
         .v-btn {
             min-width: 50px !important;
+            pointer-events: none;
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
             }
         }
 
-        
+        .v-btn.tab-completed {
+            .v-tab__slider {
+                display: block;
+                opacity: 1;
+                block-size: 1px;
+                background: linear-gradient(
+                    90deg,
+                    #57f287 0%,
+                    #00eeb0 50%,
+                    #00ffff 100%
+                );
+            }
+        }
     }
 
     @media (max-width: 776px) {
@@ -2075,6 +2087,10 @@ onBeforeRouteLeave((to, from, next) => {
                         align-items: center;
                         padding-top: 0px;
                     }
+
+                    .v-text-field__prefix {
+                        padding-top: 12px !important  ;
+                    }
                 }
             }
         }
@@ -2131,7 +2147,6 @@ onBeforeRouteLeave((to, from, next) => {
         }
     }
 </style>
-
 <style lang="scss">
 
     .border-card-comment {

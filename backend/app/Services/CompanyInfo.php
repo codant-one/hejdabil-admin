@@ -53,8 +53,6 @@ class CompanyInfo
                 'identitetsbeteckning' => $cleanOrgNumber
             ];
 
-            Log::info('Bolagsverket Request:', ['url' => $url, 'body' => $body, 'id' => $requestId]);
-
             $response = Http::withToken($token)
                 ->withHeaders([
                     'Content-Type' => 'application/json',

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+
 use Carbon\Carbon;
 use PDF;
 
@@ -83,8 +85,8 @@ class Agreement extends Model
         return $this->belongsTo(Commission::class, 'commission_id', 'id');
     }
 
-    public function tokens() {
-        return $this->hasMany(Token::class, 'agreement_id');
+    public function token(){
+        return $this->hasOne(Token::class, 'agreement_id', 'id');
     }
 
     /**** Scopes ****/
@@ -130,10 +132,6 @@ class Agreement extends Model
         $query->orderByRaw('(IFNULL('. $orderByField .', id)) '. $orderBy);
     }
 
-    public function token(){
-        return $this->hasOne(Token::class, 'agreement_id', 'id');
-    }
-
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
@@ -154,8 +152,25 @@ class Agreement extends Model
         }
 
         if ($filters->get('status') !== null) {
-            $query->whereHas('tokens', function($q) use ($filters) {
+            $query->whereHas('token', function($q) use ($filters) {
                 $q->where('signature_status', $filters->get('status'));
+            });
+        }
+
+        if ($filters->get('client_id') !== null) {
+            $query->where(function($q) use ($filters) {
+                // Client through commission (Type 3 - Commission)
+                $q->whereHas('commission.client', function($subQ) use ($filters) {
+                    $subQ->where('id', $filters->get('client_id'));
+                })
+                // Client through agreement_client (All types)
+                ->orWhereHas('agreement_client.client', function($subQ) use ($filters) {
+                    $subQ->where('id', $filters->get('client_id'));
+                })
+                // Client through vehicle_client (Type 1 - Sales, Type 2 - Purchase)
+                ->orWhereHas('vehicle_client.client', function($subQ) use ($filters) {
+                    $subQ->where('id', $filters->get('client_id'));
+                });
             });
         }
 
@@ -223,6 +238,8 @@ class Agreement extends Model
             'price' => $request->price === 'null' ? null : $request->price,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
@@ -290,6 +307,8 @@ class Agreement extends Model
             'price' => $request->price === 'null' ? null : $request->price,
             'iva_sale_amount' => $request->iva_sale_amount === 'null' ? null : $request->iva_sale_amount,
             'iva_sale_exclusive' => $request->iva_sale_exclusive === 'null' ? null : $request->iva_sale_exclusive,
+            'iva_purchase_amount' => $request->iva_purchase_amount === 'null' ? null : $request->iva_purchase_amount,
+            'iva_purchase_exclusive' => $request->iva_purchase_exclusive === 'null' ? null : $request->iva_purchase_exclusive,
             'discount' => $request->discount === 'null' ? null : $request->discount,
             'registration_fee' => $request->registration_fee === 'null' ? null : $request->registration_fee,
             'total_sale' => $request->total_sale === 'null' ? null : $request->total_sale,
@@ -355,19 +374,7 @@ class Agreement extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($agreement->supplier_id === null) {
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -402,6 +409,12 @@ class Agreement extends Model
 
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         switch ($request->agreement_type_id) {
@@ -429,28 +442,6 @@ class Agreement extends Model
     // agremment types
     public static function salesAgreement($request) {
 
-        if($request->save_client === 'true') {
-            $request->supplier_id = 'null';
-            $client = Client::createClient($request);
-            $order_id = Client::where('supplier_id', $client->supplier_id)
-                            ->withTrashed()
-                            ->latest('order_id')
-                            ->first()
-                            ->order_id ?? 0;
-
-            $client->order_id = $order_id + 1;
-            $client->update();
-        }
-
-        if ($request->has("client_id"))
-            $request->merge([
-                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
-            ]);
-        else
-            $request->request->add([
-                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
-            ]);
-
         if ($request->vehicle_id === 'null') {//no existe
 
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -463,6 +454,7 @@ class Agreement extends Model
 
             //Set Vehicle State ID on Sold
             $vehicleRequest->request->add(['state_id' => 12]);
+            $vehicleRequest->request->add(['iva_sale_id' => $request->iva_id ]);            
 
             $vehicle = Vehicle::createVehicle($vehicleRequest);
             $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
@@ -476,8 +468,31 @@ class Agreement extends Model
                     'vehicle_id' => $vehicle->id
                 ]);
 
+            if($request->save_client === 'true') {//guarda cliente si no existe vehiculo
+                $request->supplier_id = 'null';
+                $client = Client::createClient($request);
+                $order_id = Client::where('supplier_id', $client->supplier_id)
+                                ->withTrashed()
+                                ->latest('order_id')
+                                ->first()
+                                ->order_id ?? 0;
+
+                $client->order_id = $order_id + 1;
+                $client->update();
+            }
+
+            if ($request->has("client_id"))
+                $request->merge([
+                    "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+                ]);
+            else
+                $request->request->add([
+                    'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+                ]);
+
             VehicleClient::createClient($request);
-        } else {// existe pero no esta vendido 
+        } else {// existe pero no esta vendido, aqui agrega el cliente con save_client en caso de 
+            $request->request->add(['iva_sale_id' => $request->iva_id ]); 
             $vehicle = Vehicle::find($request->vehicle_id);
             Vehicle::sendVehicle($request, $vehicle); 
         }
@@ -507,7 +522,10 @@ class Agreement extends Model
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
             $request->merge(['chassis' => $request->chassis_interchange ]);
-            $request->merge(['sale_date' => $request->sale_date_interchange ]);           
+            $request->merge(['sale_date' => null ]);           
+            $request->merge(['iva_sale_amount' => null ]);
+            $request->merge(['iva_sale_exclusive' => null ]);
+            $request->merge(['total_sale' => null ]);
 
             //Create Vehicle Interchange
             $vehicleRequest = VehicleRequest::createFrom($request);
@@ -519,7 +537,7 @@ class Agreement extends Model
 
             //Set Vehicle State ID on InStock
             $vehicleRequest->request->add(['state_id' => 10]);
-            $vehicleRequest->request->add(['type' => '2']);
+            $vehicleRequest->request->add(['type' => '2']);//purchase
 
             $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
             $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
@@ -546,6 +564,7 @@ class Agreement extends Model
         //Update Vehicle.
         $vehicle = Vehicle::find($vehicleClient->vehicle_id);
         $request->request->add(['state_id' => $vehicle->state_id]);
+        $request->request->add(['iva_sale_id' => $request->iva_id ]);  
         $vehicle->updateVehicle($request, $vehicle);
 
         //Update Vehicle interchange.
@@ -561,12 +580,45 @@ class Agreement extends Model
             $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['meter_reading' => $request->meter_reading_interchange ]);
-            $request->merge(['chassis' => $request->chassis_interchange ]);
-            $request->merge(['sale_date' => $request->sale_date_interchange ]);
+            $request->merge(['sale_date' => null ]);           
+            $request->merge(['iva_sale_amount' => null ]);
+            $request->merge(['iva_sale_exclusive' => null ]);
+            $request->merge(['total_sale' => null ]);
 
-            $vehicleInterchange = Vehicle::find($request->vehicle_interchange_id);
-            $request->request->add(['state_id' => $vehicleInterchange->state_id]);
-            $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+            // Verificar si vehicle_interchange_id existe y no es null
+            if ($request->vehicle_interchange_id !== null && $request->vehicle_interchange_id !== 'null') {
+                // Buscar y actualizar vehículo existente
+                $vehicleInterchange = Vehicle::find($request->vehicle_interchange_id);
+                
+                if ($vehicleInterchange) {
+                    $request->request->add(['state_id' => $vehicleInterchange->state_id]);
+                    $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+                }
+            } else {
+                // Crear nuevo vehículo interchange
+                $vehicleRequest = VehicleRequest::createFrom($request);
+
+                $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+                if($validate->fails()){
+                    $vehicleRequest->failedValidation($validate);
+                }
+
+                //Set Vehicle State ID on InStock
+                $vehicleRequest->request->add(['state_id' => 10]);
+                $vehicleRequest->request->add(['type' => '2']);
+
+                $vehicleInterchange = Vehicle::createVehicle($vehicleRequest);
+                $vehicleInterchange = Vehicle::updateVehicle($vehicleRequest, $vehicleInterchange);
+
+                if ($request->has("vehicle_interchange_id"))
+                    $request->merge([
+                        "vehicle_interchange_id" => $vehicleInterchange->id
+                    ]);
+                else
+                    $request->request->add([
+                        'vehicle_interchange_id' => $vehicleInterchange->id
+                    ]);
+            }
         }
 
         //Update Agreement Client.
@@ -695,6 +747,28 @@ class Agreement extends Model
 
     public static function createCommission($request) {
 
+        if($request->save_client === 'true') {
+            $request->supplier_id = 'null';
+            $client = Client::createClient($request);
+            $order_id = Client::where('supplier_id', $client->supplier_id)
+                            ->withTrashed()
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $client->order_id = $order_id + 1;
+            $client->update();
+        }
+
+        if ($request->has("client_id"))
+            $request->merge([
+                "client_id" => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+        else
+            $request->request->add([
+                'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
+            ]);
+
         $commission = Commission::createCommission($request);
 
         $request->request->add([
@@ -712,8 +786,14 @@ class Agreement extends Model
     public static function coordinates($agreement, $coordinateType) {
         switch ($agreement->agreement_type_id) {
             case 1: // Sales
+                return $coordinateType === 'x' ? 12.9134 : 88.1954;
+                break;
             case 2: // Purchase
+                return $coordinateType === 'x' ? 60.3543 : 87.8653;
+                break;
             case 3: // Commission
+                return $coordinateType === 'x' ? 16.9134 : 88.5772;
+                break;
             case 4: // Offer    
                 return $coordinateType === 'x' ? 12.9134 : 86.1954;
                 break;

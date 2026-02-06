@@ -6,7 +6,7 @@ import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
@@ -96,7 +96,7 @@ const didInitVisibleColumns = ref(false)
 const columnOptions = [
   { id: 'purchase_date', label: 'Inköpsdatum' },
   { id: 'info', label: 'Bilinfo' },
-  { id: 'reg_num', label: 'Regnr' },
+  { id: 'reg_num', label: 'Reg nr' },
   { id: 'purchase_price', label: 'Inköpspris' },
   { id: 'mileage', label: 'Miltal' },
   { id: 'comments', label: 'Anteckningar' },
@@ -440,7 +440,7 @@ const downloadCSV = async () => {
       BILINFO: bilinfo,
       REGNR: element.reg_num,
       INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      MILTAL: element.mileage === null ? '' : element.mileage + ' Mil',
+      MILTAL: element.mileage === null ? '' : formatNumberInteger(element.mileage ?? '0,00') + ' Mil',
       ANTECKNINGAR:  element.comments ?? '',
       STATUS: element.state.name,
       VAT: element.iva_purchase?.name,
@@ -612,7 +612,7 @@ onBeforeUnmount(() => {
           <tr>
             <th scope="col" v-if="isColVisible('purchase_date')"> Inköpsdatum </th>
             <th scope="col" v-if="isColVisible('info')"> Bilinfo</th>
-            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Regnr </th>
+            <th class="text-center" scope="col" v-if="isColVisible('reg_num')"> Reg nr </th>
             <th class="text-center" scope="col" v-if="isColVisible('purchase_price')"> Inköpspris </th>
             <th class="text-center" scope="col" v-if="isColVisible('mileage')"> Miltal </th>
             <th class="text-center" scope="col" v-if="isColVisible('comments')"> Anteckningar </th>
@@ -655,7 +655,7 @@ onBeforeUnmount(() => {
             </td>   
             <td class="text-center" v-if="isColVisible('reg_num')"> {{ vehicle.reg_num }} </td>             
             <td class="text-center" v-if="isColVisible('purchase_price')"> {{ formatNumber(vehicle.purchase_price ?? 0) }} kr </td>
-            <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : vehicle.mileage + ' Mil' }}</td>
+            <td class="text-center" v-if="isColVisible('mileage')"> {{ vehicle.mileage === null ? '' : formatNumberInteger(vehicle.mileage ?? '0,00') + ' Mil' }}</td>
             <td class="text-center" v-if="isColVisible('comments')">
               <VTooltip 
                 v-if="vehicle.comments && vehicle.comments.length > 15"
@@ -903,7 +903,7 @@ onBeforeUnmount(() => {
         <VPagination
           v-model="currentPage"
           size="small"
-          :total-visible="5"
+          :total-visible="4"
           :length="totalPages"
           next-icon="custom-chevron-right"
           prev-icon="custom-chevron-left"/>
@@ -952,10 +952,10 @@ onBeforeUnmount(() => {
               class="selector-user selector-truncate"
             />
           </VCol>
-          <VCol cols="12" md="12">
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />
             <AppAutocomplete
               v-model="state_id"
-              placeholder="Status"
               :items="states"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -963,10 +963,10 @@ onBeforeUnmount(() => {
               clearable
               clear-icon="tabler-x"/>
           </VCol>
-          <VCol cols="12" md="12">
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
             <AppAutocomplete
               v-model="brand_id"
-              placeholder="Märke"
               :items="brands"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -976,28 +976,28 @@ onBeforeUnmount(() => {
               @update:modelValue="selectBrand"
               :menu-props="{ maxHeight: '300px' }"/>
           </VCol>
-          <VCol cols="12" md="12">
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell" />
             <AppAutocomplete
               v-model="model_id"
-              placeholder="Modell"
               :items="getModels"
               autocomplete="off"
               clearable
               clear-icon="tabler-x"
               :menu-props="{ maxHeight: '300px' }"/>
           </VCol>
-          <VCol cols="12" md="12">
+          <VCol cols="12" md="12" class="pb-0">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell" />
             <VTextField
                 v-model="year"
                 :rules="[yearValidator]"
-                label="Årsmodell"
                 clearable
             />
           </VCol>
           <VCol cols="12" md="12">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Biltyp" />
             <AppAutocomplete
               v-model="gearbox_id"
-              placeholder="Biltyp"
               :items="gearboxes"
               :item-title="item => item.name"
               :item-value="item => item.id"
@@ -1104,7 +1104,6 @@ onBeforeUnmount(() => {
               v-model="plate"
               :rules="[requiredValidator]"
               placeholder="ABC12X"
-              style="text-transform: uppercase !important"
           />
         </VCardText>
 
@@ -1186,9 +1185,10 @@ onBeforeUnmount(() => {
           />
         </VListItem>
         <VListItem class="form">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />            
           <AppAutocomplete
             v-model="state_id"
-            placeholder="Status"
+            
             :items="states"
             :item-title="item => item.name"
             :item-value="item => item.id"
@@ -1197,9 +1197,9 @@ onBeforeUnmount(() => {
             clear-icon="tabler-x"/>
         </VListItem>
         <VListItem class="form pt-6">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
           <AppAutocomplete
             v-model="brand_id"
-            placeholder="Märke"
             :items="brands"
             :item-title="item => item.name"
             :item-value="item => item.id"
@@ -1210,9 +1210,9 @@ onBeforeUnmount(() => {
             :menu-props="{ maxHeight: '300px' }"/>
         </VListItem>
         <VListItem class="form">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell" />
           <AppAutocomplete
             v-model="model_id"
-            placeholder="Modell"
             :items="getModels"
             autocomplete="off"
             clearable
@@ -1220,17 +1220,17 @@ onBeforeUnmount(() => {
             :menu-props="{ maxHeight: '300px' }"/>
         </VListItem>
         <VListItem class="form">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell" />
           <VTextField
             v-model="year"
             :rules="[yearValidator]"
-            label="Årsmodell"
             clearable
           />
         </VListItem>
         <VListItem class="form">
+          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Biltyp" />
           <AppAutocomplete
             v-model="gearbox_id"
-            placeholder="Biltyp"
             :items="gearboxes"
             :item-title="item => item.name"
             :item-value="item => item.id"
@@ -1319,7 +1319,7 @@ onBeforeUnmount(() => {
 
       .v-list-item {
         margin-bottom: 0px;
-        padding: 0px !important;
+        padding: 4px 0 !important;
         gap: 0px !important;
 
         .v-input--density-compact {
@@ -1356,7 +1356,7 @@ onBeforeUnmount(() => {
 
         .v-text-field {
           .v-input__control {
-            padding-top: 16px;
+            padding-top: 0;
             input {
               min-height: 48px;
               padding: 12px 16px;

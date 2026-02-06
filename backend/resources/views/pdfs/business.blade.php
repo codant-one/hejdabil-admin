@@ -15,7 +15,7 @@
             margin: 0;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 1;
+            line-height: 0.6;
             position: relative;
         }
         
@@ -28,55 +28,58 @@
         h2 {
             font-size: 13px;
             color: #008C91;
-            margin-top: 0;
-            margin-bottom: 8px;
+            margin-top: 10px;
+            margin-bottom: 4px;
         }
 
         /* --- HEADER --- */
         .header-logo {
-            width: 150px;
             display: inline-block;
             text-align: right;
         }
 
         .header-logo img {
-            max-width: 100%;
+            height: 60px;
+            width: auto;
         }
 
         .header-logo-cell {
-            vertical-align: top;
+            vertical-align: bottom;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: top;
+            vertical-align: bottom;
         }
 
-        .header-title-cell h1 {
-            margin: 0;
+        .header-title-cell h1, .header-logo-cell h1 {
+            margin: 0 0 6px 0;
             font-size: 24px;
-            color: #5D5D5D;
+            color: #454545;
         }
 
-        .header-title-cell .contract-details {
+        .header-title-cell .contract-details, .header-logo-cell .contract-details {
             font-size: 10px;
-            color: #5D5D5D;
+            color: #454545;
+            line-height: 1;
         }
 
         /* --- Celdas principales de las secciones --- */
         .section-cell {
-            padding-top: 10px;
+            padding-top: 4px;
         }
 
         .column-cell {
             width: 50%;
             vertical-align: top;
-            padding-top: 15px;
+            padding-top: 4px;
         }
 
-        .column-cell-left { padding-right: 15px; }
-        .column-cell-right { padding-left: 15px; }
+        .column-cell-left { padding-right: 4px; }
+        .column-cell-right { padding-left: 4px; }
+        .column-cell-left-2 { padding-right: 4px !important; }
+        .column-cell-right-2 { padding-left: 4px !important; }
 
         /* --- Tablas de información (Key-Value) --- */
         .info-table {
@@ -100,8 +103,8 @@
         .info-table .value {
             font-size: 10px;
             background-color: #F6F6F6;
-            padding: 5px;
-            border-radius: 8px;
+            padding: 6px 5px 0px 5px;
+            border-radius: 4px;
             border: 1px solid #E7E7E7;
             min-height: 12px;
             color: #5D5D5D;
@@ -150,7 +153,7 @@
             color: #5D5D5D;
             background-color: #F6F6F6;
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 4px;
             border-left: 1px solid #008C91;
             margin-bottom: 15px;
         }
@@ -188,7 +191,7 @@
         <tbody>
             <!-- === HEADER === -->
             <tr>
-                <td colspan="2" style="padding-bottom: 10px; border-bottom: 2px solid #E7E7E7;">
+                <td colspan="2" style="padding-bottom: 4px; border-bottom: 2px solid #E7E7E7;">
                     <table style="width: 100%;">
                         <tr>                            
                             <td class="header-title-cell">
@@ -199,14 +202,18 @@
                                 </div>
                             </td>
                             <td class="header-logo-cell">
-                                <div class="header-logo">
-                                    @if($company->logo)
-                                        <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
-                                    @else
-                                        <img src="{{ asset('/logos/logo_black.png') }}" width="150" alt="logo-main">
-                                    @endif
-                                </div>
-                            </td>
+                                @if($company->logo)
+                                    <div class="header-logo">
+                                        <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
+                                    </div>
+                                @else
+                                    <h1>{{ $company->company }} </h1>
+                                    <div class="contract-details">
+                                        {{ $company->name }} {{ $company->last_name }} <br>
+                                        {{ $company->email }}
+                                    </div>
+                                @endif
+                            </td>  
                         </tr>
                     </table>
                 </td>
@@ -260,7 +267,7 @@
                     <table class="info-table">
                         <tr>
                             <td>
-                                <div class="label">Regnr</div>
+                                <div class="label">Reg nr</div>
                                 <div class="value">{{ $agreement->offer->reg_num }}</div>
                             </td>
                         </tr>
@@ -320,7 +327,7 @@
                                 <div class="value">
                                     {{ $agreement->agreement_client->address ?? '' }}
                                     @if(!empty($agreement->agreement_client->postal_code) || !empty($agreement->agreement_client->street))
-                                        <br>
+                                        , 
                                         {{ $agreement->agreement_client->postal_code ?? '' }} {{ $agreement->agreement_client->street ?? '' }}
                                     @endif
                                 </div>

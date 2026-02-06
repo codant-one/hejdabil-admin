@@ -408,7 +408,7 @@ const downloadCSV = async () => {
             <VPagination
               v-model="currentPage"
               size="small"
-              :total-visible="5"
+              :total-visible="4"
               :length="totalPages"/>
           
           </VCardText>

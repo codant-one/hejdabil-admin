@@ -16,6 +16,8 @@ use App\Models\VehicleDocument;
 use App\Models\Agreement;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\Document;
+use App\Models\Payout;
 
 class TestingController extends Controller
 {
@@ -26,49 +28,107 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Begäran om ändring av lösenord',
+            'subject' => 'Återställ ditt lösenord i Billogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
         
         $buttonLink = $url;
-        $title = 'testing';
+        $title = 'Swish-betalningskvitto';
         $text =  'Vi hoppas att detta meddelande får dig att må bra. <br> Vänligen notera att vi har genererat en ny faktura i ditt namn med följande uppgifter:';
-        $buttonText = 'Nedladdningar';
+        $buttonText = 'Ladda ner faktura';
+        $email = $user->email;
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $billing = Billing::with(['client', 'supplier.user'])->find(33);
-        $text_info = 'Bifogat finns fakturan i PDF-format. Du kan ladda ner och granska den när som helst. <br> Om du har några frågor eller behöver mer information, tveka inte att kontakta oss.';
         $pdfFile = 'pdfFile';
+        $icon = asset('/images/payouts.png');
+        
+        $password = 'test1234';
 
-        // $data = [
-        //     'title' => $info['title'] ?? null,
-        //     'user' => $user->name . ' ' . $user->last_name,
-        //     'email' => $user->email,
-        //     'password' => Str::random(10),
-        //     'text' => $info['text'] ?? null,
-        //     'buttonLink' =>  $info['buttonLink'] ?? null,
-        //     'buttonText' =>  $info['buttonText'] ?? null
-        // ];
+        $billing = Billing::with(['client', 'supplier.user.userDetail'])->find(2);
+    
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+        // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
 
-        return view('emails.invoices.notifications', 
+        $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
+
+        $signingUrl = '1234';
+        $token = '1234';
+
+        $agreement = Agreement::with('agreement_client')->find(11);
+        $document = Document::find(2);
+        $downloadUrl = '1234';
+        $titles = 'Ditt signerade dokument är nu tillgängligt';
+        $fullname = $agreement->agreement_client->fullname ?? null;
+        $payouts = Payout::with('user')->whereIn('id', [1])->get();
+
+        return view('emails.payouts.receipt', 
             compact(
-                'invoice',
-                'billing',
+                'company',
                 'buttonLink',
                 'buttonText',
                 'title',
                 'text',
-                'text_info',
                 'user',
-                'pdfFile'
+                'pdfFile',
+                'icon',
+                'email',
+                'password',
+                'url',
+                'billing',
+                'text_info',
+                'signingUrl',
+                'token',
+                'agreement',
+                'document',
+                'downloadUrl'  ,
+                'titles',
+                'fullname',
+                'payouts'
             )
         );
     }
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(1);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(4);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
@@ -153,7 +213,7 @@ class TestingController extends Controller
         $url = env('APP_DOMAIN').'/reset-password?token='.Str::random(60).'&user='.$user->email;
 
         $info = [
-            'subject' => 'Begäran om ändring av lösenord',
+            'subject' => 'Återställ ditt lösenord i Billogg',
             'buttonLink' =>  $url ?? null,
             'email' => 'emails.auth.forgot_pass_confirmation'
         ]; 
@@ -164,7 +224,7 @@ class TestingController extends Controller
         $buttonText = 'Nedladdningar';
         $user = $user->name . ' ' . $user->last_name;
         $invoice= 1;
-        $billing = Billing::with(['client', 'supplier.user'])->find(33);
+        $billing = Billing::with(['client', 'supplier.user'])->find(2);
         $text_info = 'Vi har bifogat en kopia av fakturan i PDF-format för din referens. <br> Vi vill påminna er om att ni kan kontakta oss om ni vill rätta till er situation eller om ni har några frågor om denna faktura. Vi är här för att hjälpa till.';
         $pdfFile = 'pdfFile';
 
@@ -281,7 +341,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(13);
+        ])->find(8);
 
         $user = User::with(['userDetail','roles'])->find(1);
  

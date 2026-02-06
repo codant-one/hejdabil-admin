@@ -115,10 +115,14 @@ async function fetchData() {
     company.value = user_data.user_detail;
     company.value.email = user_data.email;
     company.value.billings = user_data.supplier.billings;
+    company.value.name = user_data.name;
+    company.value.last_name = user_data.last_name;
   } else if (role.value === "User") {
     company.value = user_data.supplier.boss.user.user_detail;
     company.value.email = user_data.supplier.boss.user.email;
     company.value.billings = user_data.supplier.boss.billings;
+    company.value.name = user_data.supplier.boss.user.name;
+    company.value.last_name = user_data.supplier.boss.user.last_name;
   } else {
     await configsStores.getFeature("company");
     await configsStores.getFeature("logo");

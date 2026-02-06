@@ -3,8 +3,8 @@
 import { FreeMode, Navigation, Thumbs, Scrollbar } from 'swiper/modules';
 import { Swiper, SwiperSlide } from 'swiper/vue';
 import { Carousel, Slide } from 'vue3-carousel'
-import { formatNumber } from '@/@core/utils/formatters'
-import car from '@images/car3.png'
+import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
+import car from '@images/car.png'
 
 import 'swiper/css';
 import 'swiper/css/navigation';
@@ -154,7 +154,7 @@ watchEffect(async () => {
             comments.value = props.vehicle.comments
             organization_number_purchase.value = props.vehicle.client_purchase?.organization_number
             address_purchase.value = props.vehicle.client_purchase?.address
-            postal_code_purchase.value = props.vehicle.client_purchase?.street + ' ' + props.vehicle.client_purchase?.postal_code
+            postal_code_purchase.value = props.vehicle.client_purchase ? (props.vehicle.client_purchase?.street + ' ' + props.vehicle.client_purchase?.postal_code) : null
             phone_purchase.value = props.vehicle.client_purchase?.phone
             fullname_purchase.value = props.vehicle.client_purchase?.fullname
             email_purchase.value = props.vehicle.client_purchase?.email
@@ -265,7 +265,7 @@ const setThumbsSwiper = (swiper) => {
                     <div class="d-flex flex-column gap-2" :class="[windowWidth < 1024 ? 'w-100' : 'w-40']">
                         <span class="px-1 py-0 title-vehicle"> {{ title }} </span>
                         <span class="mb-3 px-1 py-0 subtitle-vehicle"> 
-                            Reg Nr: {{ reg_num }}
+                            Reg nr: {{ reg_num }}
                         </span>
 
                         <VRow no-gutters>
@@ -372,29 +372,29 @@ const setThumbsSwiper = (swiper) => {
                                     <VContainer fluid class="px-3">
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="mileage">
                                                     <span class="title-detail"> Miltal </span>
-                                                    <span class="subtitle-detail">{{ mileage }} Mil</span>
+                                                    <span class="subtitle-detail">{{ formatNumberInteger(mileage ?? '0,00') }} Mil</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="generation">
                                                     <span class="title-detail"> Generation </span>
                                                     <span class="subtitle-detail">{{ generation }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="car_body">
                                                     <span class="title-detail"> Kaross </span>
                                                     <span class="subtitle-detail">{{ car_body }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="purchase_date">
                                                     <span class="title-detail"> Inköpsdatum </span>
                                                     <span class="subtitle-detail">{{ purchase_date }}</span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="control_inspection">
                                                     <span class="title-detail"> Kontrollbesiktning gäller tom </span>
                                                     <span class="subtitle-detail">{{ control_inspection }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="fuel">
                                                     <span class="title-detail"> Drivmedel </span>
                                                     <span class="subtitle-detail">{{ fuel }}</span>
                                                 </div>
@@ -410,7 +410,7 @@ const setThumbsSwiper = (swiper) => {
                                     <VContainer fluid class="px-3">
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="number_keys">
                                                     <span class="title-detail"> Antal nycklar </span>
                                                     <span class="subtitle-detail">{{ number_keys }}</span>
                                                 </div>
@@ -468,11 +468,11 @@ const setThumbsSwiper = (swiper) => {
                                                         </VRadioGroup>
                                                     </span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="last_service">
                                                     <span class="title-detail"> Senaste service: Mil/datum</span>
                                                     <span class="subtitle-detail">{{ last_service ?? 0 }} Mil / {{ last_service_date ?? '0000-00-00' }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="last_dist_belt">
                                                     <span class="title-detail"> Kamrem bytt vid Mil/datum </span>
                                                     <span class="subtitle-detail">{{ last_dist_belt ?? 0 }} Mil / {{ last_dist_belt_date ?? '0000-00-00' }}</span>
                                                 </div>
@@ -488,11 +488,11 @@ const setThumbsSwiper = (swiper) => {
                                     <VContainer fluid class="px-3">
                                          <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="vehicle.purchase_price">
                                                     <span class="title-detail"> Inköpspris </span>
                                                     <span class="subtitle-detail">{{ formatNumber(vehicle.purchase_price ?? 0) }} {{ currency_purchase }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="iva_purchase">
                                                     <span class="title-detail"> VMB / Moms</span>
                                                     <span class="subtitle-detail">{{ iva_purchase }}</span>
                                                 </div>
@@ -509,11 +509,11 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4" v-if="vehicle.total_sale">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="vehicle.total_sale">
                                                     <span class="title-detail"> Försäljningspris</span>
                                                     <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale ?? 0) }} {{ currency_sale }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2" v-if="vehicle.total_sale">
+                                                <div class="d-flex flex-column gap-2" v-if="vehicle.total_sale && vehicle.purchase_price">
                                                     <span class="title-detail"> Vinst</span>
                                                     <span class="subtitle-detail">{{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} {{ currency_sale }}</span>
                                                 </div>
@@ -525,29 +525,29 @@ const setThumbsSwiper = (swiper) => {
                                     <VContainer fluid class="px-3">
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="organization_number_purchase">
                                                     <span class="title-detail"> Org/personummer </span>
                                                     <span class="subtitle-detail">{{ organization_number_purchase }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="fullname_purchase">
                                                     <span class="title-detail"> Namn</span>
                                                     <span class="subtitle-detail">{{ fullname_purchase }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="address_purchase">
                                                     <span class="title-detail"> Adress </span>
                                                     <span class="subtitle-detail">{{ address_purchase }}</span>
                                                 </div>
                                             </div>
                                             <div class="flex-1-1 d-flex flex-column gap-4">
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="postal_code_purchase">
                                                     <span class="title-detail"> Postnr. ort</span>
                                                     <span class="subtitle-detail">{{postal_code_purchase }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="phone_purchase">
                                                     <span class="title-detail"> Telefon</span>
                                                     <span class="subtitle-detail">{{ phone_purchase }}</span>
                                                 </div>
-                                                <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex flex-column gap-2" v-if="email_purchase">
                                                     <span class="title-detail"> E-post</span>
                                                     <span class="subtitle-detail">{{ email_purchase }}</span>
                                                 </div>
