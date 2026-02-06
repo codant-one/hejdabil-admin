@@ -413,8 +413,11 @@ class AgreementController extends Controller
                 $company->img_signature = $signatureObj->img_signature ?? null;
             }
 
+            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
+
             $data = [
                 'company' => $company,
+                'logo' => $logo,
                 'title' => 'Nytt avtal',
                 'icon' => asset('/images/agreements-two.png'),
                 'user' => $agreement->agreement_client->fullname,
