@@ -98,6 +98,15 @@ class PayoutController extends Controller
                     ], 422);
                 }
                 $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } elseif ($role === 'User') {
+                $supplier = $user->supplier->boss;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
             } else { // por el momento no tenemos swish para otros roles
                 $config = Config::getByKey('setting');
                 
@@ -352,6 +361,15 @@ class PayoutController extends Controller
             
             if ($role === 'Supplier') {
                 $supplier = $user->supplier;
+                if (!$supplier || !$supplier->master_password) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Inget säkerhetslösenord konfigurerat för leverantören',
+                    ], 422);
+                }
+                $masterPasswordValid = ($request->master_password === $supplier->master_password);
+            } elseif ($role === 'User') {
+                $supplier = $user->supplier->boss;
                 if (!$supplier || !$supplier->master_password) {
                     return response()->json([
                         'success' => false,

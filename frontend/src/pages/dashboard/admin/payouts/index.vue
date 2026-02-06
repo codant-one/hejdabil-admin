@@ -136,6 +136,8 @@ async function fetchData(cleanFilters = false) {
 
   if(role.value === 'Supplier') {
     payer_alias.value = user_data.supplier.payout_number
+  } else if (role.value === 'User') {
+    payer_alias.value = user_data.supplier.boss.payout_number
   }
 
   // Ensure suppliers are loaded once we know the user's role
@@ -679,7 +681,7 @@ const handleSendPayout = () => {
             Exportera
           </VBtn>
           <VBtn
-            v-if="$can('create', 'payouts') && role === 'Supplier'"
+            v-if="$can('create', 'payouts') && (role === 'Supplier' || role === 'User')"
             class="btn-gradient"
             block
             @click="openPayoutDialog"
@@ -959,7 +961,7 @@ const handleSendPayout = () => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'payouts') && role === 'Supplier'"
+          v-if="$can('create', 'payouts') && (role === 'Supplier' || role === 'User')"
           @click="openPayoutDialog"
         >
           Ny betalning

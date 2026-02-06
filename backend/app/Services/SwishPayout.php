@@ -20,7 +20,12 @@ class SwishPayout
     public function __construct()
     {
         $user = Auth::user();
-        $supplier = $user->supplier;
+        
+        if ($user->hasRole('supplier')) {
+            $supplier = $user->supplier;
+        } else {
+            $supplier = $user->supplier->boss;
+        }
 
         $this->baseUrl            = config('services.swish_payout.base_url');
         $this->callbackUrl         = config('services.swish_payout.callback_url');
