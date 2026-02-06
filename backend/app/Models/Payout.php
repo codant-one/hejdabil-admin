@@ -44,7 +44,7 @@ class Payout extends Model
 
         if ($filters->get('user_id') !== null) {
             $query->where('user_id', $filters->get('user_id'));
-        } else if(Auth::check() && Auth::user()->getRoleNames()[0] !== 'SuperAdmin' && Auth::user()->getRoleNames()[0] !== 'Administrator') {
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
             $query->where('user_id', Auth::user()->id);
         }
 
