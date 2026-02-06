@@ -1,5 +1,7 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from "vue-router";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
 import { useBillingsStores } from "@/stores/useBillings";
@@ -7,6 +9,7 @@ import { useConfigsStores } from "@/stores/useConfigs";
 import InvoiceEditable from "@/views/apps/invoice/InvoiceEditable.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const authStores = useAuthStores();
 const billingsStores = useBillingsStores();
@@ -20,6 +23,21 @@ const advisor = ref({
   message: "",
   show: false,
 });
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null);
+
+const initialInvoiceData = ref(null);
+const savedInvoiceData = ref(null);
+const allowNavigation = ref(false);
+const nextRoute = ref(null);
+const invoiceEditableRef = ref(null);
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isConfirmLeaveVisible = ref(false);
+const err = ref(null);
 
 // 👉 Default Blank Data
 const validate = ref();
@@ -50,6 +68,30 @@ const extractDaysFromNetTermSplit = (term) => {
   const daysIndex = parts.findIndex((part) => /dagar?/i.test(part));
   return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 };
+
+const currentInvoiceData = computed(() => ({
+  invoice: invoice.value,
+  invoiceData: invoiceData.value,
+  discount: discount.value,
+}));
+
+const isDirty = computed(() => {
+  if (!initialInvoiceData.value) return false;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
+
+const hasChangedSinceSave = computed(() => {
+  if (!savedInvoiceData.value) return true;
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(savedInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
 
 watchEffect(fetchData);
 
@@ -112,16 +154,11 @@ async function fetchData() {
       company.value = configsStores.getFeaturedConfig("company");
       company.value.billings = response.data.data.billings;
       company.value.logo = configsStores.getFeaturedConfig("logo").logo;
-    } else if (role.value === "Supplier") {
-      //supplier
-      company.value = user_data.user_detail;
-      company.value.email = user_data.email;
-      company.value.billings = user_data.supplier.billings;
     } else {
-      //user
-      company.value = user_data.supplier.boss.user.user_detail;
-      company.value.email = user_data.supplier.boss.user.email;
-      company.value.billings = user_data.supplier.boss.billings;
+      //supplier
+      company.value = billing.value.supplier.user.user_detail;
+      company.value.email = billing.value.supplier.user.email;
+      company.value.billings = billing.value.supplier.billings;
     }
 
     JSON.parse(billing.value.detail).forEach((details) => {
@@ -150,6 +187,34 @@ async function fetchData() {
     isRequestOngoing.value = false;
   }
 }
+
+const createBilling = () => {
+  router.push({
+    name: "dashboard-admin-billings-add"
+  });
+};
+
+const showError = () => {
+  inteSkapatsDialog.value = false;
+
+  advisor.value.show = true;
+  advisor.value.type = "error";
+  
+  if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
+    advisor.value.message = Object.values(err.value.response.data.errors)
+              .flat()
+              .join("<br>");
+  } else {
+    advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+  }
+
+  setTimeout(() => {
+    advisor.value.show = false;
+    advisor.value.type = "";
+    advisor.value.message = "";
+  }, 3000);
+
+};
 
 const data = (data) => {
   invoice.value = data;
@@ -208,7 +273,22 @@ const editProduct = () => {
   });
 };
 
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false;
+  allowNavigation.value = true;
+  
+  if (nextRoute.value) {
+    router.push(nextRoute.value);
+  }
+};
+
 const onSubmit = () => {
+  // If already saved and NO changes since save, show success dialog
+  if (billing.value?.file && !hasChangedSinceSave.value) {
+    skapatsDialog.value = true;
+    return;
+  }
+
   validate.value?.validate().then(async ({ valid: isValid }) => {
     if (isValid) {
       let formData = new FormData();
@@ -247,141 +327,256 @@ const onSubmit = () => {
       billingsStores
         .updateBilling(data)
         .then((res) => {
-          let data = {
-            message: "Uppdaterad faktura!",
-            error: false,
-          };
-
+          billing.value = res.data.data.billing;
           isRequestOngoing.value = false;
-
-          router.push({
-            name: "dashboard-admin-billings-id",
-            params: { id: res.data.data.billing.id },
-          });
-          emitter.emit("toast", data);
+          allowNavigation.value = true;
+          
+          // Save current state as the saved state
+          savedInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
+          
+          // On mobile, switch to preview tab
+          if (windowWidth.value < 1024 && invoiceEditableRef.value) {
+            invoiceEditableRef.value.setPreviewTab();
+          } else {
+            skapatsDialog.value = true;
+          }
         })
-        .catch((err) => {
-          advisor.value.show = true;
-          advisor.value.type = "error";
-          advisor.value.message = Object.values(err.message)
-            .flat()
-            .join("<br>");
-
-          setTimeout(() => {
-            advisor.value.show = false;
-            advisor.value.type = "";
-            advisor.value.message = "";
-          }, 3000);
-
+        .catch((error) => {
+          err.value = error;
+          inteSkapatsDialog.value = true;
           isRequestOngoing.value = false;
         });
     }
   });
 };
+
+const editBilling = () => {
+  let data = {
+    message: "Fakturan uppdaterades framgångsrikt",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
+};
+
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 </script>
 
 <template>
-  <VForm ref="validate" @submit.prevent="onSubmit">
+  <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
-    <VRow v-if="advisor.show">
-      <VCol cols="12">
-        <VAlert v-if="advisor.show" :type="advisor.type" class="mb-6">
-          {{ advisor.message }}
-        </VAlert>
-      </VCol>
-    </VRow>
-    <VRow v-if="band">
-      <!-- 👉 InvoiceEditable -->
-      <VCol cols="12" md="9" class="order-2 order-md-1">
-        <InvoiceEditable
-          v-if="clients.length > 0"
-          :data="invoiceData"
-          :clients="clients"
-          :suppliers="suppliers"
-          :invoices="invoices"
-          :invoice_id="invoice_id"
-          :userData="userData"
-          :role="role"
-          :company="company"
-          :total="total"
-          :amount_discount="amount_discount"
-          :billing="billing"
-          :isCreated="false"
-          :isCredit="false"
-          @push="addProduct"
-          @remove="removeProduct"
-          @delete="deleteProduct"
-          @edit="editProduct"
-          @data="data"
-          @discount="applyDiscount"
-        />
-      </VCol>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
+    <VForm ref="validate" @submit.prevent="onSubmit">
+      <VRow no-gutters v-if="band" class="card-fill w-100">
+        <!-- 👉 InvoiceEditable -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 9"
+          class="order-1"
+          :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
+        >
+          <InvoiceEditable
+            ref="invoiceEditableRef"
+            v-if="clients.length > 0"
+            :data="invoiceData"
+            :clients="clients"
+            :suppliers="suppliers"
+            :invoices="invoices"
+            :invoice_id="invoice_id"
+            :userData="userData"
+            :role="role"
+            :company="company"
+            :total="total"
+            :amount_discount="amount_discount"
+            :billing="billing"
+            :isCreated="false"
+            :isCredit="false"
+            :hasUnsavedChanges="hasChangedSinceSave"
+            :title="'Redigera fakturan'"
+            @push="addProduct"
+            @remove="removeProduct"
+            @delete="deleteProduct"
+            @edit="editProduct"
+            @data="data"
+            @discount="applyDiscount"
+          />
+        </VCol>
 
-      <!-- 👉 Right Column: Invoice Action -->
-      <VCol
-        cols="12"
-        md="3"
-        class="order-1 order-md-2"
-        :class="$vuetify.display.smAndDown ? 'p-0' : ''"
+        <!-- 👉 Right Column: Invoice Action -->
+        <VCol
+          :cols="windowWidth < 1024 ? 12 : 3"
+          class="order-1 order-md-2"
+          :class="windowWidth < 1024 ? 'p-0' : ''"
+        >
+          <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''">
+            <VCardText
+              :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
+            >
+              <!-- 👉 Redigera fakturan -->
+              <VBtn
+                class="btn-gradient mb-4"
+               :class="windowWidth < 1024 ? 'flex-1 order-2 mb-0' : 'w-100'"
+                type="submit"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth >= 1024" />
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth < 1024" />
+                </template>
+                Redigera fakturan
+              </VBtn>
+
+              <!-- 👉 Preview -->
+              <VBtn
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'flex-1 order-1' : 'w-100'"
+                :to="{ name: 'dashboard-admin-billings' }"
+              >
+                <template #prepend>
+                  <VIcon icon="custom-return" size="24" />
+                </template>
+                Tillbaka
+              </VBtn>
+            </VCardText>
+          </VCard>
+        </VCol>
+      </VRow>
+    </VForm>
+
+    <!-- 👉 Dialogs Section -->
+    <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="router.push({
+          name: 'dashboard-admin-billings-id',
+          params: { id: billing_id },
+        })"
       >
-        <VCard>
-          <VCardText
-            :class="$vuetify.display.smAndDown ? 'pa-6 d-flex gap-4' : 'pa-4'"
-          >
-            <!-- 👉 Send Invoice -->
-            <VBtn
-              class="btn-gradient mb-4"
-              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
-              type="submit"
-            >
-              <template #prepend>
-                <VIcon icon="custom-send" size="24" />
-              </template>
-              Skapa faktura
-            </VBtn>
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
-            <!-- 👉 Preview -->
-            <VBtn
-              class="btn-light"
-              :class="$vuetify.display.smAndDown ? 'flex-1' : 'w-100'"
-              :to="{ name: 'dashboard-admin-billings' }"
-            >
-              <template #prepend>
-                <VIcon icon="custom-return" size="24" />
-              </template>
-              Tillbaka
-            </VBtn>
-          </VCardText>
-        </VCard>
-      </VCol>
-    </VRow>
-  </VForm>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-create-order" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Fakturan är skapad!</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="editBilling">
+            Gå till fakturalistan
+          </VBtn>
+          <VBtn class="btn-gradient" @click="createBilling"> Skapa ny faktura </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="inteSkapatsDialog = !inteSkapatsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-cancel" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">Fakturan kunde inte skapas</div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="showError">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog 
+      v-model="isConfirmLeaveVisible" 
+      persistent 
+      class="action-dialog">
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmLeaveVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Du har osparade ändringar</div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Om du lämnar sidan nu kommer dina ändringar inte att sparas.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+          <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+  </section>
 </template>
-<style lang="scss" scoped>
-.fix-bottom-menu {
-  position: fixed;
-  bottom: 70px;
-  width: 100%;
-  background: linear-gradient(
-    90deg,
-    #eafff1 0%,
-    #eafff8 50%,
-    #ecffff 100%
-  ) !important;
-  z-index: 1;
-}
-@media (max-width: 768px) {
-  .mobile-gradient-card {
-    .v-card {
-      background: none !important;
-
-      .v-card-text {
-        flex-direction: row-reverse;
-      }
-    }
-  }
-}
-</style>
 <route lang="yaml">
 meta:
   action: edit

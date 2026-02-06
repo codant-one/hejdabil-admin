@@ -40,8 +40,10 @@ class VehicleTask extends Model
             'vehicle_id' => $request->vehicle_id,
             'measure' => $request->measure,
             'cost' => $request->cost,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date === 'null' ? null : $request->end_date
+            'description' => $request->description  === 'null' ? null : $request->description,
+            'start_date' => $request->start_date === 'null' ? null : $request->start_date,
+            'end_date' => $request->end_date === 'null' ? null : $request->end_date,
+            'is_cost' => $request->is_cost === 'true' ? 1 : 0
         ]);
 
         TaskHistory::create([
@@ -58,6 +60,7 @@ class VehicleTask extends Model
         $task->update([ 
             'measure' => $request->measure,
             'cost' => $request->cost,
+            'description' => $request->description  === 'null' ? null : $request->description,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date === 'null' ? null : $request->end_date
         ]);
@@ -88,4 +91,35 @@ class VehicleTask extends Model
             'comment' => $request->comment
         ]);
     }
+
+    public static function updateComment($request, $id) {
+        $comment = TaskComment::find($id);
+        
+        if ($comment) {
+            $comment->update([
+                'comment' => $request->comment
+            ]);
+        }
+        
+        return $comment;
+    }
+
+    public static function deleteComment($id) {
+        $comment = TaskComment::find($id);
+        
+        if ($comment) {
+            $comment->delete();
+        }
+        
+        return true;
+    }
+
+    public static function updateType($task) {
+
+        $task->update([ 
+            'is_cost' => 1
+        ]);
+
+        return $task;
+    }   
 }

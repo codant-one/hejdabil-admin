@@ -1,9 +1,13 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
 
 const avatar = ref('')
 const avatarOld = ref('')
@@ -23,11 +27,13 @@ const advisor = ref({
 
 const tabs = [
   {
-    icon: 'tabler-lock',
+    // icon: 'tabler-lock',
+    icon: 'custom-agreement',
     title: 'Säkerhet',
   },
   {
-    icon: 'tabler-building-store',
+    // icon: 'tabler-building-store',
+    icon: 'custom-clients',
     title: 'Företag',
   },
 ]
@@ -152,59 +158,67 @@ const onImageSelected = event => {
         {{ advisor.message }}
     </VAlert>
 
-    <VRow>
-      <VCol
-        cols="12"
-        md="5"
-        lg="4"
-      >
-        <UserProfile
-          :user="userData"
-          :avatarOld="avatarOld"
-          :avatar="avatar"
-          @onImageSelected="onImageSelected" />
-      </VCol>
-      <VCol
-        cols="12"
-        md="7"
-        lg="8"
-      >
-        <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
-          <VTabs
-            v-model="userTab"
-            class="v-tabs-pill"
+    <VCard
+      flat 
+      class="card-fill"
+      :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+      ]"
+    >
+      <VCardText class="p-0">
+        <VRow>
+          <VCol
+            cols="12"
+            md="12"
+            lg="12"
           >
-            <VTab
-              v-for="tab in tabs"
-              :key="tab.icon"
-            >
-              <VIcon
-                :size="18"
-                :icon="tab.icon"
-                class="me-1"
-              />
-              <span>{{ tab.title }}</span>
-            </VTab>
-          </VTabs>
+            <UserProfile
+              :user="userData"
+              :avatarOld="avatarOld"
+              :avatar="avatar"
+              @onImageSelected="onImageSelected" />
+          </VCol>
 
-          <VWindow
-            v-model="userTab"
-            class="disable-tab-transition mt-3"
-            :touch="false"
+          <VCol
+            cols="12"
+            md="12"
+            lg="12"
           >
-            <VWindowItem>
-              <TabSecurity @alert="showAlert"/>
-            </VWindowItem>
-            <VWindowItem>
-              <TabDealer 
-                @alert="showAlert"
-                @window="showWindow"/>
-            </VWindowItem>
-          </VWindow>
-        </div>
-        <TabSecurity @alert="showAlert" v-else/>
-      </VCol>
-    </VRow>
+            <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">
+              <VTabs 
+                    v-model="userTab" 
+                    :grow="windowWidth < 1024 ? true : false"             
+                    :show-arrows="false"
+                    class="profile-tabs" 
+              >
+                <VTab v-for="tab in tabs" >
+                    <VIcon size="18" :icon="'' + tab.icon" />
+                    {{ tab.title }}
+                </VTab>
+              </VTabs>
+
+              <VWindow
+                v-model="userTab"
+                :touch="false"
+              >
+                <VWindowItem>
+                  <TabSecurity @alert="showAlert"/>
+                </VWindowItem>
+                <VWindowItem>
+                  <TabDealer 
+                    @alert="showAlert"
+                    @window="showWindow"/>
+                </VWindowItem>
+              </VWindow>
+            </div>
+            <TabSecurity @alert="showAlert" v-else/>
+          </VCol>
+        </VRow>
+      </VCardText>
+    </VCard>
+
+
      <!-- 👉 Confirm Delete -->
      <VDialog
       v-model="dialog"
@@ -236,6 +250,31 @@ const onImageSelected = event => {
     </VDialog>
   </section>
 </template>
+
+<style lang="scss">
+  .v-tabs.profile-tabs {
+    .v-btn {
+      min-width: 50px !important;
+      .v-btn__content {
+        font-size: 14px !important;
+        color: #454545;
+      }
+    }
+  }
+
+  @media (max-width: 776px) {
+    .v-tabs.profile-tabs {
+      .v-icon {
+        display: none !important;
+      }
+      .v-btn {
+        .v-btn__content {
+            white-space: break-spaces;
+        }
+      }
+    }
+  }
+</style>
 
 <route lang="yaml">
   meta:

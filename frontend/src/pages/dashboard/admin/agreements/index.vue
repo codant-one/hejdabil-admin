@@ -1,21 +1,25 @@
 <script setup>
 
+import { watch } from 'vue'
 import { useDisplay } from "vuetify";
 import { useAgreementsStores } from '@/stores/useAgreements'
+import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
+import { useRoute } from 'vue-router'
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
-import editIcon from "@/assets/images/icons/figma/edit.svg";
-import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+const { width: windowWidth } = useWindowSize();
 
 const agreementsStores = useAgreementsStores()
+const notificationsStore = useNotificationsStore()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const agreements = ref([])
 const searchQuery = ref('')
@@ -36,6 +40,19 @@ const existingTags = ref([])
 const isValid = ref(false)
 const selectedAgreement = ref({})
 const isStaticSignatureFlow = ref(false)
+const filtreraMobile = ref(false);
+const isFilterDialogVisible = ref(false);
+const skapaMobile = ref(false);
+
+const selectedAgreementForAction = ref({});
+const isMobileActionDialogVisible = ref(false);
+
+// Tracker Logic
+const isTrackerDialogVisible = ref(false)
+const trackerAgreement = ref(null)
+const isTrackerPreviewVisible = ref(false)
+const trackerPreviewPdfSource = ref(null)
+const trackerPreviewError = ref('')
 
 const agreementTypes = ref([])
 const agreement_type_id_select = ref(null)
@@ -49,7 +66,6 @@ const pdfPlacementContainer = ref(null) // Ref para el contenedor del PDF
 // Modal select type contract
 const isModalVisible = ref(false)
 const agreement_type_id = ref(null) 
-const refVForm = ref()
 
 const userData = ref(null)
 const role = ref(null)
@@ -81,14 +97,52 @@ watchEffect(() => {
 })
 
 onMounted(async () => {
-  resizeSectionToRemainingViewport();
-  window.addEventListener("resize", resizeSectionToRemainingViewport);
   await loadData()
-})
+  
+  // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con agreements
+  notificationsStore.onNotificationReceived(async (notification) => {    
+    // Si la notificación tiene una ruta relacionada con agreements, refrescar
+    if (notification.route && notification.route.includes('/agreements')) {
+      
+      // Si el tracker está abierto, actualizar también el agreement actual
+      if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+        try {
+          const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+          trackerAgreement.value = response
+        } catch (e) {
+          console.error('Failed to refresh tracker agreement in real-time', e)
+        }
+      }
+    } else {
+      console.warn('Route does not match /agreements criteria')
+    }
+  })
 
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", resizeSectionToRemainingViewport);
-});
+  // Polling para actualizar el tracker en tiempo real si está abierto
+  const pollingInterval = setInterval(async () => {
+    // Solo hacer polling si el tracker está visible
+    if (isTrackerDialogVisible.value && trackerAgreement.value?.id) {
+      try {
+        const response = await agreementsStores.showAgreement(trackerAgreement.value.id)
+        // Solo actualizar si hay cambios en el historial
+        const currentHistoryLength = trackerAgreement.value?.tokens?.[0]?.history?.length || 0
+        const newHistoryLength = response?.tokens?.[0]?.history?.length || 0
+        
+        if (newHistoryLength > currentHistoryLength) {
+          trackerAgreement.value = response
+          // También actualizar la lista principal de agreements
+          await fetchData()
+          //console.log('Tracker updated via polling - new events detected')
+        }
+      } catch (e) {
+        console.error('Failed to poll tracker updates:', e)
+      }
+    }
+  }, 3000) // Poll every 3 seconds
+
+  // Guardar el intervalo para limpiarlo después
+  window._trackerPollingInterval = pollingInterval
+})
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -122,6 +176,7 @@ async function fetchData(cleanFilters = false) {
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
+  isFilterDialogVisible.value = false;
 
   await agreementsStores.fetchAgreements(data)
 
@@ -311,34 +366,54 @@ const downloadCSV = async () => {
 }
 
 const resolveStatus = state => {
-  if (state === 'signed')
-    return { color: 'info' }
-  if (state === 'pending')
-    return { color: 'warning' } 
+  if (state === 'created')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
   if (state === 'sent')
-    return { color: 'success' } 
-}
-
-const startPlacementProcess = async (agreementData) => {
-  selectedAgreement.value = { ...agreementData };
-  isPlacementModalVisible.value = true;
-  isLoadingPlacementPdf.value = true;
-  signaturePlacement.value.visible = false; // Resetea la posición
-
-  try {
-    // Usamos el endpoint que ya teníamos para obtener el PDF
-    const response = await axios.get(`/agreements/${agreementData.id}/get-admin-preview-pdf`, {
-        responseType: 'blob',
-    })
-    placementPdfSource.value = URL.createObjectURL(response.data);
-  } catch (error) {
-    // Si falla (ej. PDF no existe), mostramos un error y cerramos el modal
-    advisor.value = { type: 'error', message: 'Kunde inte ladda PDF-dokumentet.', show: true };
-    isPlacementModalVisible.value = false;
-    setTimeout(() => { advisor.value.show = false }, 3000);
-  } finally {
-    isLoadingPlacementPdf.value = false;
-  }
+    return { 
+      name: 'Skickad',
+      class: 'success',
+      icon: 'custom-forward'
+    }
+  if (state === 'signed')
+    return { 
+      name: 'Signerad',
+      class: 'success',
+      icon: 'custom-signature'
+    }
+  if (state === 'pending')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'delivered')
+    return { 
+      name: 'Levererad',
+      class: 'success',
+      icon: 'custom-check-mark-2'
+    }
+  if (state === 'reviewed')
+    return { 
+      name: 'Granskad',
+      class: 'info',
+      icon: 'custom-eye'
+    }
+  if (state === 'delivery_issues')
+    return { 
+      name: 'Leveransproblem',
+      class: 'pending',
+      icon: 'custom-risk'
+    }
+  if (state === 'failed')
+    return { 
+      name: 'Misslyckades',
+      class: 'error',
+      icon: 'custom-close'
+    }
 }
 
 const handleAdminPdfClick = (event) => {
@@ -452,7 +527,7 @@ const submitStaticSignatureRequest = async () => {
     // 3. Prepara un payload más simple, sin coordenadas
     const payload = {
       agreementId: selectedAgreement.value.id,
-      email: signatureEmail.value,
+      email: signatureEmail.value
     };
 
     // 4. Llama a una NUEVA acción en el store de Pinia
@@ -506,39 +581,275 @@ const handleCloseModal = () => {
 }
 
 const addAgreements = () => {
-
-  refVForm.value?.validate().then(({ valid: isValid }) => {
-
-    if (isValid) {
-
-      switch(agreement_type_id.value) {
-        case 1: 
-          router.push({ name : 'dashboard-admin-agreements-sales' })
-        break
-        case 2:
-          router.push({ name : 'dashboard-admin-agreements-purchase' })
-        break
-        case 3:
-          router.push({ name : 'dashboard-admin-agreements-mediation' })
-        break   
-        case 4:
-          router.push({ name : 'dashboard-admin-agreements-business' })
-        break 
-      }
-
-    }
-
-  })
+  switch(agreement_type_id.value) {
+    case 1: 
+      router.push({ name : 'dashboard-admin-agreements-sales' })
+    break
+    case 2:
+      router.push({ name : 'dashboard-admin-agreements-purchase' })
+    break
+    case 3:
+      router.push({ name : 'dashboard-admin-agreements-mediation' })
+    break   
+    case 4:
+      router.push({ name : 'dashboard-admin-agreements-business' })
+    break 
+  }
 }
+
+const updateType = (newType) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (agreement_type_id_select.value === newType) {
+    newType = null;
+  }
+
+  agreement_type_id_select.value = newType;
+  filtreraMobile.value = false;
+};
+
+const setSkapa = (newSkapa) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (agreement_type_id.value === newSkapa) {
+    newSkapa = null;
+  }
+
+  agreement_type_id.value = newSkapa;
+  skapaMobile.value = false;
+
+  addAgreements();
+};
+
 
 const openLink = function (agreementData) {
   window.open(themeConfig.settings.urlStorage + agreementData.file)
 }
 
-// Navigate to agreement tracker (timeline)
 const goToTracker = (agreementData) => {
-  router.push(`/dashboard/admin/agreements/${agreementData.id}/sparare`)
+  openTracker(agreementData)
 }
+
+const trackerEvents = computed(() => {
+  if (!trackerAgreement.value) return []
+
+  const items = []
+  const latestToken = (trackerAgreement.value.tokens || []).length
+    ? [...trackerAgreement.value.tokens].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+    : null
+
+  // Si tenemos historial de token, usar esos registros
+  if (latestToken && latestToken.history && latestToken.history.length > 0) {
+    const history = [...latestToken.history].sort((a, b) => new Date(a.id) - new Date(b.id))
+    
+    // Check if there's a 'signed' event in the history
+    const hasSignedEvent = history.some(event => event.event_type === 'signed')
+    
+    history.forEach(event => {
+      const eventConfig = getEventConfig(event.event_type, event)
+      if (eventConfig) {
+        items.push({
+          key: event.event_type,
+          title: eventConfig.title,
+          meta: new Date(event.created_at).toLocaleString('en-GB', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+          }),
+          text: event.description || eventConfig.text,
+          color: eventConfig.color,
+          bgClass: eventConfig.bgClass,
+          icon: eventConfig.icon,
+          showFile: event.event_type === 'signed' || (event.event_type === 'created' && !hasSignedEvent),
+          ipAddress: event.ip_address,
+          userAgent: event.user_agent
+        })
+      }
+    })
+  }
+  
+  // Assign sides strictly alternating
+  return items.map((item, index) => ({
+    ...item,
+    side: index % 2 === 0 ? 'right' : 'left'
+  }))
+})
+
+const getEventConfig = (eventType, event) => {
+  const configs = {
+    'created': {
+      title: 'Avtal skapad',
+      text: trackerAgreement.value?.title || 'Avtal',
+      color: '#00EEB0',
+      bgClass: 'status-info',
+      icon: 'custom-star'
+    },
+    'sent': {
+      title: 'Signeringsförfrågan skickad',
+      text: `Skickad till ${event.metadata?.email || 'mottagare'}`,
+      color: '#1890FF',
+      bgClass: 'status-success',
+      icon: 'custom-forward'
+    },
+    'delivered': {
+      title: 'E-post levererad',
+      text: 'E-postmeddelandet har levererats framgångsrikt',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-check-mark-2'
+    },
+    'delivery_issues': {
+      title: 'Leveransproblem',
+      text: 'Det uppstod problem med e-postleveransen',
+      color: '#FAAD14',
+      bgClass: 'status-warning',
+      icon: 'custom-risk'
+    },
+    'reviewed': {
+      title: 'Avtal granskat',
+      text: 'Kunden har öppnat och granskat avtalet',
+      color: '#1890FF',
+      bgClass: 'status-info',
+      icon: 'custom-eye'
+    },
+    'signed': {
+      title: 'Avtal signerat',
+      text: 'Signeringen är slutförd',
+      color: '#52C41A',
+      bgClass: 'status-success',
+      icon: 'custom-signature'
+    },
+    'failed': {
+      title: 'Signeringen misslyckades',
+      text: 'Ett fel inträffade under signeringsprocessen',
+      color: '#FF4D4F',
+      bgClass: 'status-error',
+      icon: 'custom-close'
+    }
+  }
+  return configs[eventType] || null
+}
+
+const openTracker = async (agreement) => {
+  await fetchData()
+  trackerAgreement.value = agreement
+  isTrackerDialogVisible.value = true
+
+  try {
+    const response = await agreementsStores.showAgreement(agreement.id)
+    trackerAgreement.value = response
+  } catch (e) {
+    console.error('Failed to refresh agreement details', e)
+  }
+}
+
+const openTrackerPreview = async () => {
+  if (!trackerAgreement.value) return
+  isTrackerPreviewVisible.value = true
+  isRequestOngoing.value = true
+  trackerPreviewError.value = ''
+  try {
+    const response = await agreementsStores.getAdminPreviewPdf(trackerAgreement.value.id)
+    trackerPreviewPdfSource.value = URL.createObjectURL(response.data)
+  } catch (e) {
+    trackerPreviewError.value = 'Kunde inte ladda PDF-förhandsvisning.'
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+watch(isTrackerPreviewVisible, val => {
+  if (!val && trackerPreviewPdfSource.value) {
+    URL.revokeObjectURL(trackerPreviewPdfSource.value)
+    trackerPreviewPdfSource.value = null
+  }
+})
+
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
+};
+
+// Watch for route changes to open tracker automatically
+watch(() => route.query.file_id, async (fileId) => {
+  if (fileId && hasLoaded.value) {
+    const agreementId = parseInt(fileId)
+    let agreement = agreements.value.find(agr => agr.id === agreementId)
+    
+    if (!agreement) {
+      // If not found in current page, try to fetch it directly
+      try {
+        agreement = await agreementsStores.showAgreement(agreementId)
+      } catch (error) {
+        console.error('Agreement not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Avtalet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (agreement) {
+      await goToTracker(agreement)
+    }
+  }
+}, { immediate: true })
+
+// Watch hasLoaded to trigger file_id check after data is loaded
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.file_id) {
+    const agreementId = parseInt(route.query.file_id)
+    let agreement = agreements.value.find(agr => agr.id === agreementId)
+    
+    if (!agreement) {
+      try {
+        agreement = await agreementsStores.showAgreement(agreementId)
+      } catch (error) {
+        console.error('Agreement not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Avtalet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => {
+          advisor.value.show = false
+        }, 3000)
+        return
+      }
+    }
+    
+    if (agreement) {
+      await goToTracker(agreement)
+    }
+  }
+})
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+  
+  // Limpiar listeners de notificaciones
+  notificationsStore.offNotificationReceived()
+  
+  // Limpiar el polling interval
+  if (window._trackerPollingInterval) {
+    clearInterval(window._trackerPollingInterval)
+    window._trackerPollingInterval = null
+  }
+});
 </script>
 
 <template>
@@ -557,81 +868,180 @@ const goToTracker = (agreementData) => {
 
     <VCard class="card-fill">
       <VCardTitle
-        class="d-flex justify-space-between"
-        :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+        ]"
       >
         <div class="d-flex align-center w-100 w-md-auto font-blauer">
           <h2>Avtal <span v-if="hasLoaded">({{ totalAgreements }})</span></h2>
         </div>
 
-        <div class="d-flex gap-4 title-action-buttons">
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
+
+        <div class="d-flex gap-4">
           <VBtn
-            class="btn-light w-100 w-md-auto"
+            class="btn-light w-auto"
+            block
             @click="downloadCSV">
             <VIcon icon="custom-export" size="24" />
             Exportera
           </VBtn>
 
           <VBtn
-            v-if="$can('create','agreements') && !$vuetify.display.smAndDown"
-            class="btn-gradient w-100 w-md-auto"
-            @click="isModalVisible = true">
-            <VIcon icon="custom-plus" size="24" />
-            Skapa
-          </VBtn>
-
-           <VBtn
-            v-if="$vuetify.display.smAndDown && $can('create', 'agreements')"
-            class="btn-gradient w-100 w-md-auto"
-            @click="isModalVisible = true"
+            v-if="$can('create','agreements') && $vuetify.display.mdAndDown"
+            class="btn-gradient"
+            block
+            @click="skapaMobile = true"
           >
             <VIcon icon="custom-plus" size="24" />
             Skapa
           </VBtn>
+
+          <VMenu v-if="!$vuetify.display.mdAndDown">
+            <template #activator="{ props }">
+              <VBtn
+                v-if="$can('create','agreements') && !$vuetify.display.mdAndDown"
+                class="btn-gradient"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-plus" size="24" />
+                Skapa
+              </VBtn>
+            </template>
+            <VList>
+              <VListItem @click="setSkapa(1)">
+                <VListItemTitle>Försäljningsavtal</VListItemTitle>
+              </VListItem>
+
+              <VListItem @click="setSkapa(2)">
+                <VListItemTitle>Inköpsavtal</VListItemTitle>
+              </VListItem>
+
+              <VListItem @click="setSkapa(3)">
+                <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+              </VListItem>
+
+              <VListItem @click="setSkapa(4)">
+                <VListItemTitle>Prisförslag</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
         </div>
       </VCardTitle>
 
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-4"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
       >
         <!-- 👉 Search  -->
         <div class="search">
-          <VTextField
-            v-model="searchQuery"
-            placeholder="Sök"
-            clearable
-          />
+          <VTextField v-model="searchQuery" placeholder="Sök" clearable />
         </div>
 
-        <VAutocomplete
-            v-model="agreement_type_id_select"
-            placeholder="Typ av avtal"
-            :items="agreementTypes"
-            :item-title="item => item.name"
-            :item-value="item => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-        />
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <VAutocomplete
-            v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            v-model="supplier_id"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="item => item.full_name"
-            :item-value="item => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+          <AppAutocomplete
+              v-if="role === 'SuperAdmin' || role === 'Administrator'"
+              v-model="supplier_id"
+              prepend-icon="custom-profile"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="item => item.full_name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              style="width: 200px"
+              :menu-props="{ maxHeight: '300px' }"
+              class="selector-user selector-truncate"
         />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          v-if="role !== 'Supplier' && role !== 'User'"
+          @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+        
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter</span>
+        </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateType(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Försäljningsavtal</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(2)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 2"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Inköpsavtal</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(3)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 3"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateType(4)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="agreement_type_id_select === 4"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Prisförslag</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.smAndDown"
@@ -654,14 +1064,24 @@ const goToTracker = (agreementData) => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"> REG. NR </th>
-            <th scope="col"> INBYTESFORDON REG. NR </th>
-            <th scope="col" class="text-end"> KREDIT / LEASING </th>
-            <th scope="col"> TYP </th>
-            <th scope="col"> SKAPAD </th>
-            <th scope="col"> SKAPAD AV </th>
-            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> LEVERANTÖR </th>
-            <th scope="col"> SIGNERA STATUS </th>
+            <th scope="col" class="text-center"> Reg. Nr </th>
+            <th scope="col" class="text-center"> Inbytesfordon Reg. Nr </th>
+            <th scope="col" class="text-center"> Kredit / Leasing </th>
+            <th scope="col" class="text-center"> Typ </th>
+            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
+            <th scope="col" class="text-center"> Skapad </th>
+            <th scope="col" class="text-center"> 
+              Signera status                            
+              <VTooltip location="bottom" max-width="200"> 
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer">
+                    <VIcon icon="custom-circle-help" size="20" />
+                  </span>
+                </template>
+                Klicka för att se hur signeringsprocessen fortskrider.
+              </VTooltip>
+            </th>
+            <th scope="col"> Skapad Av </th>
             <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
           </tr>
         </thead>
@@ -671,19 +1091,27 @@ const goToTracker = (agreementData) => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
-            <td> 
-              {{ agreement.agreement_type_id === 4 ?
-                agreement.offer.reg_num : 
-                (agreement.agreement_type_id === 3 ? 
-                  agreement.commission?.vehicle.reg_num   :
-                  agreement.vehicle_client?.vehicle.reg_num 
-                )                    
-              }} 
+            <td class="text-center" @click="goToTracker(agreement)">
+              <span class="font-weight-medium cursor-pointer text-aqua">
+                {{ agreement.agreement_type_id === 4 ?
+                  agreement.offer.reg_num : 
+                  (agreement.agreement_type_id === 3 ? 
+                    agreement.commission?.vehicle.reg_num   :
+                    agreement.vehicle_client?.vehicle.reg_num 
+                  )                    
+                }} 
+              </span> 
             </td>
-            <td> {{ agreement.vehicle_interchange?.reg_num }} </td>                
-            <td class="text-end"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
-            <td> {{ agreement.agreement_type.name  }}</td>          
-            <td>  
+            <td class="text-center"> {{ agreement.vehicle_interchange?.reg_num }} </td>                
+            <td class="text-center"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
+            <td class="text-center"> {{ agreement.agreement_type.name  }}</td> 
+            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+              <span v-if="agreement.supplier">
+                {{ agreement.supplier.user.name }}
+                {{ agreement.supplier.user.last_name ?? "" }}
+              </span>
+            </td>         
+            <td class="text-center">  
               {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
                   year: 'numeric', 
                   month: '2-digit', 
@@ -692,47 +1120,62 @@ const goToTracker = (agreementData) => {
                   minute: '2-digit',
                   hour12: false
               }) }}
+            </td>           
+            <!-- 👉 Status -->
+            <td class="text-center text-wrap d-flex justify-center align-center">
+              <div
+                v-if="agreement.tokens && agreement.tokens.length > 0"
+                class="status-chip"
+                :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+              </div>
+
+              <div
+                v-else
+                class="status-chip"
+                :class="`status-chip-${resolveStatus('pending')?.class}`"
+              >
+                <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                 {{ resolveStatus('pending')?.name }}
+              </div>
             </td>
-            <td class="text-wrap">
-              <div class="d-flex align-center gap-x-3">
+            <td style="width: 1%; white-space: nowrap">
+              <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
                   size="38"
-                  >
+                >
                   <VImg
                     v-if="agreement.user.avatar"
-                    style="border-radius: 50%;"
+                    style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + agreement.user.avatar"
                   />
-                    <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                  <span v-else>{{ avatarText(agreement.user.name) }}</span>
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }} 
+                    {{ agreement.user.name }} {{ agreement.user.last_name ?? "" }}
                   </span>
-                  <span class="text-sm text-disabled">{{ agreement.user.email }}</span>
+                  <span class="text-sm text-disabled">
+                    <VTooltip 
+                      v-if="agreement.user.email && agreement.user.email.length > 20"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ truncateText(agreement.user.email, 20) }}
+                        </span>
+                      </template>
+                      <span>{{ agreement.user.email }}</span>
+                    </VTooltip>
+                    <span class="text-sm text-disabled"v-else>{{ agreement.user.email }}</span>
+                  </span>
                 </div>
               </div>
-            </td>
-            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
-              <span class="font-weight-medium"  v-if="agreement.supplier">
-                {{ agreement.supplier.user.name }} {{ agreement.supplier.user.last_name ?? '' }} 
-              </span>
-            </td>
-            <td>
-              <span v-if="agreement.agreement_type_id === 4">
-                NO APLICA
-              </span>
-              <VChip
-                v-else
-                label
-                :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
-              >
-                {{ agreement.token?.signature_status ?? 'pending' }}
-              </VChip>
-            </td>
+            </td> 
             <!-- 👉 Actions -->
-            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'billings') || $can('delete', 'billings')">      
+            <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')">      
               <VMenu>
                 <template #activator="{ props }">
                   <VBtn v-bind="props" icon variant="text" class="btn-white">
@@ -744,13 +1187,15 @@ const goToTracker = (agreementData) => {
                     v-if="$can('view','agreements')"
                     @click="goToTracker(agreement)">
                     <template #prepend>
-                      <VIcon icon="tabler-timeline" class="mr-2" />
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Spårare</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
+                  <VListItem 
+                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    @click="openStaticSignatureDialog(agreement)">
                     <template #prepend>
-                      <VIcon icon="mdi-draw" class="mr-2" />
+                      <VIcon icon="custom-signature" class="mr-2" />
                     </template>
                     <VListItemTitle>Signera</VListItemTitle>
                   </VListItem>
@@ -758,31 +1203,34 @@ const goToTracker = (agreementData) => {
                      v-if="$can('view', 'agreements')"
                      @click="openLink(agreement)">
                     <template #prepend>
-                      <VIcon icon="mdi-file-pdf-box" class="mr-2" />
+                      <VIcon icon="custom-pdf" class="mr-2" />
                     </template>
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
+                  <VListItem v-if="$can('view','agreements') && agreement.tokens?.[0]?.signature_status === 'signed'"
+                    @click="send(agreement)">
                     <template #prepend>
-                      <VIcon icon="mdi-file-pdf-box" class="mr-2" />
+                      <VIcon icon="custom-send" class="mr-2" />
                     </template>
                     <VListItemTitle>Sänd PDF</VListItemTitle>
                   </VListItem>
                   <VListItem v-if="$can('view','agreements')" @click="download(agreement)">
                     <template #prepend>
-                      <VIcon icon="mdi-cloud-download-outline" class="mr-2"/>
+                      <VIcon icon="custom-download" class="mr-2"/>
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
-                  <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
+                  <VListItem 
+                    v-if="$can('edit','agreements') && agreement.tokens?.[0]?.signature_status === 'created'"
+                    @click="editAgreement(agreement)">
                     <template #prepend>
-                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                      <VIcon icon="custom-pencil" size="24" />
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(agreement)">
                     <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                      <VIcon icon="custom-waste" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
@@ -800,22 +1248,31 @@ const goToTracker = (agreementData) => {
       >
         <VIcon
           :size="$vuetify.display.smAndDown ? 80 : 120"
-          icon="custom-f-user"
+          icon="custom-f-agreement"
         />
         <div class="empty-state-content">
-          <div class="empty-state-title">Inga avtal hittades</div>
+          <div class="empty-state-title">Du har inga sparade avtal</div>
           <div class="empty-state-text">
-            Skapa ett nytt avtal för att komma igång.
+            Här kommer alla dina köpeavtal och servicedokument att listas. Skapa ditt första avtal för att enkelt hantera och spåra dina överenskommelser.
           </div>
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'agreements')"
+          v-if="$can('create', 'agreements') && !$vuetify.display.mdAndDown"
           @click="isModalVisible = true"
         >
-          Skapa avtal
+          Skapa nytt avtal
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
+
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'agreements')"
+          @click="skapaMobile = true"
+        >
+          Skapa nytt avtal
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>        
       </div>
 
       <div v-if="agreements.length && $vuetify.display.smAndDown" class="pb-6 px-6">
@@ -823,20 +1280,17 @@ const goToTracker = (agreementData) => {
           <div class="card-header-type">
             {{ agreement.agreement_type.name }}
           </div>
-          <VExpansionPanels class="custom-expansion-panels">
+          <VExpansionPanels class="custom-expansion-panels expansion-panels">
             <VExpansionPanel elevation="0">
               <VExpansionPanelTitle
-                collapse-icon="tabler-chevron-up"
-                expand-icon="tabler-chevron-down"
-                class="custom-panel-title"
+                collapse-icon="custom-chevron-right"
+                expand-icon="custom-chevron-down"
+                style="height: 56px !important;"
               >
-                <div class="d-flex align-center gap-3 w-100">
-                  <VAvatar color="#008C91" size="32" class="white--text">
-                    <span class="text-white font-weight-bold">A</span>
-                  </VAvatar>
-                  <span class="font-weight-medium text-high-emphasis">{{ agreement.id }}</span>
-                  <span class="reg-nr-text">
-                    Reg. Nr. {{ agreement.agreement_type_id === 4 ?
+                <span class="order-id">{{ agreement.id }}</span>
+                <div class="order-title-box">
+                  <span class="text-aqua">
+                     Reg. Nr. {{ agreement.agreement_type_id === 4 ?
                         agreement.offer.reg_num : 
                         (agreement.agreement_type_id === 3 ? 
                           agreement.commission?.vehicle.reg_num   :
@@ -847,104 +1301,46 @@ const goToTracker = (agreementData) => {
                 </div>
               </VExpansionPanelTitle>
               <VExpansionPanelText>
-                <div class="mb-4 mt-2">
-                  <div class="text-caption text-disabled mb-1">Skapad Av</div>
-                  <div class="font-weight-medium">
+                <div class="mb-6">
+                  <div class="expansion-panel-item-label">Skapad av</div>
+                  <div class="expansion-panel-item-value">
                     {{ agreement.user.name }} {{ agreement.user.last_name ?? '' }}
                   </div>
                 </div>
                 
                 <div class="mb-6">
-                  <div class="text-caption text-disabled mb-1">Status</div>
-                  <div>
-                    <span v-if="agreement.agreement_type_id === 4">
-                        NO APLICA
-                      </span>
-                      <VChip
-                        v-else
-                        label
-                        variant="outlined"
-                        class="status-chip"
-                        :color="resolveStatus(agreement.token?.signature_status ?? 'pending')?.color"
-                      >
-                        {{ agreement.token?.signature_status ?? 'pending' }}
-                      </VChip>
+                  <div class="expansion-panel-item-label">Status:</div>
+                  <div class="expansion-panel-item-value">
+                    <div
+                      v-if="agreement.tokens && agreement.tokens.length > 0"
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus(agreement.tokens[0]?.signature_status)?.class}`"
+                    >
+                      <VIcon size="16" :icon="resolveStatus(agreement.tokens[0]?.signature_status)?.icon" class="action-icon" />
+                      {{ resolveStatus(agreement.tokens[0]?.signature_status)?.name }}
+                    </div>
+
+                    <div
+                      v-else
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus('pending')?.class}`"
+                    >
+                      <VIcon size="16" :icon="resolveStatus('pending')?.icon" class="action-icon" />
+                    {{ resolveStatus('pending')?.name }}
+                    </div>
                   </div>
                 </div>
                 
-                <div class="d-flex align-center gap-3">
-                  <VBtn
-                    variant="outlined"
-                    color="#2F3438"
-                    class="flex-grow-1 btn-details"
-                    rounded="pill"
-                    @click="goToTracker(agreement)"
+                <div class="d-flex gap-4">
+                  <VBtn class="btn-light flex-1" @click="goToTracker(agreement)"
                   >
-                    <VIcon icon="custom-eye" class="mr-2" />
+                    <VIcon icon="custom-eye" size="24" />
                     Se detaljer
                   </VBtn>
                   
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn
-                        v-bind="props"
-                        icon
-                        variant="outlined"
-                        color="#2F3438"
-                        class="btn-actions"
-                      >
-                        <VIcon icon="custom-dots-vertical" />
-                      </VBtn>
-                    </template>
-                    <VList>
-                      <VListItem
-                        v-if="$can('view','agreements')"
-                        @click="goToTracker(agreement)">
-                        <template #prepend>
-                          <VIcon icon="tabler-timeline" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Spårare</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('edit','agreements') && agreement.agreement_type_id !== 4" @click="openStaticSignatureDialog(agreement)">
-                        <template #prepend>
-                          <VIcon icon="mdi-draw" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Signera</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('view', 'agreements')"
-                         @click="openLink(agreement)">
-                        <template #prepend>
-                          <VIcon icon="mdi-file-pdf-box" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Visa som PDF</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('view','agreements')" @click="send(agreement)">
-                        <template #prepend>
-                          <VIcon icon="mdi-file-pdf-box" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Sänd PDF</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('view','agreements')" @click="download(agreement)">
-                        <template #prepend>
-                          <VIcon icon="mdi-cloud-download-outline" class="mr-2"/>
-                        </template>
-                        <VListItemTitle>Ladda ner</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('edit','agreements')" @click="editAgreement(agreement)">
-                        <template #prepend>
-                          <img :src="editIcon" alt="Edit Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(agreement)">
-                        <template #prepend>
-                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
+                  <VBtn class="btn-light" icon @click="selectedAgreementForAction = agreement; isMobileActionDialogVisible = true">
+                    <VIcon icon="custom-dots-vertical" size="24" />
+                  </VBtn>
                 </div>
               </VExpansionPanelText>
             </VExpansionPanel>
@@ -1026,27 +1422,39 @@ const goToTracker = (agreementData) => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
-        <VCardText class="dialog-title-box">
-           <div class="dialog-title">Skicka signeringsförfrågan</div>
-        </VCardText>
-        
-        <VForm
+      <VForm
           ref="refSignatureForm"
           @submit.prevent="handleSignatureSubmit"
         >
+        <VCard flat class="card-form">
+          <VCardText class="dialog-title-box">
+            <VIcon size="32" icon="custom-signature" class="action-icon" />
+            <div class="dialog-title">
+              Skicka signeringsförfrågan
+            </div>
+          </VCardText>     
           <VCardText class="dialog-text">
-            Ange e-postadressen dit signeringslänken ska skickas för avtal <strong>#{{ selectedAgreement.agreement_id }}</strong>.
+            Ange den e-postadress till vilken du vill att länken för att underteckna fordonsavtalet, 
+            Reg.nr
+            <strong>
+              {{ selectedAgreement.agreement_type_id === 4 ?
+                selectedAgreement.offer.reg_num : 
+                (selectedAgreement.agreement_type_id === 3 ? 
+                  selectedAgreement.commission?.vehicle.reg_num   :
+                  selectedAgreement.vehicle_client?.vehicle.reg_num 
+                )                    
+              }}
+            </strong>
+            ska skickas.
           </VCardText>
-          <VCardText>
+          <VCardText class="dialog-text pt-2">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-postadress*" />
             <VTextField
               v-model="signatureEmail"
-              label="E-postadress"
               placeholder="kund@exempel.com"
               :rules="[requiredValidator, emailValidator]"
             />
           </VCardText>
-
           <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
             <VBtn
               class="btn-light"
@@ -1057,14 +1465,14 @@ const goToTracker = (agreementData) => {
                 Skicka
             </VBtn>
           </VCardText>
-        </VForm>
-      </VCard>
+        </VCard>
+      </VForm>
     </VDialog>
 
     <!-- Modal Select type Contract -->
     <VDialog
       v-model="isModalVisible"
-      max-width="500"
+      persistent
       class="action-dialog"
     >
       <VBtn
@@ -1076,17 +1484,17 @@ const goToTracker = (agreementData) => {
       </VBtn>
     
       <VForm
-        ref="refVForm"
         @submit.prevent="addAgreements"
       >
-        <VCard>
+        <VCard flat class="card-form">
           <VCardText class="dialog-title-box">
-             <div class="dialog-title">Skapa</div>
+              <VIcon size="32" icon="custom-contract" class="action-icon" />
+              <div class="dialog-title">Skapa</div>
           </VCardText>
-          <VCardText>
+          <VCardText class="dialog-text">
             <VRow>
               <VCol cols="12">
-                <VAutocomplete
+                <AppAutocomplete
                   v-model="agreement_type_id"
                   :items="agreementTypes"
                   item-title="name"      
@@ -1120,7 +1528,6 @@ const goToTracker = (agreementData) => {
       v-model="isConfirmSendMailVisible"
       persistent
       class="action-dialog" >
-      
       <VBtn
         icon
         class="btn-white close-btn"
@@ -1128,10 +1535,10 @@ const goToTracker = (agreementData) => {
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
-
       <VCard>
         <VCardText class="dialog-title-box">
-           <div class="dialog-title">Skicka avtal via e-post</div>
+          <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
+          <div class="dialog-title">Skicka avtal via e-post</div>
         </VCardText>
         <VCardText class="dialog-text">
           Är du säker på att du vill skicka avtal till följande e-postadresser?
@@ -1140,8 +1547,8 @@ const goToTracker = (agreementData) => {
           <VCheckbox
             v-model="emailDefault"
             :label="selectedAgreement.agreement_client?.email"
+            class="ml-2"
           />
-
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
@@ -1154,10 +1561,14 @@ const goToTracker = (agreementData) => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           /> 
-          <span class="text-xs text-error" v-if="isValid">E-postadressen måste vara en giltig e-postadress</span>
+          <span 
+            class="text-xs text-error" 
+            v-if="isValid">
+            E-postadressen måste vara en giltig e-postadress
+          </span>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn
             class="btn-light"
             @click="isConfirmSendMailVisible = false">
@@ -1232,17 +1643,298 @@ const goToTracker = (agreementData) => {
         </VCardText>
       </VCard>
     </VDialog>
+  
+  <!-- 👉 Mobile Skapa Dialog -->
+    <VDialog
+      v-model="skapaMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="setSkapa(1)">
+            <VListItemTitle>Försäljningsavtal</VListItemTitle>
+          </VListItem>
 
+          <VListItem @click="setSkapa(2)">
+            <VListItemTitle>Inköpsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="setSkapa(3)">
+            <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="setSkapa(4)">
+            <VListItemTitle>Prisförslag</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateType(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Försäljningsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(2)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 2"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Inköpsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(3)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 3"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Förmedlingsavtal</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateType(4)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="agreement_type_id_select === 4"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Prisförslag</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Filter Dialog -->
+    <VDialog
+      v-model="isFilterDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isFilterDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-filter" class="action-icon" />
+          <div class="dialog-title">Filtrera efter</div>
+        </VCardText>
+        
+        <VCardText class="pt-0">
+          <AppAutocomplete
+            v-if="role === 'SuperAdmin' || role === 'Administrator'"
+            v-model="supplier_id"
+            prepend-icon="custom-profile"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="item => item.full_name"
+            :item-value="item => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            style="width: 200px"
+            :menu-props="{ maxHeight: '300px' }"
+            class="selector-user selector-truncate"
+        />
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
+          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'" 
+            @click="openStaticSignatureDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-signature" class="mr-2" />
+            </template>
+            <VListItemTitle>Signera</VListItemTitle>
+          </VListItem>
+          <VListItem
+              v-if="$can('view', 'agreements')"
+              @click="openLink(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-pdf" class="mr-2" />
+            </template>
+            <VListItemTitle>Visa som PDF</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('view','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'signed'"
+            @click="send(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-send" class="mr-2" />
+            </template>
+            <VListItemTitle>Sänd PDF</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('view','agreements')" @click="download(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-download" class="mr-2"/>
+            </template>
+            <VListItemTitle>Ladda ner</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('edit','agreements') && selectedAgreementForAction.tokens?.[0]?.signature_status === 'created'"
+            @click="editAgreement(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem v-if="$can('delete','agreements')" @click="showDeleteDialog(selectedAgreementForAction); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Tracker Dialog -->
+    <VDialog 
+      v-model="isTrackerDialogVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerDialogVisible = false"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">
+            Signaturprocess
+          </div>
+        </VCardText>
+        
+        <VCardText class="tracker-body">
+          <div class="snake-timeline">
+            <div 
+              v-for="(item, index) in trackerEvents" 
+              :key="item.key"
+              class="snake-item"
+              :class="[
+                index % 2 === 0 ? 'icon-right' : 'icon-left',
+                { 'is-first': index === 0 },
+                { 'is-last': index === trackerEvents.length - 1 }
+              ]"
+            >
+              <!-- Curved Border Line -->
+              <div class="snake-curve"></div>
+              
+              <!-- Content Block (centered, covers the line) -->
+              <div class="snake-content">
+                <span class="snake-date">{{ item.meta }}</span>
+                <h4 class="snake-heading">{{ item.title }}</h4>
+                <p class="snake-text">{{ item.text }}</p>
+                <div 
+                  v-if="(item.key === 'created' || item.key === 'signed') && trackerAgreement && item.showFile" 
+                  class="snake-file-btn" 
+                  @click="openTrackerPreview"
+                >
+                  <VIcon icon="custom-pdf-2" size="14" />
+                  <span>{{ item.key === 'created' ? trackerAgreement.file?.split('/').pop() : 'Signerad PDF' }}</span>
+                </div>
+              </div>
+
+              <!-- Status Icon Circle -->
+              <div class="snake-icon-wrapper" :class="item.bgClass">
+                <VIcon :icon="item.icon" size="16" color="white" />
+              </div>
+            </div>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Tracker Preview Dialog -->
+    <VDialog 
+      v-model="isTrackerPreviewVisible"
+      persistent
+      class="action-dialog" >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+          class="btn-white close-btn"
+          @click="isTrackerPreviewVisible = !isTrackerPreviewVisible"
+        >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-signature" class="action-icon" />
+          <div class="dialog-title">
+            Förhandsvisa avtal
+          </div>
+        </VCardText>
+        <VDivider />
+        <VCardText class="d-flex justify-center" style="min-height:400px;">
+          <VAlert 
+            v-if="trackerPreviewError" 
+            type="error" class="mb-4">
+            {{ trackerPreviewError }}
+          </VAlert>
+          <VuePdfEmbed 
+            v-if="trackerPreviewPdfSource && !trackerPreviewError" 
+            :source="trackerPreviewPdfSource" 
+            :width="windowWidth < 1024 ? 300 : 450"
+            />
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
 <style lang="scss" scoped>
-  .dialog-bottom-full-width {
-    .v-card {
-      border-radius: 24px 24px 0 0 !important;
-    }
-  }
-
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;
@@ -1286,24 +1978,27 @@ const goToTracker = (agreementData) => {
 
   /* Mobile Card Styles */
   .mobile-card-wrapper {
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
     background-color: #fff;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   }
 
   .card-header-type {
-    background-color: #F6F6F6;
-    padding: 8px 16px;
-    font-size: 0.875rem;
-    color: #6D788D;
+    background-color: #E7E7E7;
+    padding: 4px;
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #5D5D5D;
     text-align: center;
-    font-weight: 500;
   }
 
   .custom-expansion-panels {
     /* Remove default margins/shadows if needed */
     margin-top: 0;
+    background-color: #f6f6f6 !important;
   }
 
   :deep(.custom-expansion-panels .v-expansion-panel) {
@@ -1329,23 +2024,363 @@ const goToTracker = (agreementData) => {
   }
 
   .btn-details {
-    border-color: #E0E0E0;
+    /*border-color: #E0E0E0;*/
     text-transform: none;
     letter-spacing: normal;
     font-weight: 500;
+    border: solid 1px #6e9383 !important;
+    background-color: transparent !important;
   }
 
-  .btn-actions {
-    border-color: #E0E0E0;
+  /* Tracker Styles */
+  .tracker-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.2rem;
+  }
+
+  .tracker-body {
+    padding: 24px 32px 32px !important;
+    max-height: 80vh;
+    overflow-y: auto;
+    
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
+    &::-webkit-scrollbar {
+      display: none; /* Chrome/Safari/Edge */
+    }
+  }
+
+  /* ===== SNAKE TIMELINE - PROD STYLE (Pixel Perfect Refinement) ===== */
+  .snake-timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 600px; 
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  .snake-item {
+    position: relative;
+    display: flex;
+    width: 100%;
+    min-height: 140px;
+    box-sizing: border-box;
+    
+    /* SOLUCIÓN DOBLE LÍNEA */
+    & + .snake-item {
+      margin-top: -2px; 
+    }
+  }
+
+  /* Variables SASS Ajustadas */
+  $curve-width: 2px;
+  $curve-color: #E7E7E7;
+  $curve-radius: 70px; /* Aumentado para curva más pronunciada/circular */
+  $gap-to-center: 12px; /* 12px per Figma */
+
+  /* ===== LA CURVA (SNAKE LINE) ===== */
+  .snake-curve {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: calc(50% + 1px); 
+    border: 0 solid $curve-color;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* --- Ítem: Icono Derecha (Contenido Izquierda) --- */
+  .snake-item.icon-right {
+    flex-direction: row;
+    justify-content: flex-end; 
+    padding-right: 10%; 
+    text-align: right;
+
+    .snake-curve {
+      left: 50%; 
+      border-top-width: $curve-width;
+      border-right-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: 0 $curve-radius $curve-radius 0;
+    }
+
+    .snake-content {
+      align-items: flex-end; 
+      margin-right: $gap-to-center;
+    }
+  }
+
+  /* --- Ítem: Icono Izquierda (Contenido Derecha) --- */
+  .snake-item.icon-left {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding-left: 10%; 
+    text-align: left;
+
+    .snake-curve {
+      right: 50%; 
+      border-top-width: $curve-width;
+      border-left-width: $curve-width;
+      border-bottom-width: $curve-width;
+      border-radius: $curve-radius 0 0 $curve-radius;
+    }
+
+    .snake-content {
+      align-items: flex-start; 
+      margin-left: $gap-to-center;
+    }
+  }
+
+  /* --- PRIMER ÍTEM (Corrección "Cola") --- */
+  .snake-item.is-first {
+    .snake-curve {
+      top: 50%; 
+      height: 50% !important;
+      border-top-width: 0; /* IMPORTANTE: Eliminar borde superior */
+      border-bottom-width: $curve-width;
+    }
+    
+    &.icon-right .snake-curve {
+      border-top-right-radius: 0; /* Eliminar curva superior */
+      border-bottom-right-radius: $curve-radius;
+      border-radius: 0 0 $curve-radius 0; /* Solo curva abajo-derecha */
+    }
+
+    &.icon-left .snake-curve {
+      border-top-left-radius: 0; /* Eliminar curva superior */
+      border-bottom-left-radius: $curve-radius;
+      border-radius: 0 0 0 $curve-radius; /* Solo curva abajo-izquierda */
+    }
+  }
+
+  /* --- ÚLTIMO ÍTEM (Final) --- */
+  .snake-item.is-last {
+    .snake-curve {
+      top: 0;
+      height: 50% !important; 
+      border-top-width: $curve-width;
+      border-bottom-width: 0; 
+    }
+
+    &.icon-right .snake-curve {
+      border-radius: 0 $curve-radius 0 0;
+    }
+    &.icon-left .snake-curve {
+      border-radius: $curve-radius 0 0 0;
+    }
+  }
+
+  /* --- CONTENIDO DE TEXTO --- */
+  .snake-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 320px; 
+    padding: 12px 0;
+  }
+
+  /* Typography */
+  .snake-date {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    color: #878787;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .snake-heading {
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 16px;
+    text-align: right;
+    color: #454545;
+    margin: 0 0 4px 0;
+  }
+
+  .snake-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 16px;
+    color: #454545;
+    margin: 0;
+  }
+
+  /* File Badge */
+  .snake-file-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #E7E7E7;
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+
+    span {
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 16px;
+      color: #454545;
+
+      max-width: 160px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    &:hover {
+      background: #E5E7EB;
+      border-color: #D1D5DB;
+    }
+  }
+
+  /* ===== ESTADO (ICONO) ===== */
+  .snake-icon-wrapper {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    z-index: 20;
+    top: 48%;
   }
 
-  .status-chip {
-    border-radius: 16px;
-    padding: 0 12px;
+  /* Icon Right */
+  .snake-item.icon-right .snake-icon-wrapper {
+    right: 0;
+    transform: translate(50%, -50%);
   }
+
+  /* Icon Left */
+  .snake-item.icon-left .snake-icon-wrapper {
+    left: 0;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Status Colors */
+  .snake-icon-wrapper.status-success {
+    background-color: #00EEB0;
+  }
+
+  .snake-icon-wrapper.status-info {
+    background-color: #1890FF;
+  }
+
+  .snake-icon-wrapper.status-warning {
+    background-color: #FAAD14;
+  }
+
+  .snake-icon-wrapper.status-error {
+    background-color: #EF4444;
+  }
+
+   /* ===== RESPONSIVE ===== */
+  @media (max-width: 480px) {
+    .tracker-body {
+      padding: 16px 12px 24px !important;
+    }
+
+    .snake-timeline {
+      padding: 0 24px;
+    }
+
+    .snake-item {
+      min-height: 120px;
+    }
+    
+    .snake-content {
+      max-width: none; 
+    }
+
+    .snake-item.icon-right .snake-content { margin-right: 20px; }
+    .snake-item.icon-left .snake-content { margin-left: 20px; }
+
+    .snake-icon-wrapper {
+      width: 32px;
+      height: 32px;
+      
+      .v-icon {
+        font-size: 16px !important;
+      }
+    }
+  }
+
+  .file-upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 16px;
+    border: 1px dashed #E7E7E7;
+    border-radius: 8px;
+    min-height: 88px !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: #F6F6F6;
+    position: relative;
+
+    &.has-error {
+      border-color: rgb(var(--v-theme-error));
+      background-color: rgba(var(--v-theme-error), 0.04);
+    }
+  }
+
+  .file-upload-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    max-width: calc(100% - 40px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .file-pdf-icon {
+    font-size: 32px !important;
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  .file-remove-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  .file-error-message {
+    color: rgb(var(--v-theme-error));
+    font-size: 12px;
+    margin-top: 4px;
+    padding-left: 8px;
+  }
+
 </style>
 <route lang="yaml">
   meta:

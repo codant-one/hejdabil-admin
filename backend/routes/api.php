@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 
 use App\Http\Controllers\Testing\TestingController;
 
@@ -29,7 +30,6 @@ use App\Http\Controllers\{
     ModelController,
     VehicleController,
     VehicleTaskController,
-    VehicleCostController,
     VehicleDocumentController,
     NoteController,
     AgreementController,
@@ -37,12 +37,15 @@ use App\Http\Controllers\{
     SignatureController,
     ConfigController,
     DocumentController,
-    PayoutController
+    PayoutController,
+    NotificationController
 };
 
 use App\Http\Controllers\Services\{
     CarInfoController,
-    SwishPayoutController
+    SwishPayoutController,
+    CompanyInfoController,
+    PersonInfoController,
 };
 
 /*
@@ -78,6 +81,9 @@ Route::group([
     });
 });
 
+// Broadcasting Authentication (para canales privados de WebSocket)
+Broadcast::routes(['middleware' => ['cors', 'jwt']]);
+
 //Private Endpoints
 Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
      
@@ -98,7 +104,6 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::apiResource('equipments', EquipmentController::class);
     Route::apiResource('vehicles', VehicleController::class);
     Route::apiResource('tasks', VehicleTaskController::class);
-    Route::apiResource('costs', VehicleCostController::class);
     Route::apiResource('documents', VehicleDocumentController::class);
     Route::apiResource('notes', NoteController::class);
     Route::apiResource('agreements', AgreementController::class);
@@ -107,6 +112,13 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+
+    /* NOTIFICATIONS */
+    Route::group(['prefix' => 'notifications'], function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    });
 
     //Users
     Route::group(['prefix' => 'users'], function () {
@@ -155,7 +167,17 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
 
     //Tasks
     Route::group(['prefix' => 'tasks'], function () {
+        Route::get('type/{id}', [VehicleTaskController::class, 'updateType']);
         Route::post('comment', [VehicleTaskController::class, 'comment']);
+        Route::put('comment/{id}', [VehicleTaskController::class, 'updateComment']);
+        Route::delete('comment/{id}', [VehicleTaskController::class, 'deleteComment']);
+    });
+
+    //Notes
+    Route::group(['prefix' => 'notes'], function () {
+        Route::post('comment', [NoteController::class, 'comment']);
+        Route::put('comment/{id}', [NoteController::class, 'updateComment']);
+        Route::delete('comment/{id}', [NoteController::class, 'deleteComment']);
     });
 
     //Documents (Vehicle Documents)
@@ -167,12 +189,12 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'signable-documents'], function () {
         Route::get('/', [DocumentController::class, 'index']);
         Route::post('/', [DocumentController::class, 'store']);
+        Route::post('/send', [DocumentController::class, 'send']);
         Route::get('/{document}', [DocumentController::class, 'show']);
         Route::post('/{document}', [DocumentController::class, 'update']);
         Route::delete('/{document}', [DocumentController::class, 'destroy']);
         Route::get('/{document}/get-admin-preview-pdf', [DocumentController::class, 'getAdminPreviewPdf'])->name('documents.getAdminPreviewPdf');
         Route::post('/{document}/send-signature-request', [DocumentController::class, 'sendSignatureRequest'])->name('documents.sendSignatureRequest');
-        Route::post('/{document}/send-static-signature-request', [DocumentController::class, 'sendStaticSignatureRequest']);
         Route::post('/{document}/resend-signature-request', [DocumentController::class, 'resendSignatureRequest'])->name('documents.resendSignatureRequest');
     });
 
@@ -190,9 +212,18 @@ Route::group(['middleware' => ['cors','jwt','throttle:300,1']], function(){
     Route::group(['prefix' => 'agreements'], function () {
         Route::get('/info/all', [AgreementController::class, 'info']);
         Route::post('/sendMails/{id}', [AgreementController::class, 'sendMails']);
+        Route::get('/{agreement}/get-admin-preview-pdf', [AgreementController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
         Route::post('/{agreement}/send-signature-request', [SignatureController::class, 'sendSignatureRequest'])->name('agreements.sendSignatureRequest');
         Route::post('/{agreement}/send-static-signature-request', [SignatureController::class, 'sendStaticSignatureRequest']);
         Route::get('/{agreement}/get-admin-preview-pdf', [SignatureController::class, 'getAdminPreviewPdf'])->name('agreements.getAdminPreviewPdf');
+    });
+
+    //Billing
+    Route::group(['prefix' => 'payouts'], function () {
+        Route::get('/info/all', [PayoutController::class, 'info']);
+        Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
+        Route::post('/{payout}/save-receipt-image', [PayoutController::class, 'saveReceiptImage'])->name('payouts.saveReceiptImage');
+        Route::post('/send', [PayoutController::class, 'send']);
     });
 
     //Configs
@@ -216,7 +247,13 @@ Route::group(['prefix' => 'signatures', 'middleware' => ['cors']], function () {
     Route::get('/{token}/get-unsigned-pdf', [SignatureController::class, 'getUnsignedPdf'])->name('signatures.getUnsignedPdf');
     Route::get('/{token}/details', [SignatureController::class, 'getSignatureDetails'])->name('signatures.details');
     Route::get('/{token}/status', [SignatureController::class, 'getTokenStatus'])->name('signatures.status');
+    Route::post('/{token}/log-view', [SignatureController::class, 'logView'])->name('signatures.logView');
     Route::get('/{token}/get-signed-pdf', [SignatureController::class, 'getSignedPdf'])->name('signatures.getSignedPdf');
+});
+
+//Notifications
+Route::group(['prefix' => 'notifications', 'middleware' => ['cors']], function () {
+    Route::post('/send', [NotificationController::class, 'send'])->name('notifications.send');
 });
 
 //PROXY
@@ -224,6 +261,13 @@ Route::get('/proxy-image',[ProxyController::class, 'getImage']);
 
 //CAR INFO
 Route::get('/cars/lookup/{licensePlate}', [CarInfoController::class, 'lookupByLicensePlate']);
+Route::get('/cars/lookup-vin/{vin}', [CarInfoController::class, 'lookupByVin']);
 
 //Swish Payout
 Route::post('/swish/payout/callback', [SwishPayoutController::class, 'handle']);
+
+// COMPANY INFO (Bolagsverket)
+Route::get('/companies/lookup/{orgNumber}', [CompanyInfoController::class, 'lookupByOrgNumber']);
+
+// PERSON INFO (SPAR - Statens Personadressregister)
+Route::get('/persons/lookup/{personId}', [PersonInfoController::class, 'lookupByPersonId']);

@@ -40,12 +40,12 @@ class SignableDocuments {
         return axios.post(`/signable-documents/${documentId}/send-signature-request`, payload)
     }
 
-    sendStaticSignatureRequest(documentId, payload) {
-        return axios.post(`/signable-documents/${documentId}/send-static-signature-request`, payload)
-    }
-
     resendSignatureRequest(documentId) {
         return axios.post(`/signable-documents/${documentId}/resend-signature-request`)
+    }
+
+    send(data) {
+        return axios.post('/signable-documents/send', data)
     }
 }
 

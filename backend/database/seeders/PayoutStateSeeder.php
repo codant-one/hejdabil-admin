@@ -14,8 +14,8 @@ class PayoutStateSeeder extends Seeder
      */
     public function run()
     {
-        $states = ['Skapad', 'Skickad', 'Väntande', 'Betald', 'Misslyckad', 'Avbruten', 'Utgången'];
-        $labels = ['Created', 'Sent', 'Pending', 'Paid', 'Failed', 'Cancelled', 'Expired'];
+        $states = ['Väntande', 'Skickad', 'Avbruten', 'Slutförd', 'Misslyckad', 'Utgången'];
+        $labels = ['created', 'sent', 'cancel', 'paid', 'failed', 'expired'];
 
         foreach($states as $key => $state) {
             PayoutState::updateOrCreate(

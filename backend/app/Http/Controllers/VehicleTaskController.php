@@ -133,4 +133,69 @@ class VehicleTaskController extends Controller
             ], 500);
         }
     }
+
+    public function updateComment(Request $request, $id)
+    {
+        try {
+
+            VehicleTask::updateComment($request, $id);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteComment(Request $request, $id)
+    {
+        try {
+
+            VehicleTask::deleteComment($id);
+
+            return response()->json([
+                'success' => true
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateType($id)
+    {
+        try {
+            $task = VehicleTask::find($id);
+        
+            if (!$task)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Uppgift hittades inte'
+                ], 404);
+
+            $task->updateType($task); 
+
+            return response()->json([
+                'success' => true
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
 }

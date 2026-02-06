@@ -21,6 +21,10 @@ class Note extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
+    public function comments(){
+        return $this->hasMany(NoteComment::class, 'note_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
@@ -121,5 +125,35 @@ class Note extends Model
             $note = self::find($id);
             $note->delete();
         }
+    }
+
+    public static function sendComment($request) {
+        NoteComment::create([
+            'user_id' => Auth::user()->id,
+            'note_id' => $request->id,
+            'comment' => $request->comment
+        ]);
+    }
+
+    public static function updateComment($request, $id) {
+        $comment = NoteComment::find($id);
+        
+        if ($comment) {
+            $comment->update([
+                'comment' => $request->comment
+            ]);
+        }
+        
+        return $comment;
+    }
+
+    public static function deleteComment($id) {
+        $comment = NoteComment::find($id);
+        
+        if ($comment) {
+            $comment->delete();
+        }
+        
+        return true;
     }
 }

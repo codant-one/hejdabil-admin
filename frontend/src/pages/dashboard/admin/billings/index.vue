@@ -29,6 +29,7 @@ const hasLoaded = ref(false);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailVisible = ref(false);
 const isConfirmSendMailReminder = ref(false);
+const isConfirmKreditera = ref(false)
 const emailDefault = ref(true);
 const selectedTags = ref([]);
 const existingTags = ref([]);
@@ -211,6 +212,8 @@ const resolveStatus = state_id => {
     return { class: 'success' }   
   if (state_id === 8)
     return { class: 'error' }
+  if (state_id === 9)
+    return { class: 'error' }
 }
 
 const updateState = async () => {
@@ -236,6 +239,13 @@ const updateState = async () => {
   await fetchData();
 
   return true;
+};
+
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + '...';
+  }
+  return text;
 };
 
 const openLink = function (billingData) {
@@ -326,12 +336,41 @@ const sendReminder = (billingData) => {
   selectedBilling.value = { ...billingData };
 };
 
-const credit = (billing) => {
+const kreditera = () => {
+  isRequestOngoing.value = true
+  isConfirmKreditera.value = false;
+
+  billingsStores.credit(Number(selectedBilling.value.id))
+      .then((res) => {
+          let data = {
+              message: 'Framgångsrik kredit',
+              error: false
+          }
+          
+          isRequestOngoing.value = false
+          
+          router.push({ name : 'dashboard-admin-billings-id', params: { id: res.data.data.billing.id } })
+          emitter.emit('toast', data)
+      })
+      .catch((err) => {
+          advisor.value.show = true
+          advisor.value.type = 'error'
+          advisor.value.message = Object.values(err.message).flat().join('<br>')
+
+          setTimeout(() => { 
+              advisor.value.show = false
+              advisor.value.type = ''
+              advisor.value.message = ''
+          }, 3000)
+      
+          isRequestOngoing.value = false
+      })
+}
+
+const credit = (billingData) => {
+  isConfirmKreditera.value = true;
+  selectedBilling.value = { ...billingData };
   billingsStores.setStateId(state_id.value);
-  router.push({
-    name: "dashboard-admin-billings-credit-id",
-    params: { id: billing.id },
-  });
 };
 
 const send = (billingData) => {
@@ -494,7 +533,7 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between"
+        class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.mdAndDown ? 'p-6 pb-0' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
@@ -505,8 +544,8 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-          <VAutocomplete
-            v-if="role !== 'Supplier'"
+          <AppAutocomplete
+            v-if="role !== 'Supplier' && hasLoaded"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
@@ -519,7 +558,7 @@ onBeforeUnmount(() => {
             class="selector-user selector-truncate"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="client_id"
             :items="clients"
@@ -595,6 +634,19 @@ onBeforeUnmount(() => {
                 /></VListItemAction>
               </template>
               <VListItemTitle>Förfallna</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(9)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 9"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Krediterad</VListItemTitle>
             </VListItem>
           </VList>
         </VMenu>
@@ -726,9 +778,11 @@ onBeforeUnmount(() => {
                     {{ billing.user.name }} {{ billing.user.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
-                    <VTooltip location="bottom" v-if="billing.user.email && billing.user.email.length > 20">
+                    <VTooltip 
+                      v-if="billing.user.email && billing.user.email.length > 20"
+                      location="bottom">
                       <template #activator="{ props }">
-                        <span v-bind="props">
+                        <span v-bind="props" class="cursor-pointer">
                           {{ truncateText(billing.user.email, 20) }}
                         </span>
                       </template>
@@ -762,7 +816,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Se detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id === 4"
+                    v-if="$can('edit', 'billings') && (billing.state_id === 4 || billing.state_id === 8)"
                     @click="updateBilling(billing)"
                   >
                     <template #prepend>
@@ -772,7 +826,7 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem
                     v-if="
-                      $can('edit', 'billings') &&
+                      $can('view', 'billings') &&
                       (billing.state_id === 4 || billing.state_id === 8)
                     "
                     @click="editBilling(billing)"
@@ -783,7 +837,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="printInvoice(billing)"
                   >
                     <template #prepend>
@@ -792,7 +846,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Skriv ut</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="openLink(billing)"
                   >
                     <template #prepend>
@@ -819,7 +873,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Påminnelse</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('view', 'billings')"
                     @click="send(billing)"
                   >
                     <template #prepend>
@@ -829,7 +883,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('delete', 'billings')"
+                    v-if="$can('edit', 'billings') && billing.state_id !== 9"
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -877,7 +931,7 @@ onBeforeUnmount(() => {
           v-if="$vuetify.display.mdAndDown && $can('create', 'clients')"
           @click="isDialogOpen = true"
         >
-          Lägg till ny kund
+           Skapa ny faktura
           <VIcon icon="custom-arrow-right" size="24" />
         </VBtn>
       </div>
@@ -944,21 +998,19 @@ onBeforeUnmount(() => {
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
-        <div v-if="!clients.length" class="text-center py-4">
-          Uppgifter ej tillgängliga
-        </div>
       </VExpansionPanels>
 
       <VCardText
         v-if="billings.length"
-        class="d-block d-md-flex align-center flex-wrap gap-4 pt-0 px-6 pb-16"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
         </span>
 
-        <VSpacer class="d-none d-md-block" />
-
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+        
         <VPagination
           v-model="currentPage"
           size="small"
@@ -1016,12 +1068,14 @@ onBeforeUnmount(() => {
             @keydown.enter.prevent="addTag"
             @input="isValid = false"
           />
-          <span class="text-xs text-error" v-if="isValid"
-            >E-postadressen måste vara en giltig e-postadress</span
-          >
+          <span 
+            class="text-xs text-error" 
+            v-if="isValid">
+            E-postadressen måste vara en giltig e-postadress
+          </span>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn class="btn-light" @click="isConfirmSendMailVisible = false">
             Avbryt
           </VBtn>
@@ -1030,32 +1084,79 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
-    <!-- 👉 Confirm send reminder -->
-    <VDialog v-model="isConfirmSendMailReminder" persistent class="v-dialog-sm">
+    <!-- 👉 Confirm kreditera -->
+    <VDialog 
+      v-model="isConfirmKreditera" 
+      persistent
+      class="action-dialog"
+    >
       <!-- Dialog close btn -->
-
-      <DialogCloseBtn
-        @click="isConfirmSendMailReminder = !isConfirmSendMailReminder"
-      />
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmKreditera = !isConfirmKreditera"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Skicka påminnelse via e-post">
-        <VDivider class="mt-4" />
-        <VCardText>
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cancel-contract" class="action-icon" />
+          <div class="dialog-title">
+            Kreditera faktura
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          En hel kreditering innebär att du tar bort din fordran på kunden till fullo. 
+          Är du säker på att du vill kreditera fakturan
+          <strong>#{{ selectedBilling.invoice_id }}</strong
+          >?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmKreditera = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="kreditera"> Kreditera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm send reminder -->
+    <VDialog 
+      v-model="isConfirmSendMailReminder" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendMailReminder = !isConfirmSendMailReminder"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-alarm" class="action-icon" />
+          <div class="dialog-title">
+            Skicka påminnelse via e-post
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           Vill du skicka ett påminnelsemeddelande för faktura
           <strong>#{{ selectedBilling.invoice_id }}</strong
           >?
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmSendMailReminder = false"
-          >
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailReminder = false">
             Avbryt
           </VBtn>
-          <VBtn @click="reminder"> Skicka </VBtn>
+          <VBtn class="btn-gradient" @click="reminder"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -1140,6 +1241,18 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Förfallna</VListItemTitle>
           </VListItem>
+
+           <VListItem @click="updateStateId(9)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 9"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Krediterad</VListItemTitle>
+          </VListItem>
         </VList>
       </VCard>
     </VDialog>
@@ -1165,7 +1278,7 @@ onBeforeUnmount(() => {
         </VCardText>
         
         <VCardText class="pt-0">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="role !== 'Supplier'"
             prepend-icon="custom-profile"
             v-model="supplier_id"
@@ -1179,7 +1292,7 @@ onBeforeUnmount(() => {
             class="selector-user selector-truncate mb-3"
           />
 
-          <VAutocomplete
+          <AppAutocomplete
             prepend-icon="custom-profile"
             v-model="client_id"
             :items="clients"
@@ -1213,7 +1326,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 4"
+            v-if="$can('edit', 'billings') && (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1231,7 +1344,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="printInvoice(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1240,7 +1353,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skriv ut</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="openLink(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1258,7 +1371,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Duplicera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 8"
+            v-if="$can('view', 'billings') && selectedBillingForAction.state_id === 8"
             @click="sendReminder(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1267,7 +1380,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('view', 'billings')"
             @click="send(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1276,7 +1389,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete', 'billings')"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

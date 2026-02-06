@@ -2,74 +2,95 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Document;
-use App\Models\Token;
+use App\Http\Requests\DocumentRequest;
+
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+
+use App\Models\Document;
+use App\Models\Token;
+use App\Models\Supplier;
+
 class DocumentController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware(PermissionMiddleware::class . ':view signed-documents|administrator')->only(['index']);
+        $this->middleware(PermissionMiddleware::class . ':create signed-documents|administrator')->only(['store']);
+        $this->middleware(PermissionMiddleware::class . ':edit signed-documents|administrator')->only(['update']);
+        $this->middleware(PermissionMiddleware::class . ':delete signed-documents|administrator')->only(['destroy']);
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Document::with(['tokens', 'user']);
+        try {
 
-        // Search
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
+            $limit = $request->has('limit') ? $request->limit : 10;
+
+            $query = Document::with([
+                        'supplier' => function ($q) {
+                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                        },
+                        'tokens',
+                        'user'
+                    ])
+                    ->applyFilters(
+                        $request->only([
+                            'search',
+                            'orderByField',
+                            'orderBy',
+                            'supplier_id',
+                            'status'
+                        ])
+                    );
+
+            $count = $query->count();
+
+            $documents = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'documents' => $documents,
+                    'documentsTotalCount' => $count,
+                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
         }
-
-        // Ordering
-        $orderByField = $request->get('orderByField', 'created_at');
-        $orderBy = $request->get('orderBy', 'desc');
-        $query->orderBy($orderByField, $orderBy);
-
-        // Pagination
-        $limit = $request->get('limit', 10);
-        $page = $request->get('page', 1);
-        
-        $documents = $query->paginate($limit, ['*'], 'page', $page);
-        $totalCount = Document::count();
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'documents' => $documents,
-                'documentsTotalCount' => $totalCount,
-            ]
-        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(DocumentRequest $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf|max:10240', // 10MB max
-            'description' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
         try {
+
             $document = Document::createDocument($request);
+
+            $order_id = Document::where('supplier_id', $document->supplier_id)
+                            ->latest('order_id')
+                            ->first()
+                            ->order_id ?? 0;
+
+            $document->order_id = $order_id + 1;
+            $document->update();
 
             if ($request->hasFile('file')) {
                 $file = $request->file('file');
@@ -80,15 +101,44 @@ class DocumentController extends Controller
                 $document->save();
             }
 
+            // Create initial token with 'created' status when document is created
+            $signingToken = Str::uuid()->toString();
+            $token = $document->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => null, // Will be set when signature is requested
+                'token_expires_at' => now()->addDays(30),
+                'signature_status' => 'created',
+                'placement_x' => 0,
+                'placement_y' => 0,
+                'placement_page' => 1, // Default to page 1
+                'signature_alignment' => 'left',
+            ]);
+
+            // Log 'created' event when document is created
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Dokument skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'document_id' => $document->id,
+                    'document_title' => $document->title,
+                    'user_id' => $document->user_id,
+                ]
+            );
+
             return response()->json([
                 'success' => true,
-                'message' => 'Document created successfully',
+                'message' => 'Dokumentet har skapats',
                 'data' => ['document' => $document->load('tokens')]
             ]);
-        } catch (\Exception $e) {
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error creating document: ' . $e->getMessage()
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
             ], 500);
         }
     }
@@ -98,19 +148,31 @@ class DocumentController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $document = Document::with(['tokens'])->find($id);
+        try {
+            $document = Document::with(['tokens.history' => function($query) {
+                $query->orderBy('created_at', 'asc');
+            }])->find($id);
 
-        if (!$document) {
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Dokumentet hittades inte'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $document
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Document not found'
-            ], 404);
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'data' => ['document' => $document]
-        ]);
     }
 
     /**
@@ -118,63 +180,7 @@ class DocumentController extends Controller
      */
     public function update(Request $request, $id): JsonResponse
     {
-        $document = Document::find($id);
-
-        if (!$document) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document not found'
-            ], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'file' => 'sometimes|file|mimes:pdf|max:10240',
-            'description' => 'nullable|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            if ($request->has('title')) {
-                $document->title = $request->title;
-            }
-            if ($request->has('description')) {
-                $document->description = $request->description;
-            }
-
-            if ($request->hasFile('file')) {
-                // Delete old file
-                if ($document->file) {
-                    Storage::disk('public')->delete($document->file);
-                }
-
-                $file = $request->file('file');
-                $path = 'documents/';
-                
-                $file_data = uploadFileWithOriginalName($file, $path);
-                $document->file = $file_data['filePath'];
-            }
-
-            $document->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Document updated successfully',
-                'data' => ['document' => $document->load('tokens')]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error updating document: ' . $e->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
@@ -182,25 +188,63 @@ class DocumentController extends Controller
      */
     public function destroy($id): JsonResponse
     {
-        $document = Document::find($id);
-
-        if (!$document) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Document not found'
-            ], 404);
-        }
-
         try {
+
+            $document = Document::find($id);
+
+            if (!$document) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Dokumentet hittades inte'
+                ], 404);
+            }
+
             Document::deleteDocument($id);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Document deleted successfully'
+                'message' => 'Dokumentet har raderats'
             ]);
-        } catch (\Exception $e) {
+
+        } catch(\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting document: ' . $e->getMessage()
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send document(s) via email
+     */
+    public function send(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'ids' => 'required',
+                'email' => 'required|email',
+            ]);
+
+            $result = Document::sendDocument($request);
+
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Dokumentet har skickats via e-post'
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Kunde inte skicka dokumentet'
+            ], 400);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ett fel inträffade: ' . $ex->getMessage()
             ], 500);
         }
     }
@@ -215,73 +259,151 @@ class DocumentController extends Controller
             return response()->file($path);
         }
 
-        abort(404, 'PDF file not found for this document.');
+        abort(404, 'PDF-fil hittades inte för detta dokument.');
     }
 
     /**
      * Send signature request for a document
      */
     public function sendSignatureRequest(Document $document, Request $request)
-    {
+    {   
         $validated = $request->validate([
             'email' => 'required|email',
             'x' => 'required|numeric',
             'y' => 'required|numeric',
             'page' => 'required|integer',
+            'text' => 'required|string',
         ]);
 
         if (!$document->file) {
-            return response()->json(['message' => 'Este documento aún no tiene un PDF cargado para firmar.'], 422);
+            return response()->json([
+                'message' => 'Det finns ännu ingen PDF-fil att underteckna för detta dokument.'
+            ], 422);
         }
 
-        $signingToken = Str::uuid()->toString();
+        // Get or create token for this document
+        // First check for tokens with 'created' or 'delivery_issues' status
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['created', 'delivery_issues'])
+            ->latest()
+            ->first();
         
-        $token = $document->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email' => $validated['email'],
-            'token_expires_at' => now()->addDays(7),
-            'signature_status' => 'sent',
-            'placement_x' => $validated['x'],
-            'placement_y' => $validated['y'],
-            'placement_page' => $validated['page'],
-            'signature_alignment' => $request->get('alignment', 'left'),
-        ]);
+        if (!$token) {
+            // If no 'created' or 'delivery_issues' token exists, create a new one
+            $signingToken = Str::uuid()->toString();
+            $token = $document->tokens()->create([
+                'signing_token' => $signingToken,
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'signature_status' => 'created',
+                'placement_x' => $validated['x'],
+                'placement_y' => $validated['y'],
+                'placement_page' => $validated['page'],
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
 
-        // Send email
-        \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-        
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
-    }
-
-    /**
-     * Send static signature request (without coordinates)
-     */
-    public function sendStaticSignatureRequest(Document $document, Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-        ]);
-
-        if (!$document->file) {
-            return response()->json(['message' => 'Este documento aún no tiene un PDF cargado para firmar.'], 422);
+            // Log 'created' event for new token
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_CREATED,
+                description: 'Dokument skapat i systemet',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'document_id' => $document->id,
+                    'document_title' => $document->title,
+                    'recipient' => $validated['email'],
+                ]
+            );
+        } else {
+            // Update existing token with signature details
+            $token->update([
+                'recipient_email' => $validated['email'],
+                'token_expires_at' => now()->addDays(7),
+                'placement_x' => $validated['x'],
+                'placement_y' => $validated['y'],
+                'placement_page' => $validated['page'],
+                'signature_alignment' => $request->get('alignment', 'left'),
+            ]);
         }
 
-        $signingToken = Str::uuid()->toString();
-        
-        $token = $document->tokens()->create([
-            'signing_token' => $signingToken,
-            'recipient_email' => $validated['email'],
-            'token_expires_at' => now()->addDays(7),
-            'signature_status' => 'sent',
-            'placement_x' => null,
-            'placement_y' => null,
-            'placement_page' => 1,
-            'signature_alignment' => $request->get('alignment', 'left'),
-        ]);
+        // Send email with error handling
+        try {
+            // Update status to 'sent'
+            $token->update(['signature_status' => 'sent']);
+            
+            // Log 'sent' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: 'E-post skickad till ' . $validated['email'],
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
 
-        \Mail::to($validated['email'])->send(new \App\Mail\SignatureRequestMail($token));
-        
-        return response()->json(['message' => 'Solicitud de firma enviada con éxito.']);
+            $document->description = $request->text;
+            $document->save();
+
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $validated['email'];
+            $subject = 'Solicitud para firmar su documento';
+            $data = [
+                'signingUrl' => $signingUrl,
+                'text' => $request->text
+            ];
+
+            \Mail::send(
+                'emails.documents.signature_request'
+                , $data
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
+
+            $token->update(['signature_status' => 'delivered']);
+            
+            // Log 'delivered' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: 'E-post för underskriftsförfrågan levererad framgångsrikt',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $validated['email']]
+            );
+            
+            return response()->json([
+                'message' => 'Begäran om underskrift skickad med framgång.'
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Error sending signature email for document: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'email' => $validated['email']
+            ]);
+            
+            $token->update(['signature_status' => 'delivery_issues']);
+            
+            // Log 'delivery_issues' event
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid sändning av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'recipient' => $validated['email']
+                ]
+            );
+            
+            return response()->json([
+                'message' => 'Det gick inte att skicka e-postmeddelandet. Kontrollera e-postadressen och försök igen.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -289,27 +411,96 @@ class DocumentController extends Controller
      */
     public function resendSignatureRequest(Document $document, Request $request)
     {
-        // Find the most recent token with status 'sent' for this document
-        $token = $document->tokens()->where('signature_status', 'sent')->latest()->first();
+        // Find the most recent token with allowed statuses for this document
+        $token = $document->tokens()
+            ->whereIn('signature_status', ['sent', 'delivered', 'reviewed', 'delivery_issues'])
+            ->latest()
+            ->first();
 
         if (!$token) {
             return response()->json([
                 'success' => false,
-                'message' => 'No hay una solicitud de firma activa para reenviar.'
+                'message' => 'Det finns ingen aktiv underskriftsförfrågan att skicka om.'
             ], 422);
         }
 
         // Re-send the original email to the same recipient with the SAME token/url
         try {
-            \Mail::to($token->recipient_email)->send(new \App\Mail\SignatureRequestMail($token));
+            // Update status to 'sent' before attempting to resend
+            $token->update(['signature_status' => 'sent']);
+            
+            // Register 'sent' event for the resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_SENT,
+                description: 'Vidarebefordran av signaturpost påbörjad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+            );
+            
+            $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
+            $clientEmail = $token->recipient_email;
+            $subject = 'Solicitud para firmar su documento';
+            $data = [
+                'signingUrl' => $signingUrl,
+                'text' => $document->description
+            ];
+
+            \Mail::send(
+                'emails.documents.signature_request'
+                , $data
+                , function ($message) use ($clientEmail, $subject) {
+                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+                    $message->to($clientEmail)->subject($subject);
+            });
+            
+            // Update status to delivered if the resend was successful
+            $token->update(['signature_status' => 'delivered']);
+            
+            // Register 'delivered' event for the resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERED,
+                description: 'E-post vidarebefordrad',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: ['recipient' => $token->recipient_email, 'resend' => true]
+            );
+            
             return response()->json([
                 'success' => true,
-                'message' => 'El correo de firma ha sido reenviado.'
+                'message' => 'Återutsändningsmeddelandet har vidarebefordrats.'
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            \Log::error('Error resending signature email: ' . $e->getMessage(), [
+                'exception' => $e,
+                'document_id' => $document->id,
+                'token_id' => $token->id,
+                'email' => $token->recipient_email
+            ]);
+            
+            // If resend fails, change to delivery_issues
+            $token->update(['signature_status' => 'delivery_issues']);
+            
+            // Register 'delivery_issues' event for the failed resend
+            \App\Models\TokenHistory::logEvent(
+                tokenId: $token->id,
+                eventType: \App\Models\TokenHistory::EVENT_DELIVERY_ISSUES,
+                description: 'Fel vid vidarebefordran av e-post',
+                ipAddress: $request->ip(),
+                userAgent: $request->userAgent(),
+                metadata: [
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e),
+                    'recipient' => $token->recipient_email,
+                    'resend' => true
+                ]
+            );
+            
             return response()->json([
                 'success' => false,
-                'message' => 'No se pudo reenviar el correo: ' . $e->getMessage()
+                'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
             ], 500);
         }
     }

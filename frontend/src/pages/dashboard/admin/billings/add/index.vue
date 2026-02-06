@@ -41,6 +41,8 @@ const clients = ref([]);
 const invoice_id = ref(0);
 
 const billing_id = ref(null);
+const billing = ref(null);
+const invoiceEditableRef = ref(null);
 const err = ref(null);
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
@@ -58,6 +60,7 @@ const seeDialogRemove = ref(false);
 const selectedInvoice = ref({});
 
 const initialInvoiceData = ref(null);
+const savedInvoiceData = ref(null);
 const allowNavigation = ref(false);
 const nextRoute = ref(null);
 
@@ -71,6 +74,15 @@ const isDirty = computed(() => {
   if (!initialInvoiceData.value) return false;
   try {
     return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(initialInvoiceData.value);
+  } catch (e) {
+    return true;
+  }
+});
+
+const hasChangedSinceSave = computed(() => {
+  if (!savedInvoiceData.value) return true; // Never saved, so consider it "changed"
+  try {
+    return JSON.stringify(currentInvoiceData.value) !== JSON.stringify(savedInvoiceData.value);
   } catch (e) {
     return true;
   }
@@ -224,6 +236,7 @@ const showError = () => {
   }, 3000);
 
 };
+
 const createBilling = () => {
   let data = {
     message: "Fakturan skapades framgångsrikt",
@@ -251,6 +264,12 @@ const confirmLeave = () => {
 };
 
 const onSubmit = () => {
+  // If already saved and NO changes since save, show success dialog
+  if (billing.value?.file && !hasChangedSinceSave.value) {
+    skapatsDialog.value = true;
+    return;
+  }
+
   validate.value?.validate().then(async ({ valid: isValid }) => {
     if (isValid) {
       let formData = new FormData();
@@ -283,9 +302,19 @@ const onSubmit = () => {
         .addBilling(formData)
         .then((res) => {
           billing_id.value = res.data.billing.id;
+          billing.value = res.data.billing;
           isRequestOngoing.value = false;
-          allowNavigation.value = true; // Allow navigation after success
-          skapatsDialog.value = true;
+          allowNavigation.value = true;
+          
+          // Save current state as the saved state
+          savedInvoiceData.value = JSON.parse(JSON.stringify(currentInvoiceData.value));
+          
+          // On mobile, switch to preview tab
+          if (windowWidth.value < 1024 && invoiceEditableRef.value) {
+            invoiceEditableRef.value.setPreviewTab();
+          } else {
+            skapatsDialog.value = true;
+          }
         })
         .catch((error) => {
           err.value = error;
@@ -329,7 +358,7 @@ onBeforeRouteLeave((to, from, next) => {
 <template>
   <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
-     <VSnackbar
+    <VSnackbar
       v-model="advisor.show"
       transition="scroll-y-reverse-transition"
       :location="snackbarLocation"
@@ -348,6 +377,7 @@ onBeforeRouteLeave((to, from, next) => {
           :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
         >
           <InvoiceEditable
+            ref="invoiceEditableRef"
             v-if="userData"
             :data="invoiceData"
             :clients="clients"
@@ -359,8 +389,10 @@ onBeforeRouteLeave((to, from, next) => {
             :company="company"
             :total="total"
             :amount_discount="amount_discount"
+            :billing="billing"
             :isCreated="true"
             :isCredit="false"
+            :hasUnsavedChanges="hasChangedSinceSave"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"
@@ -380,15 +412,15 @@ onBeforeRouteLeave((to, from, next) => {
             <VCardText
               :class="windowWidth < 1024 ? 'pa-6 d-flex gap-4' : 'pa-4'"
             >
-              <!-- 👉 Send Invoice -->
+              <!-- 👉 Skapa faktura -->
               <VBtn
                 class="btn-gradient mb-4"
-                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                :class="windowWidth < 1024 ? 'flex-1 order-2 mb-0' : 'w-100'"
                 type="submit"
               >
                 <template #prepend>
-                  <VIcon icon="custom-send" size="24" v-if="windowWidth >= 1024" />
-                  <VIcon icon="custom-send" size="24" v-if="windowWidth < 1024" />
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth >= 1024" />
+                  <VIcon icon="custom-factura" size="24" v-if="windowWidth < 1024" />
                 </template>
                 Skapa faktura
               </VBtn>
@@ -396,7 +428,7 @@ onBeforeRouteLeave((to, from, next) => {
               <!-- 👉 Preview -->
               <VBtn
                 class="btn-light"
-                :class="windowWidth < 1024 ? 'flex-1' : 'w-100'"
+                :class="windowWidth < 1024 ? 'flex-1 order-1' : 'w-100'"
                 :to="{ name: 'dashboard-admin-billings' }"
               >
                 <template #prepend>

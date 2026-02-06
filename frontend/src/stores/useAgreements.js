@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import Agreements from '@/api/agreements'
-import vehicles from '@/api/vehicles'
 
 export const useAgreementsStores = defineStore('agreements', {
     state: () => ({
@@ -174,14 +173,27 @@ export const useAgreementsStores = defineStore('agreements', {
               .then(response => resolve(response))
               .catch(error => reject(error))
             })
-          },
+        },
 
-          requestStaticSignature(payload) {
+        requestStaticSignature(payload) {
             return new Promise((resolve, reject) => {
               axios.post(`/agreements/${payload.agreementId}/send-static-signature-request`, payload)
                 .then(response => resolve(response))
                 .catch(error => reject(error))
             })
-          },
+        },
+
+        getAdminPreviewPdf(id) {
+            this.setLoading(true)
+
+            return Agreements.getAdminPreviewPdf(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        }
     }
 })

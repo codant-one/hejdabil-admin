@@ -21,7 +21,7 @@ const props = defineProps({
   }),
   ...makeVFieldProps({
     variant: 'outlined',
-    color: 'primary',
+    color: 'secondary',
   }),
 })
 
@@ -165,7 +165,7 @@ const emitModelValue = val => {
   inset: 0;
   outline: none;
   padding-block: 0;
-  padding-inline: var(--v-field-padding-start);
+  padding-inline: 12px;
 }
 
 $heading-color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));
@@ -211,10 +211,10 @@ input[altinputclass="inlinePicker"] {
     color: $body-color;
 
     &.today {
-      border-color: rgb(var(--v-theme-primary));
+      border-color: rgb(var(--v-theme-secondary));
 
       &:hover {
-        border-color: rgb(var(--v-theme-primary));
+        border-color: rgb(var(--v-theme-secondary));
         background: transparent;
         color: $body-color;
       }
@@ -222,17 +222,17 @@ input[altinputclass="inlinePicker"] {
 
     &.selected,
     &.selected:hover {
-      border-color: rgb(var(--v-theme-primary));
-      background: rgb(var(--v-theme-primary));
-      color: rgb(var(--v-theme-on-primary));
+      border-color: rgb(var(--v-theme-secondary));
+      background: rgb(var(--v-theme-secondary));
+      color: rgb(var(--v-theme-on-secondary));
     }
 
     &.inRange,
     &.inRange:hover {
       border: none;
-      background: rgba(var(--v-theme-primary), 0.1) !important;
+      background: rgba(var(--v-theme-secondary), 0.1) !important;
       box-shadow: none !important;
-      color: rgb(var(--v-theme-primary));
+      color: rgb(var(--v-theme-secondary));
     }
 
     &.startRange {
@@ -247,15 +247,15 @@ input[altinputclass="inlinePicker"] {
     &.endRange,
     &.startRange:hover,
     &.endRange:hover {
-      border-color: rgb(var(--v-theme-primary));
-      background: rgb(var(--v-theme-primary));
-      color: rgb(var(--v-theme-on-primary));
+      border-color: rgb(var(--v-theme-secondary));
+      background: rgb(var(--v-theme-secondary));
+      color: rgb(var(--v-theme-on-secondary));
     }
 
     &.selected.startRange + .endRange:not(:nth-child(7n + 1)),
     &.startRange.startRange + .endRange:not(:nth-child(7n + 1)),
     &.endRange.startRange + .endRange:not(:nth-child(7n + 1)) {
-      box-shadow: -10px 0 0 rgb(var(--v-theme-primary));
+      box-shadow: -10px 0 0 rgb(var(--v-theme-secondary));
     }
 
     &.flatpickr-disabled,
@@ -435,6 +435,24 @@ input[altinputclass="inlinePicker"] {
       padding-block-start: 0.2rem;
       text-align: start;
     }
+  }
+}
+
+// Mobile calendar positioning fix for dialogs/modals
+@media (max-width: 1023px) {
+  .flatpickr-calendar {
+    position: fixed !important;
+    inset-block-start: 50% !important;
+    inset-inline-start: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 99999 !important;
+  }
+
+  .flatpickr-calendar.arrowTop::before,
+  .flatpickr-calendar.arrowTop::after,
+  .flatpickr-calendar.arrowBottom::before,
+  .flatpickr-calendar.arrowBottom::after {
+    display: none !important;
   }
 }
 </style>

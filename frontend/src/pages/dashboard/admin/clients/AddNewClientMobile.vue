@@ -1,12 +1,7 @@
 <script setup>
-import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import {
-  emailValidator,
-  requiredValidator,
-  phoneValidator,
-  minLengthDigitsValidator,
-} from "@/@core/utils/validators";
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
 
 const props = defineProps({
   isDrawerOpen: {
@@ -57,6 +52,7 @@ const currentData = computed(() => ({
   reference: reference.value,
   comments: comments.value,
 }))
+
 const isDirty = computed(() => {
   if (!initialData.value) return false
   try {
@@ -65,10 +61,6 @@ const isDirty = computed(() => {
     return true
   }
 })
-
-const getTitle = computed(() => {
-  return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
-});
 
 watchEffect(async () => {
   if (props.isDrawerOpen) {
@@ -179,7 +171,7 @@ watch(currentData, () => {
 <template>
   <!-- 👉 Form -->
   <VForm
-    class="card-client"
+    class="card-form"
     ref="refForm"
     v-model="isFormValid"
     @submit.prevent="onSubmit"
@@ -201,7 +193,7 @@ watch(currentData, () => {
       <VListItem>
         <VTextField
           v-model="fullname"
-          label="Fullständigt namn"
+          label="Fullständigt namn*"
           :rules="[requiredValidator]"
         />
       </VListItem>
@@ -209,13 +201,13 @@ watch(currentData, () => {
         <VTextField
           v-model="email"
           :rules="[emailValidator, requiredValidator]"
-          label="E-post"
+          label="E-post*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="organization_number"
-          label="Org/personummer"
+          label="Org/personummer*"
           :rules="[requiredValidator, minLengthDigitsValidator(10)]"
           minLength="11"
           maxlength="13"
@@ -226,28 +218,28 @@ watch(currentData, () => {
         <VTextField
           v-model="address"
           :rules="[requiredValidator]"
-          label="Adress"
+          label="Adress*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="postal_code"
           :rules="[requiredValidator]"
-          label="Postnummer"
+          label="Postnummer*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="street"
           :rules="[requiredValidator]"
-          label="Stad"
+          label="Stad*"
         />
       </VListItem>
       <VListItem>
         <VTextField
           v-model="phone"
           :rules="[requiredValidator, phoneValidator]"
-          label="Telefon"
+          label="Telefon*"
         />
       </VListItem>
       <VListItem>
@@ -257,27 +249,22 @@ watch(currentData, () => {
         <VTextarea v-model="comments" label="Beskrivning" />
       </VListItem>
     </VList>
-    <VRow class="px-9">
+    <div class="pb-6 px-6 d-flex gap-4 form-actions">
       <!-- 👉 Submit and Cancel -->
-      <VCol cols="6">
-        <VBtn
-          type="reset"
-          block
-          class="btn-light me-3"
-          @click="closeNavigationDrawer"
-        >
-          Avbryt
-        </VBtn>
-      </VCol>
-      <VCol cols="6">
-        <VBtn
-          type="submit"
-          class="btn-gradient"
-        >
-          {{ isEdit ? "Uppdatering" : "Lägg till" }}
-        </VBtn>
-      </VCol>
-    </VRow>
+      <VBtn
+        class="btn-light" 
+        type="reset"
+        @click="closeNavigationDrawer"
+      >
+        Avbryt
+      </VBtn>
+      <VBtn
+        class="btn-gradient"
+        type="submit"
+      >
+        {{ isEdit ? "Uppdatering" : "Lägg till" }}
+      </VBtn>
+    </div>
   </VForm>
 
   <!-- Confirm leave without saving (mobile) -->
@@ -310,9 +297,6 @@ watch(currentData, () => {
 </template>
 
 <style scoped>
-.card-client {
-  border-radius: 0 !important;
-}
 .border-img {
   border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 6px;
@@ -324,10 +308,16 @@ watch(currentData, () => {
 .v-btn {
   width: 100%;
 }
+
+.form-actions {
+  .v-btn {
+    flex: 1;
+  }
+}
 </style>
 
 <style lang="scss">
-.card-client {
+.card-form {
   .v-list {
     padding: 28px 24px 40px !important;
 
@@ -341,6 +331,10 @@ watch(currentData, () => {
       }
 
       .v-select .v-field {
+        .v-select__selection {
+          align-items: center;
+        }
+
         .v-field__input > input {
           top: 0px;
           left: 0px;
@@ -368,9 +362,7 @@ watch(currentData, () => {
       .v-field {
         background-color: #f6f6f6;
         .v-field-label {
-          @media (max-width: 991px) {
-            top: 12px !important;
-          }
+          top: 12px !important;
         }
       }
     }

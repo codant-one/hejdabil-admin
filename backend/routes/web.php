@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Event;
 use App\Events\NotificationsWebsocketEvent;
 use Illuminate\Http\Request;
 
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -22,6 +21,7 @@ use Illuminate\Http\Request;
 Route::get('/', function () {
     return view('welcome');
 });
+
 Route::get('/sign/{token}', [SignatureController::class, 'showSigningPage'])->name('contracts.sign');
 
 Route::get('/notifications-websocket', function (Request $request) {

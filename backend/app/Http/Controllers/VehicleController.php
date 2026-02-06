@@ -56,12 +56,12 @@ class VehicleController extends Controller
                         'iva_sale',
                         'currency_purchase',
                         'currency_sale',
-                        'costs',
                         'carbody',
                         'gearbox',
                         'fuel',
                         'client_purchase.client',
-                        'client_sale.client'
+                        'client_sale.client',
+                        'tasks'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -138,11 +138,11 @@ class VehicleController extends Controller
                 'tasks.user', 
                 'tasks.comments.user', 
                 'tasks.histories.user',
-                'costs',
                 'documents.user',
                 'documents.type',
                 'client_purchase.client',
-                'client_sale.client'
+                'client_sale.client',
+                'state'
             ])->find($id);
 
             if (!$vehicle)

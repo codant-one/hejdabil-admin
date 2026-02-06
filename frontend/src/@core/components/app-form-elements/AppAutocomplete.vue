@@ -4,6 +4,29 @@ defineOptions({
   inheritAttrs: false,
 })
 
+const menuOpen = ref(false)
+const autocompleteRef = ref(null)
+const isClickFromToggle = ref(false)
+
+// Toggle menu when clicking on the menu icon
+const handleMenuIconClick = () => {
+  isClickFromToggle.value = true
+  menuOpen.value = !menuOpen.value
+}
+
+// Handle focus - only open if not triggered by toggle click
+const handleFocus = () => {
+  if (!isClickFromToggle.value) {
+    menuOpen.value = true
+  }
+  isClickFromToggle.value = false
+}
+
+// Get the menu-icon from attrs or use default
+const menuIcon = computed(() => {
+  const attrs = useAttrs()
+  return attrs['menu-icon'] || attrs.menuIcon || 'tabler-chevron-down'
+})
 
 // const { class: _class, label, variant: _, ...restAttrs } = useAttrs()
 const elementId = computed(() => {
@@ -28,12 +51,14 @@ const label = computed(() => useAttrs().label)
       :text="label"
     />
     <VAutocomplete
+      ref="autocompleteRef"
+      v-model:menu="menuOpen"
       v-bind="{
         ...$attrs,
         class: null,
         label: undefined,
         id: elementId,
-        variant: 'outlined',
+        menuIcon: '',
         menuProps: {
           contentClass: [
             'app-inner-list',
@@ -42,7 +67,16 @@ const label = computed(() => useAttrs().label)
           ],
         },
       }"
+      @focus="handleFocus"
     >
+      <template #append-inner>
+        <VIcon 
+          :icon="menuIcon" 
+          class="cursor-pointer transition-icon"
+          :class="{ 'rotate-180': menuOpen }"
+          @click.stop.prevent="handleMenuIconClick"
+        />
+      </template>
       <template
         v-for="(_, name) in $slots"
         #[name]="slotProps"
@@ -55,3 +89,41 @@ const label = computed(() => useAttrs().label)
     </VAutocomplete>
   </div>
 </template>
+
+<style lang="scss">
+  .app-autocomplete {
+    .transition-icon {
+      transition: transform 0.2s ease-in-out;
+    }
+
+    .rotate-180 {
+      transform: rotate(180deg);
+    }
+
+    .v-field--focused {
+      box-shadow: none !important;
+    }
+
+    .v-field__input {
+      input::placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input::-webkit-input-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input::-moz-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+
+      input:-ms-input-placeholder {
+        color: #454545 !important;
+        opacity: 1 !important;
+      }
+    }
+  }
+</style>

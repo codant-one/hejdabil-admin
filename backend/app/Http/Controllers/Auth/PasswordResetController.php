@@ -65,7 +65,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'Token för återställning av lösenord är ogiltig'
+                'errors' => 'Länken för återställning av lösenord är ogiltig'
             ], 404);
             
         if (Carbon::parse($passwordReset->updated_at)->addMinutes(720)->isPast()) {
@@ -73,7 +73,7 @@ class PasswordResetController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'not_found',
-                'errors' => 'Token för återställning av lösenord är ogiltig'
+                'errors' => 'Länken för återställning av lösenord är ogiltig'
             ], 404);
         }
 

@@ -101,10 +101,14 @@ class Billing extends Model
         }
 
         if ($filters->get('state_id') !== null) {
-            $query->where('state_id', $filters->get('state_id'));
-
-            if($filters->get('state_id') === '7')
-                $query->orWhere('state_id', 9);
+            if($filters->get('state_id') === '7') {
+                $query->where(function($q) {
+                    $q->where('state_id', 7)
+                      ->orWhere('state_id', 9);
+                });
+            } else {
+                $query->where('state_id', $filters->get('state_id'));
+            }
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -250,9 +254,16 @@ class Billing extends Model
 
         $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
         $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
         $dueDate = Carbon::parse($request->due_date);
 
         $billing->update([
+            'supplier_id' => $supplier_id,
             'state_id' => $dueDate->isPast() ? 8 : 4,
             'client_id' =>  $request->client_id,
             'invoice_id' =>  $request->invoice_id,
@@ -274,15 +285,8 @@ class Billing extends Model
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-        } else { //Admin
+        if($billing->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -314,6 +318,10 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->find($billing->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
         }
 
         foreach($details as $row)
@@ -517,7 +525,50 @@ class Billing extends Model
       
         $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+        } else if (Auth::user()->getRoleNames()[0] === 'User') {
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            
+            // Extraer el "value" soportando array u object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+        }
+
         $data = [
+            'company' => $company,
             'user' => $billing->client->fullname,
             'text' =>  'Vi hoppas att detta meddelande är till hjälp. <br> Vi skulle vilja informera dig om att följande faktura har förfallit på grund av utebliven betalning inom den fastställda tidsfristen:',
             'billing' => $billing,

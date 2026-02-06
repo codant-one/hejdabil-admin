@@ -217,7 +217,7 @@ export const useSuppliersStores = defineStore('suppliers', {
             
             return Suppliers.getMasterPassword(id)
                 .then((response) => {
-                    return Promise.resolve(response.data.data.master_password)
+                    return Promise.resolve(response.data.data)
                 })
                 .catch(error => Promise.reject(error))
                 .finally(() => {

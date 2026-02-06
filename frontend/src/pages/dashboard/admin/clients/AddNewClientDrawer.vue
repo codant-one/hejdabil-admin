@@ -1,12 +1,8 @@
 <script setup>
+
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import {
-  emailValidator,
-  requiredValidator,
-  phoneValidator,
-  minLengthDigitsValidator,
-} from "@/@core/utils/validators";
 
 const props = defineProps({
   isDrawerOpen: {
@@ -23,7 +19,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update:isDrawerOpen", "clientData", "edited"]);
+const emit = defineEmits([
+  "update:isDrawerOpen", 
+  "clientData", 
+  "edited"
+]);
 
 const isFormValid = ref(false);
 const refForm = ref();
@@ -58,6 +58,7 @@ const currentData = computed(() => ({
   reference: reference.value,
   comments: comments.value,
 }))
+
 const isDirty = computed(() => {
   if (!initialData.value) return false
   try {
@@ -223,11 +224,16 @@ watch(currentData, () => {
 
     <VDivider class="mt-4" />
 
-    <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
-      <VCard flat class="card-client">
+    <PerfectScrollbar 
+      :options="{ wheelPropagation: false }" 
+      class="scrollbar-no-border">
+      <VCard flat class="card-form">
         <VCardText>
           <!-- 👉 Form -->
-          <VForm ref="refForm" v-model="isFormValid" @submit.prevent="onSubmit">
+          <VForm 
+            ref="refForm" 
+            v-model="isFormValid" 
+            @submit.prevent="onSubmit">
             <VRow>
               <VCol cols="12" md="12" v-if="role !== 'Supplier' && role !== 'User'">
                 <VSelect                 
@@ -245,7 +251,7 @@ watch(currentData, () => {
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="fullname"
-                  label="Fullständigt namn"
+                  label="Fullständigt namn*"
                   :rules="[requiredValidator]"
                 />
               </VCol>
@@ -253,13 +259,13 @@ watch(currentData, () => {
                 <VTextField
                   v-model="email"
                   :rules="[emailValidator, requiredValidator]"
-                  label="E-post"
+                  label="E-post*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="organization_number"
-                  label="Org/personummer"
+                  label="Org/personummer*"
                   :rules="[requiredValidator, minLengthDigitsValidator(10)]"
                   minLength="11"
                   maxlength="13"
@@ -270,28 +276,28 @@ watch(currentData, () => {
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
-                  label="Adress"
+                  label="Adress*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="postal_code"
                   :rules="[requiredValidator]"
-                  label="Postnummer"
+                  label="Postnummer*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="street"
                   :rules="[requiredValidator]"
-                  label="Stad"
+                  label="Stad*"
                 />
               </VCol>
               <VCol cols="12" md="6">
                 <VTextField
                   v-model="phone"
                   :rules="[requiredValidator, phoneValidator]"
-                  label="Telefon"
+                  label="Telefon*"
                 />
               </VCol>
               <VCol cols="12" md="6">
@@ -358,46 +364,93 @@ watch(currentData, () => {
   </VDialog>
 </template>
 
-<style scoped>
-.btn-close-client {
-  height: 32px !important;
-}
-.card-client {
-  border-radius: 0 !important;
-}
-.border-img {
-  border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 6px;
-}
-.border-img .v-img__img--contain {
-  padding: 10px;
-}
-.right-drawer {
-  border-radius: 16px !important;
-}
+<style lang="scss">
+  .btn-close-client {
+    height: 32px !important;
+  }
+  .card-form {
+    .v-input {
+      .v-input__control {
+        .v-field {
+          background-color: #f6f6f6 !important;
+          min-height: 48px !important;
 
-:deep(.right-drawer.v-navigation-drawer) {
-  border-color: transparent !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  box-shadow: none !important;
-}
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
 
-:deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
-  border: none !important;
-}
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+
+    .v-select .v-field {
+      .v-select__selection {
+          align-items: center;
+          color: #454545;
+      }
+
+      .v-field__input > input {
+        top: 0px;
+        left: 18px;
+
+      }
+
+      .v-field__input input::placeholder,
+      input.v-field__input::placeholder,
+      .v-field__input textarea::placeholder,
+      textarea.v-field__input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+    }
+  }
+  .border-img {
+    border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 6px;
+  }
+  .border-img .v-img__img--contain {
+    padding: 10px;
+  }
+
+  :deep(.right-drawer.v-navigation-drawer) {
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    box-shadow: none !important;
+  }
+
+  :deep(.right-drawer.v-navigation-drawer .v-navigation-drawer__content) {
+    border: none !important;
+  }
 </style>
 
 <style>
-.right-drawer.v-navigation-drawer {
-  border: none !important;
-  border-color: transparent !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  box-shadow: none !important;
-}
+  .right-drawer.v-navigation-drawer {
+    border: none !important;
+    border-color: transparent !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    box-shadow: none !important;
+  }
 
-.right-drawer.v-navigation-drawer .v-navigation-drawer__content {
-  border: none !important;
-}
+  .right-drawer.v-navigation-drawer .v-navigation-drawer__content {
+    border: none !important;
+  }
 </style>

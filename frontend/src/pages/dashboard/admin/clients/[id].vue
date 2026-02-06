@@ -39,13 +39,13 @@ const advisor = ref({
 const cardItems = ref([
   {
     title: "Inköpta fordon",
-    value: "238",
+    value: "0",
     icon: bestallningarIcon,
     bgCustomColor: "bg-netto",
   },
   {
     title: "Sålda fordon",
-    value: "120.000 Kr",
+    value: "0",
     icon: forsaljningIcon,
     bgCustomColor: "bg-moms",
   },
@@ -76,9 +76,9 @@ async function fetchData() {
 
   if (Number(route.params.id) && route.name === "dashboard-admin-clients-id") {
     client.value = await clientsStores.showClient(Number(route.params.id));
-
+;
     cardItems.value[0].value = client.value.carsPurchased;
-    cardItems.value[1].value = formatNumber(client.value.carsForSale) + " Kr"
+    cardItems.value[1].value = client.value.carsForSale;
     cardItems.value[2].value = formatNumber(client.value.totalBilling) + " Kr"
     cardItems.value[3].value = formatNumber(client.value.totalPending) + " Kr"
     cardItems.value[4].value = formatNumber(client.value.totalExpired) + " Kr"
@@ -167,7 +167,7 @@ onBeforeUnmount(() => {
       
     <Toaster />
 
-    <VCard class="client-slug card-fill">
+    <VCard class="client-slug card-fill h-100">
       <VCardText
         class="d-flex flex-column pa-4 gap-4"
         :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"

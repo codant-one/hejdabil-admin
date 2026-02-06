@@ -96,7 +96,7 @@ class BillingController extends Controller
 
             return response()->json([
                 'success' => true,
-                'billing' => $billing
+                'billing' => Billing::with('state')->find($billing->id)
             ]);
 
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -125,6 +125,7 @@ class BillingController extends Controller
                             }]);
                     },
                     'supplier.user.userDetail',
+                    'supplier.billings',
                     'client' => function($query) {
                         $query->withTrashed();
                     }, 
@@ -176,7 +177,7 @@ class BillingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [ 
-                    'billing' => $billing
+                    'billing' => Billing::with('state')->find($billing->id)
                 ]
             ], 200);
 
@@ -414,6 +415,8 @@ class BillingController extends Controller
                 'pdfFile' => asset('storage/'.$billing->file)
             ];
 
+            $errors = [];
+
             if($request->emailDefault === true) {
                 $clientEmail = $billing->client->email;
                 $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
@@ -437,6 +440,7 @@ class BillingController extends Controller
 
                 } catch (\Exception $e){
                     Log::info("Error mail => ". $e);
+                    $errors[] = "Kunde inte skicka e-post till {$clientEmail}: " . $e->getMessage();
                 }
             }
 
@@ -463,7 +467,15 @@ class BillingController extends Controller
 
                 } catch (\Exception $e){
                     Log::info("Error mail => ". $e);
+                    $errors[] = "Kunde inte skicka e-post till {$email}: " . $e->getMessage();
                 }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode("\n", $errors)
+                ], 500);
             }
 
             return response()->json([

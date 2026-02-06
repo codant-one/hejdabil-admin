@@ -22,20 +22,22 @@ class SwishPayoutController extends Controller
      */
     public function handle(Request $request)
     {
-        // Log completo del callback recibido
-        Log::info('=== SWISH CALLBACK RECEIVED ===');
-        Log::info('Headers: ' . json_encode($request->headers->all()));
-        Log::info('Payload: ' . json_encode($request->all()));
-        Log::info('Raw Body: ' . $request->getContent());
-        
         $payload = $request->all();
 
         // Identificar payout - Swish puede enviar diferentes estructuras
         $payoutId = $payload['id'] ?? $payload['payoutInstructionUUID'] ?? null;
         $status   = $payload['status'] ?? null;
+        $reference = $payload['payerPaymentReference'] ?? $payoutId ?? 'unknown';
+
+        // Log completo del callback recibido
+        $this->generateLog($reference, 'CALLBACK RECEIVED', [
+            'headers' => $request->headers->all(),
+            'payload' => $payload,
+            'raw_body' => $request->getContent(),
+        ]);
 
         if (!$payoutId || !$status) {
-            Log::warning('Swish callback: Invalid payload', [
+            $this->generateLog($reference, 'Invalid payload', [
                 'payoutId' => $payoutId,
                 'status' => $status,
                 'full_payload' => $payload
@@ -49,43 +51,57 @@ class SwishPayoutController extends Controller
                         ->first();
         
         if (!$payout) {
-            Log::warning('Swish callback: Payout not found', [
+            $this->generateLog($reference, 'Payout not found', [
                 'payoutId' => $payoutId
             ]);
             return response()->json(['error' => 'Payout not found'], 404);
         }
 
-        Log::info('Swish callback: Payout found', [
+        $this->generateLog($reference, 'Payout found', [
             'payout_id' => $payout->id,
-            'current_status' => $payout->status,
+            'current_status' => $payout->payout_state_id,
             'new_status' => $status
         ]);
 
-        // Actualizar status directamente (campo 'status' en payouts table)
-        $payout->status = $status;
-        
-        // También intentar mapear a payout_states si existe
+        // Mapear a payout_states
         $stateId = PayoutState::where('label', $status)->value('id');
         if ($stateId) {
             $payout->payout_state_id = $stateId;
-            Log::info('Swish callback: State mapped', ['state_id' => $stateId]);
+            $this->generateLog($reference, 'State mapped', ['state_id' => $stateId]);
         } else {
-            Log::warning('Swish callback: State not found in payout_states', ['status' => $status]);
+            $this->generateLog($reference, 'State not found in payout_states', ['status' => $status]);
         }
-
-        // Guardar response_data completo para auditoría
-        $payout->response_data = array_merge(
-            $payout->response_data ?? [],
-            ['callback' => $payload, 'callback_at' => now()->toISOString()]
-        );
 
         $payout->save();
 
-        Log::info('Swish callback: Payout updated successfully', [
+        $this->generateLog($reference, 'Payout updated successfully', [
             'payout_id' => $payout->id,
-            'status' => $status
+            'payout_state_id' => $payout->payout_state_id,
+            'status_label' => $status
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Generates a log file for the payout callback.
+     */
+    private function generateLog(string $reference, string $action, array $data): void
+    {
+        if (!file_exists(storage_path('logs/swish-payouts'))) {
+            mkdir(storage_path('logs/swish-payouts'), 0755, true);
+        }
+
+        $logPath = storage_path("logs/swish-payouts/{$reference}.log");
+
+        $log = Log::build([
+            'driver' => 'single',
+            'path' => $logPath,
+            'level' => 'debug',
+        ]);
+
+        $log->info('Date: ' . now());
+        $log->info('Action: ' . $action);
+        $log->info('Data: ' . json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
     }
 }

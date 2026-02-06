@@ -47,6 +47,19 @@ export const useTasksStores = defineStore('tasks', {
                     this.setLoading(false)
                 })  
         },
+        typeTask(id) {
+            this.setLoading(true)
+            
+            return Tasks.type(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        },
         sendComment(data) {
             this.setLoading(true)
 
@@ -60,5 +73,31 @@ export const useTasksStores = defineStore('tasks', {
                 })
             
         },
+        updateComment(data) {
+            this.setLoading(true)
+
+            return Tasks.updateComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        deleteComment(data) {
+            this.setLoading(true)
+
+            return Tasks.deleteComment(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        }
     }
 })

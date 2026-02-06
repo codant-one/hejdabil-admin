@@ -29,6 +29,12 @@ class Agreements {
     sendMails(data) {
         return axios.post(`/agreements/sendMails/${data.id}`, data)
     }
+
+    getAdminPreviewPdf(id) {
+        return axios.get(`/agreements/${id}/get-admin-preview-pdf`, {
+            responseType: 'blob'
+        })
+    }
 }
 
 const agreements = new Agreements();

@@ -5,8 +5,8 @@ import { formatNumber } from "@/@core/utils/formatters";
 import { requiredValidator } from "@validators";
 import logoBlack from "@images/logo_black.png";
 import sampleFaktura from "@images/sample-faktura.jpg";
+import VuePdfEmbed from "vue-pdf-embed";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import InvoiceProductEdit from "@/components/invoice/InvoiceProductEdit.vue";
 import draggable from "vuedraggable";
 
 const props = defineProps({
@@ -62,6 +62,16 @@ const props = defineProps({
     type: Boolean,
     required: true,
   },
+  title: {
+    type: String,
+    required: false,
+    default: "Skapa fakturan"
+  },
+  hasUnsavedChanges: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
 });
 
 const emit = defineEmits([
@@ -72,6 +82,7 @@ const emit = defineEmits([
   "data",
   "edit",
   "discount",
+  "requestPreview",
 ]);
 
 const { width: windowWidth } = useWindowSize();
@@ -83,7 +94,7 @@ const suppliers = ref(props.suppliers);
 const company = ref(props.company);
 const subtotal = ref(props.total);
 const total = ref("0.00");
-const taxOptions = ref([0, 12, 20, 25, "Custom"]);
+const taxOptions = ref([0, 6, 12, 25, "Custom"]);
 const selectedTax = ref('0');
 const selectedDiscount = ref(0);
 const selectedDiscountTemp = ref('0');
@@ -97,6 +108,45 @@ const actionDialog = ref(false);
 
 const isConfirmDiscountVisible = ref(false);
 const isAlertDiscountVisible = ref(false);
+const isAlertPreviewVisible = ref(false);
+const previousTab = ref("redigera");
+const pdfCacheKey = ref(Date.now());
+
+const pdfSource = computed(() => {
+  if (!props.billing?.file) return null;
+  return themeConfig.settings.urlbase +
+    'proxy-image?url=' +
+    themeConfig.settings.urlStorage +
+    props.billing.file +
+    '&t=' + pdfCacheKey.value;
+});
+
+const handleTabChange = (newTab) => {
+  if (newTab === 'forhandsgranska' && (!props.billing?.file || props.hasUnsavedChanges)) {
+    // Revert to previous tab and show alert
+    nextTick(() => {
+      controlledTab.value = previousTab.value;
+    });
+    isAlertPreviewVisible.value = true;
+  } else {
+    previousTab.value = newTab;
+  }
+};
+
+watch(controlledTab, (newVal) => {
+  handleTabChange(newVal);
+});
+
+const setPreviewTab = () => {
+  pdfCacheKey.value = Date.now(); // Force PDF refresh
+  previousTab.value = 'forhandsgranska';
+  controlledTab.value = 'forhandsgranska';
+};
+
+defineExpose({
+  setPreviewTab,
+  controlledTab,
+});
 
 const invoice = ref({
   id: 1,
@@ -424,6 +474,17 @@ const saveDiscount = () => {
   isConfirmDiscountVisible.value = false;
 };
 
+const resolveStatus = state_id => {
+  if (state_id === 4)
+    return { class: 'pending' }
+  if (state_id === 7)
+    return { class: 'success' }   
+  if (state_id === 8)
+    return { class: 'error' }
+  if (state_id === 9)
+    return { class: 'error' }
+}
+
 const handleBlur = (element) => {
   const defaults = {
     2: 1,
@@ -438,9 +499,27 @@ const handleBlur = (element) => {
     }
   });
 
+  // Formatear campos decimales (type_id 3) a 2 decimales
+  props.invoices.forEach((inv) => {
+    if (inv.type_id === 3 && element[inv.id] !== undefined && element[inv.id] !== "") {
+      const numValue = parseFloat(element[inv.id]);
+      if (!isNaN(numValue)) {
+        element[inv.id] = numValue.toFixed(2);
+      }
+    }
+  });
+
   // Limitar el campo de descuento (índice 5) a un máximo de 100
   if (element[5] !== undefined && element[5] > 100) {
     element[5] = 100;
+  }
+};
+
+const handleFocus = (element, fieldId) => {
+  const value = element[fieldId];
+  // Clear the field if it's the default "0.00" or 0 to allow easy editing
+  if (value === "0.00" || value === 0 || value === "0") {
+    element[fieldId] = "";
   }
 };
 </script>
@@ -456,7 +535,7 @@ const handleBlur = (element) => {
       :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0 fix-header' : 'pa-4'"
     >
       <div class="d-flex align-center w-100 w-md-auto font-blauer">
-        <h2 class="faktura-title">Skapa fakturan</h2>
+        <h2 class="faktura-title">{{ title }}</h2>
       </div>
       <VTabs
         v-model="controlledTab"
@@ -569,6 +648,7 @@ const handleBlur = (element) => {
                   v-model="invoice.due_date"
                   placeholder="YYYY-MM-DD"
                   readonly
+                  class="cursor-none"
                 />
               </div>
             </span>
@@ -579,7 +659,7 @@ const handleBlur = (element) => {
             class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
           >
             <span class="me-2 text-start w-40 text-black">
-              Betalningsvillkor:
+              Betalningsvillkor
             </span>
 
             <span style="width: 10.5rem">
@@ -639,7 +719,7 @@ const handleBlur = (element) => {
         class="d-flex flex-wrap justify-space-between flex-column flex-sm-row mt-6 p-0 w-100"
       >
         <div class="rouded-select">
-          <VAutocomplete
+          <AppAutocomplete
             v-if="props.role === 'SuperAdmin' || props.role === 'Administrator'"
             v-model="invoice.supplier_id"
             :items="suppliers"
@@ -654,7 +734,7 @@ const handleBlur = (element) => {
           />
         </div>
         <div class="rouded-select">
-          <VAutocomplete
+          <AppAutocomplete
             v-model="invoice.client_id"
             :items="clients"
             :item-title="(item) => item.fullname"
@@ -671,19 +751,6 @@ const handleBlur = (element) => {
       </VCardText>
 
       <VDivider :class="windowWidth < 1024 ? 'm-0' : 'my-6 mx-0'" />
-
-      <!-- <InvoiceProductEdit
-            v-else
-            :id="index"
-            :data="element"
-            :invoices="invoices"
-            :isCreated="props.isCreated"
-            @remove-product="removeProduct"
-            @delete-product="deleteProduct"
-            @edit-product="editx"
-
-            componente dentro del draggable
-        /> -->
 
       <!-- 👉 Add purchased products -->
       <VCardText class="add-products-form mt-2 py-0 px-0">
@@ -772,8 +839,9 @@ const handleBlur = (element) => {
                                 <VTextarea
                                   v-if="invoice.type_id === 1"
                                   v-model="element[invoice.id]"
-                                  :placeholder="invoice.description"
                                   rows="2"
+                                  :placeholder="invoice.description"
+                                  persistent-placeholder
                                   :readonly="element.disabled"
                                   :rules="[requiredValidator]"
                                 />
@@ -781,7 +849,6 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 2"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :placeholder="invoice.name"
                                   :min="1"
                                   :readonly="element.disabled"
                                   :rules="[requiredValidator]"
@@ -792,13 +859,13 @@ const handleBlur = (element) => {
                                   v-if="invoice.type_id === 3"
                                   v-model="element[invoice.id]"
                                   type="number"
-                                  :placeholder="invoice.name"
                                   :min="0"
                                   :step="0.01"
                                   :readonly="element.disabled"
                                   @input="$emit('edit')"
                                   :rules="[requiredValidator]"
                                   :disabled="invoice.name === 'Belopp'"
+                                  @focus="() => handleFocus(element, invoice.id)"
                                   @blur="() => handleBlur(element)"
                                 />
                               </div>
@@ -813,7 +880,6 @@ const handleBlur = (element) => {
                                 :disabled="selectedDiscount > 0"
                                 v-model="element[5]"
                                 type="number"
-                                :placeholder="invoice.name"
                                 :min="0"
                                 :max="100"
                                 :readonly="element.disabled"
@@ -998,7 +1064,7 @@ const handleBlur = (element) => {
             </span>
           </VCol>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold" v-if="company.link"> Webbplats </span>
+            <span class="me-2 text-bold text-footer" v-if="company.link"> Webbplats </span>
             <span class="text-footer" v-if="company.link">
               {{ company.link }}
             </span>
@@ -1072,7 +1138,7 @@ const handleBlur = (element) => {
                 </span>
               </div>
               <div
-                class="d-block d-md-flex align-center justify-sm-start mb-2 text-right"
+                class=""
                 v-if="client"
               >
                 <span class="mb-2 me-2 text-start w-40 text-black"
@@ -1138,6 +1204,7 @@ const handleBlur = (element) => {
                       v-model="invoice.due_date"
                       placeholder="YYYY-MM-DD"
                       readonly
+                      class="cursor-none"
                     />
                   </div>
                 </span>
@@ -1148,7 +1215,7 @@ const handleBlur = (element) => {
                 class="d-block d-md-flex align-center justify-sm-start mb-0 mt-2"
               >
                 <span class="me-2 text-start w-40 text-black">
-                  Betalningsvillkor:
+                  Betalningsvillkor
                 </span>
 
                 <span style="width: 10.5rem">
@@ -1168,11 +1235,13 @@ const handleBlur = (element) => {
               </p>
             </div>
 
-            <div class="rouded-select">
-              <VAutocomplete
-                v-if="
-                  props.role === 'SuperAdmin' || props.role === 'Administrator'
-                "
+            <div 
+              class="rouded-select" 
+              v-if="
+                props.role === 'SuperAdmin' || props.role === 'Administrator'
+              "
+            >
+              <AppAutocomplete
                 v-model="invoice.supplier_id"
                 :items="suppliers"
                 :item-title="(item) => item.full_name"
@@ -1186,7 +1255,7 @@ const handleBlur = (element) => {
               />
             </div>
             <div class="rouded-select">
-              <VAutocomplete
+              <AppAutocomplete
                 v-model="invoice.client_id"
                 :items="clients"
                 :item-title="(item) => item.fullname"
@@ -1329,8 +1398,9 @@ const handleBlur = (element) => {
                                     <VTextarea
                                       v-if="invoice.type_id === 1"
                                       v-model="element[invoice.id]"
-                                      :placeholder="invoice.description"
                                       rows="2"
+                                      :placeholder="invoice.description"
+                                      persistent-placeholder
                                       :readonly="element.disabled"
                                       :rules="[requiredValidator]"
                                     />
@@ -1338,7 +1408,6 @@ const handleBlur = (element) => {
                                       v-if="invoice.type_id === 2"
                                       v-model="element[invoice.id]"
                                       type="number"
-                                      :placeholder="invoice.name"
                                       :min="1"
                                       :readonly="element.disabled"
                                       :rules="[requiredValidator]"
@@ -1349,13 +1418,13 @@ const handleBlur = (element) => {
                                       v-if="invoice.type_id === 3"
                                       v-model="element[invoice.id]"
                                       type="number"
-                                      :placeholder="invoice.name"
                                       :min="0"
                                       :step="0.01"
                                       :readonly="element.disabled"
                                       @input="$emit('edit')"
                                       :rules="[requiredValidator]"
                                       :disabled="invoice.name === 'Belopp'"
+                                      @focus="() => handleFocus(element, invoice.id)"
                                       @blur="() => handleBlur(element)"
                                     />
                                   </div>
@@ -1370,7 +1439,6 @@ const handleBlur = (element) => {
                                     :disabled="selectedDiscount > 0"
                                     v-model="element[5]"
                                     type="number"
-                                    :placeholder="invoice.name"
                                     :min="0"
                                     :max="100"
                                     :readonly="element.disabled"
@@ -1501,7 +1569,7 @@ const handleBlur = (element) => {
                   {{ company.bic }}
                 </span>
 
-                <span class="me-2 text-bold text-footer" v-if="company.bank">
+                <span class="me-2 mt-4 text-bold text-footer" v-if="company.bank">
                   Bank
                 </span>
                 <span class="text-footer" v-if="company.bank">
@@ -1536,8 +1604,11 @@ const handleBlur = (element) => {
                   {{ company.account_number }}
                 </span>
 
+              </VCol>
+
+              <VCol cols="6" class="d-flex flex-column flex-1">
                 <span
-                  class="me-2 mt-4 text-bold text-footer"
+                  class="me-2 text-bold text-footer"
                   v-if="company.iban_number"
                 >
                   Iban nummer
@@ -1545,9 +1616,14 @@ const handleBlur = (element) => {
                 <span class="text-footer" v-if="company.iban_number">
                   {{ company.iban_number }}
                 </span>
-              </VCol>
 
-              <VCol cols="6" class="d-flex flex-column flex-1">
+                <span class="me-2 mt-4 text-bold text-footer"> Adress </span>
+                  <span class="d-flex flex-column">
+                    <span class="text-footer">{{ company.address }}</span>
+                    <span class="text-footer">{{ company.postal_code }}</span>
+                    <span class="text-footer">{{ company.street }}</span>
+                    <span class="text-footer">{{ company.phone }}</span>
+                  </span>
                 <span class="me-2 mt-4 text-bold text-footer">
                   Bolagets säte
                 </span>
@@ -1563,9 +1639,10 @@ const handleBlur = (element) => {
                   {{ company.swish }}
                 </span>
 
-                <span class="me-2 mt-4 text-bold" v-if="company.link">
+                <span class="me-2 mt-4 text-bold text-footer" v-if="company.link">
                   Webbplats
                 </span>
+
                 <span class="text-footer" v-if="company.link">
                   {{ company.link }}
                 </span>
@@ -1579,19 +1656,75 @@ const handleBlur = (element) => {
           </VWindowItem>
 
           <VWindowItem
-            class="d-flex flex-column gap-6 pa-6 pb-0"
+            class="d-flex flex-column gap-2 pa-6 pb-0 w-100"
             value="forhandsgranska"
           >
-            <img
-              :src="sampleFaktura"
-              class="w-100"
-              v-if="windowWidth < 1024"
-            />
+            <div class="d-flex flex-column gap-2 bg-white pa-4 mb-6 rounded-2" v-if="windowWidth < 1024 && billing?.file">
+              <div class="d-flex gap-4 bg-white align-center flex-row flex-nowrap pb-0 justify-between">
+                <div class="d-flex align-center font-blauer" v-if="windowWidth < 1024">
+                  <h2 class="faktura-title">Faktura #{{ billing.invoice_id }}</h2>
+                </div>
+                <div
+                  v-if="windowWidth < 1024 && billing?.file"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
+                >
+                  {{ billing.state.name }}
+                </div>
+              </div>
+              <VDivider v-if="windowWidth < 1024" />
+              <div v-if="windowWidth < 1024" class="invoice-panel">
+                
+                <VuePdfEmbed
+                  v-if="billing?.file"
+                  :source="pdfSource"
+                  class="d-flex justify-content-center w-auto m-auto"
+                />
+                <img
+                  v-else
+                  :src="sampleFaktura"
+                  class="w-100"
+                />
+              </div>
+            </div>
           </VWindowItem>
         </VWindow>
       </VCardText>
     </section>
   </VCard>
+
+  <!-- 👉 Alert: Must save before preview -->
+  <VDialog 
+    v-model="isAlertPreviewVisible" 
+    persistent
+    class="action-dialog"
+  >
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="isAlertPreviewVisible = false"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-alarm" class="action-icon" />
+        <div class="dialog-title">
+          Spara fakturan först
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
+        Du måste spara fakturan innan du kan förhandsgranska den. Klicka på "Skapa faktura" för att spara och förhandsgranska.
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-gradient" @click="isAlertPreviewVisible = false">
+          OK
+        </VBtn>
+      </VCardText>
+    </VCard>
+  </VDialog>
 
   <!-- 👉 Cancel discount -->
   <VDialog 
@@ -1734,6 +1867,13 @@ const handleBlur = (element) => {
   font-size: 0.75rem !important;
 }
 
+@media (max-width: 1023px) {
+  .invoice-panel {
+    margin: 0;
+    padding: 2px !important;
+  }
+}
+
 @media (max-width: 767px) {
   .faktura {
     font-size: 16px;
@@ -1748,9 +1888,11 @@ const handleBlur = (element) => {
     width: 100%;
   }
 }
+
 .margin-top-fill {
-  margin-top: 125px;
+  margin-top: 120px;
 }
+
 .v-tabs.v-tabs--horizontal:not(.v-tabs-pill) .v-btn {
   flex: 1 1;
 }

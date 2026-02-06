@@ -23,7 +23,9 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const csr_url = ref(null)
 const payout_number = ref(null)
+const pemFile = ref([])
 const is_payout = ref(false)
 const state_id = ref(null)
 const refForm = ref(null)
@@ -111,8 +113,10 @@ const showDeleteDialog = supplierData => {
 const showSwishDialog = supplierData => {
   isConfirmSwishDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
-  payout_number.value = supplierData.payout_number || ''
+  payout_number.value = supplierData.payout_number || null
+  csr_url.value = supplierData.csr_url || null
   is_payout.value = supplierData.is_payout === 0 ? false : true
+  pemFile.value = []
 
   nextTick(() => {
     refForm.value?.resetValidation()
@@ -168,17 +172,20 @@ const swish = () => {
       isConfirmSwishDialogVisible.value = false
       isRequestOngoing.value = true
       
-      let data = {
-        payout_number: payout_number.value,
-        is_payout: is_payout.value ? 1 : 0
+      let formData = new FormData()
+      formData.append('payout_number', payout_number.value)
+      formData.append('is_payout', is_payout.value ? 1 : 0)
+      if (pemFile.value && pemFile.value.length > 0) {
+        formData.append('file', pemFile.value[0])
       }
       
-      suppliersStores.swish(selectedSupplier.value.id, data)
+      suppliersStores.swish(selectedSupplier.value.id, formData)
         .then(async (res) => {
             if (res.data.success) {
               selectedSupplier.value = {}
               payout_number.value = null
               is_payout.value = false
+              pemFile.value = []
               
               await fetchData()
 
@@ -598,7 +605,7 @@ const downloadCSV = async () => {
           ref="refForm"
           v-model="isFormValid"
           @submit.prevent="swish">
-          <VCardText>
+          <VCardText class="d-flex flex-column gap-2">
             <VTextField
               v-model="payout_number"
               label="Utbetalningsnummer"
@@ -607,7 +614,15 @@ const downloadCSV = async () => {
               maxlength="11"
               @input="formatOrgNumber()"
             />
+            <VFileInput
+              v-if="csr_url !== null"
+              v-model="pemFile"
+              label="Ladda upp PEM-fil"
+              accept=".pem"
+              prepend-icon="tabler-file"
+            />
             <VCheckbox
+              v-if="csr_url !== null"
               v-model="is_payout"
               label="Aktivera Swish utbetalningar"
             />

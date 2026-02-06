@@ -14,7 +14,7 @@ class StateSeeder extends Seeder
      */
     public function run()
     {
-        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Obetalda', 'Borttagen', 'Avvisad', 'Betalad', 'Förfallna', 'Kredit', 'På lager', 'På annons', 'Såld', 'Förmedlingsbil', 'Väntande'];
+        $states = ['Inaktiv', 'Aktiv', 'Publicerad', 'Obetald', 'Borttagen', 'Avvisad', 'Betald', 'Förfallna', 'Krediterad', 'I lager', 'På annons', 'Såld', 'Förmedlingsbil', 'Väntande'];
         $labels = ['Inactive', 'Active', 'Published', 'Unpaid', 'Removed', 'Rejected', 'Paid', 'Overdue', 'Credit', 'In stock', 'Announced', 'Sold', 'Rented', 'Pending'];
 
         foreach($states as $key => $state) {

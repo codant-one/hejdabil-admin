@@ -1,5 +1,6 @@
 <script setup>
 
+import { themeConfig } from "@themeConfig";
 import { confirmedValidator, passwordValidator, requiredValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -8,6 +9,8 @@ import { useSuppliersStores } from '@/stores/useSuppliers'
 import AddAuthenticatorAppDialog from "@/components/dialogs/AddAuthenticatorAppDialog.vue";
 import QRCode from 'qrcode-generator';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+
+const { width: windowWidth } = useWindowSize();
 
 const profileStores = useProfileStores()
 const authStores = useAuthStores()
@@ -25,6 +28,8 @@ const refForm = ref()
 const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
 const masterPassword = ref('')
+const csrUrl = ref('')
+const isFileMissingDialogVisible = ref(false)
 const setting = ref([])
 
 const userData = ref(null)
@@ -72,7 +77,9 @@ async function fetchData() {
   role.value = userData.value.roles[0].name
 
   if(role.value === 'Supplier') {
-    masterPassword.value = await suppliersStores.getMasterPassword(userData.value.supplier.id)
+    const supplierData = await suppliersStores.getMasterPassword(userData.value.supplier.id)
+    masterPassword.value = supplierData.master_password
+    csrUrl.value = supplierData.csr_url
   } else {
     await configsStores.getFeature('setting')
     setting.value = configsStores.getFeaturedConfig('setting')
@@ -186,6 +193,31 @@ const onSubmit = () => {
   })
 }
 
+const downloadFile = async (url) => {
+  if (!url) {
+    isFileMissingDialogVisible.value = true
+    return
+  }
+
+   try {
+    const response = await fetch(
+      themeConfig.settings.urlbase + "proxy-image?url=" + themeConfig.settings.urlStorage + url
+    );
+    const blob = await response.blob();
+
+    const blobUrl = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = url.split("/").pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error("Error:", error);
+  }
+}
+
 const onSubmitKey = async () => {
   refForm.value?.validate().then(async ({ valid }) => {
     if (valid) {
@@ -254,8 +286,12 @@ const onSubmitKey = async () => {
 
     <VRow>
       <VCol cols="12" class="pb-0">
-        <VCard title="Ändra lösenord">
-          <VCardText>
+        <VCard>
+          <VCardText class="px-0">
+            <div class="title-tabs mb-5">
+              Ändra lösenord
+            </div>
+
             <VAlert
               variant="tonal"
               color="warning"
@@ -269,48 +305,60 @@ const onSubmitKey = async () => {
 
             <VForm
               ref="refVForm"
+              class="card-form"
               @submit.prevent="onSubmit"
             >
-              <VRow>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
+              <div 
+                  class="d-flex flex-wrap"
+                  :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                  :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+              >
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Nytt lösenord" />
                   <VTextField
                     v-model="password"
-                    label="Nytt lösenord"
                     :type="isNewPasswordVisible ? 'text' : 'password'"
-                    :append-inner-icon="isNewPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                    :append-inner-icon="isNewPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
                     :rules="[requiredValidator, passwordValidator]"
                     @click:append-inner="isNewPasswordVisible = !isNewPasswordVisible"
                   />
-                </VCol>
-                <VCol
-                  cols="12"
-                  md="6"
-                >
+                </div>
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bekräfta lösenord" />
                   <VTextField
                     v-model="passwordConfirmation"
-                    label="Bekräfta lösenord"
                     :type="isConfirmPasswordVisible ? 'text' : 'password'"
-                    :append-inner-icon="isConfirmPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
+                    :append-inner-icon="isConfirmPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
                     :rules="[requiredValidator, confirmedValidator(passwordConfirmation, password)]"
                     @click:append-inner="isConfirmPasswordVisible = !isConfirmPasswordVisible"
                   />
-                </VCol>
+                </div>
 
-                <VCol cols="12">
-                  <VBtn type="submit" class="w-100 w-md-auto">
-                    Ändra lösenord
-                  </VBtn>
-                </VCol>
-              </VRow>
+                <VCardText class="p-0 d-flex w-100">
+                  <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                      <VBtn 
+                          type="submit" 
+                          :block="windowWidth < 1024"
+                          class="btn-gradient"
+                          :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                      >
+                          Ändra lösenord
+                      </VBtn>
+                  </div>
+                </VCardText>
+              </div>
             </VForm>
           </VCardText>
         </VCard>
-        <VCard title="Authenticator" class="mt-5">
-          <VCardText>
-            <VTable class="text-no-wrap rounded border">
+
+        <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-4'" />
+
+        <VCard>
+          <VCardText class="px-0">
+            <div class="title-tabs mb-5">
+              Authenticator
+            </div>
+            <VTable class="text-no-wrap rounded">
               <thead>
                 <tr>
                   <th scope="col"> TYP </th>
@@ -332,41 +380,91 @@ const onSubmitKey = async () => {
           </VCardText>
         </VCard>
 
-        <VCard title="Säkerhetslösenord" class="mt-5" v-if="role !== 'User'">
+        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
+
+        <VCard class="mt-8" v-if="role === 'Supplier'">
           <VForm
               ref="refForm"
+              class="card-form"
               v-model="isFormValid"
               @submit.prevent="onSubmitKey">
 
-              <VCardText class="pt-0">
-              <!-- 👉 Current Password -->
-              <VRow class="mb-3">
-                  <VCol
-                      cols="12"
-                      md="12"
-                  >
-                      <VTextField
-                          v-model="masterPassword"
-                          :type="isMasterPasswordVisible ? 'text' : 'password'"
-                          :append-inner-icon="isMasterPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
-                          :rules="[requiredValidator]"
-                          label="Säkerhetslösenord"
-                          @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
-                  />
-                  </VCol>
-                  <VCol cols="12" class="py-0">
-                      <VBtn type="submit"class="w-100 w-md-auto">
-                          Spara
-                      </VBtn>
-                  </VCol>
-              </VRow>
+              <VCardText class="px-0 pt-0">
+                <div class="title-tabs mb-5">
+                  Säkerhetslösenord
+                </div>
+                <!-- 👉 Current Password -->
+                <div 
+                    class="d-flex flex-wrap"
+                    :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                >
+                  <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Säkerhetslösenord" />
+                    <VTextField
+                      v-model="masterPassword"
+                      :type="isMasterPasswordVisible ? 'text' : 'password'"
+                      :append-inner-icon="isMasterPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+                      :rules="[requiredValidator]"
+                      @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
+                    />
+                  </div>
 
-          
+                  <VCardText class="p-0 d-flex w-100">
+                    <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                        <VBtn 
+                            type="submit" 
+                            :block="windowWidth < 1024"
+                            class="btn-gradient"
+                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                        >
+                            Spara
+                        </VBtn>
+                    </div>
+                  </VCardText>
+                </div>
               </VCardText>
           </VForm>
-      </VCard>
+        </VCard>
+
+        <VDivider  v-if="role === 'Supplier'" :class="windowWidth < 1024 ? 'my-4' : 'my-4'" />
+
+        <VCard class="mt-5 mb-8" v-if="role === 'Supplier'">
+          <VCardText class="px-0">
+            <div class="title-tabs mb-5">
+              Certifikat
+            </div>
+            <VCardText class="p-0 d-flex w-100">
+              <div class="d-flex mt-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                  <VBtn 
+                      type="button" 
+                      :block="windowWidth < 1024"
+                      class="btn-light"
+                      :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                      @click="downloadFile(csrUrl)"
+                  >
+                      Ladda ner CSR
+                  </VBtn>
+              </div>
+            </VCardText>
+          </VCardText>
+        </VCard>
       </VCol>
     </VRow>
+
+    <VDialog v-model="isFileMissingDialogVisible" width="500">
+      <VCard title="Information">
+        <VCardText>
+          Systemet har inte genererat filen ännu, gör en begäran för att kunna generera den.
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn color="primary" @click="isFileMissingDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
 
     <AddAuthenticatorAppDialog
       v-model:isDialogVisible="isDialogVisible"
@@ -383,4 +481,168 @@ const onSubmitKey = async () => {
   .two_class {
     grid-template-areas: none;
   }
+
+  .bg-alert {
+    background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+    border-radius: 16px;
+    gap: 16px;
+    opacity: 1;
+    padding-top: 16px;
+    padding-right: 24px;
+    padding-bottom: 16px;
+    padding-left: 24px;
+  }
+
+  .card-info {
+        background-color: #F6F6F6;
+        border-radius: 16px;
+    }
+
+    .title-tabs {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #454545;
+
+        @media (max-width: 1023px) {
+            font-size: 16px
+        }
+    }
+
+    .list-kopare {
+        font-size: 16px;
+        line-height: 100%;
+        font-weight: 700;
+
+        span {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+    
+    .title-kopare {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #878787;
+
+        @media (max-width: 1023px) {
+            font-size: 16px
+        }
+    }
+
+    .title-page {
+        font-weight: 700;
+        font-size: 32px;
+        line-height: 100%;
+        color: #1C2925;
+
+        @media (max-width: 1023px) {
+            font-size: 24px
+        }
+    }
+
+    .subtitle-page {
+        font-weight: 400;
+        font-size: 24px;
+        line-height: 100%;
+        color: #878787;
+    }
+
+    .v-btn--disabled {
+        opacity: 1 !important;
+    }
+
+    .border-bottom-secondary {
+        border-bottom: 1px solid #d9d9d9;
+        padding-bottom: 10px;
+    }
+
+    .justify-content-end {
+        justify-content: end !important;
+    }
+
+    .info-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .info-item {
+            flex: 0 0 calc(100% / 7 - 14px);
+            min-width: 0;
+
+            span  {
+                font-weight: 400;
+                font-size: 16px;
+                line-height: 24px;
+                color: #454545;
+            }
+
+            .value-field {
+                background-color: #F6F6F6;
+                border-radius: 8px;
+                border: 1px solid #E7E7E7;
+                padding: 16px;
+                height: 48px !important;
+                align-items: center;
+                display: flex;
+                font-weight: 400;
+                font-size: 12px;
+                line-height: 24px;
+                color: #5D5D5D;
+            }
+
+            @media (max-width: 1023px) {
+                flex: 0 0 calc(50% - 8px);
+            }
+        }
+    }
+
+    .card-form {
+        .v-input {
+            .v-input__control {
+                .v-field {
+                    background-color: #f6f6f6 !important;
+                    min-height: 48px !important;
+
+                    .v-text-field__suffix {
+                            padding: 12px 16px !important;
+                    }
+
+                    .v-field__input {
+                        min-height: 48px !important;
+                        padding: 12px 16px !important;
+
+                        input {
+                            min-height: 48px !important;
+                        }
+                    }
+
+                    .v-field-label {
+                        @media (max-width: 991px) {
+                            top: 12px !important;
+                        }
+                    }
+
+                    .v-field__append-inner {
+                        align-items: center;
+                        padding-top: 0px;
+                    }
+                }
+            }
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+            .v-select__selection,
+            .v-autocomplete__selection {
+                align-items: center;
+            }
+
+            .v-field__input > input {
+                top: 0px;
+                left: 0px;
+            }
+        }
+    }
 </style>

@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+use App\Services\OpenSslService;
 
 class Supplier extends Model
 {
@@ -178,9 +182,65 @@ class Supplier extends Model
     }
 
     public static function swish($request, $id) {
-        $supplier = self::where('id', $id)->first();
-        $supplier->is_payout = $request->is_payout;
-        $supplier->payout_number = $request->payout_number;
+        $supplier = self::with('user')->where('id', $id)->first();
+
+        // Common Name solo con números (sin guiones ni caracteres especiales)
+        $payoutNumberClean = preg_replace('/[^0-9]/', '', $request->payout_number);
+        $common_name = $payoutNumberClean;
+
+        //Si se va a guardar el PEM file
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = 'suppliers/pem/';
+            
+            $filePath = $path . $common_name . '.pem';
+
+            if ($supplier->pem_url && Storage::disk('public')->exists($supplier->pem_url)) {
+                Storage::disk('public')->delete($supplier->pem_url);
+            }
+
+            Storage::disk('public')->put($filePath, file_get_contents($file));
+            $supplier->pem_url = $filePath;
+        } else { //Se se van a generar CSR y KEY
+            $supplier->is_payout = $request->is_payout;
+            $supplier->payout_number = $request->payout_number;
+
+            $sslService = new OpenSslService();
+
+            //Se crea CSR y KEY
+            $csrAndKey = $sslService->generateCsrAndKey(
+                $common_name,
+                [],
+                trim("swish"),
+                4096
+            );
+
+
+            //Save CSR file
+            $path = 'suppliers/csr/';
+
+            $filePath = $path . $common_name . '.csr';
+
+            if ($supplier->csr_url && Storage::disk('public')->exists($supplier->csr_url)) {
+                Storage::disk('public')->delete($supplier->csr_url);
+            }
+
+            Storage::disk('public')->put($filePath, $csrAndKey['csr']);
+            $supplier->csr_url = $filePath;
+
+            //Save KEY file
+            $path = 'suppliers/key/';
+
+            $filePath = $path . $common_name . '.key';
+
+            if ($supplier->key_url && Storage::disk('public')->exists($supplier->key_url)) {
+                Storage::disk('public')->delete($supplier->key_url);
+            }
+
+            Storage::disk('public')->put($filePath, $csrAndKey['private_key']);
+            $supplier->key_url = $filePath;
+        }
+
         $supplier->save();
 
         return $supplier;

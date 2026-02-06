@@ -208,11 +208,53 @@ class TestingController extends Controller
 
     public function vehicle() {
 
-        $vehicle = Vehicle::with(['user', 'model.brand', 'state', 'iva', 'costs'])->find(1);
+        $vehicle = Vehicle::with(['user', 'model.brand', 'state'])->find(1);
+
+        $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+        $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+        
+        // Extraer el "value" soportando array u object
+        $getValue = function ($cfg) {
+            if (is_array($cfg)) {
+                return $cfg['value'] ?? '[]';
+            }
+            if (is_object($cfg) && isset($cfg->value)) {
+                return $cfg->value;
+            }
+            return '[]';
+        };
+        
+        $companyRaw = $getValue($configCompany);
+        $logoRaw    = $getValue($configLogo);
+        
+        // Decodificar con tolerancia a JSON "doble"
+        $decodeSafe = function ($raw) {
+            // Primero intento decodificar
+            $decoded = json_decode($raw);
+        
+            // Si json_decode devuelve una string, entonces había JSON doble: decodifico otra vez
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded);
+            }
+        
+            // Si sigue sin ser objeto, forzamos un objeto vacío
+            if (!is_object($decoded)) {
+                $decoded = (object) [];
+            }
+        
+            return $decoded;
+        };
+        
+        $company = $decodeSafe($companyRaw);
+        $logoObj    = $decodeSafe($logoRaw);
+        
+        // Asignar logo si existe en la config del logo
+        $company->logo = $logoObj->logo ?? null;
 
         return view('pdfs.vehicle', 
             compact(
-                'vehicle'
+                'vehicle',
+                'company'
             )
         );
     }
@@ -239,7 +281,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(1);
+        ])->find(13);
 
         $user = User::with(['userDetail','roles'])->find(1);
  

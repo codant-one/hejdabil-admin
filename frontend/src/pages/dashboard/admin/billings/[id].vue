@@ -10,6 +10,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const billingsStores = useBillingsStores();
 const route = useRoute();
+const emitter = inject("emitter");
 
 const types = ref([]);
 const invoices = ref([]);
@@ -26,6 +27,7 @@ const inteSkapatsDialog = ref(false);
 
 const isMobileActionDialogVisible = ref(false);
 const isConfirmStateDialogVisible = ref(false);
+const isConfirmSendMailReminder = ref(false);
 
 const advisor = ref({
   type: "",
@@ -70,6 +72,23 @@ const addTag = (event) => {
   }
 };
 
+const createBilling = () => {
+  router.push({ name: "dashboard-admin-billings-add" });
+};
+
+const goToBilling = () => {
+  let data = {
+    message: "Fakturan är skickad!",
+    error: false,
+  };
+
+  router.push({
+    name: "dashboard-admin-billings"
+  });
+
+  emitter.emit("toast", data);
+};
+
 const sendMails = async () => {
   if (!isValid.value) {
     isConfirmSendMailVisible.value = false;
@@ -81,30 +100,90 @@ const sendMails = async () => {
       emails: selectedTags.value,
     };
 
-    let res = await billingsStores.sendMails(data);
+    try {
+      let res = await billingsStores.sendMails(data);
 
-    isRequestOngoing.value = false;
+      if (res.data.success) {
+        skickaDialog.value = true;
+      } else {
+        inteSkapatsDialog.value = true;
+      }
 
-    advisor.value = {
-      type: res.data.success ? "success" : "error",
-      message: res.data.success ? "Fakturan är skickad!" : res.data.message,
-      show: true,
-    };
+      isRequestOngoing.value = false;
 
-    setTimeout(() => {
-      selectedTags.value = [];
-      existingTags.value = [];
-      emailDefault.value = true;
+      setTimeout(() => {
+        selectedTags.value = [];
+        existingTags.value = [];
+        emailDefault.value = true;
+      }, 3000);
 
-      advisor.value = {
-        type: "",
-        message: "",
-        show: false,
-      };
-    }, 3000);
+    } catch (error) {
+      console.error("Error sending emails:", error);
+      inteSkapatsDialog.value = true;
+      isRequestOngoing.value = false;
+    }
 
     return true;
   }
+};
+
+const credit = () => {
+  router.push({
+    name: "dashboard-admin-billings-credit-id",
+    params: { id: invoice.value.id },
+  });
+};
+
+const send = () => {
+  isConfirmSendMailVisible.value = true;
+};
+
+const sendReminder = () => {
+  isConfirmSendMailReminder.value = true;
+};
+
+const reminder = async () => {
+  isRequestOngoing.value = true;
+  isConfirmSendMailReminder.value = false;
+
+  billingsStores
+    .reminder(Number(invoice.value.id))
+    .then((res) => {
+      isRequestOngoing.value = false;
+
+      advisor.value = {
+        type: res.data.success ? "success" : "error",
+        message: res.data.success
+          ? "Påminnelse skickad framgångsrikt"
+          : res.data.message,
+        show: true,
+      };
+
+      setTimeout(() => {
+        advisor.value = {
+          type: "",
+          message: "",
+          show: false,
+        };
+      }, 3000);
+    })
+    .catch((err) => {
+      advisor.value = {
+        type: "error",
+        message: err.message,
+        show: true,
+      };
+
+      setTimeout(() => {
+        advisor.value = {
+          type: "",
+          message: "",
+          show: false,
+        };
+      }, 3000);
+
+      isRequestOngoing.value = false;
+    });
 };
 
 const updateBilling = () => {
@@ -113,8 +192,10 @@ const updateBilling = () => {
 
 const updateState = async () => {
   isConfirmStateDialogVisible.value = false;
+  isRequestOngoing.value = true;
   let res = await billingsStores.updateState(invoice.value.id);
 
+  isRequestOngoing.value = false;
   advisor.value = {
     type: res.data.success ? "success" : "error",
     message: res.data.success ? "Fakturan uppdaterad!" : res.data.message,
@@ -129,11 +210,21 @@ const updateState = async () => {
     };
   }, 3000);
 
-  await loadData();
   await fetchData();
 
   return true;
 };
+
+const resolveStatus = state_id => {
+  if (state_id === 4)
+    return { class: 'pending' }
+  if (state_id === 7)
+    return { class: 'success' }   
+  if (state_id === 8)
+    return { class: 'error' }
+  if (state_id === 9)
+    return { class: 'error' }
+}
 
 const printInvoice = async () => {
   try {
@@ -224,7 +315,7 @@ onBeforeUnmount(() => {
     >
       {{ advisor.message }}
     </VSnackbar>
-    <div :class="windowWidth < 1024 ? 'd-flex justify-between' : 'd-none'">
+    <div v-if="invoice" :class="windowWidth < 1024 ? 'd-flex justify-between' : 'd-none'">
       <VBtn
         class="btn-light mb-4"
         :to="{ name: 'dashboard-admin-billings' }"
@@ -236,6 +327,10 @@ onBeforeUnmount(() => {
       </VBtn>
 
       <VBtn
+        v-if="
+          $can('view', 'billings') &&
+          (invoice.state_id === 4 || invoice.state_id === 8)
+        "
         class="btn-light mb-4"
         :to="{ name: 'dashboard-admin-billings-edit-id', params: { id: Number(route.params.id) } }"
       >
@@ -250,19 +345,37 @@ onBeforeUnmount(() => {
       </VBtn>
 
     </div>
+    <div v-if="invoice" :class="windowWidth < 1024 ? 'd-block' : 'd-none'">
+      <VBtn
+        v-if="$can('view', 'billings')"
+        class="btn-gradient w-100 mb-4"
+        @click="send"
+      >
+        <template #prepend>
+          <VIcon icon="custom-paper-plane" size="24" />
+        </template>
+        Skicka
+      </VBtn>
+    </div>
     <VRow no-gutters v-if="invoice" class="card-fill w-100">
       <VCol
         :cols="windowWidth < 1024 ? 12 : 8"
         class="order-2 order-md-1"
         :class="windowWidth < 1024 ? 'p-0' : 'pr-2 mb-5'"
       >
-        <VCard :class="windowWidth < 1024 ? 'rounded-0' : ''" id="invoice-detail">
+        <VCard id="invoice-detail">
           <VCardTitle
-            class="d-flex justify-space-between bg-white"
-            :class="windowWidth < 1024 ? 'flex-column pa-6 pb-0' : 'pa-4'"
+            class="d-flex gap-4 bg-white align-center flex-row flex-nowrap"
+            :class="windowWidth < 1024 ? 'pa-6 pb-0 justify-between' : 'pa-4'"
           >
-            <div class="d-flex align-center w-100 w-md-auto font-blauer">
+            <div class="d-flex align-center font-blauer">
               <h2 class="faktura-title">Faktura #{{ invoice.invoice_id }}</h2>
+            </div>
+            <div
+              class="status-chip"
+              :class="`status-chip-${resolveStatus(invoice.state.id)?.class}`"
+            >
+              {{ invoice.state.name }}
             </div>
           </VCardTitle>
 
@@ -288,7 +401,13 @@ onBeforeUnmount(() => {
       >
         <VCard>
           <VCardText :class="windowWidth < 1024 ? 'pa-6' : 'pa-4'">
-            <VBtn class="btn-gradient w-100 mb-4" @click="editBilling">
+            <VBtn 
+              v-if="
+                $can('view', 'billings') &&
+                (invoice.state_id === 4 || invoice.state_id === 8)
+              "
+              class="btn-gradient w-100 mb-4" 
+              @click="editBilling">
               <template #prepend>
                 <VIcon icon="custom-pencil" size="24" />
               </template>
@@ -310,7 +429,7 @@ onBeforeUnmount(() => {
             <VBtn
               v-if="$can('edit', 'billings') && invoice.state_id === 4"
               class="btn-light w-100 mb-4"
-              @click="updateBilling()"
+              @click="updateBilling"
             >
               <template #prepend>
                 <VIcon icon="custom-cash-2" size="24" />
@@ -319,8 +438,9 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
+              v-if="$can('view', 'billings')"
               class="btn-light w-100 mb-4"
-              @click="isConfirmSendMailVisible = true"
+              @click="send"
             >
               <template #prepend>
                 <VIcon icon="custom-paper-plane" size="24" />
@@ -328,14 +448,20 @@ onBeforeUnmount(() => {
               Skicka
             </VBtn>
 
-            <VBtn class="btn-light w-100 mb-4" @click="download">
+            <VBtn 
+              v-if="$can('view', 'billings')"
+              class="btn-light w-100 mb-4"
+              @click="download">
               <template #prepend>
                 <VIcon icon="custom-download" size="24" />
               </template>
               Ladda ner som PDF
             </VBtn>
 
-            <VBtn class="btn-light w-100 mb-4" @click="printInvoice">
+            <VBtn 
+              v-if="$can('view', 'billings')"
+              class="btn-light w-100 mb-4" 
+              @click="printInvoice">
               <template #prepend>
                 <VIcon icon="custom-print" size="24" />
               </template>
@@ -343,7 +469,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="invoice.state_id !== 9"
+              v-if="$can('edit', 'billings')"
               class="btn-light w-100 mb-4"
               @click="duplicate"
             >
@@ -354,14 +480,24 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="invoice.state_id !== 9"
-              class="btn-light w-100"
-              @click="duplicate"
+              v-if="$can('edit', 'billings') && invoice.state_id === 8"
+              class="btn-light w-100 mb-4"
+              @click="sendReminder"
             >
               <template #prepend>
                 <VIcon icon="custom-alarm" size="24" />
               </template>
               Påminnelse
+            </VBtn>
+            <VBtn
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9"
+              class="btn-light w-100"
+              @click="credit"
+            >
+              <template #prepend>
+                <VIcon icon="custom-cancel-contract" size="24" />
+              </template>
+              Kreditera
             </VBtn>
           </VCardText>
         </VCard>
@@ -377,7 +513,17 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            @click="printInvoice"
+            v-if="$can('edit', 'billings') && invoice.state_id === 4"
+            @click="updateBilling(); isMobileActionDialogVisible = false"
+          >
+            <template #prepend>
+              <VIcon icon="custom-cash-2" size="24" />
+            </template>
+            <VListItemTitle>Betala</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'billings')"
+            @click="printInvoice(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-print" size="24" />
@@ -385,7 +531,8 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skriv ut</VListItemTitle>
           </VListItem>
           <VListItem
-            @click="download"
+            v-if="$can('view', 'billings')"
+            @click="download(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-download" size="24" />
@@ -393,7 +540,8 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            @click="duplicate"
+            v-if="$can('edit', 'billings')"
+            @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-duplicate" size="24" />
@@ -401,8 +549,8 @@ onBeforeUnmount(() => {
             <VListItemTitle>Duplicera</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="invoice.state_id !== 9"
-            @click="duplicate"
+            v-if="$can('edit', 'billings') && invoice.state_id === 8"
+            @click="sendReminder(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-alarm" size="24" />
@@ -411,11 +559,12 @@ onBeforeUnmount(() => {
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings')"
+            @click="credit(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
-              <VIcon icon="custom-paper-plane" size="24" />
+              <VIcon icon="custom-cancel-contract" size="24" />
             </template>
-            <VListItemTitle>Skicka</VListItemTitle>
+            <VListItemTitle>Kreditera</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>
@@ -426,6 +575,7 @@ onBeforeUnmount(() => {
       v-model="isConfirmSendMailVisible" 
       persistent 
       class="action-dialog">
+      <!-- Dialog close btn -->
 
       <VBtn
         icon
@@ -436,7 +586,7 @@ onBeforeUnmount(() => {
       </VBtn>
 
       <!-- Dialog Content -->
-       <VCard>
+      <VCard>
         <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-paper-plane" class="action-icon" />
           <div class="dialog-title">
@@ -448,16 +598,16 @@ onBeforeUnmount(() => {
           e-postadresser?
         </VCardText>
         <VCardText class="d-flex flex-column gap-2">
-          <VCheckbox 
-            v-model="emailDefault" 
-            :label="invoice.client.email" 
+          <VCheckbox
+            v-model="emailDefault"
+            :label="invoice.client.email"
             class="ml-2"
           />
 
           <VCombobox
             v-model="selectedTags"
             :items="existingTags"
-            label="Ange e-post för att skicka fakturor"
+            label="Ange e-postadresser för att skicka fakturan"
             multiple
             chips
             deletable-chips
@@ -501,18 +651,18 @@ onBeforeUnmount(() => {
           <VIcon size="72" icon="custom-f-checkmark" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Skickat!n</div>
+          <div class="dialog-title">Skickat!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Fakturan har skickats till "Kundnamn". Du hittar den nu i din lista
+          Fakturan har skickats till "{{ invoice.client.fullname }}". Du hittar den nu i din lista
           över skickade fakturor.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light" @click="skickaDialog = false">
+          <VBtn class="btn-light" @click="goToBilling">
             Gå till fakturalistan
           </VBtn>
-          <VBtn class="btn-gradient" @click=""> Skapa en ny faktura </VBtn>
+          <VBtn class="btn-gradient" @click="createBilling"> Skapa ny faktura </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
@@ -585,7 +735,45 @@ onBeforeUnmount(() => {
           <VBtn class="btn-light" @click="isConfirmStateDialogVisible = false">
             Avbryt
           </VBtn>
-          <VBtn  class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+          <VBtn class="btn-gradient" @click="updateState"> Acceptera </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm send reminder -->
+    <VDialog 
+      v-model="isConfirmSendMailReminder" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmSendMailReminder = !isConfirmSendMailReminder"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+         <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-alarm" class="action-icon" />
+          <div class="dialog-title">
+            Skicka påminnelse via e-post
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Vill du skicka ett påminnelsemeddelande för faktura
+          <strong>#{{ invoice.invoice_id }}</strong
+          >?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmSendMailReminder = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="reminder"> Skicka </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

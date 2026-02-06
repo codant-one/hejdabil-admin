@@ -4,18 +4,29 @@ import Payouts from '@/api/payouts'
 export const usePayoutsStores = defineStore('payouts', {
     state: () => ({
         payouts: {},
+        suppliers: {},
         loading: false,
         last_page: 1,
-        payoutsTotalCount: 6
+        payoutsTotalCount: 6,
+        state_id: null
     }),
     getters:{
         getPayouts(){
             return this.payouts
+        },
+        getStateId(){
+            return this.state_id
         }
     },
     actions: {
         setLoading(payload){
             this.loading = payload
+        },
+         setStateId(state_id) {
+            this.state_id = state_id
+        },
+        cleanData() {
+            this.state_id = null
         },
         fetchPayouts(params) {
             this.setLoading(true)
@@ -37,6 +48,18 @@ export const usePayoutsStores = defineStore('payouts', {
             return Payouts.create(data)
                 .then((response) => {
                     this.payouts.push(response.data.data.payout)
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        updatePayout(id, data) {
+            this.setLoading(true)
+
+            return Payouts.update(id, data)
+                .then((response) => {
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -71,6 +94,62 @@ export const usePayoutsStores = defineStore('payouts', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
-        }
+        },
+        cancelPayout(id) {
+            this.setLoading(true)
+
+            return Payouts.cancel(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        saveReceiptImage(id, formData) {
+            this.setLoading(true)
+
+            return Payouts.saveReceiptImage(id, formData)
+                .then((response) => {
+                    if(response.data.success) {
+                        // Update payout in store with new image_url
+                        let index = this.payouts.findIndex((item) => item.id === id)
+                        if(index !== -1) {
+                            this.payouts[index] = response.data.data.payout
+                        }
+                    }
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        info() {
+            this.setLoading(true)
+
+            return Payouts.info()
+                .then((response) => {
+                    this.suppliers = response.data.data.suppliers
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
+        sendPayout(data) {
+            this.setLoading(true)
+
+            return Payouts.send(data)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
     }
 })

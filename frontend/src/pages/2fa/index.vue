@@ -136,7 +136,7 @@ const onSubmit = () => {
   font-weight: 700;
   font-size: 32px;
   line-height: 56px;
-  letter-spacing: 0%;
+  letter-spacing: 0;
   text-align: center;
   color: #454545;
 }

@@ -1,5 +1,7 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
+import { onBeforeRouteLeave } from 'vue-router';
 import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useAuthStores } from '@/stores/useAuth'
@@ -7,11 +9,28 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
+import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { useToastsStores } from '@/stores/useToasts'
+import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+
+const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+
+const isConfirmLeaveVisible = ref(false)
+const nextRoute = ref(null)
+const initialData = ref(null)
+const allowNavigation = ref(false)
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
 
 const route = useRoute()
 const authStores = useAuthStores()
 const agreementsStores = useAgreementsStores()
 const configsStores = useConfigsStores()
+const companyInfoStores = useCompanyInfoStores()
+const personInfoStores = usePersonInfoStores()
+const toastsStores = useToastsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -103,6 +122,11 @@ const terms_other_information = ref(`Förmedlaren har rätt att sälja fordonet 
 Förmedlaren har rätt till provision enligt avtalet. Vid garanterad utbetalning har förmedlaren rätt att sätta priset. Eventuella rekond- eller reparationskostnader debiteras om inte annat avtalats.
 
 Fordonsägaren intygar att bilen är fri från skulder och dolda fel.`)
+
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
 
 watch(start_date, (newStartDate) => {
     if (end_date.value && newStartDate > end_date.value) {
@@ -229,6 +253,10 @@ async function fetchData() {
         terms_other_information.value = agreement.value.terms_other_information
 
         isRequestOngoing.value = false
+
+        nextTick(() => {
+            initialData.value = JSON.parse(JSON.stringify(currentData.value))
+        })
     }
 }
 
@@ -283,30 +311,104 @@ const formatOrgNumber = () => {
     organization_number.value = numbers
 }
 
+/**
+ * Swedish organization numbers start with 5.
+ * Otherwise treat as personal identity number.
+ */
+const isCompanyNumber = (value) => {
+    const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+    return cleanNumber.startsWith('5')
+}
+
+const isEntitySearchLoading = computed(() => {
+    return companyInfoStores.loading || personInfoStores.loading
+})
+
+const searchCompany = async () => {
+    if (!organization_number.value) return
+
+    try {
+        const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+
+        if (response) {
+            const foretagType = client_types.value.find(t => t.name === 'Företag')
+            if (foretagType) {
+                client_type_id.value = foretagType.id
+            }
+
+            fullname.value = response.organisationsnamn?.organisationsnamnLista?.[0]?.namn || ''
+            postal_code.value = response.postadressOrganisation?.postadress?.postnummer || ''
+            address.value = response.postadressOrganisation?.postadress?.utdelningsadress || ''
+            street.value = response.postadressOrganisation?.postadress?.postort || ''
+        }
+    } catch (error) {
+        toastsStores.addToast({
+            message: 'Ingen företag hittades med det registreringsnumret',
+            type: 'error',
+        })
+    }
+}
+
+const searchPerson = async () => {
+    try {
+        const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+        if (response?.success && response?.data) {
+            const personData = response.data
+
+            const privatType = client_types.value.find(t => t.name === 'Privat')
+            if (privatType) {
+                client_type_id.value = privatType.id
+            }
+
+            fullname.value = personData.fullname || ''
+            postal_code.value = personData.postnummer || ''
+            address.value = personData.adress || ''
+            street.value = personData.postort || ''
+        }
+    } catch (error) {
+        const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+        toastsStores.addToast({
+            message: errorMessage,
+            type: 'error',
+        })
+    }
+}
+
+const searchEntity = async () => {
+    if (!organization_number.value) return
+
+    if (isCompanyNumber(organization_number.value)) {
+        await searchCompany()
+    } else {
+        await searchPerson()
+    }
+}
+
 
 const onSubmit = () => {
   const tab = currentTab.value
   const itemsLength = refForm.value.items.length
 
-  refForm.value?.validate().then(({ valid }) => {
+  refForm.value?.validate().then(({ valid: isValid }) => {
     if (tab === 0) {
-        if (valid || (!valid && itemsLength > 16 && itemsLength < 60)) {
+        if (isValid || (!isValid && itemsLength > 16 && itemsLength < 60)) {
             currentTab.value++
         }
     } else if (tab === 1) {
-        if (valid || (!valid && itemsLength > 24 && itemsLength < 60)) {
+        if (isValid || (!isValid && itemsLength > 24 && itemsLength < 60)) {
             currentTab.value++
         }
     } else if (tab === 2) {
-        if (valid || (!valid && itemsLength > 28 && itemsLength < 60)) {
+        if (isValid || (!isValid && itemsLength > 28 && itemsLength < 60)) {
             currentTab.value++
         }
     } else if (tab === 3) {
-        if (valid || (!valid && itemsLength > 33 && itemsLength < 60)) {
+        if (isValid || (!isValid && itemsLength > 33 && itemsLength < 60)) {
             currentTab.value++
         }
     } else if (tab === 4) {
-        if (valid || (!valid && itemsLength > 37 && itemsLength < 60)) {
+        if (isValid || (!isValid && itemsLength > 37 && itemsLength < 60)) {
             currentTab.value++
         }
     } else if (tab === 5) {
@@ -379,31 +481,138 @@ const onSubmit = () => {
             .then((res) => {
                 if (res.data.success) {
                     
-                    let data = {
-                        message: 'Kommissionen framgångsrikt skapat',
-                        error: false
-                    }
+                    // let data = {
+                    //     message: 'Kommissionen framgångsrikt skapat',
+                    //     error: false
+                    // }
 
-                    router.push({ name : 'dashboard-admin-agreements'})
-                    emitter.emit('toast', data)
+                    // router.push({ name : 'dashboard-admin-agreements'})
+                    // emitter.emit('toast', data)
+
+                    allowNavigation.value = true;
+
+                    // Save current state so the dirty-check stops blocking navigation
+                    initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                    skapatsDialog.value = true;
+                } else {
+                                        
+                    // Save current state so the dirty-check stops blocking navigation
+                    initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                    inteSkapatsDialog.value = true;
                 }
+
                 isRequestOngoing.value = false
             })
             .catch((err) => {
                 
-                let data = {
-                    message: err.message,
-                    error: true
-                }
+                // let data = {
+                //     message: err.message,
+                //     error: true
+                // }
 
-                router.push({ name : 'dashboard-admin-agreements'})
-                emitter.emit('toast', data)
+                // router.push({ name : 'dashboard-admin-agreements'})
+                // emitter.emit('toast', data)
+
+                // Save current state so the dirty-check stops blocking navigation
+                initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                inteSkapatsDialog.value = true;
 
                 isRequestOngoing.value = false
     })
     }
   })
 }
+
+/*
+    Campos `v-model` dentro de los tabs (class="vehicles-tabs")
+
+    Nota: la lista arriba incluye solo campos dentro de los tabs contenidos por la pestaña `vehicles-tabs`.
+*/
+const currentData = computed(() => ({
+    // Tab 1: Cliente
+    commission_id: commission_id.value,
+    organization_number: organization_number.value,
+    client_type_id: client_type_id.value,
+    fullname: fullname.value,
+    address: address.value,
+    postal_code: postal_code.value,
+    street: street.value,
+    phone: phone.value,
+    identification_id: identification_id.value,
+    email: email.value,
+
+    // Tab 2: Vehículo
+    reg_num: reg_num.value,
+    brand_id: brand_id.value,
+    model_id: model_id.value,
+    model: model.value,
+    year: year.value,
+    color: color.value,
+    chassis: chassis.value,
+    mileage: mileage.value,
+    gearbox_id: gearbox_id.value,
+    fuel_id: fuel_id.value,
+    number_keys: number_keys.value,
+    service_book: service_book.value,
+    summer_tire: summer_tire.value,
+    winter_tire: winter_tire.value,
+    comments: comments.value,
+
+    // Tab 3: Comisión
+    commission_type_id: commission_type_id.value,
+    commission_fee: commission_fee.value,
+    outstanding_debt: outstanding_debt.value,
+    remaining_debt: remaining_debt.value,
+    paid_bank: paid_bank.value,
+    selling_price: selling_price.value,
+    residual_debt: residual_debt.value,
+
+    // Tab 4: Pago
+    bank_name: bank_name.value,
+    payment_days: payment_days.value,
+    account_number: account_number.value,
+    payment_description: payment_description.value,
+
+    // Tab 5: Fechas
+    start_date: start_date.value,
+    end_date: end_date.value,
+
+    // Tab 6: Términos
+    terms_other_conditions: terms_other_conditions.value,
+    terms_other_information: terms_other_information.value,
+}))
+
+const isDirty = computed(() => {
+  if (!initialData.value) return false
+  try {
+    return JSON.stringify(currentData.value) !== JSON.stringify(initialData.value)
+  } catch (e) {
+    return true
+  }
+})
+
+const confirmLeave = () => {
+    isConfirmLeaveVisible.value = false;
+    allowNavigation.value = true;
+
+    if (nextRoute.value) {
+        router.push(nextRoute.value);
+    }
+};
+
+// Intercept all navigation attempts
+onBeforeRouteLeave((to, from, next) => {
+  if (allowNavigation.value || !isDirty.value) {
+    next();
+  } else {
+    nextRoute.value = to;
+    isConfirmLeaveVisible.value = true;
+    next(false);
+  }
+});
 
 </script>
 
@@ -413,596 +622,932 @@ const onSubmit = () => {
 
         <VForm
             ref="refForm"
+            class="card-form"
             v-model="isFormValid"
-            @submit.prevent="onSubmit">
-            <VRow>
-                <VCol cols="12" md="12" class="py-0">
-                    <div class="d-flex flex-wrap justify-start justify-sm-space-between gap-y-4 gap-x-6">
-                        <div class="d-flex flex-column justify-center">
-                            <h6 class="text-md-h4 text-h6 font-weight-medium">
+            @submit.prevent="onSubmit"
+        >
+            <VCard
+                flat 
+                class="card-fill"
+                :class="[
+                    windowWidth < 1024 ? 'flex-column' : 'flex-row',
+                    $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+                ]"
+            >
+                <VCardText class="p-0">
+                    <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
+                        <div class="d-flex flex-column gap-4">
+                            <span class="title-page">
                                 Förmedlingsavtal
-                            </h6>
+                            </span>
                         </div>
-                        <VSpacer />
-                            <div class="d-flex flex-column flex-md-row gap-1 gap-md-4 w-100 w-md-auto">
-                                <VBtn
-                                    variant="tonal"
-                                    color="secondary"
-                                    class="mb-2 w-100 w-md-auto"
-                                    :to="{ name: 'dashboard-admin-agreements' }">
-                                    Tillbaka
-                                </VBtn>
-                            </div>
+
+                        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+                        <div 
+                            class="d-flex gap-4"
+                            :class="windowWidth < 1024 ? 'w-100' : 'align-center'"
+                        >
+                            <VBtn
+                                class="btn-light w-auto" 
+                                block
+                                :to="{ name: 'dashboard-admin-agreements' }">
+                                <VIcon icon="custom-return" size="24" />
+                                Avbryt
+                            </VBtn>
+                        </div>
                     </div>
-                </VCol>
-                <VCol cols="12" md="12">              
-                    <VCard flat class="px-2 px-md-12">
-                        <VCardText class="px-2 pt-0 pt-md-5">               
-                            <VTabs v-model="currentTab" grow disabled>
-                                <VTab>Kund</VTab>
-                                <VTab>Fordonsinformation</VTab>
-                                <VTab>Förmedlingsavgift</VTab>
-                                <VTab>Betalningsinformation</VTab>
-                                <VTab>Förmedlingsdatum</VTab>
-                                <VTab>Tillägg</VTab>
-                            </VTabs>
-                            <VCardText class="px-0 px-md-2">
-                                <VWindow v-model="currentTab">
-                                    <!--Kund-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5 mt-2">
-                                            <VCol cols="12" md="6" class="d-none d-md-block"></VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="commission_id"
-                                                    disabled
-                                                    label="Kommission"
-                                                    prefix="#"
-                                                    density="compact"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Fordonsägare
-                                                </h6>
-                                                <VRow>
-                                                    <VCol cols="10" md="11">
-                                                        <VTextField
-                                                            v-model="organization_number"
-                                                            label="Org/personummer"
-                                                            :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                                            minLength="11"
-                                                            maxlength="13"
-                                                            @input="formatOrgNumber()"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="2" md="1" class="px-0 d-flex align-start">
-                                                        <VBtn
-                                                            icon="tabler-search"
-                                                            variant="tonal"
-                                                            color="primary"
-                                                            size="x-small"
-                                                            class="mt-1"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VAutocomplete
-                                                            v-model="client_type_id"
-                                                            label="Köparen är"
-                                                            :items="client_types"
-                                                            :item-title="item => item.name"
-                                                            :item-value="item => item.id"
-                                                            :rules="[requiredValidator]"
-                                                            autocomplete="off"/>
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VTextField
-                                                            v-model="fullname"
-                                                            label="Namn"
-                                                            :rules="[requiredValidator]"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="12">
-                                                        <VTextField
-                                                            v-model="address"
-                                                            label="Adress"
-                                                            :rules="[requiredValidator]"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VTextField
-                                                            v-model="postal_code"
-                                                            label="Postnummer"
-                                                            :rules="[requiredValidator]"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VTextField
-                                                            v-model="street"
-                                                            label="Stad"
-                                                            :rules="[requiredValidator]"
-                                                        /> 
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VTextField
-                                                            v-model="phone"
-                                                            :rules="[phoneValidator]"
-                                                            label="Telefon"
-                                                        />
-                                                    </VCol>
-                                                    <VCol cols="12" md="6">
-                                                        <VAutocomplete
-                                                            v-model="identification_id"
-                                                            label="Legitimation"
-                                                            :items="identifications"
-                                                            :item-title="item => item.name"
-                                                            :item-value="item => item.id"
-                                                            :rules="[requiredValidator]"
-                                                            autocomplete="off"/>
-                                                    </VCol>
-                                                    <VCol cols="12" md="12">
-                                                        <VTextField
-                                                            v-model="email"
-                                                            :rules="[emailValidator,requiredValidator]"
-                                                            label="E-post"
-                                                        />
-                                                    </VCol>
-                                                </VRow>
-                                            </VCol>                                        
-                                            <VCol cols="12" md="6" v-if="userData">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Förmedlare
-                                                </h6>
-                                                <VList class="card-list mt-2">
-                                                    <VListItem>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Namn:
-                                                                <span class="text-body-2">
-                                                                    {{ company.name }} {{ company.last_name }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Org/personummer:
-                                                                <span class="text-body-2">
-                                                                    {{ company.organization_number }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Adress:
-                                                                <span class="text-body-2">
-                                                                    {{ company.address }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Postnr. ort:
-                                                                <span class="text-body-2">
-                                                                    {{ company.street + ' ' +  company.postal_code }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Telefon:
-                                                                <span class="text-body-2">
-                                                                    {{ company.phone }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                E-post
-                                                                <span class="text-body-2">
-                                                                    {{ company.email }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                        <VListItemTitle>
-                                                            <h6 class="text-base font-weight-semibold">
-                                                                Bilfirma:
-                                                                <span class="text-body-2">
-                                                                    {{ company.company }}
-                                                                </span>
-                                                            </h6>
-                                                        </VListItemTitle>
-                                                    </VListItem>
-                                                </VList>
-                                            </VCol>                                                                                    
-                                        </VRow>
-                                        
-                                    </VWindowItem>
+                </VCardText>
 
-                                    <!--Fordonsinformation-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5 mt-1">
-                                            <VCol cols="12" md="6" class="d-none d-md-block"></VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="reg_num"
-                                                    label="Regnr"
-                                                    disabled
-                                                    :rules="[requiredValidator]"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                        <h6 class="text-md-h4 text-h5 font-weight-medium my-5">
-                                            Fordonsinformation
-                                        </h6>
-                                        <VRow class="px-md-5">
-                                            <VCol cols="12" md="6">
-                                                <VAutocomplete
-                                                    v-model="brand_id"
-                                                    label="Märke"
-                                                    :items="brands"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
-                                                    autocomplete="off"
-                                                    clearable
-                                                    clear-icon="tabler-x"
-                                                    :rules="[requiredValidator]"
-                                                    @update:modelValue="selectBrand"
-                                                    @click:clear="onClearBrand"
-                                                    :menu-props="{ maxHeight: '300px' }"/>
-                                            </VCol>
-                                            <VCol cols="12" :md="model_id !== 0 ? 6 : 3">
-                                                <VAutocomplete
-                                                    v-model="model_id"
-                                                    label="Modell"
-                                                    :items="getModels"
-                                                    autocomplete="off"
-                                                    clearable
-                                                    clear-icon="tabler-x"
-                                                    :rules="[requiredValidator]"
-                                                    @update:modelValue="selectModel"
-                                                    :menu-props="{ maxHeight: '300px' }"/> 
-                                            </VCol>
-                                            <VCol cols="12" md="3" v-if="model_id === 0">
-                                                <VTextField
-                                                    v-model="model"
-                                                    label="Modellens namn"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="year"
-                                                    label="Årsmodell"
-                                                    :rules="[yearValidator, requiredValidator]"
-                                                />   
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="color"
-                                                    label="Färg"
-                                                /> 
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="chassis"
-                                                    label="Chassinummer"
-                                                    :rules="[requiredValidator]"
-                                                /> 
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    type="number"
-                                                    v-model="mileage"
-                                                    suffix="Mil"
-                                                    label="Miltal"
-                                                    :rules="[requiredValidator]"
-                                                    min="0"
-                                                /> 
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VAutocomplete
-                                                    v-model="fuel_id"
-                                                    label="Drivmedel"
-                                                    :items="fuels"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
-                                                    :rules="[requiredValidator]"
-                                                    autocomplete="off"
-                                                    clearable
-                                                    clear-icon="tabler-x"/>
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VAutocomplete
-                                                    v-model="gearbox_id"
-                                                    label="Växellåda"
-                                                    :items="gearboxes"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
-                                                    :rules="[requiredValidator]"
-                                                    autocomplete="off"
-                                                    clearable
-                                                    clear-icon="tabler-x"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="number_keys"
-                                                    type="number"
-                                                    label="Antal nycklar"
-                                                    :rules="[requiredValidator]"
-                                                    min="1"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="2">
-                                                <div class="d-flex flex-column">
-                                                    <label class="v-label text-body-2 text-wrap"> Servicebok finns?</label>
-                                                    <VRadioGroup v-model="service_book" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="2">                                                
-                                                <div class="d-flex flex-column">
-                                                    <label class="v-label text-body-2 text-wrap">Sommardäck finns?</label>
-                                                    <VRadioGroup v-model="summer_tire" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="2">                                                
-                                                <div class="d-flex flex-column">
-                                                    <label class="v-label text-body-2 text-wrap">Vinterdäck finns?</label>
-                                                    <VRadioGroup v-model="winter_tire" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="12">
-                                                <VTextarea
-                                                    v-model="comments"
-                                                    label="Kända fel, brister och övrig information"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
+                <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
-                                    <!--Förmedlingsavgift-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5">
-                                            <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Förmedlingsavgift
-                                                </h6>
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VAutocomplete
-                                                    v-model="commission_type_id"
-                                                    label="Typ av provision"
-                                                    :items="commission_types"
-                                                    :item-title="item => item.name"
-                                                    :item-value="item => item.id"
-                                                    :rules="[requiredValidator]"
-                                                    autocomplete="off"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextField
-                                                    v-model="commission_fee"
-                                                    :label="'Provisionsavgift ' + (currencies.find(item => item.id === currency_id)?.code || '')"
-                                                    type="number"
-                                                    min="0"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="3">
-                                                <div class="d-flex flex-column">
-                                                    <label class="v-label text-body-2 text-wrap"> Har fordonet restskuld</label>
-                                                    <VRadioGroup v-model="outstanding_debt" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="3">
-                                                <VTextField
-                                                    v-model="selling_price"
-                                                    :label="'Försäljningspris ' + (currencies.find(item => item.id === currency_id)?.code || '')"
-                                                    type="number"
-                                                    min="0"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="3" v-if="outstanding_debt === 0">
-                                                <div class="d-flex flex-column">
-                                                    <label class="v-label text-body-2 text-wrap">Restskulden löses av</label>
-                                                    <VRadioGroup v-model="residual_debt" inline class="radio-form">
-                                                        <VRadio
-                                                            v-for="(radio, index) in optionsSettled"
-                                                            :key="index"
-                                                            :label="radio"
-                                                            :value="index"
-                                                        />
-                                                    </VRadioGroup>
-                                                </div>
-                                            </VCol>
-                                            <VCol cols="12" md="3" v-if="outstanding_debt === 0">
-                                                <VTextField
-                                                    v-model="remaining_debt"
-                                                    :label="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')"
-                                                    type="number"
-                                                    min="0"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6" v-if="outstanding_debt === 0">
-                                                <VTextField
-                                                    v-model="paid_bank"
-                                                    label="Restskuld betalas till bank"
-                                                />
-                                            </VCol>                                          
-                                        </VRow>
-                                    </VWindowItem>
+                <VTabs 
+                    v-model="currentTab" 
+                    :grow="windowWidth < 1024 ? true : false"                
+                    :show-arrows="false"
+                    class="vehicles-tabs" 
+                    disabled
+                >
+                    <VTab>
+                        <VIcon size="24" icon="custom-clients" />
+                        Kund
+                    </VTab>
+                    <VTab>
+                        <VIcon size="24" icon="custom-car" />
+                        Fordonsinformation
+                    </VTab>
+                    <VTab>
+                        <VIcon size="24" icon="custom-pris-information" />
+                        Förmedlingsavgift
+                    </VTab>
+                    <VTab>
+                        <VIcon size="24" icon="custom-cash-2" />
+                        Betalningsinformation
+                    </VTab>
+                    <VTab>
+                        <VIcon size="24" icon="custom-calendar" />
+                        Förmedlingsdatum
+                    </VTab>
+                    <VTab>
+                        <VIcon size="24" icon="custom-add-column" />
+                        Tillägg
+                    </VTab>
+                </VTabs>
 
-                                    <!--Betalningsinformation-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5">
-                                            <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Betalningsinformation
-                                                </h6>
-                                            </VCol>                                            
-                                            <VCol cols="12" md="4">
-                                                <VTextField
-                                                    v-model="bank_name"
-                                                    label="Bankens namn"
-                                                    disabled
-                                                />
-                                            </VCol>        
-                                            <VCol cols="12" md="4">
-                                                <VTextField
-                                                    v-model="account_number"
-                                                    label="Kontonummer"
-                                                    disabled
-                                                />
-                                            </VCol>                                 
-                                            <VCol cols="12" md="4">
-                                                <VTextField
-                                                    v-model="payment_days"
-                                                    label="Utbetalning antal bankdagar efter försäljning"
-                                                    type="number"
-                                                    min="0"
-                                                    max="30"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                            </VCol>                                            
-                                                                                   
-                                            <VCol cols="12" md="12">
-                                                <VTextarea
-                                                    v-model="payment_description"
-                                                    label="Betalningsbeskrivning"
-                                                    rows="3"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
-                                    <!--Förmedlingsdatum-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5">
-                                            <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium mb-5">
-                                                    Förmedlingsdatum och giltighetstid
-                                                </h6>
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <AppDateTimePicker
-                                                    v-model="start_date"
-                                                    label="Startdatum"
-                                                    :rules="[requiredValidator]"
-                                                    :config="{
-                                                        dateFormat: 'Y-m-d',
-                                                        position: 'auto right'
-                                                    }"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <AppDateTimePicker
-                                                    :key="start_date"
-                                                    v-model="end_date"
-                                                    label="Slutdatum"
-                                                    :rules="[requiredValidator]"
-                                                    :config="endDateTimePickerConfig"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
 
-                                    <!--Tillägg-->
-                                    <VWindowItem class="px-md-5">
-                                        <VRow class="px-md-5">
-                                            <VCol cols="12" md="12">
-                                                <h6 class="text-md-h4 text-h6 font-weight-medium">
-                                                    Tillägg
-                                                </h6>
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextarea
-                                                    v-model="terms_other_conditions"
-                                                    label="Övriga upplysningar"
-                                                />
-                                            </VCol>
-                                            <VCol cols="12" md="6">
-                                                <VTextarea
-                                                    v-model="terms_other_information"
-                                                    label="Övriga villkor"
-                                                />
-                                            </VCol>
-                                        </VRow>
-                                    </VWindowItem>
-                                </VWindow>
-                            </VCardText>
-                        </VCardText>
-                    </VCard>
-                    <VRow class="mt-5">
-                        <!-- 👉 Submit and Cancel -->
-                        <VCol cols="12" md="12">
-                            <div class="text-center align-center justify-content-center">
-                                <VBtn
-                                    v-if="currentTab > 0"
-                                    variant="tonal"
-                                    color="secondary"
-                                    class="mb-3 mb-md-0 me-md-3 w-100 w-md-auto"
-                                    @click="currentTab--"
+                <VCardText class="px-0 px-md-2">
+                    <VWindow v-model="currentTab">
+                        <!--Kund-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Fordonsägare
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
-                                    Tillbaka
-                                </VBtn>
-                                <VBtn type="submit" class="w-100 w-md-auto">
-                                    {{ (currentTab === 5) ? 'Uppdatering' : ' Nästa' }}
-                                </VBtn>
-                            </div>
-                        </VCol>
-                    </VRow>
-                </VCol>
-            </VRow>
+                                            <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kommission" />
+                                            <VTextField
+                                                v-model="commission_id"
+                                                disabled
+                                                prefix="#"
+                                                density="compact"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
+                                            <div class="d-flex gap-2"> 
+                                                <VTextField
+                                                    v-model="organization_number"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="13"
+                                                    @input="formatOrgNumber()"
+                                                />
+
+                                                <VBtn
+                                                    class="btn-light w-auto px-4"
+                                                    @click="searchEntity"
+                                                    :loading="isEntitySearchLoading"
+                                                >
+                                                    <VIcon icon="custom-search" size="24" />
+                                                    Hämta
+                                                </VBtn>
+                                            </div>        
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
+                                            <AppAutocomplete
+                                                v-model="client_type_id"
+                                                :items="client_types"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"/>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
+                                            <VTextField
+                                                v-model="fullname"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                                            <VTextField
+                                                v-model="address"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
+                                            <VTextField
+                                                v-model="postal_code"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+                                            <VTextField
+                                                v-model="street"
+                                                :rules="[requiredValidator]"
+                                            /> 
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VTextField
+                                                v-model="phone"
+                                                :rules="[phoneValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Legitimation" />
+                                            <AppAutocomplete
+                                                v-model="identification_id"
+                                                :items="identifications"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"/>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
+                                            <VTextField
+                                                v-model="email"
+                                                :rules="[emailValidator,requiredValidator]"
+                                            />
+                                        </div>
+
+                                    </div>
+                                </VCol>                                        
+                                <VCol v-if="userData" cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Förmedlare
+                                    </div>
+                                    <VList class="card-list mt-2">
+                                        <VListItem>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Namn:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.name }} {{ company.last_name }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Org/personummer:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.organization_number }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Adress:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.address }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Postnr. ort:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.street + ' ' +  company.postal_code }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Telefon:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.phone }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    E-post
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.email }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                            <VListItemTitle>
+                                                <h6 class="text-base font-weight-semibold">
+                                                    Bilfirma:
+                                                    <span class="text-body-2 text-high-emphasis">
+                                                        {{ company.company }}
+                                                    </span>
+                                                </h6>
+                                            </VListItemTitle>
+                                        </VListItem>
+                                    </VList>
+                                </VCol>                                                                                    
+                            </VRow>
+                            
+                        </VWindowItem>
+
+                        <!--Fordonsinformation-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Fordonsinformation
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Regnr*" />
+                                            <VTextField
+                                                v-model="reg_num"
+                                                disabled
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
+                                            <AppAutocomplete
+                                                v-model="brand_id"
+                                                :items="brands"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="[requiredValidator]"
+                                                @update:modelValue="selectBrand"
+                                                @click:clear="onClearBrand"
+                                                :menu-props="{ maxHeight: '300px' }"/>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
+                                            <AppAutocomplete
+                                                v-model="model_id"
+                                                :items="getModels"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="[requiredValidator]"
+                                                @update:modelValue="selectModel"
+                                                :menu-props="{ maxHeight: '300px' }"/> 
+                                        </div>
+                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn" />
+                                            <VTextField
+                                                v-model="model"
+                                                label="Modellens namn"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell*" />
+                                            <VTextField
+                                                v-model="year"
+                                                :rules="[yearValidator, requiredValidator]"
+                                            />   
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
+                                            <VTextField
+                                                v-model="color"
+                                            /> 
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
+                                            <VTextField
+                                                v-model="chassis"
+                                                :rules="[requiredValidator]"
+                                            /> 
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="mileage"
+                                                suffix="Mil"
+                                                :rules="[requiredValidator]"
+                                                min="0"
+                                            /> 
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel*" />
+                                            <AppAutocomplete
+                                                v-model="fuel_id"
+                                                :items="fuels"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"/>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda*" />
+                                            <AppAutocomplete
+                                                v-model="gearbox_id"
+                                                :items="gearboxes"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                            <VTextField
+                                                v-model="number_keys"
+                                                type="number"
+                                                :rules="[requiredValidator]"
+                                                min="1"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(32% - 12px);'">
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text=" Servicebok finns?" />
+                                                <VRadioGroup v-model="service_book" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(32% - 12px);'">                                                
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?" />
+                                                <VRadioGroup v-model="summer_tire" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(32% - 12px);'">                                                
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?" />
+                                                <VRadioGroup v-model="winter_tire" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
+                                            <VTextarea
+                                                v-model="comments"
+                                            />
+                                        </div>
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+
+                        <!--Förmedlingsavgift-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Förmedlingsavgift
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ av provision*" />
+                                            <AppAutocomplete
+                                                v-model="commission_type_id"
+                                                :items="commission_types"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                autocomplete="off"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Provisionsavgift ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
+                                            <VTextField
+                                                v-model="commission_fee"
+                                                type="number"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Har fordonet restskuld" />
+                                                <VRadioGroup v-model="outstanding_debt" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Försäljningspris ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
+                                            <VTextField
+                                                v-model="selling_price"
+                                                type="number"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" >
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskulden löses av" />
+                                                <VRadioGroup v-model="residual_debt" inline class="radio-form ms-2">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsSettled"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>
+                                        <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
+                                            <VTextField
+                                                v-model="remaining_debt"
+                                                type="number"
+                                                min="0"
+                                            />
+                                        </div>
+                                        <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskuld betalas till bank" />
+                                            <VTextField
+                                                v-model="paid_bank"
+                                                label="Restskuld betalas till bank"
+                                            />
+                                        </div>                                          
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+
+                        <!--Betalningsinformation-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Betalningsinformation
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >                                            
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bankens namn" />
+                                            <VTextField
+                                                v-model="bank_name"
+                                                disabled
+                                            />
+                                        </div>        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontonummer" />
+                                            <VTextField
+                                                v-model="account_number"
+                                                disabled
+                                            />
+                                        </div>                                 
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Utbetalning antal bankdagar efter försäljning*" />
+                                            <VTextField
+                                                v-model="payment_days"
+                                                type="number"
+                                                min="0"
+                                                max="30"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>                                            
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning" />
+                                            <VTextarea
+                                                v-model="payment_description"
+                                                rows="3"
+                                            />
+                                        </div>
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+                        <!--Förmedlingsdatum-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Förmedlingsdatum och giltighetstid
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Startdatum*" />
+                                            <AppDateTimePicker
+                                                v-model="start_date"
+                                                :rules="[requiredValidator]"
+                                                :config="{
+                                                    dateFormat: 'Y-m-d',
+                                                    position: 'auto right'
+                                                }"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Slutdatum*" />
+                                            <AppDateTimePicker
+                                                :key="start_date"
+                                                v-model="end_date"
+                                                :rules="[requiredValidator]"
+                                                :config="endDateTimePickerConfig"
+                                            />
+                                        </div>
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+
+                        <!--Tillägg-->
+                        <VWindowItem class="px-md-5">
+                            <VRow class="px-md-5">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Tillägg
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga upplysningar" />
+                                            <VTextarea
+                                                v-model="terms_other_conditions"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Övriga villkor" />
+                                            <VTextarea
+                                                v-model="terms_other_information"
+                                            />
+                                        </div>
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+                    </VWindow>
+                </VCardText>
+
+                <VCardText class="p-0">
+                    <!-- 👉 Submit and Cancel -->
+                    <div 
+                        class="d-flex gap-4 mb-12"
+                        :class="windowWidth < 1024 ? 'w-100' : 'justify-content-end'"
+                    >
+                        <VBtn
+                            v-if="currentTab > 0"
+                            class="btn-light w-auto"
+                            :block="windowWidth < 1024"
+                            @click="currentTab--"
+                            >
+                            <VIcon icon="custom-return" size="24" />
+                            Tillbaka
+                        </VBtn>
+                        <VBtn 
+                            type="submit" 
+                            :block="windowWidth < 1024"
+                            class="btn-gradient"
+                        >
+                            <VIcon v-if="currentTab === 5" icon="custom-save"  size="24" />
+                            {{ (currentTab === 5) ? 'Uppdatering' : 'Nästa' }}
+                        </VBtn>
+                    </div>
+                </VCardText>
+            </VCard>
         </VForm>
+
+        <!-- 👉 Dialogs Section -->
+
+        <!-- 👉 Skapats Dialogs -->
+        <VDialog
+            v-model="skapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+            >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="reloadPage"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-certificate" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Avtalet har skapats!</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    Ditt nya avtal har sparats och finns nu i din avtalslista.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" :to="{ name: 'dashboard-admin-agreements' }" >
+                        Gå till avtalslistan
+                    </VBtn>
+                    <VBtn class="btn-gradient" @click="reloadPage">
+                        Skapa ett till avtal 
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <VDialog
+            v-model="inteSkapatsDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+            >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="inteSkapatsDialog = !inteSkapatsDialog"
+            >
+                <VIcon size="16" icon="custom-f-cancel" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="72" icon="custom-f-cancel" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Kunde inte skapa avtalet</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="inteSkapatsDialog = !inteSkapatsDialog">
+                        Stäng
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <!-- Confirm leave without saving -->
+        <VDialog
+            v-model="isConfirmLeaveVisible"
+            persistent
+            class="action-dialog"
+        >
+            <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="isConfirmLeaveVisible = false"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box">
+                    <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+                    <div class="dialog-title">Du har osparade ändringar</div>
+                </VCardText>
+                <VCardText class="dialog-text">
+                    Om du lämnar sidan nu kommer dina ändringar inte att sparas.
+                </VCardText>
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+                    <VBtn class="btn-gradient" @click="isConfirmLeaveVisible = false">Stanna kvar</VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
     </section>
 </template>
 
-<style scoped>
-    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
-        --v-input-control-height: 0 !important;
+<style lang="scss">
+    .card-info {
+        background-color: #F6F6F6;
+        border-radius: 16px;
     }
 
-    :deep(.radio-form .v-selection-control__wrapper) {
-        height: 20px !important;
+    .title-tabs {
+        font-weight: 700;
+        font-size: 24px;
+        line-height: 100%;
+        color: #454545;
+
+        @media (max-width: 1023px) {
+            font-size: 16px
+        }
     }
 
-    :deep(.radio-form .v-icon--size-default) {
-        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
+    .title-page {
+        font-weight: 700;
+        font-size: 32px;
+        line-height: 100%;
+        color: #1C2925;
+
+        @media (max-width: 1023px) {
+            font-size: 24px
+        }
     }
-    
+
+    .subtitle-page {
+        font-weight: 400;
+        font-size: 24px;
+        line-height: 100%;
+        color: #878787;
+    }
+
     .v-btn--disabled {
-        opacity: 1 !important
+        opacity: 1 !important;
+    }
+
+    .border-bottom-secondary {
+        border-bottom: 1px solid #d9d9d9;
+        padding-bottom: 10px;
     }
 
     .justify-content-end {
         justify-content: end !important;
+    }
+
+    .v-tabs.vehicles-tabs {
+        .v-btn {
+            min-width: 50px !important;
+            .v-btn__content {
+                font-size: 14px !important;
+                color: #454545;
+            }
+        }
+    }
+
+    .info-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+
+        .info-item {
+            flex: 0 0 calc(100% / 7 - 14px);
+            min-width: 0;
+
+            span  {
+                font-weight: 400;
+                font-size: 16px;
+                line-height: 24px;
+                color: #454545;
+            }
+
+            .value-field {
+                background-color: #F6F6F6;
+                border-radius: 8px;
+                border: 1px solid #E7E7E7;
+                padding: 16px;
+                height: 48px !important;
+                align-items: center;
+                display: flex;
+                font-weight: 400;
+                font-size: 12px;
+                line-height: 24px;
+                color: #5D5D5D;
+            }
+
+            @media (max-width: 1023px) {
+                flex: 0 0 calc(50% - 8px);
+            }
+        }
+    }
+
+    .card-form {
+        .v-input {
+            .v-input__control {
+                .v-field {
+                    background-color: #f6f6f6 !important;
+                    min-height: 48px !important;
+
+                    .v-text-field__suffix {
+                            padding: 12px 16px !important;
+                    }
+
+                    .v-field__input {
+                        min-height: 48px !important;
+                        padding: 12px 16px !important;
+
+                        input {
+                            min-height: 48px !important;
+                        }
+                    }
+
+                    .v-field-label {
+                        @media (max-width: 991px) {
+                            top: 12px !important;
+                        }
+                    }
+
+                    .v-field__append-inner {
+                        align-items: center;
+                        padding-top: 0px;
+                    }
+                }
+            }
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+            .v-select__selection,
+            .v-autocomplete__selection {
+                align-items: center;
+            }
+
+            .v-field__input > input {
+                top: 0px;
+                left: 0px;
+            }
+        }
+    }
+
+    .vehicles-pills > div {
+        flex: 1 1;
+    }
+
+    .vehicles-pill {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .vehicles-pill-title {
+        font-family: "Blauer Nue";
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 100%;
+        margin-right: 4px;
+    }
+
+    .vehicles-pill-value {
+        font-family: "Blauer Nue";
+        font-weight: 700;
+        font-style: Bold;
+        font-size: 16px;
+        line-height: 100%;
+    }
+
+    @media (max-width: 991px) {
+        .vehicles-pills {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .vehicles-pill {
+            padding: 8px 16px;
+        }
     }
 </style>
 

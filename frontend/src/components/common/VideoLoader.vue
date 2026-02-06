@@ -10,14 +10,23 @@ const props = defineProps({
   storageKey: {
     type: String,
     default: 'hasSeenVideo'
+  },
+  useLocalStorage: {
+    type: Boolean,
+    default: false
   }
 })
 
 const showVideoLoader = ref(false)
 
+const getStorage = () => {
+  return props.useLocalStorage ? localStorage : sessionStorage
+}
+
 const checkAndShowVideo = () => {
   if (props.showOnce) {
-    const hasSeen = sessionStorage.getItem(props.storageKey)
+    const storage = getStorage()
+    const hasSeen = storage.getItem(props.storageKey)
     if (!hasSeen) {
       showVideoLoader.value = true
     }
@@ -29,7 +38,8 @@ const checkAndShowVideo = () => {
 const hideVideoLoader = () => {
   showVideoLoader.value = false
   if (props.showOnce) {
-    sessionStorage.setItem(props.storageKey, 'true')
+    const storage = getStorage()
+    storage.setItem(props.storageKey, 'true')
   }
 }
 

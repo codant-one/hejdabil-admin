@@ -39,9 +39,20 @@ return [
         'client_cert_password' => env('SWISH_PAYOUT_CLIENT_CERT_PASSWORD'),
         'ca_cert'     => env('SWISH_PAYOUT_CA_CERT'),
         'callback_url'=> env('SWISH_PAYOUT_CALLBACK_URL'),
-        'signing_cert' => env('SWISH_PAYOUT_SIGNING_CERT'),
-        'signing_key'  => env('SWISH_PAYOUT_SIGNING_KEY'),
         'signing_key_password' => env('SWISH_PAYOUT_SIGNING_KEY_PASSWORD', 'swish')
+    ],
+
+    'spar' => [
+        'endpoint'      => env('SPAR_ENDPOINT'),
+        'cert_path'     => env('SPAR_CERT_PATH'),
+        'cert_password' => env('SPAR_CERT_PASSWORD'),
+        'customer_id'   => env('SPAR_CUSTOMER_ID'),
+        // En SPAR, KundNrLeveransMottagare (integratör) y KundNrSlutkund (cliente final)
+        // pueden ser diferentes en producción.
+        'slutkund_id'   => env('SPAR_SLUTKUND_ID', env('SPAR_CUSTOMER_ID')),
+        'assignment_id' => env('SPAR_ASSIGNMENT_ID'),
+        'soap_action'   => env('SPAR_SOAP_ACTION'),
+        'debug'         => (bool) env('SPAR_DEBUG', false),
     ],
 
 ];
