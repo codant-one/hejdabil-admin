@@ -122,20 +122,23 @@ class Document extends Model
     public static function sendDocument($request)
     {
         $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
-        $documents = self::with('user')->whereIn('id', $ids)->get();
+        $documents = self::with(['user', 'supplier.user.userDetail', 'supplier.boss.user.userDetail'])->whereIn('id', $ids)->get();
 
         if ($documents->isEmpty()) {
             return false;
         }
 
-        if ($documents->supplier && is_null($documents->supplier->boss_id)) {//supplier
-            $user = UserDetails::with(['user'])->find($documents->supplier->user_id);
+        // Use the first document to determine company info (assuming all docs share same supplier)
+        $firstDocument = $documents->first();
+
+        if ($firstDocument->supplier && is_null($firstDocument->supplier->boss_id)) {//supplier
+            $user = UserDetails::with(['user'])->find($firstDocument->supplier->user_id);
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
-        } else if ($documents->supplier && !is_null($documents->supplier->boss_id)) {//user
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($documents->supplier->user_id);
+        } else if ($firstDocument->supplier && !is_null($firstDocument->supplier->boss_id)) {//user
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($firstDocument->supplier->user_id);
             $company = $user->supplier->boss->user->userDetail;
             $company->email = $user->supplier->boss->user->email;
             $company->name = $user->supplier->boss->user->name;
