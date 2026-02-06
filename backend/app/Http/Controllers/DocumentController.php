@@ -402,7 +402,7 @@ class DocumentController extends Controller
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $subject = 'Dokument för digital signering';
+            $subject = 'Dokument för digital signering från ' . $company->company;
 
             $data = [
                 'company' => $company,
