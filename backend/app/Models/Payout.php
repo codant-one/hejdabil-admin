@@ -51,7 +51,7 @@ class Payout extends Model
         } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
             $query->where('supplier_id', Auth::user()->supplier->id);
         } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
-            $query->where('user_id', Auth::user()->id);
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
         if ($filters->get('search')) {
