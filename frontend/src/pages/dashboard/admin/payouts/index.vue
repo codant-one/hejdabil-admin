@@ -829,7 +829,7 @@ const handleSendPayout = () => {
             <th scope="col" class="text-center"> Mobilnummer </th>
             <th scope="col" class="text-center"> Belopp </th>
             <th scope="col" class="text-center"> Status </th>
-            <th scope="col" v-if="role !== 'User'"> Skapad av </th>
+            <th scope="col"> Skapad av </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
           </tr>
         </thead>
@@ -853,7 +853,7 @@ const handleSendPayout = () => {
                 {{ payout.state.name }}
               </div>
             </td>
-            <td style="width: 1%; white-space: nowrap" v-if="role !== 'User'">
+            <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="payout.user.avatar ? 'outlined' : 'tonal'"
