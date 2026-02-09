@@ -454,11 +454,6 @@ class AgreementController extends Controller
                 );
             }
 
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
-                }
-            }
-
             foreach($request->emails as $email) {
 
                 $subject = 'Din avtal #'. $agreement->agreement_id . ' är tillgänglig';
@@ -483,10 +478,6 @@ class AgreementController extends Controller
                     null,
                     $attachments
                 );
-
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
-                }
             }
 
             return response()->json([

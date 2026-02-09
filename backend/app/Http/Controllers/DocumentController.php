@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
 use App\Jobs\SendEmailJob;
+use App\Services\CacheService;
 
 class DocumentController extends Controller
 {

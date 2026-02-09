@@ -20,6 +20,7 @@ use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
 use App\Jobs\SendEmailJob;
+use App\Services\CacheService;
 
 class BillingController extends Controller
 {
@@ -421,8 +422,6 @@ class BillingController extends Controller
                 'logo' => $logo
             ];
 
-            $errors = [];
-
             if($request->emailDefault === true) {
                 $clientEmail = $billing->client->email;
                 $subject = 'Ny faktura från ' . $company->company;
@@ -473,13 +472,6 @@ class BillingController extends Controller
                     null,
                     $attachments
                 );
-            }
-
-            if (!empty($errors)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => implode("\n", $errors)
-                ], 500);
             }
 
             return response()->json([

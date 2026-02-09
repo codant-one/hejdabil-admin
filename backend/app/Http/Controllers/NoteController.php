@@ -12,6 +12,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Note;
 use App\Models\Supplier;
+use App\Services\CacheService;
 
 class NoteController extends Controller
 {
