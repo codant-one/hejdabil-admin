@@ -41,7 +41,9 @@ class PayoutController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Payout::with(['state', 'user' => function($query) {
+            $query = Payout::with(['state', 
+                            'supplier.user',
+                            'user' => function($query) {
                                 $query->whereNull('deleted_at');
                             }])
                            ->whereHas('user', function($query) {
@@ -52,7 +54,7 @@ class PayoutController extends Controller
                                     'search',
                                     'orderByField',
                                     'orderBy',
-                                    'user_id',
+                                    'supplier_id',
                                     'state_id'
                                 ])
                             );

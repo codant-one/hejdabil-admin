@@ -26,6 +26,10 @@ class Payout extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
+    public function supplier() {
+        return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
@@ -42,10 +46,12 @@ class Payout extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if ($filters->get('user_id') !== null) {
-            $query->where('user_id', $filters->get('user_id'));
-        } else if(Auth::check() && Auth::user()->getRoleNames()[0] !== 'SuperAdmin' && Auth::user()->getRoleNames()[0] !== 'Administrator') {
-            $query->where('user_id', Auth::user()->id);
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+            $query->where('supplier_id', Auth::user()->supplier->id);
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
+            $query->where('supplier_id', Auth::user()->supplier->boss_id);
         }
 
         if ($filters->get('search')) {
@@ -74,8 +80,18 @@ class Payout extends Model
     /**** Public methods ****/
     public static function createPayout($request) {
 
+        $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isUser = Auth::user()->getRoleNames()[0] === 'User';
+        $supplier_id = match (true) {
+            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isUser => Auth::user()->supplier->boss_id,
+            $request->supplier_id === 'null' => null,
+            default => $request->supplier_id,
+        };
+
         $payout = self::create([
             'user_id'                           => Auth::user()->id,
+            'supplier_id' =>  $supplier_id,
             'payout_state_id'                   => $request->payout_state_id ?? 1,
             'swish_id'                          => $request->swish_id ?? null,
             'fullname'                          => $request->fullname === 'null' ? null : $request->fullname,

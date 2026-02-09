@@ -93,6 +93,11 @@ trait UserHelper
         $user->delete();
     }
 
+    public static function activateUser($id) {
+        $user = self::onlyTrashed()->where('id', $id)->first();
+        $user->restore();
+    }
+
     public static function getOnline($request) {
 
         $users = self::select('id','online')

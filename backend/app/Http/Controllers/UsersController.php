@@ -41,6 +41,7 @@ class UsersController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;;
 
             $query = User::with(['roles', 'userDetail'])
+                         ->withTrashed()
                          ->whereHas('roles', function ($query) {
                             $query->where('name', 'SuperAdmin')
                                 ->orWhere('name', 'Administrator')
@@ -199,6 +200,39 @@ class UsersController extends Controller
             ], 500);
         }
     }
+
+
+    public function activate($id)
+    {
+        try {
+
+            $user = User::onlyTrashed()->where('id', $id)->first();
+        
+            if (!$user)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+            
+            $user->activateUser($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'user' => $user
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
 
     /**
      *

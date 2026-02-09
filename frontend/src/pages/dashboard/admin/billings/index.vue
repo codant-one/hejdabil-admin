@@ -545,7 +545,7 @@ onBeforeUnmount(() => {
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
           <AppAutocomplete
-            v-if="role !== 'Supplier' && hasLoaded"
+            v-if="role !== 'Supplier' && role !== 'User' && hasLoaded"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
@@ -1269,7 +1269,7 @@ onBeforeUnmount(() => {
         
         <VCardText class="pt-0">
           <AppAutocomplete
-            v-if="role !== 'Supplier'"
+            v-if="role !== 'Supplier' && role !== 'User'"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"

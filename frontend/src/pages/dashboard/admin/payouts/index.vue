@@ -114,7 +114,7 @@ async function fetchData(cleanFilters = false) {
     orderBy: 'desc',
     limit: rowPerPage.value,
     page: currentPage.value,
-    user_id: supplier_id.value,
+    supplier_id: supplier_id.value,
     state_id: payoutsStores.getStateId ?? state_id.value,
   }
 
@@ -707,13 +707,13 @@ const handleSendPayout = () => {
 
         <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
           <AppAutocomplete
-            v-if="role !== 'Supplier' && hasLoaded"
+            v-if="(role !== 'Supplier' && role !== 'User') && hasLoaded"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
             :items="suppliers"
             :item-title="(item) => item.full_name"
-            :item-value="(item) => item.user_id"
+            :item-value="(item) => item.id"
             autocomplete="off"
             clearable
             clear-icon="tabler-x"
@@ -722,7 +722,7 @@ const handleSendPayout = () => {
         </div>
 
         <VBtn
-          v-if="role !== 'Supplier' && hasLoaded"
+          v-if="(role !== 'Supplier' && role !== 'User') && hasLoaded"
           class="btn-white-2 px-3"
           @click="isFilterDialogVisible = true"
           :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
@@ -829,7 +829,7 @@ const handleSendPayout = () => {
             <th scope="col" class="text-center"> Mobilnummer </th>
             <th scope="col" class="text-center"> Belopp </th>
             <th scope="col" class="text-center"> Status </th>
-            <th scope="col" v-if="role !== 'Supplier' && role !== 'User'"> Skapad av </th>
+            <th scope="col"> Skapad av </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
           </tr>
         </thead>
@@ -853,7 +853,7 @@ const handleSendPayout = () => {
                 {{ payout.state.name }}
               </div>
             </td>
-            <td style="width: 1%; white-space: nowrap" v-if="role !== 'Supplier' && role !== 'User'">
+            <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="payout.user.avatar ? 'outlined' : 'tonal'"
@@ -904,7 +904,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Visa detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 4 && role === 'Supplier'"
+                    v-if="$can('view','payouts') && payout.state.id === 4 && (role === 'Supplier' || role === 'User')"
                     @click="shareReceipt(payout)">
                     <template #prepend>
                       <VIcon icon="custom-paper-plane" size="24" />
@@ -912,7 +912,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1 && role === 'Supplier'"
+                    v-if="$can('view','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
                     @click="editPayout(payout)">
                     <template #prepend>
                       <VIcon icon="custom-check-mark" size="24" />
@@ -920,7 +920,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Bekräfta betalning</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('view','payouts') && payout.state.id === 1 && role === 'Supplier'"
+                    v-if="$can('view','payouts') && payout.state.id === 1 && (role === 'Supplier' || role === 'User')"
                     @click="showCancelDialog(payout)">
                     <template #prepend>
                       <VIcon icon="custom-unavailable" size="24" />
@@ -928,7 +928,7 @@ const handleSendPayout = () => {
                     <VListItemTitle>Avbryt</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','payouts') && role === 'Supplier'"
+                    v-if="$can('delete','payouts') && (role === 'Supplier' || role === 'User')"
                     @click="showDeleteDialog(payout)"
                     class="d-none">
                     <template #prepend>
@@ -1095,7 +1095,7 @@ const handleSendPayout = () => {
                   {{ selectedPayout.state.name }}
                 </div>
 
-                <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
+                <div v-if="selectedPayout.payout_state_id === 4 && (role === 'Supplier' || role === 'User')" class="d-flex gap-2">
                   <VBtn
                     v-if="selectedPayout.payout_state_id === 4"
                     class="btn-light"
@@ -1184,7 +1184,7 @@ const handleSendPayout = () => {
               <VIcon icon="custom-return" size="24" />
               Gå ut
             </VBtn>
-            <div v-if="selectedPayout.payout_state_id === 4 && role === 'Supplier'" class="d-flex gap-2">
+            <div v-if="selectedPayout.payout_state_id === 4 && (role === 'Supplier' || role === 'User')" class="d-flex gap-2">
               <VBtn
                 v-if="selectedPayout.payout_state_id === 4"
                 class="btn-light"
@@ -1431,7 +1431,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Visa detaljer</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4 && role === 'Supplier'"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 4 && (role === 'Supplier' || role === 'User')"
             @click="shareReceipt(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-paper-plane" size="24" />
@@ -1439,7 +1439,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Skicka betalningsbevis</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && role === 'Supplier'"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
             @click="editPayout(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-check-mark" size="24" />
@@ -1447,7 +1447,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Bekräfta betalning</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && role === 'Supplier'"
+            v-if="$can('view','payouts') && selectedPayoutForAction.state.id === 1 && (role === 'Supplier' || role === 'User')"
             @click="showCancelDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-unavailable" size="24" />
@@ -1455,7 +1455,7 @@ const handleSendPayout = () => {
             <VListItemTitle>Avbryt</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete', 'payouts') && role === 'Supplier'"
+            v-if="$can('delete', 'payouts') && (role === 'Supplier' || role === 'User')"
             class="d-none"
             @click="showDeleteDialog(selectedPayoutForAction); isMobileActionDialogVisible = false;"
           >
@@ -1555,13 +1555,13 @@ const handleSendPayout = () => {
         
         <VCardText class="pt-0">
           <AppAutocomplete
-            v-if="role !== 'Supplier'"
+            v-if="(role !== 'Supplier' && role !== 'User')"
             prepend-icon="custom-profile"
             v-model="supplier_id"
             placeholder="Leverantörer"
             :items="suppliers"
             :item-title="(item) => item.full_name"
-            :item-value="(item) => item.user_id"
+            :item-value="(item) => item.id"
             autocomplete="off"
             clearable
             clear-icon="tabler-x"

@@ -21,12 +21,12 @@ class SwishPayout
     {
         $user = Auth::user();
         
-        // Si el usuario tiene rol supplier, usar sus propios datos
-        // Si es rol usuarios, obtener los datos de su supplier asociado (boss)
-        if ($user->hasRole('supplier')) {
-            $supplier = $user;
-        } else {
+        // Si el usuario tiene rol Supplier, usar su registro de supplier
+        // Si es rol User, obtener el boss del supplier asociado
+        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
             $supplier = $user->supplier;
+        } else {
+            $supplier = $user->supplier->boss;
         }
 
         $this->baseUrl            = config('services.swish_payout.base_url');

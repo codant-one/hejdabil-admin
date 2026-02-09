@@ -122,7 +122,7 @@ const onSubmitEdit = () =>{
                 }, 5000)
 
             }).catch(error => {
-                closeUserCreateDialog()
+                closeUserEditDialog()
                 window.scrollTo(0, 0)
 
                 advisor.value.show = true

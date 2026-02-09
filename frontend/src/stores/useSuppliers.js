@@ -149,8 +149,10 @@ export const useSuppliersStores = defineStore('suppliers', {
 
             return Suppliers.deleteUser(id)
                 .then((response) => {
-                    let index = this.users.findIndex((item) => item.id === id)
-                    this.users.splice(index, 1)
+                    let index = this.users.findIndex((item) => item.user.id === id)
+                    if (index !== -1) {
+                        this.users.splice(index, 1)
+                    }
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -163,8 +165,10 @@ export const useSuppliersStores = defineStore('suppliers', {
             
             return Suppliers.updateUser(data, id)
                 .then((response) => {
-                    let pos = this.users.findIndex((item) => item.id === response.data.data.user.id)
-                    this.users[pos] = response.data.data.user
+                    let pos = this.users.findIndex((item) => item.user.id === response.data.data.user.id)
+                    if (pos !== -1) {
+                        this.users[pos].user = response.data.data.user
+                    }
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -178,8 +182,10 @@ export const useSuppliersStores = defineStore('suppliers', {
             
             return Suppliers.updatePermissions(data, id)
                 .then((response) => {
-                    let pos = this.users.findIndex((item) => item.id === response.data.data.user.id)
-                    this.users[pos] = response.data.data.user
+                    let pos = this.users.findIndex((item) => item.user.id === response.data.data.user.id)
+                    if (pos !== -1) {
+                        this.users[pos].user = response.data.data.user
+                    }
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))

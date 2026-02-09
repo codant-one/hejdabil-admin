@@ -130,6 +130,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('update/company', [UsersController::class, 'updateCompany']);
         Route::post('update/company/logo', [UsersController::class, 'updateLogo']);
         Route::post('update/company/signature', [UsersController::class, 'updateSignature']);
+        Route::get('/activate/{id}', [UsersController::class, 'activate']);
     });
 
     //Roles

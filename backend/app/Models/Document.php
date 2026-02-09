@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+use App\Models\User;;
+use App\Models\UserDetails;
+use App\Models\Config;
+
 class Document extends Model
 {
     use HasFactory;
@@ -118,10 +122,63 @@ class Document extends Model
     public static function sendDocument($request)
     {
         $ids = is_array($request->ids) ? $request->ids : explode(',', $request->ids);
-        $documents = self::with('user')->whereIn('id', $ids)->get();
+        $documents = self::with(['user', 'supplier.user.userDetail', 'supplier.boss.user.userDetail'])->whereIn('id', $ids)->get();
 
         if ($documents->isEmpty()) {
             return false;
+        }
+
+        // Use the first document to determine company info (assuming all docs share same supplier)
+        $firstDocument = $documents->first();
+
+        if ($firstDocument->supplier && is_null($firstDocument->supplier->boss_id)) {//supplier
+            $user = UserDetails::with(['user'])->find($firstDocument->supplier->user_id);
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+        } else if ($firstDocument->supplier && !is_null($firstDocument->supplier->boss_id)) {//user
+            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($firstDocument->supplier->user_id);
+            $company = $user->supplier->boss->user->userDetail;
+            $company->email = $user->supplier->boss->user->email;
+            $company->name = $user->supplier->boss->user->name;
+            $company->last_name = $user->supplier->boss->user->last_name;
+        } else { //Admin
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+            // Extract the "value" supporting array or object
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) 
+                    return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value))
+                    return $cfg->value;
+                return '[]';
+            };
+            
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+            $signatureRaw    = $getValue($configSignature);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+
+                if (is_string($decoded))
+                    $decoded = json_decode($decoded);
+            
+                if (!is_object($decoded)) 
+                    $decoded = (object) [];
+            
+                return $decoded;
+            };
+            
+            $company = $decodeSafe($companyRaw);
+            $logoObj    = $decodeSafe($logoRaw);
+            $signatureObj    = $decodeSafe($signatureRaw);
+            
+            $company->logo = $logoObj->logo ?? null;
+            $company->img_signature = $signatureObj->img_signature ?? null;
         }
 
         $titles = $documents->pluck('title')->unique()->implode(', ');
@@ -132,7 +189,8 @@ class Document extends Model
             'titles' => $titles,
             'title' => 'Dokument: ' . $titles,
             'icon' => asset('/images/documents.png'),
-            'logo' => $logo
+            'logo' => $logo,
+            'company' => $company
         ];        
 
         try {

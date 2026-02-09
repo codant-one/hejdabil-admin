@@ -377,6 +377,7 @@ class SupplierController extends Controller
                         //  ->whereHas('user.roles', function ($query) {
                         //     $query->where('name', 'User');
                         //  })
+                         ->withTrashed()
                          ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->id);
                          })
