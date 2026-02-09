@@ -167,8 +167,8 @@ class RoleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [ 
-                    'roles' => Role::all()->pluck('name')
+                'data' => [
+                    'roles' => CacheService::getRoles()
                 ]
             ], 200);
 

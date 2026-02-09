@@ -25,6 +25,7 @@ use App\Models\Agreement;
 use App\Models\Document;
 use App\Models\Token;
 use App\Models\TokenHistory;
+use App\Jobs\SendEmailJob;
 
 class SignatureController extends Controller
 {
@@ -217,13 +218,13 @@ class SignatureController extends Controller
                 'logo' => $logo
             ]; 
 
-            \Mail::send(
-                'emails.agreements.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Enviar email de forma asíncrona
+            SendEmailJob::dispatch(
+                'emails.agreements.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
             
             // Update status to delivered if the sending was successful
             $token->update(['signature_status' => 'delivered']);
@@ -433,13 +434,13 @@ class SignatureController extends Controller
                 'logo' => $logo
             ]; 
 
-            \Mail::send(
-                'emails.agreements.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Enviar email de forma asíncrona
+            SendEmailJob::dispatch(
+                'emails.agreements.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
             
             // Update status to 'delivered' if the sending was successful
             $token->update(['signature_status' => 'delivered']);

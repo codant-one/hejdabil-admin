@@ -25,8 +25,11 @@ use App\Models\{
     Advance,
     CommissionType,
     DocumentType,
-    Supplier
+    Supplier,
+    Invoice,
+    Client
 };
+use Spatie\Permission\Models\{Permission, Role};
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -64,5 +67,9 @@ class AppServiceProvider extends ServiceProvider
         CommissionType::observe(CatalogObserver::class);
         DocumentType::observe(CatalogObserver::class);
         Supplier::observe(CatalogObserver::class);
+        Invoice::observe(CatalogObserver::class);
+        Client::observe(CatalogObserver::class);
+        Permission::observe(CatalogObserver::class);
+        Role::observe(CatalogObserver::class);
     }
 }

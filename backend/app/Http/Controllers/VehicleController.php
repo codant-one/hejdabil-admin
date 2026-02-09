@@ -156,7 +156,7 @@ class VehicleController extends Controller
             if (Auth::user()->getRoleNames()[0] === 'Supplier') {
                 $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
             } else {
-                $clients = Client::all();
+                $clients = CacheService::getClients();
             }
 
             return response()->json([
@@ -170,11 +170,11 @@ class VehicleController extends Controller
                     'ivas' => CacheService::getIvas(),
                     'fuels' => CacheService::getFuels(),
                     'document_types' => CacheService::getDocumentTypes(),
-                    'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
+                    'states' => CacheService::getVehicleStates(),
                     'clients' => $clients,
                     'client_types' => CacheService::getClientTypes(),
                     'identifications' => CacheService::getIdentifications(),
-                    'currencies' => Currency::where('state_id', 2)->get()
+                    'currencies' => CacheService::getActiveCurrencies()
                 ]
             ]);
 

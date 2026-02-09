@@ -57,7 +57,7 @@ class NoteController extends Controller
                 'data' => [
                     'notes' => $notes,
                     'notesTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
 

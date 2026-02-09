@@ -457,17 +457,13 @@ class SupplierController extends Controller
                 'logo' => $logo
             ];
     
-            try {
-                \Mail::send(
-                    'emails.auth.user_created'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
-            } catch (\Exception $e) {    
-                Log::info("Failed to send email to user ". $e);
-            } 
+            // Enviar email de forma asíncrona
+            SendEmailJob::dispatch(
+                'emails.auth.user_created',
+                $data,
+                $email,
+                $subject
+            ); 
 
             return response()->json([
                 'success' => true,

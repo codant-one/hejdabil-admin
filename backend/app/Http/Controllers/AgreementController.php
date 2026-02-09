@@ -28,6 +28,7 @@ use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\AgreementClient;
 use App\Models\VehicleClient;
+use App\Jobs\SendEmailJob;
 use App\Models\GuarantyType;
 use App\Models\InsuranceType;
 use App\Models\Currency;
@@ -430,23 +431,28 @@ class AgreementController extends Controller
             if($request->emailDefault === true) {
                 $clientEmail = $agreement->agreement_client->email;
                 $subject = 'Nytt avtal från ' . $company->company;
+                
+                $pathToFile = storage_path('app/public/' . $agreement->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                        'mime' => 'application/pdf'
+                    ]];
+                }
                     
-                try {
-                    \Mail::send(
-                        'emails.agreements.notifications'
-                        , $data
-                        , function ($message) use ($clientEmail, $subject, $agreement) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($clientEmail)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $agreement->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
+                // Enviar email de forma asíncrona con archivos adjuntos
+                SendEmailJob::dispatch(
+                    'emails.agreements.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
+            }
 
                 } catch (\Exception $e){
                     Log::info("Error mail => ". $e);
@@ -456,23 +462,27 @@ class AgreementController extends Controller
             foreach($request->emails as $email) {
 
                 $subject = 'Din avtal #'. $agreement->agreement_id . ' är tillgänglig';
+                
+                $pathToFile = storage_path('app/public/' . $agreement->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                        'mime' => 'application/pdf'
+                    ]];
+                }
                     
-                try {
-                    \Mail::send(
-                        'emails.agreements.notifications'
-                        , $data
-                        , function ($message) use ($email, $subject, $agreement) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($email)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $agreement->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
+                // Enviar email de forma asíncrona con archivos adjuntos
+                SendEmailJob::dispatch(
+                    'emails.agreements.notifications',
+                    $data,
+                    $email,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
 
                 } catch (\Exception $e){
                     Log::info("Error mail => ". $e);

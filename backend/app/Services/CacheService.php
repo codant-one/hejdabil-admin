@@ -21,8 +21,11 @@ use App\Models\{
     Advance,
     CommissionType,
     DocumentType,
-    Supplier
+    Supplier,
+    Invoice,
+    Client
 };
+use Spatie\Permission\Models\{Permission, Role};
 
 class CacheService
 {
@@ -214,6 +217,66 @@ class CacheService
     }
 
     /**
+     * Get all invoices
+     */
+    public static function getInvoices()
+    {
+        return Cache::remember('invoices.all', self::CACHE_DURATION, function () {
+            return Invoice::all();
+        });
+    }
+
+    /**
+     * Get all permissions
+     */
+    public static function getPermissions()
+    {
+        return Cache::remember('permissions.all', self::CACHE_DURATION, function () {
+            return Permission::all()->pluck('name');
+        });
+    }
+
+    /**
+     * Get all roles
+     */
+    public static function getRoles()
+    {
+        return Cache::remember('roles.all', self::CACHE_DURATION, function () {
+            return Role::all()->pluck('name');
+        });
+    }
+
+    /**
+     * Get vehicle states (10, 11, 12, 13)
+     */
+    public static function getVehicleStates()
+    {
+        return Cache::remember('states.vehicles', self::CACHE_DURATION, function () {
+            return State::whereIn('id', [10, 11, 12, 13])->get();
+        });
+    }
+
+    /**
+     * Get active currencies (state_id = 2)
+     */
+    public static function getActiveCurrencies()
+    {
+        return Cache::remember('currencies.active', self::CACHE_DURATION, function () {
+            return Currency::where('state_id', 2)->get();
+        });
+    }
+
+    /**
+     * Get all clients with cache
+     */
+    public static function getClients()
+    {
+        return Cache::remember('clients.all', self::CACHE_DURATION, function () {
+            return Client::all();
+        });
+    }
+
+    /**
      * Clear all catalog cache
      */
     public static function clearCatalogCache()
@@ -226,9 +289,11 @@ class CacheService
             'ivas.all',
             'fuels.all',
             'states.all',
+            'states.vehicles',
             'guaranty_types.all',
             'insurance_types.all',
             'currencies.all',
+            'currencies.active',
             'payment_types.all',
             'agreement_types.all',
             'client_types.all',
@@ -237,6 +302,10 @@ class CacheService
             'commission_types.all',
             'document_types.all',
             'suppliers.active',
+            'invoices.all',
+            'permissions.all',
+            'roles.all',
+            'clients.all',
         ];
 
         foreach ($keys as $key) {

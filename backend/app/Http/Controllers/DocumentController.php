@@ -19,6 +19,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Jobs\SendEmailJob;
 
 class DocumentController extends Controller
 {
@@ -66,7 +67,7 @@ class DocumentController extends Controller
                 'data' => [
                     'documents' => $documents,
                     'documentsTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -413,13 +414,13 @@ class DocumentController extends Controller
                 'logo' => $logo
             ];
 
-            \Mail::send(
-                'emails.documents.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Enviar email de forma asíncrona
+            SendEmailJob::dispatch(
+                'emails.documents.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
 
             $token->update(['signature_status' => 'delivered']);
             
@@ -507,13 +508,13 @@ class DocumentController extends Controller
                 'text' => $document->description
             ];
 
-            \Mail::send(
-                'emails.documents.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Enviar email de forma asíncrona
+            SendEmailJob::dispatch(
+                'emails.documents.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
             
             // Update status to delivered if the resend was successful
             $token->update(['signature_status' => 'delivered']);

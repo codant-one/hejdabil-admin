@@ -19,6 +19,7 @@ use App\Models\Invoice;
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Jobs\SendEmailJob;
 
 class BillingController extends Controller
 {
@@ -276,9 +277,9 @@ class BillingController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get(),
+                    'suppliers' => CacheService::getActiveSuppliers(),
                     'clients' => $clients,
-                    'invoices' => Invoice::all(),
+                    'invoices' => CacheService::getInvoices(),
                     'invoice_id' => $invoice_id,
                     'billings' => Billing::whereNull('supplier_id')->get()
                 ]
@@ -425,55 +426,53 @@ class BillingController extends Controller
             if($request->emailDefault === true) {
                 $clientEmail = $billing->client->email;
                 $subject = 'Ny faktura från ' . $company->company;
-                    
-                try {
-                    \Mail::send(
-                        'emails.invoices.notifications'
-                        , $data
-                        , function ($message) use ($clientEmail, $subject, $billing) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($clientEmail)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $billing->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
-
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
-                    $errors[] = "Kunde inte skicka e-post till {$clientEmail}: " . $e->getMessage();
+                
+                $pathToFile = storage_path('app/public/' . $billing->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $billing->file),
+                        'mime' => 'application/pdf'
+                    ]];
                 }
+                    
+                // Enviar email de forma asíncrona con archivos adjuntos
+                SendEmailJob::dispatch(
+                    'emails.invoices.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
             }
 
             foreach($request->emails as $email) {
 
                 $subject = 'Din faktura #'. $billing->invoice_id . ' är tillgänglig';
-                    
-                try {
-                    \Mail::send(
-                        'emails.invoices.notifications'
-                        , $data
-                        , function ($message) use ($email, $subject, $billing) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($email)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $billing->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $billing->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
-
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
-                    $errors[] = "Kunde inte skicka e-post till {$email}: " . $e->getMessage();
+                
+                $pathToFile = storage_path('app/public/' . $billing->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $billing->file),
+                        'mime' => 'application/pdf'
+                    ]];
                 }
+                    
+                // Enviar email de forma asíncrona con archivos adjuntos
+                SendEmailJob::dispatch(
+                    'emails.invoices.notifications',
+                    $data,
+                    $email,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
             }
 
             if (!empty($errors)) {

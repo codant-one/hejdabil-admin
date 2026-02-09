@@ -21,8 +21,8 @@ class PermissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [ 
-                    'permissions' => Permission::all()->pluck('name')
+                'data' => [
+                    'permissions' => CacheService::getPermissions()
                 ]
             ], 200);
 
