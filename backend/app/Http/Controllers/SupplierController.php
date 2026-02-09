@@ -457,7 +457,7 @@ class SupplierController extends Controller
                 'logo' => $logo
             ];
     
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.auth.user_created',
                 $data,

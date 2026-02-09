@@ -104,7 +104,7 @@ class UsersController extends Controller
                 'icon' => asset('/images/users.png'),
             ];
     
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.auth.user_created',
                 $data,
@@ -271,7 +271,7 @@ class UsersController extends Controller
                 'icon' => asset('/images/reset-password.png')
             ];
     
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.auth.reset_password',
                 $data,

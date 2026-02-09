@@ -442,7 +442,7 @@ class AgreementController extends Controller
                     ]];
                 }
                     
-                // Enviar email de forma asíncrona con archivos adjuntos
+                // Send email asynchronously with attachments
                 SendEmailJob::dispatch(
                     'emails.agreements.notifications',
                     $data,
@@ -473,7 +473,7 @@ class AgreementController extends Controller
                     ]];
                 }
                     
-                // Enviar email de forma asíncrona con archivos adjuntos
+                // Send email asynchronously with attachments
                 SendEmailJob::dispatch(
                     'emails.agreements.notifications',
                     $data,

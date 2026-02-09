@@ -437,7 +437,7 @@ class BillingController extends Controller
                     ]];
                 }
                     
-                // Enviar email de forma asíncrona con archivos adjuntos
+                // Send email asynchronously with attachments
                 SendEmailJob::dispatch(
                     'emails.invoices.notifications',
                     $data,
@@ -463,7 +463,7 @@ class BillingController extends Controller
                     ]];
                 }
                     
-                // Enviar email de forma asíncrona con archivos adjuntos
+                // Send email asynchronously with attachments
                 SendEmailJob::dispatch(
                     'emails.invoices.notifications',
                     $data,

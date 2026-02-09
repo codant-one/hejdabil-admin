@@ -396,7 +396,7 @@ class AuthController extends Controller
         $email = ($id === 1) ? env('MAIL_TO_CONTACT') : $user->email;
         $subject = $info['subject'];
         
-        // Enviar email de forma asíncrona
+        // Send email asynchronously
         SendEmailJob::dispatch(
             $info['email'],
             $data,

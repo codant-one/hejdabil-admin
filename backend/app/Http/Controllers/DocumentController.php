@@ -414,7 +414,7 @@ class DocumentController extends Controller
                 'logo' => $logo
             ];
 
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.documents.signature_request',
                 $data,
@@ -508,7 +508,7 @@ class DocumentController extends Controller
                 'text' => $document->description
             ];
 
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.documents.signature_request',
                 $data,

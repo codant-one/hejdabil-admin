@@ -218,7 +218,7 @@ class SignatureController extends Controller
                 'logo' => $logo
             ]; 
 
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.agreements.signature_request',
                 $data,
@@ -434,7 +434,7 @@ class SignatureController extends Controller
                 'logo' => $logo
             ]; 
 
-            // Enviar email de forma asíncrona
+            // Send email asynchronously
             SendEmailJob::dispatch(
                 'emails.agreements.signature_request',
                 $data,

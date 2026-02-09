@@ -146,7 +146,7 @@ class PasswordResetController extends Controller
         $clientEmail = $user->email;
         $subject = $info['subject'];
         
-        // Enviar email de forma asíncrona
+        // Send email asynchronously
         SendEmailJob::dispatch(
             $info['email'],
             $data,
