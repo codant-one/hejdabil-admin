@@ -25,13 +25,14 @@ class RouteServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(120)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Aumentar límites y agregar decay para evitar 429
         RateLimiter::for('crm_limit', function (Request $request) {
             return $request->user()
-                ? Limit::perMinute(1000)->by('user_' . $request->user()->id)
-                : Limit::perMinute(60)->by('guest_' . $request->ip());
+                ? Limit::perMinute(5000)->by('user_' . $request->user()->id)
+                : Limit::perMinute(200)->by('guest_' . $request->ip());
         });
 
         $this->routes(function () {

@@ -25,6 +25,7 @@ use App\Models\ClientType;
 use App\Models\Identification;
 use App\Models\Currency;
 use App\Models\Supplier;
+use App\Services\CacheService;
 
 class VehicleController extends Controller
 {
@@ -86,10 +87,10 @@ class VehicleController extends Controller
                 'data' => [
                     'vehicles' => $vehicles,
                     'vehiclesTotalCount' => $count,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
 
@@ -162,17 +163,17 @@ class VehicleController extends Controller
                 'success' => true,
                 'data' => [ 
                     'vehicle' => $vehicle,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'carbodies' => CarBody::all(),
-                    'gearboxes' => Gearbox::all(),
-                    'ivas' => Iva::all(),
-                    'fuels' => Fuel::all(),
-                    'document_types' => DocumentType::all(),
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'carbodies' => CacheService::getCarBodies(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'ivas' => CacheService::getIvas(),
+                    'fuels' => CacheService::getFuels(),
+                    'document_types' => CacheService::getDocumentTypes(),
                     'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
                     'clients' => $clients,
-                    'client_types' => ClientType::all(),
-                    'identifications' => Identification::all(),
+                    'client_types' => CacheService::getClientTypes(),
+                    'identifications' => CacheService::getIdentifications(),
                     'currencies' => Currency::where('state_id', 2)->get()
                 ]
             ]);

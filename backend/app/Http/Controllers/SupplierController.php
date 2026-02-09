@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\UserRegisterToken;
 use App\Models\Supplier;
 use App\Models\UserDetails;
+use App\Jobs\SendEmailJob;
 
 class SupplierController extends Controller
 {
@@ -109,17 +110,17 @@ class SupplierController extends Controller
                 'icon' => asset('/images/users.png'),
             ];
             
+            // Enviar email de forma asíncrona usando Job
             try {
-                \Mail::send(
-                    'emails.auth.client_created'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
+                SendEmailJob::dispatch(
+                    'emails.auth.client_created',
+                    $data,
+                    $email,
+                    $subject
+                )->onQueue('emails');
 
                 $message = 'send_email';
-                $responseMail = 'E-post skickad till leverantör framgångsrikt.';
+                $responseMail = 'E-post schemalagd för att skickas till leverantör.';
             } catch (\Exception $e){
                 $message = 'error';
                 $responseMail = $e->getMessage();

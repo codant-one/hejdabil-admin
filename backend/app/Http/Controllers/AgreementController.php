@@ -41,6 +41,7 @@ use App\Models\Offer;
 use App\Models\User;;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Services\CacheService;
 
 class AgreementController extends Controller
 {
@@ -97,8 +98,8 @@ class AgreementController extends Controller
                 'data' => [
                     'agreements' => $agreements,
                     'agreementsTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get(),
-                    'agreementTypes' => AgreementType::all()
+                    'suppliers' => CacheService::getActiveSuppliers(),
+                    'agreementTypes' => CacheService::getAgreementTypes()
                 ]
             ]);
 
@@ -322,27 +323,27 @@ class AgreementController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'carbodies'  => CarBody::all(),
-                    'ivas'  => Iva::all(),
-                    'fuels'  => Fuel::all(),
-                    'states'  => State::all(),
-                    'guarantyTypes'  => GuarantyType::all(),
-                    'insuranceTypes'  => InsuranceType::all(),
-                    'currencies'  => Currency::all(),
-                    'paymentTypes'  => PaymentType::all(),
-                    'agreementTypes' => AgreementType::all(),
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'carbodies'  => CacheService::getCarBodies(),
+                    'ivas'  => CacheService::getIvas(),
+                    'fuels'  => CacheService::getFuels(),
+                    'states'  => CacheService::getStates(),
+                    'guarantyTypes'  => CacheService::getGuarantyTypes(),
+                    'insuranceTypes'  => CacheService::getInsuranceTypes(),
+                    'currencies'  => CacheService::getCurrencies(),
+                    'paymentTypes'  => CacheService::getPaymentTypes(),
+                    'agreementTypes' => CacheService::getAgreementTypes(),
                     'agreement_id' => $agreement_id,
                     'commission_id' => $commission_id,
                     'offer_id' => $offer_id,
                     'vehicles' => $vehicles,    
                     'clients' => $clients,
-                    'client_types' => ClientType::all(),
-                    'identifications' => Identification::all(),
-                    'advances' => Advance::all(),
-                    'commission_types' => CommissionType::all()
+                    'client_types' => CacheService::getClientTypes(),
+                    'identifications' => CacheService::getIdentifications(),
+                    'advances' => CacheService::getAdvances(),
+                    'commission_types' => CacheService::getCommissionTypes()
                 ]
             ]);
 
