@@ -48,21 +48,27 @@ class VehicleController extends Controller
         
             $query = Vehicle::with([
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user.userDetail',
-                        'model.brand', 
-                        'state', 
-                        'iva_purchase',
-                        'iva_sale',
-                        'currency_purchase',
-                        'currency_sale',
-                        'carbody',
-                        'gearbox',
-                        'fuel',
-                        'client_purchase.client',
-                        'client_sale.client',
-                        'tasks'
+                        'user:id,name,last_name,email',
+                        'user.userDetail:user_id,logo',
+                        'model:id,name,brand_id',
+                        'model.brand:id,name', 
+                        'state:id,name', 
+                        'iva_purchase:id,name,value',
+                        'iva_sale:id,name,value',
+                        'currency_purchase:id,name,code',
+                        'currency_sale:id,name,code',
+                        'carbody:id,name',
+                        'gearbox:id,name',
+                        'fuel:id,name',
+                        'client_purchase:id,vehicle_id,client_id',
+                        'client_purchase.client:id,fullname,email',
+                        'client_sale:id,vehicle_id,client_id',
+                        'client_sale.client:id,fullname,email',
+                        'tasks:id,vehicle_id,measure,cost,start_date,end_date'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -78,15 +84,23 @@ class VehicleController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $vehicles = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allVehicles = $query->get();
+                $vehicles = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allVehicles,
+                    $allVehicles->count(),
+                    $allVehicles->count(),
+                    1
+                );
+            } else {
+                $vehicles = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'vehicles' => $vehicles,
-                    'vehiclesTotalCount' => $count,
+                    'vehiclesTotalCount' => $vehicles->total(),
                     'brands' => CacheService::getBrands(),
                     'models' => CacheService::getCarModels(),
                     'gearboxes' => CacheService::getGearboxes(),

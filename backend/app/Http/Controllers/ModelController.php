@@ -31,7 +31,7 @@ class ModelController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = CarModel::with(['brand'])
+            $query = CarModel::with(['brand:id,name'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -41,15 +41,23 @@ class ModelController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $models = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allModels = $query->get();
+                $models = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allModels,
+                    $allModels->count(),
+                    $allModels->count(),
+                    1
+                );
+            } else {
+                $models = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'models' => $models,
-                    'modelsTotalCount' => $count
+                    'modelsTotalCount' => $models->total()
                 ]
             ]);
 

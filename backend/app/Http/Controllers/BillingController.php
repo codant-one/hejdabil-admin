@@ -43,11 +43,14 @@ class BillingController extends Controller
         
             $query = Billing::with([
                 'supplier' => function ($q) {
-                    $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                    $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                      ->withTrashed()
+                      ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                 },
-                'client' => fn($q) => $q->withTrashed(),
-                'state',
-                'user.userDetail'
+                'client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
+                'state:id,name',
+                'user:id,name,last_name,email',
+                'user.userDetail:user_id,logo'
             ])->applyFilters(
                 $request->only([
                     'search',
@@ -59,22 +62,33 @@ class BillingController extends Controller
                 ])
             );
 
-            $totalSum =  number_format($query->sum(DB::raw('total + amount_discount')), 2);
-            $totalTax =  number_format($query->sum('amount_tax'), 2);
-            $totalNeto = number_format($query->sum('subtotal'), 2);
+            // Get aggregates in one query before pagination
+            $aggregates = (clone $query)->selectRaw('
+                SUM(total + amount_discount) as total_sum,
+                SUM(amount_tax) as total_tax,
+                SUM(subtotal) as total_neto
+            ')->first();
             
-            $count = $query->count();
-
-            $billings = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allBillings = $query->get();
+                $billings = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allBillings,
+                    $allBillings->count(),
+                    $allBillings->count(),
+                    1
+                );
+            } else {
+                $billings = $query->paginate($limit);
+            }
           
             return response()->json([
                 'success' => true,
                 'data' => [
                     'billings' => $billings,
-                    'billingsTotalCount' => $count,
-                    'totalSum' => $totalSum,
-                    'totalTax' => $totalTax,
-                    'totalNeto' => $totalNeto
+                    'billingsTotalCount' => $billings->total(),
+                    'totalSum' => number_format($aggregates->total_sum ?? 0, 2),
+                    'totalTax' => number_format($aggregates->total_tax ?? 0, 2),
+                    'totalNeto' => number_format($aggregates->total_neto ?? 0, 2)
                 ]
             ]);
 

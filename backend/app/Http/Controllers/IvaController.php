@@ -32,15 +32,23 @@ class IvaController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $ivas = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allIvas = $query->get();
+                $ivas = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allIvas,
+                    $allIvas->count(),
+                    $allIvas->count(),
+                    1
+                );
+            } else {
+                $ivas = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'ivas' => $iva,
-                    'ivasTotalCount' => $count
+                    'ivas' => $ivas,
+                    'ivasTotalCount' => $ivas->total()
                 ]
             ]);
 

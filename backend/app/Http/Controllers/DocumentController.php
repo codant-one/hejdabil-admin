@@ -44,10 +44,13 @@ class DocumentController extends Controller
 
             $query = Document::with([
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'token.histories',
-                        'user'
+                        'token:id,document_id,signing_token,recipient_email,signature_status',
+                        'token.histories:id,token_id,event_type,description,created_at',
+                        'user:id,name,last_name,email'
                     ])
                     ->applyFilters(
                         $request->only([
@@ -59,15 +62,23 @@ class DocumentController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $documents = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allDocuments = $query->get();
+                $documents = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allDocuments,
+                    $allDocuments->count(),
+                    $allDocuments->count(),
+                    1
+                );
+            } else {
+                $documents = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'documents' => $documents,
-                    'documentsTotalCount' => $count,
+                    'documentsTotalCount' => $documents->total(),
                     'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);

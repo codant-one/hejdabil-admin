@@ -65,20 +65,27 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'token' => function($query) {
-                            $query->with(['histories' => function($q) {
-                                $q->orderBy('created_at', 'asc');
-                            }]);
+                            $query->select('id', 'agreement_id', 'signing_token', 'recipient_email', 'signature_status', 'token_expires_at')
+                                  ->with(['histories' => function($q) {
+                                      $q->select('id', 'token_id', 'event_type', 'description', 'created_at')
+                                        ->orderBy('created_at', 'asc');
+                                  }]);
                         },
-                        'offer',
-                        'commission.vehicle',
-                        'agreement_type',
-                        'agreement_client',
-                        'vehicle_interchange',
-                        'vehicle_client.vehicle',
+                        'offer:id,offer_id,reg_num,price',
+                        'commission:id,commission_id,commission_type_id,commission_fee,selling_price',
+                        'commission.vehicle:id,commission_id,reg_num,model_id',
+                        'agreement_type:id,name',
+                        'agreement_client:id,agreement_id,fullname,email,phone',
+                        'vehicle_interchange:id,reg_num,model_id',
+                        'vehicle_client:id,vehicle_id,client_id,fullname,email',
+                        'vehicle_client.vehicle:id,reg_num,model_id',
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user.userDetail'
+                        'user:id,name,last_name,email',
+                        'user.userDetail:user_id,logo'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -90,15 +97,23 @@ class AgreementController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $agreements = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allAgreements = $query->get();
+                $agreements = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allAgreements,
+                    $allAgreements->count(),
+                    $allAgreements->count(),
+                    1
+                );
+            } else {
+                $agreements = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'agreements' => $agreements,
-                    'agreementsTotalCount' => $count,
+                    'agreementsTotalCount' => $agreements->total(),
                     'suppliers' => CacheService::getActiveSuppliers(),
                     'agreementTypes' => CacheService::getAgreementTypes()
                 ]

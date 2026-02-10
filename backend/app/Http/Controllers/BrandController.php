@@ -39,15 +39,23 @@ class BrandController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $brands = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allBrands = $query->get();
+                $brands = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allBrands,
+                    $allBrands->count(),
+                    $allBrands->count(),
+                    1
+                );
+            } else {
+                $brands = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'brands' => $brands,
-                    'brandsTotalCount' => $count
+                    'brandsTotalCount' => $brands->total()
                 ]
             ]);
 

@@ -29,15 +29,23 @@ class CarBodyController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $carbodies = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allCarbodies = $query->get();
+                $carbodies = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allCarbodies,
+                    $allCarbodies->count(),
+                    $allCarbodies->count(),
+                    1
+                );
+            } else {
+                $carbodies = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'carbodies' => $carbodies,
-                    'carbodiesTotalCount' => $count
+                    'carbodiesTotalCount' => $carbodies->total()
                 ]
             ]);
 

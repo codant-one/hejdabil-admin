@@ -44,9 +44,11 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user.userDetail',
-                        'creator.userDetail',
-                        'state'
+                        'user:id,name,last_name,email',
+                        'user.userDetail:user_id,logo,company',
+                        'creator:id,name,last_name',
+                        'creator.userDetail:user_id,company',
+                        'state:id,name'
                     ])
                     ->withTrashed()
                     ->clientsCount()
@@ -60,15 +62,23 @@ class SupplierController extends Controller
                     ])
                 );
 
-            $count = $query->count();
-
-            $suppliers = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allSuppliers = $query->get();
+                $suppliers = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allSuppliers,
+                    $allSuppliers->count(),
+                    $allSuppliers->count(),
+                    1
+                );
+            } else {
+                $suppliers = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'suppliers' => $suppliers,
-                    'suppliersTotalCount' => $count
+                    'suppliersTotalCount' => $suppliers->total()
                 ]
             ]);
 
