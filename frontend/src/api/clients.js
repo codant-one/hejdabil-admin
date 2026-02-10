@@ -21,6 +21,10 @@ class Clients {
     delete(id){
         return axios.delete(`/clients/${id}`)
     }
+
+    activate(id){
+        return axios.get(`/clients/activate/${id}`)
+    }
     
 }
 

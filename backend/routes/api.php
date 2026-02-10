@@ -166,6 +166,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
     });
 
+    //Clients
+    Route::group(['prefix' => 'clients'], function () {
+        Route::get('/activate/{id}', [ClientController::class, 'activate']);
+    });
+
     //Tasks
     Route::group(['prefix' => 'tasks'], function () {
         Route::get('type/{id}', [VehicleTaskController::class, 'updateType']);

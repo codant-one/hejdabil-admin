@@ -38,7 +38,8 @@ class ClientController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Client::with(['supplier.user', 'user.userDetail'])
-                           ->applyFilters(
+                            ->withTrashed()
+                            ->applyFilters(
                                 $request->only([
                                     'search',
                                     'orderByField',
@@ -218,6 +219,37 @@ class ClientController extends Controller
                 ], 404);
             
             $client->deleteClient($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'client' => $client
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function activate($id)
+    {
+        try {
+
+            $client = Client::onlyTrashed()->where('id', $id)->first();
+        
+            if (!$client)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Kunden hittades inte'
+                ], 404);
+            
+            $client->activateClient($id);
 
             return response()->json([
                 'success' => true,
