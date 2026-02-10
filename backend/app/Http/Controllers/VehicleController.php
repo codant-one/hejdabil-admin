@@ -52,7 +52,7 @@ class VehicleController extends Controller
                               ->withTrashed()
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user:id,name,last_name,email',
+                        'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo',
                         'model:id,name,brand_id',
                         'model.brand:id,name', 

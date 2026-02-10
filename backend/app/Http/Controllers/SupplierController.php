@@ -44,9 +44,9 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user:id,name,last_name,email',
+                        'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo,company',
-                        'creator:id,name,last_name',
+                        'creator:id,name,last_name,avatar',
                         'creator.userDetail:user_id,company',
                         'state:id,name'
                     ])
@@ -388,6 +388,7 @@ class SupplierController extends Controller
                         //  ->whereHas('user.roles', function ($query) {
                         //     $query->where('name', 'User');
                         //  })
+                         ->withTrashed()
                          ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->id);
                          })

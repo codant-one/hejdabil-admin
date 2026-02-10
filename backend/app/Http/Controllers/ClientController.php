@@ -40,14 +40,19 @@ class ClientController extends Controller
             $query = Client::with([
                         'supplier:id,user_id,boss_id',
                         'supplier.user:id,name,last_name,email',
-                        'user:id,name,last_name,email',
-                        'user.userDetail:user_id,logo'
-                    ])->applyFilters(
+                        'user:id,name,last_name,email,avatar',
+                        'user.userDetail:user_id,logo',
+                        'state:id,name'
+                    ])
+                    ->when($request->has('include_deleted') && $request->include_deleted, function($q) {
+                        return $q->withTrashed();
+                    })->applyFilters(
                         $request->only([
                             'search',
                             'orderByField',
                             'orderBy',
-                            'supplier_id'
+                            'supplier_id',
+                            'state_id'
                         ])
                     );
 
@@ -121,7 +126,7 @@ class ClientController extends Controller
     {
         try {
 
-            $client = Client::with(['supplier.user'])->find($id);
+            $client = Client::with(['supplier.user'])->withTrashed()->find($id);
 
             // Cantidad de vehículos vendidos (se mantiene como conteo)
             $carsForSale = VehicleClient::where('client_id', $id)
@@ -230,6 +235,37 @@ class ClientController extends Controller
                 ], 404);
             
             $client->deleteClient($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'client' => $client
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function activate($id)
+    {
+        try {
+
+            $client = Client::onlyTrashed()->where('id', $id)->first();
+        
+            if (!$client)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Kunden hittades inte'
+                ], 404);
+            
+            $client->activateClient($id);
 
             return response()->json([
                 'success' => true,

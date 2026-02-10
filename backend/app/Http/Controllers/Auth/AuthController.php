@@ -58,6 +58,20 @@ class AuthController extends Controller
         $expired = now()->addHours(24);
             
         if (!$token = Auth::attempt($credentials)) {
+            // Verificar si el usuario existe pero está eliminado
+            $userDeleted = User::withTrashed()
+                ->where('email', $request->email)
+                ->whereNotNull('deleted_at')
+                ->first();
+            
+            if ($userDeleted) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'user_inactive',
+                    'errors' => 'Denna användare har inaktiverats. Kontakta administratören.'
+                ], 403);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'invalid_credentials',

@@ -100,10 +100,15 @@ const login = async () => {
     .catch((err) => {
       load.value = false;
 
-      errors.value = {
-        email: err.errors,
-        password: "",
-      };
+      if (err.message === "user_inactive") {
+        alertStore.type = 'error';
+        alertStore.message = err.errors;
+        alertStore.show = true;
+      } else 
+        errors.value = {
+          email: err.errors,
+          password: "",
+        };
 
       console.error(err.message);
     });

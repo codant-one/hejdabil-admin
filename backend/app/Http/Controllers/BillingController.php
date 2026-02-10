@@ -72,7 +72,7 @@ class BillingController extends Controller
                 },
                 'client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
                 'state:id,name',
-                'user:id,name,last_name,email',
+                'user:id,name,last_name,email,avatar',
                 'user.userDetail:user_id,logo'
             ])->applyFilters(
                 $request->only([

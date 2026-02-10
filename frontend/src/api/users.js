@@ -18,6 +18,10 @@ class Users {
         return axios.delete(`/users/${id}`)
     }
 
+    activate(id){
+        return axios.get(`/users/activate/${id}`)
+    }
+
     getUsersOnline(params) {
         return axios.get('users/user/online', {params})
     }

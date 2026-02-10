@@ -50,7 +50,7 @@ class DocumentController extends Controller
                         },
                         'token:id,document_id,signing_token,recipient_email,signature_status',
                         'token.histories:id,token_id,event_type,description,created_at',
-                        'user:id,name,last_name,email'
+                        'user:id,name,last_name,email,avatar'
                     ])
                     ->applyFilters(
                         $request->only([

@@ -31,6 +31,7 @@ const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
 const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
+const isConfirmActiveDialogVisible = ref(false)
 
 const selectedUser = ref({})
 const rolesList = ref([])
@@ -152,6 +153,35 @@ const showUserEditDialog = function(user){
 const showUserDeleteDialog = function(user){
   isUserDeleteDialog.value =true
   selectedUser.value = { ...user }
+}
+
+const showActivateDialog = supplierData => {
+  isConfirmActiveDialogVisible.value = true
+  selectedUser.value = { ...supplierData }
+}
+
+const activateUser = async () => {
+  isConfirmActiveDialogVisible.value = false
+  let res = await usersStores.activateUser(selectedUser.value.id)
+  selectedUser.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Användare aktiverad!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
 }
 
 const online = id =>{
@@ -299,6 +329,7 @@ const downloadCSV = async () => {
                 <th scope="col"> NAMN </th>
                 <th scope="col"> E-POST </th>
                 <th scope="col"> ROLL </th>
+                <th scope="col"> STATUS </th>
                 <th scope="col"> TELEFON </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
@@ -359,6 +390,15 @@ const downloadCSV = async () => {
                   </ul>
                 </td>
 
+                <td> 
+                  <VChip
+                    label
+                    :color="user.deleted_at ? 'error' : 'success'"
+                  >
+                    {{ user.deleted_at ? 'Inaktiv' : 'Aktiv' }}
+                  </VChip>
+                </td>
+
                 <!-- 👉 phone -->
                   <td>
                   {{ user.user_detail?.personal_phone ?? '----' }}
@@ -386,7 +426,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Visa</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'users')"
+                         v-if="$can('edit', 'users') && user.deleted_at === null"
                          @click="showUserPasswordDialog(user)">
                         <template #prepend>
                           <VIcon icon="tabler-key" />
@@ -394,7 +434,7 @@ const downloadCSV = async () => {
                         <VListItemTitle>Ändra lösenord</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'users')"
+                         v-if="$can('edit', 'users') && user.deleted_at === null"
                          @click="showUserEditDialog(user)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
@@ -402,12 +442,20 @@ const downloadCSV = async () => {
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('delete','users')"
+                        v-if="$can('delete','users') && user.deleted_at === null"
                         @click="showUserDeleteDialog(user)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
                         <VListItemTitle>Ta bort</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                        v-if="$can('delete','users') && user.deleted_at !== null"
+                        @click="showActivateDialog(user)">
+                        <template #prepend>
+                          <VIcon icon="tabler-rosette-discount-check" />
+                        </template>
+                        <VListItemTitle>Aktivera</VListItemTitle>
                       </VListItem>
                     </VList>
                   </VMenu>
@@ -480,6 +528,36 @@ const downloadCSV = async () => {
         </VCard>
       </VCol>
     </VRow>
+
+    <!-- 👉 Confirm activate user -->
+    <VDialog
+      v-model="isConfirmActiveDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Aktivera användare">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Är du säker att du vill aktivera användaren <strong>{{ selectedUser.name }} {{ selectedUser.last_name ?? '' }}</strong>?.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmActiveDialogVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn @click="activateUser">
+              Acceptera
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 

@@ -30,6 +30,10 @@ class Client extends Model
         return $this->hasMany(VehicleClient::class, 'client_id', 'id');
     }
 
+    public function state() {
+        return $this->belongsTo(State::class, 'state_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
@@ -56,7 +60,9 @@ class Client extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
-        if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
+        if ($filters->get('supplier_id') !== null) {
+            $query->where('supplier_id', $filters->get('supplier_id'));
+        } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier') {
             $query->where('supplier_id', Auth::user()->supplier->id);
         } else if(Auth::check() && Auth::user()->getRoleNames()[0] === 'User') {
             $query->where('supplier_id', Auth::user()->supplier->boss_id);
@@ -66,8 +72,8 @@ class Client extends Model
             $query->whereSearch($filters->get('search'));
         }
 
-        if ($filters->get('supplier_id') !== null) {
-            $query->where('supplier_id', $filters->get('supplier_id'));
+        if ($filters->get('state_id') !== null) {
+            $query->where('state_id', $filters->get('state_id'));
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
@@ -140,8 +146,18 @@ class Client extends Model
     public static function deleteClients($ids) {
         foreach ($ids as $id) {
             $client = self::find($id);
+            $client->state_id = 1;
+            $client->save();
+            
             $client->delete();
         }
+    }
+
+    public static function activateClient($id) {
+        $client = self::onlyTrashed()->where('id', $id)->first();
+        $client->restore();
+        $client->state_id = 2;
+        $client->save();
     }
 }
 

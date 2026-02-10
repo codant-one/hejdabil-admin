@@ -44,9 +44,9 @@ class PayoutController extends Controller
             $query = Payout::with([
                             'state:id,name', 
                             'supplier:id,user_id',
-                            'supplier.user:id,name,last_name,email',
+                            'supplier.user:id,name,last_name,email,avatar',
                             'user' => function($query) {
-                                $query->select('id', 'name', 'last_name', 'email')
+                                $query->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')
                                       ->whereNull('deleted_at');
                             }])
                            ->whereHas('user', function($query) {

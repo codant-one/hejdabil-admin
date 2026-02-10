@@ -130,6 +130,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('update/company', [UsersController::class, 'updateCompany']);
         Route::post('update/company/logo', [UsersController::class, 'updateLogo']);
         Route::post('update/company/signature', [UsersController::class, 'updateSignature']);
+        Route::get('/activate/{id}', [UsersController::class, 'activate']);
     });
 
     //Roles
@@ -163,6 +164,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/swish/{id}', [SupplierController::class, 'swish']);
         Route::post('/master-password/{id}', [SupplierController::class, 'masterPassword']);
         Route::get('/master-password/{id}', [SupplierController::class, 'getMasterPassword']);
+    });
+
+    //Clients
+    Route::group(['prefix' => 'clients'], function () {
+        Route::get('/activate/{id}', [ClientController::class, 'activate']);
     });
 
     //Tasks

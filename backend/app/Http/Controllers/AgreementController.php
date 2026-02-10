@@ -84,7 +84,7 @@ class AgreementController extends Controller
                               ->withTrashed()
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user:id,name,last_name,email',
+                        'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo'
                     ])->applyFilters(
                         $request->only([
@@ -324,7 +324,7 @@ class AgreementController extends Controller
                 Auth::check() && Auth::user()->hasRole('User'), function ($query) {
                     return $query->where('supplier_id', Auth::user()->supplier->boss_id);
                 }
-            )->withTrashed()->get();
+            )->get();
 
             $agreement_id = Agreement::whereNull('supplier_id')->count();
             $commission_id = Commission::whereNull('supplier_id')->count();

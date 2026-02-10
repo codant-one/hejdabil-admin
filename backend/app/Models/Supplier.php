@@ -178,7 +178,7 @@ class Supplier extends Model
 
         $user = User::onlyTrashed()->where('id', $supplier->user_id)->first();
         $user->restore();
-        $user->assignRole('Supplier');
+        $user->assignRole($supplier->boss_id === null ? 'Supplier' : 'User');
     }
 
     public static function swish($request, $id) {

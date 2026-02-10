@@ -91,6 +91,18 @@ export const useClientsStores = defineStore('clients', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
+        },
+        activateClient(id) {
+            this.setLoading(true)
+            
+            return Clients.activate(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
         }
     }
 })
