@@ -64,11 +64,10 @@ class VehicleController extends Controller
                         'carbody:id,name',
                         'gearbox:id,name',
                         'fuel:id,name',
-                        'client_purchase:id,vehicle_id,client_id',
+                        'client_purchase',
                         'client_purchase.client:id,fullname,email',
-                        'client_sale:id,vehicle_id,client_id',
-                        'client_sale.client:id,fullname,email',
-                        'tasks:id,vehicle_id,measure,cost,start_date,end_date'
+                        'client_sale',
+                        'tasks'
                     ])->applyFilters(
                         $request->only([
                             'search',
