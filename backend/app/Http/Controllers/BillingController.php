@@ -41,6 +41,29 @@ class BillingController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
+            // Build base query for aggregates (without relations, order, select)
+            $baseQuery = Billing::query();
+            
+            // Apply only WHERE filters
+            $filters = $request->only(['supplier_id', 'client_id', 'state_id']);
+            if (!empty($filters['supplier_id'])) {
+                $baseQuery->where('supplier_id', $filters['supplier_id']);
+            }
+            if (!empty($filters['client_id'])) {
+                $baseQuery->where('client_id', $filters['client_id']);
+            }
+            if (!empty($filters['state_id'])) {
+                $baseQuery->where('state_id', $filters['state_id']);
+            }
+            
+            // Get aggregates without order/limit
+            $aggregates = (clone $baseQuery)->selectRaw('
+                SUM(total + amount_discount) as total_sum,
+                SUM(amount_tax) as total_tax,
+                SUM(subtotal) as total_neto
+            ')->first();
+        
+            // Build full query with relations for pagination
             $query = Billing::with([
                 'supplier' => function ($q) {
                     $q->select('id', 'user_id', 'boss_id', 'deleted_at')
@@ -61,13 +84,6 @@ class BillingController extends Controller
                     'state_id'
                 ])
             );
-
-            // Get aggregates in one query before pagination
-            $aggregates = (clone $query)->selectRaw('
-                SUM(total + amount_discount) as total_sum,
-                SUM(amount_tax) as total_tax,
-                SUM(subtotal) as total_neto
-            ')->first();
             
             if ($limit == -1) {
                 $allBillings = $query->get();
