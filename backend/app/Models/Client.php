@@ -143,5 +143,11 @@ class Client extends Model
             $client->delete();
         }
     }
+
+    public static function activateClient($id) {
+        $client = self::onlyTrashed()->where('id', $id)->first();
+        $client->restore();
+        $client->save();
+    }
 }
 

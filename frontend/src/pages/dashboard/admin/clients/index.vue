@@ -33,6 +33,7 @@ const totalClients = ref(0);
 const isRequestOngoing = ref(true);
 const isAddNewClientDrawerVisible = ref(false);
 const isConfirmDeleteDialogVisible = ref(false);
+const isConfirmActiveDialogVisible = ref(false)
 const selectedClient = ref({});
 const isDialogOpen = ref(false);
 const hasLoaded = ref(false);
@@ -205,6 +206,35 @@ const showDeleteDialog = (clientData) => {
   isConfirmDeleteDialogVisible.value = true;
   selectedClient.value = { ...clientData };
 };
+
+const showActivateDialog = supplierData => {
+  isConfirmActiveDialogVisible.value = true
+  selectedClient.value = { ...supplierData }
+}
+
+const activateClient = async () => {
+  isConfirmActiveDialogVisible.value = false
+  let res = await clientsStores.activateClient(selectedClient.value.id)
+  selectedClient.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Kunden aktiverad!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
+}
 
 const seeClient = (clientData) => {
   router.push({
@@ -469,6 +499,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center">Organisationsnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
+            <th scope="col"> STATUS </th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
@@ -520,6 +551,16 @@ onBeforeUnmount(() => {
               </VTooltip>
               <span v-else>{{ client.address }}</span>
             </td>
+
+            <td> 
+              <VChip
+                label
+                :color="client.deleted_at ? 'error' : 'success'"
+              >
+                {{ client.deleted_at ? 'Inaktiv' : 'Aktiv' }}
+              </VChip>
+            </td>
+
             <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
               <span v-if="client.supplier">
                 {{ client.supplier.user.name }}
@@ -579,7 +620,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Se detaljer</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'clients')"
+                    v-if="$can('edit', 'clients') && client.deleted_at === null"
                     @click="editClient(client)"
                   >
                     <template #prepend>
@@ -588,13 +629,21 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('delete', 'clients')"
+                    v-if="$can('delete', 'clients') && client.deleted_at === null"
                     @click="showDeleteDialog(client)"
                   >
                     <template #prepend>
                       <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('delete','clients') && client.deleted_at !== null"
+                    @click="showActivateDialog(client)">
+                    <template #prepend>
+                      <VIcon icon="tabler-rosette-discount-check" />
+                    </template>
+                    <VListItemTitle>Aktivera</VListItemTitle>
                   </VListItem>
                 </VList>
               </VMenu>
@@ -862,6 +911,36 @@ onBeforeUnmount(() => {
           </VBtn>
           <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
             Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm activate user -->
+    <VDialog
+      v-model="isConfirmActiveDialogVisible"
+      persistent
+      class="v-dialog-sm" >
+      <!-- Dialog close btn -->
+        
+      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
+
+      <!-- Dialog Content -->
+      <VCard title="Aktivera kunden">
+        <VDivider class="mt-4"/>
+        <VCardText>
+          Är du säker att du vill aktivera kunden <strong>{{ selectedClient.name }} {{ selectedClient.last_name ?? '' }}</strong>?.
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap">
+          <VBtn
+            color="secondary"
+            variant="tonal"
+            @click="isConfirmActiveDialogVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn @click="activateClient">
+              Acceptera
           </VBtn>
         </VCardText>
       </VCard>
