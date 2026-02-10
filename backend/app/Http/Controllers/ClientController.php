@@ -37,16 +37,23 @@ class ClientController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Client::with(['supplier.user', 'user.userDetail'])
-                            ->withTrashed()
-                            ->applyFilters(
-                                $request->only([
-                                    'search',
-                                    'orderByField',
-                                    'orderBy',
-                                    'supplier_id'
-                                ])
-                            );
+            $query = Client::with([
+                        'supplier.user', 
+                        'user.userDetail',
+                        'state'
+                    ])
+                    ->when($request->has('include_deleted') && $request->include_deleted, function($q) {
+                        return $q->withTrashed();
+                    })
+                    ->applyFilters(
+                        $request->only([
+                            'search',
+                            'orderByField',
+                            'orderBy',
+                            'supplier_id',
+                            'state_id'
+                        ])
+                    );
 
             $count = $query->count();
 
@@ -110,7 +117,7 @@ class ClientController extends Controller
     {
         try {
 
-            $client = Client::with(['supplier.user'])->find($id);
+            $client = Client::with(['supplier.user'])->withTrashed()->find($id);
 
             // Cantidad de vehículos vendidos (se mantiene como conteo)
             $carsForSale = VehicleClient::where('client_id', $id)

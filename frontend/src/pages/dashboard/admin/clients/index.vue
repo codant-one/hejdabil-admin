@@ -44,7 +44,9 @@ const leaveContext = ref(null); // 'mobile' | 'route' | null
 
 let nextRoute = null;
 
+const filtreraMobile = ref(false);
 const supplier_id = ref(null);
+const state_id = ref(null);
 const userData = ref(null);
 const role = ref(null);
 
@@ -101,6 +103,7 @@ async function fetchData(cleanFilters = false) {
     rowPerPage.value = 10;
     currentPage.value = 1;
     supplier_id.value = null;
+    state_id.value = null;
   }
 
   let data = {
@@ -110,6 +113,8 @@ async function fetchData(cleanFilters = false) {
     limit: rowPerPage.value,
     page: currentPage.value,
     supplier_id: supplier_id.value,
+    state_id: state_id.value,
+    include_deleted: true
   };
 
   // Ensure loader is shown during fetch to prevent empty-state flicker
@@ -131,6 +136,16 @@ watchEffect(registerEvents);
 function registerEvents() {
   emitter.on("cleanFilters", fetchData);
 }
+
+const updateStateId = (newStateId) => {
+  // Si ya está seleccionado, desmarcarlo (poner null)
+  if (state_id.value === newStateId) {
+    newStateId = null;
+  }
+  console.log("Updating state_id to:", newStateId);
+  state_id.value = newStateId;
+  filtreraMobile.value = false;
+};
 
 // Guard route changes if client creation form has unsaved changes
 onBeforeRouteLeave((to, from, next) => {
@@ -454,8 +469,8 @@ onBeforeUnmount(() => {
       <VDivider :class="$vuetify.display.mdAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
       <VCardText
-        class="d-flex align-center justify-space-between gap-2"
-        :class="$vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'"
+        class="d-flex align-center justify-space-between gap-1"
+        :class="$vuetify.display.mdAndDown ? 'p-6' : 'pa-4 gap-2'"
       >
         <!-- 👉 Search  -->
         <div class="search">
@@ -464,14 +479,75 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
         
-        <VBtn 
-          class="btn-white-2 px-3" 
-          v-if="role !== 'Supplier' && role !== 'User'"
+        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
+          <AppAutocomplete
+            v-if="role !== 'Supplier' && role !== 'User' && hasLoaded"
+            prepend-icon="custom-profile"
+            v-model="supplier_id"
+            placeholder="Leverantörer"
+            :items="suppliers"
+            :item-title="(item) => item.full_name"
+            :item-value="(item) => item.id"
+            autocomplete="off"
+            clearable
+            clear-icon="tabler-x"
+            class="selector-user selector-truncate"
+          />
+        </div>
+
+        <VBtn
+          class="btn-white-2 px-3"
           @click="isFilterDialogVisible = true"
+          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
+          v-if="role !== 'Supplier' && role !== 'User' && hasLoaded"
+        >
+          <VIcon icon="custom-profile" size="24" />
+        </VBtn>
+
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="filtreraMobile = true"
+          v-if="$vuetify.display.mdAndDown"
         >
           <VIcon icon="custom-filter" size="24" />
-          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
+          <span class="d-none d-md-block">Filtrera efter</span>
         </VBtn>
+
+        <VMenu v-if="!$vuetify.display.mdAndDown">
+          <template #activator="{ props }">
+            <VBtn class="btn-white-2 px-2" v-bind="props">
+              <VIcon icon="custom-filter" size="24" />
+              <span class="d-none d-md-block">Filtrera efter</span>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem @click="updateStateId(1)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 1"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Inaktiv</VListItemTitle>
+            </VListItem>
+
+            <VListItem @click="updateStateId(2)">
+              <template #prepend>
+                <VListItemAction>
+                  <VCheckbox
+                    :model-value="state_id === 2"
+                    class="ml-3"
+                    true-icon="custom-checked-checkbox"
+                    false-icon="custom-unchecked-checkbox"
+                /></VListItemAction>
+              </template>
+              <VListItemTitle>Aktiv</VListItemTitle>
+            </VListItem>
+          </VList>
+        </VMenu>
 
         <div
           v-if="!$vuetify.display.mdAndDown"
@@ -499,7 +575,7 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center">Organisationsnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col"> STATUS </th>
+            <th scope="col" class="text-center">Status</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
@@ -551,16 +627,14 @@ onBeforeUnmount(() => {
               </VTooltip>
               <span v-else>{{ client.address }}</span>
             </td>
-
-            <td> 
-              <VChip
-                label
-                :color="client.deleted_at ? 'error' : 'success'"
+            <td class="text-center text-wrap d-flex justify-center align-center">
+              <div
+                class="status-chip"
+                :class="`status-chip-${client.deleted_at ? 'error' : 'success'}`"
               >
                 {{ client.deleted_at ? 'Inaktiv' : 'Aktiv' }}
-              </VChip>
+              </div>
             </td>
-
             <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
               <span v-if="client.supplier">
                 {{ client.supplier.user.name }}
@@ -708,12 +782,6 @@ onBeforeUnmount(() => {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">Organisationsnummer:</div>
-              <div class="expansion-panel-item-value">
-                {{ client.organization_number ?? "" }}
-              </div>
-            </div>
-            <div class="mb-6">
               <div class="expansion-panel-item-label">Adress:</div>
               <div class="expansion-panel-item-value">
                 {{ client.address ?? "" }}
@@ -725,7 +793,18 @@ onBeforeUnmount(() => {
                 {{ client.phone ?? "" }}
               </div>
             </div>
-            <div class="mb-4 row-with-buttons">
+            <div class="mb-6">
+              <div class="expansion-panel-item-label">Status:</div>
+              <div class="expansion-panel-item-value">
+                <div
+                  class="status-chip"
+                  :class="`status-chip-${client.deleted_at ? 'error' : 'success'}`"
+                >
+                  {{ client.deleted_at ? 'Inaktiv' : 'Aktiv' }}
+                </div>
+              </div>
+            </div>
+            <div class="mb-4 row-with-buttons" v-if="client.deleted_at === null">
               <VBtn
                 v-if="$can('edit', 'clients')"
                 class="btn-light"
@@ -743,7 +822,25 @@ onBeforeUnmount(() => {
                 Ta bort
               </VBtn>
             </div>
-            <div>
+            <div class="mb-4 row-with-buttons" v-if="client.deleted_at !== null">
+              <VBtn
+                v-if="$can('delete', 'clients')"
+                class="btn-light"
+                @click="seeClient(client)"
+              >
+                <VIcon icon="custom-eye" size="24" />
+                 Se detaljer
+              </VBtn>
+              <VBtn
+                v-if="$can('delete', 'clients')"
+                class="btn-light"
+                @click="showActivateDialog(client)"
+              >
+                <VIcon icon="tabler-rosette-discount-check" size="24" />
+                Aktivera
+              </VBtn>
+            </div>
+            <div v-if="client.deleted_at === null">
               <VBtn class="btn-light w-100" @click="seeClient(client)">
                 <VIcon icon="custom-eye" size="24" />
                 Se detaljer
@@ -919,30 +1016,79 @@ onBeforeUnmount(() => {
     <!-- 👉 Confirm activate user -->
     <VDialog
       v-model="isConfirmActiveDialogVisible"
-      persistent
-      class="v-dialog-sm" >
+      persistent 
+      class="action-dialog">
+      
       <!-- Dialog close btn -->
-        
-      <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
 
       <!-- Dialog Content -->
-      <VCard title="Aktivera kunden">
-        <VDivider class="mt-4"/>
-        <VCardText>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="tabler-rosette-discount-check" class="action-icon" />
+          <div class="dialog-title">
+            Aktivera kunden
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
           Är du säker att du vill aktivera kunden <strong>{{ selectedClient.name }} {{ selectedClient.last_name ?? '' }}</strong>?.
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap">
-          <VBtn
-            color="secondary"
-            variant="tonal"
-            @click="isConfirmActiveDialogVisible = false">
-              Avbryt
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn 
+            class="btn-light"  
+            @click="isConfirmActiveDialogVisible = false"
+          >
+            Avbryt
           </VBtn>
-          <VBtn @click="activateClient">
-              Acceptera
+          <VBtn 
+            class="btn-gradient" 
+            @click="activateClient"
+          >
+            Acceptera
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Filter Dialog -->
+    <VDialog
+      v-model="filtreraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="updateStateId(1)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                  :model-value="state_id === 1"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Inaktiv</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="updateStateId(2)">
+            <template #prepend>
+              <VListItemAction>
+                <VCheckbox
+                 :model-value="state_id === 2"
+                  true-icon="custom-checked-checkbox"
+                  false-icon="custom-unchecked-checkbox"
+              /></VListItemAction>
+            </template>
+            <VListItemTitle>Aktiv</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
   </section>
