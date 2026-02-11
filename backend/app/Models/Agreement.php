@@ -743,6 +743,10 @@ class Agreement extends Model
     public static function updateOffer($request, $agreement) {
         $offer = Offer::find($agreement->offer_id);
         $offer->updateOffer($request, $offer);
+
+        $request->request->add([
+            'offer_id' => $offer->id
+        ]);
     }
 
     public static function createCommission($request) {
