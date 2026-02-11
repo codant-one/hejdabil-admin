@@ -1705,7 +1705,7 @@ onBeforeRouteLeave((to, from, next) => {
         font-size: 12px;
         opacity: 1;
     }
-}
+  }
 </style>
 
 <style lang="scss" scoped>
