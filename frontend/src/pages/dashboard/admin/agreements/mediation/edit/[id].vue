@@ -703,8 +703,19 @@ const showError = () => {
 
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
-    // Verificar tab 0 (Kund)
-    const hasTab0Errors = !organization_number.value || 
+    // Verificar tab 0 (Fordonsinformation)
+    const hasTab0Errors = !reg_num.value || 
+                          !brand_id.value || 
+                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
+                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
+                          !year.value ||
+                          !chassis.value ||
+                          !mileage.value || 
+                          !car_body_id.value ||
+                          !number_keys.value
+
+    // Verificar tab 1 (Kund)
+    const hasTab1Errors = !organization_number.value || 
                           (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
                           !client_type_id.value || 
                           !fullname.value || 
@@ -716,17 +727,6 @@ const onSubmit = async () => {
                           !identification_id.value || 
                           !email.value || 
                           (email.value && emailValidator(email.value) !== true)
-
-    // Verificar tab 1 (Fordonsinformation)
-    const hasTab1Errors = !reg_num.value || 
-                          !brand_id.value || 
-                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
-                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
-                          !year.value ||
-                          !chassis.value ||
-                          !mileage.value || 
-                          !car_body_id.value ||
-                          !number_keys.value
 
     // Verificar tab 2 (Förmedlingsavgift)
     const hasTab2Errors = !commission_type_id.value || 
@@ -751,7 +751,7 @@ const onSubmit = async () => {
             
             advisor.value = {
                 type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
                 show: true
             }
             
@@ -778,7 +778,7 @@ const onSubmit = async () => {
             
             advisor.value = {
                 type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
                 show: true
             }
             
@@ -890,7 +890,7 @@ const onSubmit = async () => {
             
             advisor.value = {
                 type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
                 show: true
             }
             
@@ -913,7 +913,7 @@ const onSubmit = async () => {
             
             advisor.value = {
                 type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordonsinformation',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
                 show: true
             }
             
@@ -1294,12 +1294,12 @@ onBeforeRouteLeave((to, from, next) => {
                     class="agreements-tabs" 
                 >
                     <VTab :class="{ 'tab-completed': currentTab > 0 }">
-                        <VIcon size="24" icon="custom-clients" />
-                        Kund
-                    </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-car" />
                         Fordonsinformation
+                    </VTab>
+                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
+                        <VIcon size="24" icon="custom-clients" />
+                        Kund
                     </VTab>
                     <VTab :class="{ 'tab-completed': currentTab > 2 }">
                         <VIcon size="24" icon="custom-pris-information" />
@@ -1321,8 +1321,306 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VCardText class="px-0 px-md-2">
                     <VWindow v-model="currentTab">
-                        <!--Kund-->
+                        <!--Fordonsinformation-->
                         <VWindowItem class="px-md-0">
+                            <VRow class="px-md-3">
+                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
+                                    <div class="title-tabs mb-5">
+                                        Fordonsinformation
+                                    </div>
+                                    <div 
+                                        class="d-flex flex-wrap"
+                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
+                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                                    >
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
+                                            <div class="d-flex gap-2"> 
+                                                <VTextField
+                                                    v-model="reg_num"
+                                                    :rules="[requiredValidator]"
+                                                    @input="reg_num = reg_num.toUpperCase()"
+                                                />
+
+                                                <VBtn
+                                                    class="btn-light w-auto px-4"
+                                                    @click="searchVehicleByPlate"
+                                                >
+                                                    <VIcon icon="custom-search" size="24" />
+                                                    Hämta
+                                                </VBtn>
+                                            </div>
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Avtalsnummer" />
+                                            <VTextField
+                                                v-model="commission_id"
+                                                disabled
+                                                prefix="#"
+                                                density="compact"
+                                            />
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
+                                            <AppAutocomplete
+                                                v-model="brand_id"
+                                                :items="brands"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                @update:modelValue="selectBrand"
+                                                @click:clear="onClearBrand"
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '300px' }"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
+                                            <AppAutocomplete
+                                                v-model="model_id"
+                                                :items="getModels"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                @update:modelValue="selectModel"
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '300px' }"
+                                            />
+                                        </div>
+                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
+                                            <VTextField
+                                                v-model="model"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
+                                            <VTextField
+                                                v-model="generation"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
+                                            <AppAutocomplete
+                                                v-model="car_body_id"
+                                                :items="carbodies"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell*" />
+                                            <VTextField
+                                                v-model="year"
+                                                :rules="[requiredValidator, yearValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(startDateTimePickerConfig)"
+                                                v-model="date"
+                                                density="default"
+                                                :config="startDateTimePickerConfig"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Välj datum"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
+                                            <VTextField
+                                                v-model="chassis"
+                                                :rules="[requiredValidator]"
+                                            /> 
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontrollbesiktning gäller tom" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(endDateTimePickerConfigTab2)"
+                                                v-model="control_inspection"
+                                                density="default"
+                                                :config="endDateTimePickerConfigTab2"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Välj datum"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
+                                            <VTextField
+                                                v-model="color"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
+                                            <AppAutocomplete
+                                                v-model="fuel_id"
+                                                :items="fuels"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
+                                            <AppAutocomplete
+                                                v-model="gearbox_id"
+                                                :items="gearboxes"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                                <VTextField
+                                                    v-model="number_keys"
+                                                    type="number"
+                                                    min="1"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                        </div>         
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="mileage"
+                                                suffix="Mil"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>     
+                                        <div :style="windowWidth < 1024 ? 'display: none;' : 'width: calc(50% - 12px);'"></div>
+                                        <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
+                                                    <div class="d-flex flex-column">
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
+                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </div>
+                                                </div>
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
+                                                    <div class="d-flex flex-column">
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
+                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </div>
+                                                </div>
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
+                                                    <div class="d-flex flex-column">
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
+                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
+                                                            <VRadio
+                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
+                                                                :key="index"
+                                                                :label="radio"
+                                                                :value="index"
+                                                            />
+                                                        </VRadioGroup>
+                                                    </div>
+                                                </div>    
+                                            </div>
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
+                                                <VRadioGroup v-model="dist_belt" inline class="radio-form">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div>                       
+                                        <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">                                       
+                                            <div class="d-flex gap-2">
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
+                                                    <VTextField
+                                                        type="number"
+                                                        v-model="last_service"
+                                                        suffix="Mil"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                    <AppDateTimePicker
+                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
+                                                        v-model="last_service_date"
+                                                        density="default"
+                                                        :config="endDateTimePickerConfigTab2"
+                                                        clearable
+                                                        class="field-solo-flat"
+                                                        placeholder="YYYY-MM-DD"
+                                                        style="margin-top: 6px"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2" v-if="dist_belt === 0">
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
+                                                    <VTextField
+                                                        type="number"
+                                                        v-model="last_dist_belt"
+                                                        suffix="Mil"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                    <AppDateTimePicker
+                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
+                                                        v-model="last_dist_belt_date"
+                                                        density="default"
+                                                        :config="endDateTimePickerConfigTab2"
+                                                        clearable
+                                                        class="field-solo-flat"
+                                                        placeholder="YYYY-MM-DD"
+                                                        style="margin-top: 6px"
+                                                    />
+                                                </div>
+                                            </div>                                        
+                                        </div>                                        
+                                        <div class="w-100">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
+                                            <VTextarea
+                                                v-model="comments"
+                                                rows="3"
+                                            />
+                                        </div>
+                                    </div>
+                                </VCol>
+                            </VRow>
+                        </VWindowItem>
+
+                        <!--Kund-->
+                       <VWindowItem class="px-md-0">
                             <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
@@ -1487,294 +1785,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                     {{ company.company }}
                                                 </span>
                                             </h6>
-                                        </div>
-                                    </div>
-                                </VCol>
-                            </VRow>
-                        </VWindowItem>
-
-                        <!--Fordonsinformation-->
-                       <VWindowItem class="px-md-0">
-                            <VRow class="px-md-3">
-                                <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
-                                    <div class="title-tabs mb-5">
-                                        Fordonsinformation
-                                    </div>
-                                    <div 
-                                        class="d-flex flex-wrap"
-                                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
-                                        :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
-                                    >
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
-                                            <div class="d-flex gap-2"> 
-                                                <VTextField
-                                                    v-model="reg_num"
-                                                    :rules="[requiredValidator]"
-                                                    @input="reg_num = reg_num.toUpperCase()"
-                                                />
-
-                                                <VBtn
-                                                    class="btn-light w-auto px-4"
-                                                    @click="searchVehicleByPlate"
-                                                >
-                                                    <VIcon icon="custom-search" size="24" />
-                                                    Hämta
-                                                </VBtn>
-                                            </div>
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
-                                            <VTextField
-                                                type="number"
-                                                v-model="mileage"
-                                                suffix="Mil"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
-                                            <AppAutocomplete
-                                                v-model="brand_id"
-                                                :items="brands"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                @update:modelValue="selectBrand"
-                                                @click:clear="onClearBrand"
-                                                :rules="[requiredValidator]"
-                                                :menu-props="{ maxHeight: '300px' }"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
-                                            <AppAutocomplete
-                                                v-model="model_id"
-                                                :items="getModels"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                @update:modelValue="selectModel"
-                                                :rules="[requiredValidator]"
-                                                :menu-props="{ maxHeight: '300px' }"
-                                            />
-                                        </div>
-                                        <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
-                                            <VTextField
-                                                v-model="model"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
-                                            <VTextField
-                                                v-model="generation"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
-                                            <AppAutocomplete
-                                                v-model="car_body_id"
-                                                :items="carbodies"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell*" />
-                                            <VTextField
-                                                v-model="year"
-                                                :rules="[requiredValidator, yearValidator]"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="date"
-                                                density="default"
-                                                :config="startDateTimePickerConfig"
-                                                clearable
-                                                class="field-solo-flat"
-                                                placeholder="Välj datum"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
-                                            <VTextField
-                                                v-model="chassis"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontrollbesiktning gäller tom" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(endDateTimePickerConfigTab2)"
-                                                v-model="control_inspection"
-                                                density="default"
-                                                :config="endDateTimePickerConfigTab2"
-                                                clearable
-                                                class="field-solo-flat"
-                                                placeholder="Välj datum"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
-                                            <VTextField
-                                                v-model="color"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
-                                            <AppAutocomplete
-                                                v-model="fuel_id"
-                                                :items="fuels"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
-                                            <AppAutocomplete
-                                                v-model="gearbox_id"
-                                                :items="gearboxes"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                autocomplete="off"
-                                                clearable
-                                                clear-icon="tabler-x"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                                <VTextField
-                                                    v-model="number_keys"
-                                                    type="number"
-                                                    min="1"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                        </div>                                     
-                                        <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">                                       
-                                            <div class="d-flex gap-2">
-                                                <div class="w-50">
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
-                                                    <VTextField
-                                                        type="number"
-                                                        v-model="last_service"
-                                                        suffix="Mil"
-                                                        min="0"
-                                                    />
-                                                </div>
-                                                <div class="w-50">
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
-                                                        v-model="last_service_date"
-                                                        density="default"
-                                                        :config="endDateTimePickerConfigTab2"
-                                                        clearable
-                                                        class="field-solo-flat"
-                                                        placeholder="YYYY-MM-DD"
-                                                        style="margin-top: 6px"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="d-flex gap-2" v-if="dist_belt === 0">
-                                                <div class="w-50">
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
-                                                    <VTextField
-                                                        type="number"
-                                                        v-model="last_dist_belt"
-                                                        suffix="Mil"
-                                                        min="0"
-                                                    />
-                                                </div>
-                                                <div class="w-50">
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
-                                                    <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
-                                                        v-model="last_dist_belt_date"
-                                                        density="default"
-                                                        :config="endDateTimePickerConfigTab2"
-                                                        clearable
-                                                        class="field-solo-flat"
-                                                        placeholder="YYYY-MM-DD"
-                                                        style="margin-top: 6px"
-                                                    />
-                                                </div>
-                                            </div>                                        
-                                        </div>
-                                        <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
-                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
-                                                    <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
-                                                        <VRadioGroup v-model="service_book" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </div>
-                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
-                                                    <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
-                                                        <VRadioGroup v-model="summer_tire" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </div>
-                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
-                                                    <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
-                                                        <VRadioGroup v-model="winter_tire" inline class="radio-form">
-                                                            <VRadio
-                                                                v-for="(radio, index) in optionsRadio.slice(0, 2)"
-                                                                :key="index"
-                                                                :label="radio"
-                                                                :value="index"
-                                                            />
-                                                        </VRadioGroup>
-                                                    </div>
-                                                </div>    
-                                            </div>
-                                            <div class="d-flex flex-column">
-                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
-                                                <VRadioGroup v-model="dist_belt" inline class="radio-form">
-                                                    <VRadio
-                                                        v-for="(radio, index) in optionsRadio"
-                                                        :key="index"
-                                                        :label="radio"
-                                                        :value="index"
-                                                    />
-                                                </VRadioGroup>
-                                            </div>
-                                        </div> 
-                                        <div class="w-100">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
-                                            <VTextarea
-                                                v-model="comments"
-                                                rows="3"
-                                            />
                                         </div>
                                     </div>
                                 </VCol>

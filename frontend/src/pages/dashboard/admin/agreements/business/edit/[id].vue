@@ -1147,58 +1147,8 @@ onBeforeRouteLeave((to, from, next) => {
                                 min="1"
                                 :rules="[requiredValidator]"
                             />
-                    </div>                                     
-                    <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">                                       
-                        <div class="d-flex gap-2">
-                            <div class="w-50">
-                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
-                                <VTextField
-                                    type="number"
-                                    v-model="last_service"
-                                    suffix="Mil"
-                                    min="0"
-                                />
-                            </div>
-                            <div class="w-50">
-                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="last_service_date"
-                                    density="default"
-                                    :config="endDateTimePickerConfig"
-                                    clearable
-                                    class="field-solo-flat"
-                                    placeholder="YYYY-MM-DD"
-                                    style="margin-top: 6px"
-                                />
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2" v-if="dist_belt === 0">
-                            <div class="w-50">
-                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
-                                <VTextField
-                                    type="number"
-                                    v-model="last_dist_belt"
-                                    suffix="Mil"
-                                    min="0"
-                                />
-                            </div>
-                            <div class="w-50">
-                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
-                                <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
-                                    v-model="last_dist_belt_date"
-                                    density="default"
-                                    :config="endDateTimePickerConfig"
-                                    clearable
-                                    class="field-solo-flat"
-                                    placeholder="YYYY-MM-DD"
-                                    style="margin-top: 6px"
-                                />
-                            </div>
-                        </div>                                        
-                    </div>
-                    <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    </div>  
+                    <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
                             <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
                                 <div class="d-flex flex-column">
@@ -1251,6 +1201,56 @@ onBeforeRouteLeave((to, from, next) => {
                                 />
                             </VRadioGroup>
                         </div>
+                    </div>
+                    <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">                                       
+                        <div class="d-flex gap-2">
+                            <div class="w-50">
+                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
+                                <VTextField
+                                    type="number"
+                                    v-model="last_service"
+                                    suffix="Mil"
+                                    min="0"
+                                />
+                            </div>
+                            <div class="w-50">
+                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="last_service_date"
+                                    density="default"
+                                    :config="endDateTimePickerConfig"
+                                    clearable
+                                    class="field-solo-flat"
+                                    placeholder="YYYY-MM-DD"
+                                    style="margin-top: 5.5px"
+                                />
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2" v-if="dist_belt === 0">
+                            <div class="w-50">
+                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
+                                <VTextField
+                                    type="number"
+                                    v-model="last_dist_belt"
+                                    suffix="Mil"
+                                    min="0"
+                                />
+                            </div>
+                            <div class="w-50">
+                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                <AppDateTimePicker
+                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    v-model="last_dist_belt_date"
+                                    density="default"
+                                    :config="endDateTimePickerConfig"
+                                    clearable
+                                    class="field-solo-flat"
+                                    placeholder="YYYY-MM-DD"
+                                    style="margin-top: 5.5px"
+                                />
+                            </div>
+                        </div>                                        
                     </div>
                     <div class="w-100">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anmärkning" />
