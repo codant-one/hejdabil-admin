@@ -643,7 +643,6 @@ const onSubmit = async () => {
             formData.append('car_body_id', car_body_id.value)
             formData.append('gearbox_id', gearbox_id.value)
             formData.append('fuel_id', fuel_id.value)
-            formData.append('currency_id', currency_id.value)
             formData.append('offerId', offer_id.value)
             formData.append('mileage', mileage.value)
             formData.append('generation', generation.value)

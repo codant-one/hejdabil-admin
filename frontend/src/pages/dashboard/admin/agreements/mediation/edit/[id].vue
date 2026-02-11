@@ -1034,7 +1034,6 @@ const onSubmit = async () => {
                 formData.append('comments', comments.value)
 
                 formData.append('car_body_id', car_body_id.value)
-                formData.append('currency_id', currency_id.value)
                 formData.append('generation', generation.value)
                 formData.append('control_inspection', control_inspection.value)      
                 formData.append('date', date.value)
