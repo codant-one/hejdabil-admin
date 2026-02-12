@@ -1664,7 +1664,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 type="submit" 
                             >
                                 <VIcon icon="custom-save"  size="24" />
-                                Spara
+                                 Uppdatering 
                             </VBtn>
                         </div>
                     </div>

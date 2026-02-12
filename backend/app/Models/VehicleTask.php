@@ -61,7 +61,7 @@ class VehicleTask extends Model
             'measure' => $request->measure,
             'cost' => $request->cost,
             'description' => $request->description  === 'null' ? null : $request->description,
-            'start_date' => $request->start_date,
+            'start_date' => $request->start_date === 'null' ? null : $request->start_date,
             'end_date' => $request->end_date === 'null' ? null : $request->end_date
         ]);
 
