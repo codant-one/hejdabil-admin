@@ -55,7 +55,7 @@ class VehicleController extends Controller
                         'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo',
                         'model:id,name,brand_id',
-                        'model.brand:id,name', 
+                        'model.brand:id,name,logo', 
                         'state:id,name', 
                         'iva_purchase:id,name,value',
                         'iva_sale:id,name,value',
