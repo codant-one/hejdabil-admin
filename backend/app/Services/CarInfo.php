@@ -104,7 +104,7 @@ class CarInfo
         // Mapear brand_id y model_id
         $brandData = $this->mapBrandAndModel(
             $result['brand'] ?? null,
-            $result['model'] ?? null
+            $result['model_gen_engine'] ?? null
         );
 
         // Mapear gearbox_id basado en attributes
@@ -119,7 +119,7 @@ class CarInfo
         $data['result']['car_body_id'] = $carBodyId;
         $data['result']['brand_id'] = $brandData['brand_id'];
         $data['result']['model_id'] = $brandData['model_id'];
-        $data['result']['model_name'] = $result['model'] ?? null;
+        $data['result']['model_name'] = $result['model_gen_engine'] ?? null;
         $data['result']['brand_name'] = $result['brand'] ?? null;
         $data['result']['gearbox_id'] = $gearboxId;
         // El VIN es el número de chasis real
@@ -157,14 +157,26 @@ class CarInfo
         // Buscar coincidencia en el mapeo
         foreach ($fuelMapping as $key => $label) {
             if (str_contains($engineTypeLower, $key)) {
-                $fuel = Fuel::where('label', $label)->first();
-                return $fuel?->id;
+                $fuel = Fuel::firstOrCreate(
+                    ['label' => $label],
+                    ['label' => $label, 'name' => ucfirst($label)]
+                );
+                return $fuel->id;
             }
         }
 
         // Intentar búsqueda directa por nombre
         $fuel = Fuel::whereRaw('LOWER(name) LIKE ?', ['%' . $engineTypeLower . '%'])->first();
-        return $fuel?->id;
+        
+        // Si no se encuentra, crear un nuevo registro con el nombre original
+        if (!$fuel) {
+            $fuel = Fuel::create([
+                'label' => strtolower(str_replace(' ', '_', $engineType)),
+                'name' => ucfirst($engineType)
+            ]);
+        }
+        
+        return $fuel->id;
     }
 
     /**
