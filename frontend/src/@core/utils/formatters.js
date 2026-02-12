@@ -82,6 +82,31 @@ export const formatDateToMonthShort = (value, toTimeForCurrentDay = true) => {
   return new Intl.DateTimeFormat('en-US', formatting).format(new Date(value))
 }
 
+/**
+ * Format date in Swedish format: YYYY Month DD
+ * @param {String} value date to format
+ * @returns {String} Formatted date in Swedish (e.g., "2026 februari 12")
+ * @example
+ * formatDateSwedish('2026-02-12') // Returns '2026 februari 12'
+ * formatDateSwedish('2026-01-21T10:30:00') // Returns '2026 januari 21'
+ */
+export const formatDateSwedish = (value) => {
+  if (!value) return ''
+  
+  // Si la fecha es solo YYYY-MM-DD sin hora, agregar tiempo para evitar problemas de zona horaria
+  let dateValue = value
+  if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    dateValue = `${value}T12:00:00`
+  }
+  
+  const date = new Date(dateValue)
+  const year = date.getFullYear()
+  const month = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(date)
+  const day = date.getDate()
+  
+  return `${year}, ${month} ${day}`
+}
+
 export const prefixWithPlus = value => value > 0 ? `+${value}` : value
 
 export const formatNumber = (value) => {

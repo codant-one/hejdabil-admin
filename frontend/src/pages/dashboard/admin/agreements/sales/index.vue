@@ -10,7 +10,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -88,7 +88,6 @@ const insurance_company_description = ref(null);
 const insurance_type_id = ref(null)                                 
 const insuranceTypes = ref([])
 
-const purchase_date = ref(null)
 const comments = ref(null)
 const gearbox_id = ref(null)
 const fuel_id = ref(null)
@@ -161,6 +160,7 @@ const dist_belt_interchange = ref(0)
 const last_dist_belt_interchange = ref(null)
 const last_dist_belt_date_interchange = ref(null)
 const comments_interchange = ref(null)
+const purchase_date = ref(null)
 
 //const tab 3
 const clients = ref([])
@@ -266,6 +266,36 @@ watch(() => payment_received.value, (val) => {
 
 watch(() => reg_num_interchange.value, (val) => {
     if (!val || val.trim() === '') {
+        // Limpiar todos los campos del tab Inbytesfordon
+        brand_id_interchange.value = null
+        model_id_interchange.value = null
+        model_interchange.value = null
+        year_interchange.value = null
+        car_body_id_interchange.value = null
+        color_interchange.value = null
+        chassis_interchange.value = null
+        trade_price.value = 0
+        residual_debt.value = 0
+        residual_price.value = 0
+        iva_purchase_id_interchange.value = null
+        mileage_interchange.value = null
+        generation_interchange.value = null
+        control_inspection_interchange.value = null
+        fuel_id_interchange.value = null
+        gearbox_id_interchange.value = null
+        number_keys_interchange.value = null
+        service_book_interchange.value = 0
+        summer_tire_interchange.value = 0
+        winter_tire_interchange.value = 0
+        last_service_interchange.value = null
+        last_service_date_interchange.value = null
+        dist_belt_interchange.value = 0
+        last_dist_belt_interchange.value = null
+        last_dist_belt_date_interchange.value = null
+        comments_interchange.value = null
+        purchase_date.value = formatDate(new Date())
+        modelsByBrandInterchange.value = []
+        
         nextTick(() => {
             refForm.value?.resetValidation()
         })
@@ -335,6 +365,7 @@ async function fetchData() {
     advances.value = agreementsStores.advances
 
     sale_date.value = formatDate(new Date())
+    purchase_date.value = formatDate(new Date())
 
     isRequestOngoing.value = false
 
@@ -922,6 +953,7 @@ const onSubmit = async () => {
     // Tab 1 (Inbytesfordon) - Validaciones condicionales si reg_num_interchange tiene valor
     const hasTab1Errors = reg_num_interchange.value && (
                           !mileage_interchange.value ||
+                          !purchase_date.value ||
                           !brand_id_interchange.value ||
                           (model_id_interchange.value !== 0 && !model_id_interchange.value) ||
                           (model_id_interchange.value === 0 && !model_interchange.value) ||
@@ -1221,7 +1253,6 @@ const onSubmit = async () => {
                 formData.append('year_interchange', year_interchange.value)
                 formData.append('color_interchange', color_interchange.value)
                 formData.append('purchase_price_interchange', trade_price.value)
-                formData.append('purchase_date_interchange', formatDate(new Date()))
                 formData.append('chassis_interchange', chassis_interchange.value)
                 
                 formData.append('mileage_interchange', mileage_interchange.value)
@@ -1239,6 +1270,7 @@ const onSubmit = async () => {
                 formData.append('last_service_interchange', last_service_interchange.value)
                 formData.append('last_service_date_interchange', last_service_date_interchange.value)
                 formData.append('comments_interchange', comments_interchange.value)
+                formData.append('purchase_date_interchange', purchase_date.value)
 
                 //agreement
                 formData.append('agreement_type_id', 1)
@@ -1318,7 +1350,6 @@ const currentData = computed(() => ({
     insurance_company: insurance_company.value,
     insurance_company_description: insurance_company_description.value,
     insurance_type_id: insurance_type_id.value,
-    purchase_date: purchase_date.value,
     comments: comments.value,
     gearbox_id: gearbox_id.value,
     fuel_id: fuel_id.value,
@@ -1674,18 +1705,6 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="purchase_date"
-                                                density="default"
-                                                :config="startDateTimePickerConfig"
-                                                clearable
-                                                class="field-solo-flat"
-                                                placeholder="Välj datum"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
                                             <VTextField
                                                 v-model="chassis"
@@ -1733,16 +1752,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 clear-icon="tabler-x"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                                <VTextField
-                                                    v-model="number_keys"
-                                                    type="number"
-                                                    min="1"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                        </div>                                        
+                                        </div>                                                                               
                                         <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
                                                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
@@ -1847,13 +1857,15 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </div>
                                             </div>                                        
                                         </div>
-                                        <div class="w-100">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
-                                            <VTextarea
-                                                v-model="comments"
-                                                rows="3"
-                                            />
-                                        </div>  
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                                <VTextField
+                                                    v-model="number_keys"
+                                                    type="number"
+                                                    min="1"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                        </div>                                         
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Försäljningsdatum*" />
                                             <AppDateTimePicker
@@ -1865,6 +1877,16 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                             />
                                         </div>
+                                        <div class="form w-100">
+                                            <div
+                                                class="d-flex w-100 p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-calendar" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Försäljningsdatum</div>
+                                                <div class="agreements-pill-value">{{ formatDateSwedish(sale_date) }}</div>
+                                            </div>                      
+                                        </div> 
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Garanti*" />
                                             <AppAutocomplete
@@ -1932,6 +1954,13 @@ onBeforeRouteLeave((to, from, next) => {
                                                 autocomplete="off"
                                             />    
                                         </div>
+                                        <div class="w-100">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
+                                            <VTextarea
+                                                v-model="comments"
+                                                rows="3"
+                                            />
+                                        </div> 
                                     </div>
                                 </VCol>
                             </VRow>
@@ -2041,19 +2070,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="year_interchange"
                                                 :rules="reg_num_interchange ? [requiredValidator, yearValidator] : [yearValidator]"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="purchase_date"
-                                                density="default"
-                                                :config="startDateTimePickerConfig"
-                                                clearable
-                                                class="field-solo-flat"
-                                                placeholder="Välj datum"
-                                            />
-                                        </div>
+                                        </div>                                        
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer" />
@@ -2103,18 +2120,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 clear-icon="tabler-x"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
-                                            <VTextField
-                                                v-model="number_keys_interchange"
-                                                type="number"
-                                                min="1"
-                                                :rules="reg_num_interchange ? [requiredValidator] : []"
-                                            />
-                                        </div>                                        
-                                        <div :style="windowWidth < 1024 ? 'display: none;' : 'width: calc(50% - 12px);'"></div>
+                                        </div>                                                                          
                                         <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
                                                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
@@ -2219,13 +2225,40 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </div>
                                             </div>                                        
                                         </div>
-                                        <div class="w-100">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
-                                            <VTextarea
-                                                v-model="comments_interchange"
-                                                rows="3"
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
+                                            <VTextField
+                                                v-model="number_keys_interchange"
+                                                type="number"
+                                                min="1"
+                                                :rules="reg_num_interchange ? [requiredValidator] : []"
                                             />
-                                        </div>
+                                        </div>     
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
+                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(startDateTimePickerConfig)"
+                                                v-model="purchase_date"
+                                                density="default"
+                                                :config="startDateTimePickerConfig"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Välj datum"
+                                                :rules="reg_num_interchange ? [requiredValidator] : []"
+                                            />
+                                        </div>    
+                                        <div class="form w-100">
+                                            <div
+                                                class="d-flex w-100 `p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-calendar" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Inköpsdatum</div>
+                                                <div class="agreements-pill-value">{{ formatDateSwedish(purchase_date) }}</div>
+                                            </div>                      
+                                        </div>                                    
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" :text="'Inbytespris ' + (currencies.find(item => item.id === currency_id)?.code || '')+'*'" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" :text="'Inbytespris ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
@@ -2263,14 +2296,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 suffix="KR"
                                                 :disabled="residual_debt === 0 ? true : false"
                                             /> 
-                                        </div>                                        
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Verkligt värde ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
-                                            <VTextField
-                                                :model-value="fair_value"
-                                                suffix="KR"
-                                                disabled 
-                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="VMB / Moms*" />
@@ -2284,6 +2309,43 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 clear-icon="tabler-x"
                                                 :rules="reg_num_interchange ? [requiredValidator] : []"
+                                            />
+                                        </div>
+                                        <div class="form w-100">
+                                            <div
+                                                class="d-flex w-100 `p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Totalpris</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(trade_price ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
+                                            </div>                      
+                                        </div>
+                                        <div class="form w-100">
+                                            <div
+                                                class="d-flex w-100 `p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#C6FFEB', color: '#00624E', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Restskuld </div>
+                                                <div class="agreements-pill-value">{{ formatNumber(residual_price ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
+                                            </div>                      
+                                        </div>
+                                        <div class="form w-100">
+                                            <div
+                                                class="d-flex w-100 `p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#C0FEFF', color: '#04585D', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Verkligt värde</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(fair_value ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
+                                            </div>                      
+                                        </div> 
+                                        <div class="w-100">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
+                                            <VTextarea
+                                                v-model="comments_interchange"
+                                                rows="3"
                                             />
                                         </div>
                                     </div>
@@ -2569,7 +2631,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Totalpris</div>
-                                                <div class="agreements-pill-value">{{ formatNumber(total_sale ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(total_sale ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
                                             </div>                                            
                                         </div> 
                                         <div class="w-100">
@@ -2579,7 +2641,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Pris på inbytesbil</div>
-                                                <div class="agreements-pill-value"> {{ formatNumber(trade_price ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value"> {{ formatNumber(trade_price ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
                                             </div>                                            
                                         </div> 
                                         <div class="w-100">
@@ -2589,7 +2651,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Mellanpris</div>
-                                                <div class="agreements-pill-value">{{ formatNumber(middle_price ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(middle_price ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
                                             </div>                                            
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

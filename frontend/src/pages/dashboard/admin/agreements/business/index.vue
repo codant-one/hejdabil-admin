@@ -11,6 +11,7 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { formatNumber } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -71,7 +72,6 @@ const control_inspection = ref(null)
 const color = ref(null)
 const fuel_id = ref(null)
 const gearbox_id = ref(null)
-const date = ref(null)
 const chassis = ref(null)
 const number_keys = ref(null)
 const service_book = ref(0)
@@ -152,27 +152,6 @@ watchEffect(async () => {
       initialData.value = JSON.parse(JSON.stringify(currentData.value))
     })
    
-})
-
-const startDateTimePickerConfig = computed(() => {
-
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-
-    const formatToISO = (date) => date.toISOString().split('T')[0];
-
-
-    const config = {
-        dateFormat: 'Y-m-d',
-        position: 'auto right',
-        disable: [{
-            from: formatToISO(tomorrow),
-            to: '2099-12-31' // Una fecha futura lejana para bloquear indefinidamente
-        }]
-    }
-
-    return config
 })
 
 const endDateTimePickerConfig = computed(() => {
@@ -648,8 +627,7 @@ const onSubmit = async () => {
             formData.append('generation', generation.value)
             formData.append('year', year.value)
             formData.append('control_inspection', control_inspection.value)
-            formData.append('color', color.value)           
-            formData.append('date', date.value)
+            formData.append('color', color.value)
             formData.append('number_keys', number_keys.value)
             formData.append('service_book', service_book.value)
             formData.append('summer_tire', summer_tire.value)
@@ -754,7 +732,6 @@ const currentData = computed(() => ({
     color: color.value,
     fuel_id: fuel_id.value,
     gearbox_id: gearbox_id.value,
-    date: date.value,
     service_book: service_book.value,
     summer_tire: summer_tire.value,
     winter_tire: winter_tire.value,
@@ -950,25 +927,7 @@ onBeforeRouteLeave((to, from, next) => {
                         prefix="#"
                         density="compact"
                       />
-                    </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
-                      <VTextField 
-                        v-model="mileage" 
-                        suffix="Mil"
-                        :rules="[requiredValidator]" 
-                      />
-                    </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Belopp ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
-                      <VTextField
-                        v-model="price"
-                        type="number"
-                        min="0"
-                        suffix="KR"
-                        :rules="[requiredValidator]"
-                      />
-                    </div>
+                    </div>                    
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                       <AppAutocomplete
@@ -1032,18 +991,6 @@ onBeforeRouteLeave((to, from, next) => {
                         />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
-                        <AppDateTimePicker
-                            :key="JSON.stringify(startDateTimePickerConfig)"
-                            v-model="date"
-                            density="default"
-                            :config="startDateTimePickerConfig"
-                            clearable
-                            class="field-solo-flat"
-                            placeholder="Välj datum"
-                        />
-                    </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
                         <VTextField
                             v-model="chassis"
@@ -1091,15 +1038,6 @@ onBeforeRouteLeave((to, from, next) => {
                             clearable
                             clear-icon="tabler-x"
                         />
-                    </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                            <VTextField
-                                v-model="number_keys"
-                                type="number"
-                                min="1"
-                                :rules="[requiredValidator]"
-                            />
                     </div>
                     <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
@@ -1205,6 +1143,43 @@ onBeforeRouteLeave((to, from, next) => {
                             </div>
                         </div>                                        
                     </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                      <VTextField
+                          v-model="number_keys"
+                          type="number"
+                          min="1"
+                          :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                      <VTextField 
+                        v-model="mileage" 
+                        suffix="Mil"
+                        :rules="[requiredValidator]" 
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Belopp ' + (currencies.find(item => item.id === currency_id)?.code || '') + '*'" />
+                      <VTextField
+                        v-model="price"
+                        type="number"
+                        min="0"
+                        suffix="KR"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px); margin-top: 27px;'" class="form">
+                      <div
+                          class="d-flex w-100 p-4 agreements-pill"
+                          :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
+                      >
+                          <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
+                          <div class="agreements-pill-title">Totalpris</div>
+                          <div class="agreements-pill-value">{{ formatNumber(price ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
+                      </div>                      
+                    </div> 
                     <div class="w-100">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anmärkning" />
                       <VTextarea v-model="comment" rows="3" />

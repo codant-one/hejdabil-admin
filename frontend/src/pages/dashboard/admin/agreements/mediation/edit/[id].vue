@@ -100,33 +100,11 @@ const comments = ref(null)
 const generation = ref(null)
 const car_body_id = ref(null)
 const control_inspection = ref(null)
-const date = ref(null)
 const last_service = ref(null)
 const last_service_date = ref(null)
 const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const last_dist_belt_date = ref(null)
-
-const startDateTimePickerConfig = computed(() => {
-
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-
-    const formatToISO = (date) => date.toISOString().split('T')[0];
-
-
-    const config = {
-        dateFormat: 'Y-m-d',
-        position: 'auto right',
-        disable: [{
-            from: formatToISO(tomorrow),
-            to: '2099-12-31' // Una fecha futura lejana para bloquear indefinidamente
-        }]
-    }
-
-    return config
-})
 
 const endDateTimePickerConfigTab2 = computed(() => {
     const now = new Date();
@@ -194,13 +172,6 @@ watch(start_date, (newStartDate) => {
         end_date.value = null; 
     }
 })
-
-const formatDate = (date) => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0') // meses de 0 a 11
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
 
 onMounted(async () => {
     checkIfMobile()
@@ -304,7 +275,6 @@ async function fetchData() {
         car_body_id.value = agreement.value.commission.vehicle.car_body_id
         generation.value = agreement.value.commission.vehicle.generation
         control_inspection.value = agreement.value.commission.vehicle.control_inspection
-        date.value = agreement.value.commission.vehicle.date
         last_service.value = agreement.value.commission.vehicle.last_service
         last_service_date.value = agreement.value.commission.vehicle.last_service_date
         dist_belt.value = agreement.value.commission.vehicle.dist_belt
@@ -1035,8 +1005,7 @@ const onSubmit = async () => {
 
                 formData.append('car_body_id', car_body_id.value)
                 formData.append('generation', generation.value)
-                formData.append('control_inspection', control_inspection.value)      
-                formData.append('date', date.value)
+                formData.append('control_inspection', control_inspection.value)
                 formData.append('last_service', last_service.value)
                 formData.append('last_service_date', last_service_date.value)
                 formData.append('dist_belt', dist_belt.value)
@@ -1136,7 +1105,6 @@ const currentData = computed(() => ({
     generation: generation.value,
     car_body_id: car_body_id.value,
     control_inspection: control_inspection.value,
-    date: date.value,
     last_service: last_service.value,
     last_service_date: last_service_date.value,
     dist_belt: dist_belt.value,
@@ -1422,18 +1390,6 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="date"
-                                                density="default"
-                                                :config="startDateTimePickerConfig"
-                                                clearable
-                                                class="field-solo-flat"
-                                                placeholder="Välj datum"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
                                             <VTextField
                                                 v-model="chassis"
@@ -1481,27 +1437,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 clear-icon="tabler-x"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                                <VTextField
-                                                    v-model="number_keys"
-                                                    type="number"
-                                                    min="1"
-                                                    :rules="[requiredValidator]"
-                                                />
-                                        </div>         
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
-                                            <VTextField
-                                                type="number"
-                                                v-model="mileage"
-                                                suffix="Mil"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            />
-                                        </div>     
-                                        <div :style="windowWidth < 1024 ? 'display: none;' : 'width: calc(50% - 12px);'"></div>
+                                        </div>    
                                         <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
                                                 <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
@@ -1605,7 +1541,27 @@ onBeforeRouteLeave((to, from, next) => {
                                                     />
                                                 </div>
                                             </div>                                        
-                                        </div>                                        
+                                        </div>     
+                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                                <VTextField
+                                                    v-model="number_keys"
+                                                    type="number"
+                                                    min="1"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                        </div>         
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="mileage"
+                                                suffix="Mil"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>                                    
                                         <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kända fel, brister och övrig information" />
                                             <VTextarea
