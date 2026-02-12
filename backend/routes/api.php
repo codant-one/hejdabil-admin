@@ -207,6 +207,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     //Vehicles
     Route::group(['prefix' => 'vehicles'], function () {
         Route::post('send', [VehicleController::class, 'send']);
+        Route::post('findByRegNum', [VehicleController::class, 'findByRegNum']);
     });
 
     //Billing

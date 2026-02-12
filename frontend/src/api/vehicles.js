@@ -25,6 +25,10 @@ class Vehicles {
     send(data) {
         return axios.post('/vehicles/send', data)
     }
+
+    findByRegNum(data) {
+        return axios.post('/vehicles/findByRegNum', data)
+    }
     
 }
 

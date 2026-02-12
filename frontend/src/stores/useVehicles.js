@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import Vehicles from '@/api/vehicles'
+import { set } from 'date-fns'
 
 export const useVehiclesStores = defineStore('vehicles', {
     state: () => ({
@@ -9,6 +10,8 @@ export const useVehiclesStores = defineStore('vehicles', {
         gearboxes: {},
         suppliers: {},
         loading: false,
+        reg_num: '',
+        common_info: {},
         last_page: 1,
         vehiclesTotalCount: 6
     }),
@@ -27,11 +30,23 @@ export const useVehiclesStores = defineStore('vehicles', {
         },
         getSuppliers(){
             return this.suppliers
+        },
+        getRegNum(){
+            return this.reg_num
+        },
+        getCommonInfo(){
+            return this.common_info
         }
     },
     actions: {
         setLoading(payload){
             this.loading = payload
+        },
+        setRegNum(reg_num){
+            this.reg_num = reg_num
+        },
+        setCommonInfo(common_info){
+            this.common_info = common_info
         },
         fetchVehicles(params) {
             this.setLoading(true)
@@ -119,5 +134,18 @@ export const useVehiclesStores = defineStore('vehicles', {
                 })
          
         },
+        findByRegNum(data) {
+            this.setLoading(true)
+            
+            return Vehicles.findByRegNum(data)
+                .then((response) => {
+                    return Promise.resolve(response.data)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+         
+        }
     }
 })

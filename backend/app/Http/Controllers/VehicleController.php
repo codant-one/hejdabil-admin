@@ -7,6 +7,8 @@ use App\Http\Requests\VehicleRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
@@ -25,6 +27,7 @@ use App\Models\ClientType;
 use App\Models\Identification;
 use App\Models\Currency;
 use App\Models\Supplier;
+use App\Models\VehicleDocument;
 
 class VehicleController extends Controller
 {
@@ -108,7 +111,30 @@ class VehicleController extends Controller
     public function store(VehicleRequest $request)
     {
         try {
+            $user = Auth::user();
+            $name = $user->name . ' ' . $user->last_name;
 
+            if ($request->documents && is_array($request->documents)) {
+                foreach ($request->documents as $document) {
+                    $image = $document['file'];
+                    $originalName = $image->getClientOriginalName();
+
+                    $path = 'vehicles/' . Str::slug($name) . '/';
+                    $fullFilePath = $path . $originalName;
+
+                    $existsInDatabase = VehicleDocument::where('file', $fullFilePath)->exists();
+                    $existsInStorage = Storage::disk('public')->exists($fullFilePath);
+
+                    if ($existsInDatabase || $existsInStorage) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Dokumentet ' . $originalName . ' är redan sparat i systemet för ' . $name
+                        ]);
+                    }
+                }
+            }
+            
+            // dd($request->tasks);
             $vehicle = Vehicle::createVehicle($request);
 
             return response()->json([
@@ -272,6 +298,63 @@ class VehicleController extends Controller
                 'success' => true,
                 'data' => [ 
                     'vehicle' => $vehicle
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function findByRegNum(Request $request): JsonResponse
+    {
+        try {
+            $vehicle = Vehicle::where('reg_num', $request->regnum)->first();
+        
+            if (!$vehicle)
+                return response()->json([
+                    'success' => false,
+                    'data' => [
+                        'message' => 'Fordon hittades inte',
+                        'common_info' => [
+                            'brands' => Brand::all(),
+                            'models' => CarModel::with(['brand'])->get(),
+                            'carbodies' => CarBody::all(),
+                            'gearboxes' => Gearbox::all(),
+                            'ivas' => Iva::all(),
+                            'fuels' => Fuel::all(),
+                            'document_types' => DocumentType::all(),
+                            'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
+                            'clients' => Client::all(),
+                            'client_types' => ClientType::all(),
+                            'identifications' => Identification::all(),
+                            'currencies' => Currency::where('state_id', 2)->get()
+                        ]
+                    ]
+                ], 200);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'vehicle' => $vehicle,
+                    'common_info' => [
+                        'brands' => Brand::all(),
+                        'models' => CarModel::with(['brand'])->get(),
+                        'carbodies' => CarBody::all(),
+                        'gearboxes' => Gearbox::all(),
+                        'ivas' => Iva::all(),
+                        'fuels' => Fuel::all(),
+                        'document_types' => DocumentType::all(),
+                        'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
+                        'clients' => Client::all(),
+                        'client_types' => ClientType::all(),
+                        'identifications' => Identification::all(),
+                        'currencies' => Currency::where('state_id', 2)->get()
+                    ]
                 ]
             ], 200);
 

@@ -320,73 +320,96 @@ const onSubmit = async () => {
       isConfirmCreateDialogVisible.value = false
       isRequestOngoing.value = true
 
-      const carRes = await carInfoStores.getLicensePlate(plate.value)
+      const carRes = await vehiclesStores.findByRegNum({ regnum: plate.value })
+      
+      if(carRes.success === true && carRes.data.vehicle) {     
+        plate.value = null
+        advisor.value = {
+            type: 'error',
+            message: 'Fordonsnumret är redan registrerat',
+            show: true
+        }
+
+        setTimeout(() => {
+          advisor.value = {
+            type: '',
+            message: '',
+            show: false
+          }
+        }, 3000)
+
+        isRequestOngoing.value = false
+      } else {
+        vehiclesStores.setRegNum(plate.value)
+        vehiclesStores.setCommonInfo(carRes.data.common_info)
+        router.push({ name : 'dashboard-admin-stock-add' })
+      }
 
       // Verificar success (también manejar typo 'sucess' de la API)
-      const isSuccess = carRes.success === true || carRes.sucess === true
+    //   const isSuccess = carRes.success === true || carRes.sucess === true
 
-      if (isSuccess && carRes.result) {
-        chassis.value = carRes.result.chassis_number ?? carRes.result.vin
-        year_api.value = carRes.result.model_year
-        generation.value = carRes.result.generation
-        model_api.value = carRes.result.model_name
-        brand_id_api.value = carRes.result.brand_id
-        model_id_api.value = carRes.result.model_id
-        car_body_id_api.value = carRes.result.car_body_id
-        fuel_id_api.value = carRes.result.fuel_id
-        gearbox_id_api.value = carRes.result.gearbox_id
-        color.value = carRes.result.basic_color
-        mileage.value = carRes.result.mileage
-        control_inspection.value = carRes.result.control_inspection
-      }
+    //   if (isSuccess && carRes.result) {
+    //     chassis.value = carRes.result.chassis_number ?? carRes.result.vin
+    //     year_api.value = carRes.result.model_year
+    //     generation.value = carRes.result.generation
+    //     model_api.value = carRes.result.model_name
+    //     brand_id_api.value = carRes.result.brand_id
+    //     model_id_api.value = carRes.result.model_id
+    //     car_body_id_api.value = carRes.result.car_body_id
+    //     fuel_id_api.value = carRes.result.fuel_id
+    //     gearbox_id_api.value = carRes.result.gearbox_id
+    //     color.value = carRes.result.basic_color
+    //     mileage.value = carRes.result.mileage
+    //     control_inspection.value = carRes.result.control_inspection
+    //   }
 
-      let formData = new FormData()
+    //   let formData = new FormData()
 
-      formData.append('reg_num', plate.value)
+    //   formData.append('reg_num', plate.value)
       
-      if (chassis.value) formData.append('chassis', chassis.value)
-      if (year_api.value) formData.append('year', year_api.value)
-      if (generation.value) formData.append('generation', generation.value)
-      if (model_api.value) formData.append('model', model_api.value)
-      if (brand_id_api.value) formData.append('brand_id', brand_id_api.value)
-      if (color.value) formData.append('color', color.value)
-      if (mileage.value) formData.append('mileage', mileage.value)
-      if (control_inspection.value) formData.append('control_inspection', control_inspection.value)
+    //   if (chassis.value) formData.append('chassis', chassis.value)
+    //   if (year_api.value) formData.append('year', year_api.value)
+    //   if (generation.value) formData.append('generation', generation.value)
+    //   if (model_api.value) formData.append('model', model_api.value)
+    //   if (brand_id_api.value) formData.append('brand_id', brand_id_api.value)
+    //   if (color.value) formData.append('color', color.value)
+    //   if (mileage.value) formData.append('mileage', mileage.value)
+    //   if (control_inspection.value) formData.append('control_inspection', control_inspection.value)
 
-      // Si tenemos brand_id pero no model_id, enviar model_id=0 para crear nuevo modelo
-      if (model_id_api.value) {
-        formData.append('model_id', model_id_api.value)
-      } else if (brand_id_api.value && model_api.value) {
-        formData.append('model_id', '0')
-      }
+    //   // Si tenemos brand_id pero no model_id, enviar model_id=0 para crear nuevo modelo
+    //   if (model_id_api.value) {
+    //     formData.append('model_id', model_id_api.value)
+    //   } else if (brand_id_api.value && model_api.value) {
+    //     formData.append('model_id', '0')
+    //   }
       
-      if (car_body_id_api.value) formData.append('car_body_id', car_body_id_api.value)
-      if (fuel_id_api.value) formData.append('fuel_id', fuel_id_api.value)
-      if (gearbox_id_api.value) formData.append('gearbox_id', gearbox_id_api.value)
+    //   if (car_body_id_api.value) formData.append('car_body_id', car_body_id_api.value)
+    //   if (fuel_id_api.value) formData.append('fuel_id', fuel_id_api.value)
+    //   if (gearbox_id_api.value) formData.append('gearbox_id', gearbox_id_api.value)
 
-      vehiclesStores.addVehicle(formData)
-        .then((res) => {
-          router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: res.data.data.vehicle.id } })  
-        })
-        .catch((err) => {
-          //console.log('err', err)
-          plate.value = null
-            advisor.value = {
-                type: 'error',
-                message: err.message,
-                show: true
-            }
+    //   vehiclesStores.addVehicle(formData)
+    //     .then((res) => {
+    //       router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: res.data.data.vehicle.id } })  
+    //     })
+    //     .catch((err) => {
+    //       //console.log('err', err)
+    //       plate.value = null
+    //         advisor.value = {
+    //             type: 'error',
+    //             message: err.message,
+    //             show: true
+    //         }
 
-            setTimeout(() => {
-              advisor.value = {
-                type: '',
-                message: '',
-                show: false
-              }
-            }, 3000)
+    //         setTimeout(() => {
+    //           advisor.value = {
+    //             type: '',
+    //             message: '',
+    //             show: false
+    //           }
+    //         }, 3000)
 
-            isRequestOngoing.value = false
-        })
+    //         isRequestOngoing.value = false
+    //     })
     }
   })
 }

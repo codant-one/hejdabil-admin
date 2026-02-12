@@ -12,6 +12,9 @@ use App\Models\Client;
 use App\Models\VehicleClient;
 use App\Models\Config;
 use App\Models\UserDetails;
+use App\Models\VehicleTask;
+use App\Models\VehicleDocument;
+use App\Models\TaskComment;
 
 use Carbon\Carbon;
 use PDF;
@@ -232,7 +235,7 @@ class Vehicle extends Model
             'color' => $request->color === 'null' ? null : $request->color,
             'mileage' => $request->mileage === 'null' ? null : $request->mileage,
             'control_inspection' => $request->control_inspection === 'null' ? null : $request->control_inspection,
-            'purchase_date' => $request->purchase_date ?? now()->format('Y-m-d')
+            'purchase_date' => $request->purchase_date === 'null' ? now()->format('Y-m-d') : $request->purchase_date
         ]);
         
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase'])->find($vehicle->id);
@@ -288,6 +291,60 @@ class Vehicle extends Model
 
         $vehicle->file = 'pdfs/'.Str::slug($name).'-sammanställning-'.$vehicle->id.'.pdf';
         $vehicle->update();
+
+        //Se registran las tareas y documentos asociados al vehículo
+        $allTasks = json_decode($request->tasks);
+        if ($allTasks && is_array($allTasks)) {
+            foreach ($allTasks as $task) {
+                $vehicleTask = VehicleTask::create([
+                    'vehicle_id' => $vehicle->id,
+                    'user_id' => Auth::user()->id,
+                    'measure' => $task->measure ?? '',
+                    'description' => $task->description ?? null,
+                    'is_cost' => $task->is_cost ?? 0,
+                    'cost' => $task->cost ?? 0,
+                    'start_date' => $task->start_date ?? null,
+                    'end_date' => $task->end_date ?? null,
+                ]);
+
+                if ($task->comments && is_array($task->comments)) {
+                    foreach ($task->comments as $comment) {
+                        TaskComment::create([
+                            'vehicle_task_id' => $vehicleTask->id,
+                            'user_id' => Auth::user()->id,
+                            'comment' => $comment->comment ?? '',
+                        ]);
+                    }
+
+                }
+            }
+        }
+
+        if ($request->documents && is_array($request->documents)) {
+            foreach ($request->documents as $document) {
+                $vehicleDocument = VehicleDocument::create([
+                    'vehicle_id' => $vehicle->id,
+                    'user_id' => Auth::user()->id,
+                    'document_type_id' => $document['document_type_id'] ?? '',
+                    'reference' => $document['reference'] ?? null
+                ]);
+
+                if ($document['file']) {
+                    $doc = VehicleDocument::with(['user'])->find($vehicleDocument->id);
+                    $name = $doc->user->name . ' ' . $doc->user->last_name;
+                    $image = $document['file'];
+
+                    $path = 'vehicles/' . Str::slug($name) . '/';
+
+                    $file_data = uploadFileWithOriginalName($image, $path);
+
+                    $doc->file = $file_data['filePath'];
+                    $doc->update();
+                }
+            }
+        }
+
+
 
         return $vehicle;
     }
