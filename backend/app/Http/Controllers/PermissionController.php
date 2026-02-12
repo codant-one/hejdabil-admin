@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Services\CacheService;
 
 class PermissionController extends Controller
 {
@@ -21,8 +22,8 @@ class PermissionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [ 
-                    'permissions' => Permission::all()->pluck('name')
+                'data' => [
+                    'permissions' => CacheService::getPermissions()
                 ]
             ], 200);
 

@@ -12,6 +12,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Note;
 use App\Models\Supplier;
+use App\Services\CacheService;
 
 class NoteController extends Controller
 {
@@ -34,10 +35,14 @@ class NoteController extends Controller
         
             $query = Note::with([
                            'supplier' => function ($q) {
-                                $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                                $q->select('id', 'user_id', 'deleted_at')
+                                  ->withTrashed()
+                                  ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                             },
-                            'user.userDetail',
-                            'comments.user'
+                            'user:id,name,last_name,email,avatar',
+                            'user.userDetail:user_id,logo',
+                            'comments:id,note_id,user_id,comment,created_at',
+                            'comments.user:id,name,last_name'
                         ])
                          ->applyFilters(
                                 $request->only([
@@ -48,16 +53,24 @@ class NoteController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $notes = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allNotes = $query->get();
+                $notes = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allNotes,
+                    $allNotes->count(),
+                    $allNotes->count(),
+                    1
+                );
+            } else {
+                $notes = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'notes' => $notes,
-                    'notesTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'notesTotalCount' => $notes->total(),
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
 

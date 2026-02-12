@@ -10,7 +10,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
-import { formatNumber } from '@/@core/utils/formatters'
+import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -86,6 +86,15 @@ const gearboxes = ref([])
 const carbodies = ref([])
 const fuels = ref([])
 const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+
+const generation = ref(null)
+const car_body_id = ref(null)
+const control_inspection = ref(null)
+const last_service = ref(null)
+const last_service_date = ref(null)
+const dist_belt = ref(0)
+const last_dist_belt = ref(null)
+const last_dist_belt_date = ref(null)
 
 //const tab 2
 const clients = ref([])
@@ -257,6 +266,15 @@ async function fetchData() {
         winter_tire.value = agreement.value.vehicle_client.vehicle.winter_tire
         service_book.value = agreement.value.vehicle_client.vehicle.service_book
 
+        car_body_id.value = agreement.value.vehicle_client.vehicle.car_body_id
+        generation.value = agreement.value.vehicle_client.vehicle.generation
+        control_inspection.value = agreement.value.vehicle_client.vehicle.control_inspection
+        last_service.value = agreement.value.vehicle_client.vehicle.last_service
+        last_service_date.value = agreement.value.vehicle_client.vehicle.last_service_date
+        dist_belt.value = agreement.value.vehicle_client.vehicle.dist_belt
+        last_dist_belt.value = agreement.value.vehicle_client.vehicle.last_dist_belt
+        last_dist_belt_date.value = agreement.value.vehicle_client.vehicle.last_dist_belt_date
+
         if(agreement.value.vehicle_client.vehicle.model_id !== null) {
             let modelId = agreement.value.vehicle_client.vehicle.model_id
             let brandId = models.value.filter(item => item.id === modelId)[0].brand.id
@@ -363,6 +381,25 @@ const startDateTimePickerConfig = computed(() => {
 
     return config
 })
+
+const endDateTimePickerConfig = computed(() => {
+    const now = new Date();
+    const twoYearsLater = new Date();
+    twoYearsLater.setFullYear(now.getFullYear() + 2);
+
+    const formatToISO = (date) => date.toISOString().split('T')[0];
+
+    const config = {
+        dateFormat: 'Y-m-d',
+        position: 'auto right',
+        disable: [{
+            from: formatToISO(twoYearsLater),
+            to: '2099-12-31' // Una fecha futura lejana para bloquear indefinidamente
+        }]
+    }
+
+    return config;
+});
 
 const selectBrand = brand => {
     if (brand) {
@@ -607,105 +644,119 @@ const handleChangeTwo = (val) => {
  * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
  */
 const searchVehicleByPlate = async () => {
-  if (!reg_num.value) {
-    advisor.value = {
-        type: 'warning',
-        message: 'Ange ett registreringsnummer',
-        show: true
-    }
-
-    setTimeout(() => {
-        advisor.value = {
-            type: '',
-            message: '',
-            show: false
-        }
-    }, 3000)
-
-    return
-  }
-
-  isRequestOngoing.value = true
-
-  try {
-    const carRes = await carInfoStores.getLicensePlate(reg_num.value)
-    
-    // Verificar success (también manejar typo 'sucess' de la API)
-    const isSuccess = carRes?.success === true || carRes?.sucess === true
-    
-    if (isSuccess && carRes?.result) {
-        // Actualizar año del modelo
-        if (carRes.result.model_year) {
-            year.value = carRes.result.model_year
-        }                    
-
-        if (carRes.result.color) {
-            color.value = carRes.result.color
-        }
-
-        if (carRes.result.chassis_number) {
-            chassis.value = carRes.result.chassis_number
-        }
-
-        // Actualizar marca (Märke)
-        if (carRes.result.brand_id) {
-            brand_id.value = carRes.result.brand_id
-            selectBrand(brand_id.value)
-        }
-        
-        // Actualizar modelo (Modell)
-        if (carRes.result.model_id) {
-            model_id.value = carRes.result.model_id
-        } else if (carRes.result.model_name) {
-            // Si no se encontró el modelo en la DB, usar el campo de texto libre
-            model_id.value = 0
-            model.value = carRes.result.model_name
-        }
-        
-        if (carRes.result.mileage) {
-            mileage.value = carRes.result.mileage
-        }
-
-        // Actualizar tipo de combustible (Drivmedel)
-        if (carRes.result.fuel_id) {
-            fuel_id.value = carRes.result.fuel_id
-        }
-
-        // Actualizar caja de cambios (Växellåda)
-        if (carRes.result.gearbox_id) {
-            gearbox_id.value = carRes.result.gearbox_id
-        }
-
-        advisor.value = {
-            type: 'success',
-            message: 'Fordonsdata hämtades framgångsrikt',
-            show: true
-        }   
-
-    } else {
+    if (!reg_num.value) {
         advisor.value = {
             type: 'warning',
-            message: 'Ingen information hittades för detta registreringsnummer',
+            message: 'Ange ett registreringsnummer',
             show: true
         }
-    }
-  } catch (error) {    
-    advisor.value = {
-        type: 'error',
-        message: error?.response?.data?.message || error?.message || 'Fel vid hämtning av fordonsdata',
-        show: true
-    }
-  } finally {
-      setTimeout(() => {
-          advisor.value = {
-              type: '',
-              message: '',
-              show: false
-          }
-      }, 3000)
 
-      isRequestOngoing.value = false
-  }
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+
+        return
+    }
+
+    isRequestOngoing.value = true
+
+    try {
+        const carRes = await carInfoStores.getLicensePlate(reg_num.value)
+        
+        // Verificar success (también manejar typo 'sucess' de la API)
+        const isSuccess = carRes.success === true || carRes.sucess === true
+
+        if (isSuccess && carRes.result) {
+            // Actualizar año del modelo
+            if (carRes.result.model_year) {
+                year.value = carRes.result.model_year
+            }
+            
+            // Actualizar generación
+            if (carRes.result.generation) {
+                generation.value = carRes.result.generation
+            }
+            
+            // Actualizar marca (Märke)
+            if (carRes.result.brand_id) {
+                brand_id.value = carRes.result.brand_id
+                selectBrand(brand_id.value)
+            }
+            
+            // Actualizar modelo (Modell)
+            if (carRes.result.model_id) {
+                model_id.value = carRes.result.model_id
+            } else if (carRes.result.model_name) {
+                // Si no se encontró el modelo en la DB, usar el campo de texto libre
+                model_id.value = 0
+                model.value = carRes.result.model_name
+            }
+            
+            // Actualizar tipo de carrocería (Kaross)
+            if (carRes.result.car_body_id) {
+                car_body_id.value = carRes.result.car_body_id
+            }
+            
+            // Actualizar tipo de combustible (Drivmedel)
+            if (carRes.result.fuel_id) {
+                fuel_id.value = carRes.result.fuel_id
+            }
+
+            // Actualizar caja de cambios (Växellåda)
+            if (carRes.result.gearbox_id) {
+                gearbox_id.value = carRes.result.gearbox_id
+            }
+
+            if (carRes.result.color) {
+                color.value = carRes.result.color
+            }
+
+            if (carRes.result.mileage) {
+                mileage.value = carRes.result.mileage
+            }
+
+            if (carRes.result.control_inspection) {
+                control_inspection.value = carRes.result.control_inspection
+            }
+
+            if (carRes.result.chassis_number) {
+                chassis.value = carRes.result.chassis_number
+            }
+
+            advisor.value = {
+                type: 'success',
+                message: 'Fordonsdata hämtades framgångsrikt',
+                show: true
+            }   
+
+        } else {
+            advisor.value = {
+                type: 'warning',
+                message: 'Ingen information hittades för detta registreringsnummer',
+                show: true
+            }
+        }
+    } catch (error) {
+        advisor.value = {
+            type: 'error',
+            message: 'Fel vid hämtning av fordonsdata',
+            show: true
+        }
+    } finally {
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 3000)
+
+        isRequestOngoing.value = false
+    }
 }
 
 const goToAgreements = () => {
@@ -748,9 +799,11 @@ const onSubmit = async () => {
                           (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
                           (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
                           !year.value ||
-                          !color.value ||
+                          !purchase_date.value ||
+                          !chassis.value ||
                           !mileage.value || 
-                          !purchase_date.value
+                          !car_body_id.value ||
+                          !number_keys.value
 
     // Verificar tab 1 (Kund)
     const hasTab1Errors = !organization_number.value || 
@@ -957,6 +1010,15 @@ const onSubmit = async () => {
                 formData.append('fuel_id', fuel_id.value)
                 formData.append('comments', comments.value)
 
+                formData.append('car_body_id', car_body_id.value)
+                formData.append('generation', generation.value)
+                formData.append('control_inspection', control_inspection.value)
+                formData.append('last_service', last_service.value)
+                formData.append('last_service_date', last_service_date.value)
+                formData.append('dist_belt', dist_belt.value)
+                formData.append('last_dist_belt', last_dist_belt.value)
+                formData.append('last_dist_belt_date', last_dist_belt_date.value)
+
                 //vehicle payment
                 formData.append('is_loan', is_loan.value)
                 formData.append('loan_amount', loan_amount.value)
@@ -1041,18 +1103,26 @@ const currentData = computed(() => ({
     brand_id: brand_id.value,
     model_id: model_id.value,
     model: model.value,
+    generation: generation.value,
+    car_body_id: car_body_id.value,
     year: year.value,
-    color: color.value,
     chassis: chassis.value,
-    mileage: mileage.value,
-    purchase_date: purchase_date.value,
-    gearbox_id: gearbox_id.value,
+    control_inspection: control_inspection.value,
+    color: color.value,
     fuel_id: fuel_id.value,
+    gearbox_id: gearbox_id.value,
     number_keys: number_keys.value,
+    mileage: mileage.value,
+    last_service: last_service.value,
+    last_service_date: last_service_date.value,
+    dist_belt: dist_belt.value,
+    last_dist_belt: last_dist_belt.value,
+    last_dist_belt_date: last_dist_belt_date.value,
     service_book: service_book.value,
     summer_tire: summer_tire.value,
     winter_tire: winter_tire.value,
     comments: comments.value,
+    purchase_date: purchase_date.value,
     // Tab 1 - Kund
     client_id: client_id.value,
     organization_number: organization_number.value,
@@ -1242,15 +1312,6 @@ onBeforeRouteLeave((to, from, next) => {
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Avtalsnummer" />
-                                            <VTextField
-                                                v-model="agreement_id"
-                                                disabled
-                                                prefix="#"
-                                                density="compact"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
@@ -1268,6 +1329,15 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Avtalsnummer" />
+                                            <VTextField
+                                                v-model="agreement_id"
+                                                disabled
+                                                prefix="#"
+                                                density="compact"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
                                                 v-model="brand_id"
@@ -1277,10 +1347,11 @@ onBeforeRouteLeave((to, from, next) => {
                                                 autocomplete="off"
                                                 clearable
                                                 clear-icon="tabler-x"
-                                                :rules="[requiredValidator]"
                                                 @update:modelValue="selectBrand"
                                                 @click:clear="onClearBrand"
-                                                :menu-props="{ maxHeight: '300px' }"/>
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '300px' }"
+                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modell*" />
@@ -1290,9 +1361,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                 autocomplete="off"
                                                 clearable
                                                 clear-icon="tabler-x"
-                                                :rules="[requiredValidator]"
                                                 @update:modelValue="selectModel"
-                                                :menu-props="{ maxHeight: '300px' }"/> 
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '300px' }"
+                                            />
                                         </div>
                                         <div v-if="model_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Modellens namn*" />
@@ -1302,34 +1374,55 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
+                                            <VTextField
+                                                v-model="generation"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
+                                            <AppAutocomplete
+                                                v-model="car_body_id"
+                                                :items="carbodies"
+                                                :item-title="item => item.name"
+                                                :item-value="item => item.id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Årsmodell*" />
                                             <VTextField
                                                 v-model="year"
                                                 :rules="[requiredValidator, yearValidator]"
-                                            />   
+                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg*" />
-                                            <VTextField
-                                                v-model="color"
-                                                :rules="[requiredValidator]"
-                                            /> 
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Chassinummer*" />
                                             <VTextField
                                                 v-model="chassis"
+                                                :rules="[requiredValidator]"
                                             /> 
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontrollbesiktning gäller tom" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(endDateTimePickerConfig)"
+                                                v-model="control_inspection"
+                                                density="default"
+                                                :config="endDateTimePickerConfig"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Välj datum"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Färg" />
                                             <VTextField
-                                                type="number"
-                                                v-model="mileage"
-                                                suffix="Mil"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            /> 
+                                                v-model="color"
+                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
@@ -1340,7 +1433,8 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :item-value="item => item.id"
                                                 autocomplete="off"
                                                 clearable
-                                                clear-icon="tabler-x"/>
+                                                clear-icon="tabler-x"
+                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
@@ -1353,31 +1447,12 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clearable
                                                 clear-icon="tabler-x"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
-                                            <VTextField
-                                                v-model="number_keys"
-                                                type="number"
-                                                min="1"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
-                                            <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
-                                                v-model="purchase_date"
-                                                density="compact"
-                                                :config="startDateTimePickerConfig"
-                                                :rules="[requiredValidator]"
-                                                clearable
-                                            />
-                                        </div>
-                                        <div class="w-100">
-                                            <VRow no-gutters>
-                                                <VCol cols="12" md="4">
+                                        </div>                                        
+                                        <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'">
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">
                                                     <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?" />
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Servicebok finns?*" />
                                                         <VRadioGroup v-model="service_book" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1387,11 +1462,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                             />
                                                         </VRadioGroup>
                                                     </div>
-                                                </VCol>
-                                                <VCol cols="12" md="4"> 
+                                                </div>
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
                                                     <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?" />
-
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sommardäck finns?*" />
                                                         <VRadioGroup v-model="summer_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1401,10 +1475,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                             />
                                                         </VRadioGroup>
                                                     </div>
-                                                </VCol>
-                                                <VCol cols="12" md="4">
+                                                </div>
+                                                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(33% - 16px);'">                                                
                                                     <div class="d-flex flex-column">
-                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?" />
+                                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vinterdäck finns?*" />
                                                         <VRadioGroup v-model="winter_tire" inline class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -1414,9 +1488,112 @@ onBeforeRouteLeave((to, from, next) => {
                                                             />
                                                         </VRadioGroup>
                                                     </div>
-                                                </VCol>
-                                            </VRow>
+                                                </div>    
+                                            </div>
+                                            <div class="d-flex flex-column">
+                                                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt?" />
+                                                <VRadioGroup v-model="dist_belt" inline class="radio-form">
+                                                    <VRadio
+                                                        v-for="(radio, index) in optionsRadio"
+                                                        :key="index"
+                                                        :label="radio"
+                                                        :value="index"
+                                                    />
+                                                </VRadioGroup>
+                                            </div>
+                                        </div> 
+                                        <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">                                       
+                                            <div class="d-flex gap-2">
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Senaste service: Mil/datum" />
+                                                    <VTextField
+                                                        type="number"
+                                                        v-model="last_service"
+                                                        suffix="Mil"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                    <AppDateTimePicker
+                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        v-model="last_service_date"
+                                                        density="default"
+                                                        :config="endDateTimePickerConfig"
+                                                        clearable
+                                                        class="field-solo-flat"
+                                                        placeholder="YYYY-MM-DD"
+                                                        style="margin-top: 5.5px"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div class="d-flex gap-2" v-if="dist_belt === 0">
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kamrem bytt vid: Mil/datum" />
+                                                    <VTextField
+                                                        type="number"
+                                                        v-model="last_dist_belt"
+                                                        suffix="Mil"
+                                                        min="0"
+                                                    />
+                                                </div>
+                                                <div class="w-50">
+                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
+                                                    <AppDateTimePicker
+                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        v-model="last_dist_belt_date"
+                                                        density="default"
+                                                        :config="endDateTimePickerConfig"
+                                                        clearable
+                                                        class="field-solo-flat"
+                                                        placeholder="YYYY-MM-DD"
+                                                        style="margin-top: 5.5px"
+                                                    />
+                                                </div>
+                                            </div>                                        
                                         </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                                <VTextField
+                                                    v-model="number_keys"
+                                                    type="number"
+                                                    min="1"
+                                                    :rules="[requiredValidator]"
+                                                />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="mileage"
+                                                suffix="Mil"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
+                                            <AppDateTimePicker
+                                                :key="JSON.stringify(startDateTimePickerConfig)"
+                                                v-model="purchase_date"
+                                                density="default"
+                                                :config="startDateTimePickerConfig"
+                                                clearable
+                                                class="field-solo-flat"
+                                                placeholder="Välj datum"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px); margin-top: 27px;'" class="form">
+                                            <div
+                                                class="d-flex w-100 p-4 agreements-pill"
+                                                :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
+                                            >
+                                                <VIcon icon="custom-calendar" :color="'#0C5B27'" size="24" class="mr-2" />
+                                                <div class="agreements-pill-title">Inköpsdatum</div>
+                                                <div class="agreements-pill-value">{{ formatDateSwedish(purchase_date) }}</div>
+                                            </div>                      
+                                        </div> 
                                         <div class="w-100">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Anteckningar" />
                                             <VTextarea
@@ -1725,7 +1902,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             >
                                                 <VIcon icon="custom-coins" :color="'#0C5B27'" size="24" class="mr-2" />
                                                 <div class="agreements-pill-title">Restsumma</div>
-                                                <div class="agreements-pill-value">{{ formatNumber(remaining_amount ?? 0) }} {{ currencies.filter(item => item.id === currency_id)[0].code }}</div>
+                                                <div class="agreements-pill-value">{{ formatNumber(remaining_amount ?? 0) }} {{ currencies.find(item => item.id === currency_id)?.code || '' }}</div>
                                             </div>
                                             
                                         </div>                                 
@@ -1990,6 +2167,32 @@ onBeforeRouteLeave((to, from, next) => {
 </style>
 <style lang="scss">
 
+    .radio-form {
+        display: flex;
+        align-items: center;
+        height: 48px;
+
+        :deep(.v-selection-control-group) {
+            gap: 16px;
+        }
+
+        :deep(.v-selection-control) {
+            min-height: auto;
+        }
+
+        :deep(.v-selection-control--dirty) {
+            .v-selection-control__input > .v-icon {
+                color: #00E1E2 !important;
+            }
+        }
+
+        :deep(.v-label) {
+            color: #5D5D5D;
+            font-size: 12px;
+            opacity: 1;
+        }
+    }
+
     .card-info {
         background-color: #F6F6F6;
         border-radius: 16px;
@@ -2231,11 +2434,7 @@ onBeforeRouteLeave((to, from, next) => {
     }
 
     .agreements-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
-        margin-inline-end: 12rem !important;
-
-        @media (max-width: 991px) {
-        margin-inline-end: 5rem !important;
-        }
+        margin-inline-end: 1.5rem !important;
     }
 
     :deep(.right-drawer.v-navigation-drawer) {

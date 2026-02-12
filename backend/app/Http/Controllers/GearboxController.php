@@ -31,15 +31,23 @@ class GearboxController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $gearboxes = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allGearboxes = $query->get();
+                $gearboxes = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allGearboxes,
+                    $allGearboxes->count(),
+                    $allGearboxes->count(),
+                    1
+                );
+            } else {
+                $gearboxes = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'gearboxes' => $gearbox,
-                    'gearboxesTotalCount' => $count
+                    'gearboxes' => $gearboxes,
+                    'gearboxesTotalCount' => $gearboxes->total()
                 ]
             ]);
 

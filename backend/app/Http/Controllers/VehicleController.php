@@ -28,6 +28,7 @@ use App\Models\Identification;
 use App\Models\Currency;
 use App\Models\Supplier;
 use App\Models\VehicleDocument;
+use App\Services\CacheService;
 
 class VehicleController extends Controller
 {
@@ -50,20 +51,25 @@ class VehicleController extends Controller
         
             $query = Vehicle::with([
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user.userDetail',
-                        'model.brand', 
-                        'state', 
-                        'iva_purchase',
-                        'iva_sale',
-                        'currency_purchase',
-                        'currency_sale',
-                        'carbody',
-                        'gearbox',
-                        'fuel',
-                        'client_purchase.client',
-                        'client_sale.client',
+                        'user:id,name,last_name,email,avatar',
+                        'user.userDetail:user_id,logo',
+                        'model:id,name,brand_id',
+                        'model.brand:id,name,logo', 
+                        'state:id,name', 
+                        'iva_purchase:id,name,value',
+                        'iva_sale:id,name,value',
+                        'currency_purchase:id,name,code',
+                        'currency_sale:id,name,code',
+                        'carbody:id,name',
+                        'gearbox:id,name',
+                        'fuel:id,name',
+                        'client_purchase',
+                        'client_purchase.client:id,fullname,email',
+                        'client_sale',
                         'tasks'
                     ])->applyFilters(
                         $request->only([
@@ -80,19 +86,27 @@ class VehicleController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $vehicles = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allVehicles = $query->get();
+                $vehicles = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allVehicles,
+                    $allVehicles->count(),
+                    $allVehicles->count(),
+                    1
+                );
+            } else {
+                $vehicles = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'vehicles' => $vehicles,
-                    'vehiclesTotalCount' => $count,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'vehiclesTotalCount' => $vehicles->total(),
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
 
@@ -181,25 +195,25 @@ class VehicleController extends Controller
             if (Auth::user()->getRoleNames()[0] === 'Supplier') {
                 $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
             } else {
-                $clients = Client::all();
+                $clients = CacheService::getClients();
             }
 
             return response()->json([
                 'success' => true,
                 'data' => [ 
                     'vehicle' => $vehicle,
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'carbodies' => CarBody::all(),
-                    'gearboxes' => Gearbox::all(),
-                    'ivas' => Iva::all(),
-                    'fuels' => Fuel::all(),
-                    'document_types' => DocumentType::all(),
-                    'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'carbodies' => CacheService::getCarBodies(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'ivas' => CacheService::getIvas(),
+                    'fuels' => CacheService::getFuels(),
+                    'document_types' => CacheService::getDocumentTypes(),
+                    'states' => CacheService::getVehicleStates(),
                     'clients' => $clients,
-                    'client_types' => ClientType::all(),
-                    'identifications' => Identification::all(),
-                    'currencies' => Currency::where('state_id', 2)->get()
+                    'client_types' => CacheService::getClientTypes(),
+                    'identifications' => CacheService::getIdentifications(),
+                    'currencies' => CacheService::getActiveCurrencies()
                 ]
             ]);
 

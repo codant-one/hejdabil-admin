@@ -9,6 +9,7 @@ use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Services\CacheService;
 
 class RoleController extends Controller
 {
@@ -167,8 +168,8 @@ class RoleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [ 
-                    'roles' => Role::all()->pluck('name')
+                'data' => [
+                    'roles' => CacheService::getRoles()
                 ]
             ], 200);
 

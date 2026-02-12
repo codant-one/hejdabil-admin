@@ -19,6 +19,8 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Jobs\SendEmailJob;
+use App\Services\CacheService;
 
 class DocumentController extends Controller
 {
@@ -42,10 +44,13 @@ class DocumentController extends Controller
 
             $query = Document::with([
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'token.histories',
-                        'user'
+                        'token:id,document_id,signing_token,recipient_email,signature_status',
+                        'token.histories:id,token_id,event_type,description,created_at',
+                        'user:id,name,last_name,email,avatar'
                     ])
                     ->applyFilters(
                         $request->only([
@@ -57,16 +62,24 @@ class DocumentController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $documents = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allDocuments = $query->get();
+                $documents = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allDocuments,
+                    $allDocuments->count(),
+                    $allDocuments->count(),
+                    1
+                );
+            } else {
+                $documents = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'documents' => $documents,
-                    'documentsTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get()
+                    'documentsTotalCount' => $documents->total(),
+                    'suppliers' => CacheService::getActiveSuppliers()
                 ]
             ]);
         } catch(\Illuminate\Database\QueryException $ex) {
@@ -413,13 +426,13 @@ class DocumentController extends Controller
                 'logo' => $logo
             ];
 
-            \Mail::send(
-                'emails.documents.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.documents.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
 
             $token->update(['signature_status' => 'delivered']);
             
@@ -507,13 +520,13 @@ class DocumentController extends Controller
                 'text' => $document->description
             ];
 
-            \Mail::send(
-                'emails.documents.signature_request'
-                , $data
-                , function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.documents.signature_request',
+                $data,
+                $clientEmail,
+                $subject
+            );
             
             // Update status to delivered if the resend was successful
             $token->update(['signature_status' => 'delivered']);

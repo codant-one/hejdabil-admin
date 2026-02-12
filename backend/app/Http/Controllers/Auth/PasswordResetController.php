@@ -13,6 +13,7 @@ use Carbon\Carbon;
 
 use App\Models\PasswordReset;
 use App\Models\User;
+use App\Jobs\SendEmailJob;
 
 class PasswordResetController extends Controller
 {
@@ -145,18 +146,16 @@ class PasswordResetController extends Controller
         $clientEmail = $user->email;
         $subject = $info['subject'];
         
-        try {
-            \Mail::send($info['email'], $data, function ($message) use ($clientEmail, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
-            });
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            $info['email'],
+            $data,
+            $clientEmail,
+            $subject
+        );
 
-            $response['success'] = true;
-            $response['message'] = "Återställningslänk har skickats till din e-post.";
-        } catch (\Exception $e){
-            $response['success'] = false;
-            $response['message'] = "Ett fel inträffade, e-postmeddelandet kunde inte skickas. ".$e;
-        }        
+        $response['success'] = true;
+        $response['message'] = "Återställningslänk har skickats till din e-post.";        
 
         return $response;
 

@@ -28,6 +28,7 @@ use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\AgreementClient;
 use App\Models\VehicleClient;
+use App\Jobs\SendEmailJob;
 use App\Models\GuarantyType;
 use App\Models\InsuranceType;
 use App\Models\Currency;
@@ -41,6 +42,7 @@ use App\Models\Offer;
 use App\Models\User;;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Services\CacheService;
 
 class AgreementController extends Controller
 {
@@ -63,20 +65,27 @@ class AgreementController extends Controller
 
             $query = Agreement::with([
                         'token' => function($query) {
-                            $query->with(['histories' => function($q) {
-                                $q->orderBy('created_at', 'asc');
-                            }]);
+                            $query->select('id', 'agreement_id', 'signing_token', 'recipient_email', 'signature_status', 'token_expires_at')
+                                  ->with(['histories' => function($q) {
+                                      $q->select('id', 'token_id', 'event_type', 'description', 'created_at')
+                                        ->orderBy('created_at', 'asc');
+                                  }]);
                         },
-                        'offer',
-                        'commission.vehicle',
-                        'agreement_type',
-                        'agreement_client',
-                        'vehicle_interchange',
-                        'vehicle_client.vehicle',
+                        'offer:id,offer_id,reg_num,price',
+                        'commission:id,commission_id,commission_type_id,commission_fee,selling_price',
+                        'commission.vehicle:id,commission_id,reg_num,model_id',
+                        'agreement_type:id,name',
+                        'agreement_client:id,agreement_id,fullname,email,phone',
+                        'vehicle_interchange:id,reg_num,model_id',
+                        'vehicle_client:id,vehicle_id,client_id,fullname,email',
+                        'vehicle_client.vehicle:id,reg_num,model_id',
                         'supplier' => function ($q) {
-                            $q->withTrashed()->with(['user' => fn($u) => $u->withTrashed()]);
+                            $q->select('id', 'user_id', 'boss_id', 'deleted_at')
+                              ->withTrashed()
+                              ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user.userDetail'
+                        'user:id,name,last_name,email,avatar',
+                        'user.userDetail:user_id,logo'
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -88,17 +97,25 @@ class AgreementController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $agreements = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allAgreements = $query->get();
+                $agreements = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allAgreements,
+                    $allAgreements->count(),
+                    $allAgreements->count(),
+                    1
+                );
+            } else {
+                $agreements = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'agreements' => $agreements,
-                    'agreementsTotalCount' => $count,
-                    'suppliers' => Supplier::with(['user.userDetail', 'billings'])->whereNull('boss_id')->get(),
-                    'agreementTypes' => AgreementType::all()
+                    'agreementsTotalCount' => $agreements->total(),
+                    'suppliers' => CacheService::getActiveSuppliers(),
+                    'agreementTypes' => CacheService::getAgreementTypes()
                 ]
             ]);
 
@@ -322,27 +339,27 @@ class AgreementController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'brands' => Brand::all(),
-                    'models' => CarModel::with(['brand'])->get(),
-                    'gearboxes' => Gearbox::all(),
-                    'carbodies'  => CarBody::all(),
-                    'ivas'  => Iva::all(),
-                    'fuels'  => Fuel::all(),
-                    'states'  => State::all(),
-                    'guarantyTypes'  => GuarantyType::all(),
-                    'insuranceTypes'  => InsuranceType::all(),
-                    'currencies'  => Currency::all(),
-                    'paymentTypes'  => PaymentType::all(),
-                    'agreementTypes' => AgreementType::all(),
+                    'brands' => CacheService::getBrands(),
+                    'models' => CacheService::getCarModels(),
+                    'gearboxes' => CacheService::getGearboxes(),
+                    'carbodies'  => CacheService::getCarBodies(),
+                    'ivas'  => CacheService::getIvas(),
+                    'fuels'  => CacheService::getFuels(),
+                    'states'  => CacheService::getStates(),
+                    'guarantyTypes'  => CacheService::getGuarantyTypes(),
+                    'insuranceTypes'  => CacheService::getInsuranceTypes(),
+                    'currencies'  => CacheService::getCurrencies(),
+                    'paymentTypes'  => CacheService::getPaymentTypes(),
+                    'agreementTypes' => CacheService::getAgreementTypes(),
                     'agreement_id' => $agreement_id,
                     'commission_id' => $commission_id,
                     'offer_id' => $offer_id,
                     'vehicles' => $vehicles,    
                     'clients' => $clients,
-                    'client_types' => ClientType::all(),
-                    'identifications' => Identification::all(),
-                    'advances' => Advance::all(),
-                    'commission_types' => CommissionType::all()
+                    'client_types' => CacheService::getClientTypes(),
+                    'identifications' => CacheService::getIdentifications(),
+                    'advances' => CacheService::getAdvances(),
+                    'commission_types' => CacheService::getCommissionTypes()
                 ]
             ]);
 
@@ -429,53 +446,53 @@ class AgreementController extends Controller
             if($request->emailDefault === true) {
                 $clientEmail = $agreement->agreement_client->email;
                 $subject = 'Nytt avtal från ' . $company->company;
-                    
-                try {
-                    \Mail::send(
-                        'emails.agreements.notifications'
-                        , $data
-                        , function ($message) use ($clientEmail, $subject, $agreement) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($clientEmail)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $agreement->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
-
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
+                
+                $pathToFile = storage_path('app/public/' . $agreement->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                        'mime' => 'application/pdf'
+                    ]];
                 }
+                    
+                // Send email asynchronously with attachments
+                SendEmailJob::dispatch(
+                    'emails.agreements.notifications',
+                    $data,
+                    $clientEmail,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
             }
 
             foreach($request->emails as $email) {
 
                 $subject = 'Din avtal #'. $agreement->agreement_id . ' är tillgänglig';
-                    
-                try {
-                    \Mail::send(
-                        'emails.agreements.notifications'
-                        , $data
-                        , function ($message) use ($email, $subject, $agreement) {
-                            $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                            $message->to($email)->subject($subject);
-
-                            $pathToFile = storage_path('app/public/' . $agreement->file);
-                            if (file_exists($pathToFile)) {
-                                $message->attach($pathToFile, [
-                                    'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
-                                    'mime' => 'application/pdf',
-                                ]);
-                            }
-                    });
-
-                } catch (\Exception $e){
-                    Log::info("Error mail => ". $e);
+                
+                $pathToFile = storage_path('app/public/' . $agreement->file);
+                $attachments = null;
+                if (file_exists($pathToFile)) {
+                    $attachments = [[
+                        'path' => $pathToFile,
+                        'as' => Str::replaceFirst('pdfs/', '', $agreement->file),
+                        'mime' => 'application/pdf'
+                    ]];
                 }
+                    
+                // Send email asynchronously with attachments
+                SendEmailJob::dispatch(
+                    'emails.agreements.notifications',
+                    $data,
+                    $email,
+                    $subject,
+                    null,
+                    null,
+                    $attachments
+                );
             }
 
             return response()->json([

@@ -41,10 +41,13 @@ class PayoutController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Payout::with(['state', 
-                            'supplier.user',
+            $query = Payout::with([
+                            'state:id,name', 
+                            'supplier:id,user_id',
+                            'supplier.user:id,name,last_name,email,avatar',
                             'user' => function($query) {
-                                $query->whereNull('deleted_at');
+                                $query->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')
+                                      ->whereNull('deleted_at');
                             }])
                            ->whereHas('user', function($query) {
                                 $query->whereNull('deleted_at');
@@ -59,15 +62,23 @@ class PayoutController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $payouts = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allPayouts = $query->get();
+                $payouts = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allPayouts,
+                    $allPayouts->count(),
+                    $allPayouts->count(),
+                    1
+                );
+            } else {
+                $payouts = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'payouts' => $payouts,
-                    'payoutsTotalCount' => $count
+                    'payoutsTotalCount' => $payouts->total()
                 ]
             ]);
 

@@ -904,6 +904,7 @@ const setThumbsSwiper = (swiper) => {
     }
 
     .radio-form {
+        height: 16px;
         :deep(.v-selection-control--dirty) {
             .v-selection-control__input > .v-icon {
                 color: #00E1E2 !important;

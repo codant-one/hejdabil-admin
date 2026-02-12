@@ -31,7 +31,7 @@ class CurrencyController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Currency::with(['state'])
+            $query = Currency::with(['state:id,name'])
                             ->applyFilters(
                                 $request->only([
                                     'search',
@@ -41,15 +41,23 @@ class CurrencyController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $currencies = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allCurrencies = $query->get();
+                $currencies = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allCurrencies,
+                    $allCurrencies->count(),
+                    $allCurrencies->count(),
+                    1
+                );
+            } else {
+                $currencies = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'currencies' => $currencies,
-                    'currenciesTotalCount' => $count
+                    'currenciesTotalCount' => $currencies->total()
                 ]
             ]);
 

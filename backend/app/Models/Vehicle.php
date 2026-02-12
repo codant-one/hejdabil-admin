@@ -388,7 +388,6 @@ class Vehicle extends Model
             'last_dist_belt' => $request->last_dist_belt === 'null' ? null : $request->last_dist_belt,
             'last_dist_belt_date' => $request->last_dist_belt_date === 'null' ? null : $request->last_dist_belt_date,
             'comments' => $request->comments === 'null' ? null : $request->comments,
-            'meter_reading' => $request->meter_reading === 'null' ? null : $request->meter_reading,
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
             'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,

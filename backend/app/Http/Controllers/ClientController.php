@@ -38,14 +38,15 @@ class ClientController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Client::with([
-                        'supplier.user', 
-                        'user.userDetail',
-                        'state'
+                        'supplier:id,user_id,boss_id',
+                        'supplier.user:id,name,last_name,email',
+                        'user:id,name,last_name,email,avatar',
+                        'user.userDetail:user_id,logo',
+                        'state:id,name'
                     ])
                     ->when($request->has('include_deleted') && $request->include_deleted, function($q) {
                         return $q->withTrashed();
-                    })
-                    ->applyFilters(
+                    })->applyFilters(
                         $request->only([
                             'search',
                             'orderByField',
@@ -55,15 +56,23 @@ class ClientController extends Controller
                         ])
                     );
 
-            $count = $query->count();
-
-            $clients = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allClients = $query->get();
+                $clients = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allClients,
+                    $allClients->count(),
+                    $allClients->count(),
+                    1
+                );
+            } else {
+                $clients = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'clients' => $clients,
-                    'clientsTotalCount' => $count
+                    'clientsTotalCount' => $clients->total()
                 ]
             ]);
 

@@ -21,6 +21,7 @@ use App\Models\User;
 use App\Models\UserRegisterToken;
 use App\Models\Supplier;
 use App\Models\UserDetails;
+use App\Jobs\SendEmailJob;
 
 class SupplierController extends Controller
 {
@@ -43,9 +44,11 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user.userDetail',
-                        'creator.userDetail',
-                        'state'
+                        'user:id,name,last_name,email,avatar',
+                        'user.userDetail:user_id,logo,company',
+                        'creator:id,name,last_name,avatar',
+                        'creator.userDetail:user_id,company',
+                        'state:id,name'
                     ])
                     ->withTrashed()
                     ->clientsCount()
@@ -59,15 +62,23 @@ class SupplierController extends Controller
                     ])
                 );
 
-            $count = $query->count();
-
-            $suppliers = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allSuppliers = $query->get();
+                $suppliers = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allSuppliers,
+                    $allSuppliers->count(),
+                    $allSuppliers->count(),
+                    1
+                );
+            } else {
+                $suppliers = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'suppliers' => $suppliers,
-                    'suppliersTotalCount' => $count
+                    'suppliersTotalCount' => $suppliers->total()
                 ]
             ]);
 
@@ -109,17 +120,17 @@ class SupplierController extends Controller
                 'icon' => asset('/images/users.png'),
             ];
             
+            // Enviar email de forma asíncrona usando Job
             try {
-                \Mail::send(
-                    'emails.auth.client_created'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
+                SendEmailJob::dispatch(
+                    'emails.auth.client_created',
+                    $data,
+                    $email,
+                    $subject
+                )->onQueue('emails');
 
                 $message = 'send_email';
-                $responseMail = 'E-post skickad till leverantör framgångsrikt.';
+                $responseMail = 'E-post schemalagd för att skickas till leverantör.';
             } catch (\Exception $e){
                 $message = 'error';
                 $responseMail = $e->getMessage();
@@ -457,17 +468,13 @@ class SupplierController extends Controller
                 'logo' => $logo
             ];
     
-            try {
-                \Mail::send(
-                    'emails.auth.user_created'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
-            } catch (\Exception $e) {    
-                Log::info("Failed to send email to user ". $e);
-            } 
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.auth.user_created',
+                $data,
+                $email,
+                $subject
+            ); 
 
             return response()->json([
                 'success' => true,

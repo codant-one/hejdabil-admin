@@ -60,7 +60,18 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                // Optimizaciones de rendimiento
+                PDO::ATTR_PERSISTENT => env('DB_PERSISTENT', true), // Conexiones persistentes
+                PDO::ATTR_EMULATE_PREPARES => false, // Mejora el rendimiento de prepared statements
+                PDO::ATTR_STRINGIFY_FETCHES => false, // Mantiene tipos de datos nativos
+                PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, // Mejora el rendimiento de queries grandes
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
             ]) : [],
+            // Pool de conexiones
+            'pool' => [
+                'min' => env('DB_POOL_MIN', 2),
+                'max' => env('DB_POOL_MAX', 20),
+            ],
         ],
 
         'pgsql' => [

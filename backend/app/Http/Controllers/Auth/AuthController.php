@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 use Carbon\Carbon;
+use App\Jobs\SendEmailJob;
 
 use App\Models\User;
 use App\Models\UserDetails;
@@ -409,18 +410,15 @@ class AuthController extends Controller
         $email = ($id === 1) ? env('MAIL_TO_CONTACT') : $user->email;
         $subject = $info['subject'];
         
-        try {
-            \Mail::send($info['email'], $data, function ($message) use ($email, $subject) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($email)->subject($subject);
-            });
+        // Send email asynchronously
+        SendEmailJob::dispatch(
+            $info['email'],
+            $data,
+            $email,
+            $subject
+        );
 
-            return "Återställningslänk har skickats till din e-post.";
-        } catch (\Exception $e){
-            return "Fel vid sändning av e-post. ".$e;
-        }        
-
-        return "";
+        return "Återställningslänk har skickats till din e-post.";
 
     } 
 }

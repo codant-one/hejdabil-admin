@@ -31,7 +31,7 @@ class InvoiceController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            $query = Invoice::with(['type'])
+            $query = Invoice::with(['type:id,name'])
                            ->applyFilters(
                                 $request->only([
                                     'search',
@@ -40,15 +40,23 @@ class InvoiceController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $invoices = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allInvoices = $query->get();
+                $invoices = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allInvoices,
+                    $allInvoices->count(),
+                    $allInvoices->count(),
+                    1
+                );
+            } else {
+                $invoices = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'invoices' => $invoices,
-                    'invoicesTotalCount' => $count
+                    'invoicesTotalCount' => $invoices->total()
                 ]
             ]);
 

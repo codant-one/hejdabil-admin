@@ -18,6 +18,7 @@ use App\Http\Requests\UserRequest;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\UserRegisterToken;
+use App\Jobs\SendEmailJob;
 use App\Models\Supplier;
 
 class UsersController extends Controller
@@ -104,17 +105,13 @@ class UsersController extends Controller
                 'icon' => asset('/images/users.png'),
             ];
     
-            try {
-                \Mail::send(
-                    'emails.auth.user_created'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
-            } catch (\Exception $e) {    
-                Log::info("Failed to send email to user ". $e);
-            } 
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.auth.user_created',
+                $data,
+                $email,
+                $subject
+            ); 
 
             return response()->json([
                 'success' => true,
@@ -308,17 +305,13 @@ class UsersController extends Controller
                 'icon' => asset('/images/reset-password.png')
             ];
     
-            try {
-                \Mail::send(
-                    'emails.auth.reset_password'
-                    , $data
-                    , function ($message) use ($email, $subject) {
-                        $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                        $message->to($email)->subject($subject);
-                });
-            } catch (\Exception $e) {    
-                Log::info("Failed to send email to user ". $e);
-            } 
+            // Send email asynchronously
+            SendEmailJob::dispatch(
+                'emails.auth.reset_password',
+                $data,
+                $email,
+                $subject
+            ); 
 
 
             return response()->json([

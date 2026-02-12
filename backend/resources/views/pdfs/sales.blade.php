@@ -460,7 +460,7 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Mätarställning</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_interchange?->meter_reading }}
+                                    {{ $agreement->vehicle_interchange?->mileage }}
                                 </div>
                             </td>
                         </tr>

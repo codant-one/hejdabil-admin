@@ -31,15 +31,23 @@ class EquipmentController extends Controller
                                 ])
                             );
 
-            $count = $query->count();
-
-            $equipments = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+            if ($limit == -1) {
+                $allEquipments = $query->get();
+                $equipments = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allEquipments,
+                    $allEquipments->count(),
+                    $allEquipments->count(),
+                    1
+                );
+            } else {
+                $equipments = $query->paginate($limit);
+            }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'equipments' => $equipments,
-                    'equipmentsTotalCount' => $count
+                    'equipmentsTotalCount' => $equipments->total()
                 ]
             ]);
 
