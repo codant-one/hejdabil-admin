@@ -1344,8 +1344,8 @@ onBeforeUnmount(() => {
               <!-- 👉 table head -->
               <thead>
                 <tr>
-                  <th scope="col" class="text-center"> Reg. Nr </th>
-                  <th scope="col" class="text-center"> Inbytesfordon Reg. Nr </th>
+                  <th scope="col" class="text-center"> Reg. nr </th>
+                  <th scope="col" class="text-center"> Inbytesfordon Reg. nr </th>
                   <th scope="col" class="text-center"> Kredit / Leasing </th>
                   <th scope="col" class="text-center"> Typ </th>
                   <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
@@ -1553,7 +1553,7 @@ onBeforeUnmount(() => {
                       <span class="order-id">{{ agreement.id }}</span>
                       <div class="order-title-box">
                         <span class="text-aqua">
-                          Reg. Nr. {{ agreement.agreement_type_id === 4 ?
+                          Reg. nr. {{ agreement.agreement_type_id === 4 ?
                               agreement.offer.reg_num : 
                               (agreement.agreement_type_id === 3 ? 
                                 agreement.commission?.vehicle.reg_num   :

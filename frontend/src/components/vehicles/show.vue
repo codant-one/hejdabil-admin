@@ -37,12 +37,8 @@ const currentSlide = ref(0)
 const modules = ref([FreeMode, Navigation, Thumbs, Scrollbar])
 const thumbsSwiper = ref(null);
 
-const title = computed(() => {
-  const v = props.vehicle;
-  if (!v || !v.model || !v.model.brand) return '';
-  return v.model.brand.name + ' ' + v.model.name + (v.year === null ? '' : ', ' + v.year);
-});
-const reg_num = ref('')
+const title = ref(null)
+const reg_num = ref(null)
 const brand = ref(null)
 const model = ref(null)
 const mileage = ref(null)
@@ -53,6 +49,7 @@ const control_inspection = ref(null)
 const color = ref(null)
 const fuel = ref(null)
 const gearbox = ref(null)
+const engine = ref(null)
 const purchase_price = ref(null)
 const iva_purchase = ref(null)
 const iva_sale = ref(null)
@@ -105,6 +102,7 @@ const cardItems = ref([])
 watchEffect(async () => {
     if (props.isDrawerOpen) {
         if (!(Object.entries(props.vehicle).length === 0) && props.vehicle.constructor === Object) {
+            title.value = props.vehicle.car_name ?? (props.vehicle.model?.brand.name + ' ' + props.vehicle.model?.name + (props.vehicle.year ? ', ' + props.vehicle.year : '')) ?? 'Detaljer'
             reg_num.value = props.vehicle.reg_num
 
             brand.value = props.vehicle.model?.brand.name
@@ -118,6 +116,7 @@ watchEffect(async () => {
             control_inspection.value = props.vehicle.control_inspection
             fuel.value = props.vehicle.fuel?.name
             gearbox.value = props.vehicle.gearbox?.name
+            engine.value = props.vehicle.engine
             purchase_price.value = props.vehicle.purchase_price
             iva_purchase.value = props.vehicle.iva_purchase?.name
             iva_sale.value = props.vehicle.iva_sale?.name
@@ -401,6 +400,10 @@ const setThumbsSwiper = (swiper) => {
                                                 <div class="d-flex flex-column gap-2" v-if="gearbox">
                                                     <span class="title-detail"> Växellåda </span>
                                                     <span class="subtitle-detail">{{ gearbox }}</span>
+                                                </div>
+                                                <div class="d-flex flex-column gap-2" v-if="engine">
+                                                    <span class="title-detail"> Motor </span>
+                                                    <span class="subtitle-detail">{{ engine }}</span>
                                                 </div>
                                             </div>
                                         </div>

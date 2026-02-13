@@ -93,7 +93,6 @@ const document_types = ref([])
 const states = ref([])
 const logo = ref(null)
 
-const vehicle = ref(null)
 const vehicle_id = ref(null)
 const reg_num = ref('')
 const mileage = ref(null)
@@ -115,6 +114,8 @@ const state_idOld = ref(10)
 const sale_price = ref(null)
 const purchase_date = ref(null)
 const chassis = ref(null)
+const engine = ref(null)
+const car_name = ref(null)
 const sale_date = ref(null)
 const number_keys = ref(null)
 const service_book = ref(0)
@@ -248,6 +249,8 @@ const currentVehicleData = computed(() => ({
   fuel_id: fuel_id.value,
   gearbox_id: gearbox_id.value,
   chassis: chassis.value,
+  engine: engine.value,
+  car_name: car_name.value,
   number_keys: number_keys.value,
   service_book: service_book.value,
   summer_tire: summer_tire.value,
@@ -534,6 +537,14 @@ const searchVehicleByPlate = async () => {
 
             if (carRes.result.chassis_number) {
                 chassis.value = carRes.result.chassis_number
+            }
+
+            if (carRes.result.engine) {
+                engine.value = carRes.result.engine
+            }
+
+            if (carRes.result.car_name) {
+                car_name.value = carRes.result.car_name
             }
 
             advisor.value = {
@@ -1551,6 +1562,7 @@ const onSubmit = async () => {
                           !year.value || 
                           yearValidator(year.value) !== true ||
                           !chassis.value ||
+                          !car_name.value ||
                           number_keys.value === null || 
                           number_keys.value === undefined || 
                           number_keys.value === ''
@@ -1689,6 +1701,8 @@ const onSubmit = async () => {
             formData.append('last_dist_belt_date', last_dist_belt_date.value)
             formData.append('comments', comments.value)
             formData.append('chassis', chassis.value)
+            formData.append('car_name', car_name.value)
+            formData.append('engine', engine.value)
 
             formData.append('type', 2)
             formData.append('save_client', save_client.value)
@@ -1980,6 +1994,19 @@ onBeforeRouteLeave((to, from, next) => {
                                         <VTextField
                                             v-model="model"
                                             :rules="[requiredValidator]"
+                                        />
+                                    </div>
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                                        <VTextField
+                                            v-model="car_name"
+                                            :rules="[requiredValidator]"
+                                        />
+                                    </div>
+                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                                        <VTextField
+                                            v-model="engine"
                                         />
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -3714,7 +3741,7 @@ onBeforeRouteLeave((to, from, next) => {
 
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
-                    <VIcon size="72" icon="custom-f-checkmark" />
+                    <VIcon size="72" icon="custom-f-suv" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
                     <div class="dialog-title">Fordonet har lagts till i lagret!</div>

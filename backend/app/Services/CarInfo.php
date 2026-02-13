@@ -104,7 +104,7 @@ class CarInfo
         // Mapear brand_id y model_id
         $brandData = $this->mapBrandAndModel(
             $result['brand'] ?? null,
-            $result['model_gen_engine'] ?? null
+            $result['model'] ?? null
         );
 
         // Mapear gearbox_id basado en attributes
@@ -119,9 +119,11 @@ class CarInfo
         $data['result']['car_body_id'] = $carBodyId;
         $data['result']['brand_id'] = $brandData['brand_id'];
         $data['result']['model_id'] = $brandData['model_id'];
-        $data['result']['model_name'] = $result['model_gen_engine'] ?? null;
+        $data['result']['model_name'] = $result['model'] ?? null;
         $data['result']['brand_name'] = $result['brand'] ?? null;
         $data['result']['gearbox_id'] = $gearboxId;
+        $data['result']['engine'] = $result['engine'] ?? null;
+        $data['result']['car_name'] = $result['car_name'] ?? null;
         // El VIN es el número de chasis real
         $data['result']['chassis_number'] = $result['vin'] ?? null;
         $data['result']['color'] = $result['basic_color'] ?? null;
