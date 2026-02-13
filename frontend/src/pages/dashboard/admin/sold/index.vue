@@ -477,11 +477,13 @@ onBeforeUnmount(() => {
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
-                    {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
+                    <span v-if="vehicle.car_name">
+                      {{ vehicle.car_name}}                      
+                    </span>
+                    <span v-else>
+                      {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
+                    </span>
                   </span>
-                  <!--<span class="text-sm text-disabled">
-                    {{ vehicle.color }}
-                  </span>-->
                 </div>
               </div>
             </td>                
@@ -632,7 +634,7 @@ onBeforeUnmount(() => {
                 </VAvatar>
 
                 <div class="d-flex flex-column gap-1">
-                    <span class="text-aqua">Reg. Nr. {{ vehicle.reg_num }}</span>
+                    <span class="text-aqua">Reg. nr. {{ vehicle.reg_num }}</span>
                     <span class="text-neutral-3">
                         {{ vehicle.model?.brand?.name }} {{ vehicle.model?.name }} {{ vehicle.year ?`, ${vehicle.year}` : '' }}
                     </span>
