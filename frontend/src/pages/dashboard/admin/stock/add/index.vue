@@ -221,6 +221,8 @@ const endDateTimePickerConfig = computed(() => {
 
 onMounted(async () => {
 
+    await fetchData()
+
     checkIfMobile()
 
     window.addEventListener('resize', checkIfMobile);
@@ -332,11 +334,16 @@ const formatCommentDate = (dateString) => {
     return `${day} ${month} ${year}, ${hours}:${minutes}`
 }
 
-watchEffect(fetchData)
-
 async function fetchData() {
 
     isRequestOngoing.value = true
+
+    // Guardar estado inicial vacío una sola vez, antes de autocompletar campos
+    if (!initialVehicleData.value) {
+        await nextTick()
+        initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value))
+        savedVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value))
+    }
     
     // Intentar recuperar reg_num de sessionStorage primero, luego del store
     const storedRegNum = sessionStorage.getItem('temp_reg_num')
@@ -400,11 +407,6 @@ async function fetchData() {
     await searchVehicleByPlate()
 
     purchase_date.value = formatDate(new Date())
-
-    // Save initial state for dirty checking
-    await nextTick();
-    initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
-    savedVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
 
     isRequestOngoing.value = false
 }
