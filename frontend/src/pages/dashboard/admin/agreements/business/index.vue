@@ -942,7 +942,20 @@ onBeforeRouteLeave((to, from, next) => {
                         prefix="#"
                         density="compact"
                       />
-                    </div>                    
+                    </div>     
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                      <VTextField
+                          v-model="car_name"
+                          :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                        <VTextField
+                            v-model="engine"
+                        />
+                    </div>               
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                       <AppAutocomplete
@@ -978,20 +991,7 @@ onBeforeRouteLeave((to, from, next) => {
                             v-model="model"
                             :rules="[requiredValidator]"
                         />
-                    </div>
-                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
-                      <VTextField
-                          v-model="car_name"
-                          :rules="[requiredValidator]"
-                      />
-                    </div>
-                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
-                        <VTextField
-                            v-model="engine"
-                        />
-                    </div>
+                    </div>                    
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
                         <VTextField

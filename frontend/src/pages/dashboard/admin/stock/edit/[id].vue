@@ -1768,12 +1768,9 @@ onBeforeRouteLeave((to, from, next) => {
                                         </div>
                                     </div>   
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
                                         <VTextField
-                                            type="number"
-                                            v-model="mileage"
-                                            suffix="Mil"
-                                            min="0"
+                                            v-model="car_name"
                                             :rules="[requiredValidator]"
                                         />
                                     </div>
@@ -1814,13 +1811,16 @@ onBeforeRouteLeave((to, from, next) => {
                                         />
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
                                         <VTextField
-                                            v-model="car_name"
+                                            type="number"
+                                            v-model="mileage"
+                                            suffix="Mil"
+                                            min="0"
                                             :rules="[requiredValidator]"
                                         />
-                                    </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                    </div>                                    
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
                                         <VTextField
                                             v-model="engine"
