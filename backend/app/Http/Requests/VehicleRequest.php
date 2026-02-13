@@ -26,11 +26,25 @@ class VehicleRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isSupplier = auth()->check() && auth()->user()->getRoleNames()[0] === 'Supplier';
+        $isUser = auth()->check() && auth()->user()->getRoleNames()[0] === 'User';
+
+        $supplierId = match (true) {
+            $isSupplier => auth()->user()->supplier->id,
+            $isUser => auth()->user()->supplier->boss_id,
+            $this->supplier_id === 'null' || $this->supplier_id === null => null,
+            default => $this->supplier_id,
+        };
+
         $rules = [
             'reg_num' => [
                 'required',
-                Rule::unique('vehicles')->where(function ($query) {
-                    return $query->where('user_id', auth()->id());
+                Rule::unique('vehicles')->where(function ($query) use ($supplierId) {
+                    if ($supplierId === null) {
+                        return $query->whereNull('supplier_id');
+                    }
+
+                    return $query->where('supplier_id', $supplierId);
                 }),
             ]
         ];
