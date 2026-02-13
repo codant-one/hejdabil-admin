@@ -476,14 +476,22 @@ onBeforeUnmount(() => {
                 >              
                 </VAvatar>
                 <div class="d-flex flex-column">
-                  <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
-                    <span v-if="vehicle.car_name">
-                      {{ vehicle.car_name}}                      
+                <VTooltip 
+                    v-if="vehicle.car_name && vehicle.car_name.length > 25"
+                    location="bottom"
+                    max-width="300">
+                    <template #activator="{ props }">
+                      <span v-bind="props" class="font-weight-medium cursor-pointer text-aqua">
+                        {{ truncateText(vehicle.car_name, 25) }}
+                      </span>
+                    </template>
+                    <span>{{ vehicle.car_name }}</span>
+                  </VTooltip>
+                  <template v-else>
+                    <span v-if="vehicle.model_id" class="font-weight-medium cursor-pointer text-aqua">
+                      {{ vehicle.car_name}}
                     </span>
-                    <span v-else>
-                      {{ vehicle.model.brand.name }} {{ vehicle.model.name }}{{ vehicle.year === null ? '' :  ', ' + vehicle.year}}
-                    </span>
-                  </span>
+                  </template>                  
                 </div>
               </div>
             </td>                
