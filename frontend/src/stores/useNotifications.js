@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import notificationsApi from '@/api/notifications'
+import router from '@/router'
 
 // Callback global para notificaciones
 let globalNotificationCallback = null
@@ -100,6 +101,9 @@ export const useNotificationsStore = defineStore('notifications', {
           .listen('.user-notification', data => {
             this.addFromBackend(data.message)
           })
+          .listen('.force-logout', data => {
+            this.forceLogout(data?.message)
+          })
           .error(error => {
             console.error('❌ Error in private notification channel:', error)
           })
@@ -111,6 +115,24 @@ export const useNotificationsStore = defineStore('notifications', {
       } catch (err) {
         console.error('❌ Error subscribing to private notifications:', err)
       }
+    },
+
+    forceLogout(message = 'Ditt konto har inaktiverats.') {
+      localStorage.removeItem('user_data')
+      localStorage.removeItem('userAbilities')
+      localStorage.removeItem('accessToken')
+
+      if (window?.Echo) {
+        try {
+          window.Echo.disconnect()
+        } catch (error) {
+        }
+      }
+
+      const loginRoute = { name: 'login' }
+      const query = { reason: 'force_logout', message }
+
+      router.push({ ...loginRoute, query })
     },
 
     addFromBackend(data) {

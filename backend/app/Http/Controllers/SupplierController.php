@@ -22,6 +22,7 @@ use App\Models\UserRegisterToken;
 use App\Models\Supplier;
 use App\Models\UserDetails;
 use App\Jobs\SendEmailJob;
+use App\Events\ForceLogoutUserEvent;
 
 class SupplierController extends Controller
 {
@@ -584,6 +585,8 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte ' . $user->id
                 ], 404);
+
+            event(new ForceLogoutUserEvent($user->id));
             
             $supplier->deleteSupplier($supplier->id);
 

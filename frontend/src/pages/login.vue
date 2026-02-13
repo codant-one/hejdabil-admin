@@ -33,6 +33,27 @@ const password = ref("");
 const remember_me = ref(true);
 const load = ref(false);
 
+const showForceLogoutAlert = () => {
+  if (route.query.reason !== 'force_logout')
+    return
+
+  alertStore.type = 'warning'
+  alertStore.message = typeof route.query.message === 'string' && route.query.message.length > 0
+    ? route.query.message
+    : 'Denna användare har inaktiverats. Kontakta administratören.'
+  alertStore.show = true
+
+  const newQuery = { ...route.query }
+  delete newQuery.reason
+  delete newQuery.message
+
+  router.replace({ query: newQuery })
+}
+
+onMounted(() => {
+  showForceLogoutAlert()
+})
+
 watchEffect(fetchData);
 
 async function fetchData() {
