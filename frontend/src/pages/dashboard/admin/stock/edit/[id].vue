@@ -234,6 +234,7 @@ const allSelected = computed({
 })
 
 const currentVehicleData = computed(() => ({
+  // Datos del vehículo (tab-1)
   reg_num: reg_num.value,
   mileage: mileage.value,
   brand_id: brand_id.value,
@@ -246,13 +247,7 @@ const currentVehicleData = computed(() => ({
   color: color.value,
   fuel_id: fuel_id.value,
   gearbox_id: gearbox_id.value,
-  purchase_price: purchase_price.value,
-  iva_purchase_id: iva_purchase_id.value,
-  state_id: state_id.value,
-  sale_price: sale_price.value,
-  purchase_date: purchase_date.value,
   chassis: chassis.value,
-  sale_date: sale_date.value,
   number_keys: number_keys.value,
   service_book: service_book.value,
   summer_tire: summer_tire.value,
@@ -263,7 +258,37 @@ const currentVehicleData = computed(() => ({
   last_dist_belt: last_dist_belt.value,
   last_dist_belt_date: last_dist_belt_date.value,
   comments: comments.value,
+  
+  // Datos de precio (tab-2)
+  purchase_price: purchase_price.value,
+  iva_purchase_id: iva_purchase_id.value,
   currency_id: currency_id.value,
+  sale_price: sale_price.value,
+  purchase_date: purchase_date.value,
+  sale_date: sale_date.value,
+  state_id: state_id.value,
+  
+  // Datos del cliente (tab-3)
+  client_type_id: client_type_id.value,
+  identification_id: identification_id.value,
+  client_id: client_id.value,
+  fullname: fullname.value,
+  email: email.value,
+  organization_number: organization_number.value,
+  address: address.value,
+  street: street.value,
+  postal_code: postal_code.value,
+  phone: phone.value,
+  save_client: save_client.value,
+  
+  // Tareas y documentos (tab-5 y tab-6)
+  tasks: JSON.stringify(tasks.value),
+  documents: JSON.stringify(documents.value.map(doc => ({
+    id: doc.id,
+    document_type_id: doc.document_type_id,
+    reference: doc.reference,
+    file: doc.file
+  }))),
 }));
 
 const isDirty = computed(() => {
