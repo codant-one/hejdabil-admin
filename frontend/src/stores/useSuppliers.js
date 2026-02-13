@@ -129,6 +129,18 @@ export const useSuppliersStores = defineStore('suppliers', {
                 })
             
         },
+        getInactiveUserByEmail(email) {
+            this.setLoading(true)
+
+            return Suppliers.getInactiveUserByEmail({ email })
+                .then((response) => {
+                    return Promise.resolve(response.data.data.inactive_user)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
         fetchUsers(params) {
             this.setLoading(true)
             

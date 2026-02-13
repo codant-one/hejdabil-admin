@@ -17,6 +17,8 @@ const isUserPermissionsDialog = ref(false)
 
 const isUserCreateDialog = ref(false)
 const isPasswordVisible = ref(false)
+const isReactivateUserDialog = ref(false)
+const isReactivatingUser = ref(false)
 const email = ref('')
 const name = ref('')
 const password = ref('')
@@ -25,6 +27,7 @@ const phone = ref('----')
 const address = ref('----')
 const assignedPermissions = ref([])
 const readonly =  ref(false)
+const reactivationSupplierId = ref(null)
 
 const advisor = ref({
   type: '',
@@ -50,6 +53,75 @@ const closeUserCreateDialog  = function(){
 
 const getPermissions = function(permissions){
     assignedPermissions.value = permissions
+}
+
+const closeReactivateUserDialog = function() {
+  isReactivateUserDialog.value = false
+  reactivationSupplierId.value = null
+}
+
+const getEmailValidationMessage = function(error) {
+  if (error.feedback !== 'params_validation_failed')
+    return ''
+
+  if (error.message?.hasOwnProperty('email') && Array.isArray(error.message.email) && error.message.email.length > 0)
+    return error.message.email[0]
+
+  if (typeof error.message === 'string')
+    return error.message
+
+  return ''
+}
+
+const reactivateUserAccount = async function() {
+  if (!reactivationSupplierId.value) {
+    closeReactivateUserDialog()
+    return
+  }
+
+  isReactivatingUser.value = true
+
+  try {
+    const response = await usersStores.activateSupplier(reactivationSupplierId.value)
+
+    closeReactivateUserDialog()
+    closeUserCreateDialog()
+
+    window.scrollTo(0, 0)
+
+    advisor.value.show = true
+    advisor.value.type = 'success'
+    advisor.value.message = response.data.message || 'Användaren har återaktiverats!'
+
+    emit('alert', advisor)
+    emit('data')
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      emit('alert', advisor)
+    }, 5000)
+
+  } catch (error) {
+    closeReactivateUserDialog()
+    window.scrollTo(0, 0)
+
+    advisor.value.show = true
+    advisor.value.type = 'error'
+    advisor.value.message = error.message || 'Ett serverfel uppstod. Försök igen.'
+
+    emit('alert', advisor)
+
+    setTimeout(() => {
+      advisor.value.show = false
+      advisor.value.type = ''
+      advisor.value.message = ''
+      emit('alert', advisor)
+    }, 5000)
+  } finally {
+    isReactivatingUser.value = false
+  }
 }
 
 const onSubmitCreate = () => {
@@ -94,17 +166,32 @@ const onSubmitCreate = () => {
             advisor.value.message = ''
             emit('alert', advisor)
           }, 5000)
-        }).catch(error => {
+        }).catch(async error => {
+
+          const emailValidationMessage = getEmailValidationMessage(error)
+
+          if (emailValidationMessage === 'En användare med den angivna e-postadressen finns redan.') {
+            try {
+              const inactiveUser = await usersStores.getInactiveUserByEmail(email.value)
+
+              if (inactiveUser?.supplier_id) {
+                reactivationSupplierId.value = inactiveUser.supplier_id
+                isReactivateUserDialog.value = true
+                return
+              }
+            } catch (lookupError) {
+              reactivationSupplierId.value = null
+            }
+          }
 
           closeUserCreateDialog()
           window.scrollTo(0, 0)
 
           advisor.value.show = true
           advisor.value.type = 'error'
-          
-          if (error.feedback === 'params_validation_failed') {
-            if(error.message.hasOwnProperty('email'))
-              advisor.value.message = error.message.email[0]
+
+          if (emailValidationMessage) {
+            advisor.value.message = emailValidationMessage
           } else {
             advisor.value.message = 'Ett serverfel uppstod. Försök igen.'
           }
@@ -117,7 +204,7 @@ const onSubmitCreate = () => {
             advisor.value.type = ''
             advisor.value.message = ''
             emit('alert', advisor)
-          }, 5000)   
+          }, 5000)
         })
     }
   })
@@ -226,6 +313,36 @@ const onSubmitCreate = () => {
           </VCardText>
         </VCardText>
       </VForm>
+    </VCard>
+  </VDialog>
+
+  <VDialog
+    v-model="isReactivateUserDialog"
+    max-width="520"
+    persistent
+  >
+    <VCard title="Återaktivera konto">
+      <VCardText>
+        Denna e-postadress är redan registrerad.<br>
+        Användaren är för närvarande inaktiv.<br>
+        Vill du återaktivera kontot?
+      </VCardText>
+
+      <VCardText class="d-flex justify-end gap-3 flex-wrap pt-0">
+        <VBtn
+          color="secondary"
+          variant="tonal"
+          @click="closeReactivateUserDialog"
+        >
+          Avbryt
+        </VBtn>
+        <VBtn
+          :loading="isReactivatingUser"
+          @click="reactivateUserAccount"
+        >
+          Acceptera
+        </VBtn>
+      </VCardText>
     </VCard>
   </VDialog>
 

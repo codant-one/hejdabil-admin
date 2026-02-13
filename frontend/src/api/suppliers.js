@@ -30,6 +30,10 @@ class Suppliers {
         return axios.get('suppliers/supplier/users', {params})
     }
 
+    getInactiveUserByEmail(data) {
+        return axios.post('suppliers/supplier/inactive-user', data)
+    }
+
     addUser(data) {
         return axios.post('suppliers/supplier/adduser', data)
     }

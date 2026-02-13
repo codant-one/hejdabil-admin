@@ -306,7 +306,6 @@ const downloadCSV = async () => {
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMN </th>
                 <th scope="col"> E-POST </th>
-                <th scope="col"> STATUS </th>
                 <th scope="col"> TELEFON </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
@@ -356,15 +355,6 @@ const downloadCSV = async () => {
                 <!-- 👉 correo -->
                 <td>
                   {{ user.user.email }}
-                </td>
-
-                <td> 
-                  <VChip
-                    label
-                    :color="user.deleted_at ? 'error' : 'success'"
-                  >
-                    {{ user.deleted_at ? 'Inaktiv' : 'Aktiv' }}
-                  </VChip>
                 </td>
 
                 <!-- 👉 phone -->

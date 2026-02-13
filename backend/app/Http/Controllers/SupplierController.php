@@ -388,7 +388,6 @@ class SupplierController extends Controller
                         //  ->whereHas('user.roles', function ($query) {
                         //     $query->where('name', 'User');
                         //  })
-                         ->withTrashed()
                          ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->id);
                          })
@@ -491,6 +490,74 @@ class SupplierController extends Controller
             ], 500);
         }
 
+    }
+
+    public function inactiveRelatedUser(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => ['required', 'email']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'feedback' => 'params_validation_failed',
+                'message' => $validator->errors()
+            ], 400);
+        }
+
+        try {
+            $bossId = Auth::user()?->supplier?->id;
+
+            if (!$bossId) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'inactive_user' => null
+                    ]
+                ], 200);
+            }
+
+            $inactiveSupplier = Supplier::withTrashed()
+                ->with(['user' => function ($query) {
+                    $query->withTrashed();
+                }])
+                ->where('boss_id', $bossId)
+                ->whereNotNull('deleted_at')
+                ->whereHas('user', function ($query) use ($request) {
+                    $query->withTrashed()
+                        ->where('email', $request->email)
+                        ->whereNotNull('deleted_at');
+                })
+                ->first();
+
+            if (!$inactiveSupplier || !$inactiveSupplier->user) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'inactive_user' => null
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'inactive_user' => [
+                        'supplier_id' => $inactiveSupplier->id,
+                        'user_id' => $inactiveSupplier->user->id,
+                        'email' => $inactiveSupplier->user->email
+                    ]
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
