@@ -86,7 +86,6 @@ const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
-const identification_id = ref(null)
 
 const isConfirmLeaveVisible = ref(false)
 const initialData = ref(null)
@@ -111,7 +110,6 @@ const currentData = computed(() => ({
     street: street.value,
     postal_code: postal_code.value,
     phone: phone.value,
-    identification_id: identification_id.value,
     email: email.value,
     save_client: save_client.value
 }))
@@ -490,7 +488,7 @@ const onSubmit = async () => {
         discount.value === null || registration_fee.value === null || total_sale.value === null;
 
     // Tab-2: Kund
-    const hasTab2Errors = !client_type_id.value || !identification_id.value ||
+    const hasTab2Errors = !client_type_id.value ||
         !fullname.value || !organization_number.value || !address.value || !street.value ||
         !postal_code.value || !phone.value || !email.value;
 
@@ -535,7 +533,6 @@ const onSubmit = async () => {
             formData.append('save_client', save_client.value);
 
             formData.append('client_type_id', client_type_id.value);
-            formData.append('identification_id', identification_id.value);
             formData.append('client_id', client_id.value);
             formData.append('fullname', fullname.value);
             formData.append('email', email.value);
@@ -1000,16 +997,6 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <AppAutocomplete
-                                                v-model="identification_id"
-                                                label="Legitimation*"
-                                                :items="identifications"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :rules="[requiredValidator]"
-                                                autocomplete="off"/>
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />                                            
                                             <VTextField
                                                 v-model="email"
@@ -1018,7 +1005,8 @@ onBeforeRouteLeave((to, from, next) => {
                                         </div>
                                         <div style="width: 100%">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Comments" />                                            
-                                            <VTextField
+                                            <VTextarea
+                                                rows="3"
                                                 v-model="sale_comments"
                                             />
                                         </div>

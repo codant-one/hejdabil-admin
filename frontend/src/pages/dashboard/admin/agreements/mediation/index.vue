@@ -116,7 +116,6 @@ const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
-const identification_id = ref(null)
 const organization_number = ref('')
 const address = ref('')
 const street = ref('')
@@ -658,7 +657,6 @@ const onSubmit = async () => {
                           !street.value || 
                           !phone.value || 
                           (phone.value && phoneValidator(phone.value) !== true) ||
-                          !identification_id.value || 
                           !email.value || 
                           (email.value && emailValidator(email.value) !== true)
 
@@ -940,7 +938,6 @@ const onSubmit = async () => {
                 formData.append('save_client', save_client.value)
                 formData.append('client_type_id', client_type_id.value)
                 formData.append('client_id', client_id.value)
-                formData.append('identification_id', identification_id.value)
                 formData.append('fullname', fullname.value)
                 formData.append('email', email.value)
                 formData.append('organization_number', organization_number.value)
@@ -1063,7 +1060,6 @@ const currentData = computed(() => ({
     postal_code: postal_code.value,
     street: street.value,
     phone: phone.value,
-    identification_id: identification_id.value,
     email: email.value,
     save_client: save_client.value,
     disabled_client: disabled_client.value,
@@ -1633,23 +1629,13 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Legitimation*" />
-                                            <AppAutocomplete
-                                                v-model="identification_id"
-                                                :items="identifications"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :rules="[requiredValidator]"
-                                                autocomplete="off"/>
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
                                             <VTextField
                                                 v-model="email"
                                                 :rules="[emailValidator, requiredValidator]"
                                             />
                                         </div>
-                                        <div class="ms-2">
+                                        <div class="ms-auto mt-auto">
                                             <VCheckbox
                                                 v-model="save_client"
                                                 :readonly="disabled_client"

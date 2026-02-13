@@ -104,7 +104,6 @@ const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
 const identifications = ref([])
-const identification_id = ref(null)
 const organization_number = ref('')
 const address = ref('')
 const street = ref('')
@@ -289,7 +288,6 @@ async function fetchData() {
 
 
         client_type_id.value = agreement.value.agreement_client.client_type_id
-        identification_id.value = agreement.value.agreement_client.identification_id
         organization_number.value = agreement.value.agreement_client.organization_number
         address.value = agreement.value.agreement_client.address
         street.value = agreement.value.agreement_client.street
@@ -323,7 +321,6 @@ async function fetchData() {
         if (agreement.value.agreement_client) {
           client_id.value = agreement.value.agreement_client.client_id
           client_type_id.value = agreement.value.agreement_client.client_type_id
-          identification_id.value = agreement.value.agreement_client.identification_id
           fullname.value = agreement.value.agreement_client.fullname
           email.value = agreement.value.agreement_client.email
           organization_number.value = agreement.value.agreement_client.organization_number
@@ -837,7 +834,6 @@ const onSubmit = async () => {
                           !street.value || 
                           !phone.value || 
                           (phone.value && phoneValidator(phone.value) !== true) ||
-                          !identification_id.value || 
                           !email.value || 
                           (email.value && emailValidator(email.value) !== true)
 
@@ -1056,7 +1052,6 @@ const onSubmit = async () => {
                 //client
                 formData.append('client_id', client_id.value)
                 formData.append('client_type_id', client_type_id.value)
-                formData.append('identification_id', identification_id.value)
                 formData.append('fullname', fullname.value)
                 formData.append('email', email.value)
                 formData.append('organization_number', organization_number.value)
@@ -1158,7 +1153,6 @@ const currentData = computed(() => ({
     postal_code: postal_code.value,
     street: street.value,
     phone: phone.value,
-    identification_id: identification_id.value,
     email: email.value,
     // Tab 2 - Pris
     price: price.value,
@@ -1733,16 +1727,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="phone"
                                                 :rules="[requiredValidator, phoneValidator]"
                                             />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Legitimation*" />
-                                            <AppAutocomplete
-                                                v-model="identification_id"
-                                                :items="identifications"
-                                                :item-title="item => item.name"
-                                                :item-value="item => item.id"
-                                                :rules="[requiredValidator]"
-                                                autocomplete="off"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />
