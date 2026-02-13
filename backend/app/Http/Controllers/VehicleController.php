@@ -334,7 +334,28 @@ class VehicleController extends Controller
     public function findByRegNum(Request $request): JsonResponse
     {
         try {
-            $vehicle = Vehicle::where('reg_num', $request->regnum)->first();
+            $user = Auth::user();
+            $requestSupplierId = $request->input('supplier_id');
+
+            if ($requestSupplierId === 'null' || $requestSupplierId === '' || $requestSupplierId === null) {
+                $requestSupplierId = null;
+            }
+
+            $supplierId = match (true) {
+                Auth::check() && $user->hasRole('Supplier') => optional($user->supplier)->id,
+                Auth::check() && $user->hasRole('User') => optional($user->supplier)->boss_id,
+                default => $requestSupplierId,
+            };
+
+            $vehicleQuery = Vehicle::where('reg_num', $request->regnum);
+
+            if ($supplierId === null) {
+                $vehicleQuery->whereNull('supplier_id');
+            } else {
+                $vehicleQuery->where('supplier_id', $supplierId);
+            }
+
+            $vehicle = $vehicleQuery->first();
         
             if (!$vehicle)
                 return response()->json([
