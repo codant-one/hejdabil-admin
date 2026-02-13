@@ -71,6 +71,8 @@ const modelsByBrand = ref([])
 const year = ref(null)
 const color = ref(null)
 const chassis = ref(null)
+const engine = ref(null)
+const car_name = ref(null)
 const mileage = ref(null)
 const purchase_date = ref(null)
 const comments = ref(null)
@@ -643,6 +645,14 @@ const searchVehicleByPlate = async () => {
                 chassis.value = carRes.result.chassis_number
             }
 
+            if (carRes.result.engine) {
+                engine.value = carRes.result.engine
+            }
+
+            if (carRes.result.car_name) {
+                car_name.value = carRes.result.car_name
+            }
+
             advisor.value = {
                 type: 'success',
                 message: 'Fordonsdata hämtades framgångsrikt',
@@ -719,6 +729,7 @@ const onSubmit = async () => {
                           !year.value ||
                           !purchase_date.value ||
                           !chassis.value ||
+                          !car_name.value ||
                           !mileage.value || 
                           !car_body_id.value ||
                           !number_keys.value
@@ -912,6 +923,8 @@ const onSubmit = async () => {
                 formData.append('year', year.value)
                 formData.append('color', color.value)
                 formData.append('chassis', chassis.value)
+                formData.append('car_name', car_name.value)
+                formData.append('engine', engine.value)
                 formData.append('mileage', mileage.value)
                 formData.append('purchase_date', purchase_date.value)
                 formData.append('vehicle_id', vehicle_id.value)
@@ -1013,6 +1026,8 @@ const currentData = computed(() => ({
     car_body_id: car_body_id.value,
     year: year.value,
     chassis: chassis.value,
+    engine: engine.value,
+    car_name: car_name.value,
     control_inspection: control_inspection.value,
     color: color.value,
     fuel_id: fuel_id.value,
@@ -1277,6 +1292,19 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextField
                                                 v-model="model"
                                                 :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                                            <VTextField
+                                                v-model="car_name"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                                            <VTextField
+                                                v-model="engine"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
