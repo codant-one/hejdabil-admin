@@ -71,6 +71,8 @@ const color = ref(null)
 const fuel_id = ref(null)
 const gearbox_id = ref(null)
 const chassis = ref(null)
+const engine = ref(null)
+const car_name = ref(null)
 const number_keys = ref(null)
 const service_book = ref(0)
 const summer_tire = ref(0)
@@ -148,6 +150,8 @@ async function fetchData() {
         fuel_id.value = agreement.value.offer.fuel_id ?? fuel_id.value
         gearbox_id.value = agreement.value.offer.gearbox_id ?? gearbox_id.value
         chassis.value = agreement.value.offer.chassis ?? chassis.value
+        engine.value = agreement.value.offer.engine ?? engine.value
+        car_name.value = agreement.value.offer.car_name ?? car_name.value
         number_keys.value = agreement.value.offer.number_keys ?? number_keys.value
         service_book.value = agreement.value.offer.service_book ?? service_book.value
         summer_tire.value = agreement.value.offer.summer_tire ?? summer_tire.value
@@ -498,6 +502,14 @@ const searchVehicleByPlate = async () => {
                 chassis.value = carRes.result.chassis_number
             }
 
+            if (carRes.result.engine) {
+                engine.value = carRes.result.engine
+            }
+
+            if (carRes.result.car_name) {
+                car_name.value = carRes.result.car_name
+            }
+
             advisor.value = {
                 type: 'success',
                 message: 'Fordonsdata hämtades framgångsrikt',
@@ -577,6 +589,7 @@ const onSubmit = async () => {
                         !year.value ||
                         yearValidator(year.value) !== true ||
                         !chassis.value ||
+                        !car_name.value ||
                         number_keys.value === null || 
                         number_keys.value === undefined || 
                         number_keys.value === ''
@@ -703,6 +716,8 @@ const onSubmit = async () => {
               formData.append('last_dist_belt', last_dist_belt.value)
               formData.append('last_dist_belt_date', last_dist_belt_date.value)
               formData.append('chassis', chassis.value)
+              formData.append('car_name', car_name.value)
+              formData.append('engine', engine.value)
               formData.append('comment', comment.value)
               formData.append('price', price.value)
               formData.append('terms_other_conditions', terms_other_conditions.value)
@@ -773,6 +788,8 @@ const currentData = computed(() => ({
     car_body_id: car_body_id.value,
     year: year.value,
     chassis: chassis.value,
+    engine: engine.value,
+    car_name: car_name.value,
     number_keys: number_keys.value,
     generation: generation.value,
     control_inspection: control_inspection.value,
@@ -1007,6 +1024,19 @@ onBeforeRouteLeave((to, from, next) => {
                         <VTextField
                             v-model="model"
                             :rules="[requiredValidator]"
+                        />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                      <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                      <VTextField
+                          v-model="car_name"
+                          :rules="[requiredValidator]"
+                      />
+                    </div>
+                      <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                        <VTextField
+                            v-model="engine"
                         />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

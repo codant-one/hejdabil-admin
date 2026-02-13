@@ -107,6 +107,8 @@ class Offer extends Model
             'last_dist_belt' => $request->last_dist_belt === 'null' ? null : $request->last_dist_belt,      
             'last_dist_belt_date' => $request->last_dist_belt_date === 'null' ? null : $request->last_dist_belt_date,
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
+            'engine' => $request->engine === 'null' ? null : $request->engine,
+            'car_name' => $request->car_name === 'null' ? null : $request->car_name,
             'comment' => $request->comment === 'null' ? null : $request->comment,
             'price' => $request->price === 'null' ? null : $request->price,
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions
@@ -151,6 +153,8 @@ class Offer extends Model
             'last_dist_belt' => $request->last_dist_belt === 'null' ? null : $request->last_dist_belt,      
             'last_dist_belt_date' => $request->last_dist_belt_date === 'null' ? null : $request->last_dist_belt_date,
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
+            'engine' => $request->engine === 'null' ? null : $request->engine,
+            'car_name' => $request->car_name === 'null' ? null : $request->car_name,
             'comment' => $request->comment === 'null' ? null : $request->comment,
             'price' => $request->price === 'null' ? null : $request->price,
             'terms_other_conditions' => $request->terms_other_conditions === 'null' ? null : $request->terms_other_conditions

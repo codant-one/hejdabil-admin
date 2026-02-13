@@ -2003,7 +2003,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             :rules="[requiredValidator]"
                                         />
                                     </div>
-                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
                                         <VTextField
                                             v-model="engine"
