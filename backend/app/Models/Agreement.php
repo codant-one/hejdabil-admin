@@ -91,6 +91,12 @@ class Agreement extends Model
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
+        $search = trim((string) $search);
+
+        if ($search === '' || in_array(strtolower($search), ['null', 'undefined'], true)) {
+            return $query;
+        }
+
         $query->where(function ($q) use ($search) {
             $q->whereHas('offer', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
@@ -121,11 +127,15 @@ class Agreement extends Model
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
                          ->orWhere('last_name', 'LIKE', '%' . $search . '%')
-                         ->orWhere('email', 'LIKE', '%' . $search . '%');
+                         ->orWhere('email', 'LIKE', '%' . $search . '%')
+                         ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
                 });
             })
-            ->orWhere('installment_amount', $search); 
+            ->orWhere('agreement_id', 'LIKE', '%' . $search . '%')
+            ->orWhere('installment_amount', 'LIKE', '%' . $search . '%'); 
         });
+
+        return $query;
     }
 
     public function scopeWhereOrder($query, $orderByField, $orderBy) {
