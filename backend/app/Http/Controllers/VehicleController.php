@@ -142,8 +142,15 @@ class VehicleController extends Controller
                     if ($existsInDatabase || $existsInStorage) {
                         return response()->json([
                             'success' => false,
+                            'response' => [
+                                'data' => [
+                                    'errors' => [
+                                        'Dokumentet ' . $originalName . ' är redan sparat i systemet för ' . $name
+                                        ]
+                                ]
+                            ],
                             'message' => 'Dokumentet ' . $originalName . ' är redan sparat i systemet för ' . $name
-                        ]);
+                        ],400);
                     }
                 }
             }
