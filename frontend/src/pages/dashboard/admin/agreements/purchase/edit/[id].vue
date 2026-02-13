@@ -788,9 +788,18 @@ const showError = () => {
 
     advisor.value.show = true;
     advisor.value.type = "error";
+        const responseData = err.value?.response?.data;
     
-    if (err.value && !err.value.success) {
-      advisor.value.message = err.value.message;
+        if (responseData?.message) {
+            advisor.value.message = responseData.message;
+        } else if (responseData?.errors) {
+            advisor.value.message = Object.values(responseData.errors)
+                                .flat()
+                                .join("<br>");
+        } else if (err.value && !err.value.success && err.value.message) {
+            advisor.value.message = err.value.message;
+        } else if (err.value?.message) {
+            advisor.value.message = err.value.message;
     } else {
       advisor.value.message = "Ett serverfel uppstod. Försök igen.";
     }

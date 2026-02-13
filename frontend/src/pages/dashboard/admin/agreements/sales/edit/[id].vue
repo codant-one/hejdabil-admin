@@ -70,6 +70,8 @@ const modelsByBrand = ref([])
 const year = ref(null)
 const color = ref(null)
 const chassis = ref(null)
+const engine = ref(null)
+const car_name = ref(null)
 const mileage = ref(null)
 const sale_date = ref(null)
 const guaranty = ref(0);
@@ -141,6 +143,8 @@ const car_body_id_interchange = ref(null)
 const color_interchange = ref(null)
 const reg_num_interchange = ref(null)
 const chassis_interchange = ref(null)
+const engine_interchange = ref(null)
+const car_name_interchange = ref(null)
 const trade_price = ref(0)
 const residual_debt = ref(0)
 const residual_price = ref(null)
@@ -276,6 +280,8 @@ watch(() => reg_num_interchange.value, (val) => {
         car_body_id_interchange.value = null
         color_interchange.value = null
         chassis_interchange.value = null
+        engine_interchange.value = null
+        car_name_interchange.value = null
         trade_price.value = 0
         residual_debt.value = 0
         residual_price.value = 0
@@ -375,6 +381,8 @@ async function fetchData() {
         year.value = agreement.value.vehicle_client.vehicle.year
         color.value = agreement.value.vehicle_client.vehicle.color
         chassis.value = agreement.value.vehicle_client.vehicle.chassis
+        engine.value = agreement.value.vehicle_client.vehicle.engine
+        car_name.value = agreement.value.vehicle_client.vehicle.car_name
         mileage.value = agreement.value.vehicle_client.vehicle.mileage
         sale_date.value = agreement.value.vehicle_client.vehicle.sale_date === null ? formatDate(new Date()) : agreement.value.vehicle_client.vehicle.sale_date
         guaranty.value = agreement.value.guaranty
@@ -417,6 +425,8 @@ async function fetchData() {
             color_interchange.value = agreement.value.vehicle_interchange.color
             reg_num_interchange.value = agreement.value.vehicle_interchange.reg_num
             chassis_interchange.value = agreement.value.vehicle_interchange.chassis
+            engine_interchange.value = agreement.value.vehicle_interchange.engine
+            car_name_interchange.value = agreement.value.vehicle_interchange.car_name
             trade_price.value = formatDecimal(agreement.value.vehicle_interchange.purchase_price ?? 0)
             residual_debt.value = agreement.value.residual_debt
             residual_price.value = agreement.value.residual_price ? formatDecimal(agreement.value.residual_price) : null
@@ -547,6 +557,22 @@ const selectVehicle = vehicle => {
         color.value = _vehicle.color
         mileage.value = _vehicle.mileage
         chassis.value = _vehicle.chassis
+        engine.value = _vehicle.engine
+        car_name.value = _vehicle.car_name
+        generation.value = _vehicle.generation
+        gearbox_id.value = _vehicle.gearbox_id
+        car_body_id.value = _vehicle.car_body_id
+        fuel_id.value = _vehicle.fuel_id
+        control_inspection.value = _vehicle.control_inspection
+        number_keys.value = _vehicle.number_keys
+        service_book.value = _vehicle.service_book
+        summer_tire.value = _vehicle.summer_tire
+        winter_tire.value = _vehicle.winter_tire
+        last_service.value = _vehicle.last_service
+        last_service_date.value = _vehicle.last_service_date
+        dist_belt.value = _vehicle.dist_belt
+        last_dist_belt.value = _vehicle.last_dist_belt
+        last_dist_belt_date.value = _vehicle.last_dist_belt_date
     }
 }
 
@@ -927,6 +953,15 @@ const searchVehicleByPlate = async (type) => {
             if (carRes.result.chassis_number) {
                 chassis.value = carRes.result.chassis_number
             }
+
+            if (carRes.result.engine) {
+                engine.value = carRes.result.engine
+            }
+
+            if (carRes.result.car_name) {
+                car_name.value = carRes.result.car_name
+            }
+
         } else { //type 2
             // Actualizar año del modelo
             if (carRes.result.model_year) {
@@ -984,6 +1019,13 @@ const searchVehicleByPlate = async (type) => {
                 chassis_interchange.value = carRes.result.chassis_number
             }
             
+            if (carRes.result.engine) {
+                engine_interchange.value = carRes.result.engine
+            }
+
+            if (carRes.result.car_name) {
+                car_name_interchange.value = carRes.result.car_name
+            }
         }
 
         advisor.value = {
@@ -1035,11 +1077,16 @@ const showError = () => {
 
     advisor.value.show = true;
     advisor.value.type = "error";
+        const responseData = err.value?.response?.data;
     
-    if (err.value && err.value.response && err.value.response.data && err.value.response.data.errors) {
-      advisor.value.message = Object.values(err.value.response.data.errors)
+        if (responseData?.message) {
+            advisor.value.message = responseData.message;
+        } else if (responseData?.errors) {
+            advisor.value.message = Object.values(responseData.errors)
                 .flat()
                 .join("<br>");
+        } else if (err.value?.message) {
+            advisor.value.message = err.value.message;
     } else {
       advisor.value.message = "Ett serverfel uppstod. Försök igen.";
     }
@@ -1063,6 +1110,7 @@ const onSubmit = async () => {
                               !year.value ||
                               !mileage.value || 
                               !chassis.value ||
+                              !car_name.value ||
                               !number_keys.value ||
                               !sale_date.value ||
                               (guaranty.value === null || guaranty.value === undefined) ||
@@ -1080,6 +1128,7 @@ const onSubmit = async () => {
                               !car_body_id_interchange.value ||
                               !year_interchange.value ||
                               !chassis_interchange.value ||
+                              !car_name_interchange.value ||
                               !number_keys_interchange.value ||
                               !trade_price.value ||
                               trade_price.value <= 0 ||
@@ -1346,6 +1395,8 @@ const onSubmit = async () => {
                 formData.append('year', year.value)
                 formData.append('color', color.value)
                 formData.append('chassis', chassis.value)
+                formData.append('car_name', car_name.value)
+                formData.append('engine', engine.value)
                 formData.append('mileage', mileage.value)
                 formData.append('sale_date', sale_date.value)
                 formData.append('vehicle_id', vehicle_id.value)
@@ -1379,7 +1430,8 @@ const onSubmit = async () => {
                 formData.append('color_interchange', color_interchange.value)
                 formData.append('purchase_price_interchange', trade_price.value)
                 formData.append('chassis_interchange', chassis_interchange.value)
-
+                formData.append('car_name_interchange', car_name_interchange.value)
+                formData.append('engine_interchange', engine_interchange.value)
                 formData.append('mileage_interchange', mileage_interchange.value)
                 formData.append('generation_interchange', generation_interchange.value)
                 formData.append('control_inspection_interchange', control_inspection_interchange.value)
@@ -1475,6 +1527,8 @@ const currentData = computed(() => ({
     year: year.value,
     color: color.value,
     chassis: chassis.value,
+    car_name: car_name.value,
+    engine: engine.value,
     mileage: mileage.value,
     sale_date: sale_date.value,
     guaranty: guaranty.value,
@@ -1524,6 +1578,8 @@ const currentData = computed(() => ({
     car_body_id_interchange: car_body_id_interchange.value,
     color_interchange: color_interchange.value,
     chassis_interchange: chassis_interchange.value,
+    car_name_interchange: car_name_interchange.value,
+    engine_interchange: engine_interchange.value,
     trade_price: trade_price.value,
     residual_debt: residual_debt.value,
     residual_price: residual_price.value,
@@ -1808,6 +1864,19 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextField
                                                 v-model="model"
                                                 :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                                            <VTextField
+                                                v-model="car_name"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                                            <VTextField
+                                                v-model="engine"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2173,6 +2242,20 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VTextField
                                                 v-model="model_interchange"
                                                 :rules="[requiredValidator]"    
+                                            />
+                                        </div>
+                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn*" />
+                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Bilnamn" />
+                                            <VTextField
+                                                v-model="car_name_interchange"
+                                                :rules="reg_num_interchange ? [requiredValidator] : []"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                                            <VTextField
+                                                v-model="engine_interchange"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

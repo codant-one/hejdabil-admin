@@ -521,6 +521,8 @@ class Agreement extends Model
             $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['chassis' => $request->chassis_interchange ]);
+            $request->merge(['car_name' => $request->car_name_interchange ]);
+            $request->merge(['engine' => $request->engine_interchange ]);
             $request->merge(['mileage' => $request->mileage_interchange ]);
             $request->merge(['generation' => $request->generation_interchange ]);
             $request->merge(['control_inspection' => $request->control_inspection_interchange ]);
@@ -594,6 +596,8 @@ class Agreement extends Model
             $request->merge(['purchase_price' => $request->purchase_price_interchange ]);
             $request->merge(['purchase_date' => $request->purchase_date_interchange ]);
             $request->merge(['chassis' => $request->chassis_interchange ]);
+            $request->merge(['car_name' => $request->car_name_interchange ]);
+            $request->merge(['engine' => $request->engine_interchange ]);
             $request->merge(['mileage' => $request->mileage_interchange ]);
             $request->merge(['generation' => $request->generation_interchange ]);
             $request->merge(['control_inspection' => $request->control_inspection_interchange ]);
