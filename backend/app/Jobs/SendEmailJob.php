@@ -66,11 +66,6 @@ class SendEmailJob implements ShouldQueue
                 }
             );
 
-            Log::info("Email enviado exitosamente", [
-                'to' => $this->to,
-                'subject' => $this->subject,
-                'view' => $this->view
-            ]);
         } catch (\Exception $e) {
             Log::error("Error al enviar email", [
                 'to' => $this->to,
