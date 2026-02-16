@@ -529,7 +529,7 @@ const setThumbsSwiper = (swiper) => {
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2" v-if="organization_number_purchase">
-                                                    <span class="title-detail"> Org/personummer </span>
+                                                    <span class="title-detail"> Org/personnummer </span>
                                                     <span class="subtitle-detail">{{ organization_number_purchase }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2" v-if="fullname_purchase">
@@ -649,7 +649,7 @@ const setThumbsSwiper = (swiper) => {
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Org/personummer </span>
+                                                    <span class="title-detail"> Org/personnummer </span>
                                                     <span class="subtitle-detail">{{ organization_number_sale }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">

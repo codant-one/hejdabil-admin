@@ -418,7 +418,7 @@ watch(currentData, () => {
                 />
               </VCol>               
               <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
                 <div class="d-flex gap-2">
                   <VTextField
                     v-model="organization_number"
@@ -438,7 +438,7 @@ watch(currentData, () => {
               <VCol cols="12" md="6" class="pb-0">
                 <AppAutocomplete
                   v-model="client_type_id"
-                  label="Köparen är*"
+                  label="Kunden är*"
                   :items="client_types"
                   :item-title="item => item.name"
                   :item-value="item => item.id"

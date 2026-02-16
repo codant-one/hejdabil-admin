@@ -203,7 +203,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="label">Org/personummer</div>
+                                <div class="label">Org/personnummer</div>
                                 <div class="value">
                                     {{ $agreement->commission->client->organization_number }}
                                 </div>
@@ -273,7 +273,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="label">Org/personummer</div>
+                                <div class="label">Org/personnummer</div>
                                 <div class="value">
                                     {{ $company->organization_number }} 
                                 </div>

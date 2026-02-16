@@ -2453,7 +2453,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectClient"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
                                                     v-model="organization_number"
@@ -2556,7 +2556,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 </span>
                                             </h6>
                                               <h6 class="list-kopare text-neutral-3">
-                                                Org/personummer:
+                                                Org/personnummer:
                                                 <span>
                                                     {{ company.organization_number }}
                                                 </span>

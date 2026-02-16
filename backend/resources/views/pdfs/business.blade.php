@@ -313,7 +313,7 @@
                         </tr>
                         <tr>
                             <td style="width: 50%; padding-right: 15px; vertical-align: top;">
-                                <div class="label">Org/personummer</div>
+                                <div class="label">Org/personnummer</div>
                                 <div class="value">{{ $agreement->agreement_client->organization_number ?? '-' }}</div>
                             </td>
                             <td style="width: 50%; padding-left: 15px; vertical-align: top;">
