@@ -44,6 +44,76 @@ const filtreraMobile = ref(false);
 const isFilterDialogVisible = ref(false);
 const skapaMobile = ref(false);
 
+const userData = ref(null)
+const role = ref(null)
+const suppliers = ref([])
+const supplier_id = ref(null)
+
+// 👉 Column visibility state
+const isColumnsDialogVisible = ref(false)
+const visibleColumns = ref([])
+const didInitVisibleColumns = ref(false)
+
+const columnOptions = [
+  { id: 'agreement_id', label: '# ID' },
+  { id: 'reg_num', label: 'Reg. nr' },
+  { id: 'interchange_reg_num', label: 'Inbytesfordon Reg. nr' },
+  { id: 'type', label: 'Typ' },
+  { id: 'customer', label: 'Kund' },
+  { id: 'created', label: 'Skapad' },
+  { id: 'signature_status', label: 'Signera status' },
+  { id: 'created_by', label: 'Skapad av' },
+  { id: 'installment', label: 'Kredit / Leasing' } ,
+  { id: 'supplier', label: 'Leverantör' },
+]
+
+const availableColumnOptions = computed(() => {
+  const canSeeSupplier = role.value === 'SuperAdmin' || role.value === 'Administrator'
+  return canSeeSupplier
+    ? columnOptions
+    : columnOptions.filter(opt => opt.id !== 'supplier')
+})
+
+const defaultColumns = computed(() => availableColumnOptions.value.slice(0, 8).map(opt => opt.id))
+
+watch(
+  () => role.value,
+  () => {
+    if (!didInitVisibleColumns.value && role.value) {
+      const saved = localStorage.getItem('agreements_visible_columns')
+      const allowed = new Set(availableColumnOptions.value.map(o => o.id))
+      const initial = saved ? JSON.parse(saved).filter((id) => allowed.has(id)) : defaultColumns.value
+      visibleColumns.value = initial
+      didInitVisibleColumns.value = true
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => visibleColumns.value,
+  (val) => {
+    if (didInitVisibleColumns.value) {
+      localStorage.setItem('agreements_visible_columns', JSON.stringify(val))
+    }
+  },
+  { deep: true }
+)
+
+const isColVisible = (id) => visibleColumns.value.includes(id)
+
+const selectAllColumns = () => {
+  visibleColumns.value = availableColumnOptions.value.map(o => o.id)
+}
+
+const selectDefaultColumns = () => {
+  visibleColumns.value = defaultColumns.value
+}
+
+const clearColumns = () => {
+  visibleColumns.value = []
+}
+
 const selectedAgreementForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 
@@ -67,10 +137,6 @@ const pdfPlacementContainer = ref(null) // Ref para el contenedor del PDF
 const isModalVisible = ref(false)
 const agreement_type_id = ref(null) 
 
-const userData = ref(null)
-const role = ref(null)
-const suppliers = ref([])
-const supplier_id = ref(null)
 const status = ref(null);
 
 const sectionEl = ref(null);
@@ -1065,6 +1131,14 @@ onBeforeUnmount(() => {
           <VIcon icon="custom-filter" size="24" />
         </VBtn>
 
+        <VBtn
+          class="btn-white-2"
+          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+          @click="isColumnsDialogVisible = true">
+          <VIcon icon="custom-column" size="24" />
+          <span>Kolumner</span>
+        </VBtn>
+        
         <div
           v-if="!$vuetify.display.smAndDown"
           class="d-flex align-center visa-select"
@@ -1086,15 +1160,15 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"># ID</th>            
-            <th scope="col" class="text-center"> Reg. nr </th>
-            <th scope="col" class="text-center"> Inbytesfordon Reg. nr </th>
-            <th scope="col" class="text-center"> Kredit / Leasing </th>
-            <th scope="col" class="text-center"> Typ </th>
-            <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
-            <th scope="col">Kund</th>
-            <th scope="col" class="text-center"> Skapad </th>
-            <th scope="col" class="text-center"> 
+            <th scope="col" v-if="isColVisible('agreement_id')"># ID</th>
+            <th scope="col" class="text-center" v-if="isColVisible('reg_num')"> Reg. nr </th>
+            <th scope="col" class="text-center" v-if="isColVisible('interchange_reg_num')"> Inbytesfordon Reg. nr </th>
+            <th scope="col" class="text-center" v-if="isColVisible('installment')"> Kredit / Leasing </th>
+            <th scope="col" class="text-center" v-if="isColVisible('type')"> Typ </th>
+            <th scope="col" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')"> Leverantör </th>
+            <th scope="col" v-if="isColVisible('customer')">Kund</th>
+            <th scope="col" class="text-center" v-if="isColVisible('created')"> Skapad </th>
+            <th scope="col" class="text-center" v-if="isColVisible('signature_status')"> 
               Signera status                            
               <VTooltip location="bottom" max-width="200"> 
                 <template #activator="{ props }">
@@ -1105,7 +1179,7 @@ onBeforeUnmount(() => {
                 Klicka för att se hur signeringsprocessen fortskrider.
               </VTooltip>
             </th>
-            <th scope="col"> Skapad Av </th>
+            <th scope="col" v-if="isColVisible('created_by')"> Skapad Av </th>
             <th scope="col" v-if="$can('edit', 'agreements') || $can('delete', 'agreements')"></th>
           </tr>
         </thead>
@@ -1115,7 +1189,7 @@ onBeforeUnmount(() => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
-            <td>
+            <td v-if="isColVisible('agreement_id')">
               {{ agreement.agreement_type_id === 4 ?
                 agreement.offer.offer_id : 
                 ( agreement.agreement_type_id === 3 ? 
@@ -1124,7 +1198,7 @@ onBeforeUnmount(() => {
                 )                    
               }}
             </td>           
-            <td class="text-center" @click="goToTracker(agreement)">
+            <td class="text-center" v-if="isColVisible('reg_num')" @click="goToTracker(agreement)">
               <span class="font-weight-medium cursor-pointer text-aqua">
                 {{ agreement.agreement_type_id === 4 ?
                   agreement.offer.reg_num : 
@@ -1135,16 +1209,16 @@ onBeforeUnmount(() => {
                 }} 
               </span> 
             </td>
-            <td class="text-center"> {{ agreement.vehicle_interchange?.reg_num }} </td>                
-            <td class="text-center"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
-            <td class="text-center"> {{ agreement.agreement_type.name  }}</td> 
-            <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+            <td class="text-center" v-if="isColVisible('interchange_reg_num')"> {{ agreement.vehicle_interchange?.reg_num }} </td>
+            <td class="text-center" v-if="isColVisible('installment')"> {{ formatNumber(agreement.installment_amount ?? 0) }} kr </td>
+            <td class="text-center" v-if="isColVisible('type')"> {{ agreement.agreement_type.name  }}</td>
+            <td class="text-wrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
               <span v-if="agreement.supplier">
                 {{ agreement.supplier.user.name }}
                 {{ agreement.supplier.user.last_name ?? "" }}
               </span>
             </td>      
-            <td>
+            <td v-if="isColVisible('customer')">
               <span
                 class="d-flex justify-between align-center font-weight-medium text-neutral-3"
               >
@@ -1157,7 +1231,7 @@ onBeforeUnmount(() => {
               }}
               </span>
             </td>   
-            <td class="text-center">  
+            <td class="text-center" v-if="isColVisible('created')">  
               {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
                   year: 'numeric', 
                   month: '2-digit', 
@@ -1168,7 +1242,7 @@ onBeforeUnmount(() => {
               }) }}
             </td>           
             <!-- 👉 Status -->
-            <td class="text-center text-wrap d-flex justify-center align-center">
+            <td class="text-center text-wrap d-flex justify-center align-center" v-if="isColVisible('signature_status')">
               <div
                 v-if="agreement.token"
                 class="status-chip"
@@ -1187,7 +1261,7 @@ onBeforeUnmount(() => {
                  {{ resolveStatus('pending')?.name }}
               </div>
             </td>
-            <td style="width: 1%; white-space: nowrap">
+            <td style="width: 1%; white-space: nowrap" v-if="isColVisible('created_by')">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
                   :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
@@ -1696,6 +1770,54 @@ onBeforeUnmount(() => {
               
             </div>
           </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Columns -->
+    <VDialog
+      v-model="isColumnsDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isColumnsDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-column" class="action-icon" />
+          <div class="dialog-title">
+            Välj kolumner
+          </div>
+        </VCardText>
+        <VCardText class="pt-0">
+          <VRow>
+            <VCol cols="12">
+              <div class="d-flex gap-2 flex-wrap">
+                <VBtn class="btn-gradient" size="small" @click="selectAllColumns">Alla</VBtn>
+                <VBtn class="btn-blue" size="small" @click="selectDefaultColumns">Standard (8)</VBtn>
+                <VBtn class="btn-light" size="small" @click="clearColumns">Rensa</VBtn>
+              </div>
+            </VCol>
+            <VCol cols="12">
+              <VCheckbox
+                v-for="opt in availableColumnOptions"
+                :key="opt.id"
+                :label="opt.label"
+                :value="opt.id"
+                v-model="visibleColumns"
+                density="comfortable"
+                hide-details
+              />
+            </VCol>
+          </VRow>
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
+          <VBtn class="btn-light" @click="isColumnsDialogVisible = false">Stäng</VBtn>
         </VCardText>
       </VCard>
     </VDialog>
