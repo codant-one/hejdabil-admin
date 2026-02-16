@@ -80,10 +80,10 @@ class Payout extends Model
     /**** Public methods ****/
     public static function createPayout($request) {
 
-        $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
         $isUser = Auth::user()->getRoleNames()[0] === 'User';
         $supplier_id = match (true) {
-            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isSupplier => Auth::user()->supplier->id,
             $isUser => Auth::user()->supplier->boss_id,
             $request->supplier_id === 'null' => null,
             default => $request->supplier_id,
