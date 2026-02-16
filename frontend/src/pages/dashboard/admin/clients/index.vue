@@ -1,12 +1,12 @@
 <script setup>
 
-import { toRaw } from "vue";
+import { ref, toRaw } from "vue";
 import { useDisplay } from "vuetify";
 import { useSuppliersStores } from "@/stores/useSuppliers";
 import { useClientsStores } from "@/stores/useClients";
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { avatarText } from "@/@core/utils/formatters";
+import { avatarText, formatDateYMD, formatNumber } from "@/@core/utils/formatters";
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from "@/router";
@@ -33,8 +33,15 @@ const totalClients = ref(0);
 const isRequestOngoing = ref(true);
 const isAddNewClientDrawerVisible = ref(false);
 const isConfirmDeleteDialogVisible = ref(false);
-const isConfirmActiveDialogVisible = ref(false)
+const isItemsPendingDialogVisible = ref(false)
+const isPendingDocumentsDialogVisible = ref(false)
+const isMobile = ref(false);
+const isPendingDocumentsMobileDialogVisible = ref(false)
 const selectedClient = ref({});
+const pendingItems = ref({
+  pending_invoices: [],
+  open_agreements: [],
+});
 const isDialogOpen = ref(false);
 const hasLoaded = ref(false);
 const isClientFormEdited = ref(false);
@@ -113,8 +120,7 @@ async function fetchData(cleanFilters = false) {
     limit: rowPerPage.value,
     page: currentPage.value,
     supplier_id: supplier_id.value,
-    state_id: state_id.value,
-    include_deleted: true
+    state_id: state_id.value
   };
 
   // Ensure loader is shown during fetch to prevent empty-state flicker
@@ -217,39 +223,11 @@ const openAddNewClientDrawerMobile = () => {
   selectedClient.value = {};
 };
 
-const showDeleteDialog = (clientData) => {
+const showDeleteDialog = (clientData, mobile = false) => {
+  isMobile.value = mobile;
   isConfirmDeleteDialogVisible.value = true;
   selectedClient.value = { ...clientData };
 };
-
-const showActivateDialog = supplierData => {
-  isConfirmActiveDialogVisible.value = true
-  selectedClient.value = { ...supplierData }
-}
-
-const activateClient = async () => {
-  isConfirmActiveDialogVisible.value = false
-  let res = await clientsStores.activateClient(selectedClient.value.id)
-  selectedClient.value = {}
-
-  advisor.value = {
-    type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Kunden aktiverad!' : res.data.message,
-    show: true
-  }
-
-  await fetchData()
-
-  setTimeout(() => {
-    advisor.value = {
-      type: '',
-      message: '',
-      show: false
-    }
-  }, 3000)
-
-  return true
-}
 
 const seeClient = (clientData) => {
   router.push({
@@ -259,28 +237,140 @@ const seeClient = (clientData) => {
 };
 
 const removeClient = async () => {
+
   isConfirmDeleteDialogVisible.value = false;
-  let res = await clientsStores.deleteClient(selectedClient.value.id);
-  selectedClient.value = {};
 
-  advisor.value = {
-    type: res.data.success ? "success" : "error",
-    message: res.data.success ? "Kunden har tagits bort!" : res.data.message,
-    show: true,
-  };
+  clientsStores.deleteClient(selectedClient.value.id)
+    .then((res) => {
+        if (res.data.success) {
+            selectedClient.value = {};
 
-  await fetchData();
+            advisor.value = {
+              type: res.data.success ? "success" : "error",
+              message: res.data.success ? "Kunden har tagits bort!" : res.data.message,
+              show: true,
+            };
+
+            fetchData()
+        }
+        isRequestOngoing.value = false
+    })
+    .catch((err) => {
+
+
+      if(err.feedback === 'client_has_open_items_pending') {
+        isItemsPendingDialogVisible.value = true
+      }
+
+      advisor.value = {
+        type: 'error',
+        message: err.message,
+        show: true,
+      }
+
+      isRequestOngoing.value = false
+    })
 
   setTimeout(() => {
-    advisor.value = {
-      type: "",
-      message: "",
-      show: false,
-    };
-  }, 3000);
-
-  return true;
+      advisor.value = {
+          type: '',
+          message: '',
+          show: false
+      }
+  }, 3000)
 };
+
+const showDocuments = (clientData) => {
+  isRequestOngoing.value = true;
+
+  clientsStores.fetchPendingItems(clientData.id)
+    .then((res) => {
+      pendingItems.value = {
+        pending_invoices: res.data?.data?.pending_invoices ?? [],
+        open_agreements: res.data?.data?.open_agreements ?? [],
+      };
+
+      isItemsPendingDialogVisible.value = false;
+
+      if(isMobile.value) {
+        isPendingDocumentsMobileDialogVisible.value = true;
+        return;
+      }
+      isPendingDocumentsDialogVisible.value = true;
+    })
+    .catch((err) => {
+      advisor.value = {
+        type: "error",
+        message: err?.response?.data?.message ?? err.message,
+        show: true,
+      };
+    })
+    .finally(() => {
+      isRequestOngoing.value = false;
+    });
+};
+
+const seeDocument = (agreement) => {
+  router.push(`/dashboard/admin/agreements?file_id=${agreement.id}`)
+};
+
+const seeBilling = (invoice) => {
+  router.push({
+    name: "dashboard-admin-billings-id",
+    params: { id: invoice.id },
+  });
+};
+
+const resolveStatus = state => {
+  if (state === 'created')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'sent')
+    return { 
+      name: 'Skickad',
+      class: 'success',
+      icon: 'custom-forward'
+    }
+  if (state === 'signed')
+    return { 
+      name: 'Signerad',
+      class: 'success',
+      icon: 'custom-signature'
+    }
+  if (state === 'pending')
+    return { 
+      name: 'Skapad',
+      class: 'info',
+      icon: 'custom-star'
+    }
+  if (state === 'delivered')
+    return { 
+      name: 'Levererad',
+      class: 'success',
+      icon: 'custom-check-mark-2'
+    }
+  if (state === 'reviewed')
+    return { 
+      name: 'Granskad',
+      class: 'info',
+      icon: 'custom-eye'
+    }
+  if (state === 'delivery_issues')
+    return { 
+      name: 'Leveransproblem',
+      class: 'pending',
+      icon: 'custom-risk'
+    }
+  if (state === 'failed')
+    return { 
+      name: 'Misslyckades',
+      class: 'error',
+      icon: 'custom-close'
+    }
+}
 
 const submitForm = async (client, method) => {
   isRequestOngoing.value = true;
@@ -575,7 +665,6 @@ onBeforeUnmount(() => {
             <th scope="col" class="text-center">Organisationsnummer</th>
             <th scope="col" class="text-center">Telefon</th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" class="text-center">Status</th>
             <th scope="col" v-if="role !== 'Supplier' && role !== 'User'">Leverantör</th>
             <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'clients') || $can('delete', 'clients')"></th>
@@ -626,14 +715,6 @@ onBeforeUnmount(() => {
                 <span>{{ client.address }}</span>
               </VTooltip>
               <span v-else>{{ client.address }}</span>
-            </td>
-            <td class="text-center text-wrap d-flex justify-center align-center">
-              <div
-                class="status-chip"
-                :class="`status-chip-${client.deleted_at ? 'error' : 'success'}`"
-              >
-                {{ client.deleted_at ? 'Inaktiv' : 'Aktiv' }}
-              </div>
             </td>
             <td class="text-wrap" v-if="role === 'SuperAdmin' || role === 'Administrator'">
               <span v-if="client.supplier">
@@ -704,20 +785,12 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem
                     v-if="$can('delete', 'clients') && client.deleted_at === null"
-                    @click="showDeleteDialog(client)"
+                    @click="showDeleteDialog(client, false)"
                   >
                     <template #prepend>
                       <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
-                  </VListItem>
-                  <VListItem
-                    v-if="$can('delete','clients') && client.deleted_at !== null"
-                    @click="showActivateDialog(client)">
-                    <template #prepend>
-                      <VIcon icon="tabler-rosette-discount-check" />
-                    </template>
-                    <VListItemTitle>Aktivera</VListItemTitle>
                   </VListItem>
                 </VList>
               </VMenu>
@@ -793,17 +866,6 @@ onBeforeUnmount(() => {
                 {{ client.phone ?? "" }}
               </div>
             </div>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Status:</div>
-              <div class="expansion-panel-item-value">
-                <div
-                  class="status-chip"
-                  :class="`status-chip-${client.deleted_at ? 'error' : 'success'}`"
-                >
-                  {{ client.deleted_at ? 'Inaktiv' : 'Aktiv' }}
-                </div>
-              </div>
-            </div>
             <div class="mb-4 row-with-buttons" v-if="client.deleted_at === null">
               <VBtn
                 v-if="$can('edit', 'clients')"
@@ -816,7 +878,7 @@ onBeforeUnmount(() => {
               <VBtn
                 v-if="$can('delete', 'clients')"
                 class="btn-light"
-                @click="showDeleteDialog(client)"
+                @click="showDeleteDialog(client, true)"
               >
                 <VIcon icon="custom-waste" size="24" />
                 Ta bort
@@ -830,14 +892,6 @@ onBeforeUnmount(() => {
               >
                 <VIcon icon="custom-eye" size="24" />
                  Se detaljer
-              </VBtn>
-              <VBtn
-                v-if="$can('delete', 'clients')"
-                class="btn-light"
-                @click="showActivateDialog(client)"
-              >
-                <VIcon icon="tabler-rosette-discount-check" size="24" />
-                Aktivera
               </VBtn>
             </div>
             <div v-if="client.deleted_at === null">
@@ -1013,45 +1067,280 @@ onBeforeUnmount(() => {
       </VCard>
     </VDialog>
 
-    <!-- 👉 Confirm activate user -->
+    <!-- 👉 Items pending -->
     <VDialog
-      v-model="isConfirmActiveDialogVisible"
-      persistent 
-      class="action-dialog">
+      v-model="isItemsPendingDialogVisible"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
       
       <!-- Dialog close btn -->
       <VBtn
         icon
         class="btn-white close-btn"
-        @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible"
+        @click="isItemsPendingDialogVisible = !isItemsPendingDialogVisible"
       >
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
       <!-- Dialog Content -->
       <VCard>
-        <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="tabler-rosette-discount-check" class="action-icon" />
-          <div class="dialog-title">
-            Aktivera kunden
-          </div>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-info" />
         </VCardText>
-        <VCardText class="dialog-text">
-          Är du säker att du vill aktivera kunden <strong>{{ selectedClient.name }} {{ selectedClient.last_name ?? '' }}</strong>?.
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title text-center">Kunden kan inte raderas!</div>
         </VCardText>
-
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VCardText class="dialog-text text-center">
+          Du kan inte radera kunden eftersom det finns pågående avtal och/eller fakturor kopplade till kunden.
+          <br>
+          Alla dokument som inte är slutförda måste först färdigställas, skickas, signeras eller tas bort innan kunden kan raderas.
+        </VCardText>
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
           <VBtn 
             class="btn-light"  
-            @click="isConfirmActiveDialogVisible = false"
+            @click="isItemsPendingDialogVisible = false"
           >
             Avbryt
           </VBtn>
           <VBtn 
             class="btn-gradient" 
-            @click="activateClient"
+            @click="showDocuments(selectedClient)"
           >
-            Acceptera
+            Visa pågående dokument
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Pending documents list -->
+    <VDialog
+      v-model="isPendingDocumentsDialogVisible"
+      persistent
+      class="action-dialog"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isPendingDocumentsDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Pågående dokument</div>
+        </VCardText>
+
+        <VCardText v-if="pendingItems.open_agreements.length > 0" class="dialog-text font-weight-bold">Pågående avtal</VCardText>
+        <VCardText v-if="pendingItems.open_agreements.length > 0" class="pt-2">
+          <template 
+           v-for="agreement in pendingItems.open_agreements"
+            :key="`agreement-${agreement.id}`"
+          >
+            <div class="d-flex justify-between text-neutral-3">
+              <div class="d-flex flex-column">
+                <span class="font-weight-medium">{{ agreement.agreement_type.name }}</span>
+                <span>
+                  {{ agreement.agreement_type_id === 4 ?
+                    `Offer nr: ${agreement.offer.offer_id}` : 
+                    ( agreement.agreement_type_id === 3 ? 
+                      `Avtalsnummer: ${agreement.commission.commission_id}` : 
+                      `Avtalsnummer: ${agreement.agreement_id}`
+                    )                    
+                  }}
+                </span>
+                <span>
+                  Datum: {{ formatDateYMD(agreement.created_at) }}
+                </span>
+              </div>
+              <div class="d-flex gap-2 justify-center align-center">
+                <VSpacer :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" />
+                <div
+                  v-if="agreement.token"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
+                >
+                  <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                  {{ resolveStatus(agreement.token?.signature_status)?.name }}
+                </div>
+                <VBtn 
+                  class="btn-ghost px-2" 
+                  style="height: 32px !important;"
+                  @click="seeDocument(agreement)">
+                  <VIcon icon="custom-eye" size="24" />                
+                </VBtn>
+              </div>
+            </div>
+            <VDivider />
+          </template>
+        </VCardText>
+
+        <VCardText v-if="pendingItems.pending_invoices.length > 0" class="dialog-text font-weight-bold">Fakturor att stänga</VCardText>
+        <VCardText v-if="pendingItems.pending_invoices.length > 0" class="pt-2">
+          <template 
+            v-for="invoice in pendingItems.pending_invoices"
+            :key="`invoice-${invoice.id}`"
+          >
+            <div class="d-flex justify-between text-neutral-3">
+              <div class="d-flex flex-column">
+                <span>
+                  Faktura nr: {{ invoice.invoice_id}}
+                </span>
+                <span>
+                  Förfallodatum: {{ formatDateYMD(invoice.invoice_date) }}
+                </span>
+                 <span>
+                  Total: {{ formatNumber(invoice.total) }} kr
+                </span>
+              </div>
+              <div class="d-flex gap-2 justify-center align-center">
+                <VSpacer :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" />
+                <div
+                  class="status-chip"
+                  :class="`status-chip-pending`"
+                >
+                  Obetald
+                </div>
+                <VBtn 
+                  class="btn-ghost px-2" 
+                  style="height: 32px !important;"
+                  @click="seeBilling(invoice)">
+                  <VIcon icon="custom-eye" size="24" />                
+                </VBtn>
+              </div>
+            </div>
+            <VDivider />
+          </template>        
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isPendingDocumentsDialogVisible = false">
+            Stäng
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Pending documents list mobile -->
+    <VDialog
+      v-model="isPendingDocumentsMobileDialogVisible"
+      fullscreen
+      persistent
+      :scrim="false"
+      transition="dialog-bottom-transition"
+      class="action-dialog dialog-fullscreen"
+      content-class="clients-pending-mobile-fullscreen">
+      
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isPendingDocumentsMobileDialogVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard class="h-100">
+        <VCardText class="dialog-title-box mb-2 pb-0 flex-0">
+          <img :src="modalWarningIcon" alt="Warning" class="action-icon" />
+          <div class="dialog-title">Pågående dokument</div>
+        </VCardText>
+
+        <VCardText 
+          v-if="pendingItems.open_agreements.length > 0" 
+          style="overflow-y: auto; overflow-x: hidden;"
+          class="pt-4 pb-0 flex-none font-weight-bold">
+          Pågående avtal
+        </VCardText>
+        <VCardText v-if="pendingItems.open_agreements.length > 0" class="pt-2">
+          <template 
+           v-for="agreement in pendingItems.open_agreements"
+            :key="`agreement-${agreement.id}`"
+          >
+            <div class="d-flex justify-between text-neutral-3">
+              <div class="d-flex flex-column">
+                <span class="font-weight-medium">{{ agreement.agreement_type.name }}</span>
+                <span>
+                  {{ agreement.agreement_type_id === 4 ?
+                    `Offer nr: ${agreement.offer.offer_id}` : 
+                    ( agreement.agreement_type_id === 3 ? 
+                      `Avtalsnummer: ${agreement.commission.commission_id}` : 
+                      `Avtalsnummer: ${agreement.agreement_id}`
+                    )                    
+                  }}
+                </span>
+                <span>
+                  Datum: {{ formatDateYMD(agreement.created_at) }}
+                </span>
+              </div>
+              <div class="d-flex gap-2 justify-center align-center">
+                <VSpacer :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" />
+                <div
+                  v-if="agreement.token"
+                  class="status-chip"
+                  :class="`status-chip-${resolveStatus(agreement.token?.signature_status)?.class}`"
+                >
+                  <VIcon size="16" :icon="resolveStatus(agreement.token?.signature_status)?.icon" class="action-icon" />
+                  {{ resolveStatus(agreement.token?.signature_status)?.name }}
+                </div>
+                <VBtn 
+                  class="btn-ghost px-2" 
+                  style="height: 32px !important;"
+                  @click="seeDocument(agreement)">
+                  <VIcon icon="custom-eye" size="24" />                
+                </VBtn>
+              </div>
+            </div>
+            <VDivider />
+          </template>
+        </VCardText>
+
+        <VCardText 
+          v-if="pendingItems.pending_invoices.length > 0" 
+          style="overflow-y: auto; overflow-x: hidden;"
+          class="pt-4 pb-0 flex-none font-weight-bold">
+          Fakturor att stänga
+        </VCardText>
+        <VCardText v-if="pendingItems.pending_invoices.length > 0" class="pt-2">
+          <template 
+            v-for="invoice in pendingItems.pending_invoices"
+            :key="`invoice-${invoice.id}`"
+          >
+            <div class="d-flex justify-between text-neutral-3">
+              <div class="d-flex flex-column">
+                <span>
+                  Faktura nr: {{ invoice.invoice_id}}
+                </span>
+                <span>
+                  Förfallodatum: {{ formatDateYMD(invoice.invoice_date) }}
+                </span>
+                 <span>
+                  Total: {{ formatNumber(invoice.total) }} kr
+                </span>
+              </div>
+              <div class="d-flex gap-2 justify-center align-center">
+                <VSpacer :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" />
+                <div
+                  class="status-chip"
+                  :class="`status-chip-pending`"
+                >
+                  Obetald
+                </div>
+                <VBtn 
+                  class="btn-ghost px-2" 
+                  style="height: 32px !important;"
+                  @click="seeBilling(invoice)">
+                  <VIcon icon="custom-eye" size="24" />                
+                </VBtn>
+              </div>
+            </div>
+            <VDivider />
+          </template>        
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions flex-none mt-auto">
+          <VBtn class="btn-light" @click="isPendingDocumentsMobileDialogVisible = false">
+            Stäng
           </VBtn>
         </VCardText>
       </VCard>
@@ -1095,6 +1384,25 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+
+  :deep(.clients-pending-mobile-fullscreen) {
+    inset: 0 !important;
+    margin: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  :deep(.clients-pending-mobile-fullscreen > .v-card) {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0 !important;
+    overflow-y: auto;
+  }
+
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

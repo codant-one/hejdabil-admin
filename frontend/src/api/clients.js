@@ -25,6 +25,10 @@ class Clients {
     activate(id){
         return axios.get(`/clients/activate/${id}`)
     }
+
+    pendingItems(id){
+        return axios.get(`/clients/pending-items/${id}`)
+    }
     
 }
 

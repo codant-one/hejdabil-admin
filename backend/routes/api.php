@@ -170,6 +170,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     //Clients
     Route::group(['prefix' => 'clients'], function () {
         Route::get('/activate/{id}', [ClientController::class, 'activate']);
+        Route::get('/pending-items/{id}', [ClientController::class, 'pendingItems']);
     });
 
     //Tasks

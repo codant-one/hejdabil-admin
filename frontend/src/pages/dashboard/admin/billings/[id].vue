@@ -329,7 +329,8 @@ onBeforeUnmount(() => {
       <VBtn
         v-if="
           $can('view', 'billings') &&
-          (invoice.state_id === 4 || invoice.state_id === 8)
+          (invoice.state_id === 4 || invoice.state_id === 8) &&
+          invoice.client.deleted_at === null
         "
         class="btn-light mb-4"
         :to="{ name: 'dashboard-admin-billings-edit-id', params: { id: Number(route.params.id) } }"
@@ -404,7 +405,8 @@ onBeforeUnmount(() => {
             <VBtn 
               v-if="
                 $can('view', 'billings') &&
-                (invoice.state_id === 4 || invoice.state_id === 8)
+                (invoice.state_id === 4 || invoice.state_id === 8) &&
+                invoice.client.deleted_at === null
               "
               class="btn-gradient w-100 mb-4" 
               @click="editBilling">
@@ -469,7 +471,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings')"
+              v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
               class="btn-light w-100 mb-4"
               @click="duplicate"
             >
@@ -480,7 +482,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id === 8"
+              v-if="$can('edit', 'billings') && invoice.state_id === 8 && invoice.client.deleted_at === null"
               class="btn-light w-100 mb-4"
               @click="sendReminder"
             >
@@ -490,7 +492,7 @@ onBeforeUnmount(() => {
               Påminnelse
             </VBtn>
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id !== 9"
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
               class="btn-light w-100"
               @click="credit"
             >
@@ -540,7 +542,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
             @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -558,7 +560,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null && invoice.state_id !== 9"
             @click="credit(); isMobileActionDialogVisible = false"
           >
             <template #prepend>

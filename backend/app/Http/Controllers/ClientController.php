@@ -16,6 +16,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Billing;
 use App\Models\VehicleClient;
+use App\Models\Agreement;
 use App\Models\Client;
 
 class ClientController extends Controller
@@ -26,6 +27,7 @@ class ClientController extends Controller
         $this->middleware(PermissionMiddleware::class . ':create clients|administrator')->only(['store']);
         $this->middleware(PermissionMiddleware::class . ':edit clients|administrator')->only(['update']);
         $this->middleware(PermissionMiddleware::class . ':delete clients|administrator')->only(['destroy']);
+        $this->middleware(PermissionMiddleware::class . ':view clients|administrator')->only(['pendingItems']);
     }
 
     /**
@@ -43,10 +45,7 @@ class ClientController extends Controller
                         'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo',
                         'state:id,name'
-                    ])
-                    ->when($request->has('include_deleted') && $request->include_deleted, function($q) {
-                        return $q->withTrashed();
-                    })->applyFilters(
+                    ])->applyFilters(
                         $request->only([
                             'search',
                             'orderByField',
@@ -233,6 +232,33 @@ class ClientController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Kunden hittades inte'
                 ], 404);
+
+            $hasPendingInvoices = Billing::where('state_id', 4)
+                ->applyFilters(['client_id' => $id])
+                ->exists();
+
+            $hasOpenAgreements = Agreement::where(function ($query) use ($id) {
+                $query->whereHas('agreement_client.client', function ($subQuery) use ($id) {
+                    $subQuery->where('id', $id);
+                })
+                ->orWhereHas('vehicle_client.client', function ($subQuery) use ($id) {
+                    $subQuery->where('id', $id);
+                });
+            })
+            ->where(function ($query) {
+                $query->doesntHave('token')
+                    ->orWhereHas('token', function ($tokenQuery) {
+                        $tokenQuery->whereRaw("LOWER(signature_status) != 'signed'");
+                    });
+            })
+            ->exists();
+
+            if ($hasOpenAgreements || $hasPendingInvoices)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'client_has_open_items_pending',
+                    'message' => 'Kunden kan inte raderas'
+                ], 400);
             
             $client->deleteClient($id);
 
@@ -275,6 +301,65 @@ class ClientController extends Controller
             ], 200);
 
         } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function pendingItems($id): JsonResponse
+    {
+        try {
+            $client = Client::find($id);
+
+            if (!$client)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Kunden hittades inte'
+                ], 404);
+
+            $pendingInvoices = Billing::where('state_id', 4)
+                ->applyFilters(['client_id' => $id])
+                ->select('id', 'invoice_id', 'invoice_date', 'due_date', 'total', 'amount_discount', 'state_id')
+                ->orderByDesc('id')
+                ->get();
+
+            $openAgreements = Agreement::with([
+                    'agreement_type:id,name',
+                    'offer:id,offer_id',
+                    'commission:id,commission_id',
+                    'token:id,agreement_id,signature_status'
+                ])
+                ->where(function ($query) use ($id) {
+                    $query->whereHas('agreement_client.client', function ($subQuery) use ($id) {
+                        $subQuery->where('id', $id);
+                    })
+                    ->orWhereHas('vehicle_client.client', function ($subQuery) use ($id) {
+                        $subQuery->where('id', $id);
+                    });
+                })
+                ->where(function ($query) {
+                    $query->doesntHave('token')
+                        ->orWhereHas('token', function ($tokenQuery) {
+                            $tokenQuery->whereRaw("LOWER(signature_status) != 'signed'");
+                        });
+                })
+                ->select('id', 'agreement_id', 'agreement_type_id', 'offer_id', 'commission_id', 'file', 'created_at')
+                ->orderByDesc('id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'pending_invoices' => $pendingInvoices,
+                    'open_agreements' => $openAgreements,
+                ]
+            ]);
+
+        } catch (\Illuminate\Database\QueryException $ex) {
             return response()->json([
                 'success' => false,
                 'message' => 'database_error',

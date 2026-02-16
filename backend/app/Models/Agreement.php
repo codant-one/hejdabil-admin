@@ -103,6 +103,37 @@ class Agreement extends Model
                     $inner->where('reg_num', 'LIKE', '%' . $search . '%');
                 });
             })
+            ->orWhereHas('commission.client', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('fullname', 'LIKE', '%' . $search . '%')
+                          ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                          ->orWhere('email', 'LIKE', '%' . $search . '%');
+                });
+            })
+            ->orWhereHas('agreement_client', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('fullname', 'LIKE', '%' . $search . '%')
+                          ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                          ->orWhere('email', 'LIKE', '%' . $search . '%')
+                          ->orWhereHas('client', function ($clientQ) use ($search) {
+                              $clientQ->where('fullname', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('email', 'LIKE', '%' . $search . '%');
+                          });
+                });
+            })
+            ->orWhereHas('vehicle_client', function ($uq) use ($search) {
+                $uq->where(function ($inner) use ($search) {
+                    $inner->where('fullname', 'LIKE', '%' . $search . '%')
+                          ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                          ->orWhere('email', 'LIKE', '%' . $search . '%')
+                          ->orWhereHas('client', function ($clientQ) use ($search) {
+                              $clientQ->where('fullname', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('organization_number', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('email', 'LIKE', '%' . $search . '%');
+                          });
+                });
+            })
             ->orWhereHas('commission.vehicle', function ($uq) use ($search) {
                 $uq->where(function ($inner) use ($search) {
                     $inner->where('reg_num', 'LIKE', '%' . $search . '%');

@@ -2015,7 +2015,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VDivider />
-        <VCardText class="d-flex justify-center" style="min-height:400px;">
+        <VCardText class="d-flex justify-center p-0" style="min-height:400px;">
           <VAlert 
             v-if="trackerPreviewError" 
             type="error" class="mb-4">

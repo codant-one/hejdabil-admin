@@ -827,7 +827,8 @@ onBeforeUnmount(() => {
                   <VListItem
                     v-if="
                       $can('view', 'billings') &&
-                      (billing.state_id === 4 || billing.state_id === 8)
+                      (billing.state_id === 4 || billing.state_id === 8) &&
+                      billing.client.deleted_at === null
                     "
                     @click="editBilling(billing)"
                   >
@@ -855,7 +856,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Visa som PDF</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings')"
+                    v-if="$can('edit', 'billings') && billing.client.deleted_at === null"
                     @click="duplicate(billing)"
                   >
                     <template #prepend>
@@ -883,7 +884,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id !== 9"
+                    v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.client.deleted_at === null" 
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -1325,7 +1326,10 @@ onBeforeUnmount(() => {
             <VListItemTitle>Betala</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') &&  (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
+            v-if="
+              $can('edit', 'billings') && 
+              (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8) &&
+              selectedBillingForAction.client.deleted_at === null"
             @click="editBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1352,7 +1356,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.client.deleted_at === null"
             @click="duplicate(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1379,7 +1383,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.client.deleted_at === null"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

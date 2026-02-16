@@ -83,8 +83,13 @@ export const useClientsStores = defineStore('clients', {
 
             return Clients.delete(id)
                 .then((response) => {
-                    let index = this.clients.findIndex((item) => item.id === id)
-                    this.clients.splice(index, 1)
+                    if (response.data.success) {
+                        let index = this.clients.findIndex((item) => item.id === id)
+
+                        if (index !== -1)
+                            this.clients.splice(index, 1)
+                    }
+
                     return Promise.resolve(response)
                 })
                 .catch(error => Promise.reject(error))
@@ -99,6 +104,16 @@ export const useClientsStores = defineStore('clients', {
                 .then((response) => {
                     return Promise.resolve(response)
                 })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        fetchPendingItems(id) {
+            this.setLoading(true)
+
+            return Clients.pendingItems(id)
+                .then((response) => Promise.resolve(response))
                 .catch(error => Promise.reject(error))
                 .finally(() => {
                     this.setLoading(false)

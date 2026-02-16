@@ -197,7 +197,7 @@
                             <td class="header-title-cell">
                                 <h1>Prisförslag</h1>
                                 <div class="contract-details">
-                                    Offert nr: {{ $agreement->offer->id }} <br>
+                                    Offert nr: {{ $agreement->offer->offer_id }} <br>
                                     Datum: {{ $agreement->offer->created_at->format('Y-m-d')}}
                                 </div>
                             </td>
