@@ -907,16 +907,64 @@ const setThumbsSwiper = (swiper) => {
     }
 
     .radio-form {
-        height: 16px;
+        display: flex;
+        align-items: center;
+        height: 24px;
+
+        :deep(.v-selection-control-group) {
+            gap: 8px;
+        }
+
+        :deep(.v-selection-control) {
+            min-height: auto;
+        }
+
         :deep(.v-selection-control--dirty) {
             .v-selection-control__input > .v-icon {
                 color: #00E1E2 !important;
             }
         }
+
         :deep(.v-label) {
             color: #5D5D5D;
             font-size: 12px;
+            opacity: 1;
         }
     }
 
+</style>
+<style lang="scss" scoped>
+    :deep(.radio-form .v-input--density-comfortable), :deep(.v-radio) {
+        --v-input-control-height: 0 !important;
+    }
+
+    :deep(.radio-form) {
+        @media (max-width: 1023px) {
+            .v-selection-control-group  {
+                .v-radio:not(:last-child) {
+                    margin-inline-end: 0.1rem !important;
+                } 
+            }
+        }
+    }
+
+    :deep(.radio-form .v-selection-control__wrapper) {
+        height: 20px !important;
+        width: 20px !important;
+    }
+
+    :deep(.radio-form .v-icon--size-default) {
+        font-size: calc(var(--v-icon-size-multiplier) * 1em) !important;
+    }
+
+    :deep(.radio-form .v-selection-control--dirty) {
+        .v-selection-control__input > .v-icon {
+            color: #00E1E2 !important;
+        }
+    }
+
+    :deep(.radio-form .v-label) {
+        color: #5D5D5D;
+        font-size: 12px;
+    }
 </style>
