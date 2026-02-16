@@ -1737,7 +1737,7 @@ onBeforeUnmount(() => {
               clear-icon="tabler-x"/>
           </VListItem>           
           <VListItem class="form pt-6">
-            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontraktstyper" />
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ" />
             <AppAutocomplete
               v-model="agreement_type_id_select"
               :items="agreementTypes"
@@ -1809,7 +1809,7 @@ onBeforeUnmount(() => {
                 clear-icon="tabler-x"/>
             </VCol>
             <VCol cols="12" md="12" class="pb-0">
-              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontraktstyper" />
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ" />
               <AppAutocomplete
                 v-model="agreement_type_id_select"
                 :items="agreementTypes"
