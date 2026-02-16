@@ -950,6 +950,7 @@ const setThumbsSwiper = (swiper) => {
 
     :deep(.radio-form .v-selection-control__wrapper) {
         height: 20px !important;
+        width: 20px !important;
     }
 
     :deep(.radio-form .v-icon--size-default) {
