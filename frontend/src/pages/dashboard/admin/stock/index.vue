@@ -3,19 +3,18 @@
 import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
 import { useVehiclesStores } from '@/stores/useVehicles'
-import { useCarInfoStores } from '@/stores/useCarInfo'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
 import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
+import showMobile from "@/components/vehicles/showMobile.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
 const vehiclesStores = useVehiclesStores()
-const carInfoStores = useCarInfoStores()
 const emitter = inject("emitter")
 const route = useRoute()
 
@@ -40,6 +39,7 @@ const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmCreateDialogVisible = ref(false)
 const isVehicleDetailDialog = ref(false)
+const isMobile = ref(false)
 const selectedVehicle = ref({})
 const state_id = ref(null)
 const year = ref(null)
@@ -53,18 +53,6 @@ const model_id = ref(null)
 const modelsByBrand = ref([])
 
 const plate = ref(null)
-const chassis = ref(null)
-const year_api = ref(null)
-const generation = ref(null)
-const model_api = ref(null)
-const brand_id_api = ref(null)
-const model_id_api = ref(null)
-const car_body_id_api = ref(null)
-const fuel_id_api = ref(null)
-const gearbox_id_api = ref(null)
-const color = ref(null)
-const mileage = ref(null)
-const control_inspection = ref(null)
 const refForm = ref()
 
 const selectedVehicleForAction = ref({});
@@ -258,8 +246,9 @@ const showDeleteDialog = vehicleData => {
   selectedVehicle.value = { ...vehicleData }
 }
 
-const showVehicle = async (id) => {
+const showVehicle = async (id, mobile = false) => {
   isVehicleDetailDialog.value = true
+  isMobile.value = mobile
   selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
 }
 
@@ -344,72 +333,6 @@ const onSubmit = async () => {
         vehiclesStores.setCommonInfo(carRes.data.common_info)
         router.push({ name : 'dashboard-admin-stock-add' })
       }
-
-      // Verificar success (también manejar typo 'sucess' de la API)
-    //   const isSuccess = carRes.success === true || carRes.sucess === true
-
-    //   if (isSuccess && carRes.result) {
-    //     chassis.value = carRes.result.chassis_number ?? carRes.result.vin
-    //     year_api.value = carRes.result.model_year
-    //     generation.value = carRes.result.generation
-    //     model_api.value = carRes.result.model_name
-    //     brand_id_api.value = carRes.result.brand_id
-    //     model_id_api.value = carRes.result.model_id
-    //     car_body_id_api.value = carRes.result.car_body_id
-    //     fuel_id_api.value = carRes.result.fuel_id
-    //     gearbox_id_api.value = carRes.result.gearbox_id
-    //     color.value = carRes.result.basic_color
-    //     mileage.value = carRes.result.mileage
-    //     control_inspection.value = carRes.result.control_inspection
-    //   }
-
-    //   let formData = new FormData()
-
-    //   formData.append('reg_num', plate.value)
-      
-    //   if (chassis.value) formData.append('chassis', chassis.value)
-    //   if (year_api.value) formData.append('year', year_api.value)
-    //   if (generation.value) formData.append('generation', generation.value)
-    //   if (model_api.value) formData.append('model', model_api.value)
-    //   if (brand_id_api.value) formData.append('brand_id', brand_id_api.value)
-    //   if (color.value) formData.append('color', color.value)
-    //   if (mileage.value) formData.append('mileage', mileage.value)
-    //   if (control_inspection.value) formData.append('control_inspection', control_inspection.value)
-
-    //   // Si tenemos brand_id pero no model_id, enviar model_id=0 para crear nuevo modelo
-    //   if (model_id_api.value) {
-    //     formData.append('model_id', model_id_api.value)
-    //   } else if (brand_id_api.value && model_api.value) {
-    //     formData.append('model_id', '0')
-    //   }
-      
-    //   if (car_body_id_api.value) formData.append('car_body_id', car_body_id_api.value)
-    //   if (fuel_id_api.value) formData.append('fuel_id', fuel_id_api.value)
-    //   if (gearbox_id_api.value) formData.append('gearbox_id', gearbox_id_api.value)
-
-    //   vehiclesStores.addVehicle(formData)
-    //     .then((res) => {
-    //       router.push({ name : 'dashboard-admin-stock-edit-id', params: { id: res.data.data.vehicle.id } })  
-    //     })
-    //     .catch((err) => {
-    //       //console.log('err', err)
-    //       plate.value = null
-    //         advisor.value = {
-    //             type: 'error',
-    //             message: err.message,
-    //             show: true
-    //         }
-
-    //         setTimeout(() => {
-    //           advisor.value = {
-    //             type: '',
-    //             message: '',
-    //             show: false
-    //           }
-    //         }, 3000)
-
-    //         isRequestOngoing.value = false
-    //     })
     }
   })
 }
@@ -655,7 +578,7 @@ onBeforeUnmount(() => {
             :key="vehicle.id"
             style="height: 3rem;">
             <td v-if="isColVisible('purchase_date')"> {{ vehicle.purchase_date }} </td>
-            <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id)">
+            <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id, false)">
               <div class="d-flex align-center gap-x-3"> 
                 <VAvatar
                   v-if="vehicle.model?.brand?.logo"
@@ -781,7 +704,7 @@ onBeforeUnmount(() => {
                 <VList>
                   <VListItem 
                     v-if="$can('edit', 'stock')" 
-                    @click="showVehicle(vehicle.id)"
+                    @click="showVehicle(vehicle.id, false)"
                   >
                     <template #prepend>
                       <VIcon icon="custom-eye" size="24" class="mr-2" />
@@ -913,7 +836,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="d-flex gap-4">
-              <VBtn class="btn-light flex-1" @click="showVehicle(vehicle.id)">
+              <VBtn class="btn-light flex-1" @click="showVehicle(vehicle.id, true)">
                 <VIcon icon="custom-eye" size="24" class="me-2"/>
                 Se detaljer
               </VBtn>
@@ -1343,6 +1266,12 @@ onBeforeUnmount(() => {
   </VDialog>
 
   <show 
+    v-if="!isMobile"
+    v-model:isDrawerOpen="isVehicleDetailDialog"
+    :vehicle="selectedVehicle"/>
+
+  <showMobile 
+    v-else
     v-model:isDrawerOpen="isVehicleDetailDialog"
     :vehicle="selectedVehicle"/>
   </section>

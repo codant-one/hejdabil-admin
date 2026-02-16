@@ -9,6 +9,7 @@ import { formatNumber } from '@/@core/utils/formatters'
 import { formatNumberInteger } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
 import show from "@/components/vehicles/show.vue";
+import showMobile from "@/components/vehicles/showMobile.vue"
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
@@ -35,6 +36,7 @@ const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isVehicleDetailDialog = ref(false)
+const isMobile = ref(false)
 const selectedVehicle = ref({})
 const isFilterDialogVisible = ref(false);
 const filtreraMobile = ref(false);
@@ -204,8 +206,9 @@ function registerEvents() {
     emitter.on('cleanFilters', fetchData)
 }
 
-const showVehicle = async (id) => {
+const showVehicle = async (id, mobile = false) => {
   isVehicleDetailDialog.value = true
+  isMobile.value = mobile
   selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
 }
 
@@ -461,7 +464,7 @@ onBeforeUnmount(() => {
             :key="vehicle.id"
             style="height: 3rem;">
             <td class="text-center" v-if="isColVisible('sale_date')"> {{ vehicle.sale_date }}</td>
-            <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id)">
+            <td class="cursor-pointer" v-if="isColVisible('info')" @click="showVehicle(vehicle.id, false)">
               <div class="d-flex align-center gap-x-3"> 
                 <VAvatar
                   v-if="vehicle.model?.brand?.logo"
@@ -567,7 +570,7 @@ onBeforeUnmount(() => {
                 </template>
 
                 <VList>
-                  <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id)">
+                  <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id, false)">
                     <template #prepend>
                       <img :src="eyeIcon" alt="See Icon" class="mr-2" />
                     </template>
@@ -663,7 +666,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div class="d-flex">
-              <VBtn class="btn-light flex-fill"  @click="showVehicle(vehicle.id)">
+              <VBtn class="btn-light flex-fill"  @click="showVehicle(vehicle.id, true)">
                 <VIcon icon="custom-eye" size="24" />
                 Se detaljer
               </VBtn>
@@ -977,6 +980,12 @@ onBeforeUnmount(() => {
     </VDialog>
 
     <show 
+      v-if="!isMobile"
+      v-model:isDrawerOpen="isVehicleDetailDialog"
+      :vehicle="selectedVehicle"/>
+
+    <showMobile 
+      v-else
       v-model:isDrawerOpen="isVehicleDetailDialog"
       :vehicle="selectedVehicle"/>
   </section>
