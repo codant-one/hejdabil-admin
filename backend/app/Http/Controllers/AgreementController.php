@@ -334,10 +334,21 @@ class AgreementController extends Controller
             $agreement_id = Agreement::whereNull('supplier_id')->count();
             $commission_id = Commission::whereNull('supplier_id')->count();
             $offer_id = Offer::whereNull('supplier_id')->count();
+
+            $user = Auth::user();
+            $isSupplier = Auth::check() && $user->hasRole('Supplier');
+            $isUser = Auth::check() && $user->hasRole('User');
+
+            $supplier_id = match (true) {
+                $isSupplier => $user->supplier?->id,
+                $isUser => $user->supplier?->boss_id,
+                default => null,
+            };
+
             $vehicles = 
                 Vehicle::with(['model.brand'])
                        ->where([
-                            ['user_id', Auth::user()->id], 
+                            ['supplier_id', $supplier_id], 
                             ['state_id', 10]
                        ])->get();
 
