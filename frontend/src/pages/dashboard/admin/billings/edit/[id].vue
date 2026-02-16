@@ -190,11 +190,9 @@ async function fetchData() {
   }
 }
 
-const createBilling = () => {
-  router.push({
-    name: "dashboard-admin-billings-add"
-  });
-};
+function reloadPage() {
+  window.location.reload();
+}
 
 const showError = () => {
   inteSkapatsDialog.value = false;
@@ -509,17 +507,19 @@ onBeforeRouteLeave((to, from, next) => {
           <VIcon size="72" icon="custom-f-create-order" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
-          <div class="dialog-title">Fakturan är skapad!</div>
+          <div class="dialog-title">Fakturan är uppdaterad!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din faktura har sparats som ett utkast. Du kan nu skicka den till kunden.
+           Ditt Fakturan har uppdaterats och ändringarna har sparats.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
           <VBtn class="btn-light" @click="editBilling">
             Gå till fakturalistan
           </VBtn>
-          <VBtn class="btn-gradient" @click="createBilling"> Skapa ny faktura </VBtn>
+          <VBtn class="btn-gradient" @click="reloadPage"> 
+            Redigera fakturan
+          </VBtn>
         </VCardText>
       </VCard>
     </VDialog>
