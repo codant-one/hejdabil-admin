@@ -37,6 +37,41 @@ const elementId = computed(() => {
 })
 
 const label = computed(() => useAttrs().label)
+
+const mergedMenuProps = computed(() => {
+  const attrs = useAttrs()
+  const incoming = attrs.menuProps || attrs['menu-props'] || {}
+  const incomingObject = typeof incoming === 'object' && incoming !== null ? incoming : {}
+
+  const contentClass = [
+    'app-inner-list',
+    'app-autocomplete__content',
+    'v-autocomplete__content',
+    ...(Array.isArray(incomingObject.contentClass)
+      ? incomingObject.contentClass
+      : incomingObject.contentClass
+        ? [incomingObject.contentClass]
+        : []),
+  ]
+
+  return {
+    ...incomingObject,
+    contentClass,
+  }
+})
+
+const autocompleteAttrs = computed(() => {
+  const attrs = useAttrs()
+
+  return {
+    ...attrs,
+    class: null,
+    label: undefined,
+    id: elementId.value,
+    menuIcon: '',
+    menuProps: mergedMenuProps.value,
+  }
+})
 </script>
 
 <template>
@@ -53,20 +88,7 @@ const label = computed(() => useAttrs().label)
     <VAutocomplete
       ref="autocompleteRef"
       v-model:menu="menuOpen"
-      v-bind="{
-        ...$attrs,
-        class: null,
-        label: undefined,
-        id: elementId,
-        menuIcon: '',
-        menuProps: {
-          contentClass: [
-            'app-inner-list',
-            'app-autocomplete__content',
-            'v-autocomplete__content',
-          ],
-        },
-      }"
+      v-bind="autocompleteAttrs"
       @focus="handleFocus"
     >
       <template #append-inner>

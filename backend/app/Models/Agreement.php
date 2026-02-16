@@ -724,20 +724,25 @@ class Agreement extends Model
                 'client_id' => $request->save_client === 'true' ? $client->id : ($request->client_id === 'null' ? null : $request->client_id)
             ]);
 
+        if ($request->vehicle_id === 'null') {//no existe
 
-        $vehicleRequest = VehicleRequest::createFrom($request);
+            $vehicleRequest = VehicleRequest::createFrom($request);
 
-        $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+            $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
 
-        if($validate->fails()) {
-            $vehicleRequest->failedValidation($validate);
+            if($validate->fails()) {
+                $vehicleRequest->failedValidation($validate);
+            }
+
+            //Set Vehicle State ID in stock
+            $vehicleRequest->request->add(['state_id' => 10]);
+
+            $vehicle = Vehicle::createVehicle($vehicleRequest);
+            $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
+
+        } else {// existe pero no tiene contrato
+            $vehicle = Vehicle::find($request->vehicle_id);
         }
-
-        //Set Vehicle State ID in stock
-        $vehicleRequest->request->add(['state_id' => 10]);
-
-        $vehicle = Vehicle::createVehicle($vehicleRequest);
-        $vehicle = Vehicle::updateVehicle($vehicleRequest, $vehicle);
 
         if ($request->has("vehicle_id"))
             $request->merge([
@@ -753,7 +758,7 @@ class Agreement extends Model
         $vehicle = Vehicle::with(['client_purchase'])->find($vehicle->id);
 
         //Set VehicleClient ID
-       if ($request->has("client_id"))
+        if ($request->has("client_id"))
             $request->merge([
                 "vehicle_client_id" => $vehicle->client_purchase->id
             ]);

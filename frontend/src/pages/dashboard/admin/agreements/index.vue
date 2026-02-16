@@ -1625,6 +1625,7 @@ onBeforeUnmount(() => {
             <VRow>
               <VCol cols="12">
                 <AppAutocomplete
+                  :menu-props="{ maxHeight: '300px' }"
                   v-model="agreement_type_id"
                   :items="agreementTypes"
                   item-title="name"      
@@ -1859,6 +1860,7 @@ onBeforeUnmount(() => {
         <VList>
           <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
             <AppAutocomplete
+              :menu-props="{ maxHeight: '300px' }"
               prepend-icon="custom-profile"
               v-model="supplier_id"
               placeholder="Leverantörer"
@@ -1874,6 +1876,7 @@ onBeforeUnmount(() => {
           <VListItem class="form">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />            
             <AppAutocomplete
+              :menu-props="{ maxHeight: '300px' }"
               v-model="status"
               :items="states"
               :item-title="item => item.name"
@@ -1885,6 +1888,7 @@ onBeforeUnmount(() => {
           <VListItem class="form pt-6">
             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ" />
             <AppAutocomplete
+              :menu-props="{ maxHeight: '300px' }"
               v-model="agreement_type_id_select"
               :items="agreementTypes"
               :item-title="item => item.name"
@@ -1931,6 +1935,7 @@ onBeforeUnmount(() => {
               v-if="role === 'SuperAdmin' || role === 'Administrator'"
               class="pb-0">
                 <AppAutocomplete
+                  :menu-props="{ maxHeight: '300px' }"
                   prepend-icon="custom-profile"
                   v-model="supplier_id"
                   placeholder="Leverantörer"
@@ -1946,6 +1951,7 @@ onBeforeUnmount(() => {
             <VCol cols="12" md="12" class="pb-0">
               <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />
               <AppAutocomplete
+                :menu-props="{ maxHeight: '300px' }"
                 v-model="status"
                 :items="states"
                 :item-title="item => item.name"
@@ -1957,6 +1963,7 @@ onBeforeUnmount(() => {
             <VCol cols="12" md="12" class="pb-0">
               <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ" />
               <AppAutocomplete
+                :menu-props="{ maxHeight: '300px' }"
                 v-model="agreement_type_id_select"
                 :items="agreementTypes"
                 :item-title="item => item.name"

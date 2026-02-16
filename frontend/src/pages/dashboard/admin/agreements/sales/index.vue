@@ -443,6 +443,7 @@ const selectVehicle = vehicle => {
         dist_belt.value = _vehicle.dist_belt
         last_dist_belt.value = _vehicle.last_dist_belt
         last_dist_belt_date.value = _vehicle.last_dist_belt_date
+        comments.value = _vehicle.comments
     }
 }
 
@@ -1652,6 +1653,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clear-icon="tabler-x"
                                                 @update:modelValue="selectVehicle"
                                                 @click:clear="clearVehicle"
+                                                :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -1690,6 +1692,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id"
                                                 :items="brands"
                                                 :item-title="item => item.name"
@@ -1700,7 +1703,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectBrand"
                                                 @click:clear="onClearBrand"
                                                 :rules="[requiredValidator]"
-                                                :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
@@ -1748,6 +1750,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="car_body_id"
                                                 :items="carbodies"
                                                 :item-title="item => item.name"
@@ -1793,6 +1796,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="fuel_id"
                                                 :items="fuels"
                                                 :item-title="item => item.name"
@@ -1805,6 +1809,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="gearbox_id"
                                                 :items="gearboxes"
                                                 :item-title="item => item.name"
@@ -1951,6 +1956,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Garanti*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="guaranty"
                                                 :items="guaranties"
                                                 :item-title="item => item.name"
@@ -1972,6 +1978,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ av garanti" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="guaranty_type_id"
                                                 :items="guarantyTypes"
                                                 :item-title="item => item.name"
@@ -1983,6 +1990,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Försäkring*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="insurance_company"
                                                 :items="insuranceCompanies"
                                                 :item-title="item => item.name"
@@ -2070,6 +2078,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Märke" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id_interchange"
                                                 :items="brands"
                                                 :item-title="item => item.name"
@@ -2079,7 +2088,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 clear-icon="tabler-x"
                                                 @update:modelValue="selectBrandInterchange"
                                                 @click:clear="onClearBrandInterchange"
-                                                :menu-props="{ maxHeight: '300px' }"
                                                 :rules="reg_num_interchange ? [requiredValidator] : []"
                                             /> 
                                         </div>
@@ -2128,6 +2136,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Kaross" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="car_body_id_interchange"
                                                 :items="carbodies"
                                                 :item-title="item => item.name"
@@ -2175,6 +2184,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="fuel_id_interchange"
                                                 :items="fuels"
                                                 :item-title="item => item.name"
@@ -2187,6 +2197,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="gearbox_id_interchange"
                                                 :items="gearboxes"
                                                 :item-title="item => item.name"
@@ -2376,6 +2387,7 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="VMB / Moms*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="VMB / Moms" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="iva_purchase_id_interchange"
                                                 :items="ivas"
                                                 :item-title="item => item.name"
@@ -2443,6 +2455,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_id"
                                                 :items="clients"
                                                 :item-title="item => item.fullname"
@@ -2475,6 +2488,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_type_id"
                                                 :items="client_types"
                                                 :item-title="item => item.name"
@@ -2625,6 +2639,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Valuta" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="currency_id"
                                                 :items="currencies"
                                                 :item-title="item => item.name"
@@ -2648,6 +2663,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Moms / VMB / Export*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="iva_id"
                                                 :items="ivas"
                                                 :item-title="item => item.name"
@@ -2732,6 +2748,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : payment_type_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalsätt*" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="payment_type_id"
                                                 :items="getPaymentTypes"
                                                 autocomplete="off"
@@ -2752,6 +2769,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div class="d-none" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Handpenning procent" />
                                             <AppAutocomplete
+                                                :menu-props="{ maxHeight: '300px' }"
                                                 v-model="advance_id"
                                                 :items="advances"
                                                 :item-title="item => item.name"

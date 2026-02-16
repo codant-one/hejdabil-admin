@@ -1364,6 +1364,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id"
                                                 :items="brands"
                                                 :item-title="item => item.name"
@@ -1374,7 +1375,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectBrand"
                                                 @click:clear="onClearBrand"
                                                 :rules="[requiredValidator]"
-                                                :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
@@ -1406,6 +1406,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="car_body_id"
                                                 :items="carbodies"
                                                 :item-title="item => item.name"
@@ -1451,6 +1452,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="fuel_id"
                                                 :items="fuels"
                                                 :item-title="item => item.name"
@@ -1463,6 +1465,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="gearbox_id"
                                                 :items="gearboxes"
                                                 :item-title="item => item.name"
@@ -1623,6 +1626,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_id"
                                                 :items="clients"
                                                 :item-title="item => item.fullname"
@@ -1655,6 +1659,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_type_id"
                                                 :items="client_types"
                                                 :item-title="item => item.name"
@@ -1785,6 +1790,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ av provision*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="commission_type_id"
                                                 :items="commission_types"
                                                 :item-title="item => item.name"

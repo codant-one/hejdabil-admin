@@ -958,7 +958,8 @@ onBeforeRouteLeave((to, from, next) => {
                     </div>               
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                       <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
-                      <AppAutocomplete
+                        <AppAutocomplete
+                          :menu-props="{ maxHeight: '300px' }"
                           v-model="brand_id"
                           :items="brands"
                           :item-title="item => item.name"
@@ -969,7 +970,6 @@ onBeforeRouteLeave((to, from, next) => {
                           @update:modelValue="selectBrand"
                           @click:clear="onClearBrand"
                           :rules="[requiredValidator]"
-                          :menu-props="{ maxHeight: '300px' }"
                         />
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
@@ -1001,9 +1001,10 @@ onBeforeRouteLeave((to, from, next) => {
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                         <AppAutocomplete
-                            v-model="car_body_id"
-                            :items="carbodies"
-                            :item-title="item => item.name"
+                          :menu-props="{ maxHeight: '300px' }"
+                          v-model="car_body_id"
+                          :items="carbodies"
+                          :item-title="item => item.name"
                             :item-value="item => item.id"
                             autocomplete="off"
                             clearable
@@ -1046,9 +1047,10 @@ onBeforeRouteLeave((to, from, next) => {
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                         <AppAutocomplete
-                            v-model="fuel_id"
-                            :items="fuels"
-                            :item-title="item => item.name"
+                          :menu-props="{ maxHeight: '300px' }"
+                          v-model="fuel_id"
+                          :items="fuels"
+                          :item-title="item => item.name"
                             :item-value="item => item.id"
                             autocomplete="off"
                             clearable
@@ -1058,9 +1060,10 @@ onBeforeRouteLeave((to, from, next) => {
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                         <AppAutocomplete
-                            v-model="gearbox_id"
-                            :items="gearboxes"
-                            :item-title="item => item.name"
+                          :menu-props="{ maxHeight: '300px' }"
+                          v-model="gearbox_id"
+                          :items="gearboxes"
+                          :item-title="item => item.name"
                             :item-value="item => item.id"
                             autocomplete="off"
                             clearable
@@ -1234,10 +1237,11 @@ onBeforeRouteLeave((to, from, next) => {
                   >
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <AppAutocomplete
-                            v-model="client_id"
-                            label="Kunder"
-                            :items="clients"
-                            :item-title="item => item.fullname"
+                          :menu-props="{ maxHeight: '300px' }"
+                          v-model="client_id"
+                          label="Kunder"
+                          :items="clients"
+                          :item-title="item => item.fullname"
                             :item-value="item => item.id"
                             autocomplete="off"
                             clearable
@@ -1266,10 +1270,11 @@ onBeforeRouteLeave((to, from, next) => {
                     </div>
                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                         <AppAutocomplete
-                            v-model="client_type_id"
-                            label="Köparen är*"
-                            :items="client_types"
-                            :item-title="item => item.name"
+                          :menu-props="{ maxHeight: '300px' }"
+                          v-model="client_type_id"
+                          label="Köparen är*"
+                          :items="client_types"
+                          :item-title="item => item.name"
                             :item-value="item => item.id"
                             :rules="[requiredValidator]"
                             autocomplete="off"/>

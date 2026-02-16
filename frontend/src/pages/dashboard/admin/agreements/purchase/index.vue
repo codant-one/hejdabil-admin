@@ -308,6 +308,49 @@ const endDateTimePickerConfig = computed(() => {
     return config;
 });
 
+const selectVehicle = vehicle => {
+    if (vehicle) {
+        let _vehicle = vehicles.value.find(item => item.id === vehicle)
+    
+        selectBrand(_vehicle.model?.brand.id)
+
+        reg_num.value = _vehicle.reg_num
+        brand_id.value = _vehicle.model?.brand.id
+        model_id.value = _vehicle.model?.id
+        year.value = _vehicle.year
+        color.value = _vehicle.color
+        mileage.value = _vehicle.mileage
+        chassis.value = _vehicle.chassis
+        engine.value = _vehicle.engine
+        car_name.value = _vehicle.car_name
+        generation.value = _vehicle.generation
+        gearbox_id.value = _vehicle.gearbox_id
+        car_body_id.value = _vehicle.car_body_id
+        fuel_id.value = _vehicle.fuel_id
+        control_inspection.value = _vehicle.control_inspection
+        number_keys.value = _vehicle.number_keys
+        service_book.value = _vehicle.service_book
+        summer_tire.value = _vehicle.summer_tire
+        winter_tire.value = _vehicle.winter_tire
+        last_service.value = _vehicle.last_service
+        last_service_date.value = _vehicle.last_service_date
+        dist_belt.value = _vehicle.dist_belt
+        last_dist_belt.value = _vehicle.last_dist_belt
+        last_dist_belt_date.value = _vehicle.last_dist_belt_date
+        comments.value = _vehicle.comments
+    }
+}
+
+const clearVehicle = () => {
+    reg_num.value = null
+    brand_id.value = null
+    model_id.value = null
+    year.value = null
+    color.value = null
+    mileage.value = null
+    modelsByBrand.value = []
+}
+
 const selectBrand = brand => {
     if (brand) {
         let _brand = brands.value.find(item => item.id === brand)
@@ -1020,6 +1063,7 @@ const onSubmit = async () => {
 
 const currentData = computed(() => ({
     // Tab 0 - Inköpsavtal
+    vehicle_id: vehicle_id.value,
     reg_num: reg_num.value,
     brand_id: brand_id.value,
     model_id: model_id.value,
@@ -1234,6 +1278,21 @@ onBeforeRouteLeave((to, from, next) => {
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Lagerbilar" />
+                                            <AppAutocomplete
+                                                v-model="vehicle_id"
+                                                :items="vehicles"
+                                                item-title="reg_num"      
+                                                item-value="id"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                @update:modelValue="selectVehicle"
+                                                @click:clear="clearVehicle"
+                                                :menu-props="{ maxHeight: '300px' }"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Reg nr*" />
                                             <div class="d-flex gap-2"> 
                                                 <VTextField
@@ -1266,15 +1325,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
-                                            <VTextField
-                                                v-model="engine"
-                                            />
-                                        </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" class="form">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Märke*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="brand_id"
                                                 :items="brands"
                                                 :item-title="item => item.name"
@@ -1285,7 +1339,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectBrand"
                                                 @click:clear="onClearBrand"
                                                 :rules="[requiredValidator]"
-                                                :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : model_id !== 0 ? 'width: calc(50% - 12px);' : 'width: calc(25% - 18px);'">
@@ -1309,6 +1362,22 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>                                        
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
+                                            <VTextField
+                                                type="number"
+                                                v-model="mileage"
+                                                suffix="Mil"
+                                                min="0"
+                                                :rules="[requiredValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Motor" />
+                                            <VTextField
+                                                v-model="engine"
+                                            />
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Generation" />
                                             <VTextField
                                                 v-model="generation"
@@ -1317,6 +1386,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kaross*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="car_body_id"
                                                 :items="carbodies"
                                                 :item-title="item => item.name"
@@ -1362,6 +1432,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Drivmedel" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="fuel_id"
                                                 :items="fuels"
                                                 :item-title="item => item.name"
@@ -1374,6 +1445,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Växellåda" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="gearbox_id"
                                                 :items="gearboxes"
                                                 :item-title="item => item.name"
@@ -1486,8 +1558,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                     />
                                                 </div>
                                             </div>                                        
-                                        </div>
-                                        
+                                        </div>                                        
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
                                                 <VTextField
@@ -1496,16 +1567,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                     min="1"
                                                     :rules="[requiredValidator]"
                                                 />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Miltal*" />
-                                            <VTextField
-                                                type="number"
-                                                v-model="mileage"
-                                                suffix="Mil"
-                                                min="0"
-                                                :rules="[requiredValidator]"
-                                            />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
@@ -1520,7 +1581,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px); margin-top: 27px;'" class="form">
+                                        <div class="form w-100">
                                             <div
                                                 class="d-flex w-100 p-4 agreements-pill"
                                                 :style="{ backgroundColor: '#D8FFE4', color: '#0C5B27', height: '50px' }"
@@ -1557,6 +1618,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_id"
                                                 :items="clients"
                                                 :item-title="item => item.fullname"
@@ -1589,6 +1651,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Köparen är*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="client_type_id"
                                                 :items="client_types"
                                                 :item-title="item => item.name"
@@ -1738,6 +1801,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Valuta" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="currency_id"
                                                 :items="currencies"
                                                 :item-title="item => item.name"
@@ -1761,6 +1825,7 @@ onBeforeRouteLeave((to, from, next) => {
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Moms / VMB*" />
                                             <AppAutocomplete
+                                              :menu-props="{ maxHeight: '300px' }"
                                                 v-model="iva_id"
                                                 :items="ivas"
                                                 :item-title="item => item.name"
@@ -1873,6 +1938,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectPaymentType"
                                                 @click:clear="selectPaymentType"
                                                 :disabled="settled_by !== 1 ? true : false"
+                                                :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
                                         <div v-if="payment_type_id === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
