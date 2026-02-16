@@ -419,7 +419,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Servicebok finns? </span>
-                                                    <span class="subtitle-detail ml-2">
+                                                    <span class="subtitle-detail">
                                                         <VRadioGroup v-model="service_book" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -432,7 +432,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Sommardäck finns? </span>
-                                                    <span class="subtitle-detail ml-2">
+                                                    <span class="subtitle-detail">
                                                         <VRadioGroup v-model="summer_tire" inline readonly class="radio-form">
                                                         <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -445,7 +445,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Vinterdäck finns? </span>
-                                                    <span class="subtitle-detail ml-2">
+                                                    <span class="subtitle-detail">
                                                         <VRadioGroup v-model="winter_tire" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -460,7 +460,7 @@ const setThumbsSwiper = (swiper) => {
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
-                                                    <span class="subtitle-detail ml-2">
+                                                    <span class="subtitle-detail">
                                                         <VRadioGroup v-model="dist_belt" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio"
@@ -529,7 +529,7 @@ const setThumbsSwiper = (swiper) => {
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2" v-if="organization_number_purchase">
-                                                    <span class="title-detail"> Org/personummer </span>
+                                                    <span class="title-detail"> Org/personnummer </span>
                                                     <span class="subtitle-detail">{{ organization_number_purchase }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2" v-if="fullname_purchase">
@@ -649,7 +649,7 @@ const setThumbsSwiper = (swiper) => {
                                         <div class="d-flex gap-6">
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
-                                                    <span class="title-detail"> Org/personummer </span>
+                                                    <span class="title-detail"> Org/personnummer </span>
                                                     <span class="subtitle-detail">{{ organization_number_sale }}</span>
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
@@ -909,6 +909,12 @@ const setThumbsSwiper = (swiper) => {
     .radio-form {
         height: 16px;
         :deep(.v-selection-control--dirty) {
+
+            .v-selection-control__input {
+                width: 20px!important;
+                height: 20px!important;
+            }
+
             .v-selection-control__input > .v-icon {
                 color: #00E1E2 !important;
             }
@@ -917,6 +923,12 @@ const setThumbsSwiper = (swiper) => {
             color: #5D5D5D;
             font-size: 12px;
         }
+        :deep(.v-selection-control-group){
+            .v-radio:not(:last-child) {
+                margin-inline-end: 0.6rem !important;
+            }
+        }
+        
     }
 
 </style>
