@@ -71,6 +71,7 @@ const userData = ref(null)
 const role = ref(null)
 const suppliers = ref([])
 const supplier_id = ref(null)
+const status = ref(null);
 
 const sectionEl = ref(null);
 const { mdAndDown } = useDisplay();
@@ -81,6 +82,14 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const states = [
+  { name: 'Skapad', id: 'created' },
+  { name: 'Levererad', id: 'delivered' },
+  { name: 'Leveransproblem', id: 'delivery_issues' },
+  { name: 'Granskad', id: 'reviewed' },
+  { name: 'Signerad', id: 'signed' }
+]
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -113,7 +122,8 @@ const checkForUpdates = async () => {
       limit: rowPerPage.value,
       page: currentPage.value,
       supplier_id: supplier_id.value,
-      agreement_type_id: agreement_type_id_select.value
+      agreement_type_id: agreement_type_id_select.value,
+      status: agreementsStores.getStatus ?? status.value
     }
 
     // Hacer la petición silenciosa (sin cambiar isRequestOngoing)
@@ -132,6 +142,9 @@ const checkForUpdates = async () => {
 }
 
 onMounted(async () => {
+  status.value = agreementsStores.getStatus ?? status.value;
+  updateStatus(status.value);
+
   await loadData()
   
   // Escuchar notificaciones y refrescar datos cuando llegue una relacionada con agreements
@@ -244,6 +257,7 @@ async function fetchData(cleanFilters = false) {
     currentPage.value = 1
     supplier_id.value = null
     agreement_type_id_select.value = null
+    status.value = null;
   }
 
   let data = {
@@ -253,7 +267,8 @@ async function fetchData(cleanFilters = false) {
     limit: rowPerPage.value,
     page: currentPage.value,
     supplier_id: supplier_id.value,
-    agreement_type_id: agreement_type_id_select.value
+    agreement_type_id: agreement_type_id_select.value,
+    status: agreementsStores.getStatus ?? status.value
   }
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
@@ -678,13 +693,14 @@ const addAgreements = () => {
   }
 }
 
-const updateType = (newType) => {
+const updateStatus = (newStatus) => {
   // Si ya está seleccionado, desmarcarlo (poner null)
-  if (agreement_type_id_select.value === newType) {
-    newType = null;
+  if (status.value === newStatus) {
+    newStatus = null;
   }
 
-  agreement_type_id_select.value = newType;
+  agreementsStores.setStatus(newStatus);
+  status.value = newStatus;
   filtreraMobile.value = false;
 };
 
@@ -699,7 +715,6 @@ const setSkapa = (newSkapa) => {
 
   addAgreements();
 };
-
 
 const openLink = function (agreementData) {
   window.open(themeConfig.settings.urlStorage + agreementData.file)
@@ -1033,103 +1048,22 @@ onBeforeUnmount(() => {
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-2'">
-          <AppAutocomplete
-              v-if="role === 'SuperAdmin' || role === 'Administrator'"
-              v-model="supplier_id"
-              prepend-icon="custom-profile"
-              placeholder="Leverantörer"
-              :items="suppliers"
-              :item-title="item => item.full_name"
-              :item-value="item => item.id"
-              autocomplete="off"
-              clearable
-              clear-icon="tabler-x"
-              style="width: 200px"
-              :menu-props="{ maxHeight: '300px' }"
-              class="selector-user selector-truncate"
-        />
-        </div>
-
-        <VBtn
+        <VBtn 
           class="btn-white-2 px-3"
-          v-if="role !== 'Supplier' && role !== 'User'"
+          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
           @click="isFilterDialogVisible = true"
-          :class="windowWidth > 1023 ? 'd-none' : 'd-flex'"
-        >
-          <VIcon icon="custom-profile" size="24" />
-        </VBtn>
-        
-        <VBtn
-          class="btn-white-2 px-3"
-          @click="filtreraMobile = true"
-          v-if="$vuetify.display.mdAndDown"
         >
           <VIcon icon="custom-filter" size="24" />
-          <span class="d-none d-md-block">Filtrera efter</span>
+          <span :class="windowWidth < 1024 ? 'd-none' : 'd-flex'">Filtrera efter</span>
         </VBtn>
 
-        <VMenu v-if="!$vuetify.display.mdAndDown">
-          <template #activator="{ props }">
-            <VBtn class="btn-white-2 px-2" v-bind="props">
-              <VIcon icon="custom-filter" size="24" />
-              <span class="d-none d-md-block">Filtrera efter</span>
-            </VBtn>
-          </template>
-          <VList>
-            <VListItem @click="updateType(1)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="agreement_type_id_select === 1"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Försäljningsavtal</VListItemTitle>
-            </VListItem>
-
-            <VListItem @click="updateType(2)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="agreement_type_id_select === 2"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Inköpsavtal</VListItemTitle>
-            </VListItem>
-
-            <VListItem @click="updateType(3)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="agreement_type_id_select === 3"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Förmedlingsavtal</VListItemTitle>
-            </VListItem>
-
-            <VListItem @click="updateType(4)">
-              <template #prepend>
-                <VListItemAction>
-                  <VCheckbox
-                    :model-value="agreement_type_id_select === 4"
-                    class="ml-3"
-                    true-icon="custom-checked-checkbox"
-                    false-icon="custom-unchecked-checkbox"
-                /></VListItemAction>
-              </template>
-              <VListItemTitle>Prisförslag</VListItemTitle>
-            </VListItem>
-          </VList>
-        </VMenu>
+        <VBtn 
+          class="btn-white-2 px-3"
+          :class="windowWidth >= 1024 ? 'd-none' : 'd-flex'"
+          @click="filtreraMobile = true"
+        >
+          <VIcon icon="custom-filter" size="24" />
+        </VBtn>
 
         <div
           v-if="!$vuetify.display.smAndDown"
@@ -1775,54 +1709,48 @@ onBeforeUnmount(() => {
       transition="dialog-bottom-transition"
       content-class="dialog-bottom-full-width"
     >
-      <VCard>
+      <VCard class="card-form">
         <VList>
-          <VListItem @click="updateType(1)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="agreement_type_id_select === 1"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Försäljningsavtal</VListItemTitle>
+          <VListItem class="form py-0" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+            <AppAutocomplete
+              prepend-icon="custom-profile"
+              v-model="supplier_id"
+              placeholder="Leverantörer"
+              :items="suppliers"
+              :item-title="item => item.full_name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"
+              class="selector-user selector-truncate"
+            />
           </VListItem>
-
-          <VListItem @click="updateType(2)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="agreement_type_id_select === 2"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Inköpsavtal</VListItemTitle>
+          <VListItem class="form">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />            
+            <AppAutocomplete
+              v-model="status"
+              :items="states"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"/>
+          </VListItem>           
+          <VListItem class="form pt-6">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontraktstyper" />
+            <AppAutocomplete
+              v-model="agreement_type_id_select"
+              :items="agreementTypes"
+              :item-title="item => item.name"
+              :item-value="item => item.id"
+              autocomplete="off"
+              clearable
+              clear-icon="tabler-x"/>
           </VListItem>
-
-          <VListItem @click="updateType(3)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="agreement_type_id_select === 3"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Förmedlingsavtal</VListItemTitle>
-          </VListItem>
-
-          <VListItem @click="updateType(4)">
-            <template #prepend>
-              <VListItemAction>
-                <VCheckbox
-                  :model-value="agreement_type_id_select === 4"
-                  true-icon="custom-checked-checkbox"
-                  false-icon="custom-unchecked-checkbox"
-              /></VListItemAction>
-            </template>
-            <VListItemTitle>Prisförslag</VListItemTitle>
+          <VListItem class="form mt-5">
+            <VBtn class="btn-gradient w-100" @click="filtreraMobile = false">
+                Visa resultat
+            </VBtn>
           </VListItem>
         </VList>
       </VCard>
@@ -1842,36 +1770,66 @@ onBeforeUnmount(() => {
         <VIcon size="16" icon="custom-close" />
       </VBtn>
 
-      <VCard>
+      <VCard flat class="card-form">
         <VCardText class="dialog-title-box">
           <VIcon size="32" icon="custom-filter" class="action-icon" />
-          <div class="dialog-title">Filtrera efter</div>
+          <div class="dialog-title">
+            Filtrera
+          </div>
         </VCardText>
         
         <VCardText class="pt-0">
-          <AppAutocomplete
-            v-if="role === 'SuperAdmin' || role === 'Administrator'"
-            v-model="supplier_id"
-            prepend-icon="custom-profile"
-            placeholder="Leverantörer"
-            :items="suppliers"
-            :item-title="item => item.full_name"
-            :item-value="item => item.id"
-            autocomplete="off"
-            clearable
-            clear-icon="tabler-x"
-            style="width: 200px"
-            :menu-props="{ maxHeight: '300px' }"
-            class="selector-user selector-truncate"
-        />
+          <VRow class="pt-3">
+            <VCol 
+              cols="12" md="12" 
+              v-if="role === 'SuperAdmin' || role === 'Administrator'"
+              class="pb-0">
+                <AppAutocomplete
+                  prepend-icon="custom-profile"
+                  v-model="supplier_id"
+                  placeholder="Leverantörer"
+                  :items="suppliers"
+                  :item-title="item => item.full_name"
+                  :item-value="item => item.id"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"
+                  class="selector-user selector-truncate"
+                />
+            </VCol>
+            <VCol cols="12" md="12" class="pb-0">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />
+              <AppAutocomplete
+                v-model="status"
+                :items="states"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+            </VCol>
+            <VCol cols="12" md="12" class="pb-0">
+              <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kontraktstyper" />
+              <AppAutocomplete
+                v-model="agreement_type_id_select"
+                :items="agreementTypes"
+                :item-title="item => item.name"
+                :item-value="item => item.id"
+                autocomplete="off"
+                clearable
+                clear-icon="tabler-x"/>
+            </VCol>
+          </VRow>
         </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-10">
-          <VBtn class="btn-light" @click="isFilterDialogVisible = false">
-            Avbryt
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-2">
+          <VBtn
+            class="btn-light"
+            @click="fetchData(true); isFilterDialogVisible = false">
+              Rensa filter
           </VBtn>
           <VBtn class="btn-gradient" @click="isFilterDialogVisible = false">
-            Stäng
+              Visa resultat
           </VBtn>
         </VCardText>
       </VCard>
@@ -2480,6 +2438,101 @@ onBeforeUnmount(() => {
   }
 
 </style>
+<style lang="scss">
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 4px 0 !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+
+          .v-select__selection, .v-autocomplete__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            background: white !important;
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 0;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
+    }
+    & .v-input {
+      .v-input__prepend {
+        padding-top: 12px !important;
+      }
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
+</style>
+
 <route lang="yaml">
   meta:
     action: view

@@ -1223,8 +1223,7 @@ onBeforeUnmount(() => {
         <VListItem class="form">
           <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Status" />            
           <AppAutocomplete
-            v-model="state_id"
-            
+            v-model="state_id"            
             :items="states"
             :item-title="item => item.name"
             :item-value="item => item.id"

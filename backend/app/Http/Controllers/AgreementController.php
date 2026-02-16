@@ -84,7 +84,10 @@ class AgreementController extends Controller
                               ->withTrashed()
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user:id,name,last_name,email,avatar',
+                        'user' => function ($q) {
+                                $q->select('id', 'name', 'last_name', 'email', 'avatar')
+                                    ->withTrashed();
+                        },
                         'user.userDetail:user_id,logo'
                     ])->applyFilters(
                         $request->only([

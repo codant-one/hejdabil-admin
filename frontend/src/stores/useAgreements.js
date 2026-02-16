@@ -28,7 +28,8 @@ export const useAgreementsStores = defineStore('agreements', {
         loading: false,
         last_page: 1,
         agreementsTotalCount: 6,
-        suppliers: {}
+        suppliers: {},
+        status: null
     }),
     getters:{
         getAgreements(){
@@ -36,11 +37,20 @@ export const useAgreementsStores = defineStore('agreements', {
         },
         getSuppliers(){
             return this.suppliers
+        },
+        getStatus(){
+            return this.status
         }
     },
     actions: {
         setLoading(payload){
             this.loading = payload
+        },
+        setStatus(status) {
+            this.status = status
+        },
+        cleanData() {
+            this.status = null
         },
         fetchAgreements(params) {
             this.setLoading(true)
