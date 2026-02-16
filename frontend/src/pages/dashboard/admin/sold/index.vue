@@ -644,7 +644,7 @@ onBeforeUnmount(() => {
                 <div class="d-flex flex-column gap-1">
                     <span class="text-aqua">Reg. nr. {{ vehicle.reg_num }}</span>
                     <span class="text-neutral-3">
-                        {{ vehicle.model?.brand?.name }} {{ vehicle.model?.name }} {{ vehicle.year ?`, ${vehicle.year}` : '' }}
+                        {{ [vehicle.model?.brand?.name, vehicle.model?.name].filter(Boolean).join(' ') }}{{ vehicle.year ? `, ${vehicle.year}` : '' }}
                     </span>
                 </div>
             </div>
