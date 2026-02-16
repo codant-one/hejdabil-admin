@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
             <VDivider class="mb-4" />
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id === 4"
+              v-if="$can('edit', 'billings') && (invoice.state_id === 4 || invoice.state_id === 8)"
               class="btn-light w-100 mb-4"
               @click="updateBilling"
             >
@@ -515,7 +515,7 @@ onBeforeUnmount(() => {
       <VCard>
         <VList>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.state_id === 4"
+            v-if="$can('edit', 'billings') && (invoice.state_id === 4 || invoice.state_id === 8)"
             @click="updateBilling(); isMobileActionDialogVisible = false"
           >
             <template #prepend>

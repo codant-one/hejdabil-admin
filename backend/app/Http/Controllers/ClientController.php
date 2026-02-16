@@ -233,7 +233,7 @@ class ClientController extends Controller
                     'message' => 'Kunden hittades inte'
                 ], 404);
 
-            $hasPendingInvoices = Billing::where('state_id', 4)
+            $hasPendingInvoices = Billing::whereIn('state_id', [4, 8])
                 ->applyFilters(['client_id' => $id])
                 ->exists();
 
@@ -321,7 +321,7 @@ class ClientController extends Controller
                     'message' => 'Kunden hittades inte'
                 ], 404);
 
-            $pendingInvoices = Billing::where('state_id', 4)
+            $pendingInvoices = Billing::whereIn('state_id', [4, 8])
                 ->applyFilters(['client_id' => $id])
                 ->select('id', 'invoice_id', 'invoice_date', 'due_date', 'total', 'amount_discount', 'state_id')
                 ->orderByDesc('id')

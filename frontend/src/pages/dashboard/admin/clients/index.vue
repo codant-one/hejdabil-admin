@@ -1199,9 +1199,9 @@ onBeforeUnmount(() => {
                 <VSpacer :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" />
                 <div
                   class="status-chip"
-                  :class="`status-chip-pending`"
+                  :class="`status-chip-${invoice.state_id === 4 ? 'pending' : 'error'}`"
                 >
-                  Obetald
+                  {{ invoice.state_id === 4 ? 'Obetald' : 'Förfallna' }}
                 </div>
                 <VBtn 
                   class="btn-ghost px-2" 
