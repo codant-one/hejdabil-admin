@@ -2,6 +2,8 @@
 
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
+import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
+import { usePersonInfoStores } from '@/stores/usePersonInfo'
 
 const props = defineProps({
   isDrawerOpen: {
@@ -16,15 +18,29 @@ const props = defineProps({
     type: Object,
     required: false,
   },
+  client_types: {
+    type: Object,
+    required: false,
+  }
 });
 
-const emit = defineEmits(["update:isDrawerOpen", "clientData", "edited"]);
+const emit = defineEmits([
+  "update:isDrawerOpen",
+  "clientData", 
+  "edited",
+  "alert",
+  "loading"
+]);
+
+const companyInfoStores = useCompanyInfoStores()
+const personInfoStores = usePersonInfoStores()
 
 const isFormValid = ref(false);
 const refForm = ref();
 
 const id = ref(0);
 const supplier_id = ref(null);
+const client_type_id = ref(null)
 const organization_number = ref("");
 const address = ref("");
 const street = ref("");
@@ -51,7 +67,14 @@ const currentData = computed(() => ({
   email: email.value,
   reference: reference.value,
   comments: comments.value,
+  client_type_id: client_type_id.value,
 }))
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const isDirty = computed(() => {
   if (!initialData.value) return false
@@ -82,7 +105,8 @@ watchEffect(async () => {
       fullname.value = props.client.fullname;
       email.value = props.client.email;
       reference.value = props.client.reference;
-      comments.value = props.client.comments;
+      comments.value = props.client.comments;      
+      client_type_id.value = props.client.client_type_id; 
     }
 
     // snapshot initial state after fields are populated
@@ -109,6 +133,7 @@ const reallyCloseAndReset = () => {
     email.value = null;
     reference.value = null;
     comments.value = null;
+    client_type_id.value = null;
 
     isEdit.value = false;
     id.value = 0;
@@ -133,6 +158,145 @@ const formatOrgNumber = () => {
   organization_number.value = numbers;
 };
 
+const isCompanyNumber = value => {
+  const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
+  return cleanNumber.startsWith('5')
+}
+
+/**
+ * Search for entity information based on the organization/personal number.
+ * If the number starts with 5, searches in CompanyInfo (Bolagsverket).
+ * Otherwise, searches in SPAR (Statens Personadressregister).
+ */
+const searchEntity = async () => {
+    if (!organization_number.value) return
+
+    if (isCompanyNumber(organization_number.value)) {
+        await searchCompany()
+    } else {
+        await searchPerson()
+    }
+}
+
+const searchCompany = async () => {
+  try {
+    emit("loading", true);
+
+    const response = await companyInfoStores.getCompanyInfo(organization_number.value)
+    
+    emit("loading", false);
+
+    if (response) {
+          // Set Client Type to Företag
+        const foretagType = props.client_types?.find(t => t.name === 'Företag')
+        if (foretagType) {
+            client_type_id.value = foretagType.id
+        }
+
+        // Set Name
+        if (response.organisationsnamn?.organisationsnamnLista?.[0]?.namn) {
+            fullname.value = response.organisationsnamn.organisationsnamnLista[0].namn
+        } else {
+            fullname.value = ''
+        }
+
+        // Set Postal Code
+        if (response.postadressOrganisation?.postadress?.postnummer) {
+            postal_code.value = response.postadressOrganisation.postadress.postnummer
+        } else {
+            postal_code.value = ''
+        }
+
+        // Set Address
+        if (response.postadressOrganisation?.postadress?.utdelningsadress) {
+            address.value = response.postadressOrganisation.postadress.utdelningsadress
+        } else {
+            address.value = ''
+        }
+
+        // Set Street/City (Postort)
+        if (response.postadressOrganisation?.postadress?.postort) {
+            street.value = response.postadressOrganisation.postadress.postort
+        } else {
+            street.value = ''
+        }
+    }
+
+  } catch (error) {
+      emit("loading", false);
+      advisor.value = {
+          type: 'error',
+          message: 'Ingen företag hittades med det registreringsnumret',
+          show: true
+      }
+      emit('alert', advisor)
+
+      setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false
+        }
+        emit('alert', advisor)
+      }, 3000)
+  }
+}
+
+/**
+ * Search for person information in SPAR (Statens Personadressregister) API.
+ */
+const searchPerson = async () => {
+  try {
+    emit("loading", true);
+
+    const response = await personInfoStores.getPersonInfo(organization_number.value)
+
+    emit("loading", false);
+
+    if (response?.success && response?.data) {
+        const personData = response.data
+
+        // Set Client Type to Privat
+        const privatType = props.client_types?.find(t => t.name === 'Privat')
+        if (privatType) {
+            client_type_id.value = privatType.id
+        }
+
+        // Set Name
+        fullname.value = personData.fullname || ''
+
+        // Set Postal Code
+        postal_code.value = personData.postnummer || ''
+
+        // Set Address
+        address.value = personData.adress || ''
+
+        // Set Street/City (Postort)
+        street.value = personData.postort || ''
+    }
+
+  } catch (error) {
+    emit("loading", false);
+
+    const errorMessage = error?.response?.data?.message || 'Ingen person hittades med det personnumret'
+    
+    advisor.value = {
+        type: 'error',
+        message: errorMessage,
+        show: true
+    }
+
+    setTimeout(() => {
+      advisor.value = {
+          type: '',
+          message: '',
+          show: false
+      }
+      emit('alert', advisor)
+    }, 3000)
+  }
+}
+
 const onSubmit = () => {
   refForm.value?.validate().then(({ valid }) => {
     if (valid) {
@@ -140,6 +304,7 @@ const onSubmit = () => {
 
       formData.append("supplier_id", supplier_id.value);
       formData.append("supplier_id", supplier_id.value);
+      formData.append('client_type_id', client_type_id.value);
       formData.append("email", email.value);
       formData.append("fullname", fullname.value);
       formData.append("organization_number", organization_number.value);
@@ -177,6 +342,15 @@ watch(currentData, () => {
     @submit.prevent="onSubmit"
   >
     <VList>
+      <VListItem v-if="advisor.show" class="m-4 p-5">
+        <VAlert
+          :color="advisor.type"
+          class="alert-no-shrink custom-alert"
+          style="flex: none; margin: 2px 2px 2px 1px"
+        >
+          <VAlertTitle>{{ advisor.message }}</VAlertTitle>
+        </VAlert>
+      </VListItem>
       <VListItem v-if="role !== 'Supplier' && role !== 'User'" class="pb-2">
         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Leverantörer" />
         <VSelect
@@ -191,27 +365,38 @@ watch(currentData, () => {
         />
       </VListItem>
       <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />        
+        <div class="d-flex gap-2">
+          <VTextField
+            v-model="organization_number"
+            :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+            minLength="11"
+            maxlength="13"
+            @input="formatOrgNumber()"
+          />
+          <VBtn
+            class="btn-ghost w-auto px-3"
+            @click="searchEntity"
+          >
+            <VIcon icon="custom-search" size="24" />
+          </VBtn>
+        </div>
+      </VListItem>
+      <VListItem>
+        <AppAutocomplete
+          v-model="client_type_id"
+          label="Köparen är*"
+          :items="client_types"
+          :item-title="item => item.name"
+          :item-value="item => item.id"
+          :rules="[requiredValidator]"
+          autocomplete="off"/>
+      </VListItem>
+      <VListItem>
         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />        
         <VTextField
           v-model="fullname"
           :rules="[requiredValidator]"
-        />
-      </VListItem>
-      <VListItem>
-        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />        
-        <VTextField
-          v-model="email"
-          :rules="[emailValidator, requiredValidator]"
-        />
-      </VListItem>
-      <VListItem>
-        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personummer*" />        
-        <VTextField
-          v-model="organization_number"
-          :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-          minLength="11"
-          maxlength="13"
-          @input="formatOrgNumber()"
         />
       </VListItem>
       <VListItem>
@@ -242,6 +427,13 @@ watch(currentData, () => {
           :rules="[requiredValidator, phoneValidator]"
         />
       </VListItem>
+      <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />        
+        <VTextField
+          v-model="email"
+          :rules="[emailValidator, requiredValidator]"
+        />
+      </VListItem>      
       <VListItem>
         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />        
         <VTextField v-model="reference" />

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Services\CacheService;
 
 use App\Models\Agreement;
 use App\Models\AgreementType;
@@ -42,7 +43,6 @@ use App\Models\Offer;
 use App\Models\User;;
 use App\Models\UserDetails;
 use App\Models\Config;
-use App\Services\CacheService;
 
 class AgreementController extends Controller
 {

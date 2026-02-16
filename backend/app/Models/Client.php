@@ -22,6 +22,10 @@ class Client extends Model
         return $this->belongsTo(Supplier::class, 'supplier_id', 'id');
     }
 
+    public function client_type(){
+        return $this->belongsTo(ClientType::class, 'client_type_id', 'id');
+    }
+
     public function agreement_client(){
         return $this->hasMany(AgreementClient::class, 'client_id', 'id');
     }
@@ -106,6 +110,7 @@ class Client extends Model
         $client = self::create([
             'user_id' => Auth::user()->id, 
             'supplier_id' =>  $supplier_id,
+            'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
             'email' => $request->email,
             'fullname' => $request->fullname,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
@@ -125,6 +130,7 @@ class Client extends Model
 
         $client->update([
             'supplier_id' => $request->supplier_id === 'null' && $isSupplier ? Auth::user()->supplier->id : ($request->supplier_id === 'null' ? null : $request->supplier_id),
+            'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
             'email' => $request->email,
             'fullname' => $request->fullname,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,

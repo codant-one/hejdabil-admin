@@ -24,6 +24,7 @@ const suppliersStores = useSuppliersStores();
 const emitter = inject("emitter");
 
 const suppliers = ref([]);
+const client_types = ref([])
 const clients = ref([]);
 const searchQuery = ref("");
 const rowPerPage = ref(10);
@@ -130,6 +131,7 @@ async function fetchData(cleanFilters = false) {
   await clientsStores.fetchClients(data);
 
   clients.value = clientsStores.getClients;
+  client_types.value = clientsStores.client_types;
   totalPages.value = clientsStores.last_page;
   totalClients.value = clientsStores.clientsTotalCount;
   
@@ -308,6 +310,16 @@ const showDocuments = (clientData) => {
     .finally(() => {
       isRequestOngoing.value = false;
     });
+};
+
+const showLoading = function (value) {
+  isRequestOngoing.value = value;
+};
+
+const showAlert = function (alert) {
+  advisor.value.show = alert.value.show;
+  advisor.value.type = alert.value.type;
+  advisor.value.message = alert.value.message;
 };
 
 const seeDocument = (agreement) => {
@@ -931,8 +943,11 @@ onBeforeUnmount(() => {
       v-model:isDrawerOpen="isAddNewClientDrawerVisible"
       :client="selectedClient"
       :suppliers="suppliers"
+      :client_types="client_types"
       @client-data="submitForm"
       @edited="onClientFormEdited"
+      @alert="showAlert"
+      @loading="showLoading"
     />
 
     <!-- 👉 Confirm Delete -->
@@ -1013,8 +1028,11 @@ onBeforeUnmount(() => {
           v-model:isDrawerOpen="isDialogOpen"
           :client="selectedClient"
           :suppliers="suppliers"
+          :client_types="client_types"
           @client-data="submitForm"
           @edited="onClientFormEdited"
+          @alert="showAlert"
+          @loading="showLoading"
         />
       </VCard>
     </VDialog>

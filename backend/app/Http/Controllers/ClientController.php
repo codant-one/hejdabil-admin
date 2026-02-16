@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
+use App\Services\CacheService;
 
 use App\Models\Billing;
 use App\Models\VehicleClient;
@@ -71,7 +72,8 @@ class ClientController extends Controller
                 'success' => true,
                 'data' => [
                     'clients' => $clients,
-                    'clientsTotalCount' => $clients->total()
+                    'clientsTotalCount' => $clients->total(),
+                    'client_types' => CacheService::getClientTypes(),
                 ]
             ]);
 

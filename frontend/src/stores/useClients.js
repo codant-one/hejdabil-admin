@@ -4,6 +4,7 @@ import Clients from '@/api/clients'
 export const useClientsStores = defineStore('clients', {
     state: () => ({
         clients: {},
+        client_types: {},
         loading: false,
         last_page: 1,
         clientsTotalCount: 6
@@ -23,6 +24,7 @@ export const useClientsStores = defineStore('clients', {
             return Clients.get(params)
                 .then((response) => {
                     this.clients = response.data.data.clients.data
+                    this.client_types = response.data.data.client_types
                     this.last_page = response.data.data.clients.last_page
                     this.clientsTotalCount = response.data.data.clientsTotalCount
                 })
