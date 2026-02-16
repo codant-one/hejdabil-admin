@@ -419,7 +419,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Servicebok finns? </span>
-                                                    <span class="subtitle-detail">
+                                                    <span class="subtitle-detail ml-2">
                                                         <VRadioGroup v-model="service_book" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -432,7 +432,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Sommardäck finns? </span>
-                                                    <span class="subtitle-detail">
+                                                    <span class="subtitle-detail ml-2">
                                                         <VRadioGroup v-model="summer_tire" inline readonly class="radio-form">
                                                         <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -445,7 +445,7 @@ const setThumbsSwiper = (swiper) => {
                                                 </div>
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Vinterdäck finns? </span>
-                                                    <span class="subtitle-detail">
+                                                    <span class="subtitle-detail ml-2">
                                                         <VRadioGroup v-model="winter_tire" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio.slice(0, 2)"
@@ -460,7 +460,7 @@ const setThumbsSwiper = (swiper) => {
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
-                                                    <span class="subtitle-detail">
+                                                    <span class="subtitle-detail ml-2">
                                                         <VRadioGroup v-model="dist_belt" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio"
