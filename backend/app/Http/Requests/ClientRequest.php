@@ -6,8 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
-
-use App\Models\Client;
+use Illuminate\Support\Facades\Auth;
 
 class ClientRequest extends FormRequest
 {
@@ -26,6 +25,24 @@ class ClientRequest extends FormRequest
      */
     public function rules(): array
     {
+        $clientId = $this->route('client') ?? $this->route('id');
+        $supplierId = $this->resolveSupplierId();
+
+        $organizationNumberUniqueRule = Rule::unique('clients', 'organization_number')
+            ->where(function ($query) use ($supplierId) {
+                if ($supplierId === null) {
+                    $query->whereNull('supplier_id');
+                } else {
+                    $query->where('supplier_id', $supplierId);
+                }
+
+                $query->whereNull('deleted_at');
+            });
+
+        if (!empty($clientId)) {
+            $organizationNumberUniqueRule->ignore($clientId);
+        }
+
         $rules = [
             'address' => [
                 'required'
@@ -44,6 +61,10 @@ class ClientRequest extends FormRequest
             ],
             'email' => [
                 'required'
+            ],
+            'organization_number' => [
+                'nullable',
+                $organizationNumberUniqueRule
             ]
         ];
 
@@ -59,8 +80,32 @@ class ClientRequest extends FormRequest
             'postal_code.required' => 'Postnumret är obligatoriskt.',
             'phone.required' => 'Telefonen är obligatorisk.',
             'fullname.required' => 'Namnet är obligatoriskt.',
-            'email.required' => 'E-postadressen är obligatorisk.'
+            'email.required' => 'E-postadressen är obligatorisk.',
+            'organization_number.unique' => 'Org/personnummer finns redan för vald leverantör.'
         ];
+    }
+
+    private function resolveSupplierId(): ?int
+    {
+        $supplierFromRequest = $this->input('supplier_id');
+
+        if (Auth::check()) {
+            $role = Auth::user()->getRoleNames()[0] ?? null;
+
+            if ($role === 'Supplier' && ($supplierFromRequest === null || $supplierFromRequest === 'null' || $supplierFromRequest === '')) {
+                return Auth::user()->supplier?->id;
+            }
+
+            if ($role === 'User') {
+                return Auth::user()->supplier?->boss_id;
+            }
+        }
+
+        if ($supplierFromRequest === null || $supplierFromRequest === 'null' || $supplierFromRequest === '') {
+            return null;
+        }
+
+        return (int) $supplierFromRequest;
     }
 
     /**
