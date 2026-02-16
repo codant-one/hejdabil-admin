@@ -41,20 +41,15 @@ class BillingController extends Controller
 
             $limit = $request->has('limit') ? $request->limit : 10;
         
-            // Build base query for aggregates (without relations, order, select)
-            $baseQuery = Billing::query();
-            
-            // Apply only WHERE filters
-            $filters = $request->only(['supplier_id', 'client_id', 'state_id']);
-            if (!empty($filters['supplier_id'])) {
-                $baseQuery->where('supplier_id', $filters['supplier_id']);
-            }
-            if (!empty($filters['client_id'])) {
-                $baseQuery->where('client_id', $filters['client_id']);
-            }
-            if (!empty($filters['state_id'])) {
-                $baseQuery->where('state_id', $filters['state_id']);
-            }
+            // Build base query for aggregates with same filters/role rules as listing
+            $baseQuery = Billing::query()->applyFilters(
+                $request->only([
+                    'search',
+                    'supplier_id',
+                    'client_id',
+                    'state_id'
+                ])
+            );
             
             // Get aggregates without order/limit
             $aggregates = (clone $baseQuery)->selectRaw('
