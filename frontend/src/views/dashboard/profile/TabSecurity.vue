@@ -374,7 +374,7 @@ const onSubmitKey = async () => {
 
         <VCardText class="px-0">
           <div class="title-tabs-profile" :class="windowWidth < 1024 ? 'mb-4' : 'mb-6'">
-            Säkerhetslösenord
+            Säkerhetslösenord för Swish-utbetalningar
           </div>
           <!-- 👉 Current Password -->
           <div 
