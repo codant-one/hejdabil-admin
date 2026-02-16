@@ -1086,11 +1086,13 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
+            <th scope="col"># ID</th>            
             <th scope="col" class="text-center"> Reg. nr </th>
             <th scope="col" class="text-center"> Inbytesfordon Reg. nr </th>
             <th scope="col" class="text-center"> Kredit / Leasing </th>
             <th scope="col" class="text-center"> Typ </th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'"> Leverantör </th>
+            <th scope="col">Kund</th>
             <th scope="col" class="text-center"> Skapad </th>
             <th scope="col" class="text-center"> 
               Signera status                            
@@ -1113,6 +1115,15 @@ onBeforeUnmount(() => {
             v-for="agreement in agreements"
             :key="agreement.id"
             style="height: 3rem;">
+            <td>
+              {{ agreement.agreement_type_id === 4 ?
+                agreement.offer.offer_id : 
+                ( agreement.agreement_type_id === 3 ? 
+                  agreement.commission.commission_id : 
+                  agreement.agreement_id
+                )                    
+              }}
+            </td>           
             <td class="text-center" @click="goToTracker(agreement)">
               <span class="font-weight-medium cursor-pointer text-aqua">
                 {{ agreement.agreement_type_id === 4 ?
@@ -1132,7 +1143,20 @@ onBeforeUnmount(() => {
                 {{ agreement.supplier.user.name }}
                 {{ agreement.supplier.user.last_name ?? "" }}
               </span>
-            </td>         
+            </td>      
+            <td>
+              <span
+                class="d-flex justify-between align-center font-weight-medium text-neutral-3"
+              >
+              {{ agreement.agreement_type_id === 4 ?
+                agreement.agreement_client?.fullname : 
+                ( agreement.agreement_type_id === 3 ? 
+                  agreement.commission?.client?.fullname : 
+                  agreement.agreement_client?.fullname
+                )                    
+              }}
+              </span>
+            </td>   
             <td class="text-center">  
               {{ new Date(agreement.created_at).toLocaleString('sv-SE', { 
                   year: 'numeric', 

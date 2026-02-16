@@ -22,7 +22,7 @@ class Commission extends Model
     }
 
     public function client() {       
-        return $this->hasOne(CommissionClient::class, 'commission_id');
+        return $this->hasOne(CommissionClient::class, 'id');
     }
 
     public function commission_type() {

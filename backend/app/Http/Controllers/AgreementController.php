@@ -74,6 +74,7 @@ class AgreementController extends Controller
                         'offer:id,offer_id,reg_num,price',
                         'commission:id,commission_id,commission_type_id,commission_fee,selling_price',
                         'commission.vehicle:id,commission_id,reg_num,model_id',
+                        'commission.client:id,fullname,email,phone',
                         'agreement_type:id,name',
                         'agreement_client:id,agreement_id,fullname,email,phone',
                         'vehicle_interchange:id,reg_num,model_id',

@@ -58,12 +58,6 @@ class PersonInfoController extends Controller
                 $masked = (strlen($clean) > 4)
                     ? (substr($clean, 0, 2) . str_repeat('*', max(0, strlen($clean) - 4)) . substr($clean, -2))
                     : '****';
-
-                Log::info('SPAR lookup returned no person record', [
-                    'personId_masked' => $masked,
-                    'result_top_keys' => array_keys($result),
-                    'result_excerpt' => mb_substr(json_encode($result, JSON_UNESCAPED_UNICODE), 0, 800),
-                ]);
             }
 
             return response()->json([
