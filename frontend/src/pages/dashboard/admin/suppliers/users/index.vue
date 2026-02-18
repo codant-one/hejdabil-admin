@@ -1,17 +1,25 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import create from './create.vue' 
 import show from './show.vue' 
 import password from './password.vue' 
 import edit from './edit.vue'
 import destroy from './destroy.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-
 import { avatarText } from '@/@core/utils/formatters'
-
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { themeConfig } from '@themeConfig'
 import { excelParser } from '@/plugins/csv/excelParser'
+import router from '@/router'
+import eyeIcon from "@/assets/images/icons/figma/eye.svg";
+import editIcon from "@/assets/images/icons/figma/edit.svg";
+import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+import passwordIcon from "@/assets/images/icons/figma/password.svg";
+
+const { width: windowWidth } = useWindowSize();
+const route = useRoute()
 
 const usersStores = useSuppliersStores()
 
@@ -36,6 +44,7 @@ const IdsUserOnline = ref([])
 const userOnline = ref([])
 
 const isRequestOngoing = ref(true)
+const hasLoaded = ref(false);
 
 const permissionsRol = ref([])
 const readonly = ref(false)
@@ -45,6 +54,10 @@ const advisor = ref({
   message: '',
   show: false
 })
+
+const emit = defineEmits([
+  'alert'
+])
 
 let interval = null
 
@@ -67,11 +80,14 @@ const onlineList = () => {
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = users.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = users.value.length + (currentPage.value - 1) * rowPerPage.value
-  
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalUsers.value } användare`
-})
+  const firstIndex = users.value.length
+    ? (currentPage.value - 1) * rowPerPage.value + 1
+    : 0;
+  const lastIndex =
+    users.value.length + (currentPage.value - 1) * rowPerPage.value;
+  return `${totalUsers.value} resultat`;
+  // return `Visar ${firstIndex} till ${lastIndex} av ${totalClients.value} register`;
+});
 
 
 // 👉 watching current page
@@ -108,6 +124,7 @@ async function fetchData() {
 
   onlineList()
 
+  hasLoaded.value = true;
   isRequestOngoing.value = false
 }
 
@@ -154,6 +171,26 @@ const showUserDeleteDialog = function(user){
 const showActivateDialog = supplierData => {
   isConfirmActiveDialogVisible.value = true
   selectedUser.value = { ...supplierData }
+}
+
+const createUser = () => {
+  router.push({ name : 'dashboard-admin-suppliers-users-create' })
+
+  // advisor.value = {
+  //   type: 'success',
+  //   message: 'OK OK OK',
+  //   show: true
+  // }
+
+  // setTimeout(() => {
+  //   advisor.value = {
+  //     type: '',
+  //     message: '',
+  //     show: false
+  //   }
+  // }, 3000)
+
+  // return true
 }
 
 const activateUser = async () => {
@@ -256,33 +293,14 @@ const downloadCSV = async () => {
             {{ advisor.message }}
         </VAlert>
 
-        <VCard v-if="users" id="rol-list" >
-          <VCardText class="d-flex align-center flex-wrap gap-4">
-            <!-- 👉 Rows per page -->
-             <div class="d-flex align-center w-100 w-md-auto">
-              <span class="text-no-wrap me-3">Visa</span>
-              <VSelect
-                v-model="rowPerPage"
-                density="compact"
-                :items="[10, 20, 30, 50]"
-              />
-            </div>
-
-            <VBtn
-              variant="tonal"
-              color="secondary"
-              prepend-icon="tabler-file-export"
-              class="w-100 w-md-auto"
-              @click="downloadCSV">
-                Exportera
-            </VBtn>
-
-            <create
-              @data="fetchData"
-              @alert="showAlert"/>
-
-            <VSpacer class="d-none d-md-block"/>
-
+        <VCard v-if="users" class="card-fill" id="rol-list" >
+          <VCardTitle
+            class="d-flex gap-6 justify-space-between"
+            :class="[
+              windowWidth < 1024 ? 'flex-column' : 'flex-row',
+              $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+            ]"
+          >
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
               <!-- 👉 Search  -->
               <div class="search rol-list-filter">
@@ -294,19 +312,39 @@ const downloadCSV = async () => {
                 />
               </div>
             </div>
-          </VCardText>
+            <div class="d-flex gap-4">
+              <VBtn
+                class="btn-light w-auto"
+                block
+                @click="downloadCSV">
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
 
-          <VDivider />
+              <VBtn
+                v-if="$can('create', 'users')"
+                class="btn-gradient"
+                block
+                @click="createUser">
+                  <VIcon icon="custom-plus" size="24" />
+                  Lägg till medarbetare
+              </VBtn>
+            </div>
+          </VCardTitle>
 
           <!-- SECTION Table -->
-          <VTable class="text-no-wrap rol-list-table">
+          <VTable 
+            v-if="!$vuetify.display.mdAndDown"
+            class="pt-2 px-4 pb-6 text-no-wrap rol-list-table"
+            style="border-radius: 0 !important"
+          >
             <!-- 👉 Table head -->
-            <thead class="text-uppercase">
+            <thead>
               <tr>
-                <th scope="col"> #ID </th>
-                <th scope="col"> NAMN </th>
-                <th scope="col"> E-POST </th>
-                <th scope="col"> TELEFON </th>
+                <th scope="col"> #ID </th> 
+                <th scope="col"> Namn </th>
+                <th class="text-center" scope="col"> E-post </th>
+                <th class="text-center"scope="col"> Telefon </th>
                 <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
               </tr>
             </thead>
@@ -325,53 +363,37 @@ const downloadCSV = async () => {
 
                 <!-- 👉 name -->
                 <td>
-                  <div class="d-flex align-center">
-                    <VBadge
-                      dot
-                      location="bottom right"
-                      offset-x="3"
-                      offset-y="3"
-                      bordered
-                      :color="online(user.user.id)"
-                    >
-                      <VAvatar
-                        variant="tonal"
-                        size="38"
-                      >
-                        <VImg
-                          v-if="user.user.avatar"
-                          style="border-radius: 50%;"
-                          :src="themeConfig.settings.urlStorage + user.user.avatar"
-                        />
-                        <span v-else>{{ avatarText(user.user.name) }}</span>
-                      </VAvatar>
-                    </VBadge>
-                    <div class="ml-3 d-flex flex-column">
+                  <div
+                    class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
+                    @click="showUserDetailDialog(user.user)"
+                  >
+                    <span class="flex-grow break-words">
                       {{ user.user.name }}  {{ user.user.last_name ?? '' }}
-                    </div>
+                    </span>
+
+                    <VIcon
+                      class="flex-shrink-0"
+                      icon="custom-arrow-right"
+                      size="22"
+                    />
                   </div>
                 </td>
 
                 <!-- 👉 correo -->
-                <td>
+                <td class="text-center">
                   {{ user.user.email }}
                 </td>
 
                 <!-- 👉 phone -->
-                  <td>
+                <td class="text-center">
                   {{ user.user.user_detail?.personal_phone ?? '----' }}
                 </td>
                 <!-- 👉 Actions -->
                 <td style="width: 3rem;">
                   <VMenu>
                     <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="24" height="24" stroke-width="2">
-                          <path d="M12.52 20.924c-.87 .262 -1.93 -.152 -2.195 -1.241a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.088 .264 1.502 1.323 1.242 2.192"></path>
-                          <path d="M19 16v6"></path>
-                          <path d="M22 19l-3 3l-3 -3"></path>
-                          <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"></path>
-                        </svg>
+                      <VBtn v-bind="props" icon variant="text" class="btn-white">
+                        <VIcon icon="custom-dots-vertical" size="22" />
                       </VBtn>
                     </template>
                     <VList>
@@ -379,7 +401,7 @@ const downloadCSV = async () => {
                          v-if="$can('view', 'users')"
                          @click="showUserDetailDialog(user.user)">
                         <template #prepend>
-                          <VIcon icon="tabler-eye" />
+                          <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Visa</VListItemTitle>
                       </VListItem>
@@ -387,7 +409,7 @@ const downloadCSV = async () => {
                          v-if="$can('edit', 'users') && user.deleted_at === null"
                          @click="showUserPasswordDialog(user.user)">
                         <template #prepend>
-                          <VIcon icon="tabler-key" />
+                          <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Ändra lösenord</VListItemTitle>
                       </VListItem>
@@ -395,7 +417,7 @@ const downloadCSV = async () => {
                          v-if="$can('edit', 'users') && user.deleted_at === null"
                          @click="showUserEditDialog(user.user)">
                         <template #prepend>
-                          <VIcon icon="tabler-edit" />
+                          <img :src="editIcon" alt="Edit Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
@@ -403,7 +425,7 @@ const downloadCSV = async () => {
                         v-if="$can('delete','users') && user.deleted_at === null"
                         @click="showUserDeleteDialog(user.user)">
                         <template #prepend>
-                          <VIcon icon="tabler-trash" />
+                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
                         </template>
                         <VListItemTitle>Ta bort</VListItemTitle>
                       </VListItem>
@@ -433,27 +455,62 @@ const downloadCSV = async () => {
               </tr>
             </tfoot>
           </VTable>
+
+          <div
+            v-if="!isRequestOngoing && hasLoaded && !users.length"
+            class="empty-state"
+            :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+          >
+            <VIcon
+              :size="$vuetify.display.mdAndDown ? 80 : 120"
+              icon="custom-f-user"
+            />
+            <div class="empty-state-content">
+              <div class="empty-state-title">Du har inga användare än</div>
+              <div class="empty-state-text">
+                Lägg till dina användare här för att snabbt skapa fakturor och hålla
+                ordning på dina kontakter.
+              </div>
+            </div>
+            <VBtn
+              class="btn-ghost"
+              v-if="$can('create', 'users') && !$vuetify.display.mdAndDown"
+              @click="createUser"
+            >
+              Lägg till ny användare
+              <VIcon icon="custom-arrow-right" size="24" />
+            </VBtn>
+
+            <VBtn
+              class="btn-ghost"
+              v-if="$vuetify.display.mdAndDown && $can('create', 'users')"
+              @click="createUser"
+            >
+              Lägg till ny användare
+              <VIcon icon="custom-arrow-right" size="24" />
+            </VBtn>
+          </div>
           <!-- !SECTION -->
 
-          <VDivider />
-
           <!-- SECTION Pagination -->
-          <VCardText class="d-block d-md-flex text-center align-center flex-wrap gap-4 py-3">
-            <!-- 👉 Pagination meta -->
-            <span class="text-sm text-disabled">
+          <VCardText
+            v-if="users.length"
+            :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+            class="align-center flex-wrap gap-4 pt-0 px-6"
+          >
+            <span class="text-pagination-results">
               {{ paginationData }}
             </span>
 
-            <VSpacer class="d-none d-md-block"/>
+            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-            <!-- 👉 Pagination -->
             <VPagination
               v-model="currentPage"
               size="small"
               :total-visible="4"
               :length="totalPages"
-              @next="selectedRows = []"
-              @prev="selectedRows = []"
+              next-icon="custom-chevron-right"
+              prev-icon="custom-chevron-left"
             />
           </VCardText>
 

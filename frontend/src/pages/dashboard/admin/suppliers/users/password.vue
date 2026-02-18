@@ -100,53 +100,161 @@ const editUserPassword = function(){
     <!-- DIALOG -->
     <VDialog
       v-model="props.isDrawerOpen"
+      class="action-dialog"
       max-width="600"
       persistent
     >
         <!-- Dialog close btn -->
-        <DialogCloseBtn @click="closeUserPasswordDialog" />
+         <VBtn
+            icon
+            class="btn-white close-btn"
+            @click="closeUserPasswordDialog"
+            >
+            <VIcon size="16" icon="custom-close" />
+        </VBtn>
 
         <!-- Dialog Content -->
-        <VCard title="Redigera användarens lösenord">
-            <VDivider class="mt-4"/>
-            <VForm
-                ref="refForm"
-                @submit.prevent="editUserPassword"
-                >
-                <VCardText>
-                    <VRow>
-                        <VCol cols="12">
-                            <VTextField
-                                v-model="email"
-                                label="E-post"
-                                readonly
-                            />
-                        </VCol>
-                        <VCol cols="12" >
-                            <VTextField
-                                v-model="password"
-                                label="Nytt lösenord"
-                                :type="isPasswordVisible ? 'text' : 'password'"
-                                :rules="[requiredValidator]"
-                                :append-inner-icon="isPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
-                                @click:append-inner="isPasswordVisible = !isPasswordVisible"
-                            />
-                        </VCol>
-                    </VRow>
-                    <VCardText class="d-flex justify-end gap-3 flex-wrap pb-0 px-0">
-                        <VBtn
-                            color="secondary"
-                            variant="tonal"
-                            @click="closeUserPasswordDialog"
-                        >
-                            Avbryt
-                        </VBtn>
-                        <VBtn type="submit">
-                            Redigera lösenord
-                        </VBtn>
-                    </VCardText>
+        <VForm
+            ref="refForm"
+            @submit.prevent="editUserPassword"
+        >
+            <VCard flat class="card-form">
+                <VCardText class="dialog-title-box">
+                <VIcon size="32" icon="custom-password" class="action-icon" />
+                
+                <div class="dialog-title">
+                    Redigera användarens lösenord
+                </div>
                 </VCardText>
-            </VForm>
-        </VCard>
+                <VCardText class="dialog-text">
+                    <VLabel
+                        class="mb-1 text-body-2 text-high-emphasis"
+                        text="E-post"
+                        />
+                    <VTextField
+                        v-model="email"
+                        readonly
+                    />
+                </VCardText>
+                <VCardText class="dialog-text mt-4">
+                    <VLabel
+                        class="mb-1 text-body-2 text-high-emphasis"
+                        text="Nytt lösenord*"
+                        />
+                    <VTextField
+                        v-model="password"
+                        :type="isPasswordVisible ? 'text' : 'password'"
+                        :rules="[requiredValidator]"
+                        :append-inner-icon="isPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
+                        @click:append-inner="isPasswordVisible = !isPasswordVisible"
+                    />
+                </VCardText>
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn
+                        class="btn-light"
+                        @click="closeUserPasswordDialog">
+                        Avbryt
+                    </VBtn>
+                    <VBtn class="btn-gradient" type="submit">
+                        Sticka
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VForm>
     </VDialog>
 </template>
+
+<style lang="scss">
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 4px 0 !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+
+          .v-select__selection, .v-autocomplete__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            background: white !important;
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 0;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
+    }
+    & .v-input {
+      .v-input__prepend {
+        padding-top: 12px !important;
+      }
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
+    }
+  }
+</style>

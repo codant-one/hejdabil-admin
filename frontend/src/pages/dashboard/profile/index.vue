@@ -3,6 +3,8 @@
 import { useDisplay } from "vuetify";
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
+// import TabMyTeam from '@/views/dashboard/profile/TabMyTeam.vue'
+import TabMyTeam from '@/pages/dashboard/admin/suppliers/users/index.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -36,6 +38,10 @@ const tabs = [
   {
     icon: 'custom-clients',
     title: 'Företag',
+  },
+  {
+    icon: 'custom-users',
+    title: 'Mitt team',
   },
 ]
 
@@ -219,6 +225,10 @@ onBeforeUnmount(() => {
             <TabDealer 
               @alert="showAlert"
               @window="showWindow"/>
+          </VWindowItem>
+          <VWindowItem>
+            <TabMyTeam 
+              @alert="showAlert"/>
           </VWindowItem>
         </VWindow>
       </div>
