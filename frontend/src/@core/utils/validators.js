@@ -99,6 +99,11 @@ export const minLengthDigitsValidator = (minLength) => {
   }
 }
 
+// 👉 Duplicate Organization Number Validator
+export const duplicateOrganizationNumberValidator = isDuplicate => {
+  return () => !isDuplicate || 'Numret är redan registrerat.'
+}
+
 // 👉 Alpha-dash Validator
 export const alphaDashValidator = value => {
   if (isEmpty(value))

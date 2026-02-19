@@ -28,6 +28,18 @@ class Offer extends Model
         return $this->belongsTo(CarModel::class, 'model_id', 'id');
     }
 
+    public function fuel(){
+        return $this->belongsTo(Fuel::class, 'fuel_id', 'id');
+    }
+
+    public function gearbox(){
+        return $this->belongsTo(Gearbox::class, 'gearbox_id', 'id');
+    }
+
+    public function carbody(){
+        return $this->belongsTo(CarBody::class, 'car_body_id', 'id');
+    } 
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('fullname', 'LIKE', '%' . $search . '%')
@@ -85,7 +97,8 @@ class Offer extends Model
         $offer = self::create([
             'user_id' => Auth::user()->id,
             'supplier_id' => $supplier_id,
-            'model_id' => $model_id,            'car_body_id' => ($request->car_body_id && $request->car_body_id !== 'null') ? $request->car_body_id : null,
+            'model_id' => $model_id,            
+            'car_body_id' => ($request->car_body_id && $request->car_body_id !== 'null') ? $request->car_body_id : null,
             'fuel_id' => ($request->fuel_id && $request->fuel_id !== 'null') ? $request->fuel_id : null,
             'gearbox_id' => ($request->gearbox_id && $request->gearbox_id !== 'null') ? $request->gearbox_id : null,
             'currency_id' => ($request->currency_id && $request->currency_id !== 'null') ? $request->currency_id : null,

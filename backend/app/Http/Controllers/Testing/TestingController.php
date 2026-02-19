@@ -329,7 +329,10 @@ class TestingController extends Controller
             'iva',
             'offer.user',
             'offer.model.brand',
-            'commission.vehicle',
+            'offer.fuel',
+            'offer.gearbox',
+            'Offer.carbody',
+            'commission.vehicle.carbody',
             'commission.commission_type',
             'payment_types',
             'vehicle_interchange.model.brand',
@@ -341,7 +344,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(8);
+        ])->find(62);
 
         $user = User::with(['userDetail','roles'])->find(1);
  
