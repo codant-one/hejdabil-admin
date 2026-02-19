@@ -176,7 +176,7 @@ export const getBarChartConfig = themeColors => {
 export const getCandlestickChartConfig = themeColors => {
   const candlestickColors = {
     series1: '#28c76f',
-    series2: '#ea5455',
+    series2: '#FF4D4F',
   }
 
   const { themeBorderColor, themeDisabledTextColor } = colorVariables(themeColors)

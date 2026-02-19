@@ -44,6 +44,8 @@ const pendingItems = ref({
   open_agreements: [],
 });
 const isDialogOpen = ref(false);
+const addNewClientDrawerRef = ref(null);
+const addNewClientMobileRef = ref(null);
 const hasLoaded = ref(false);
 const isClientFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
@@ -66,6 +68,14 @@ const advisor = ref({
   show: false,
 });
 
+const skapatsDialog = ref(false);
+const inteSkapatsDialog = ref(false);
+const isDuplicate = ref(false)
+const isEdit = ref(false)
+const err = ref(null);
+const openedClientFormSource = ref('drawer');
+const lastEditedClientDraft = ref(null);
+
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -85,7 +95,9 @@ watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value;
 
-  if (!isAddNewClientDrawerVisible.value) selectedClient.value = {};
+  if (!isAddNewClientDrawerVisible.value && !isDialogOpen.value && !skapatsDialog.value) {
+    selectedClient.value = {};
+  }
 });
 
 onMounted(async () => {
@@ -384,80 +396,135 @@ const resolveStatus = state => {
     }
 }
 
+const normalizeFormDataValue = (value) => {
+  if (value === 'null' || value === 'undefined') return null
+  return value
+}
+
+const buildClientDraftFromFormData = (formData) => {
+  const draft = {}
+  for (const [key, value] of formData.entries()) {
+    draft[key] = normalizeFormDataValue(value)
+  }
+  return draft
+}
+
 const submitForm = async (client, method) => {
   isRequestOngoing.value = true;
+  isDuplicate.value = false;
+  openedClientFormSource.value = isDialogOpen.value ? 'mobile' : 'drawer';
 
   if (method === "update") {
+    lastEditedClientDraft.value = {
+      ...selectedClient.value,
+      ...buildClientDraftFromFormData(client.data),
+      id: client.id,
+    };
     client.data.append("_method", "PUT");
     submitUpdate(client);
     return;
   }
 
+  lastEditedClientDraft.value = null;
   submitCreate(client.data);
 };
 
 const submitCreate = (clientData) => {
   clientsStores
     .addClient(clientData)
-    .then((res) => {
+    .then(async (res) => {
       if (res.data.success) {
-        advisor.value = {
-          type: "success",
-          message: "Kunden har lagts till!",
-          show: true,
-        };
-        fetchData();
+        isEdit.value = false
+        
+        skapatsDialog.value = true;
+        addNewClientDrawerRef.value?.reallyCloseAndReset?.();
+        addNewClientMobileRef.value?.reallyCloseAndReset?.();
+
+        await fetchData();
+        
       }
       isRequestOngoing.value = false;
     })
-    .catch((err) => {
-      advisor.value = {
-        type: "error",
-        message: err.message,
-        show: true,
-      };
-      isRequestOngoing.value = false;
+    .catch((error) => {
+      err.value = error;
+      isDuplicate.value = error.message === 'organization_number.unique' ? true : false
+      inteSkapatsDialog.value = true;
+      isRequestOngoing.value = false
     });
-
-  setTimeout(() => {
-    advisor.value = {
-      type: "",
-      message: "",
-      show: false,
-    };
-  }, 3000);
 };
 
 const submitUpdate = (clientData) => {
   clientsStores
     .updateClient(clientData)
-    .then((res) => {
+    .then(async (res) => {
       if (res.data.success) {
-        advisor.value = {
-          type: "success",
-          message: "Ändringarna har sparats!",
-          show: true,
-        };
-        fetchData();
+
+        skapatsDialog.value = true;
+        isEdit.value = true
+        addNewClientDrawerRef.value?.reallyCloseAndReset?.();
+        addNewClientMobileRef.value?.reallyCloseAndReset?.();
+
+        await fetchData();
+
       }
       isRequestOngoing.value = false;
     })
-    .catch((err) => {
-      advisor.value = {
-        type: "error",
-        message: err.message,
-        show: true,
-      };
-      isRequestOngoing.value = false;
-    });
+    .catch((error) => {
+      err.value = error;
+      isDuplicate.value = error.message === 'organization_number.unique' ? true : false
+      inteSkapatsDialog.value = true;
+      isRequestOngoing.value = false
+    })
+};
 
-  setTimeout(() => {
-    advisor.value = {
-      type: "",
-      message: "",
-      show: false,
-    };
-  }, 3000);
+const closeDialog = () => {
+  skapatsDialog.value = false;
+
+  if (isEdit.value) {
+    if (lastEditedClientDraft.value) {
+      selectedClient.value = { ...lastEditedClientDraft.value }
+    }
+    if (openedClientFormSource.value === 'mobile') {
+      isDialogOpen.value = true
+    } else {
+      isAddNewClientDrawerVisible.value = true
+    }
+    return
+  }
+
+  selectedClient.value = {}
+  if (openedClientFormSource.value === 'mobile') {
+    isDialogOpen.value = true
+  } else {
+    isAddNewClientDrawerVisible.value = true
+  }
+}
+
+const showError = () => {
+    inteSkapatsDialog.value = false;
+
+    advisor.value.show = isDuplicate.value ? false : true;
+    advisor.value.type = "error";
+    const responseData = err.value?.response?.data;
+    
+    if (responseData?.message) {
+      advisor.value.message = responseData.message;
+    } else if (responseData?.errors) {
+      advisor.value.message = Object.values(responseData.errors)
+                .flat()
+                .join("<br>");
+    } else if (err.value?.message) {
+      advisor.value.message = err.value.message;
+    } else {
+      advisor.value.message = "Ett serverfel uppstod. Försök igen.";
+    }
+
+    setTimeout(() => {
+      advisor.value.show = false;
+      advisor.value.type = "";
+      advisor.value.message = "";
+    }, 3000);
+
 };
 
 const downloadCSV = async () => {
@@ -940,11 +1007,14 @@ onBeforeUnmount(() => {
 
     <!-- 👉 Add New Client -->
     <AddNewClientDrawer
+      ref="addNewClientDrawerRef"
       v-model:isDrawerOpen="isAddNewClientDrawerVisible"
       :client="selectedClient"
       :suppliers="suppliers"
       :client_types="client_types"
+      :is-duplicate="isDuplicate"
       @client-data="submitForm"
+      @reset-duplicate="isDuplicate = false"
       @edited="onClientFormEdited"
       @alert="showAlert"
       @loading="showLoading"
@@ -1025,11 +1095,14 @@ onBeforeUnmount(() => {
     >
       <VCard>
         <AddNewClientMobile
+          ref="addNewClientMobileRef"
           v-model:isDrawerOpen="isDialogOpen"
           :client="selectedClient"
           :suppliers="suppliers"
           :client_types="client_types"
+          :is-duplicate="isDuplicate"
           @client-data="submitForm"
+          @reset-duplicate="isDuplicate = false"
           @edited="onClientFormEdited"
           @alert="showAlert"
           @loading="showLoading"
@@ -1396,6 +1469,79 @@ onBeforeUnmount(() => {
             <VListItemTitle>Aktiv</VListItemTitle>
           </VListItem>
         </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Dialogs Section -->
+
+    <!-- 👉 Skapats Dialogs -->
+    <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="skapatsDialog = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-user" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">
+            {{ isEdit ? 'Kunden har uppdaterats!' : 'Kunden har lagts till!' }}
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+            {{ isEdit ? 'Din kund har uppdaterats och ändringarna har sparats i din kundlista.' : 'Din kund har skapats och finns nu i din kundlista.' }}
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-gradient" @click="closeDialog">
+             {{ isEdit ? 'Redigera kund' : 'Skapa en ny kund' }}
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+    >
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="inteSkapatsDialog = !inteSkapatsDialog"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+        <VCardText class="dialog-title-box big-icon justify-center pb-0">
+          <VIcon size="72" icon="custom-f-cancel" />
+        </VCardText>
+        <VCardText class="dialog-title-box justify-center">
+          <div class="dialog-title">
+            {{ isDuplicate ? 'Kunden finns redan registrerad.' : 'Kunde inte skapa avtalet' }}
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text text-center">
+          {{ isDuplicate ? 
+            'En kund med detta personnummer eller organisationsnummer finns redan i systemet. För att undvika dubbletter kan du inte skapa en ny kund med samma uppgifter.' : 
+            'Ett fel inträffade. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.'
+          }}
+        </VCardText>
+
+        <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="showError">
+            Stäng
+          </VBtn>
+        </VCardText>
       </VCard>
     </VDialog>
   </section>
