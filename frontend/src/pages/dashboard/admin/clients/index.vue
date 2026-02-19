@@ -396,15 +396,22 @@ const resolveStatus = state => {
     }
 }
 
-const normalizeFormDataValue = (value) => {
+const normalizeFormDataValue = (key, value) => {
   if (value === 'null' || value === 'undefined') return null
+
+  if (key.endsWith('_id')) {
+    if (value === '') return null
+    const numericValue = Number(value)
+    return Number.isNaN(numericValue) ? value : numericValue
+  }
+
   return value
 }
 
 const buildClientDraftFromFormData = (formData) => {
   const draft = {}
   for (const [key, value] of formData.entries()) {
-    draft[key] = normalizeFormDataValue(value)
+    draft[key] = normalizeFormDataValue(key, value)
   }
   return draft
 }
