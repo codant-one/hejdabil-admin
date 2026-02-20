@@ -75,6 +75,7 @@
             background: white;
             border-radius: 8px;
             position: relative;
+            padding: 8px;
         }
 
         .box-logo img {
