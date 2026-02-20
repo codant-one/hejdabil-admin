@@ -1922,7 +1922,7 @@ const handleFocus = (element, fieldId) => {
 <style lang="css">
 .invoice-logo {
   width: 200px;
-  min-height: 100px;
+  height: 100px;
   background: white;
   border-radius: 8px;
   padding: 8px;
