@@ -101,6 +101,17 @@ const discountOptions = ref([0, 20, 30, 50]);
 const discountApplied = ref(false);
 const amountDiscount = ref(props.amount_discount);
 const isCustomTax = computed(() => selectedTax.value === "Custom");
+const canEditInvoiceId = computed(() => {
+  if (!props.isCreated) return false;
+  if (props.role !== "Supplier") return false;
+  if (props.billing) return false;
+
+  const billingsCount = Array.isArray(company.value?.billings)
+    ? company.value.billings.length
+    : 0;
+
+  return billingsCount === 0;
+});
 const isMobile = ref(false);
 const controlledTab = ref("redigera");
 const actionDialog = ref(false);
@@ -167,6 +178,21 @@ const extractDaysFromNetTermSplit = (term) => {
   return daysIndex > -1 ? parseInt(parts[daysIndex - 1]) : null;
 };
 
+const getNextInvoiceId = (billings = [], fallbackId = 0) => {
+  const maxFromBillings = Array.isArray(billings)
+    ? billings.reduce((maxValue, billingItem) => {
+        const currentId = Number(billingItem?.invoice_id);
+        return Number.isFinite(currentId) && currentId > maxValue
+          ? currentId
+          : maxValue;
+      }, 0)
+    : 0;
+
+  const baseId = Math.max(maxFromBillings, Number(fallbackId) || 0);
+
+  return baseId + 1;
+};
+
 watch(
   () => props.company,
   (val) => {
@@ -174,13 +200,15 @@ watch(
 
     if (props.billing) {
       invoice.value.id = route.path.includes("/duplicate/")
-        ? company.value.billings.length + 1
+        ? getNextInvoiceId(company.value?.billings, props.invoice_id)
         : props.billing.invoice_id;
     } else if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = company.value.billings.length + 1;
+      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
     } else if (props.role === "User" && company.value.billings) {
-      invoice.value.id = company.value.billings.length + 1;
-    } else invoice.value.id = props.invoice_id + 1;
+      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
+    } else {
+      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
+    }
   }
 );
 
@@ -269,7 +297,7 @@ const checkIfMobile = () => {
 async function fetchData() {
   if (props.billing) {
     invoice.value.id = route.path.includes("/duplicate/")
-      ? company.value?.billings?.length + 1
+      ? getNextInvoiceId(company.value?.billings, props.invoice_id)
       : props.billing.invoice_id;
     invoice.value.reference = props.billing.reference;
     invoice.value.invoice_date = props.billing.invoice_date;
@@ -297,8 +325,10 @@ async function fetchData() {
     invoice.value.invoice_date = `${year}-${month}-${day}`;
 
     if (props.role === "Supplier" && company.value.billings) {
-      invoice.value.id = company.value.billings.length + 1;
-    } else invoice.value.id = props.invoice_id + 1;
+      invoice.value.id = getNextInvoiceId(company.value.billings, props.invoice_id);
+    } else {
+      invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
+    }
   }
 }
 
@@ -356,13 +386,13 @@ const selectSupplier = async () => {
     company.value = selected.user.user_detail;
     company.value.email = selected.user.email;
     company.value.billings = selected.billings;
-    invoice.value.id = selected.billings.length + 1;
+    invoice.value.id = getNextInvoiceId(selected.billings, props.invoice_id);
     clients.value = props.clients.filter(
       (item) => item.supplier_id === invoice.value.supplier_id
     );
   } else {
     company.value = props.company;
-    invoice.value.id = props.invoice_id + 1;
+    invoice.value.id = getNextInvoiceId(props.company?.billings, props.invoice_id);
     clients.value = props.clients;
   }
 
@@ -580,8 +610,12 @@ const handleFocus = (element, fieldId) => {
               <div class="form-field">
                 <VTextField
                   v-model="invoice.id"
-                  disabled
+                  :disabled="!canEditInvoiceId"
+                  :rules="canEditInvoiceId ? [requiredValidator] : []"
+                  type="number"
+                  :min="1"
                   prefix="#"
+                  @input="inputData"
                   style="inline-size: 10.5rem"
                 />
               </div>
@@ -1131,8 +1165,12 @@ const handleFocus = (element, fieldId) => {
                   <div class="form-field">
                     <VTextField
                       v-model="invoice.id"
-                      disabled
+                      :disabled="!canEditInvoiceId"
+                      :rules="canEditInvoiceId ? [requiredValidator] : []"
+                      type="number"
+                      :min="1"
                       prefix="#"
+                      @input="inputData"
                     />
                   </div>
                 </span>

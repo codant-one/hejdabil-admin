@@ -298,7 +298,24 @@ class BillingController extends Controller
                     }
             )->get();
 
-            $invoice_id = Billing::whereNull('supplier_id')->count();
+            $currentSupplierId = null;
+
+            if (Auth::check() && Auth::user()->hasRole('Supplier')) {
+                $currentSupplierId = Auth::user()->supplier->id;
+            } else if (Auth::check() && Auth::user()->hasRole('User')) {
+                $currentSupplierId = Auth::user()->supplier->boss_id;
+            }
+
+            $billingQuery = Billing::query();
+
+            if (is_null($currentSupplierId)) {
+                $billingQuery->whereNull('supplier_id');
+            } else {
+                $billingQuery->where('supplier_id', $currentSupplierId);
+            }
+
+            $invoice_id = (int) ($billingQuery->max('invoice_id') ?? 0);
+            $billings = (clone $billingQuery)->get();
 
             return response()->json([
                 'success' => true,
@@ -307,7 +324,7 @@ class BillingController extends Controller
                     'clients' => $clients,
                     'invoices' => CacheService::getInvoices(),
                     'invoice_id' => $invoice_id,
-                    'billings' => Billing::whereNull('supplier_id')->get()
+                    'billings' => $billings
                 ]
             ]);
 

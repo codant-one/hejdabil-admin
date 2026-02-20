@@ -347,15 +347,10 @@ class Billing extends Model
     }
 
     public static function createCredit($billing) {
-
-        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
-
-        if($isSupplier) {
-            $supplier = Supplier::with(['billings'])->where('user_id', Auth::user()->id)->first();
-            $invoice_id = count($supplier->billings) + 1;
-        } else {
-            $invoice_id = self::whereNull('user_id')->count() + 1;
-        }
+        $maxInvoiceId = is_null($billing->supplier_id)
+            ? (self::whereNull('supplier_id')->max('invoice_id') ?? 0)
+            : (self::where('supplier_id', $billing->supplier_id)->max('invoice_id') ?? 0);
+        $invoice_id = ((int) $maxInvoiceId) + 1;
 
         $array = json_decode($billing->detail, true);
 
