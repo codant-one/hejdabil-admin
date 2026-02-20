@@ -586,7 +586,7 @@ const handleFocus = (element, fieldId) => {
     >
       <VCardText class="d-flex invoice-box">
         <div class="w-100 w-md-50">
-          <div class="invoice-logo-box d-flex align-center mb-6">
+          <div class="invoice-logo-box invoice-logo d-flex align-center mb-6">
             <!-- 👉 Logo -->
             <img
               v-if="company.logo"
@@ -1842,6 +1842,7 @@ const handleFocus = (element, fieldId) => {
 </template>
 
 <style lang="scss" scoped>
+
 .draggable-item {
   margin-top: 5px;
   display: flex;
@@ -1919,6 +1920,13 @@ const handleFocus = (element, fieldId) => {
 }
 </style>
 <style lang="css">
+.invoice-logo {
+  width: 200px;
+  background: white;
+  border-radius: 8px;
+  position: relative;
+  padding: 16px;
+}
 @media (max-width: 1024px) {
   .fix-header {
     position: fixed;
