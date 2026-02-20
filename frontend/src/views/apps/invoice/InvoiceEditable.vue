@@ -590,7 +590,7 @@ const handleFocus = (element, fieldId) => {
             <!-- 👉 Logo -->
             <img
               v-if="company.logo"
-              :width="isMobile ? '200' : '200'"
+              class="invoice-logo-img"
               :src="themeConfig.settings.urlStorage + company.logo"
             />
             <div v-else>    
@@ -1922,10 +1922,23 @@ const handleFocus = (element, fieldId) => {
 <style lang="css">
 .invoice-logo {
   width: 200px;
+  min-height: 100px;
   background: white;
   border-radius: 8px;
-  position: relative;
-  padding: 16px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.invoice-logo .invoice-logo-img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 @media (max-width: 1024px) {
   .fix-header {
