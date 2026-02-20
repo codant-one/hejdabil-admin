@@ -299,7 +299,7 @@
                                                 text-align: {{ $column['id'] === 1 ? ' start' : 'right' }}!important;
                                                 {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 16px !important;
                                                 height: 48px !important; 
-                                                {{ $rowIndex > 0 ? 'border-top: 1px solid #E7E7E7;' : '' }}">
+                                                border-bottom: 1px solid #E7E7E7;">
                                                 <span>
                                                 {{ ($column['id'] === 2 || $column['id'] === 3)
                                                     ? formatCurrency($column['value'])
@@ -313,7 +313,7 @@
                                                 text-align: right!important;
                                                 padding-right: 16px!important;
                                                 height: 48px !important; 
-                                                {{ $rowIndex > 0 ? 'border-top: 1px solid #E7E7E7;' : '' }}">
+                                                border-bottom: 1px solid #E7E7E7;">
                                                 <span>
                                                 {{ formatCurrency($column['value'])}} %
                                                 </span>
@@ -326,7 +326,7 @@
                                             padding-left: 16px !important; 
                                             text-align: start !important; 
                                             height: 48px !important; 
-                                            {{ $rowIndex > 0 ? 'border-top: 1px solid #E7E7E7;' : '' }}">
+                                            border-bottom: 1px solid #E7E7E7;">
                                             <span>
                                             {{ $column['note'] }}
                                             </span>
