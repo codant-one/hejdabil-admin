@@ -1130,7 +1130,8 @@ const onSubmit = async () => {
                               !car_name_interchange.value ||
                               !number_keys_interchange.value ||
                               !trade_price.value ||
-                              trade_price.value <= 0 ||
+                              trade_price.value <= 0 ||           
+                              !residual_price.value ||
                               !iva_purchase_id_interchange.value
                             )
     
@@ -2460,14 +2461,14 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
                                             <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
+                                                :key="`${JSON.stringify(startDateTimePickerConfig)}-${(reg_num_interchange || '').trim() ? 'required' : 'optional'}`"
                                                 v-model="purchase_date"
                                                 density="default"
                                                 :config="startDateTimePickerConfig"
                                                 clearable
                                                 class="field-solo-flat"
                                                 placeholder="Välj datum"
-                                                :rules="reg_num_interchange ? [requiredValidator] : []"
+                                                :rules="(reg_num_interchange || '').trim() ? [requiredValidator] : []"
                                             />
                                         </div>    
                                         <div class="form w-100">
@@ -2509,13 +2510,15 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
+                                            <VLabel v-if="residual_debt !== 0" class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '') + ' *'" />
+                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
                                             <VTextField
                                                 v-model="residual_price"
                                                 type="number"
                                                 min="0"
                                                 suffix="KR"
                                                 :disabled="residual_debt === 0 ? true : false"
+                                                :rules="residual_debt !== 0 ? [requiredValidator] : []"
                                             /> 
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

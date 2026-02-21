@@ -116,7 +116,7 @@
             border-radius: 4px;
             border: 1px solid #E7E7E7;
             line-height: 1;
-            min-height: 40px;
+            min-height: 120px;
             border-left: 1px solid #008C91;
             white-space: pre-line;
         }
@@ -422,6 +422,7 @@
                                 </div>
                             </td>
                         </tr>    
+                        @if($agreement->vehicle_client->vehicle->last_service !== null)
                         <tr>
                             <td>
                                 <div class="label">Vinterdäck finns?</div>
@@ -440,31 +441,58 @@
                                 </div>
                             </td>
                         </tr>  
-                        @if($agreement->vehicle_client->vehicle->dist_belt === 0)
+                        @else
                         <tr>
-                            <td>
-                                <div class="label">Kamrem bytt?</div>
+                            <td colspan="2">
+                                <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                      (
-                                        $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                        'Nej' : 
-                                        'Vet ej'
-                                      ) 
-                                    }}
+                                    {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
                                 </div>
-                            </td>                            
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Kamrem bytt vid: Mil/datum</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
-                                        {{ $agreement->vehicle_client->vehicle->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_dist_belt_date ?? 'YYYY-MM-DD' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>                            
+                            </td>
                         </tr> 
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->dist_belt === 0)
+                            @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                            <tr>
+                                <td>
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                            
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                                            {{ $agreement->vehicle_client->vehicle->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>                            
+                            </tr> 
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                         
+                            </tr>
+                            @endif
                         @else
                         <tr>
                             <td colspan="2">
@@ -652,6 +680,7 @@
                                 </div>
                             </td>
                         </tr>    
+                        @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
                         <tr>
                             <td>
                                 <div class="label">Vinterdäck finns?</div>
@@ -674,31 +703,62 @@
                                 </div>
                             </td>
                         </tr>  
-                        @if($agreement->vehicle_interchange?->dist_belt === 0)
+                        @else
                         <tr>
-                            <td>
-                                <div class="label">Kamrem bytt?</div>
+                            <td colspan="2">
+                                <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                      (
-                                        $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                        'Nej' : 
-                                        'Vet ej'
-                                      ) 
-                                    }}
-                                </div>
-                            </td>                            
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Kamrem bytt vid: Mil/datum</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange?->last_dist_belt !== null)
-                                    {{ $agreement->vehicle_interchange?->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                    @if($agreement->vehicle_interchange)
+                                        {{ $agreement->vehicle_interchange?->winter_tire === 0 ? 'Ja' : 'Nej' }}
                                     @else
                                          
                                     @endif
                                 </div>
-                            </td>                            
+                            </td>
                         </tr> 
+                        @endif
+                        @if($agreement->vehicle_interchange?->dist_belt === 0)
+                            @if($agreement->vehicle_interchange?->last_dist_belt !== null)
+                            <tr>
+                                <td>
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->vehicle_interchange?->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                            
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange?->last_dist_belt !== null)
+                                        {{ $agreement->vehicle_interchange?->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>                            
+                            </tr> 
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->vehicle_interchange?->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                            
+                            </tr>
+                            @endif
                         @else
                         <tr>
                             <td colspan="2">
@@ -753,18 +813,20 @@
                             </td>
                         </tr>
                         @else
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Verkligt värde</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                    {{ formatCurrency($agreement->fair_value) }} kr
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
+                            @if($agreement->vehicle_interchange)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Verkligt värde</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)
+                                        {{ formatCurrency($agreement->fair_value) }} kr
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                         @endif
                         <tr>
                             <td colspan="2">
@@ -848,8 +910,7 @@
             <!-- === PAYMENT INFORMATION === -->
             <tr>
                 <td colspan="2" class="section-cell">
-                    <h2>Betalningsinformation</h2>
-                    
+                    <h2>Betalningsinformation</h2>                    
                 </td>
             </tr>
             <tr>

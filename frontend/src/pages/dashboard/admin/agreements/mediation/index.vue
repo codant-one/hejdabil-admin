@@ -663,7 +663,9 @@ const onSubmit = async () => {
     // Verificar tab 2 (Förmedlingsavgift)
     const hasTab2Errors = !commission_type_id.value || 
                           !commission_fee.value ||
-                          !selling_price.value
+                          !selling_price.value ||
+                          !remaining_debt.value ||
+                          !paid_bank.value
 
     // Verificar tab 3 (Betalningsinformation)
     const hasTab3Errors = !payment_days.value
@@ -992,7 +994,6 @@ const onSubmit = async () => {
                 formData.append('agreement_type_id', 3)
                 formData.append('currency_id', currency_id.value)
                 formData.append('price', selling_price.value)
-                formData.append('residual_debt', 0)
                 formData.append('guaranty', 0)
                 formData.append('insurance_company', 0)
                 formData.append('terms_other_conditions', terms_other_conditions.value)
@@ -1798,12 +1799,14 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 min="0"
                                                 suffix="KR"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskuld betalas till*" />
                                             <VTextField
                                                 v-model="paid_bank"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>                                          
                                     </div>
