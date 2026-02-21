@@ -149,7 +149,7 @@ watchEffect(async () => {
       num_iva.value = props.client.num_iva
       comments.value = props.client.comments
       client_type_id.value = props.client.client_type_id 
-      country_id.value = props.client.country.name
+      country_id.value = props.client.country_id ?? props.client.country?.id ?? props.client.country?.name ?? null
     }
 
     // snapshot initial state after fields are populated
@@ -356,10 +356,17 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData();
 
+      const selectedCountry = Array.isArray(props.countries)
+        ? props.countries.find(item => String(item.id) === String(country_id.value))
+          || props.countries.find(item => item.name === country_id.value)
+        : null
+
+      const normalizedCountryId = selectedCountry?.id ?? country_id.value
+
       formData.append('supplier_id', supplier_id.value)
       formData.append('supplier_id', supplier_id.value)
       formData.append('client_type_id', client_type_id.value)
-      formData.append('country_id', country_id.value)
+      formData.append('country_id', normalizedCountryId)
       formData.append('email', email.value)
       formData.append('fullname', fullname.value)
       formData.append('organization_number', organization_number.value)
