@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
 
             StateSeeder::class,
 
+            CountrySeeder::class,
+
             MorePermissionSeeder::class,
 
             TypeSeeder::class,

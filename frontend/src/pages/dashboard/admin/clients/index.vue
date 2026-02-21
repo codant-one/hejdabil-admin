@@ -25,6 +25,7 @@ const emitter = inject("emitter");
 
 const suppliers = ref([]);
 const client_types = ref([])
+const countries = ref([])
 const clients = ref([]);
 const searchQuery = ref("");
 const rowPerPage = ref(10);
@@ -144,6 +145,7 @@ async function fetchData(cleanFilters = false) {
 
   clients.value = clientsStores.getClients;
   client_types.value = clientsStores.client_types;
+  countries.value = clientsStores.countries;
   totalPages.value = clientsStores.last_page;
   totalClients.value = clientsStores.clientsTotalCount;
   
@@ -1019,6 +1021,7 @@ onBeforeUnmount(() => {
       :client="selectedClient"
       :suppliers="suppliers"
       :client_types="client_types"
+      :countries="countries"
       :is-duplicate="isDuplicate"
       @client-data="submitForm"
       @reset-duplicate="isDuplicate = false"
@@ -1107,6 +1110,7 @@ onBeforeUnmount(() => {
           :client="selectedClient"
           :suppliers="suppliers"
           :client_types="client_types"
+          :countries="countries"
           :is-duplicate="isDuplicate"
           @client-data="submitForm"
           @reset-duplicate="isDuplicate = false"

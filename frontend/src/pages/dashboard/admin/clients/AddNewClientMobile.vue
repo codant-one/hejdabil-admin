@@ -22,6 +22,10 @@ const props = defineProps({
     type: Object,
     required: false,
   },
+  countries: {
+    type: Object,
+    required: false
+  },
   isDuplicate: {
     type: Boolean,
     required: false,
@@ -56,6 +60,8 @@ const phone = ref("");
 const fullname = ref("");
 const email = ref("");
 const reference = ref("");
+const num_iva = ref("")
+const country_id = ref(null)
 const comments = ref("");
 const isEdit = ref(false);
 const userData = ref(null);
@@ -73,8 +79,10 @@ const currentData = computed(() => ({
   fullname: fullname.value,
   email: email.value,
   reference: reference.value,
+  num_iva: num_iva.value,
   comments: comments.value,
   client_type_id: client_type_id.value,
+  country_id: country_id.value
 }))
 
 const advisor = ref({
@@ -95,6 +103,11 @@ const isDirty = computed(() => {
 const organizationNumberRules = computed(() => [
   requiredValidator,
   minLengthDigitsValidator(10),
+  duplicateOrganizationNumberValidator(props.isDuplicate),
+])
+
+const organizationNumberForeignRules = computed(() => [
+  requiredValidator,
   duplicateOrganizationNumberValidator(props.isDuplicate),
 ])
 
@@ -127,8 +140,10 @@ watchEffect(async () => {
       fullname.value = props.client.fullname;
       email.value = props.client.email;
       reference.value = props.client.reference;
+      num_iva.value = props.client.num_iva;
       comments.value = props.client.comments;      
       client_type_id.value = props.client.client_type_id; 
+      country_id.value = props.client.country.name
     }
 
     // snapshot initial state after fields are populated
@@ -154,8 +169,10 @@ const reallyCloseAndReset = () => {
     fullname.value = null;
     email.value = null;
     reference.value = null;
+    num_iva.value = null;
     comments.value = null;
     client_type_id.value = null;
+    country_id.value = null;
 
     isEdit.value = false;
     id.value = 0;
@@ -336,6 +353,7 @@ const onSubmit = () => {
       formData.append("supplier_id", supplier_id.value);
       formData.append("supplier_id", supplier_id.value);
       formData.append('client_type_id', client_type_id.value);
+      formData.append("country_id", country_id.vlue);
       formData.append("email", email.value);
       formData.append("fullname", fullname.value);
       formData.append("organization_number", organization_number.value);
@@ -344,6 +362,7 @@ const onSubmit = () => {
       formData.append("postal_code", postal_code.value);
       formData.append("phone", phone.value);
       formData.append("reference", reference.value);
+      formData.append("num_iva", num_iva.value)
       formData.append("comments", comments.value);
 
       emit(
@@ -359,6 +378,34 @@ watch(currentData, () => {
   if (!initialData.value) return
   emit('edited', isDirty.value)
 }, { deep: true })
+
+watch(client_type_id, async () => {
+  await nextTick()
+  refForm.value?.validate?.()
+})
+
+const getFlagCountry = country => {
+  if (!country || !Array.isArray(props.countries)) return ''
+
+  const normalizeText = value =>
+    String(value ?? '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+  let selectedCountry = null
+
+  if (typeof country === 'object') {
+    selectedCountry = props.countries.find(item => item.id === country.id)
+  } else {
+    selectedCountry = props.countries.find(item => String(item.id) === String(country))
+      || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+  }
+
+  return selectedCountry?.iso
+    ? `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+    : ''
+}
 </script>
 
 <template>
@@ -391,28 +438,7 @@ watch(currentData, () => {
           clear-icon="tabler-x"
           :menu-props="{ maxHeight: '300px' }"
         />
-      </VListItem>
-      <VListItem>
-        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />        
-        <div class="d-flex gap-2">
-          <VTextField
-            ref="organizationNumberFieldRef"
-            v-model="organization_number"
-            :class="{ 'org-number-duplicate': props.isDuplicate }"
-            :error="props.isDuplicate"
-            :rules="organizationNumberRules"
-            minLength="11"
-            maxlength="13"
-            @input="handleOrganizationNumberInput"
-          />
-          <VBtn
-            class="btn-ghost w-auto px-3"
-            @click="searchEntity"
-          >
-            <VIcon icon="custom-search" size="24" />
-          </VBtn>
-        </div>
-      </VListItem>
+      </VListItem>      
       <VListItem>
         <AppAutocomplete
           v-model="client_type_id"
@@ -424,11 +450,81 @@ watch(currentData, () => {
           autocomplete="off"/>
       </VListItem>
       <VListItem>
-        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />        
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />        
+        <div class="d-flex gap-2">
+          <VTextField
+            v-if="client_type_id !== 3"
+            ref="organizationNumberFieldRef"
+            v-model="organization_number"
+            :class="{ 'org-number-duplicate': props.isDuplicate }"
+            :error="props.isDuplicate"
+            :rules="organizationNumberRules"
+            minLength="11"
+            maxlength="13"
+            @input="handleOrganizationNumberInput"
+          /> 
+          <VTextField
+            v-else
+            ref="organizationNumberFieldRef"
+            v-model="organization_number"
+            :class="{ 'org-number-duplicate': props.isDuplicate }"
+            :error="props.isDuplicate"
+            :rules="organizationNumberForeignRules"
+            @input="emit('resetDuplicate')"
+          />                
+          <VBtn
+            v-if="client_type_id !== 3"
+            class="btn-ghost w-auto px-3"
+            @click="searchEntity"
+          >
+            <VIcon icon="custom-search" size="24" />
+          </VBtn>
+        </div>
+      </VListItem>
+      <VListItem>
+        <VLabel v-if="client_type_id === 2" class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
+        <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />
         <VTextField
           v-model="fullname"
           :rules="[requiredValidator]"
         />
+      </VListItem>
+      <VListItem>
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />        
+        <VTextField
+          v-model="phone"
+          :rules="[requiredValidator, phoneValidator]"
+        />
+      </VListItem>
+      <VListItem v-if="client_type_id === 2">
+        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Momsreg. nr." />
+        <VTextField
+          v-model="num_iva"
+        />
+      </VListItem>
+      <VListItem v-if="client_type_id === 3">
+        <AppAutocomplete
+          v-model="country_id"
+          label="Land*"
+          :items="countries"
+          :item-title="item => item.name"
+          :item-value="item => item.id"
+          :rules="[requiredValidator]"
+          :menu-props="{ maxHeight: '200px' }"
+          autocomplete="off"
+        >
+          <template
+            v-if="country_id"
+            #prepend
+            >
+            <VAvatar
+              start
+              style="margin-top: -3px;"
+              size="40"
+              :image="getFlagCountry(country_id)"
+            />
+          </template>
+        </AppAutocomplete>
       </VListItem>
       <VListItem>
         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />        
@@ -450,14 +546,7 @@ watch(currentData, () => {
           v-model="street"
           :rules="[requiredValidator]"
         />
-      </VListItem>
-      <VListItem>
-        <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />        
-        <VTextField
-          v-model="phone"
-          :rules="[requiredValidator, phoneValidator]"
-        />
-      </VListItem>
+      </VListItem>      
       <VListItem>
         <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />        
         <VTextField

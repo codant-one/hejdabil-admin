@@ -23,7 +23,8 @@ use App\Models\{
     DocumentType,
     Supplier,
     Invoice,
-    Client
+    Client,
+    Country
 };
 use Spatie\Permission\Models\{Permission, Role};
 
@@ -165,6 +166,16 @@ class CacheService
     }
 
     /**
+     * Get all countries
+     */
+    public static function getCountries()
+    {
+        return Cache::remember('countries.all', self::CACHE_DURATION, function () {
+            return Country::all();
+        });
+    }
+
+    /**
      * Get all identifications
      */
     public static function getIdentifications()
@@ -297,6 +308,7 @@ class CacheService
             'payment_types.all',
             'agreement_types.all',
             'client_types.all',
+            'countries.all',
             'identifications.all',
             'advances.all',
             'commission_types.all',

@@ -5,6 +5,7 @@ export const useClientsStores = defineStore('clients', {
     state: () => ({
         clients: {},
         client_types: {},
+        countries: {},
         loading: false,
         last_page: 1,
         clientsTotalCount: 6
@@ -25,6 +26,7 @@ export const useClientsStores = defineStore('clients', {
                 .then((response) => {
                     this.clients = response.data.data.clients.data
                     this.client_types = response.data.data.client_types
+                    this.countries = response.data.data.countries
                     this.last_page = response.data.data.clients.last_page
                     this.clientsTotalCount = response.data.data.clientsTotalCount
                 })
