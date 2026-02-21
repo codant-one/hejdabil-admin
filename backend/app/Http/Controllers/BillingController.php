@@ -440,7 +440,7 @@ class BillingController extends Controller
                 $logoObj    = $decodeSafe($logoRaw);
                 
                 $company->logo = $logoObj->logo ?? null;
-                $logo = null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
             } else {
                 $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
                 $company = $user->user->userDetail;
@@ -449,7 +449,7 @@ class BillingController extends Controller
                 $company->last_name = $user->user->last_name;
                 $logo = $user->user->userDetail->logo_url ?? null;
             }
- 
+
             $data = [
                 'company' => $company,
                 'user' => $billing->client->fullname,

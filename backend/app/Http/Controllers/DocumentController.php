@@ -394,7 +394,7 @@ class DocumentController extends Controller
                 $logoObj    = $decodeSafe($logoRaw);
                 
                 $company->logo = $logoObj->logo ?? null;
-                $logo = null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
             } else {
                 $user = UserDetails::with(['user'])->where('user_id', $document->supplier->user_id)->first();
                 $company = $user->user->userDetail;
@@ -536,7 +536,7 @@ class DocumentController extends Controller
                 $logoObj    = $decodeSafe($logoRaw);
                 
                 $company->logo = $logoObj->logo ?? null;
-                $logo = null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
             } else {
                 $user = UserDetails::with(['user'])->where('user_id', $document->supplier->user_id)->first();
                 $company = $user->user->userDetail;
