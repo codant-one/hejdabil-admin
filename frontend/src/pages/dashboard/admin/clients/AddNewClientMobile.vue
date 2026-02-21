@@ -120,6 +120,16 @@ watch(() => props.isDuplicate, async isDuplicate => {
   organizationNumberFieldRef.value?.resetValidation?.()
 })
 
+watch(() => props.isDrawerOpen, async isOpen => {
+  if (isOpen) {
+    emit('resetDuplicate')
+    await nextTick()
+    organizationNumberFieldRef.value?.resetValidation?.()
+    return
+  }
+  emit('resetDuplicate')
+})
+
 watchEffect(async () => {
   if (props.isDrawerOpen) {
     userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
@@ -157,6 +167,7 @@ watchEffect(async () => {
 // 👉 drawer close
 const reallyCloseAndReset = () => {
   emit("update:isDrawerOpen", false);
+  emit('resetDuplicate')
   nextTick(() => {
     refForm.value?.reset();
     refForm.value?.resetValidation();

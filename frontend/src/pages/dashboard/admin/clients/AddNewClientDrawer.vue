@@ -121,6 +121,16 @@ watch(() => props.isDuplicate, async isDuplicate => {
   organizationNumberFieldRef.value?.resetValidation?.()
 })
 
+watch(() => props.isDrawerOpen, async isOpen => {
+  if (isOpen) {
+    emit('resetDuplicate')
+    await nextTick()
+    organizationNumberFieldRef.value?.resetValidation?.()
+    return
+  }
+  emit('resetDuplicate')
+})
+
 const getTitle = computed(() => {
   return isEdit.value ? "Uppdatera klient" : "Lägg till kund";
 });
@@ -163,6 +173,7 @@ watchEffect(async () => {
 // 👉 drawer close
 const reallyCloseAndReset = () => {
   emit("update:isDrawerOpen", false);
+  emit('resetDuplicate')
   nextTick(() => {
     refForm.value?.reset();
     refForm.value?.resetValidation();
