@@ -586,7 +586,10 @@ const handleFocus = (element, fieldId) => {
     >
       <VCardText class="d-flex invoice-box">
         <div class="w-100 w-md-50">
-          <div class="invoice-logo-box invoice-logo d-flex align-center mb-6">
+          <div 
+            class="invoice-logo-box d-flex align-center mb-6"
+            :class="company.logo ? 'invoice-logo' : ''"
+          >
             <!-- 👉 Logo -->
             <img
               v-if="company.logo"

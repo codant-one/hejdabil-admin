@@ -407,15 +407,8 @@ class BillingController extends Controller
             $billing->is_sent = 1;
             $billing->save();
 
-            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $user = UserDetails::with(['user'])->find(Auth::user()->id);
-                $company = $user->user->userDetail;
-                $company->email = $user->user->email;
-            } else if (Auth::user()->getRoleNames()[0] === 'User') {
-                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-                $company = $user->supplier->boss->user->userDetail;
-                $company->email = $user->supplier->boss->user->email;
-            } else { //Admin
+            if($billing->supplier_id === null) {
+                //Admin
                 $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
                 $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
                 
@@ -447,10 +440,16 @@ class BillingController extends Controller
                 $logoObj    = $decodeSafe($logoRaw);
                 
                 $company->logo = $logoObj->logo ?? null;
+                $logo = $logoObj->logo ?? null;
+            } else {
+                $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+                $logo = $user->user->userDetail->logo_url ?? null;
             }
-
-            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
-
+ 
             $data = [
                 'company' => $company,
                 'user' => $billing->client->fullname,

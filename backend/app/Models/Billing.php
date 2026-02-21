@@ -179,19 +179,8 @@ class Billing extends Model
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -223,6 +212,12 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         foreach($details as $row)
@@ -324,7 +319,7 @@ class Billing extends Model
             
             $company->logo = $logoObj->logo ?? null;
         } else {
-            $user = UserDetails::with(['user'])->find($billing->supplier->user_id);
+            $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
@@ -387,19 +382,8 @@ class Billing extends Model
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($billing->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -431,6 +415,12 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         foreach($details as $row)
@@ -454,19 +444,8 @@ class Billing extends Model
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
         
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($billing->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -498,6 +477,12 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         foreach($details as $row)
@@ -535,19 +520,8 @@ class Billing extends Model
       
         $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($billing->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -579,9 +553,15 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+            $logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+            $logo = $user->user->userDetail->logo_url ?? null;
         }
-
-        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
         
         $data = [
             'company' => $company,

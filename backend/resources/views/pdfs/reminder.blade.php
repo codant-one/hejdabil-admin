@@ -170,7 +170,7 @@
                         <table width="100%" class="invoice-background table-background-top">
                             <tr>
                                 <td width="35%" class="data-from">
-                                    <div class="d-flex align-center mb-6 box-logo">
+                                     <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
                                         @if($company->logo)
                                             <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
