@@ -396,19 +396,8 @@ class AgreementController extends Controller
                 'agreement_client',
             ])->find($id);
 
-            if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
-                $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
-                $company = $user->user->userDetail;
-                $company->email = $user->user->email;
-                $company->name = $user->user->name;
-                $company->last_name = $user->user->last_name;
-            } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
-                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
-                $company = $user->supplier->boss->user->userDetail;
-                $company->email = $user->supplier->boss->user->email;
-                $company->name = $user->supplier->boss->user->name;
-                $company->last_name = $user->supplier->boss->user->last_name;
-            } else { //Admin
+            if($agreement->supplier_id === null) {
+                //Admin
                 $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
                 $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
                 $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -444,9 +433,15 @@ class AgreementController extends Controller
                 
                 $company->logo = $logoObj->logo ?? null;
                 $company->img_signature = $signatureObj->img_signature ?? null;
+                $logo = $logoObj->logo ?? null;
+            } else {
+                $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+                $logo = $user->user->userDetail->logo_url ?? null;
             }
-
-            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
 
             $data = [
                 'company' => $company,

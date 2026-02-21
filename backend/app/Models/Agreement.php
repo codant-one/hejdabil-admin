@@ -416,10 +416,12 @@ class Agreement extends Model
         } //create a folder
 
         if($agreement->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
-            // Extraer el "value" soportando array u object
+
+            // Extract the "value" supporting array or object
             $getValue = function ($cfg) {
                 if (is_array($cfg)) 
                     return $cfg['value'] ?? '[]';
@@ -447,11 +449,12 @@ class Agreement extends Model
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
             $signatureObj    = $decodeSafe($signatureRaw);
-
+            
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
+            $logo = $logoObj->logo ?? null;
         } else {
-            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
+            $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;

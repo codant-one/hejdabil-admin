@@ -90,7 +90,7 @@ class SignedDocumentMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(?Agreement $agreement, string $pdfPath = '', ?Document $document = null, ?string $downloadUrl = null, bool $attachFile = true, $company = null)
+    public function __construct(?Agreement $agreement, string $pdfPath = '', ?Document $document = null, ?string $downloadUrl = null, bool $attachFile = true, $company = null, $logo = null)
     {
         $this->agreement = $agreement;
         $this->document = $document;
@@ -98,6 +98,7 @@ class SignedDocumentMail extends Mailable
         $this->downloadUrl = $downloadUrl;
         $this->attachFile = $attachFile;
         $this->company = $company;
+        $this->logo = $logo;
 
         // Configure variables for the view
         $this->title = 'Dokumentet är nu signerat';
@@ -111,16 +112,6 @@ class SignedDocumentMail extends Mailable
             $this->icon = asset('/images/check.png');
             $this->fullname = null;
         }
-        
-        // Obtain the logo of the user who owns the document/agreement
-        $user = null;
-        if ($this->agreement && $this->agreement->user) {
-            $user = $this->agreement->user;
-        } elseif ($this->document && $this->document->user) {
-            $user = $this->document->user;
-        }
-        
-        $this->logo = $user && $user->userDetail ? $user->userDetail->logo_url : null;
     }
 
     /**
