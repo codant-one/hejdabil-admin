@@ -433,7 +433,7 @@ class AgreementController extends Controller
                 
                 $company->logo = $logoObj->logo ?? null;
                 $company->img_signature = $signatureObj->img_signature ?? null;
-                $logo = $logoObj->logo ?? null;
+                $logo = null;
             } else {
                 $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
                 $company = $user->user->userDetail;

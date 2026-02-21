@@ -553,7 +553,7 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
-            $logo = $logoObj->logo ?? null;
+            $logo = null;
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
