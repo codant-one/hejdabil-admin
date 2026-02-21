@@ -84,6 +84,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            width: auto;
+            height: auto;
+            max-width: 150px;
+            max-height: 56px;
         }
 
         .table-background-top {
@@ -172,7 +176,7 @@
                                 <td width="35%" class="data-from">
                                     <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
                                         @if($company->logo)
-                                            <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
+                                            <img src="{{ asset('storage/'.$company->logo) }}" alt="logo-main">
                                         @else
                                             <h1 style="margin: 0 !important;">{{ $company->company }} </h1>
                                             <div class="contract-details">
