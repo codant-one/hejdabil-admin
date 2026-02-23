@@ -29,6 +29,10 @@ class CommissionVehicle extends Model
         return $this->belongsTo(Gearbox::class, 'gearbox_id');
     }
 
+    public function carbody(){
+        return $this->belongsTo(CarBody::class, 'car_body_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where('fullname', 'LIKE', '%' . $search . '%')

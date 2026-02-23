@@ -26,10 +26,10 @@
         }
 
         h2 {
-            font-size: 13px;
+            font-size: 14px;
             color: #008C91;
             margin-top: 10px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         /* --- HEADER --- */
@@ -97,16 +97,15 @@
             display: block;
             color: #454545;
             font-size: 10px;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .info-table .value {
             font-size: 10px;
             background-color: #F6F6F6;
-            padding: 6px 5px 0px 5px;
+            padding: 8px;
             border-radius: 4px;
             border: 1px solid #E7E7E7;
-            min-height: 12px;
             color: #5D5D5D;
         }
 
@@ -129,7 +128,7 @@
         }
 
         .financials-table .total-row td {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: #008C91;
             border-top: 2px solid #E7E7E7;
@@ -173,7 +172,7 @@
         .signature-box {
             border-top: 1px solid #454545;
             padding-top: 8px;
-            font-size: 11px; /* Ajustado para consistencia */
+            font-size: 12px; /* Ajustado para consistencia */
             color: #454545;
         }
         
@@ -225,118 +224,267 @@
                     <h2>Förberedd av</h2>
                     <table class="info-table">
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Företag</div>
                                 <div class="value">
-                                    {{ $company->company }}
+                                    {{ $company->company }} 
                                 </div>
                             </td>
-                        </tr>
-                        <tr>
-                            <td>
+                            <td class="column-cell column-cell-right-2 pb-0">
                                 <div class="label">Namn</div>
                                 <div class="value">
-                                    {{ $company->name }} {{ $company->last_name }} 
+                                    {{ $company->name }} {{ $company->last_name }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Org/person nr.</div>
+                                <div class="value">
+                                    {{ $company->organization_number }} 
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Telefon</div>
+                                <div class="value">
+                                    {{ $company->phone }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">E-post</div>
+                                <div class="value">
+                                    {{ $company->email }} 
+                                </div>
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td colspan="2">
                                 <div class="label">Adress</div>
                                 <div class="value">
-                                    {{ $company->address }}
+                                    {{ $company->address }}, {{ $company->postal_code }} {{ $company->street }}  
                                 </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">E-post</div>
-                                <div class="value">{{ $company->email }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Telefon</div>
-                                <div class="value">{{ $company->phone }}</div>
                             </td>
                         </tr>
                     </table>
                 </td>
-                <td class="column-cell column-cell-right">
-                    <h2>Information om fordonet</h2>
+                   <td class="column-cell column-cell-right">
+                    <h2>Kundinformation</h2>
                     <table class="info-table">
                         <tr>
-                            <td>
-                                <div class="label">Reg nr</div>
-                                <div class="value">{{ $agreement->offer->reg_num }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Märke & Modell</div>
+                            <td colspan="2">
+                                <div class="label">Namn</div>
                                 <div class="value">
-                                    @if($agreement->offer && $agreement->offer->model)
-                                        {{ $agreement->offer->model->brand->name }} {{ $agreement->offer->model->name }}
-                                    @else
-                                        -
-                                    @endif
+                                    {{ $agreement->agreement_client->fullname }}
                                 </div>
                             </td>
                         </tr>
                         <tr>
-                            <td>
-                                <div class="label">Mätarställning</div>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Org/person nr.</div>
+                                <div class="value">
+                                    {{ $agreement->agreement_client->organization_number }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Telefon</div>
+                                <div class="value">
+                                    {{ $agreement->agreement_client->phone }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">E-post</div>
+                                <div class="value">
+                                    {{ $agreement->agreement_client->email }}
+                                </div>
+                            </td>
+                        </tr>                        
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Adress</div>
+                                <div class="value">
+                                    {{ $agreement->agreement_client->address }}, {{ $agreement->agreement_client->postal_code }} {{ $agreement->agreement_client->street }} 
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <!-- === VEHICLE INFORMATION === -->
+            <tr>
+                <td class="column-cell column-cell-left">
+                    <h2>Information om fordonet</h2>                 
+                    <table class="info-table">
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Bilnamn</div>
+                                <div class="value">
+                                    {{ $agreement->offer->car_name }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Reg nr</div>
+                                <div class="value">
+                                    {{ $agreement->offer->reg_num }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Färg & Årsmodell</div>
+                                <div class="value">
+                                    {{ $agreement->offer->color }} / {{ $agreement->offer->year }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Chassinummer (VIN)</div>
+                                <div class="value">
+                                    {{ $agreement->offer->chassis }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Miltal</div>
                                 <div class="value">
                                     {{ $agreement->offer->mileage }} Mil
                                 </div>
                             </td>
                         </tr>
-                    </table>
-                </td>
-            </tr>
-
-            <!-- === CUSTOMER INFORMATION === -->
-            @if($agreement->agreement_client)
-            <tr>
-                <td colspan="2" class="section-cell">
-                    <h2>Kundinformation</h2>
-                    <table class="info-table">
                         <tr>
-                            <td style="width: 50%; padding-right: 15px; vertical-align: top;">
-                                <div class="label">Namn</div>
-                                <div class="value">{{ $agreement->agreement_client->fullname ?? '-' }}</div>
-                            </td>
-                            <td style="width: 50%; padding-left: 15px; vertical-align: top;">
-                                <div class="label">E-post</div>
-                                <div class="value">{{ $agreement->agreement_client->email ?? '-' }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="width: 50%; padding-right: 15px; vertical-align: top;">
-                                <div class="label">Org/personnummer</div>
-                                <div class="value">{{ $agreement->agreement_client->organization_number ?? '-' }}</div>
-                            </td>
-                            <td style="width: 50%; padding-left: 15px; vertical-align: top;">
-                                <div class="label">Telefon</div>
-                                <div class="value">{{ $agreement->agreement_client->phone ?? '-' }}</div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Adress</div>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Drivmedel</div>
                                 <div class="value">
-                                    {{ $agreement->agreement_client->address ?? '' }}
-                                    @if(!empty($agreement->agreement_client->postal_code) || !empty($agreement->agreement_client->street))
-                                        , 
-                                        {{ $agreement->agreement_client->postal_code ?? '' }} {{ $agreement->agreement_client->street ?? '' }}
-                                    @endif
+                                    {{ $agreement->offer->fuel?->name }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Växellåda</div>
+                                <div class="value">
+                                {{ $agreement->offer->gearbox?->name }}
                                 </div>
                             </td>
                         </tr>
-                    </table>
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->offer->carbody?->name }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Generation</div>
+                                <div class="value">
+                                {{ $agreement->offer->generation }}
+                                </div>
+                            </td>
+                        </tr>                        
+                    </table>                           
                 </td>
+                <td class="column-cell column-cell-right">
+                    <h2 style="color: white;">.</h2>                 
+                    <table class="info-table">     
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Kontrollbesiktning gäller tom</div>
+                                <div class="value">
+                                    {{ $agreement->offer->control_inspection }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Antal nycklar till fordonet</div>
+                                <div class="value">
+                                {{ $agreement->offer->number_keys }}
+                                </div>
+                            </td>
+                        </tr>   
+                        <tr>
+                            <td class="column-cell column-cell-left-2">
+                                <div class="label">Servicebok finns?</div>
+                                <div class="value">
+                                    {{ $agreement->offer->service_book === 0 ? 'Ja' : 'Nej' }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Sommardäck finns?</div>
+                                <div class="value">
+                                    {{ $agreement->offer->summer_tire === 0 ? 'Ja' : 'Nej' }}
+                                </div>
+                            </td>
+                        </tr>  
+                        <tr>
+                            <td>
+                                <div class="label">Vinterdäck finns?</div>
+                                <div class="value">
+                                    {{ $agreement->offer->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                </div>
+                            </td>
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Senaste service: Mil/datum</div>
+                                <div class="value">
+                                    @if($agreement->offer->last_service || $agreement->offer->last_service_date)
+                                        {{ $agreement->offer->last_service ?? 0 }} Mil / {{ $agreement->offer->last_service_date ?? 'YYYY-MM-DD' }}
+                                    @else
+                                         
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>  
+                        @if($agreement->offer->dist_belt === 0)
+                        <tr>
+                            <td>
+                                <div class="label">Kamrem bytt?</div>
+                                <div class="value">
+                                    {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
+                                      (
+                                        $agreement->offer->dist_belt === 1 ? 
+                                        'Nej' : 
+                                        'Vet ej'
+                                      ) 
+                                    }}
+                                </div>
+                            </td>                            
+                            <td class="column-cell column-cell-right-2">
+                                <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                <div class="value">
+                                    @if($agreement->offer->last_dist_belt || $agreement->offer->last_dist_belt_date)    
+                                    {{ $agreement->offer->last_dist_belt ?? 0 }} Mil / {{ $agreement->offer->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                    @else
+                                         
+                                    @endif
+                                </div>
+                            </td>                            
+                        </tr> 
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kamrem bytt?</div>
+                                <div class="value">
+                                    {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
+                                      (
+                                        $agreement->offer->dist_belt === 1 ? 
+                                        'Nej' : 
+                                        'Vet ej'
+                                      ) 
+                                    }}
+                                </div>
+                            </td>                          
+                        </tr> 
+                        @endif
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Belopp kr</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->offer->price) }} kr
+                                </div>
+                            </td>                          
+                        </tr> 
+                    </table>                
+                </td>                
             </tr>
-            @endif
 
             <!-- === FINANCIAL OVERVIEW === -->
             <tr>

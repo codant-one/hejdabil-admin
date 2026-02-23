@@ -1,7 +1,7 @@
 <script setup>
 
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
-import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator } from "@/@core/utils/validators";
+import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -22,12 +22,18 @@ const props = defineProps({
   client_types: {
     type: Object,
     required: false,
+  },
+  isDuplicate: {
+    type: Boolean,
+    required: false,
+    default: false,
   }
 });
 
 const emit = defineEmits([
   "update:isDrawerOpen", 
   "clientData", 
+  "resetDuplicate",
   "edited",
   "alert",
   "loading"
@@ -38,6 +44,7 @@ const personInfoStores = usePersonInfoStores()
 
 const isFormValid = ref(false);
 const refForm = ref();
+const organizationNumberFieldRef = ref();
 
 const id = ref(0)
 const supplier_id = ref(null)
@@ -84,6 +91,21 @@ const isDirty = computed(() => {
   } catch (e) {
     return true
   }
+})
+
+const organizationNumberRules = computed(() => [
+  requiredValidator,
+  minLengthDigitsValidator(10),
+  duplicateOrganizationNumberValidator(props.isDuplicate),
+])
+
+watch(() => props.isDuplicate, async isDuplicate => {
+  await nextTick()
+  if (isDuplicate) {
+    organizationNumberFieldRef.value?.validate?.()
+    return
+  }
+  organizationNumberFieldRef.value?.resetValidation?.()
 })
 
 const getTitle = computed(() => {
@@ -148,6 +170,10 @@ const reallyCloseAndReset = () => {
   })
 }
 
+defineExpose({
+  reallyCloseAndReset,
+})
+
 const closeNavigationDrawer = () => {
   if (isDirty.value) {
     isConfirmLeaveVisible.value = true
@@ -163,6 +189,11 @@ const formatOrgNumber = () => {
   }
   organization_number.value = numbers;
 };
+
+const handleOrganizationNumberInput = () => {
+  formatOrgNumber()
+  emit('resetDuplicate')
+}
 
 const isCompanyNumber = value => {
   const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
@@ -326,11 +357,7 @@ const onSubmit = () => {
         { data: formData, id: id.value },
         isEdit.value ? "update" : "create"
       );
-     
-      setTimeout(() => {
-        // After successful submit, close without confirmation
-        reallyCloseAndReset();
-      }, 100)
+
     }
   });
 };
@@ -421,11 +448,14 @@ watch(currentData, () => {
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
                 <div class="d-flex gap-2">
                   <VTextField
+                    ref="organizationNumberFieldRef"
                     v-model="organization_number"
-                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                    :class="{ 'org-number-duplicate': props.isDuplicate }"
+                    :error="props.isDuplicate"
+                    :rules="organizationNumberRules"
                     minLength="11"
                     maxlength="13"
-                    @input="formatOrgNumber()"
+                    @input="handleOrganizationNumberInput"
                   />                
                   <VBtn
                     class="btn-ghost w-auto px-3"
@@ -602,6 +632,20 @@ watch(currentData, () => {
           color: #454545 !important;
           opacity: 1 !important;
         }
+    }
+  }
+
+  .org-number-duplicate {
+    &.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline,
+    .v-field--error:not(.v-field--disabled) .v-field__outline {
+      color: #FF4D4F !important;
+      border-color: #FF4D4F !important;
+    }
+
+    &.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline__start,
+    &.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline__notch,
+    &.v-input--error .v-input__control .v-field:not(.v-field--disabled) .v-field__outline__end {
+      border-color: #FF4D4F !important;
     }
   }
   .border-img {

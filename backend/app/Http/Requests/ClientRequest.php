@@ -81,7 +81,7 @@ class ClientRequest extends FormRequest
             'phone.required' => 'Telefonen är obligatorisk.',
             'fullname.required' => 'Namnet är obligatoriskt.',
             'email.required' => 'E-postadressen är obligatorisk.',
-            'organization_number.unique' => 'Org/personnummer finns redan för vald leverantör.'
+            'organization_number.unique' => 'organization_number.unique'
         ];
     }
 

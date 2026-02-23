@@ -398,7 +398,7 @@ class Agreement extends Model
             'currency',
             'iva',
             'offer',
-            'commission.vehicle',
+            'commission.vehicle.carbody',
             'payment_types',
             'vehicle_interchange.model.brand',
             'vehicle_interchange.carbody',
@@ -468,8 +468,8 @@ class Agreement extends Model
                 $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 3:
-                PDF::loadView('pdfs.mediation', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
-                $agreement->file = 'pdfs/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
+                PDF::loadView('pdfs.mediation', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                $agreement->file = 'pdfs/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf';
                 break;
             case 4:
                 PDF::loadView('pdfs.business', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
@@ -869,7 +869,7 @@ class Agreement extends Model
     public static function coordinates($agreement, $coordinateType) {
         switch ($agreement->agreement_type_id) {
             case 1: // Sales
-                return $coordinateType === 'x' ? 12.9134 : 88.1954;
+                return $coordinateType === 'x' ? 12.9134 : 189.1954;
                 break;
             case 2: // Purchase
                 return $coordinateType === 'x' ? 60.3543 : 87.8653;
