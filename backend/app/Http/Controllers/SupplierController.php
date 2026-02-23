@@ -394,6 +394,7 @@ class SupplierController extends Controller
                          })
                          ->applyFilters(
                             $request->only([
+                                'id',
                                 'search',
                                 'orderByField',
                                 'orderBy'

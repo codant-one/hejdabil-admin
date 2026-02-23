@@ -90,6 +90,10 @@ class Supplier extends Model
     public function scopeApplyFilters($query, array $filters) {
         $filters = collect($filters);
 
+        if ($filters->get('id')) {
+            $query->where('id', $filters->get('id'));
+        }
+        
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
         }

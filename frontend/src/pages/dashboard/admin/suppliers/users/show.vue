@@ -480,15 +480,6 @@ const closeUserDetailDialog = function() {
                         </div>
                     </div>            
                 </div>
-
-                <VCol
-                        cols="12"
-                        class="text-center"
-                    >
-                        <VBtn class="w-100 w-md-auto" @click="isUserPermissionsDialog = true">
-                            Redigera roll permissions
-                        </VBtn>
-                    </VCol> 
             </VCardText>
         </VCard>
     </VDialog>

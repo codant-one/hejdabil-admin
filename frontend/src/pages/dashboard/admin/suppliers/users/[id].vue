@@ -10,7 +10,6 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
-import { id } from "date-fns/locale";
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
@@ -23,6 +22,7 @@ const advisor = ref({
   show: false
 })
 
+const route = useRoute();
 const isConfirmLeaveVisible = ref(false)
 const nextRoute = ref(null)
 const initialData = ref(null)
@@ -44,6 +44,8 @@ const refForm = ref()
 const currentTab = ref(0)
 const isMobile = ref(false)
 
+const selectedUser = ref({})
+const id = ref('')
 const email = ref('')
 const name = ref('')
 const password = ref('')
@@ -52,16 +54,8 @@ const phone = ref('----')
 const address = ref('----')
 const assignedPermissions = ref([])
 const readonly =  ref(false)
+const permissionsRol = ref([])
 
-
-   
-   
-   
-       
-const getPermissions = function(permissions){
-    assignedPermissions.value = permissions
-}       
-   
 
 // Recargar la página al crear otro acuerdo
 function reloadPage() {
@@ -85,7 +79,7 @@ async function fetchData() {
     isRequestOngoing.value = true
 
       let data = {
-        id: '',
+        id: route.params.id,
         search: '',
         orderByField: 'order_id',
         orderBy: 'desc',
@@ -95,59 +89,23 @@ async function fetchData() {
 
     await usersStores.fetchUsers(data)
 
-    // await agreementsStores.info()
+    selectedUser.value = usersStores.getUsers
 
-    // userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-    // role.value = userData.value.roles[0].name
+    id.value = selectedUser.value[0].user.id
+    email.value = selectedUser.value[0].user.email
+    name.value = selectedUser.value[0].user.name
+    //password.value = selectedUser.value[0].user.password
+    last_name.value = selectedUser.value[0].user.last_name
+    phone.value = selectedUser.value[0].user.user_detail?.personal_phone
+    address.value = selectedUser.value[0].user.user_detail?.personal_address
 
-    // const { user_data, userAbilities } = await authStores.me(userData.value)
+    permissionsRol.value = []
 
-    // localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+    selectedUser.value[0].user.permissions.forEach(function(pe) {
+        permissionsRol.value.push(pe.name)
+    })
 
-    // ability.update(userAbilities)
-
-    // localStorage.setItem('user_data', JSON.stringify(user_data))
-
-    // if(role.value === 'Supplier') {
-    //     company.value = user_data.user_detail
-    //     company.value.email = user_data.email
-    //     company.value.name = user_data.name
-    //     company.value.last_name = user_data.last_name
-    //     agreement_id.value = user_data.supplier.agreements.length + 1
-    // } else if(role.value === 'User') {
-    //     company.value = user_data.supplier.boss.user.user_detail
-    //     company.value.email = user_data.supplier.boss.user.email
-    //     company.value.name = user_data.supplier.boss.user.name
-    //     company.value.last_name = user_data.supplier.boss.user.last_name
-    //     agreement_id.value = user_data.supplier.boss.agreements.length + 1
-    // } else {
-    //     await configsStores.getFeature('company')
-    //     await configsStores.getFeature('logo')
-
-    //     company.value = configsStores.getFeaturedConfig('company')
-    //     company.value.logo = configsStores.getFeaturedConfig('logo').logo
-
-    //     agreement_id.value = agreementsStores.agreement_id + 1
-    // }
-
-    // vehicles.value = agreementsStores.vehicles
-    // guarantyTypes.value = agreementsStores.guarantyTypes
-    // insuranceTypes.value = agreementsStores.insuranceTypes
-    // brands.value = agreementsStores.brands
-    // models.value = agreementsStores.models 
-    // fuels.value = agreementsStores.fuels
-    // gearboxes.value = agreementsStores.gearboxes
-    // carbodies.value = agreementsStores.carbodies
-    // currencies.value = agreementsStores.currencies
-    // ivas.value = agreementsStores.ivas
-    // clients.value = agreementsStores.clients
-    // client_types.value = agreementsStores.client_types
-    // identifications.value = agreementsStores.identifications
-    // paymentTypes.value = agreementsStores.paymentTypes
-    // advances.value = agreementsStores.advances
-
-    // sale_date.value = formatDate(new Date())
-    // purchase_date.value = formatDate(new Date())
+    assignedPermissions.value = permissionsRol.value
 
     isRequestOngoing.value = false
 
@@ -187,7 +145,8 @@ const showError = () => {
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
         // Verificar tab 0 (Försäljning)
-    const hasTab0Errors = !email.value || !name.value || !password.value || !last_name.value || !phone.value || !address.value
+    const hasTab0Errors = !email.value || !name.value || !last_name.value || !phone.value || !address.value 
+    //|| !password.value
 
 
     // Lógica de navegación entre tabs (0, 1, 2, 3)
@@ -252,16 +211,16 @@ const onSubmit = async () => {
 
                 formData.append('email', email.value)
                 formData.append('name', name.value)
-                formData.append('password', password.value)
+                //formData.append('password', password.value)
                 formData.append('last_name', last_name.value)
-                formData.append('phone', phone.value)
-                formData.append('address', address.value)
+                formData.append('personal_phone', phone.value)
+                formData.append('personal_address', address.value)
                 // formData.append('permissions', assignedPermissions.value)
                 assignedPermissions.value.forEach(p => formData.append('permissions[]', p))
 
                 isRequestOngoing.value = true
 
-                usersStores.addUser(formData)
+                usersStores.updateUser(formData, id.value)
                     .then((res) => {
                         if (res.data.success) {
                             allowNavigation.value = true;
@@ -401,7 +360,7 @@ const goToProfile = () => {
                         
                         <div class="d-flex flex-column gap-4">
                             <span class="title-page">
-                                Lägg till medarbetare
+                                Uppdatera medarbetare
                             </span>
                         </div>
 
@@ -475,13 +434,13 @@ const goToProfile = () => {
                                             :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div v-if="false" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Lösenord*" />
                                             <VTextField
                                                 v-model="password"
                                                 :type="isPasswordVisible ? 'text' : 'password'"
                                                 :append-inner-icon="isPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                                                :rules="[requiredValidator, passwordValidator]"
+                                                :rules="[passwordValidator]"
                                                 @click:append-inner="isPasswordVisible = !isPasswordVisible"
                                             />
                                         </div>
@@ -490,8 +449,8 @@ const goToProfile = () => {
                                             <VTextField
                                             v-model="phone"
                                             type="tel"
+                                            :rules="[requiredValidator, phoneValidator]"
                                             placeholder="+(XX) XXXXXXXXX"
-                                            disabled
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -499,7 +458,7 @@ const goToProfile = () => {
                                             <VTextarea
                                             v-model="address"
                                             rows="3"
-                                            disabled
+                                            :rules="[requiredValidator]"
                                             />
                                         </div>
                                     </div>
@@ -884,7 +843,7 @@ const goToProfile = () => {
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                         >
                             <VIcon v-if="currentTab === 1" icon="custom-save"  size="24" />
-                            {{ (currentTab === 1) ? 'Skapa' : 'Nästa' }}
+                            {{ (currentTab === 1) ? 'Uppdatering' : 'Nästa' }}
                         </VBtn>
                     </div>
                 </VCardText>
@@ -911,15 +870,15 @@ const goToProfile = () => {
                     <VIcon size="72" icon="custom-certificate" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
-                    <div class="dialog-title">Medarbetaren har lagts till!</div>
+                    <div class="dialog-title">Medarbetaren har lagts uppdaterats!</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
-                    En inbjudan har skickats via e-post. Personen finns nu listad i ditt team med valda behörigheter.
+                    Ändringarna har sparats.
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
                     <VBtn class="btn-light" @click="reloadPage" >
-                        Lägg till en till
+                        Redigera Medarbetaren 
                     </VBtn>
                     <VBtn class="btn-gradient" @click="goToProfile">
                         Klar
@@ -945,7 +904,7 @@ const goToProfile = () => {
                     <VIcon size="72" icon="custom-f-cancel" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
-                    <div class="dialog-title">Kunde inte lägga till medarbetaren</div>
+                    <div class="dialog-title">Kunde inte uppdateras till medarbetaren</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
                     Ett oväntat fel inträffade och ändringarna kunde inte sparas. Vänligen kontrollera din anslutning och försök igen.

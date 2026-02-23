@@ -152,17 +152,19 @@ const showUserPasswordDialog = function(user){
 }
 
 const showUserEditDialog = function(user){
-  isUserEditDialog.value = true
-  selectedUser.value = { ...user }
+  router.push({ name : 'dashboard-admin-suppliers-users-id', params: { id: user.id } })
 
-  permissionsRol.value = []
+  // isUserEditDialog.value = true
+  // selectedUser.value = { ...user }
 
-  selectedUser.value.permissions.forEach(function(pe) {
-      permissionsRol.value.push(pe.name)
-  })
+  // permissionsRol.value = []
 
-  selectedUser.value.assignedPermissions = permissionsRol
-  readonly.value= false
+  // selectedUser.value.permissions.forEach(function(pe) {
+  //     permissionsRol.value.push(pe.name)
+  // })
+
+  // selectedUser.value.assignedPermissions = permissionsRol
+  // readonly.value= false
 }
 
 const showUserDeleteDialog = function(user){
@@ -417,7 +419,7 @@ const downloadCSV = async () => {
                       </VListItem>
                       <VListItem
                          v-if="$can('edit', 'users') && user.deleted_at === null"
-                         @click="showUserEditDialog(user.user)">
+                         @click="showUserEditDialog(user)">
                         <template #prepend>
                           <img :src="editIcon" alt="Edit Icon" class="mr-2" />
                         </template>
@@ -627,7 +629,7 @@ const downloadCSV = async () => {
           </VListItem>
           <VListItem
               v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
-              @click="showUserEditDialog(selectedUserForAction.user)">
+              @click="showUserEditDialog(selectedUserForAction)">
             <template #prepend>
               <img :src="editIcon" alt="Edit Icon" class="mr-2" />
             </template>
