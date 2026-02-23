@@ -38,7 +38,8 @@ use App\Http\Controllers\{
     ConfigController,
     DocumentController,
     PayoutController,
-    NotificationController
+    NotificationController,
+    CountryController,
 };
 
 use App\Http\Controllers\Services\{
@@ -109,6 +110,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('agreements', AgreementController::class);
     Route::apiResource('currencies', CurrencyController::class);
     Route::apiResource('payouts', PayoutController::class);
+    Route::apiResource('countries', CountryController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
@@ -212,9 +214,14 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('findByRegNum', [VehicleController::class, 'findByRegNum']);
     });
 
-    //Billing
+    //Currencies
     Route::group(['prefix' => 'currencies'], function () {
         Route::get('/updateState/{id}', [CurrencyController::class, 'updateState']);
+    });
+
+    //Countries
+    Route::group(['prefix' => 'countries'], function () {
+        Route::get('/updateState/{id}', [CountryController::class, 'updateState']);
     });
 
     //Agreement

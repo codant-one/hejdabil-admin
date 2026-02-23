@@ -23,6 +23,13 @@ export default [
         to: 'dashboard-admin-currencies', 
         action: 'view',
         subject: 'invoices'
+      },
+      { 
+        title: 'Land', 
+        icon: { icon: 'mdi-flag' },
+        to: 'dashboard-admin-countries', 
+        action: 'view',
+        subject: 'countries'
       }
     ]
   },

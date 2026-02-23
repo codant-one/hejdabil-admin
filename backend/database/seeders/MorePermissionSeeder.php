@@ -52,6 +52,12 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'edit payouts'],
             ['name' => 'delete payouts'],
 
+            //countries
+            ['name' => 'view countries'],
+            ['name' => 'create countries'],
+            ['name' => 'edit countries'],
+            ['name' => 'delete countries']
+
         ]; 
         // Crear o actualizar permisos
         $this->createOrUpdatePermissions($permissions);

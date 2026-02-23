@@ -11,12 +11,5 @@ class State extends Model
     use HasFactory;
 
     protected $guarded = [];
-
-    /**** Public methods ****/
-    public static function forDropdown()
-    {
-        return DB::table('states as s')
-            ->select(['s.id', 's.name' ])
-            ->get()->pluck('name','id');
-    }
+    
 }

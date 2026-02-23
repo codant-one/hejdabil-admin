@@ -31,10 +31,8 @@ class CountrySeeder extends Seeder
 
             Country::query()->updateOrCreate([
                 'id' => $country['id'],
-                'max_month_amount' => $country['max_month_amount'],
                 'iso' => $country['iso'],
                 'name' => $country['name'],
-                'nicename' => $country['nicename'],
                 'iso3' => $country['iso3'],
                 'numcode' => $country['numcode'],
                 'phonecode' => $country['phonecode'],

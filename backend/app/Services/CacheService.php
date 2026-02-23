@@ -171,7 +171,7 @@ class CacheService
     public static function getCountries()
     {
         return Cache::remember('countries.all', self::CACHE_DURATION, function () {
-            return Country::all();
+            return Country::where('state_id', 2)->get();
         });
     }
 

@@ -4,6 +4,7 @@ import { PerfectScrollbar } from "vue3-perfect-scrollbar";
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { themeConfig } from '@themeConfig'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const props = defineProps({
@@ -68,6 +69,7 @@ const isEdit = ref(false)
 const userData = ref(null)
 const role = ref(null)
 const isConfirmLeaveVisible = ref(false)
+const failedExternalFlags = ref({})
 
 const initialData = ref(null)
 const currentData = computed(() => ({
@@ -418,8 +420,8 @@ watch(currentData, () => {
   emit('edited', isDirty.value)
 }, { deep: true })
 
-const getFlagCountry = country => {
-  if (!country || !Array.isArray(props.countries)) return ''
+const findCountry = country => {
+  if (!country || !Array.isArray(props.countries)) return null
 
   const normalizeText = value =>
     String(value ?? '')
@@ -427,18 +429,50 @@ const getFlagCountry = country => {
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
 
-  let selectedCountry = null
-
   if (typeof country === 'object') {
-    selectedCountry = props.countries.find(item => item.id === country.id)
-  } else {
-    selectedCountry = props.countries.find(item => String(item.id) === String(country))
-      || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+    return props.countries.find(item => item.id === country.id) || null
   }
 
-  return selectedCountry?.iso
-    ? `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
-    : ''
+  return props.countries.find(item => String(item.id) === String(country))
+      || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+
+}
+
+const getFlagFromDb = selectedCountry => {
+  const flag = String(selectedCountry?.flag ?? '').trim()
+  if (!flag) return ''
+
+  if (/^https?:\/\//i.test(flag)) return flag
+
+  const basePublicUrl = String(themeConfig.settings.urlStorage ?? '').replace(/\/+$/, '')
+  const cleanFlag = flag.replace(/^\/+/, '')
+
+  if (cleanFlag.startsWith('/'))
+    return `${basePublicUrl}/${cleanFlag}`
+
+  return `${basePublicUrl}/${cleanFlag}`
+}
+
+const getFlagCountry = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry) return ''
+
+  const hasExternalError = !!failedExternalFlags.value[selectedCountry.id]
+
+  if (selectedCountry?.iso && !hasExternalError)
+    return `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+
+  return getFlagFromDb(selectedCountry)
+}
+
+const onCountryFlagError = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry?.id || !selectedCountry?.iso) return
+
+  failedExternalFlags.value = {
+    ...failedExternalFlags.value,
+    [selectedCountry.id]: true,
+  }
 }
 </script>
 
@@ -593,6 +627,8 @@ const getFlagCountry = country => {
                   :rules="[requiredValidator]"
                   :menu-props="{ maxHeight: '200px' }"
                   autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"
                 >
                   <template
                     v-if="country_id"
@@ -601,9 +637,13 @@ const getFlagCountry = country => {
                     <VAvatar
                       start
                       style="margin-top: -3px;"
-                      size="40"
-                      :image="getFlagCountry(country_id)"
-                    />
+                      size="40">
+                      <VImg
+                        :src="getFlagCountry(country_id)"
+                        cover
+                        @error="onCountryFlagError(country_id)"
+                      />
+                    </VAvatar>
                   </template>
                 </AppAutocomplete>
               </VCol>  

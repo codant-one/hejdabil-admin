@@ -14,10 +14,8 @@ return new class extends Migration
         Schema::create('countries', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('state_id')->default(2)->comment('1: Inactive. 2: Active');
-            $table->double('max_month_amount', 10, 2)->comment("Maximun transfer amount by month");
-            $table->string('iso')->nullable();
             $table->string('name');
-            $table->string('nicename')->nullable();
+            $table->string('iso')->nullable();            
             $table->string('iso3')->nullable();
             $table->integer('numcode')->nullable();
             $table->string('phonecode')->nullable();

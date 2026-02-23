@@ -1,24 +1,25 @@
 <script setup>
 
-import { useCurrenciesStores } from '@/stores/useCurrencies'
+import { useCountriesStores } from '@/stores/useCountries'
 import { excelParser } from '@/plugins/csv/excelParser'
-import AddNewCurrencyDrawer from './AddNewCurrencyDrawer.vue' 
+import { themeConfig } from '@themeConfig'
+import AddNewCountryDrawer from './AddNewCountryDrawer.vue' 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 
-const currenciesStores = useCurrenciesStores()
+const countriesStores = useCountriesStores()
 const emitter = inject("emitter")
 
-const currencies = ref([])
+const countries = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
 const currentPage = ref(1)
 const totalPages = ref(1)
-const totalCurrencies = ref(0)
+const totalCountries = ref(0)
 const isRequestOngoing = ref(true)
-const isAddNewCurrencyDrawerVisible = ref(false)
+const isAddNewCountryDrawerVisible = ref(false)
 const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
-const selectedCurrency = ref({})
+const selectedCountry = ref({})
 const state_id = ref(null)
 
 const states = ref ([
@@ -32,12 +33,14 @@ const advisor = ref({
   show: false
 })
 
+const failedExternalFlags = ref({})
+
 // 👉 Computing pagination data
 const paginationData = computed(() => {
-  const firstIndex = currencies.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
-  const lastIndex = currencies.value.length + (currentPage.value - 1) * rowPerPage.value
+  const firstIndex = countries.value.length ? (currentPage.value - 1) * rowPerPage.value + 1 : 0
+  const lastIndex = countries.value.length + (currentPage.value - 1) * rowPerPage.value
 
-  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCurrencies.value } register`
+  return `Visar ${ firstIndex } till ${ lastIndex } av ${ totalCountries.value } register`
 })
 
 // 👉 watching current page
@@ -45,8 +48,8 @@ watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value
 
-    if (!isAddNewCurrencyDrawerVisible.value)
-        selectedCurrency.value = {}
+    if (!isAddNewCountryDrawerVisible.value)
+        selectedCountry.value = {}
 })
 
 watchEffect(fetchData)
@@ -71,11 +74,11 @@ async function fetchData(cleanFilters = false) {
 
   isRequestOngoing.value = searchQuery.value !== '' ? false : true
 
-  await currenciesStores.fetchCurrencies(data)
+  await countriesStores.fetchCountries(data)
 
-  currencies.value = currenciesStores.getCurrencies
-  totalPages.value = currenciesStores.last_page
-  totalCurrencies.value = currenciesStores.currenciesTotalCount
+  countries.value = countriesStores.getCountries
+  totalPages.value = countriesStores.last_page
+  totalCountries.value = countriesStores.countriesTotalCount
 
   isRequestOngoing.value = false
 }
@@ -93,29 +96,32 @@ const resolveStatus = state_id => {
     return { color: 'error' }
 }
 
-const showActivateDialog = currencyData => {
+const showActivateDialog = countryData => {
   isConfirmActiveDialogVisible.value = true
-  selectedCurrency.value = { ...currencyData }
+  selectedCountry.value = { ...countryData }
 }
 
-const editCurrency = currencyData => {
-    isAddNewCurrencyDrawerVisible.value = true
-    selectedCurrency.value = { ...currencyData }
+const editCountry = countryData => {
+    isAddNewCountryDrawerVisible.value = true
+    selectedCountry.value = {
+      ...countryData,
+      flag: getFlagCountry(countryData),
+    }
 }
 
-const showDeleteDialog = currencyData => {
+const showDeleteDialog = countryData => {
   isConfirmDeleteDialogVisible.value = true
-  selectedCurrency.value = { ...currencyData }
+  selectedCountry.value = { ...countryData }
 }
 
-const removeCurrency = async () => {
+const removeCountry = async () => {
   isConfirmDeleteDialogVisible.value = false
-  let res = await currenciesStores.deleteCurrency(selectedCurrency.value.id)
-  selectedCurrency.value = {}
+  let res = await countriesStores.deleteCountry(selectedCountry.value.id)
+  selectedCountry.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Valuta raderad!' : res.data.message,
+    message: res.data.success ? 'Land raderad!' : res.data.message,
     show: true
   }
 
@@ -132,27 +138,27 @@ const removeCurrency = async () => {
   return true
 }
 
-const submitForm = async (currency, method) => {
+const submitForm = async (country, method) => {
   isRequestOngoing.value = true
 
   if (method === 'update') {
-    currency.data.append('_method', 'PUT')
-    submitUpdate(currency)
+    country.data.append('_method', 'PUT')
+    submitUpdate(country)
     return
   }
 
-  submitCreate(currency.data)
+  submitCreate(country.data)
 }
 
 
-const submitCreate = currencyData => {
+const submitCreate = countryData => {
 
-  currenciesStores.addCurrency(currencyData)
+  countriesStores.addCountry(countryData)
     .then((res) => {
         if (res.data.success) {
             advisor.value = {
                 type: 'success',
-                message: 'Valuta skapad! ',
+                message: 'Land skapad! ',
                 show: true
             }
             fetchData()
@@ -177,14 +183,14 @@ const submitCreate = currencyData => {
   }, 3000)
 }
 
-const submitUpdate = currencyData => {
+const submitUpdate = countryData => {
 
-  currenciesStores.updateCurrency(currencyData)
+  countriesStores.updateCountry(countryData)
     .then((res) => {
         if (res.data.success) {
                 advisor.value = {
                 type: 'success',
-                message: 'Valuta uppdaterad!',
+                message: 'Land uppdaterad!',
                 show: true
             }
             fetchData()
@@ -211,12 +217,12 @@ const submitUpdate = currencyData => {
 
 const updateState = async () => {
   isConfirmActiveDialogVisible.value = false
-  let res = await currenciesStores.updateState(selectedCurrency.value.id)
-  selectedCurrency.value = {}
+  let res = await countriesStores.updateState(selectedCountry.value.id)
+  selectedCountry.value = {}
 
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Valuta uppdaterad!' : res.data.message,
+    message: res.data.success ? 'Land uppdaterad!' : res.data.message,
     show: true
   }
 
@@ -233,22 +239,76 @@ const updateState = async () => {
   return true
 }
 
+const findCountry = country => {
+  if (!country || !Array.isArray(countries.value)) return null
+
+  const normalizeText = value =>
+    String(value ?? '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+  if (typeof country === 'object') {
+    return countries.value.find(item => item.id === country.id) || null
+  }
+
+  return countries.value.find(item => String(item.id) === String(country))
+      || countries.value.find(item => normalizeText(item.name) === normalizeText(country))
+
+}
+
+const getFlagFromDb = selectedCountry => {
+  const flag = String(selectedCountry?.flag ?? '').trim()
+  if (!flag) return ''
+
+  if (/^https?:\/\//i.test(flag)) return flag
+
+  const basePublicUrl = String(themeConfig.settings.urlStorage ?? '').replace(/\/+$/, '')
+  const cleanFlag = flag.replace(/^\/+/, '')
+
+  if (cleanFlag.startsWith('/'))
+    return `${basePublicUrl}/${cleanFlag}`
+
+  return `${basePublicUrl}/${cleanFlag}`
+}
+
+const getFlagCountry = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry) return ''
+
+  const hasExternalError = !!failedExternalFlags.value[selectedCountry.id]
+
+  if (selectedCountry?.iso && !hasExternalError)
+    return `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+
+  return getFlagFromDb(selectedCountry)
+}
+
+const onCountryFlagError = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry?.id || !selectedCountry?.iso) return
+
+  failedExternalFlags.value = {
+    ...failedExternalFlags.value,
+    [selectedCountry.id]: true,
+  }
+}
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
 
   let data = { limit: -1 }
 
-  await currenciesStores.fetchCurrencies(data)
+  await countriesStores.fetchCountries(data)
 
   let dataArray = [];
       
-  currenciesStores.getCurrencies.forEach(element => {
+  countriesStores.getCountries.forEach(element => {
 
     let data = {
       ID: element.id,
       NAMNET: element.name,
-      KOD: element.code,
       STATU: element.state.name
     }
           
@@ -256,7 +316,7 @@ const downloadCSV = async () => {
   })
 
   excelParser()
-    .exportDataFromJSON(dataArray, "currencies", "csv");
+    .exportDataFromJSON(dataArray, "countries", "csv");
 
   isRequestOngoing.value = false
 
@@ -326,11 +386,11 @@ const downloadCSV = async () => {
 
               <!-- 👉 Add user button -->
               <VBtn
-                v-if="$can('create','currencies')"
+                v-if="$can('create','countries')"
                 prepend-icon="tabler-plus"
                 class="w-100 w-md-auto"
-                @click="isAddNewCurrencyDrawerVisible = true">
-                  Ny Valuta
+                @click="isAddNewCountryDrawerVisible = true">
+                  Ny Land
               </VBtn>
             </div>
           </VCardText>
@@ -343,50 +403,54 @@ const downloadCSV = async () => {
               <tr>
                 <th scope="col"> #ID </th>
                 <th scope="col"> NAMNET </th>
-                <th scope="col"> KOD </th>
+                <th scope="col"> ISO </th>
+                <th scope="col"> ISO 3</th>
                 <th scope="col"> STATUS </th>
-                <th scope="col" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')"></th>
+                <th scope="col" v-if="$can('edit', 'countries') || $can('delete', 'countries')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->
             <tbody>
               <tr 
-                v-for="currency in currencies"
-                :key="currency.id"
+                v-for="country in countries"
+                :key="country.id"
                 style="height: 3rem;">
 
-                <td> {{ currency.id }} </td>
+                <td> {{ country.id }} </td>
                 <td class="text-wrap w-100">
                   <div class="d-flex align-center gap-x-3">
                     <VAvatar
-                      variant="outlined"
-                      size="38"
-                      >
+                      start
+                      style="margin-top: -3px;"
+                      size="40">
                       <VImg
-                        style="border-radius: 50%;"
-                        :src="currency.flag"
+                        :src="getFlagCountry(country)"
+                        cover
+                        @error="onCountryFlagError(country)"
                       />
                     </VAvatar>
                     <div class="d-flex flex-column">
                       <span class="font-weight-medium">
-                        {{ currency.name }}
+                        {{ country.name }}
                       </span>
                       <span class="text-sm text-disabled">
-                        {{ currency.code }}
+                        {{ getFlagCountry(country.id) }}
                       </span>
                     </div>
                   </div>
                 </td>
+                <td> {{ country.iso }} </td>
+                <td> {{ country.iso3 }} </td>
                 <td class="text-wrap">
                   <VChip
                     label
-                    :color="resolveStatus(currency.state.id)?.color"
+                    :color="resolveStatus(country.state.id)?.color"
                   >
-                    {{ currency.state.name }}
+                    {{ country.state.name }}
                   </VChip>
                 </td> 
                 <!-- 👉 Actions -->
-                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')">      
+                <td class="text-center" style="width: 3rem;" v-if="$can('edit', 'countries') || $can('delete', 'countries')">      
                   <VMenu>
                     <template #activator="{ props }">
                       <VBtn v-bind="props" icon variant="text" color="default" size="x-small">
@@ -400,32 +464,32 @@ const downloadCSV = async () => {
                     </template>
                     <VList>
                       <VListItem
-                        v-if="$can('delete','currencies') && currency.state_id === 1"
-                        @click="showActivateDialog(currency)">
+                        v-if="$can('delete','countries') && country.state_id === 1"
+                        @click="showActivateDialog(country)">
                         <template #prepend>
                           <VIcon icon="tabler-rosette-discount-check" />
                         </template>
                         <VListItemTitle>Aktivera</VListItemTitle>
                       </VListItem>
                       <VListItem
-                        v-if="$can('delete','currencies') && currency.state_id === 2"
-                        @click="showActivateDialog(currency)">
+                        v-if="$can('delete','countries') && country.state_id === 2"
+                        @click="showActivateDialog(country)">
                         <template #prepend>
                           <VIcon icon="mdi-close-circle-outline" />
                         </template>
                         <VListItemTitle>Inaktivera</VListItemTitle>
                       </VListItem>
                       <VListItem
-                         v-if="$can('edit', 'currencies')"
-                         @click="editCurrency(currency)">
+                         v-if="$can('edit', 'countries')"
+                         @click="editCountry(country)">
                         <template #prepend>
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
                       </VListItem>
                       <VListItem 
-                        v-if="$can('delete','currencies')"
-                        @click="showDeleteDialog(currency)">
+                        v-if="$can('delete','countries')"
+                        @click="showDeleteDialog(country)">
                         <template #prepend>
                           <VIcon icon="tabler-trash" />
                         </template>
@@ -437,7 +501,7 @@ const downloadCSV = async () => {
               </tr>
             </tbody>
             <!-- 👉 table footer  -->
-            <tfoot v-show="!currencies.length">
+            <tfoot v-show="!countries.length">
               <tr>
                 <td
                   colspan="4"
@@ -467,11 +531,11 @@ const downloadCSV = async () => {
         </VCard>
       </VCol>
     </VRow>
-    <!-- 👉 Add New Currency -->
-    <AddNewCurrencyDrawer
-      v-model:isDrawerOpen="isAddNewCurrencyDrawerVisible"
-      :currency="selectedCurrency"
-      @currency-data="submitForm"/>
+    <!-- 👉 Add New Country -->
+    <AddNewCountryDrawer
+      v-model:isDrawerOpen="isAddNewCountryDrawerVisible"
+      :country="selectedCountry"
+      @country-data="submitForm"/>
 
     <!-- 👉 Confirm Delete -->
     <VDialog
@@ -483,10 +547,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmDeleteDialogVisible = !isConfirmDeleteDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard title="Ta bort valuta">
+      <VCard title="Ta bort land">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill ta bort valuta <strong>{{ selectedCurrency.name }}</strong>?
+          Är du säker att du vill ta bort land <strong>{{ selectedCountry.name }}</strong>?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -496,7 +560,7 @@ const downloadCSV = async () => {
             @click="isConfirmDeleteDialogVisible = false">
               Avbryt
           </VBtn>
-          <VBtn @click="removeCurrency">
+          <VBtn @click="removeCountry">
               Acceptera
           </VBtn>
         </VCardText>
@@ -512,10 +576,10 @@ const downloadCSV = async () => {
       <DialogCloseBtn @click="isConfirmActiveDialogVisible = !isConfirmActiveDialogVisible" />
 
       <!-- Dialog Content -->
-      <VCard :title="selectedCurrency.state_id === 1 ? 'Aktivera valuta' : 'Inaktivera valuta'">
+      <VCard :title="selectedCountry.state_id === 1 ? 'Aktivera land' : 'Inaktivera land'">
         <VDivider class="mt-4"/>
         <VCardText>
-          Är du säker att du vill {{ selectedCurrency.state_id === 1 ? 'aktivera' : 'inaktivera' }} valuta  <strong>{{ selectedCurrency.name }}</strong>?.
+          Är du säker att du vill {{ selectedCountry.state_id === 1 ? 'aktivera' : 'inaktivera' }} land  <strong>{{ selectedCountry.name }}</strong>?.
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -536,5 +600,5 @@ const downloadCSV = async () => {
 <route lang="yaml">
   meta:
     action: view
-    subject: currencies
+    subject: countries
 </route>

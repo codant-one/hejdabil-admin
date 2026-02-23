@@ -99,6 +99,15 @@ export const minLengthDigitsValidator = (minLength) => {
   }
 }
 
+// 👉 Min Length Validator (ej siffror)
+export const minLengthNonDigitsValidator = (minLength) => {
+  return (value) => {
+    if (isEmpty(value)) return true
+    const nonDigitsOnly = String(value).replace(/\d/g, '')
+    return nonDigitsOnly.length >= minLength || `Fältet måste innehålla minst ${minLength} tecken som inte är siffror.`
+  }
+}
+
 // 👉 Duplicate Organization Number Validator
 export const duplicateOrganizationNumberValidator = isDuplicate => {
   return () => !isDuplicate || 'Numret är redan registrerat.'

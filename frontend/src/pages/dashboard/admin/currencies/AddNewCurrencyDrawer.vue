@@ -150,6 +150,7 @@ const handleDrawerModelValueUpdate = val => {
                 <VTextField
                     v-model="name"
                     label="Namnet"
+                    :rules="[requiredValidator]"
                 />
             </VCol>
             <VCol cols="12" md="6">
