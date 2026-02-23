@@ -418,11 +418,6 @@ watch(currentData, () => {
   emit('edited', isDirty.value)
 }, { deep: true })
 
-watch(client_type_id, async () => {
-  await nextTick()
-  refForm.value?.validate?.()
-})
-
 const getFlagCountry = country => {
   if (!country || !Array.isArray(props.countries)) return ''
 
@@ -485,6 +480,7 @@ const getFlagCountry = country => {
           <VForm 
             ref="refForm" 
             v-model="isFormValid" 
+            validate-on="submit"
             @submit.prevent="onSubmit">
             <VRow>
               <VCol cols="12" md="12" v-if="advisor.show">

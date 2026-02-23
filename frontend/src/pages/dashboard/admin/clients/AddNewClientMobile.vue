@@ -397,11 +397,6 @@ watch(currentData, () => {
   emit('edited', isDirty.value)
 }, { deep: true })
 
-watch(client_type_id, async () => {
-  await nextTick()
-  refForm.value?.validate?.()
-})
-
 const getFlagCountry = country => {
   if (!country || !Array.isArray(props.countries)) return ''
 
@@ -432,6 +427,7 @@ const getFlagCountry = country => {
     class="card-form"
     ref="refForm"
     v-model="isFormValid"
+    validate-on="submit"
     @submit.prevent="onSubmit"
   >
     <VList>
