@@ -126,7 +126,6 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 5px;
-            font-size: 12px;
         }
 
         .financials-table td {
@@ -193,6 +192,10 @@
             padding-top: 8px;
             font-size: 12px; /* Ajustado para consistencia */
             color: #454545;
+        }
+
+        .page-break {
+            page-break-before: always;
         }
     </style>
 </head>
@@ -348,7 +351,11 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Färg & Årsmodell</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->color }} / {{ $agreement->vehicle_client->vehicle->year }}
+                                    {{ $agreement->vehicle_client->vehicle->color }} 
+                                    @if($agreement->vehicle_client->vehicle->color && $agreement->vehicle_client->vehicle->year)
+                                        / 
+                                    @endif
+                                    {{ $agreement->vehicle_client->vehicle->year }}
                                 </div>
                             </td>
                         </tr>
@@ -366,6 +373,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->vehicle_client->vehicle->fuel && $agreement->vehicle_client->vehicle->gearbox)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Drivmedel</div>
@@ -380,6 +388,26 @@
                                 </div>
                             </td>
                         </tr>
+                        @elseif($agreement->vehicle_client->vehicle->fuel)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Drivmedel</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->fuel?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @elseif($agreement->vehicle_client->vehicle->gearbox)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Växellåda</div>
+                                <div class="value">
+                                {{ $agreement->vehicle_client->vehicle->gearbox?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->generation)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kaross</div>
@@ -394,6 +422,17 @@
                                 </div>
                             </td>
                         </tr>
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->carbody?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->control_inspection)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -408,6 +447,16 @@
                                 </div>
                             </td>
                         </tr>
+                        @else
+                        <tr>                         
+                            <td colspan="2">
+                                <div class="label">Antal nycklar till fordonet</div>
+                                <div class="value">
+                                {{ $agreement->vehicle_client->vehicle->number_keys }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Servicebok finns?</div>
@@ -422,61 +471,78 @@
                                 </div>
                             </td>
                         </tr>    
-                        @if($agreement->vehicle_client->vehicle->last_service !== null)
-                        <tr>
-                            <td>
-                                <div class="label">Vinterdäck finns?</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Senaste service: Mil/datum</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_client->vehicle->last_service !== null)
-                                        {{ $agreement->vehicle_client->vehicle->last_service ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_service_date ?? 'YYYY-MM-DD' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>  
-                        @else
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Vinterdäck finns?</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
-                                </div>
-                            </td>
-                        </tr> 
-                        @endif
-                        @if($agreement->vehicle_client->vehicle->dist_belt === 0)
-                            @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                        @if($agreement->vehicle_interchange)
+                            @if($agreement->vehicle_client->vehicle->last_service !== null)
                             <tr>
                                 <td>
-                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="label">Vinterdäck finns?</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
                                     </div>
-                                </td>                            
+                                </td>
                                 <td class="column-cell column-cell-right-2">
-                                    <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                    <div class="label">Senaste service: Mil/datum</div>
                                     <div class="value">
-                                        @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
-                                            {{ $agreement->vehicle_client->vehicle->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                        @if($agreement->vehicle_client->vehicle->last_service !== null)
+                                            {{ $agreement->vehicle_client->vehicle->last_service ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_service_date ?? 'YYYY-MM-DD' }}
                                         @else
                                              
                                         @endif
                                     </div>
-                                </td>                            
+                                </td>
+                            </tr>  
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Vinterdäck finns?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                    </div>
+                                </td>
                             </tr> 
+                            @endif
+                            @if($agreement->vehicle_client->vehicle->dist_belt === 0)
+                                @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                                <tr>
+                                    <td>
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                            
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                        <div class="value">
+                                            @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                                                {{ $agreement->vehicle_client->vehicle->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                            @else
+                                                 
+                                            @endif
+                                        </div>
+                                    </td>                            
+                                </tr> 
+                                @else
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                         
+                                </tr>
+                                @endif
                             @else
                             <tr>
                                 <td colspan="2">
@@ -490,329 +556,356 @@
                                         ) 
                                         }}
                                     </div>
-                                </td>                         
+                                </td>                           
+                            </tr> 
+                            @endif          
+                            @if($agreement->guaranty === 1)
+                            <tr>                                        
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Garanti</div>
+                                    <div class="value">
+                                        {{ $agreement->guaranty_description }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Typ av garanti</div>
+                                    <div class="value">
+                                        {{ $agreement->guaranty_type->name}}
+                                    </div>
+                                </td>                                        
                             </tr>
                             @endif
-                        @else
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Kamrem bytt?</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                      (
-                                        $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                        'Nej' : 
-                                        'Vet ej'
-                                      ) 
-                                    }}
-                                </div>
-                            </td>                           
-                        </tr> 
-                        @endif          
-                        @if($agreement->guaranty === 1)
-                        <tr>                                        
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Garanti</div>
-                                <div class="value">
-                                    {{ $agreement->guaranty_description }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Typ av garanti</div>
-                                <div class="value">
-                                    {{ $agreement->guaranty_type->name}}
-                                </div>
-                            </td>                                        
-                        </tr>
-                        @endif
-                        @if($agreement->insurance_company === 1)
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Försäkring</div>
-                                <div class="value">
-                                    {{ $agreement->insurance_company_description }} 
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Försäkringstyp</div>
-                                <div class="value">
-                                    {{ $agreement->insurance_type->name}}
-                                </div>
-                            </td>
-                        </tr>
-                        @endif
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Pris</div>
-                                <div class="value">
-                                    {{ formatCurrency($agreement->price) }} kr
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Försäljningsdatum</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->sale_date }}
-                                </div>
-                            </td>
-                        </tr>
-                        @if($agreement->vehicle_client->vehicle->comments)
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Anteckningar</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->comments ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
+                            @if($agreement->insurance_company === 1)
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Försäkring</div>
+                                    <div class="value">
+                                        {{ $agreement->insurance_company_description }} 
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Försäkringstyp</div>
+                                    <div class="value">
+                                        {{ $agreement->insurance_type->name}}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Pris</div>
+                                    <div class="value">
+                                        {{ formatCurrency($agreement->price) }} kr
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Försäljningsdatum</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->sale_date }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @if($agreement->vehicle_client->vehicle->comments)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Anteckningar</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->comments ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                         @endif
                     </table>
                 </td>
-                <td class="column-cell column-cell-right">
-                    <h2>Inbytesfordon</h2>                    
+                
+                <td class="column-cell column-cell-right">                     
+                    @if($agreement->vehicle_interchange)
+                        <h2>Inbytesfordon</h2>   
+                    @else
+                        <h2 style="color: white;">.</h2>  
+                    @endif                 
                     <table class="info-table">
-                         <tr>
-                            <td colspan="2">
-                                <div class="label">Bilnamn</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->car_name ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Reg nr</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->reg_num ?? ' '}}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Färg & Årsmodell</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->color ?? ' ' }} 
-                                    @if($agreement->vehicle_interchange?->color && $agreement->vehicle_interchange?->year)
-                                        / 
-                                    @endif
-                                    {{ $agreement->vehicle_interchange?->year ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Chassinummer (VIN)</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->chassis ?? ' ' }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Miltal</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange?->mileage !== null)
-                                        {{ $agreement->vehicle_interchange->mileage }} Mil
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Drivmedel</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->fuel?->name ?? ' ' }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Växellåda</div>
-                                <div class="value">
-                                {{ $agreement->vehicle_interchange?->gearbox?->name ?? ' '}}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Kaross</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->carbody?->name ?? ' ' }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Generation</div>
-                                <div class="value">
-                                {{ $agreement->vehicle_interchange?->generation ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Kontrollbesiktning gäller tom</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->control_inspection ?? ' ' }}
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Antal nycklar till fordonet</div>
-                                <div class="value">
-                                {{ $agreement->vehicle_interchange?->number_keys ?? ' '}}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Servicebok finns?</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                        {{ $agreement->vehicle_interchange?->service_book === 0 ? 'Ja' : 'Nej' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Sommardäck finns?</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)  
-                                        {{ $agreement->vehicle_interchange?->summer_tire === 0 ? 'Ja' : 'Nej' }}
-                                    @else
-                                          
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>    
-                        @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
-                        <tr>
-                            <td>
-                                <div class="label">Vinterdäck finns?</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                        {{ $agreement->vehicle_interchange?->winter_tire === 0 ? 'Ja' : 'Nej' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Senaste service: Mil/datum</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
-                                        {{ $agreement->vehicle_interchange?->last_service ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_service_date ?? 'YYYY-MM-DD' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>  
-                        @else
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Vinterdäck finns?</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                        {{ $agreement->vehicle_interchange?->winter_tire === 0 ? 'Ja' : 'Nej' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>
-                        </tr> 
-                        @endif
-                        @if($agreement->vehicle_interchange?->dist_belt === 0)
-                            @if($agreement->vehicle_interchange?->last_dist_belt !== null)
+                        @if($agreement->vehicle_interchange)
                             <tr>
-                                <td>
-                                    <div class="label">Kamrem bytt?</div>
+                                <td colspan="2">
+                                    <div class="label">Bilnamn</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ $agreement->vehicle_interchange?->car_name ?? ' ' }}
                                     </div>
-                                </td>                            
-                                <td class="column-cell column-cell-right-2">
-                                    <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Reg nr</div>
                                     <div class="value">
-                                        @if($agreement->vehicle_interchange?->last_dist_belt !== null)
-                                        {{ $agreement->vehicle_interchange?->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                        {{ $agreement->vehicle_interchange?->reg_num ?? ' '}}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Färg & Årsmodell</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->color }} 
+                                        @if($agreement->vehicle_interchange?->color && $agreement->vehicle_interchange?->year)
+                                            / 
+                                        @endif
+                                        {{ $agreement->vehicle_interchange?->year ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Chassinummer (VIN)</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->chassis ?? ' ' }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Miltal</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange?->mileage !== null)
+                                            {{ $agreement->vehicle_interchange->mileage }} Mil
                                         @else
                                              
                                         @endif
                                     </div>
-                                </td>                            
+                                </td>
+                            </tr>
+                            @if($agreement->vehicle_interchange?->fuel && $agreement->vehicle_interchange?->gearbox)
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Drivmedel</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->fuel?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Växellåda</div>
+                                    <div class="value">
+                                    {{ $agreement->vehicle_interchange?->gearbox?->name ?? ' '}}
+                                    </div>
+                                </td>
+                            </tr>
+                            @elseif($agreement->vehicle_interchange?->vehicle?->fuel)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Drivmedel</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->vehicle?->fuel?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @elseif($agreement->vehicle_interchange?->vehicle?->gearbox)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Växellåda</div>
+                                    <div class="value">
+                                    {{ $agreement->vehicle_interchange?->vehicle?->gearbox?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
+                            @if($agreement->vehicle_interchange?->generation)
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Kaross</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->carbody?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Generation</div>
+                                    <div class="value">
+                                    {{ $agreement->vehicle_interchange?->generation ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kaross</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->carbody?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
+                            @if($agreement->vehicle_interchange?->control_inspection)
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Kontrollbesiktning gäller tom</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->control_inspection ?? ' ' }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Antal nycklar till fordonet</div>
+                                    <div class="value">
+                                    {{ $agreement->vehicle_interchange?->number_keys ?? ' '}}
+                                    </div>
+                                </td>
+                            </tr>
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Antal nycklar till fordonet</div>
+                                    <div class="value">
+                                    {{ $agreement->vehicle_interchange?->number_keys ?? ' '}}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Servicebok finns?</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)
+                                            {{ $agreement->vehicle_interchange?->service_book === 0 ? 'Ja' : 'Nej' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Sommardäck finns?</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)  
+                                            {{ $agreement->vehicle_interchange?->summer_tire === 0 ? 'Ja' : 'Nej' }}
+                                        @else
+                                              
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>    
+                            @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
+                            <tr>
+                                <td>
+                                    <div class="label">Vinterdäck finns?</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)
+                                            {{ $agreement->vehicle_interchange?->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Senaste service: Mil/datum</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
+                                            {{ $agreement->vehicle_interchange?->last_service ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_service_date ?? 'YYYY-MM-DD' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>  
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Vinterdäck finns?</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)
+                                            {{ $agreement->vehicle_interchange?->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
                             </tr> 
+                            @endif
+                            @if($agreement->vehicle_interchange?->dist_belt === 0)
+                                @if($agreement->vehicle_interchange?->last_dist_belt !== null)
+                                <tr>
+                                    <td>
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                            
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                        <div class="value">
+                                            @if($agreement->vehicle_interchange?->last_dist_belt !== null)
+                                            {{ $agreement->vehicle_interchange?->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_interchange?->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                            @else
+                                                 
+                                            @endif
+                                        </div>
+                                    </td>                            
+                                </tr> 
+                                @else
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                            
+                                </tr>
+                                @endif
                             @else
                             <tr>
                                 <td colspan="2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        @if($agreement->vehicle_interchange)
+                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        @else
+                                             
+                                        @endif
                                     </div>
-                                </td>                            
+                                </td>                           
+                            </tr> 
+                            @endif         
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Inbytespris</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_interchange)
+                                        {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr
+                                        @else
+                                             
+                                        @endif  
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Avdragbar moms</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->iva_purchase?->name ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @if($agreement->residual_debt === 1)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Restskuld</div>
+                                    <div class="value">
+                                        {{ formatCurrency($agreement->residual_price) }} kr
+                                    </div>
+                                </td>
                             </tr>
                             @endif
-                        @else
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Kamrem bytt?</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                        {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>                           
-                        </tr> 
-                        @endif         
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Inbytespris</div>
-                                <div class="value">
-                                    @if($agreement->vehicle_interchange)
-                                    {{ formatCurrency($agreement->vehicle_interchange?->purchase_price) }} kr
-                                    @else
-                                         
-                                    @endif  
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Avdragbar moms</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->iva_purchase?->name ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
-                        @if($agreement->residual_debt === 1)
-                        <tr>
-                            <td class="column-cell column-cell-left-2">
-                                <div class="label">Restskuld</div>
-                                <div class="value">
-                                    {{ formatCurrency($agreement->residual_price) }} kr
-                                </div>
-                            </td>
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Verkligt värde</div>
-                                <div class="value">
-                                    {{ formatCurrency($agreement->fair_value) }} kr
-                                </div>
-                            </td>
-                        </tr>
-                        @else
                             @if($agreement->vehicle_interchange)
                             <tr>
                                 <td colspan="2">
@@ -826,25 +919,171 @@
                                     </div>
                                 </td>
                             </tr>
+                            @endif                            
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Inköpsdatum</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->created_at?->format('Y-m-d') ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @if($agreement->vehicle_interchange?->comments)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Anteckningar</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->comments ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
                             @endif
-                        @endif
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Inköpsdatum</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->created_at?->format('Y-m-d') ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
-                        @if($agreement->vehicle_interchange?->comments)
-                        <tr>
-                            <td colspan="2">
-                                <div class="label">Anteckningar</div>
-                                <div class="value">
-                                    {{ $agreement->vehicle_interchange?->comments ?? ' ' }}
-                                </div>
-                            </td>
-                        </tr>
+                        @else
+                            @if($agreement->vehicle_client->vehicle->last_service !== null)
+                            <tr>
+                                <td>
+                                    <div class="label">Vinterdäck finns?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Senaste service: Mil/datum</div>
+                                    <div class="value">
+                                        @if($agreement->vehicle_client->vehicle->last_service !== null)
+                                            {{ $agreement->vehicle_client->vehicle->last_service ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_service_date ?? 'YYYY-MM-DD' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>  
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Vinterdäck finns?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
+                                    </div>
+                                </td>
+                            </tr> 
+                            @endif
+                            @if($agreement->vehicle_client->vehicle->dist_belt === 0)
+                                @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                                <tr>
+                                    <td>
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                            
+                                    <td class="column-cell column-cell-right-2">
+                                        <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                        <div class="value">
+                                            @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
+                                                {{ $agreement->vehicle_client->vehicle->last_dist_belt ?? 0 }} Mil / {{ $agreement->vehicle_client->vehicle->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                            @else
+                                                 
+                                            @endif
+                                        </div>
+                                    </td>                            
+                                </tr> 
+                                @else
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="label">Kamrem bytt?</div>
+                                        <div class="value">
+                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                            (
+                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                                'Nej' : 
+                                                'Vet ej'
+                                            ) 
+                                            }}
+                                        </div>
+                                    </td>                         
+                                </tr>
+                                @endif
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                           
+                            </tr> 
+                            @endif          
+                            @if($agreement->guaranty === 1)
+                            <tr>                                        
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Garanti</div>
+                                    <div class="value">
+                                        {{ $agreement->guaranty_description }}
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Typ av garanti</div>
+                                    <div class="value">
+                                        {{ $agreement->guaranty_type->name}}
+                                    </div>
+                                </td>                                        
+                            </tr>
+                            @endif
+                            @if($agreement->insurance_company === 1)
+                            <tr>
+                                <td class="column-cell column-cell-left-2">
+                                    <div class="label">Försäkring</div>
+                                    <div class="value">
+                                        {{ $agreement->insurance_company_description }} 
+                                    </div>
+                                </td>
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Försäkringstyp</div>
+                                    <div class="value">
+                                        {{ $agreement->insurance_type->name}}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Pris</div>
+                                    <div class="value">
+                                        {{ formatCurrency($agreement->price) }} kr
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Försäljningsdatum</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->sale_date }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @if($agreement->vehicle_client->vehicle->comments)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Anteckningar</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_client->vehicle->comments ?? ' ' }}
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                         @endif
                     </table>                            
                 </td>
@@ -908,7 +1147,7 @@
             </tr>
             
             <!-- === PAYMENT INFORMATION === -->
-            <tr>
+            <tr @if(is_null($agreement->vehicle_interchange)) class="page-break" @endif>
                 <td colspan="2" class="section-cell">
                     <h2>Betalningsinformation</h2>                    
                 </td>

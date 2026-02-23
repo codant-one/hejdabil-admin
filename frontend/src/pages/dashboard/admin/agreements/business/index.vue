@@ -524,6 +524,8 @@ const onSubmit = async () => {
                         yearValidator(year.value) !== true ||
                         !chassis.value ||
                         !car_name.value ||
+                        (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
+                        (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
                         number_keys.value === null || 
                         number_keys.value === undefined || 
                         number_keys.value === ''
@@ -1138,7 +1140,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <div class="w-50">
                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                 <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_service || '').trim() ? 'required' : 'optional'}`"
                                     v-model="last_service_date"
                                     density="default"
                                     :config="endDateTimePickerConfig"
@@ -1146,6 +1148,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     class="field-solo-flat"
                                     placeholder="YYYY-MM-DD"
                                     style="margin-top: 5.5px"
+                                    :rules="last_service ? [requiredValidator] : []"
                                 />
                             </div>
                         </div>
@@ -1162,7 +1165,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <div class="w-50">
                                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                 <AppDateTimePicker
-                                    :key="JSON.stringify(endDateTimePickerConfig)"
+                                    :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_dist_belt || '').trim() ? 'required' : 'optional'}`"
                                     v-model="last_dist_belt_date"
                                     density="default"
                                     :config="endDateTimePickerConfig"
@@ -1170,6 +1173,7 @@ onBeforeRouteLeave((to, from, next) => {
                                     class="field-solo-flat"
                                     placeholder="YYYY-MM-DD"
                                     style="margin-top: 5.5px"
+                                    :rules="last_dist_belt ? [requiredValidator] : [] "
                                 />
                             </div>
                         </div>                                        

@@ -283,7 +283,7 @@ watch(() => reg_num_interchange.value, (val) => {
         car_name_interchange.value = null
         trade_price.value = 0
         residual_debt.value = 0
-        residual_price.value = 0
+        residual_price.value = null
         iva_purchase_id_interchange.value = null
         mileage_interchange.value = null
         generation_interchange.value = null
@@ -708,7 +708,7 @@ const formatDate = (date) => {
 }
 
 const onChangeRadio = (newValue) => {
-  residual_price.value = newValue === 1 ? 0 : residual_price.value
+  residual_price.value = newValue === 0 ? null : residual_price.value
 }
 
 const guarantyDescriptionRules = computed(() => {
@@ -1110,6 +1110,8 @@ const onSubmit = async () => {
                               !mileage.value || 
                               !chassis.value ||
                               !car_name.value ||
+                              (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
+                              (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
                               !number_keys.value ||
                               !sale_date.value ||
                               (guaranty.value === null || guaranty.value === undefined) ||
@@ -1128,10 +1130,12 @@ const onSubmit = async () => {
                               !year_interchange.value ||
                               !chassis_interchange.value ||
                               !car_name_interchange.value ||
+                              (last_service_interchange.value !== null && last_service_interchange.value !== undefined && `${last_service_interchange.value}`.trim() !== '' && (!last_service_date_interchange.value || `${last_service_date_interchange.value}`.trim() === '')) ||
+                              (last_dist_belt_interchange.value !== null && last_dist_belt_interchange.value !== undefined && `${last_dist_belt_interchange.value}`.trim() !== '' && (!last_dist_belt_date_interchange.value || `${last_dist_belt_date_interchange.value}`.trim() === '')) ||
                               !number_keys_interchange.value ||
                               !trade_price.value ||
-                              trade_price.value <= 0 ||           
-                              !residual_price.value ||
+                              trade_price.value <= 0 ||  
+                              (residual_debt.value !== 0 && !residual_price.value) ||
                               !iva_purchase_id_interchange.value
                             )
     
@@ -2023,7 +2027,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_service || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_service_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -2031,6 +2035,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_service ? [requiredValidator] : []"
                                                     />
                                                 </div>
                                             </div>
@@ -2047,7 +2052,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_dist_belt || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_dist_belt_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -2055,6 +2060,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_dist_belt ? [requiredValidator] : [] "
                                                     />
                                                 </div>
                                             </div>                                        
@@ -2411,7 +2417,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_service_interchange || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_service_date_interchange"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -2419,6 +2425,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_service_interchange ? [requiredValidator] : []"
                                                     />
                                                 </div>
                                             </div>
@@ -2435,7 +2442,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_dist_belt_interchange || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_dist_belt_date_interchange"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -2443,6 +2450,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_dist_belt_interchange ? [requiredValidator] : [] "
                                                     />
                                                 </div>
                                             </div>                                        

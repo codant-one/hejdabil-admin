@@ -308,7 +308,11 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Färg & Årsmodell</div>
                                 <div class="value">
-                                    {{ $agreement->commission->vehicle->color }} / {{ $agreement->commission->vehicle->year }}
+                                    {{ $agreement->commission->vehicle->color }} 
+                                    @if($agreement->commission->vehicle->color && $agreement->commission->vehicle->year)
+                                        / 
+                                    @endif
+                                    {{ $agreement->commission->vehicle->year }}
                                 </div>
                             </td>
                         </tr>
@@ -326,6 +330,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->commission->vehicle->fuel && $agreement->commission->vehicle->gearbox)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Drivmedel</div>
@@ -340,6 +345,26 @@
                                 </div>
                             </td>
                         </tr>
+                        @elseif($agreement->commission->vehicle->fuel)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Drivmedel</div>
+                                <div class="value">
+                                    {{ $agreement->commission->vehicle->fuel?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @elseif($agreement->commission->vehicle->gearbox)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Växellåda</div>
+                                <div class="value">
+                                {{ $agreement->commission->vehicle->gearbox?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->commission->vehicle->generation)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kaross</div>
@@ -353,12 +378,23 @@
                                 {{ $agreement->commission->vehicle->generation }}
                                 </div>
                             </td>
-                        </tr>                        
+                        </tr>   
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->commission->vehicle->carbody?->name }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @endif                     
                     </table>                           
                 </td>
                 <td class="column-cell column-cell-right">
                     <h2 style="color: white;">.</h2>                 
-                    <table class="info-table">     
+                    <table class="info-table">    
+                        @if($agreement->commission->vehicle->control_inspection) 
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -372,7 +408,17 @@
                                 {{ $agreement->commission->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>   
+                        </tr>  
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Antal nycklar till fordonet</div>
+                                <div class="value">
+                                {{ $agreement->commission->vehicle->number_keys }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif 
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Servicebok finns?</div>

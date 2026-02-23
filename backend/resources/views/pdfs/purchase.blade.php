@@ -332,7 +332,11 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Färg & Årsmodell</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->color }} / {{ $agreement->vehicle_client->vehicle->year }}
+                                    {{ $agreement->vehicle_client->vehicle->color }} 
+                                    @if($agreement->vehicle_client->vehicle->color && $agreement->vehicle_client->vehicle->year)
+                                        / 
+                                    @endif
+                                    {{ $agreement->vehicle_client->vehicle->year }}
                                 </div>
                             </td>
                         </tr>
@@ -350,6 +354,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->vehicle_client->vehicle->fuel && $agreement->vehicle_client->vehicle->gearbox)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Drivmedel</div>
@@ -364,6 +369,26 @@
                                 </div>
                             </td>
                         </tr>
+                        @elseif($agreement->vehicle_client->vehicle->fuel)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Drivmedel</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->fuel?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @elseif($agreement->vehicle_client->vehicle->gearbox)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Växellåda</div>
+                                <div class="value">
+                                {{ $agreement->vehicle_client->vehicle->gearbox?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->generation)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kaross</div>
@@ -378,6 +403,17 @@
                                 </div>
                             </td>
                         </tr>
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->carbody?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->control_inspection)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -392,6 +428,16 @@
                                 </div>
                             </td>
                         </tr>
+                        @else
+                         <tr>
+                            <td colspan="2">
+                                <div class="label">Antal nycklar till fordonet</div>
+                                <div class="value">
+                                {{ $agreement->vehicle_client->vehicle->number_keys }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Servicebok finns?</div>
