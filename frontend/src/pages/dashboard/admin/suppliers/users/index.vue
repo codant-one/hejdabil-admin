@@ -37,8 +37,10 @@ const isUserDetailDialog = ref(false)
 const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
+const isMobileActionDialogVisible = ref(false);
 
 const selectedUser = ref({})
+const selectedUserForAction = ref({});
 
 const IdsUserOnline = ref([])
 const userOnline = ref([])
@@ -298,7 +300,7 @@ const downloadCSV = async () => {
             class="d-flex gap-6 justify-space-between"
             :class="[
               windowWidth < 1024 ? 'flex-column' : 'flex-row',
-              $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
+              $vuetify.display.mdAndDown ? 'py-6 pa-2' : 'pa-4'
             ]"
           >
             <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
@@ -456,6 +458,29 @@ const downloadCSV = async () => {
             </tfoot>
           </VTable>
 
+          <VExpansionPanels
+            class="expansion-panels pb-6 px-0"
+            v-if="users.length && windowWidth < 1024"
+          >
+            <VExpansionPanel v-for="user in users" :key="user.id">
+              <VExpansionPanelTitle
+                collapse-icon="custom-dots-vertical"
+                expand-icon="custom-dots-vertical"
+                @click="selectedUserForAction = user; isMobileActionDialogVisible = true"
+              >
+                <div class="d-flex align-center w-100">
+                    <span class="order-id">{{  user.order_id }}</span>
+
+                    <div class="d-flex flex-column gap-1">
+                        <span class="text-aqua">{{ user.user.name }}  {{ user.user.last_name ?? '' }}</span>
+                        <span class="text-neutral-3">{{ user.user.email }}</span>
+                        <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
+                    </div>
+                </div>
+              </VExpansionPanelTitle>
+            </VExpansionPanel>
+          </VExpansionPanels>
+
           <div
             v-if="!isRequestOngoing && hasLoaded && !users.length"
             class="empty-state"
@@ -575,6 +600,58 @@ const downloadCSV = async () => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+              v-if="$can('view', 'users')"
+              @click="showUserDetailDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
+            </template>
+            <VListItemTitle>Visa</VListItemTitle>
+          </VListItem>
+          <VListItem
+              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              @click="showUserPasswordDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
+            <template #prepend>
+              <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
+            </template>
+            <VListItemTitle>Ändra lösenord</VListItemTitle>
+          </VListItem>
+          <VListItem
+              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              @click="showUserEditDialog(selectedUserForAction.user)">
+            <template #prepend>
+              <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem 
+            v-if="$can('delete','users') && selectedUserForAction.deleted_at === null"
+            @click="showUserDeleteDialog(selectedUserForAction.user)">
+            <template #prepend>
+              <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('delete','users') && selectedUserForAction.deleted_at !== null"
+            @click="showActivateDialog(selectedUserForAction.user)">
+            <template #prepend>
+              <VIcon icon="tabler-rosette-discount-check" />
+            </template>
+            <VListItemTitle>Aktivera</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -590,6 +667,99 @@ const downloadCSV = async () => {
   @media(min-width: 991px){
     .user-list-filter {
       inline-size: 12rem;
+    }
+  }
+
+  .card-form {
+    .v-list {
+      padding: 28px 24px 40px !important;
+
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 4px 0 !important;
+        gap: 0px !important;
+
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
+        }
+
+        .v-select .v-field,
+        .v-autocomplete .v-field {
+
+          .v-select__selection, .v-autocomplete__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+
+        .selector-user {
+          .v-input__control {
+            background: white !important;
+            padding-top: 0 !important;
+          }
+          .v-input__prepend, .v-input__append {
+            padding-top: 12px !important;
+          }
+        }
+
+        .v-text-field {
+          .v-input__control {
+            padding-top: 0;
+            input {
+              min-height: 48px;
+              padding: 12px 16px;
+            }
+          }
+        }
+      }
+    }
+    & .v-input {
+      .v-input__prepend {
+        padding-top: 12px !important;
+      }
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+            padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+                min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+  }
+
+  .dialog-bottom-full-width {
+    .v-card {
+      border-radius: 24px 24px 0 0 !important;
     }
   }
 

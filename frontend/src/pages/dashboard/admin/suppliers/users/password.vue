@@ -99,9 +99,9 @@ const editUserPassword = function(){
 <template>
     <!-- DIALOG -->
     <VDialog
+      id="password-dialog"
       v-model="props.isDrawerOpen"
       class="action-dialog"
-      max-width="600"
       persistent
     >
         <!-- Dialog close btn -->
@@ -256,5 +256,9 @@ const editUserPassword = function(){
     .v-card {
       border-radius: 24px 24px 0 0 !important;
     }
+  }
+
+  #password-dialog.v-overlay__content {
+      width: 1000px !important;
   }
 </style>
