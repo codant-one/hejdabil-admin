@@ -129,12 +129,14 @@ const redirectTo = (path) => {
                   v-bind="item.icon || themeConfig.verticalNav.defaultNavItemIconProps"
                   class="nav-item-icon"
                 />
+                <div class="d-flex w-100 justify-between align-center">
                 <span>{{ item.title }}</span>
                 <component
                   :is="themeConfig.app.iconRenderer || 'div'"
                   v-bind="themeConfig.icons.chevronRight"
                   class="nav-group-arrow"
                 />
+                </div>
               </div>
 
               <div class="nav-group-children ps-7 py-2" v-show="openGroups[index] === true">

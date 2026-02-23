@@ -45,7 +45,8 @@ class ClientController extends Controller
                         'supplier.user:id,name,last_name,email',
                         'user:id,name,last_name,email,avatar',
                         'user.userDetail:user_id,logo',
-                        'state:id,name'
+                        'state:id,name',
+                        'country:id,name',
                     ])->applyFilters(
                         $request->only([
                             'search',
@@ -74,6 +75,7 @@ class ClientController extends Controller
                     'clients' => $clients,
                     'clientsTotalCount' => $clients->total(),
                     'client_types' => CacheService::getClientTypes(),
+                    'countries' => CacheService::getCountries(),
                 ]
             ]);
 

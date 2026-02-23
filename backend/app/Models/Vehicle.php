@@ -261,15 +261,8 @@ class Vehicle extends Model
         $vehicle = self::with(['user', 'model.brand', 'state', 'iva_purchase'])->find($vehicle->id);
         $name = $vehicle->reg_num;
 
-        if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(Auth::user()->id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-        } else { //Admin
+        if($vehicle->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             
@@ -301,6 +294,12 @@ class Vehicle extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $vehicle->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {
@@ -479,9 +478,11 @@ class Vehicle extends Model
             
             $company->logo = $logoObj->logo ?? null;
         } else {
-            $user = UserDetails::with(['user'])->find($vehicle->supplier->user_id);
+            $user = UserDetails::with(['user'])->where('user_id', $vehicle->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {
@@ -551,9 +552,11 @@ class Vehicle extends Model
             
             $company->logo = $logoObj->logo ?? null;
         } else {
-            $user = UserDetails::with(['user'])->find($vehicle->supplier->user_id);
+            $user = UserDetails::with(['user'])->where('user_id', $vehicle->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
         }
 
         if (!file_exists(storage_path('app/public/pdfs'))) {

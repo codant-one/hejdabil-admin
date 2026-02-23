@@ -643,6 +643,8 @@ const onSubmit = async () => {
                           !year.value ||
                           !chassis.value ||
                           !car_name.value ||
+                          (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
+                          (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
                           !mileage.value || 
                           !car_body_id.value ||
                           !number_keys.value
@@ -663,7 +665,9 @@ const onSubmit = async () => {
     // Verificar tab 2 (Förmedlingsavgift)
     const hasTab2Errors = !commission_type_id.value || 
                           !commission_fee.value ||
-                          !selling_price.value
+                          !selling_price.value ||
+                          (outstanding_debt.value === 0 && !remaining_debt.value) ||
+                          (outstanding_debt.value === 0 && !paid_bank.value)
 
     // Verificar tab 3 (Betalningsinformation)
     const hasTab3Errors = !payment_days.value
@@ -992,7 +996,6 @@ const onSubmit = async () => {
                 formData.append('agreement_type_id', 3)
                 formData.append('currency_id', currency_id.value)
                 formData.append('price', selling_price.value)
-                formData.append('residual_debt', 0)
                 formData.append('guaranty', 0)
                 formData.append('insurance_company', 0)
                 formData.append('terms_other_conditions', terms_other_conditions.value)
@@ -1157,6 +1160,7 @@ onBeforeRouteLeave((to, from, next) => {
             ref="refForm"
             class="card-form"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit"
         >
             <VCard
@@ -1475,7 +1479,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfigTab2)}-${(last_service || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_service_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfigTab2"
@@ -1483,6 +1487,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_service ? [requiredValidator] : []"
                                                     />
                                                 </div>
                                             </div>
@@ -1499,7 +1504,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfigTab2)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfigTab2)}-${(last_dist_belt || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_dist_belt_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfigTab2"
@@ -1507,6 +1512,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_dist_belt ? [requiredValidator] : [] "
                                                     />
                                                 </div>
                                             </div>                                        
@@ -1798,12 +1804,14 @@ onBeforeRouteLeave((to, from, next) => {
                                                 type="number"
                                                 min="0"
                                                 suffix="KR"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>
                                         <div v-if="outstanding_debt === 0" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Restskuld betalas till*" />
                                             <VTextField
                                                 v-model="paid_bank"
+                                                :rules="[requiredValidator]"
                                             />
                                         </div>                                          
                                     </div>
@@ -1946,10 +1954,11 @@ onBeforeRouteLeave((to, from, next) => {
                             Tillbaka
                         </VBtn>
                         <VBtn 
-                            type="submit" 
+                            type="button" 
                             :block="windowWidth < 1024"
                             class="btn-gradient"
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            @click="onSubmit"
                         >
                             <VIcon v-if="currentTab === 5" icon="custom-save"  size="24" />
                             {{ (currentTab === 5) ? 'Skapa' : 'Nästa' }}

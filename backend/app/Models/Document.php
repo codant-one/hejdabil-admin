@@ -131,24 +131,12 @@ class Document extends Model
         // Use the first document to determine company info (assuming all docs share same supplier)
         $firstDocument = $documents->first();
 
-        if ($firstDocument->supplier && is_null($firstDocument->supplier->boss_id)) {//supplier
-            $user = UserDetails::with(['user'])->find($firstDocument->supplier->user_id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if ($firstDocument->supplier && !is_null($firstDocument->supplier->boss_id)) {//user
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($firstDocument->supplier->user_id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($firstDocument->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
-            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
-
-            // Extract the "value" supporting array or object
+            
+            // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
                 if (is_array($cfg)) 
                     return $cfg['value'] ?? '[]';
@@ -159,8 +147,7 @@ class Document extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
-            $signatureRaw    = $getValue($configSignature);
-
+            
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
 
@@ -175,14 +162,19 @@ class Document extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
-            $signatureObj    = $decodeSafe($signatureRaw);
             
             $company->logo = $logoObj->logo ?? null;
-            $company->img_signature = $signatureObj->img_signature ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $firstDocument->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+            $logo = $user->user->userDetail->logo_url ?? null;
         }
 
         $titles = $documents->pluck('title')->unique()->implode(', ');
-        $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
         $subject = 'Dokument: ' . $titles;
 
         $data = [

@@ -12,11 +12,4 @@ class DocumentType extends Model
 
     protected $guarded = [];
 
-    /**** Public methods ****/
-    public static function forDropdown()
-    {
-        return DB::table('document_types as t')
-            ->select(['t.id', 't.name' ])
-            ->get()->pluck('name','id');
-    }
 }

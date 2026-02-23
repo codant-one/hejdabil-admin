@@ -4,6 +4,7 @@ import { PerfectScrollbar } from "vue3-perfect-scrollbar";
 import { emailValidator, requiredValidator, phoneValidator, minLengthDigitsValidator, duplicateOrganizationNumberValidator } from "@/@core/utils/validators";
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { themeConfig } from '@themeConfig'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
 const props = defineProps({
@@ -22,6 +23,10 @@ const props = defineProps({
   client_types: {
     type: Object,
     required: false,
+  },
+  countries: {
+    type: Object,
+    required: false
   },
   isDuplicate: {
     type: Boolean,
@@ -57,11 +62,14 @@ const phone = ref('')
 const fullname = ref('')
 const email = ref('')
 const reference = ref('')
+const num_iva = ref('')
+const country_id = ref('')
 const comments = ref('')
 const isEdit = ref(false)
 const userData = ref(null)
 const role = ref(null)
 const isConfirmLeaveVisible = ref(false)
+const failedExternalFlags = ref({})
 
 const initialData = ref(null)
 const currentData = computed(() => ({
@@ -74,8 +82,10 @@ const currentData = computed(() => ({
   fullname: fullname.value,
   email: email.value,
   reference: reference.value,
+  num_iva: num_iva.value,
   comments: comments.value,
   client_type_id: client_type_id.value,
+  country_id: country_id.value
 }))
 
 const advisor = ref({
@@ -99,6 +109,11 @@ const organizationNumberRules = computed(() => [
   duplicateOrganizationNumberValidator(props.isDuplicate),
 ])
 
+const organizationNumberForeignRules = computed(() => [
+  requiredValidator,
+  duplicateOrganizationNumberValidator(props.isDuplicate),
+])
+
 watch(() => props.isDuplicate, async isDuplicate => {
   await nextTick()
   if (isDuplicate) {
@@ -106,6 +121,16 @@ watch(() => props.isDuplicate, async isDuplicate => {
     return
   }
   organizationNumberFieldRef.value?.resetValidation?.()
+})
+
+watch(() => props.isDrawerOpen, async isOpen => {
+  if (isOpen) {
+    emit('resetDuplicate')
+    await nextTick()
+    organizationNumberFieldRef.value?.resetValidation?.()
+    return
+  }
+  emit('resetDuplicate')
 })
 
 const getTitle = computed(() => {
@@ -133,8 +158,10 @@ watchEffect(async () => {
       fullname.value = props.client.fullname 
       email.value = props.client.email
       reference.value = props.client.reference
+      num_iva.value = props.client.num_iva
       comments.value = props.client.comments
-      client_type_id.value = props.client.client_type_id  
+      client_type_id.value = props.client.client_type_id 
+      country_id.value = props.client.country_id ?? props.client.country?.id ?? props.client.country?.name ?? null
     }
 
     // snapshot initial state after fields are populated
@@ -148,6 +175,7 @@ watchEffect(async () => {
 // 👉 drawer close
 const reallyCloseAndReset = () => {
   emit("update:isDrawerOpen", false);
+  emit('resetDuplicate')
   nextTick(() => {
     refForm.value?.reset();
     refForm.value?.resetValidation();
@@ -160,8 +188,10 @@ const reallyCloseAndReset = () => {
     fullname.value = null
     email.value = null
     reference.value = null
+    num_iva.value = null
     comments.value = null
     client_type_id.value = null
+    country_id.value = null
 
     isEdit.value = false 
     id.value = 0
@@ -339,9 +369,17 @@ const onSubmit = () => {
     if (valid) {
       let formData = new FormData();
 
+      const selectedCountry = Array.isArray(props.countries)
+        ? props.countries.find(item => String(item.id) === String(country_id.value))
+          || props.countries.find(item => item.name === country_id.value)
+        : null
+
+      const normalizedCountryId = selectedCountry?.id ?? country_id.value
+
       formData.append('supplier_id', supplier_id.value)
       formData.append('supplier_id', supplier_id.value)
       formData.append('client_type_id', client_type_id.value)
+      formData.append('country_id', normalizedCountryId)
       formData.append('email', email.value)
       formData.append('fullname', fullname.value)
       formData.append('organization_number', organization_number.value)
@@ -350,6 +388,7 @@ const onSubmit = () => {
       formData.append('postal_code', postal_code.value)
       formData.append('phone', phone.value)
       formData.append('reference', reference.value)
+      formData.append('num_iva', num_iva.value)
       formData.append('comments', comments.value)
 
       emit(
@@ -380,6 +419,61 @@ watch(currentData, () => {
   if (!initialData.value) return
   emit('edited', isDirty.value)
 }, { deep: true })
+
+const findCountry = country => {
+  if (!country || !Array.isArray(props.countries)) return null
+
+  const normalizeText = value =>
+    String(value ?? '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+  if (typeof country === 'object') {
+    return props.countries.find(item => item.id === country.id) || null
+  }
+
+  return props.countries.find(item => String(item.id) === String(country))
+      || props.countries.find(item => normalizeText(item.name) === normalizeText(country))
+
+}
+
+const getFlagFromDb = selectedCountry => {
+  const flag = String(selectedCountry?.flag ?? '').trim()
+  if (!flag) return ''
+
+  if (/^https?:\/\//i.test(flag)) return flag
+
+  const basePublicUrl = String(themeConfig.settings.urlStorage ?? '').replace(/\/+$/, '')
+  const cleanFlag = flag.replace(/^\/+/, '')
+
+  if (cleanFlag.startsWith('/'))
+    return `${basePublicUrl}/${cleanFlag}`
+
+  return `${basePublicUrl}/${cleanFlag}`
+}
+
+const getFlagCountry = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry) return ''
+
+  const hasExternalError = !!failedExternalFlags.value[selectedCountry.id]
+
+  if (selectedCountry?.iso && !hasExternalError)
+    return `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+
+  return getFlagFromDb(selectedCountry)
+}
+
+const onCountryFlagError = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry?.id || !selectedCountry?.iso) return
+
+  failedExternalFlags.value = {
+    ...failedExternalFlags.value,
+    [selectedCountry.id]: true,
+  }
+}
 </script>
 
 <template>
@@ -420,6 +514,7 @@ watch(currentData, () => {
           <VForm 
             ref="refForm" 
             v-model="isFormValid" 
+            validate-on="submit"
             @submit.prevent="onSubmit">
             <VRow>
               <VCol cols="12" md="12" v-if="advisor.show">
@@ -445,9 +540,21 @@ watch(currentData, () => {
                 />
               </VCol>               
               <VCol cols="12" md="6" class="pb-0">
+                <AppAutocomplete
+                  v-model="client_type_id"
+                  label="Kunden är*"
+                  :items="client_types"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  :rules="[requiredValidator]"
+                  autocomplete="off"
+                />
+              </VCol> 
+              <VCol cols="12" md="6" class="pb-0">
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
                 <div class="d-flex gap-2">
                   <VTextField
+                    v-if="client_type_id !== 3"
                     ref="organizationNumberFieldRef"
                     v-model="organization_number"
                     :class="{ 'org-number-duplicate': props.isDuplicate }"
@@ -456,8 +563,18 @@ watch(currentData, () => {
                     minLength="11"
                     maxlength="13"
                     @input="handleOrganizationNumberInput"
+                  /> 
+                  <VTextField
+                    v-else
+                    ref="organizationNumberFieldRef"
+                    v-model="organization_number"
+                    :class="{ 'org-number-duplicate': props.isDuplicate }"
+                    :error="props.isDuplicate"
+                    :rules="organizationNumberForeignRules"
+                    @input="emit('resetDuplicate')"
                   />                
                   <VBtn
+                    v-if="client_type_id !== 3"
                     class="btn-ghost w-auto px-3"
                     @click="searchEntity"
                   >
@@ -466,17 +583,8 @@ watch(currentData, () => {
                 </div>
               </VCol>
               <VCol cols="12" md="6" class="pb-0">
-                <AppAutocomplete
-                  v-model="client_type_id"
-                  label="Kunden är*"
-                  :items="client_types"
-                  :item-title="item => item.name"
-                  :item-value="item => item.id"
-                  :rules="[requiredValidator]"
-                  autocomplete="off"/>
-              </VCol> 
-              <VCol cols="12" md="6" class="pb-0">
-                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />
+                <VLabel v-if="client_type_id === 2" class="mb-1 text-body-2 text-high-emphasis" text="Företagsnamn*" />
+                <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Fullständigt namn*" />
                 <VTextField
                   v-model="fullname"
                   :rules="[requiredValidator]"
@@ -488,14 +596,64 @@ watch(currentData, () => {
                   v-model="phone"
                   :rules="[requiredValidator, phoneValidator]"
                 />
-              </VCol>
-              <VCol cols="12" md="12" class="pb-0">
+              </VCol> 
+              <VCol cols="12" md="12" class="pb-0" v-if="client_type_id === 1">
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
                 <VTextField
                   v-model="address"
                   :rules="[requiredValidator]"
                 />
-              </VCol>           
+              </VCol>    
+              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 2">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Momsreg. nr." />
+                <VTextField
+                  v-model="num_iva"
+                />
+              </VCol>
+              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 2">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                <VTextField
+                  v-model="address"
+                  :rules="[requiredValidator]"
+                />
+              </VCol> 
+              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 3">
+                <AppAutocomplete
+                  v-model="country_id"
+                  label="Land*"
+                  :items="countries"
+                  :item-title="item => item.name"
+                  :item-value="item => item.id"
+                  :rules="[requiredValidator]"
+                  :menu-props="{ maxHeight: '200px' }"
+                  autocomplete="off"
+                  clearable
+                  clear-icon="tabler-x"
+                >
+                  <template
+                    v-if="country_id"
+                    #prepend
+                    >
+                    <VAvatar
+                      start
+                      style="margin-top: -3px;"
+                      size="40">
+                      <VImg
+                        :src="getFlagCountry(country_id)"
+                        cover
+                        @error="onCountryFlagError(country_id)"
+                      />
+                    </VAvatar>
+                  </template>
+                </AppAutocomplete>
+              </VCol>  
+              <VCol cols="12" md="6" class="pb-0" v-if="client_type_id === 3">
+                <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                <VTextField
+                  v-model="address"
+                  :rules="[requiredValidator]"
+                />
+              </VCol> 
               <VCol cols="12" md="6" class="pb-0">
                 <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Postnummer*" />
                 <VTextField

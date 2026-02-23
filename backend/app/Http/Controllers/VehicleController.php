@@ -199,11 +199,15 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-                $clients = Client::where('supplier_id', Auth::user()->supplier->id)->get();
-            } else {
-                $clients = CacheService::getClients();
-            }
+            $clients = Client::when(
+                Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->when(
+                Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->boss_id);
+                }
+            )->withTrashed()->get();
 
             return response()->json([
                 'success' => true,
@@ -356,6 +360,16 @@ class VehicleController extends Controller
             }
 
             $vehicle = $vehicleQuery->first();
+
+            $clients = Client::when(
+                Auth::check() && Auth::user()->hasRole('Supplier'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->id);
+                }
+            )->when(
+                Auth::check() && Auth::user()->hasRole('User'), function ($query) {
+                    return $query->where('supplier_id', Auth::user()->supplier->boss_id);
+                }
+            )->withTrashed()->get();
         
             if (!$vehicle)
                 return response()->json([
@@ -371,7 +385,7 @@ class VehicleController extends Controller
                             'fuels' => Fuel::all(),
                             'document_types' => DocumentType::all(),
                             'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
-                            'clients' => Client::all(),
+                            'clients' => $clients,
                             'client_types' => ClientType::all(),
                             'identifications' => Identification::all(),
                             'currencies' => Currency::where('state_id', 2)->get()
@@ -392,7 +406,7 @@ class VehicleController extends Controller
                         'fuels' => Fuel::all(),
                         'document_types' => DocumentType::all(),
                         'states' => State::whereIn('id', [10, 11, 12, 13])->get(),
-                        'clients' => Client::all(),
+                        'clients' => $clients,
                         'client_types' => ClientType::all(),
                         'identifications' => Identification::all(),
                         'currencies' => Currency::where('state_id', 2)->get()

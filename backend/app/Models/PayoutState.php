@@ -11,12 +11,5 @@ class PayoutState extends Model
     use HasFactory;
 
     protected $guarded = [];
-
-    /**** Public methods ****/
-    public static function forDropdown()
-    {
-        return DB::table('payout_states as s')
-            ->select(['s.id', 's.name' ])
-            ->get()->pluck('name','id');
-    }
+    
 }

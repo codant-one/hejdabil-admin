@@ -345,7 +345,7 @@ const downloadCSV = async () => {
                 <th scope="col"> NAMNET </th>
                 <th scope="col"> KOD </th>
                 <th scope="col"> STATUS </th>
-                <th scope="col" v-if="$can('edit', 'currencies') || $can('delete', 'cliencurrenciests')"></th>
+                <th scope="col" v-if="$can('edit', 'currencies') || $can('delete', 'currencies')"></th>
               </tr>
             </thead>
             <!-- 👉 table body -->

@@ -128,29 +128,9 @@ class TestingController extends Controller
 
     public function pdfs() {
 
-        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(4);
+        $billing = Billing::with(['client', 'supplier.user.userDetail', 'state'])->find(33);
         $types = Invoice::all();
         $details = json_decode($billing->detail, true);
-
-        /*if (Auth::user()->getRoleNames()[0] === 'Supplier') {
-            $company = UserDetails::with(['user'])->find(Auth::user()->id);
-            $company->email = Auth::user()->email;
-
-            $user = UserDetails::with(['user'])->find(3);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-
-        } else if (Auth::user()->getRoleNames()[0] === 'User') {
-
-                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
-                $company = $user->supplier->boss->user->userDetail;
-                $company->email = $user->supplier->boss->user->email;
-        } else { //Admin
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find(4);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-        }
-        */
 
         $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
         $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
@@ -344,7 +324,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(62);
+        ])->find(82);
 
         $user = User::with(['userDetail','roles'])->find(1);
  
@@ -364,7 +344,7 @@ class TestingController extends Controller
         }
 
         if ($user->roles[0]->name === 'Supplier') {
-            $user = UserDetails::with(['user'])->find(Auth::user()->id);
+            $user = UserDetails::with(['user'])->where('user_id', Auth::user()->id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;

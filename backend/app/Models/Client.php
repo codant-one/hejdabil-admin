@@ -38,6 +38,10 @@ class Client extends Model
         return $this->belongsTo(State::class, 'state_id', 'id');
     }
 
+    public function country() {
+        return $this->belongsTo(Country::class, 'country_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
@@ -98,10 +102,10 @@ class Client extends Model
     /**** Public methods ****/
     public static function createClient($request) {
 
-        $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
+        $isSupplier = Auth::check() && Auth::user()->getRoleNames()[0] === 'Supplier';
         $isUser = Auth::user()->getRoleNames()[0] === 'User';
         $supplier_id = match (true) {
-            $request->supplier_id === 'null' && $isSupplier => Auth::user()->supplier->id,
+            $isSupplier => Auth::user()->supplier->id,
             $isUser => Auth::user()->supplier->boss_id,
             $request->supplier_id === 'null' => null,
             default => $request->supplier_id,
@@ -111,6 +115,7 @@ class Client extends Model
             'user_id' => Auth::user()->id, 
             'supplier_id' =>  $supplier_id,
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
+            'country_id' => $request->country_id === 'null' ? null : $request->country_id,
             'email' => $request->email,
             'fullname' => $request->fullname,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
@@ -119,6 +124,7 @@ class Client extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'reference' => $request->reference === 'null' ? null : $request->reference,
+            'num_iva' => $request->num_iva === 'null' ? null : $request->num_iva,
             'comments' =>  $request->comments === 'null' ? null : $request->comments
         ]);
         
@@ -129,8 +135,8 @@ class Client extends Model
         $isSupplier = Auth::user()->getRoleNames()[0] === 'Supplier';
 
         $client->update([
-            'supplier_id' => $request->supplier_id === 'null' && $isSupplier ? Auth::user()->supplier->id : ($request->supplier_id === 'null' ? null : $request->supplier_id),
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
+            'country_id' => $request->country_id === 'null' ? null : $request->country_id,
             'email' => $request->email,
             'fullname' => $request->fullname,
             'organization_number' => $request->organization_number === 'null' ? null : $request->organization_number,
@@ -139,6 +145,7 @@ class Client extends Model
             'postal_code' => $request->postal_code,
             'phone' => $request->phone,
             'reference' => $request->reference === 'null' ? null : $request->reference,
+            'num_iva' => $request->num_iva === 'null' ? null : $request->num_iva,
             'comments' =>  $request->comments === 'null' ? null : $request->comments
         ]);
 

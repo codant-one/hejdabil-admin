@@ -146,7 +146,7 @@ const engine_interchange = ref(null)
 const car_name_interchange = ref(null)
 const trade_price = ref(null)
 const residual_debt = ref(0)
-const residual_price = ref(0)
+const residual_price = ref(null)
 const ivas = ref([])
 const iva_purchase_id_interchange = ref(null)
 const mileage_interchange = ref(null)
@@ -281,7 +281,7 @@ watch(() => reg_num_interchange.value, (val) => {
         car_name_interchange.value = null
         trade_price.value = 0
         residual_debt.value = 0
-        residual_price.value = 0
+        residual_price.value = null
         iva_purchase_id_interchange.value = null
         mileage_interchange.value = null
         generation_interchange.value = null
@@ -585,7 +585,7 @@ const formatDate = (date) => {
 }
 
 const onChangeRadio = (newValue) => {
-  residual_price.value = newValue === 1 ? 0 : residual_price.value
+  residual_price.value = newValue === 0 ? null : residual_price.value
 }
 
 const guarantyDescriptionRules = computed(() => {
@@ -987,6 +987,8 @@ const onSubmit = async () => {
                           !mileage.value || 
                           !chassis.value ||
                           !car_name.value ||
+                          (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
+                          (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
                           !number_keys.value ||
                           !sale_date.value ||
                           (guaranty.value === null || guaranty.value === undefined) ||
@@ -1005,9 +1007,12 @@ const onSubmit = async () => {
                           !year_interchange.value ||
                           !chassis_interchange.value ||
                           !car_name_interchange.value ||
+                          (last_service_interchange.value !== null && last_service_interchange.value !== undefined && `${last_service_interchange.value}`.trim() !== '' && (!last_service_date_interchange.value || `${last_service_date_interchange.value}`.trim() === '')) ||
+                          (last_dist_belt_interchange.value !== null && last_dist_belt_interchange.value !== undefined && `${last_dist_belt_interchange.value}`.trim() !== '' && (!last_dist_belt_date_interchange.value || `${last_dist_belt_date_interchange.value}`.trim() === '')) ||
                           !number_keys_interchange.value ||
                           !trade_price.value ||
-                          trade_price.value <= 0 ||
+                          trade_price.value <= 0  ||           
+                          (residual_debt.value !== 0 && !residual_price.value) ||
                           !iva_purchase_id_interchange.value
                         )
 
@@ -1549,6 +1554,7 @@ onBeforeRouteLeave((to, from, next) => {
             ref="refForm"
             class="card-form"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit"
         >
             <VCard
@@ -1887,7 +1893,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_service || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_service_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -1895,6 +1901,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_service ? [requiredValidator] : []"
                                                     />
                                                 </div>
                                             </div>
@@ -1911,7 +1918,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="w-50">
                                                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="" />
                                                     <AppDateTimePicker
-                                                        :key="JSON.stringify(endDateTimePickerConfig)"
+                                                        :key="`${JSON.stringify(endDateTimePickerConfig)}-${(last_dist_belt || '').trim() ? 'required' : 'optional'}`"
                                                         v-model="last_dist_belt_date"
                                                         density="default"
                                                         :config="endDateTimePickerConfig"
@@ -1919,6 +1926,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                         class="field-solo-flat"
                                                         placeholder="YYYY-MM-DD"
                                                         style="margin-top: 5.5px"
+                                                        :rules="last_dist_belt ? [requiredValidator] : [] "
                                                     />
                                                 </div>
                                             </div>                                        
@@ -2325,14 +2333,14 @@ onBeforeRouteLeave((to, from, next) => {
                                             <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum*" />
                                             <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Inköpsdatum" />
                                             <AppDateTimePicker
-                                                :key="JSON.stringify(startDateTimePickerConfig)"
+                                                :key="`${JSON.stringify(startDateTimePickerConfig)}-${(reg_num_interchange || '').trim() ? 'required' : 'optional'}`"
                                                 v-model="purchase_date"
                                                 density="default"
                                                 :config="startDateTimePickerConfig"
                                                 clearable
                                                 class="field-solo-flat"
                                                 placeholder="Välj datum"
-                                                :rules="reg_num_interchange ? [requiredValidator] : []"
+                                                :rules="(reg_num_interchange || '').trim() ? [requiredValidator] : []"
                                             />
                                         </div>    
                                         <div class="form w-100">
@@ -2374,13 +2382,15 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
+                                            <VLabel v-if="residual_debt !== 0" class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '') + ' *'" />
+                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" :text="'Restskuld ' + (currencies.find(item => item.id === currency_id)?.code || '')" />
                                             <VTextField
                                                 v-model="residual_price"
                                                 type="number"
                                                 min="0"
                                                 suffix="KR"
                                                 :disabled="residual_debt === 0 ? true : false"
+                                                :rules="residual_debt !== 0 ? [requiredValidator] : []"
                                             /> 
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2866,10 +2876,11 @@ onBeforeRouteLeave((to, from, next) => {
                             Tillbaka
                         </VBtn>
                         <VBtn 
-                            type="submit" 
+                            type="button" 
                             :block="windowWidth < 1024"
                             class="btn-gradient"
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            @click="onSubmit"
                         >
                             <VIcon v-if="currentTab === 4" icon="custom-save"  size="24" />
                             {{ (currentTab === 4) ? 'Skapa' : 'Nästa' }}

@@ -443,6 +443,31 @@ const closeModal = function(){
                                         value="delete currencies"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Land
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="view countries"
+                                        value="view countries"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="create countries"
+                                        value="create countries"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="edit countries"
+                                        value="edit countries"
+                                    />
+                                    <VCheckbox
+                                        v-model="assignedPermissions"
+                                        label="delete countries"
+                                        value="delete countries"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>

@@ -336,7 +336,11 @@
                             <td class="column-cell column-cell-right-2">
                                 <div class="label">Färg & Årsmodell</div>
                                 <div class="value">
-                                    {{ $agreement->offer->color }} / {{ $agreement->offer->year }}
+                                    {{ $agreement->offer->color }} 
+                                    @if($agreement->offer->color && $agreement->offer->year)
+                                        / 
+                                    @endif 
+                                    {{ $agreement->offer->year }}
                                 </div>
                             </td>
                         </tr>
@@ -354,6 +358,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->offer->fuel && $agreement->offer->gearbox)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Drivmedel</div>
@@ -368,6 +373,26 @@
                                 </div>
                             </td>
                         </tr>
+                        @elseif($agreement->offer->fuel)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Drivmedel</div>
+                                <div class="value">
+                                    {{ $agreement->offer->fuel?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @elseif($agreement->offer->gearbox)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Växellåda</div>
+                                <div class="value">
+                                {{ $agreement->offer->gearbox?->name }}
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->offer->generation)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kaross</div>
@@ -381,12 +406,23 @@
                                 {{ $agreement->offer->generation }}
                                 </div>
                             </td>
-                        </tr>                        
+                        </tr>     
+                        @else
+                         <tr>
+                            <td colspan="2">
+                                <div class="label">Kaross</div>
+                                <div class="value">
+                                    {{ $agreement->offer->carbody?->name }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @endif                   
                     </table>                           
                 </td>
                 <td class="column-cell column-cell-right">
                     <h2 style="color: white;">.</h2>                 
                     <table class="info-table">     
+                        @if($agreement->offer->control_inspection)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -401,6 +437,16 @@
                                 </div>
                             </td>
                         </tr>   
+                        @else
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Antal nycklar till fordonet</div>
+                                <div class="value">
+                                {{ $agreement->offer->number_keys }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Servicebok finns?</div>
@@ -415,6 +461,7 @@
                                 </div>
                             </td>
                         </tr>  
+                        @if($agreement->offer->last_service || $agreement->offer->last_service_date)                        
                         <tr>
                             <td>
                                 <div class="label">Vinterdäck finns?</div>
@@ -433,31 +480,58 @@
                                 </div>
                             </td>
                         </tr>  
-                        @if($agreement->offer->dist_belt === 0)
+                        @else
                         <tr>
-                            <td>
-                                <div class="label">Kamrem bytt?</div>
+                            <td colspan="2">
+                                <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
-                                    {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
-                                      (
-                                        $agreement->offer->dist_belt === 1 ? 
-                                        'Nej' : 
-                                        'Vet ej'
-                                      ) 
-                                    }}
+                                    {{ $agreement->offer->winter_tire === 0 ? 'Ja' : 'Nej' }}
                                 </div>
-                            </td>                            
-                            <td class="column-cell column-cell-right-2">
-                                <div class="label">Kamrem bytt vid: Mil/datum</div>
-                                <div class="value">
-                                    @if($agreement->offer->last_dist_belt || $agreement->offer->last_dist_belt_date)    
-                                    {{ $agreement->offer->last_dist_belt ?? 0 }} Mil / {{ $agreement->offer->last_dist_belt_date ?? 'YYYY-MM-DD' }}
-                                    @else
-                                         
-                                    @endif
-                                </div>
-                            </td>                            
-                        </tr> 
+                            </td>
+                        </tr>  
+                        @endif
+                        @if($agreement->offer->dist_belt === 0)
+                            @if($agreement->offer->last_dist_belt || $agreement->offer->last_dist_belt_date) 
+                            <tr>
+                                <td>
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->offer->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                            
+                                <td class="column-cell column-cell-right-2">
+                                    <div class="label">Kamrem bytt vid: Mil/datum</div>
+                                    <div class="value">
+                                        @if($agreement->offer->last_dist_belt || $agreement->offer->last_dist_belt_date)    
+                                        {{ $agreement->offer->last_dist_belt ?? 0 }} Mil / {{ $agreement->offer->last_dist_belt_date ?? 'YYYY-MM-DD' }}
+                                        @else
+                                             
+                                        @endif
+                                    </div>
+                                </td>                            
+                            </tr> 
+                            @else
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kamrem bytt?</div>
+                                    <div class="value">
+                                        {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
+                                        (
+                                            $agreement->offer->dist_belt === 1 ? 
+                                            'Nej' : 
+                                            'Vet ej'
+                                        ) 
+                                        }}
+                                    </div>
+                                </td>                           
+                            </tr>
+                            @endif
                         @else
                         <tr>
                             <td colspan="2">

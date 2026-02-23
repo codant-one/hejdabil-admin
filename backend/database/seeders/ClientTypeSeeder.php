@@ -18,8 +18,8 @@ class ClientTypeSeeder extends Seeder
      */
     public function run()
     {
-        $names = ['Privat', 'Företag'];
-        $labels = ['private', 'company'];
+        $names = ['Privat', 'Företag', 'Utländsk kund'];
+        $labels = ['private', 'company', 'foreign'];
 							
         foreach($names as $key => $name) {
             ClientType::updateOrCreate(

@@ -152,19 +152,8 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
-                $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
-                $company = $user->user->userDetail;
-                $company->email = $user->user->email;
-                $company->name = $user->user->name;
-                $company->last_name = $user->user->last_name;
-            } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
-                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
-                $company = $user->supplier->boss->user->userDetail;
-                $company->email = $user->supplier->boss->user->email;
-                $company->name = $user->supplier->boss->user->name;
-                $company->last_name = $user->supplier->boss->user->last_name;
-            } else { //Admin
+            if($agreement->supplier_id === null) {
+                //Admin
                 $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
                 $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
                 $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -200,11 +189,18 @@ class SignatureController extends Controller
                 
                 $company->logo = $logoObj->logo ?? null;
                 $company->img_signature = $signatureObj->img_signature ?? null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            } else {
+                $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+                $logo = $user->user->userDetail->logo_url ?? null;
             }
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $subject = $agreement->agreement_type_id === 4 ? 'Prisförslag från ' . $company->company : 'Avtal för digital signering från ' . $company->company;
             $agreement = Agreement::with('agreement_client')->find($agreement->id); // Refresh agreement data
 
@@ -368,19 +364,8 @@ class SignatureController extends Controller
                 metadata: ['recipient' => $validated['email']]
             );
 
-            if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
-                $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
-                $company = $user->user->userDetail;
-                $company->email = $user->user->email;
-                $company->name = $user->user->name;
-                $company->last_name = $user->user->last_name;
-            } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
-                $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
-                $company = $user->supplier->boss->user->userDetail;
-                $company->email = $user->supplier->boss->user->email;
-                $company->name = $user->supplier->boss->user->name;
-                $company->last_name = $user->supplier->boss->user->last_name;
-            } else { //Admin
+            if($agreement->supplier_id === null) {
+                //Admin
                 $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
                 $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
                 $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -416,14 +401,21 @@ class SignatureController extends Controller
                 
                 $company->logo = $logoObj->logo ?? null;
                 $company->img_signature = $signatureObj->img_signature ?? null;
+                $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            } else {
+                $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+                $company = $user->user->userDetail;
+                $company->email = $user->user->email;
+                $company->name = $user->user->name;
+                $company->last_name = $user->user->last_name;
+                $logo = $user->user->userDetail->logo_url ?? null;
             }
 
             $signingUrl = env('APP_DOMAIN') . '/sign/' . $token->signing_token;
             $clientEmail = $validated['email'];
-            $logo = Auth::user()->userDetail ? Auth::user()->userDetail->logo_url : null;
             $subject = $agreement->agreement_type_id === 4 ? 'Prisförslag från ' . $company->company : 'Avtal för digital signering från ' . $company->company;
             $agreement = Agreement::with('agreement_client')->find($agreement->id); // Refresh agreement data
-
+            
             $data = [
                 'agreement' => $agreement,
                 'signingUrl' => $signingUrl,
@@ -746,19 +738,8 @@ class SignatureController extends Controller
                     if ($token->agreement_id) {
                         $agreement = $token->agreement;
 
-                        if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
-                            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
-                            $company = $user->user->userDetail;
-                            $company->email = $user->user->email;
-                            $company->name = $user->user->name;
-                            $company->last_name = $user->user->last_name;
-                        } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
-                            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
-                            $company = $user->supplier->boss->user->userDetail;
-                            $company->email = $user->supplier->boss->user->email;
-                            $company->name = $user->supplier->boss->user->name;
-                            $company->last_name = $user->supplier->boss->user->last_name;
-                        } else { //Admin
+                        if($agreement->supplier_id === null) {
+                            //Admin
                             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
                             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
                             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -794,12 +775,88 @@ class SignatureController extends Controller
                             
                             $company->logo = $logoObj->logo ?? null;
                             $company->img_signature = $signatureObj->img_signature ?? null;
+                            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+                        } else {
+                            $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+                            $company = $user->user->userDetail;
+                            $company->email = $user->user->email;
+                            $company->name = $user->user->name;
+                            $company->last_name = $user->user->last_name;
+                            $logo = $user->user->userDetail->logo_url ?? null;
                         }
 
-                        Mail::to($recipientEmail)->send(new SignedDocumentMail($agreement, $attachFile ? $pdfFullPath : '', null, $downloadUrl, $attachFile, $company));
+                        Mail::to($recipientEmail)->send(
+                            new SignedDocumentMail(
+                                $agreement, 
+                                $attachFile ? $pdfFullPath : '', 
+                                null, 
+                                $downloadUrl, 
+                                $attachFile, 
+                                $company,
+                                $logo
+                            )
+                        );
                     } elseif ($token->document_id) {
                         $document = $token->document;
-                        Mail::to($recipientEmail)->send(new SignedDocumentMail(null, $attachFile ? $pdfFullPath : '', $document, $downloadUrl, $attachFile, null));
+
+                        if($document->supplier_id === null) {
+                            //Admin
+                            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+                            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+                            $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+
+                            // Extract the "value" supporting array or object
+                            $getValue = function ($cfg) {
+                                if (is_array($cfg)) 
+                                    return $cfg['value'] ?? '[]';
+                                if (is_object($cfg) && isset($cfg->value))
+                                    return $cfg->value;
+                                return '[]';
+                            };
+                            
+                            $companyRaw = $getValue($configCompany);
+                            $logoRaw    = $getValue($configLogo);
+                            $signatureRaw    = $getValue($configSignature);
+
+                            $decodeSafe = function ($raw) {
+                                $decoded = json_decode($raw);
+
+                                if (is_string($decoded))
+                                    $decoded = json_decode($decoded);
+                            
+                                if (!is_object($decoded)) 
+                                    $decoded = (object) [];
+                            
+                                return $decoded;
+                            };
+                            
+                            $company = $decodeSafe($companyRaw);
+                            $logoObj    = $decodeSafe($logoRaw);
+                            $signatureObj    = $decodeSafe($signatureRaw);
+                            
+                            $company->logo = $logoObj->logo ?? null;
+                            $company->img_signature = $signatureObj->img_signature ?? null;
+                            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+                        } else {
+                            $user = UserDetails::with(['user'])->where('user_id', $document->supplier->user_id)->first();
+                            $company = $user->user->userDetail;
+                            $company->email = $user->user->email;
+                            $company->name = $user->user->name;
+                            $company->last_name = $user->user->last_name;
+                            $logo = $user->user->userDetail->logo_url ?? null;
+                        }
+
+                        Mail::to($recipientEmail)->send(
+                            new SignedDocumentMail(
+                                null, 
+                                $attachFile ? $pdfFullPath : '', 
+                                $document, 
+                                $downloadUrl, 
+                                $attachFile, 
+                                null,
+                                $logo
+                            )
+                        );
                     }
                 }
             } catch (\Exception $e) {
@@ -905,19 +962,8 @@ class SignatureController extends Controller
         $signatureImageSrc = 'data:image/png;base64,' . $imageData;
 
         // 3. Prepare data for the view, including the user and the signature.
-        if ($agreement->supplier && is_null($agreement->supplier->boss_id)) {//supplier
-            $user = UserDetails::with(['user'])->find($agreement->supplier->user_id);
-            $company = $user->user->userDetail;
-            $company->email = $user->user->email;
-            $company->name = $user->user->name;
-            $company->last_name = $user->user->last_name;
-        } else if ($agreement->supplier && !is_null($agreement->supplier->boss_id)) {//user
-            $user = User::with(['userDetail', 'supplier.boss.user.userDetail'])->find($agreement->supplier->user_id);
-            $company = $user->supplier->boss->user->userDetail;
-            $company->email = $user->supplier->boss->user->email;
-            $company->name = $user->supplier->boss->user->name;
-            $company->last_name = $user->supplier->boss->user->last_name;
-        } else { //Admin
+        if($agreement->supplier_id === null) {
+            //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
@@ -953,6 +999,14 @@ class SignatureController extends Controller
             
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+            $logo = $user->user->userDetail->logo_url ?? null;
         }
 
         $data = [

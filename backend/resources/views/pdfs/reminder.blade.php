@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Påminnelse</title>
     </head>
-     <style>
+    <style>
 
         /* Using fonts from storage/fonts - synced between local and server */
         body {
@@ -13,7 +13,7 @@
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
-            color: #33303CAD;
+            color: #454545;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
         }
@@ -21,22 +21,19 @@
         table {
             border-radius: 16px !important;
             border-spacing: unset;
-            font-size: 0.8rem;
+            font-size: 12px;
             font-weight: 400;
-        }
-
-        table thead {
-            font-weight: 700;
         }
 
         .faktura {
             font-family: 'gelion', 'dm sans', sans-serif;
             font-size: 32px;
-            font-weight: 700;
+            font-weight: 600;
             color: #454545;
-            border-top: 2px solid #454545;
-            border-bottom: 2px solid #454545;
-            padding: 4px 0;
+            border-top: 1px solid #454545;
+            border-bottom: 1px solid #454545;
+            padding: 8px 16px 4px 16px;
+            line-height: 0.6;
             display: inline-block;
             letter-spacing: 0 !important;
         }
@@ -44,11 +41,9 @@
         .table-items {
             font-family: 'gelion', 'dm sans', sans-serif !important;
             margin-top: 10px;
-            border-radius: 8px !important;
-            border-width: thin !important;
-            border-style: solid !important;
-            border-color: rgba(47,43,61, 0.16) !important;
+            border-radius: 32px !important;
             letter-spacing: 0 !important;
+            line-height: 0.6;
         }
 
         .table-supplier {
@@ -57,7 +52,38 @@
         }
 
         .invoice-background {
+            background-color: #E7E7E7;
+        }
+
+        .bg-items {
             background-color: #F6F6F6;
+        }
+
+        .bg-items td:first-child {
+            border-top-left-radius: 32px !important;
+            border-bottom-left-radius: 32px !important;
+        }
+
+        .bg-items td:last-child {
+            border-top-right-radius: 32px !important;
+            border-bottom-right-radius: 32px !important;
+        }
+
+        .box-logo {
+            width: 160px;
+            height: 72px;
+            background: white;
+            border-radius: 8px;
+            position: relative;
+            padding: 8px;
+        }
+
+        .box-logo img {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .table-background-top {
@@ -70,20 +96,16 @@
             border-top-right-radius: 0 !important;
         }
 
-        .invoice-background td:first-child {
-            border-top-left-radius: 8px !important;
-        }
-
-        .invoice-background td:last-child {
-            border-top-right-radius: 8px !important;
-        }
-
         .data-from {
-            padding: 32px;
+            padding: 16px;
         }
 
         .m-0 {
             margin: 0;
+        }
+
+        .mt-5 {
+            margin-top: 5px;
         }
 
         .mt-10 {
@@ -96,6 +118,14 @@
 
         .pr-0 {
             padding-right: 0;
+        }
+
+        .pt-0 {
+            padding-top: 0;
+        }
+
+        .pb-0 {
+            padding-bottom: 0;
         }
 
         .info-total table tr {
@@ -114,20 +144,24 @@
         .border-top {
             border-top-width: thin !important;
             border-top-style: solid !important;
-            border-top-color: rgba(47,43,61, 0.16) !important;
+            border-top-color: #E7E7E7 !important;
             border-radius: 0 !important;
         }
 
         .info-supplier {
             display: flex;
             flex-direction: column;
-            width: auto;
+            width: auto;            
+        }
+
+        .style-supplier {
+            color: #878787;
         }
 
         .table-supplier td {
             vertical-align: top;
         }
-    </style> 
+    </style>
     <body>
         <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
             <tbody>
@@ -135,8 +169,8 @@
                     <td>
                         <table width="100%" class="invoice-background table-background-top">
                             <tr>
-                                <td width="35%" class="data-from pb-0">
-                                    <div class="d-flex align-center mb-6">
+                                <td width="35%" class="data-from">
+                                     <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
                                         @if($company->logo)
                                             <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
@@ -148,27 +182,18 @@
                                         @endif
                                     </div>
                                 </td>
-                               <td width="65%" class="data-from pb-0">
+                               <td width="65%" class="data-from">
                                     <div style="text-align: right;">
                                         <span class="m-0 faktura">
                                             PÅMINNELSE
                                         </span>
-                                        <h3 class="m-0 mt-10" style="text-align: right;">
-                                            {{$billing->client->fullname}}
-                                        </h3> 
-                                        @if($billing->reference)
-                                        <div style="text-align: right;">
-                                            <span width="30%">Vår referens: </span>
-                                            <span>{{ $billing->reference }}</span>
-                                        </div>
-                                        @endif 
                                     </div>
                                 </td>
                             </tr>
                         </table>
                         <table width="100%" class="invoice-background table-background-bottom">
                             <tr>
-                                <td width="65%" class="data-from pt-8">
+                                <td width="65%" class="data-from pt-0">
                                     <table width="100%" class="invoice-background">
                                         <tr class="font-weight-medium m-0 d-flex">
                                             <td width="30%">
@@ -206,12 +231,18 @@
  
                                     <p class="mt-20 m-0">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
                                 </td>
-                                <td width="35%" class="data-from pt-8" style="vertical-align: bottom;">
-                                    <div class="mt-auto number-invoice">
-                                        <h4 class="font-weight-medium m-0">
-                                            Faktureringsadress
-                                        </h4>
-                                        <span class="number-invoice">
+                                <td width="35%" class="data-from pt-0" style="vertical-align: top;">
+                                    <h3 class="m-0" style="text-align: right;">
+                                        {{$billing->client->fullname}}
+                                    </h3> 
+                                    @if($billing->reference)
+                                    <div style="text-align: right;">
+                                        <span width="30%">Vår referens: </span>
+                                        <span>{{ $billing->reference }}</span>
+                                    </div>
+                                    @endif 
+                                    <div style="text-align: right;" class="mt-5 number-invoice">
+                                        <span class="number-invoice" style="line-height: 0.8;">
                                             <p class="m-0">{{ $billing->client->address }}</p>
                                             <p class="m-0">{{ $billing->client->postal_code }}</p>
                                             <p class="m-0">{{ $billing->client->street }}</p>
@@ -226,15 +257,15 @@
                 <tr>
                     <td>
                         <table width="100%" class="table-items">
-                            <thead class="invoice-background">
+                            <thead class="bg-items">
                                 <tr>
                                     @foreach($types as $key => $type)
                                     <td 
                                         style="
                                             text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
                                             width: {{$type->type_id === 1 ? '40' : '15' }}%; 
-                                            {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 10px !important;
-                                            height: 40px !important;"> 
+                                            {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 16px !important;
+                                            height: 48px !important;">
                                         {{ $type->name }}
                                     </td>
                                     @endforeach
@@ -243,25 +274,25 @@
                                         style="
                                             text-align: right!important;
                                             width: 15%; 
-                                            padding-right: 10px !important;
-                                            height: 40px !important;"> 
+                                            padding-right: 16px !important;
+                                            height: 48px !important;"> 
                                         Rabbat
                                     </td>
                                     @endif
                                 </tr>
                             </thead>
                             @foreach($invoices as $rowIndex => $row)
-                                <tr style="height: 40px !important;">
+                                <tr style="height: 48px !important;">
                                     @foreach($row as $colIndex => $column)
                                         @isset($column['id'])
                                             @if($column['id'] < 5)
                                             <td 
                                                 style="
                                                 text-align: {{ $column['id'] === 1 ? ' start' : 'right' }}!important;
-                                                {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 10px !important;
-                                                height: 40px !important; 
-                                                border-top: 1px solid #D9D9D9;">
-                                                <span style="{{ $column['id'] === 1 ? 'font-weight: 700;' : 'font-weight: 400;' }}">
+                                                {{ $column['id'] === 1 ? 'padding-left' : 'padding-right' }}: 16px !important;
+                                                height: 48px !important; 
+                                                border-bottom: 1px solid #E7E7E7;">
+                                                <span>
                                                 {{ ($column['id'] === 2 || $column['id'] === 3)
                                                     ? formatCurrency($column['value'])
                                                     : $column['value'] 
@@ -269,13 +300,13 @@
                                                 </span>
                                             </td>
                                             @elseif($column['id'] === 5 && $billing->rabatt)
-                                            <td 
+                                           <td 
                                                 style="
                                                 text-align: right!important;
-                                                padding-right: 10px!important;
-                                                height: 40px !important; 
-                                                border-top: 1px solid #D9D9D9;">
-                                                <span style="font-weight: 400;">
+                                                padding-right: 16px!important;
+                                                height: 48px !important; 
+                                                border-bottom: 1px solid #E7E7E7;">
+                                                <span>
                                                 {{ formatCurrency($column['value'])}} %
                                                 </span>
                                             </td>
@@ -284,11 +315,11 @@
                                         <td 
                                             colspan="{{ $billing->rabatt ? 5 : 4 }}"
                                             style="
-                                            padding-left: 10px !important; 
+                                            padding-left: 16px !important; 
                                             text-align: start !important; 
-                                            height: 40px !important; 
-                                            border-top: 1px solid #D9D9D9;">
-                                            <span style="font-weight: 700;">
+                                            height: 48px !important; 
+                                            border-bottom: 1px solid #E7E7E7;">
+                                            <span>
                                             {{ $column['note'] }}
                                             </span>
                                         </td>
@@ -348,7 +379,7 @@
                     </td>
                 </tr>
             </table>
-            <table width="100%" class="table-supplier border-top mt-10">
+            <table width="100%" class="table-supplier border-top mt-10 style-supplier">
                 <tr>
                     <td width="25%">
                         <p class="m-0 info-supplier">

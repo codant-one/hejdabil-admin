@@ -837,6 +837,7 @@ const handleSendPayout = () => {
             <th scope="col" class="text-center"> Personnummer </th>
             <th scope="col" class="text-center"> Mobilnummer </th>
             <th scope="col" class="text-center"> Belopp </th>
+            <th scope="col" v-if="(role === 'SuperAdmin' || role === 'Administrator')"> Leverantör </th>
             <th scope="col" class="text-center"> Status </th>
             <th scope="col"> Skapad av </th>
             <th scope="col" v-if="$can('edit', 'payouts') || $can('delete', 'payouts')"></th>
@@ -853,6 +854,12 @@ const handleSendPayout = () => {
             <td class="text-center"> {{ payout.payee_ssn ?? ''}} </td>
             <td class="text-center"> +{{ payout.payee_alias ?? ''}} </td>
             <td class="text-center"> {{ formatNumber(payout.amount ?? 0) }} kr</td>
+            <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator')">
+              <span v-if="payout.supplier">
+                {{ payout.supplier.user.name }}
+                {{ payout.supplier.user.last_name ?? "" }}
+              </span>
+            </td>
             <!-- 😵 Statuses -->
             <td class="text-center text-wrap d-flex justify-center align-center">
               <div

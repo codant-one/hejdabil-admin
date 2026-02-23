@@ -557,6 +557,35 @@ const closeRoleDetailDialog = function(){
                                         :readonly="readonly"
                                     />
                                 </div>
+                                <VLabel style="font-weight: bold;">
+                                    Land
+                                </VLabel>
+                                <div class="demo-space-x ml-5">
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="view countries"
+                                        value="view countries"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="create countries"
+                                        value="create countries"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="edit countries"
+                                        value="edit countries"
+                                        :readonly="readonly"
+                                    />
+                                    <VCheckbox
+                                        v-model="permissions"
+                                        label="delete countries"
+                                        value="delete countries"
+                                        :readonly="readonly"
+                                    />
+                                </div>
                             </div>
                         </VCardText>
                     </div>
