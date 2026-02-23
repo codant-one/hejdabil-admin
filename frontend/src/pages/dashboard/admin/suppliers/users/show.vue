@@ -88,7 +88,7 @@ const closeUserDetailDialog = function() {
         <VCard >
             <VCardText class="dialog-title-box">
                 <div class="w-100 d-flex flex-column align-start gap-2">
-                    <div class="dialog-title">
+                    <div class="dialog-title text-aqua">
                         {{ name }} {{ last_name }}
                     </div>
                     <div class="dialog-text">

@@ -434,18 +434,18 @@ const goToProfile = () => {
                                             :rules="[requiredValidator,emailValidator]"
                                             />
                                         </div>
-                                        <div v-if="false" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Lösenord*" />
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Lösenord" />
                                             <VTextField
-                                                v-model="password"
+                                                v-model="email"
+                                                disabled
                                                 :type="isPasswordVisible ? 'text' : 'password'"
                                                 :append-inner-icon="isPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                                                :rules="[passwordValidator]"
                                                 @click:append-inner="isPasswordVisible = !isPasswordVisible"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />
                                             <VTextField
                                             v-model="phone"
                                             type="tel"
@@ -454,10 +454,9 @@ const goToProfile = () => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress" />
-                                            <VTextarea
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
+                                            <VTextField
                                             v-model="address"
-                                            rows="3"
                                             :rules="[requiredValidator]"
                                             />
                                         </div>

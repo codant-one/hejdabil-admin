@@ -481,7 +481,7 @@ const goToProfile = () => {
                                                 v-model="password"
                                                 :type="isPasswordVisible ? 'text' : 'password'"
                                                 :append-inner-icon="isPasswordVisible ? 'custom-eye-off' : 'custom-eye'"
-                                                :rules="[requiredValidator, passwordValidator]"
+                                                :rules="[requiredValidator]"
                                                 @click:append-inner="isPasswordVisible = !isPasswordVisible"
                                             />
                                         </div>
@@ -496,9 +496,8 @@ const goToProfile = () => {
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress" />
-                                            <VTextarea
+                                            <VTextField
                                             v-model="address"
-                                            rows="3"
                                             disabled
                                             />
                                         </div>

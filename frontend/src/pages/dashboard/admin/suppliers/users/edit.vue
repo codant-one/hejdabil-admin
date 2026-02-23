@@ -225,10 +225,9 @@ const onSubmitEdit = () =>{
                           cols="12"
                           md="12"
                         >
-                          <VTextarea
+                          <VTextField
                             v-model="address"
-                            rows="3"
-                            label="Adress"
+                            label="Adress*"
                             :rules="[requiredValidator]"
                           />
                         </VCol>

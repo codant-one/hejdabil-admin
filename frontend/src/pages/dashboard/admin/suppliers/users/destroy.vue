@@ -76,27 +76,35 @@ const deleteUser = function() {
   <VDialog
     :model-value="props.isDrawerOpen"
     persistent
-    class="v-dialog-sm"
+    class="action-dialog"
     >
     <!-- Dialog close btn -->
-    <DialogCloseBtn @click="closeUserDeleteDialog" />
+
+    <VBtn
+      icon
+      class="btn-white close-btn"
+      @click="closeUserDeleteDialog"
+    >
+      <VIcon size="16" icon="custom-close" />
+    </VBtn>
 
     <!-- Dialog Content -->
-    <VCard title="Delete user">
-      <VDivider class="mt-4"/>
-      <VCardText>
+    <VCard>
+      <VCardText class="dialog-title-box">
+        <VIcon size="32" icon="custom-filled-waste" class="action-icon" />
+        <div class="dialog-title">
+          Ta bort användare
+        </div>
+      </VCardText>
+      <VCardText class="dialog-text">
         Är du säker att du vill ta bort användaren <strong>{{ user.email }}</strong>?
       </VCardText>
 
-      <VCardText class="d-flex justify-end gap-3 flex-wrap">
-        <VBtn 
-          color="secondary"
-          variant="tonal"
-          @click="closeUserDeleteDialog"
-          >
+      <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+        <VBtn class="btn-light" @click="closeUserDeleteDialog">
           Avbryt
         </VBtn>
-        <VBtn @click="deleteUser" >
+        <VBtn class="btn-gradient" @click="deleteUser" >
           Radera
         </VBtn>
       </VCardText>

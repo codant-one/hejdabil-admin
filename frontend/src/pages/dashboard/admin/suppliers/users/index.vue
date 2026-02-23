@@ -19,6 +19,9 @@ import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 import passwordIcon from "@/assets/images/icons/figma/password.svg";
 
 const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
 const route = useRoute()
 
 const usersStores = useSuppliersStores()
@@ -255,6 +258,13 @@ const showAlert = function(alert) {
   advisor.value.message = alert.value.message
 }
 
+const truncateText = (text, length = 15) => {
+  if (text && text.length > length) {
+    return text.substring(0, length) + "...";
+  }
+  return text;
+};
+
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
@@ -286,292 +296,295 @@ const downloadCSV = async () => {
 
 <template>
   <section>
-    <VRow>
-      <LoadingOverlay :is-loading="isRequestOngoing" />
+    <LoadingOverlay :is-loading="isRequestOngoing" />
 
-      <VCol cols="12">
-        <VAlert
-          v-if="advisor.show"
-          :type="advisor.type"
-          class="mb-6">
-            {{ advisor.message }}
-        </VAlert>
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar> 
 
-        <VCard v-if="users" class="card-fill" id="rol-list" >
-          <VCardTitle
-            class="d-flex gap-6 justify-space-between"
-            :class="[
-              windowWidth < 1024 ? 'flex-column' : 'flex-row',
-              $vuetify.display.mdAndDown ? 'py-6 pa-2' : 'pa-4'
-            ]"
+    <VCard v-if="users" class="card-fill" id="rol-list" >
+      <VCardTitle
+        class="d-flex gap-6 justify-space-between"
+        :class="[
+          windowWidth < 1024 ? 'flex-column' : 'flex-row',
+          $vuetify.display.mdAndDown ? 'py-6 pa-0' : 'pa-4'
+        ]"
+      >
+        <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
+          <!-- 👉 Search  -->
+          <div class="search rol-list-filter">
+            <VTextField
+              v-model="searchQuery"
+              placeholder="Sök användare"
+              density="compact"
+              clearable
+            />
+          </div>
+        </div>
+        <div class="d-flex" :class="windowWidth < 1024 ? 'gap-2' : 'gap-4'">
+          <VBtn
+            class="btn-light w-auto"
+            block
+            @click="downloadCSV">
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
+
+          <VBtn
+            v-if="$can('create', 'users')"
+            class="btn-gradient"
+            block
+            @click="createUser">
+              <VIcon v-if="windowWidth >= 1024" icon="custom-plus" size="24" />
+              Lägg till medarbetare
+          </VBtn>
+        </div>
+      </VCardTitle>
+
+      <!-- SECTION Table -->
+      <VTable 
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="users.length"
+        class="pt-2 px-4 pb-6 text-no-wrap rol-list-table"
+        style="border-radius: 0 !important"
+      >
+        <!-- 👉 Table head -->
+        <thead>
+          <tr>
+            <th scope="col"> #ID </th> 
+            <th scope="col"> Namn </th>
+            <th class="text-center" scope="col"> E-post </th>
+            <th class="text-center" scope="col"> Telefon </th>
+            <th scope="col" class="text-center">Adress</th>
+            <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
+          </tr>
+        </thead>
+
+        <!-- 👉 Table Body -->
+        <tbody>
+          <tr
+            v-for="user in users"
+            :key="user.user.id"
+            style="height: 3rem;"
           >
-            <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
-              <!-- 👉 Search  -->
-              <div class="search rol-list-filter">
-                <VTextField
-                  v-model="searchQuery"
-                  placeholder="Sök användare"
-                  density="compact"
-                  clearable
+            <!-- 👉 Id -->
+            <td>
+              #{{ user.order_id }}
+            </td>
+
+            <!-- 👉 name -->
+            <td>
+              <div
+                class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
+                @click="showUserDetailDialog(user.user)"
+              >
+                <span class="flex-grow break-words">
+                  {{ user.user.name }}  {{ user.user.last_name ?? '' }}
+                </span>
+
+                <VIcon
+                  class="flex-shrink-0"
+                  icon="custom-arrow-right"
+                  size="22"
                 />
               </div>
-            </div>
-            <div class="d-flex gap-4">
-              <VBtn
-                class="btn-light w-auto"
-                block
-                @click="downloadCSV">
-                <VIcon icon="custom-export" size="24" />
-                Exportera
-              </VBtn>
+            </td>
 
-              <VBtn
-                v-if="$can('create', 'users')"
-                class="btn-gradient"
-                block
-                @click="createUser">
-                  <VIcon icon="custom-plus" size="24" />
-                  Lägg till medarbetare
-              </VBtn>
-            </div>
-          </VCardTitle>
+            <!-- 👉 correo -->
+            <td class="text-center">
+              {{ user.user.email }}
+            </td>
 
-          <!-- SECTION Table -->
-          <VTable 
-            v-if="!$vuetify.display.mdAndDown"
-            class="pt-2 px-4 pb-6 text-no-wrap rol-list-table"
-            style="border-radius: 0 !important"
-          >
-            <!-- 👉 Table head -->
-            <thead>
-              <tr>
-                <th scope="col"> #ID </th> 
-                <th scope="col"> Namn </th>
-                <th class="text-center" scope="col"> E-post </th>
-                <th class="text-center"scope="col"> Telefon </th>
-                <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
-              </tr>
-            </thead>
-
-            <!-- 👉 Table Body -->
-            <tbody>
-              <tr
-                v-for="user in users"
-                :key="user.user.id"
-                style="height: 3rem;"
-              >
-                <!-- 👉 Id -->
-                <td>
-                  #{{ user.order_id }}
-                </td>
-
-                <!-- 👉 name -->
-                <td>
-                  <div
-                    class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
-                    @click="showUserDetailDialog(user.user)"
-                  >
-                    <span class="flex-grow break-words">
-                      {{ user.user.name }}  {{ user.user.last_name ?? '' }}
-                    </span>
-
-                    <VIcon
-                      class="flex-shrink-0"
-                      icon="custom-arrow-right"
-                      size="22"
-                    />
-                  </div>
-                </td>
-
-                <!-- 👉 correo -->
-                <td class="text-center">
-                  {{ user.user.email }}
-                </td>
-
-                <!-- 👉 phone -->
-                <td class="text-center">
-                  {{ user.user.user_detail?.personal_phone ?? '----' }}
-                </td>
-                <!-- 👉 Actions -->
-                <td style="width: 3rem;">
-                  <VMenu>
-                    <template #activator="{ props }">
-                      <VBtn v-bind="props" icon variant="text" class="btn-white">
-                        <VIcon icon="custom-dots-vertical" size="22" />
-                      </VBtn>
+            <!-- 👉 phone -->
+            <td class="text-center">
+              {{ user.user.user_detail?.personal_phone ?? '----' }}
+            </td>
+            <td class="text-center">
+              <VTooltip 
+                v-if="user.user.user_detail?.personal_address && user.user.user_detail.personal_address.length > 20"
+                location="bottom"
+                max-width="300">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer">
+                    {{ truncateText(user.user.user_detail.personal_address, 20) }}
+                  </span>
+                </template>
+                <span>{{ user.user.user_detail.personal_address }}</span>
+              </VTooltip>
+              <span v-else>{{ user.user.user_detail.personal_address }}</span>
+            </td>
+            <!-- 👉 Actions -->
+            <td style="width: 3rem;">
+              <VMenu>
+                <template #activator="{ props }">
+                  <VBtn v-bind="props" icon variant="text" class="btn-white">
+                    <VIcon icon="custom-dots-vertical" size="22" />
+                  </VBtn>
+                </template>
+                <VList>
+                  <VListItem
+                      v-if="$can('view', 'users')"
+                      @click="showUserDetailDialog(user.user)">
+                    <template #prepend>
+                      <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
                     </template>
-                    <VList>
-                      <VListItem
-                         v-if="$can('view', 'users')"
-                         @click="showUserDetailDialog(user.user)">
-                        <template #prepend>
-                          <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Visa</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'users') && user.deleted_at === null"
-                         @click="showUserPasswordDialog(user.user)">
-                        <template #prepend>
-                          <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Ändra lösenord</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                         v-if="$can('edit', 'users') && user.deleted_at === null"
-                         @click="showUserEditDialog(user)">
-                        <template #prepend>
-                          <img :src="editIcon" alt="Edit Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Redigera</VListItemTitle>
-                      </VListItem>
-                      <VListItem 
-                        v-if="$can('delete','users') && user.deleted_at === null"
-                        @click="showUserDeleteDialog(user.user)">
-                        <template #prepend>
-                          <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
-                        </template>
-                        <VListItemTitle>Ta bort</VListItemTitle>
-                      </VListItem>
-                      <VListItem
-                        v-if="$can('delete','users') && user.deleted_at !== null"
-                        @click="showActivateDialog(user)">
-                        <template #prepend>
-                          <VIcon icon="tabler-rosette-discount-check" />
-                        </template>
-                        <VListItemTitle>Aktivera</VListItemTitle>
-                      </VListItem>
-                    </VList>
-                  </VMenu>
-                </td>
-              </tr>
-            </tbody>
+                    <VListItemTitle>Visa</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      @click="showUserPasswordDialog(user.user)">
+                    <template #prepend>
+                      <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ändra lösenord</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      @click="showUserEditDialog(user)">
+                    <template #prepend>
+                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('delete','users') && user.deleted_at === null"
+                    @click="showUserDeleteDialog(user.user)">
+                    <template #prepend>
+                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ta bort</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('delete','users') && user.deleted_at !== null"
+                    @click="showActivateDialog(user)">
+                    <template #prepend>
+                      <VIcon icon="tabler-rosette-discount-check" />
+                    </template>
+                    <VListItemTitle>Aktivera</VListItemTitle>
+                  </VListItem>
+                </VList>
+              </VMenu>
+            </td>
+          </tr>
+        </tbody>
+      </VTable>
 
-            <!-- 👉 table footer  -->
-            <tfoot v-show="!users.length">
-              <tr>
-                <td
-                  colspan="6"
-                  class="text-center text-body-1"
-                >
-                  Det finns inga användare
-                </td>
-              </tr>
-            </tfoot>
-          </VTable>
-
-          <VExpansionPanels
-            class="expansion-panels pb-6 px-0"
-            v-if="users.length && windowWidth < 1024"
+      <VExpansionPanels
+        class="expansion-panels pb-6 px-0"
+        v-if="users.length && windowWidth < 1024"
+      >
+        <VExpansionPanel v-for="user in users" :key="user.id">
+          <VExpansionPanelTitle
+            collapse-icon="custom-dots-vertical"
+            expand-icon="custom-dots-vertical"
+            @click="selectedUserForAction = user; isMobileActionDialogVisible = true"
           >
-            <VExpansionPanel v-for="user in users" :key="user.id">
-              <VExpansionPanelTitle
-                collapse-icon="custom-dots-vertical"
-                expand-icon="custom-dots-vertical"
-                @click="selectedUserForAction = user; isMobileActionDialogVisible = true"
-              >
-                <div class="d-flex align-center w-100">
-                    <span class="order-id">{{  user.order_id }}</span>
+            <div class="d-flex align-center w-100">
+                <span class="order-id">{{  user.order_id }}</span>
 
-                    <div class="d-flex flex-column gap-1">
-                        <span class="text-aqua">{{ user.user.name }}  {{ user.user.last_name ?? '' }}</span>
-                        <span class="text-neutral-3">{{ user.user.email }}</span>
-                        <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
-                    </div>
+                <div class="d-flex flex-column gap-1">
+                    <span class="text-aqua">{{ user.user.name }}  {{ user.user.last_name ?? '' }}</span>
+                    <span class="text-neutral-3">{{ user.user.email }}</span>
+                    <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
                 </div>
-              </VExpansionPanelTitle>
-            </VExpansionPanel>
-          </VExpansionPanels>
-
-          <div
-            v-if="!isRequestOngoing && hasLoaded && !users.length"
-            class="empty-state"
-            :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
-          >
-            <VIcon
-              :size="$vuetify.display.mdAndDown ? 80 : 120"
-              icon="custom-f-user"
-            />
-            <div class="empty-state-content">
-              <div class="empty-state-title">Du har inga användare än</div>
-              <div class="empty-state-text">
-                Lägg till dina användare här för att snabbt skapa fakturor och hålla
-                ordning på dina kontakter.
-              </div>
             </div>
-            <VBtn
-              class="btn-ghost"
-              v-if="$can('create', 'users') && !$vuetify.display.mdAndDown"
-              @click="createUser"
-            >
-              Lägg till ny användare
-              <VIcon icon="custom-arrow-right" size="24" />
-            </VBtn>
+          </VExpansionPanelTitle>
+        </VExpansionPanel>
+      </VExpansionPanels>
 
-            <VBtn
-              class="btn-ghost"
-              v-if="$vuetify.display.mdAndDown && $can('create', 'users')"
-              @click="createUser"
-            >
-              Lägg till ny användare
-              <VIcon icon="custom-arrow-right" size="24" />
-            </VBtn>
+      <div
+        v-if="!isRequestOngoing && hasLoaded && !users.length"
+        class="empty-state"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-user"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Inga medarbetare inlagda än</div>
+          <div class="empty-state-text">
+            Bjud in dina kollegor för att samarbeta kring försäljning, fakturering och lagerhantering. 
+            Ge rätt behörigheter till rätt person och jobba effektivare tillsammans.
           </div>
-          <!-- !SECTION -->
+        </div>
+        <VBtn
+          class="btn-ghost"
+          v-if="$can('create', 'users') && !$vuetify.display.mdAndDown"
+          @click="createUser"
+        >
+          Lägg till medarbetare
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
 
-          <!-- SECTION Pagination -->
-          <VCardText
-            v-if="users.length"
-            :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-            class="align-center flex-wrap gap-4 pt-0 px-6"
-          >
-            <span class="text-pagination-results">
-              {{ paginationData }}
-            </span>
+        <VBtn
+          class="btn-ghost"
+          v-if="$vuetify.display.mdAndDown && $can('create', 'users')"
+          @click="createUser"
+        >
+          Lägg till ny användare
+          <VIcon icon="custom-arrow-right" size="24" />
+        </VBtn>
+      </div>
+      <!-- !SECTION -->
 
-            <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+      <!-- SECTION Pagination -->
+      <VCardText
+        v-if="users.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-6"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
 
-            <VPagination
-              v-model="currentPage"
-              size="small"
-              :total-visible="4"
-              :length="totalPages"
-              next-icon="custom-chevron-right"
-              prev-icon="custom-chevron-left"
-            />
-          </VCardText>
+        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-          <show 
-            v-model:isDrawerOpen="isUserDetailDialog"
-            :user="selectedUser"
-            :readonly="readonly"
-            @close="permissionsRol = []"
-            @readonly="readonly = false"/>
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
 
-          <password
-            v-model:isDrawerOpen="isUserPasswordDialog"
-            :user="selectedUser"
-            @data="fetchData"
-            @alert="showAlert"/>
+      <show 
+        v-model:isDrawerOpen="isUserDetailDialog"
+        :user="selectedUser"
+        :readonly="readonly"
+        @close="permissionsRol = []"
+        @readonly="readonly = false"/>
 
-          <edit
-            v-model:isDrawerOpen="isUserEditDialog"
-            :user="selectedUser"
-            :readonly="readonly"
-            @data="fetchData"
-            @alert="showAlert"
-            @close="permissionsRol = []"
-            @readonly="readonly = true"/>
+      <password
+        v-model:isDrawerOpen="isUserPasswordDialog"
+        :user="selectedUser"
+        @data="fetchData"
+        @alert="showAlert"/>
 
-          <destroy 
-            v-model:isDrawerOpen="isUserDeleteDialog"
-            :user="selectedUser"
-            @data="fetchData"
-            @alert="showAlert"/>
+      <edit
+        v-model:isDrawerOpen="isUserEditDialog"
+        :user="selectedUser"
+        :readonly="readonly"
+        @data="fetchData"
+        @alert="showAlert"
+        @close="permissionsRol = []"
+        @readonly="readonly = true"/>
 
-        </VCard>
-      </VCol>
-    </VRow>
+      <destroy 
+        v-model:isDrawerOpen="isUserDeleteDialog"
+        :user="selectedUser"
+        @data="fetchData"
+        @alert="showAlert"/>
+
+    </VCard>
 
     <!-- 👉 Confirm activate user -->
     <VDialog
