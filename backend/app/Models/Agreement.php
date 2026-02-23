@@ -759,6 +759,8 @@ class Agreement extends Model
         VehicleClient::createClient($request);
         
         $vehicle = Vehicle::with(['client_purchase'])->find($vehicle->id);
+        $request->request->add(['state_id' => 10]);
+        $vehicle->updateVehicle($request, $vehicle);
 
         //Set VehicleClient ID
         if ($request->has("client_id"))

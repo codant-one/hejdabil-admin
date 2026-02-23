@@ -1160,6 +1160,7 @@ onBeforeRouteLeave((to, from, next) => {
             ref="refForm"
             class="card-form"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit"
         >
             <VCard
@@ -1953,10 +1954,11 @@ onBeforeRouteLeave((to, from, next) => {
                             Tillbaka
                         </VBtn>
                         <VBtn 
-                            type="submit" 
+                            type="button" 
                             :block="windowWidth < 1024"
                             class="btn-gradient"
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            @click="onSubmit"
                         >
                             <VIcon v-if="currentTab === 5" icon="custom-save"  size="24" />
                             {{ (currentTab === 5) ? 'Skapa' : 'Nästa' }}
