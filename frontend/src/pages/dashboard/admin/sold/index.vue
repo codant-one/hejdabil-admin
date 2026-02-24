@@ -745,9 +745,6 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
         <VCardText class="dialog-text">
-          <!-- Är du säker att du vill ta bort klienten
-          <strong>{{ selectedClient.fullname }}</strong
-          >? -->
           Detta raderar permanent posten för det sålda fordonet <strong>"{{ selectedVehicle.reg_num }}"</strong> från 
           din försäljningshistorik. Åtgärden kan inte ångras.
         </VCardText>

@@ -10,12 +10,39 @@ export const useNotificationsStore = defineStore('notifications', {
     notifications: [],
     initialized: false,
     privateChannelSubscribed: false,
+    privateChannelUserId: null,
   }),
   actions: {
+    getStoredUserId() {
+      const userData = localStorage.getItem('user_data')
+
+      if (!userData)
+        return null
+
+      try {
+        const user = JSON.parse(userData)
+
+        return user?.id ?? null
+      } catch (error) {
+        return null
+      }
+    },
+
     async init(userId = null) {
-      
-      if (this.initialized)
+      const resolvedUserId = userId ?? this.getStoredUserId()
+
+      if (this.initialized) {
+        if (
+          resolvedUserId
+          && (
+            !this.privateChannelSubscribed
+            || this.privateChannelUserId !== resolvedUserId
+          )
+        )
+          this.subscribeToPrivateChannel(resolvedUserId)
+
         return
+      }
       this.initialized = true
 
       // Cargar notificaciones guardadas desde la base de datos
@@ -53,8 +80,8 @@ export const useNotificationsStore = defineStore('notifications', {
             })
           
           // Canal privado (notificaciones específicas del usuario)
-          if (userId) {
-            this.subscribeToPrivateChannel(userId)
+          if (resolvedUserId) {
+            this.subscribeToPrivateChannel(resolvedUserId)
           } else {
             //console.warn('⚠️ No userId provided, skipping private channel subscription')
           }
@@ -85,11 +112,20 @@ export const useNotificationsStore = defineStore('notifications', {
      * @param {number} userId - ID del usuario
      */
     subscribeToPrivateChannel(userId) {
-      if (this.privateChannelSubscribed || !window.Echo) {
+      if (!userId || !window.Echo) {
+        return
+      }
+
+      if (this.privateChannelSubscribed && this.privateChannelUserId === userId) {
         return
       }
 
       try {
+        if (this.privateChannelUserId) {
+          window.Echo.leaveChannel(`private-notifications.${this.privateChannelUserId}`)
+          this.privateChannelSubscribed = false
+        }
+
         // Actualizar el token de autorización en Echo antes de suscribirse
         const token = localStorage.getItem('accessToken')
         
@@ -112,12 +148,20 @@ export const useNotificationsStore = defineStore('notifications', {
           })
 
         this.privateChannelSubscribed = true
+        this.privateChannelUserId = userId
       } catch (err) {
         console.error('❌ Error subscribing to private notifications:', err)
       }
     },
 
     forceLogout(message = 'Ditt konto har inaktiverats.') {
+      if (window?.Echo && this.privateChannelUserId) {
+        try {
+          window.Echo.leaveChannel(`private-notifications.${this.privateChannelUserId}`)
+        } catch (error) {
+        }
+      }
+
       localStorage.removeItem('user_data')
       localStorage.removeItem('userAbilities')
       localStorage.removeItem('accessToken')
@@ -128,6 +172,10 @@ export const useNotificationsStore = defineStore('notifications', {
         } catch (error) {
         }
       }
+
+      this.privateChannelSubscribed = false
+      this.privateChannelUserId = null
+      this.initialized = false
 
       const loginRoute = { name: 'login' }
       const query = { reason: 'force_logout', message }

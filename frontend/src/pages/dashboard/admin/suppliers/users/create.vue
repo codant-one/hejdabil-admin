@@ -27,6 +27,9 @@ const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const isPasswordVisible = ref(false)
 const isUserPermissionsDialog = ref(false)
+const isReactivateUserDialog = ref(false)
+const isReactivatingUser = ref(false)
+const reactivationSupplierId = ref(null)
 
 const usersStores = useSuppliersStores()
 const emitter = inject("emitter")
@@ -115,6 +118,69 @@ const showError = () => {
     }, 3000);
 
 };
+
+const closeReactivateUserDialog = function() {
+    isReactivateUserDialog.value = false
+    reactivationSupplierId.value = null
+}
+
+const getEmailValidationMessage = function(error) {
+    if (error?.feedback !== 'params_validation_failed')
+        return ''
+
+    if (error.message?.hasOwnProperty('email') && Array.isArray(error.message.email) && error.message.email.length > 0)
+        return error.message.email[0]
+
+    if (typeof error.message === 'string')
+        return error.message
+
+    return ''
+}
+
+const reactivateUserAccount = async function() {
+    if (!reactivationSupplierId.value) {
+        closeReactivateUserDialog()
+        return
+    }
+
+    isReactivatingUser.value = true
+    isRequestOngoing.value = true
+
+    try {
+        const response = await usersStores.activateSupplier(reactivationSupplierId.value)
+
+        closeReactivateUserDialog()
+
+        let data = {
+            message: response.data.message || 'Användaren har återaktiverats!',
+            error: false
+        }
+
+        allowNavigation.value = true
+        emitter.emit('toast', data)
+        router.push({ name : 'dashboard-profile', query: { tab: 'mitt-team' } })
+
+    } catch (error) {
+        closeReactivateUserDialog()
+
+        advisor.value = {
+            show: true,
+            type: 'error',
+            message: error?.message || 'Ett serverfel uppstod. Försök igen.'
+        }
+
+        setTimeout(() => {
+            advisor.value = {
+                type: '',
+                message: '',
+                show: false
+            }
+        }, 5000)
+    } finally {
+        isReactivatingUser.value = false
+        isRequestOngoing.value = false
+    }
+}
 
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
@@ -208,7 +274,24 @@ const onSubmit = async () => {
                         }
                         isRequestOngoing.value = false
                     })
-                    .catch((error) => {
+                    .catch(async (error) => {
+                        const emailValidationMessage = getEmailValidationMessage(error)
+
+                        if (emailValidationMessage === 'En användare med den angivna e-postadressen finns redan.') {
+                            try {
+                                const inactiveUser = await usersStores.getInactiveUserByEmail(email.value)
+
+                                if (inactiveUser?.supplier_id) {
+                                    reactivationSupplierId.value = inactiveUser.supplier_id
+                                    isReactivateUserDialog.value = true
+                                    isRequestOngoing.value = false
+                                    return
+                                }
+                            } catch (lookupError) {
+                                reactivationSupplierId.value = null
+                            }
+                        }
+
                         err.value = error;
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
                         inteSkapatsDialog.value = true;
@@ -893,6 +976,50 @@ const goToProfile = () => {
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
                     <VBtn class="btn-light" @click="showError">
                         Försök igen
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+
+        <VDialog
+            v-model="isReactivateUserDialog"
+            persistent
+            class="action-dialog"
+        >
+            <!-- Dialog close btn -->
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="closeReactivateUserDialog"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+
+            <VCard>
+                <VCardText class="dialog-title-box">
+                    <VIcon size="32" icon="custom-user-outlined" class="action-icon" />
+                    <div class="dialog-title">
+                        Återaktivera konto
+                    </div>
+                </VCardText>
+                <VCardText class="dialog-text">
+                    Denna e-postadress är redan registrerad.<br>
+                    Användaren är för närvarande inaktiv.<br>
+                    Vill du återaktivera kontot?
+                </VCardText>
+                <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+                    <VBtn 
+                        class="btn-light" 
+                        @click="closeReactivateUserDialog"
+                    >
+                        Avbryt
+                    </VBtn>
+                    <VBtn
+                        class="btn-gradient"
+                        :loading="isReactivatingUser"
+                        @click="reactivateUserAccount"
+                    >
+                        Acceptera
                     </VBtn>
                 </VCardText>
             </VCard>
