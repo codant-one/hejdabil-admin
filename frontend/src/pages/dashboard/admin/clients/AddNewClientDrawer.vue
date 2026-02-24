@@ -225,6 +225,13 @@ const handleOrganizationNumberInput = () => {
   emit('resetDuplicate')
 }
 
+const truncateText = (text, length = 30) => {
+  if (text && text.length > length)
+    return text.substring(0, length) + '...'
+
+  return text
+}
+
 const isCompanyNumber = value => {
   const cleanNumber = (value ?? '').toString().replace(/[\s\-]/g, '')
   return cleanNumber.startsWith('5')
@@ -622,13 +629,14 @@ const onCountryFlagError = country => {
                   v-model="country_id"
                   label="Land*"
                   :items="countries"
-                  :item-title="item => item.name"
+                  :item-title="item => truncateText(item.name, 16)"
                   :item-value="item => item.id"
                   :rules="[requiredValidator]"
                   :menu-props="{ maxHeight: '200px' }"
                   autocomplete="off"
                   clearable
                   clear-icon="tabler-x"
+                  class="selector-country selector-truncate"
                 >
                   <template
                     v-if="country_id"
@@ -636,8 +644,8 @@ const onCountryFlagError = country => {
                     >
                     <VAvatar
                       start
-                      style="margin-top: -3px;"
-                      size="40">
+                      style="margin-top: -7px;"
+                      size="44">
                       <VImg
                         :src="getFlagCountry(country_id)"
                         cover
@@ -791,6 +799,13 @@ const onCountryFlagError = country => {
           opacity: 1 !important;
         }
     }
+
+    .selector-country {
+      .v-input__prepend {
+        margin-inline-end: 6px !important;
+      }
+    }
+
   }
 
   .org-number-duplicate {

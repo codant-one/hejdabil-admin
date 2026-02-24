@@ -453,6 +453,13 @@ const onCountryFlagError = country => {
     [selectedCountry.id]: true,
   }
 }
+
+const truncateText = (text, length = 30) => {
+  if (text && text.length > length)
+    return text.substring(0, length) + '...'
+
+  return text
+}
 </script>
 
 <template>
@@ -555,13 +562,14 @@ const onCountryFlagError = country => {
           v-model="country_id"
           label="Land*"
           :items="countries"
-          :item-title="item => item.name"
+          :item-title="item => truncateText(item.name, 35)"
           :item-value="item => item.id"
           :rules="[requiredValidator]"
           :menu-props="{ maxHeight: '200px' }"
           autocomplete="off"
           clearable
           clear-icon="tabler-x"
+          class="selector-country selector-truncate"
         >
           <template
             v-if="country_id"
@@ -569,8 +577,8 @@ const onCountryFlagError = country => {
             >
             <VAvatar
               start
-              style="margin-top: -3px;"
-              size="40">
+              style="margin-top: -7px;"
+              size="44">
               <VImg
                 :src="getFlagCountry(country_id)"
                 cover
@@ -723,6 +731,12 @@ const onCountryFlagError = country => {
         .v-field__append-inner {
           align-items: center;
           padding-top: 0px;
+        }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
         }
       }
 
