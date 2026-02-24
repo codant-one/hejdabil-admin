@@ -1,28 +1,18 @@
 <script setup>
 
-import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
-import create from './create.vue' 
+import { useSuppliersStores } from '@/stores/useSuppliers'
+import { excelParser } from '@/plugins/csv/excelParser'
 import show from './show.vue' 
-import password from './password.vue' 
-import edit from './edit.vue'
+import showMobile from './showMobile.vue' 
+import password from './password.vue'
 import destroy from './destroy.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-import { avatarText } from '@/@core/utils/formatters'
-import { useSuppliersStores } from '@/stores/useSuppliers'
-import { themeConfig } from '@themeConfig'
-import { excelParser } from '@/plugins/csv/excelParser'
 import router from '@/router'
-import eyeIcon from "@/assets/images/icons/figma/eye.svg";
-import editIcon from "@/assets/images/icons/figma/edit.svg";
-import wasteIcon from "@/assets/images/icons/figma/waste.svg";
-import passwordIcon from "@/assets/images/icons/figma/password.svg";
 
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
-
-const route = useRoute()
 
 const usersStores = useSuppliersStores()
 
@@ -33,11 +23,9 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalUsers = ref(0)
 
-const selectedRows = ref([])
-
+const isMobile = ref(false)
 const isUserDeleteDialog = ref(false)
 const isUserDetailDialog = ref(false)
-const isUserEditDialog = ref(false)
 const isUserPasswordDialog = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isMobileActionDialogVisible = ref(false);
@@ -134,8 +122,9 @@ async function fetchData() {
 }
 
 // show dialogs
-const showUserDetailDialog = function(user){
+const showUserDetailDialog = function(user, mobile = false){
   isUserDetailDialog.value = true
+  isMobile.value = mobile
   selectedUser.value = { ...user }
 
   permissionsRol.value = []
@@ -156,18 +145,6 @@ const showUserPasswordDialog = function(user){
 
 const showUserEditDialog = function(user){
   router.push({ name : 'dashboard-admin-suppliers-users-id', params: { id: user.id } })
-
-  // isUserEditDialog.value = true
-  // selectedUser.value = { ...user }
-
-  // permissionsRol.value = []
-
-  // selectedUser.value.permissions.forEach(function(pe) {
-  //     permissionsRol.value.push(pe.name)
-  // })
-
-  // selectedUser.value.assignedPermissions = permissionsRol
-  // readonly.value= false
 }
 
 const showUserDeleteDialog = function(user){
@@ -182,22 +159,6 @@ const showActivateDialog = supplierData => {
 
 const createUser = () => {
   router.push({ name : 'dashboard-admin-suppliers-users-create' })
-
-  // advisor.value = {
-  //   type: 'success',
-  //   message: 'OK OK OK',
-  //   show: true
-  // }
-
-  // setTimeout(() => {
-  //   advisor.value = {
-  //     type: '',
-  //     message: '',
-  //     show: false
-  //   }
-  // }, 3000)
-
-  // return true
 }
 
 const activateUser = async () => {
@@ -224,24 +185,6 @@ const activateUser = async () => {
   return true
 }
 
-const online = id =>{
-
-  let uo = userOnline.value.find(user => user.id == id )
-  let current = new Date()
-  let online = new Date(2000, 0, 1, 12, 0, 0)
-
-  if(uo && uo.online!=null)
-    online = new Date(uo.online)
-
-  let gapSeconds = Math.abs((online.getTime() - current.getTime()) / 1000)
-
-  if(gapSeconds>120) {
-    return 'error'
-  } else {
-    return 'success'
-  }  
-}
-
 onMounted(()=>{
   interval = setInterval(()=>{
     onlineList()
@@ -256,6 +199,11 @@ const showAlert = function(alert) {
   advisor.value.show = alert.value.show
   advisor.value.type = alert.value.type
   advisor.value.message = alert.value.message
+}
+
+const openMobileActionDialog = user => {
+  selectedUserForAction.value = user
+  isMobileActionDialogVisible.value = true
 }
 
 const truncateText = (text, length = 15) => {
@@ -309,6 +257,11 @@ const downloadCSV = async () => {
     </VSnackbar> 
 
     <VCard v-if="users" class="card-fill" id="rol-list" >
+      <VCardText class="px-0" :class="windowWidth < 1024 ? 'pb-0' : 'd-none'">
+        <div class="title-tabs-profile">
+          Mitt team
+        </div>
+      </VCardText>
       <VCardTitle
         class="d-flex gap-6 justify-space-between"
         :class="[
@@ -316,7 +269,7 @@ const downloadCSV = async () => {
           $vuetify.display.mdAndDown ? 'py-6 pa-0' : 'pa-4'
         ]"
       >
-        <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto"> 
+        <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto mobile-search-block"> 
           <!-- 👉 Search  -->
           <div class="search rol-list-filter">
             <VTextField
@@ -327,7 +280,7 @@ const downloadCSV = async () => {
             />
           </div>
         </div>
-        <div class="d-flex" :class="windowWidth < 1024 ? 'gap-2' : 'gap-4'">
+        <div class="d-flex mobile-actions-block" :class="windowWidth < 1024 ? 'gap-2' : 'gap-4'">
           <VBtn
             class="btn-light w-auto"
             block
@@ -375,14 +328,14 @@ const downloadCSV = async () => {
           >
             <!-- 👉 Id -->
             <td>
-              #{{ user.order_id }}
+              {{ user.order_id }}
             </td>
 
             <!-- 👉 name -->
             <td>
               <div
                 class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
-                @click="showUserDetailDialog(user.user)"
+                @click="showUserDetailDialog(user.user, false)"
               >
                 <span class="flex-grow break-words">
                   {{ user.user.name }}  {{ user.user.last_name ?? '' }}
@@ -430,9 +383,9 @@ const downloadCSV = async () => {
                 <VList>
                   <VListItem
                       v-if="$can('view', 'users')"
-                      @click="showUserDetailDialog(user.user)">
+                      @click="showUserDetailDialog(user.user, false)">
                     <template #prepend>
-                      <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
+                       <VIcon icon="custom-eye" size="24" />
                     </template>
                     <VListItemTitle>Visa</VListItemTitle>
                   </VListItem>
@@ -440,7 +393,7 @@ const downloadCSV = async () => {
                       v-if="$can('edit', 'users') && user.deleted_at === null"
                       @click="showUserPasswordDialog(user.user)">
                     <template #prepend>
-                      <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
+                      <VIcon icon="custom-password-outlined" size="24" />
                     </template>
                     <VListItemTitle>Ändra lösenord</VListItemTitle>
                   </VListItem>
@@ -448,7 +401,7 @@ const downloadCSV = async () => {
                       v-if="$can('edit', 'users') && user.deleted_at === null"
                       @click="showUserEditDialog(user)">
                     <template #prepend>
-                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                      <VIcon icon="custom-pencil" size="24" />
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
@@ -456,7 +409,7 @@ const downloadCSV = async () => {
                     v-if="$can('delete','users') && user.deleted_at === null"
                     @click="showUserDeleteDialog(user.user)">
                     <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                      <VIcon icon="custom-waste" size="24" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
@@ -479,13 +432,13 @@ const downloadCSV = async () => {
         class="expansion-panels pb-6 px-0"
         v-if="users.length && windowWidth < 1024"
       >
-        <VExpansionPanel v-for="user in users" :key="user.id">
+        <VExpansionPanel v-for="user in users" :key="user.id" readonly>
           <VExpansionPanelTitle
-            collapse-icon="custom-dots-vertical"
-            expand-icon="custom-dots-vertical"
-            @click="selectedUserForAction = user; isMobileActionDialogVisible = true"
+            class="mobile-user-actions-title"
+            hide-actions
           >
-            <div class="d-flex align-center w-100">
+            <div class="d-flex align-center justify-space-between w-100">
+              <div class="d-flex align-center">
                 <span class="order-id">{{  user.order_id }}</span>
 
                 <div class="d-flex flex-column gap-1">
@@ -493,6 +446,14 @@ const downloadCSV = async () => {
                     <span class="text-neutral-3">{{ user.user.email }}</span>
                     <span class="text-neutral-3">{{ user.user.user_detail?.personal_phone ?? '----' }}</span>
                 </div>
+              </div>
+
+              <VIcon
+                icon="custom-dots-vertical"
+                size="22"
+                class="mobile-actions-icon"
+                @click.stop="openMobileActionDialog(user)"
+              />
             </div>
           </VExpansionPanelTitle>
         </VExpansionPanel>
@@ -557,6 +518,15 @@ const downloadCSV = async () => {
       </VCardText>
 
       <show 
+        v-if="!isMobile"
+        v-model:isDrawerOpen="isUserDetailDialog"
+        :user="selectedUser"
+        :readonly="readonly"
+        @close="permissionsRol = []"
+        @readonly="readonly = false"/>
+
+      <showMobile 
+        v-else
         v-model:isDrawerOpen="isUserDetailDialog"
         :user="selectedUser"
         :readonly="readonly"
@@ -568,15 +538,6 @@ const downloadCSV = async () => {
         :user="selectedUser"
         @data="fetchData"
         @alert="showAlert"/>
-
-      <edit
-        v-model:isDrawerOpen="isUserEditDialog"
-        :user="selectedUser"
-        :readonly="readonly"
-        @data="fetchData"
-        @alert="showAlert"
-        @close="permissionsRol = []"
-        @readonly="readonly = true"/>
 
       <destroy 
         v-model:isDrawerOpen="isUserDeleteDialog"
@@ -626,9 +587,9 @@ const downloadCSV = async () => {
         <VList>
           <VListItem
               v-if="$can('view', 'users')"
-              @click="showUserDetailDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
+              @click="showUserDetailDialog(selectedUserForAction.user, true); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <img :src="eyeIcon" alt="Eye Icon" class="mr-2" />
+               <VIcon icon="custom-eye" size="24" />
             </template>
             <VListItemTitle>Visa</VListItemTitle>
           </VListItem>
@@ -636,7 +597,7 @@ const downloadCSV = async () => {
               v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
               @click="showUserPasswordDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <img :src="passwordIcon" alt="Password Icon" class="mr-2" />
+              <VIcon icon="custom-password-outlined" size="24" />
             </template>
             <VListItemTitle>Ändra lösenord</VListItemTitle>
           </VListItem>
@@ -644,15 +605,15 @@ const downloadCSV = async () => {
               v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
               @click="showUserEditDialog(selectedUserForAction)">
             <template #prepend>
-              <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+              <VIcon icon="custom-pencil" size="24" />
             </template>
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem 
             v-if="$can('delete','users') && selectedUserForAction.deleted_at === null"
-            @click="showUserDeleteDialog(selectedUserForAction.user)">
+            @click="showUserDeleteDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
-              <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+              <VIcon icon="custom-waste" size="24" />
             </template>
             <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
@@ -682,6 +643,16 @@ const downloadCSV = async () => {
   @media(min-width: 991px){
     .user-list-filter {
       inline-size: 12rem;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .mobile-actions-block {
+      order: 1;
+    }
+
+    .mobile-search-block {
+      order: 2;
     }
   }
 
@@ -775,6 +746,20 @@ const downloadCSV = async () => {
   .dialog-bottom-full-width {
     .v-card {
       border-radius: 24px 24px 0 0 !important;
+    }
+  }
+
+  .mobile-user-actions-title {
+    color: #878787;
+
+    .v-expansion-panel-title__icon {
+      .v-icon {
+        color: #878787 !important;
+      }
+    }
+
+    .mobile-actions-icon {
+      color: #878787 !important;
     }
   }
 

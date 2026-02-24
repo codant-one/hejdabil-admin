@@ -1513,7 +1513,12 @@ const handleSendPayout = () => {
           <VBtn class="btn-light" @click="viewReceipt">
             Visa kvitto
           </VBtn>
-          <VBtn class="btn-gradient" @click="goToPayouts"> Klar </VBtn>
+          <VBtn 
+            class="btn-gradient"
+            :class="windowWidth < 1024 ? '' : 'w-30'" 
+            @click="goToPayouts"
+          > Klar 
+        </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

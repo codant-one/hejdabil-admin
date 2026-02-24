@@ -72,9 +72,12 @@ const hasAssignedPermission = permission => {
     <VDialog
         id="show-dialog"
         :model-value="props.isDrawerOpen"
-        class="action-dialog"
+        fullscreen
         persistent
-        >
+        :scrim="false"
+        transition="dialog-bottom-transition"
+        class="action-dialog dialog-fullscreen"
+        content-class="clients-pending-mobile-fullscreen">
         <!-- Dialog close btn -->
          <VBtn
             icon
@@ -85,8 +88,8 @@ const hasAssignedPermission = permission => {
         </VBtn>
 
         <!-- Dialog Content -->
-        <VCard class="detail-user">
-            <VCardText class="dialog-title-box">
+        <VCard class="detail-user h-100">
+            <VCardText class="dialog-title-box mb-6 pb-0 flex-0">
                 <div class="w-100 d-flex flex-column align-start gap-2">
                     <div class="dialog-title text-aqua">
                         {{ name }} {{ last_name }}
@@ -98,7 +101,7 @@ const hasAssignedPermission = permission => {
                 
             </VCardText>
 
-            <VCardText class="dialog-text">
+            <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">
                 <div 
                     class="d-flex flex-wrap card-form flex-row gap-3"
                 >
@@ -497,6 +500,7 @@ const hasAssignedPermission = permission => {
         line-height: 100%;
         letter-spacing: 0;
         color: #454545;
+        padding-bottom: 2px;
     }
 
     .dialog-text {

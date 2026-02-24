@@ -3,15 +3,16 @@
 import { useDisplay } from "vuetify";
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
-// import TabMyTeam from '@/views/dashboard/profile/TabMyTeam.vue'
 import TabMyTeam from '@/pages/dashboard/admin/suppliers/users/index.vue'
 import UserProfile from '@/views/dashboard/profile/UserProfile.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import Toaster from "@/components/common/Toaster.vue";
 
 const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+const route = useRoute();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const avatar = ref('')
@@ -44,6 +45,21 @@ const tabs = [
     title: 'Mitt team',
   },
 ]
+
+const setTabFromRoute = (tabQuery) => {
+  if (tabQuery === 'mitt-team') {
+    userTab.value = 2
+    return
+  }
+
+  if (userTab.value === null) {
+    userTab.value = 0
+  }
+}
+
+watch(() => route.query.tab, tab => {
+  setTabFromRoute(tab)
+}, { immediate: true })
 
 onBeforeRouteLeave((to, from, next) => {
   if (isFormEdited.value) {
@@ -185,6 +201,8 @@ onBeforeUnmount(() => {
     >
         {{ advisor.message }}
     </VSnackbar>
+
+    <Toaster />
 
     <VCard
       flat 

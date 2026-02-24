@@ -11,10 +11,6 @@ import AddNewClientDrawer from "./AddNewClientDrawer.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
-
-import eyeIcon from "@/assets/images/icons/figma/eye.svg";
-import editIcon from "@/assets/images/icons/figma/edit.svg";
-import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
 
 const { width: windowWidth } = useWindowSize();
@@ -858,7 +854,7 @@ onBeforeUnmount(() => {
                 <VList>
                   <VListItem @click="seeClient(client)">
                     <template #prepend>
-                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-eye" size="24" />
                     </template>
                     <VListItemTitle>Se detaljer</VListItemTitle>
                   </VListItem>
@@ -867,7 +863,7 @@ onBeforeUnmount(() => {
                     @click="editClient(client)"
                   >
                     <template #prepend>
-                      <img :src="editIcon" alt="Edit Icon" class="mr-2" />
+                      <VIcon icon="custom-pencil" size="24" />
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
@@ -876,7 +872,7 @@ onBeforeUnmount(() => {
                     @click="showDeleteDialog(client, false)"
                   >
                     <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                      <VIcon icon="custom-waste" size="24" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>

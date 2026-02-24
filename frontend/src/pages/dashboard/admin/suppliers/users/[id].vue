@@ -2,11 +2,8 @@
 
 import { useDisplay } from "vuetify";
 import { onBeforeRouteLeave } from 'vue-router';
-import { requiredValidator, yearValidator, emailValidator, phoneValidator, minLengthDigitsValidator, passwordValidator } from '@/@core/utils/validators'
+import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
-import permissions from './permissions.vue'
-import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
-import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
@@ -33,7 +30,6 @@ const isPasswordVisible = ref(false)
 const isUserPermissionsDialog = ref(false)
 
 const usersStores = useSuppliersStores()
-const ability = useAppAbility()
 const emitter = inject("emitter")
 const err = ref(null);
 
@@ -94,7 +90,7 @@ async function fetchData() {
     id.value = selectedUser.value[0].user.id
     email.value = selectedUser.value[0].user.email
     name.value = selectedUser.value[0].user.name
-    //password.value = selectedUser.value[0].user.password
+    password.value = selectedUser.value[0].user.password
     last_name.value = selectedUser.value[0].user.last_name
     phone.value = selectedUser.value[0].user.user_detail?.personal_phone
     address.value = selectedUser.value[0].user.user_detail?.personal_address
@@ -144,9 +140,14 @@ const showError = () => {
 
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
-        // Verificar tab 0 (Försäljning)
-    const hasTab0Errors = !email.value || !name.value || !last_name.value || !phone.value || !address.value 
-    //|| !password.value
+    // Verificar tab 0 (Konto)
+    const hasTab0Errors = !name.value?.trim() ||
+        !last_name.value?.trim() ||
+        !email.value?.trim() ||
+        !phone.value?.trim() ||
+        !address.value?.trim() ||
+        (phone.value && phoneValidator(phone.value) !== true) ||
+        (email.value && emailValidator(email.value) !== true) 
 
 
     // Lógica de navegación entre tabs (0, 1, 2, 3)
@@ -189,7 +190,7 @@ const onSubmit = async () => {
             
             advisor.value = {
                 type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Försäljning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Konto',
                 show: true
             }
             
@@ -211,11 +212,9 @@ const onSubmit = async () => {
 
                 formData.append('email', email.value)
                 formData.append('name', name.value)
-                //formData.append('password', password.value)
                 formData.append('last_name', last_name.value)
                 formData.append('personal_phone', phone.value)
                 formData.append('personal_address', address.value)
-                // formData.append('permissions', assignedPermissions.value)
                 assignedPermissions.value.forEach(p => formData.append('permissions[]', p))
 
                 isRequestOngoing.value = true
@@ -302,20 +301,20 @@ onBeforeRouteLeave((to, from, next) => {
 
 const goToProfile = () => {
 
-  let data = {
-      message: 'Medarbetaren har lagts till!',
-      error: false
-  }
+    let data = {
+        message: 'Medarbetaren har lagts uppdaterats!',
+        error: false
+    }
 
-  router.push({ name : 'dashboard-profile' })
-  emitter.emit('toast', data)  
+    router.push({ name : 'dashboard-profile', query: { tab: 'mitt-team' } })
+    emitter.emit('toast', data)  
 
 };
 
 </script>
 
 <template>
-    <section class="page-section agreements-page" ref="sectionEl">
+    <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
 
         <VSnackbar
@@ -332,6 +331,7 @@ const goToProfile = () => {
             ref="refForm"
             class="card-form"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit"
         >
             <VCard
@@ -352,7 +352,7 @@ const goToProfile = () => {
                             :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
                             class="btn-light"
                             style="width: 120px;"
-                            :to="{ name: 'dashboard-profile' }"
+                            :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }"
                         >
                             <VIcon icon="custom-return" size="24" />
                             Gå ut
@@ -372,7 +372,7 @@ const goToProfile = () => {
                             <VBtn
                                 class="btn-light w-auto" 
                                 block
-                                :to="{ name: 'dashboard-profile' }">
+                                :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }">
                                 <VIcon icon="custom-return" size="24" />
                                 Avbryt
                             </VBtn>
@@ -386,7 +386,7 @@ const goToProfile = () => {
                     v-model="currentTab" 
                     grow             
                     :show-arrows="false"
-                    class="agreements-tabs" 
+                    class="users-tabs" 
                 >
                     <VTab :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-profile" />
@@ -470,7 +470,7 @@ const goToProfile = () => {
                         <VWindowItem class="px-md-0">
                             <VRow class="px-md-3">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
-                                    <div class="title-tabs mb-5">
+                                    <div class="text-modules mb-5">
                                         Modules
                                     </div>
                                     <div 
@@ -486,8 +486,8 @@ const goToProfile = () => {
                                                 $can('delete','clients')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Kunder" />
-                                            <div class="demo-space-x ml-5 permissions-grid">
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Kunder" />
+                                            <div class="ml-2 permissions-grid">
                                                 <VCheckbox
                                                     v-if="$can('view','clients')"
                                                     v-model="assignedPermissions"
@@ -527,8 +527,8 @@ const goToProfile = () => {
                                                 $can('delete','billings')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Fakturor" />
-                                            <div class="demo-space-x ml-5 permissions-grid">
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Fakturor" />
+                                            <div class="ml-2 permissions-grid">
                                                 <VCheckbox
                                                     v-if="$can('view','billings')"
                                                     v-model="assignedPermissions"
@@ -570,10 +570,10 @@ const goToProfile = () => {
                                                 $can('delete','sold')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mitt Fordonslager" />
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt Fordonslager" />
                                             <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: 100%;'">
                                                 <div class="ml-5 w-100">
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="I Lager" 
+                                                    <VLabel class="mb-4 text-body-3 text-high-emphasis" text="I Lager" 
                                                         v-if="
                                                             $can('view','stock') ||
                                                             $can('create','stock') ||
@@ -581,7 +581,7 @@ const goToProfile = () => {
                                                             $can('delete','stock')
                                                         "
                                                     />
-                                                    <div class="demo-space-x mb-4 ml-5 permissions-grid"
+                                                    <div class="demo-space-x mb-4 ml-2 permissions-grid"
                                                         v-if="
                                                             $can('view','stock') ||
                                                             $can('create','stock') ||
@@ -618,13 +618,13 @@ const goToProfile = () => {
                                                             :readonly="readonly"
                                                         />
                                                     </div>
-                                                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Sålda Fordon" 
+                                                    <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Sålda Fordon" 
                                                         v-if="
                                                             $can('view','sold') ||
                                                             $can('delete','sold')
                                                         "
                                                     />
-                                                    <div class="demo-space-x ml-5 permissions-grid"
+                                                    <div class="ml-2 permissions-grid"
                                                         v-if="
                                                             $can('view','sold') ||
                                                             $can('delete','sold')
@@ -658,8 +658,8 @@ const goToProfile = () => {
                                                 $can('delete','agreements')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Avtal" />
-                                            <div class="demo-space-x ml-5 permissions-grid">
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Avtal" />
+                                            <div class="ml-2 permissions-grid">
                                                 <VCheckbox
                                                     v-if="$can('view','agreements')"
                                                     v-model="assignedPermissions"
@@ -699,7 +699,7 @@ const goToProfile = () => {
                                                 $can('delete','signed-documents')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Signera dokument" />
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Signera dokument" />
                                             <div class="demo-space-x ml-5"
                                                 :class="windowWidth < 1024 ? 'd-flex flex-column align-start' : 'permissions-grid'"
                                             >
@@ -742,8 +742,8 @@ const goToProfile = () => {
                                                 $can('delete','payouts')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Swish" />
-                                            <div class="demo-space-x ml-5 permissions-grid">
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Swish" />
+                                            <div class="ml-2 permissions-grid">
                                                 <VCheckbox
                                                     v-if="$can('view','payouts')"
                                                     v-model="assignedPermissions"
@@ -783,8 +783,8 @@ const goToProfile = () => {
                                                 $can('delete','notes')
                                             "
                                         >
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mina Värderingar" />
-                                            <div class="demo-space-x ml-5 permissions-grid">
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mina Värderingar" />
+                                            <div class="ml-2 permissions-grid">
                                                 <VCheckbox
                                                     v-if="$can('view','notes')"
                                                     v-model="assignedPermissions"
@@ -866,7 +866,7 @@ const goToProfile = () => {
 
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
-                    <VIcon size="72" icon="custom-certificate" />
+                    <VIcon size="72" icon="custom-f-checkmark" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
                     <div class="dialog-title">Medarbetaren har lagts uppdaterats!</div>
@@ -879,7 +879,10 @@ const goToProfile = () => {
                     <VBtn class="btn-light" @click="reloadPage" >
                         Redigera Medarbetaren 
                     </VBtn>
-                    <VBtn class="btn-gradient" @click="goToProfile">
+                    <VBtn 
+                        class="btn-gradient"
+                        :class="windowWidth < 1024 ? '' : 'w-30'" 
+                        @click="goToProfile">
                         Klar
                     </VBtn>
                 </VCardText>
@@ -1068,7 +1071,7 @@ const goToProfile = () => {
         justify-content: end !important;
     }
 
-    .v-tabs.agreements-tabs {
+    .v-tabs.users-tabs {
         .v-btn {
             min-width: 50px !important;
             pointer-events: none;
@@ -1094,10 +1097,7 @@ const goToProfile = () => {
     }
 
     @media (max-width: 776px) {
-            .v-tabs.agreements-tabs {
-                .v-icon {
-                    display: none !important;
-                }
+            .v-tabs.users-tabs {
                 .v-btn {
                     .v-btn__content {
                         white-space: break-spaces;
@@ -1194,48 +1194,26 @@ const goToProfile = () => {
         }
     }
 
-    .agreements-pills > div {
-        flex: 1 1;
-    }
-
-    .agreements-pill {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        border-radius: 8px;
-    }
-
-    .agreements-pill-title {
-        font-family: "Blauer Nue";
-        font-weight: 400;
-        font-size: 16px;
-        line-height: 100%;
-        margin-right: 4px;
-    }
-
-    .agreements-pill-value {
-        font-family: "Blauer Nue";
+    .text-modules {
         font-weight: 700;
-        font-style: Bold;
-        font-size: 16px;
+        font-size: 20px;
         line-height: 100%;
+        letter-spacing: 0;
+        color: #878787;
     }
 
-    @media (max-width: 991px) {
-        .agreements-pills {
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .agreements-pill {
-            padding: 8px 16px;
-        }
+    .text-body-3 {
+        font-weight: 700;
+        font-size: 16px;
+        line-height: 100%;
+        letter-spacing: 0;
+        color: #454545;
     }
 
     .permissions-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr); /* Crea 2 columnas de igual tamaño */
-        gap: 10px; /* Espacio entre elementos */
+        gap: 16px; /* Espacio entre elementos */
     }
     
     .permissions-card {
@@ -1249,10 +1227,6 @@ const goToProfile = () => {
     .border-card-comment {
         border: 1px solid #E7E7E7;
         border-radius: 16px !important;
-    }
-
-    .agreements-page .radio-form.v-radio-group .v-selection-control-group .v-radio:not(:last-child) {
-        margin-inline-end: 1.5rem !important;
     }
 
     :deep(.right-drawer.v-navigation-drawer) {

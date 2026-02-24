@@ -10,6 +10,7 @@ import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
 import { useRoute } from 'vue-router'
+import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -1034,6 +1035,8 @@ onBeforeUnmount(() => {
     >
       {{ advisor.message }}
     </VSnackbar>
+
+    <Toaster />
 
     <VCard class="card-fill">
       <VCardTitle
