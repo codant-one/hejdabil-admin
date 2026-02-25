@@ -129,7 +129,7 @@ class ClientController extends Controller
     {
         try {
 
-            $client = Client::with(['supplier.user'])->withTrashed()->find($id);
+            $client = Client::with(['supplier.user', 'country'])->withTrashed()->find($id);
 
             // Cantidad de vehículos vendidos (se mantiene como conteo)
             $carsForSale = VehicleClient::where('client_id', $id)

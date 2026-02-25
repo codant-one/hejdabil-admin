@@ -204,8 +204,18 @@ const onSubmit = () => {
             </div>
           </div>
           <div class="bio-right">
-            <div class="bio-label">Kundbeskrivning</div>
-            <div class="bio-value">{{ props.customerData.comments ?? "" }}</div>
+            <div class="bio-item" v-if="props.customerData.client_type_id === 3">
+                <div class="bio-label">Land</div>
+                <div class="bio-value">{{ props.customerData.country.name }}</div>
+              </div>
+              <div class="bio-item" v-if="props.customerData.client_type_id === 2">
+                <div class="bio-label">Momsreg. nr.</div>
+                <div class="bio-value">{{ props.customerData.num_iva ?? '---'}}</div>
+              </div>
+              <div class="bio-item">
+                <div class="bio-label">Kundbeskrivning</div>
+                <div class="bio-value">{{ props.customerData.comments ?? "---" }}</div>
+              </div>
           </div>
         </div>
       </div>
@@ -352,6 +362,12 @@ const onSubmit = () => {
     font-weight: 400;
     font-size: 14px;
     color: #454545;
+  }
+
+  .bio-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 }
 
