@@ -2,7 +2,7 @@
 
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
-import { formatNumber } from "@/@core/utils/formatters";
+import { avatarText, formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'

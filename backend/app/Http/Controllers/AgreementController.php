@@ -375,7 +375,8 @@ class AgreementController extends Controller
                     'client_types' => CacheService::getClientTypes(),
                     'identifications' => CacheService::getIdentifications(),
                     'advances' => CacheService::getAdvances(),
-                    'commission_types' => CacheService::getCommissionTypes()
+                    'commission_types' => CacheService::getCommissionTypes(),
+                    'countries' => CacheService::getCountries()
                 ]
             ]);
 

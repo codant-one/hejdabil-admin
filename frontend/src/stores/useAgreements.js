@@ -20,6 +20,7 @@ export const useAgreementsStores = defineStore('agreements', {
         clients: {},
         client_types: {},
         identifications: {},
+        countries: {},
         advances: {},
         commission_types: {},
         agreement_id: 0,
@@ -146,6 +147,7 @@ export const useAgreementsStores = defineStore('agreements', {
                     this.clients = response.data.data.clients
                     this.client_types = response.data.data.client_types
                     this.identifications = response.data.data.identifications
+                    this.countries = response.data.data.countries
                     this.advances = response.data.data.advances
                     this.commission_types = response.data.data.commission_types
                 })

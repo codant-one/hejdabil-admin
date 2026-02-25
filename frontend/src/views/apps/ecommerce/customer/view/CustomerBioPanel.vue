@@ -1,7 +1,7 @@
 <script setup>
 
 import { themeConfig } from "@themeConfig";
-import { avatarText, formatNumber } from "@/@core/utils/formatters";
+import { avatarText } from "@/@core/utils/formatters";
 import { toRaw } from "vue";
 import {
   emailValidator,

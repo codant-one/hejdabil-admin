@@ -208,7 +208,7 @@ const closeNavigationDrawer = () => {
 
 const formatOrgNumber = () => {
   let numbers = organization_number.value.replace(/\D/g, "");
-  if (numbers.length > 4) {
+  if (numbers.length > 4 && client_type_id.value !== 3) {
     numbers = numbers.slice(0, -4) + "-" + numbers.slice(-4);
   }
   organization_number.value = numbers;
@@ -516,6 +516,7 @@ const truncateText = (text, length = 30) => {
             :rules="organizationNumberRules"
             minLength="11"
             maxlength="13"
+            style="flex: 1;"
             @input="handleOrganizationNumberInput"
           /> 
           <VTextField
@@ -525,7 +526,8 @@ const truncateText = (text, length = 30) => {
             :class="{ 'org-number-duplicate': props.isDuplicate }"
             :error="props.isDuplicate"
             :rules="organizationNumberForeignRules"
-            @input="emit('resetDuplicate')"
+            style="flex: 1;"
+            @input="handleOrganizationNumberInput"
           />                
           <VBtn
             v-if="client_type_id !== 3"

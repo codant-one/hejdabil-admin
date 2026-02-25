@@ -28,6 +28,9 @@ class AgreementClient extends Model
         return $this->belongsTo(ClientType::class, 'client_type_id', 'id');
     }
 
+    public function country(){
+        return $this->belongsTo(Country::class, 'country_id', 'id');
+    }
 
     /**** Scopes ****/
     public function scopeWhereSearch($query, $search) {
@@ -66,6 +69,7 @@ class AgreementClient extends Model
         $client = self::create([
             'agreement_id' => $request->agreement_id === 'null' ? null : $request->agreement_id,
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
+            'country_id' => $request->country_id === 'null' ? null : $request->country_id,
             'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
             'client_id' => ($request->client_id === 'null' || empty($request->client_id) ) ? null : $request->client_id,
             'fullname' => $request->fullname === 'null' ? null : $request->fullname,
@@ -83,6 +87,7 @@ class AgreementClient extends Model
     public static function updateClient($request, $client) {
         $client->update([
             'client_type_id' => ($request->client_type_id === 'null' || empty($request->client_type_id)) ? $client->client_type_id : $request->client_type_id,
+            'country_id' => ($request->country_id === 'null' || empty($request->country_id)) ? $client->country_id : $request->country_id,
             'identification_id' => ($request->identification_id === 'null' || empty($request->identification_id)) ? $client->identification_id : $request->identification_id,
             'client_id' => ($request->client_id === 'null' || empty($request->client_id)) ? $client->client_id : $request->client_id,
             'fullname' => ($request->fullname === 'null' || empty($request->fullname)) ? $client->fullname : $request->fullname,
