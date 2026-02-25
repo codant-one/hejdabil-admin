@@ -33,7 +33,7 @@ const redirectTo = (path) => {
           <div class="d-flex gap-x-3 buttons-center">
             <VBtn
               class="btn-blue px-6"
-              @click="redirectTo('dashboard-admin-agreements-business')"
+              @click="redirectTo('dashboard-admin-agreements-purchase')"
             >
               Köp
               <VIcon icon="custom-car-close" size="24" />

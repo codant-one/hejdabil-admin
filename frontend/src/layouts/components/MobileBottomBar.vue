@@ -41,7 +41,7 @@ const redirectTo = (path) => {
       <VIcon icon="custom-home" size="24" />
       <span>Hem</span>
     </VBtn>
-    <VBtn class="btn-green" @click="redirectTo('dashboard-admin-agreements-business')">
+    <VBtn class="btn-green" @click="redirectTo('dashboard-admin-agreements-purchase')">
       <VIcon icon="custom-car-close" size="24" />
       <span>Köp</span>
     </VBtn>
