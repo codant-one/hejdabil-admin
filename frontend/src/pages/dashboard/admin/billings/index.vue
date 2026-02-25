@@ -753,7 +753,30 @@ onBeforeUnmount(() => {
             <td class="text-center">{{ billing.due_date }}</td>
             <!-- 😵 Statuses -->
             <td class="text-center text-wrap d-flex justify-center align-center">
+              <VTooltip 
+                v-if="billing.state.id === 7"
+                location="bottom">
+                <template #activator="{ props }">
+                  <span v-bind="props" class="cursor-pointer">
+                    <div                
+                      class="status-chip"
+                      :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
+                    >
+                      {{ billing.state.name }}
+                    </div>
+                  </span>
+                </template>
+                <span>Betaldatum: 
+                  {{ new Date(billing.updated_at).toLocaleString('sv-SE', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour12: false
+                    }) }}
+                </span>
+              </VTooltip>
               <div
+                v-else
                 class="status-chip"
                 :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
               >
@@ -822,7 +845,7 @@ onBeforeUnmount(() => {
                     <template #prepend>
                       <VIcon icon="custom-cash-2" size="24" class="mr-2" />
                     </template>
-                    <VListItemTitle>Betala</VListItemTitle>
+                    <VListItemTitle>Markera som betald</VListItemTitle>
                   </VListItem>
                   <VListItem
                     v-if="
@@ -1323,7 +1346,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-cash-2" size="24" />
             </template>
-            <VListItemTitle>Betala</VListItemTitle>
+            <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="

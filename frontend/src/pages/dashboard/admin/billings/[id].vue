@@ -436,7 +436,7 @@ onBeforeUnmount(() => {
               <template #prepend>
                 <VIcon icon="custom-cash-2" size="24" />
               </template>
-              Betala
+              Markera som betald
             </VBtn>
 
             <VBtn
@@ -521,7 +521,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-cash-2" size="24" />
             </template>
-            <VListItemTitle>Betala</VListItemTitle>
+            <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('view', 'billings')"

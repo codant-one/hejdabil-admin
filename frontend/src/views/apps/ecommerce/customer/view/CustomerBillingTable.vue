@@ -1153,7 +1153,7 @@ onBeforeUnmount(() => {
                           <template #prepend>
                             <VIcon icon="custom-cash-2" size="24" class="mr-2" />
                           </template>
-                          <VListItemTitle>Betala</VListItemTitle>
+                          <VListItemTitle>Markera som betald</VListItemTitle>
                         </VListItem>
                         <VListItem
                           v-if="
@@ -1784,7 +1784,7 @@ onBeforeUnmount(() => {
             <template #prepend>
               <VIcon icon="custom-cash-2" size="24" />
             </template>
-            <VListItemTitle>Betala</VListItemTitle>
+            <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings') &&  (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"

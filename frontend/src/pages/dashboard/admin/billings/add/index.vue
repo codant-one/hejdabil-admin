@@ -275,7 +275,18 @@ const confirmLeave = () => {
 const onSubmit = () => {
   // If already saved and NO changes since save, show success dialog
   if (billing.value?.file && !hasChangedSinceSave.value) {
-    skapatsDialog.value = true;
+    //skapatsDialog.value = true;
+    let data = {
+      message: "Fakturan är skapad!",
+      error: false,
+    };
+
+    router.push({
+      name: "dashboard-admin-billings-id",
+      params: { id: billing_id.value },
+    });
+
+    emitter.emit("toast", data);
     return;
   }
 
@@ -322,7 +333,18 @@ const onSubmit = () => {
           if (windowWidth.value < 1024 && invoiceEditableRef.value) {
             invoiceEditableRef.value.setPreviewTab();
           } else {
-            skapatsDialog.value = true;
+            //skapatsDialog.value = true;
+            let data = {
+              message: "Fakturan är skapad!",
+              error: false,
+            };
+
+            router.push({
+              name: "dashboard-admin-billings-id",
+              params: { id: billing_id.value },
+            });
+
+            emitter.emit("toast", data);
           }
         })
         .catch((error) => {

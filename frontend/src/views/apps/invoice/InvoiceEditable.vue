@@ -300,7 +300,7 @@ async function fetchData() {
       ? getNextInvoiceId(company.value?.billings, props.invoice_id)
       : props.billing.invoice_id;
     invoice.value.reference = props.billing.reference;
-    invoice.value.invoice_date = props.billing.invoice_date;
+    invoice.value.invoice_date = route.path.includes("/duplicate/") ? new Date().toLocaleDateString('sv-SE') : props.billing.invoice_date;
     invoice.value.due_date = props.billing.due_date;
     invoice.value.days = extractDaysFromNetTermSplit(
       props.billing.payment_terms
