@@ -31,6 +31,7 @@ onMounted(async () => {
 
 const onReadAll = async () => {
   await notificationsStore.markAllRead()
+  router.push({ name : 'dashboard-notifications' })
 }
 
 const onNotificationClick = async (notification) => {
