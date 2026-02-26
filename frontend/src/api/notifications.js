@@ -2,8 +2,28 @@ import axios from '@axios'
 
 class Notifications {
 
-    getAll() {
-        return axios.get('/notifications')
+    get(params) {
+        return axios.get('notifications', {params})
+    }
+
+    create(data) {
+        return axios.post('/notifications', data)
+    }
+
+    show(id) {
+        return axios.get(`/notifications/${id}`)
+    }
+
+    update(data) {
+        return axios.post(`/notifications/${data.id}`, data.data)
+    }
+
+    delete(id){
+        return axios.delete(`/notifications/${id}`)
+    }
+
+    listRecent() {
+        return axios.get('/notifications/list/recent')
     }
 
     markAsRead(id) {

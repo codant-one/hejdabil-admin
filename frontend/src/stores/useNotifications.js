@@ -11,8 +11,89 @@ export const useNotificationsStore = defineStore('notifications', {
     initialized: false,
     privateChannelSubscribed: false,
     privateChannelUserId: null,
+    loading: false,
+    last_page: 1,
+    notificationsTotalCount: 6
   }),
+  getters:{
+    getNotifications(){
+        return this.notifications
+    },
+  },
   actions: {
+    fetchNotifications(params) {
+      this.setLoading(true)
+      
+      return Notifications.get(params)
+          .then((response) => {
+              this.notifications = response.data.data.notifications.data
+              this.suppliers = response.data.data.suppliers
+              this.last_page = response.data.data.notifications.last_page
+              this.notesTotalCount = response.data.data.notesTotalCount
+          })
+          .catch(error => console.log(error))
+          .finally(() => {
+              this.setLoading(false)
+          })
+      
+  },
+  addNote(data) {
+      this.setLoading(true)
+
+      return Notifications.create(data)
+          .then((response) => {
+              this.notifications.push(response.data.data.notification)
+              return Promise.resolve(response)
+          })
+          .catch(error => Promise.reject(error))
+          .finally(() => {
+              this.setLoading(false)
+          })
+      
+  },
+  showNote(id) {
+      this.setLoading(true)
+
+      return Notifications.show(id)
+          .then((response) => {
+              if(response.data.success)
+                  return Promise.resolve(response.data.data.notification)
+          })
+          .catch(error => Promise.reject(error))
+          .finally(() => {
+              this.setLoading(false)
+          })
+      
+  },
+  updateNote(data) {
+      this.setLoading(true)
+      
+      return Notifications.update(data)
+          .then((response) => {
+              let pos = this.notifications.findIndex((item) => item.id === response.data.data.notification.id)
+              this.notifications[pos] = response.data.data.notification
+              return Promise.resolve(response)
+          })
+          .catch(error => Promise.reject(error))
+          .finally(() => {
+              this.setLoading(false)
+          })
+    
+  },
+  deleteNote(id) {
+      this.setLoading(true)
+
+      return Notifications.delete(id)
+          .then((response) => {
+              let index = this.notifications.findIndex((item) => item.id === id)
+              this.notifications.splice(index, 1)
+              return Promise.resolve(response)
+          })
+          .catch(error => Promise.reject(error))
+          .finally(() => {
+              this.setLoading(false)
+          })  
+  },
     getStoredUserId() {
       const userData = localStorage.getItem('user_data')
 
@@ -47,7 +128,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
       // Cargar notificaciones guardadas desde la base de datos
       try {
-        const { data } = await notificationsApi.getAll()
+        const { data } = await notificationsApi.listRecent()
         if (data.success && Array.isArray(data.data)) {
           this.notifications = data.data.map(notification => ({
             id: notification.id,

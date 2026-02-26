@@ -13,10 +13,190 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+     /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request): JsonResponse
+    {
+        try {
+
+            $limit = $request->has('limit') ? $request->limit : 10;
+        
+            $query = Notification::with([
+                           'supplier' => function ($q) {
+                                $q->select('id', 'user_id', 'deleted_at')
+                                  ->withTrashed()
+                                  ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
+                            },
+                            'user:id,name,last_name,email,avatar',
+                            'user.userDetail:user_id,logo'
+                        ])
+                         ->applyFilters(
+                                $request->only([
+                                    'search',
+                                    'orderByField',
+                                    'orderBy',
+                                    'supplier_id'
+                                ])
+                            );
+
+            if ($limit == -1) {
+                $allNotifications = $query->get();
+                $notifications = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allNotifications,
+                    $allNotifications->count(),
+                    $allNotifications->count(),
+                    1
+                );
+            } else {
+                $notifications = $query->paginate($limit);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'notifications' => $notifications,
+                    'notesTotalCount' => $notifications->total()
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(NotificationRequest $request)
+    {
+        try {
+
+            $notification = Notification::createNotification($request);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'notification' => Notification::with(['user'])->find($notification->id)
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        try {
+
+            $notification = Notification::with(['user'])->find($id);
+
+            if (!$notification)
+                return response()->json([
+                    'sucess' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'notification' => $notification
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(NotificationRequest $request, $id): JsonResponse
+    {
+        try {
+            $notification = Notification::with(['user'])->find($id);
+        
+            if (!$notification)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+
+            $notification->updateNotification($request, $notification); 
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'notification' => $notification
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        try {
+
+            $notification = Notification::with(['user'])->find($id);
+        
+            if (!$notification)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+            
+            $notification->deleteNotification($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'notification' => $notification
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Get notifications from the authenticated user
      */
-    public function index(Request $request)
+    public function listRecent(Request $request)
     {
         $user = Auth::user();
         

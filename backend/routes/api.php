@@ -111,13 +111,14 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('currencies', CurrencyController::class);
     Route::apiResource('payouts', PayoutController::class);
     Route::apiResource('countries', CountryController::class);
+    Route::apiResource('notifications', NotificationController::class);
 
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
     /* NOTIFICATIONS */
     Route::group(['prefix' => 'notifications'], function () {
-        Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/list/recent', [NotificationController::class, 'listRecent'])->name('notifications.listRecent');
         Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
     });
