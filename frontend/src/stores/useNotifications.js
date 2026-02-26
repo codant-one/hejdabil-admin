@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import notificationsApi from '@/api/notifications'
+import Notifications from '@/api/notifications'
 import router from '@/router'
 
 // Callback global para notificaciones
@@ -21,66 +21,25 @@ export const useNotificationsStore = defineStore('notifications', {
     },
   },
   actions: {
+    setLoading(payload){
+      this.loading = payload
+    },
     fetchNotifications(params) {
       this.setLoading(true)
       
       return Notifications.get(params)
           .then((response) => {
               this.notifications = response.data.data.notifications.data
-              this.suppliers = response.data.data.suppliers
               this.last_page = response.data.data.notifications.last_page
-              this.notesTotalCount = response.data.data.notesTotalCount
+              this.notificationsTotalCount = response.data.data.notificationsTotalCount
           })
           .catch(error => console.log(error))
           .finally(() => {
               this.setLoading(false)
           })
       
-  },
-  addNote(data) {
-      this.setLoading(true)
-
-      return Notifications.create(data)
-          .then((response) => {
-              this.notifications.push(response.data.data.notification)
-              return Promise.resolve(response)
-          })
-          .catch(error => Promise.reject(error))
-          .finally(() => {
-              this.setLoading(false)
-          })
-      
-  },
-  showNote(id) {
-      this.setLoading(true)
-
-      return Notifications.show(id)
-          .then((response) => {
-              if(response.data.success)
-                  return Promise.resolve(response.data.data.notification)
-          })
-          .catch(error => Promise.reject(error))
-          .finally(() => {
-              this.setLoading(false)
-          })
-      
-  },
-  updateNote(data) {
-      this.setLoading(true)
-      
-      return Notifications.update(data)
-          .then((response) => {
-              let pos = this.notifications.findIndex((item) => item.id === response.data.data.notification.id)
-              this.notifications[pos] = response.data.data.notification
-              return Promise.resolve(response)
-          })
-          .catch(error => Promise.reject(error))
-          .finally(() => {
-              this.setLoading(false)
-          })
-    
-  },
-  deleteNote(id) {
+    },
+    deleteNotification(id) {
       this.setLoading(true)
 
       return Notifications.delete(id)
@@ -93,7 +52,20 @@ export const useNotificationsStore = defineStore('notifications', {
           .finally(() => {
               this.setLoading(false)
           })  
-  },
+    },
+    clearAllNotificationsByUser(userId) {
+      this.setLoading(true)
+
+      return Notifications.clearAll({ user_id: userId })
+        .then((response) => {
+          this.notifications = this.notifications.filter(item => item.user_id !== userId)
+          return Promise.resolve(response)
+        })
+        .catch(error => Promise.reject(error))
+        .finally(() => {
+          this.setLoading(false)
+        })
+    },
     getStoredUserId() {
       const userData = localStorage.getItem('user_data')
 
@@ -128,7 +100,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
       // Cargar notificaciones guardadas desde la base de datos
       try {
-        const { data } = await notificationsApi.listRecent()
+        const { data } = await Notifications.listRecent()
         if (data.success && Array.isArray(data.data)) {
           this.notifications = data.data.map(notification => ({
             id: notification.id,
@@ -301,7 +273,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     async markAsRead(notificationId) {
       try {
-        await notificationsApi.markAsRead(notificationId)
+        await Notifications.markAsRead(notificationId)
         
         // Actualizar en el store local
         const notification = this.notifications.find(n => n.id === notificationId)
@@ -316,7 +288,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     async send(payload) {
       try {
-        const response = await notificationsApi.send(payload)
+        const response = await Notifications.send(payload)
         return response
       } catch (error) {
         console.error('Error sending notification:', error)
@@ -326,7 +298,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     async markAllRead() {
       try {
-        await notificationsApi.markAllAsRead()
+        await Notifications.markAllAsRead()
         
         // Actualizar todas como leídas en el store local
         this.notifications.forEach(n => {

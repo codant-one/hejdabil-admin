@@ -121,6 +121,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/list/recent', [NotificationController::class, 'listRecent'])->name('notifications.listRecent');
         Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
         Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+        Route::post('/clear-all', [NotificationController::class, 'clearAll'])->name('notifications.clearAll');
     });
 
     //Users

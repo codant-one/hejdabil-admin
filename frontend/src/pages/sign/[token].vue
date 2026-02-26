@@ -995,7 +995,7 @@ onMounted(loadSignatureData);
   width: 100%;
   display: flex;
   flex-direction: column;
-  background: transparent;
+  background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
   border-radius: 8px;
   box-shadow: none;
   overflow: visible;

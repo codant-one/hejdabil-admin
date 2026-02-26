@@ -6,10 +6,13 @@ use App\Http\Requests\NotificationRequest;
 use App\Events\NotificationsWebsocketEvent;
 use App\Events\UserNotificationEvent;
 use App\Models\Notification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+
+use App\Models\Supplier;
 
 class NotificationController extends Controller
 {
@@ -23,11 +26,6 @@ class NotificationController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Notification::with([
-                           'supplier' => function ($q) {
-                                $q->select('id', 'user_id', 'deleted_at')
-                                  ->withTrashed()
-                                  ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
-                            },
                             'user:id,name,last_name,email,avatar',
                             'user.userDetail:user_id,logo'
                         ])
@@ -36,7 +34,7 @@ class NotificationController extends Controller
                                     'search',
                                     'orderByField',
                                     'orderBy',
-                                    'supplier_id'
+                                    'user_id'
                                 ])
                             );
 
@@ -56,7 +54,7 @@ class NotificationController extends Controller
                 'success' => true,
                 'data' => [
                     'notifications' => $notifications,
-                    'notesTotalCount' => $notifications->total()
+                    'notificationsTotalCount' => $notifications->total()
                 ]
             ]);
 
@@ -74,24 +72,7 @@ class NotificationController extends Controller
      */
     public function store(NotificationRequest $request)
     {
-        try {
-
-            $notification = Notification::createNotification($request);
-
-            return response()->json([
-                'success' => true,
-                'data' => [ 
-                    'notification' => Notification::with(['user'])->find($notification->id)
-                ]
-            ]);
-
-        } catch(\Illuminate\Database\QueryException $ex) {
-            return response()->json([
-                'success' => false,
-                'message' => 'database_error '.$ex->getMessage(),
-                'exception' => $ex->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
@@ -99,31 +80,7 @@ class NotificationController extends Controller
      */
     public function show($id)
     {
-        try {
-
-            $notification = Notification::with(['user'])->find($id);
-
-            if (!$notification)
-                return response()->json([
-                    'sucess' => false,
-                    'feedback' => 'not_found',
-                    'message' => 'Egen värdering hittades inte'
-                ], 404);
-
-            return response()->json([
-                'success' => true,
-                'data' => [ 
-                    'notification' => $notification
-                ]
-            ]);
-
-        } catch(\Illuminate\Database\QueryException $ex) {
-            return response()->json([
-                'success' => false,
-                'message' => 'database_error',
-                'exception' => $ex->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
@@ -131,32 +88,7 @@ class NotificationController extends Controller
      */
     public function update(NotificationRequest $request, $id): JsonResponse
     {
-        try {
-            $notification = Notification::with(['user'])->find($id);
-        
-            if (!$notification)
-                return response()->json([
-                    'success' => false,
-                    'feedback' => 'not_found',
-                    'message' => 'Egen värdering hittades inte'
-                ], 404);
-
-            $notification->updateNotification($request, $notification); 
-
-            return response()->json([
-                'success' => true,
-                'data' => [ 
-                    'notification' => $notification
-                ]
-            ], 200);
-
-        } catch(\Illuminate\Database\QueryException $ex) {
-            return response()->json([
-                'success' => false,
-                'message' => 'database_error',
-                'exception' => $ex->getMessage()
-            ], 500);
-        }
+        //
     }
 
     /**
@@ -172,7 +104,7 @@ class NotificationController extends Controller
                 return response()->json([
                     'success' => false,
                     'feedback' => 'not_found',
-                    'message' => 'Egen värdering hittades inte'
+                    'message' => ' Anmälan hittades inte'
                 ], 404);
             
             $notification->deleteNotification($id);
@@ -260,6 +192,44 @@ class NotificationController extends Controller
     }
 
     /**
+     * Delete all notifications for a specific user
+     */
+    public function clearAll(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'validation_error',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $authUser = Auth::user();
+        $targetUserId = (int) $request->input('user_id');
+
+        if (!$authUser || (int) $authUser->id !== $targetUserId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'unauthorized',
+            ], 403);
+        }
+
+        $deletedRows = Notification::where('user_id', $targetUserId)->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Alla meddelanden raderade',
+            'data' => [
+                'deleted_count' => $deletedRows,
+            ]
+        ]);
+    }
+
+    /**
      * Send a notification via WebSocket and save in DB
      * Can send to a specific user (private channel) or to all (public channel)
      *
@@ -269,6 +239,14 @@ class NotificationController extends Controller
     public function send(NotificationRequest $request)
     {
         try {
+
+            $supplier = Supplier::where('user_id', $request->input('user_id'))->first();
+            $supplierId = null;
+
+            if($supplier) {
+                $supplierId = $supplier->boss_id === null ? $supplier->id : $supplier->boss_id;
+            }
+
             $userId = $request->input('user_id');
             $notification_id = $request->input('notification_id');
             $title = $request->input('title');
@@ -282,6 +260,7 @@ class NotificationController extends Controller
             // Guardar en base de datos
             $dbNotification = Notification::create([
                 'user_id' => $userId,
+                'supplier_id' => $supplierId,
                 'notification_id' => $notification_id,
                 'title' => $title,
                 'subtitle' => $subtitle,

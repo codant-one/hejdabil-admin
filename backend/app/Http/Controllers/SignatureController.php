@@ -867,10 +867,13 @@ class SignatureController extends Controller
             $userId = null;
             if ($token->agreement_id) {
                 $agreement = $token->agreement;
-                // Get the user_id of the supplier associated with the agreement
-                if ($agreement->supplier && $agreement->supplier->user_id) {
+                // If documents have user_id or supplier
+                if (isset($agreement->user_id)) {
+                    $userId = $agreement->user_id;
+                } elseif (isset($agreement->supplier) && $agreement->supplier->user_id) {
                     $userId = $agreement->supplier->user_id;
                 }
+
             } elseif ($token->document_id) {
                 $document = $token->document;
                 // If documents have user_id or supplier

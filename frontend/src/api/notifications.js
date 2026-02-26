@@ -34,6 +34,10 @@ class Notifications {
         return axios.post('/notifications/read-all')
     }
 
+    clearAll(data) {
+        return axios.post('/notifications/clear-all', data)
+    }
+
     send(data) {
         return axios.post('/notifications/send', data)
     }
