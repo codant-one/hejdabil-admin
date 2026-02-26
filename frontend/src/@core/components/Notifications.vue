@@ -126,7 +126,8 @@ const closeMenu = () => {
 
         <!-- 👉 Footer -->
         <VListItem class="notification-section">
-          <VBtn block @click="$emit('click:readAllNotifications')" class="px-0">
+         <!-- <VBtn block @click="$emit('click:readAllNotifications')" class="px-0">-->
+          <VBtn block class="px-0">
             Läs alla meddelanden
           </VBtn>
         </VListItem>
