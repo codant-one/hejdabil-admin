@@ -577,6 +577,28 @@ const goToAgreements = () => {
 
 };
 
+const onTabChange = async (targetTab) => {
+  const nextTab = Number(targetTab)
+  if (Number.isNaN(nextTab) || nextTab === currentTab.value) return
+
+  if (nextTab < currentTab.value) {
+    currentTab.value = nextTab
+    return
+  }
+
+  currentTab.value = 0
+
+  while (currentTab.value < nextTab) {
+    const beforeTab = currentTab.value
+    await onSubmit()
+
+    if (currentTab.value === beforeTab) return
+  }
+
+  if (currentTab.value !== nextTab)
+    currentTab.value = nextTab
+}
+
 const onSubmit = async () => {
   // Validación manual ANTES de usar VForm.validate()
   // Verificar tab 0 (Erbjudande)
@@ -957,7 +979,8 @@ onBeforeRouteLeave((to, from, next) => {
         <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
         <VTabs
-          v-model="currentTab"   
+          :model-value="currentTab"
+          @update:modelValue="onTabChange"
           grow               
           :show-arrows="false"
           class="agreements-tabs"
@@ -1628,7 +1651,6 @@ onBeforeRouteLeave((to, from, next) => {
   .v-tabs.agreements-tabs {
     .v-btn {
       min-width: 50px !important;
-      pointer-events: none;
       .v-btn__content {
         font-size: 14px !important;
         color: #454545;

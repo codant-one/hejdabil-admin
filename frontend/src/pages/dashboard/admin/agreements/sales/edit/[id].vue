@@ -1172,6 +1172,28 @@ const showError = () => {
 
 };
 
+const onTabChange = async (targetTab) => {
+    const nextTab = Number(targetTab)
+    if (Number.isNaN(nextTab) || nextTab === currentTab.value) return
+
+    if (nextTab < currentTab.value) {
+        currentTab.value = nextTab
+        return
+    }
+
+    currentTab.value = 0
+
+    while (currentTab.value < nextTab) {
+        const beforeTab = currentTab.value
+        await onSubmit()
+
+        if (currentTab.value === beforeTab) return
+    }
+
+    if (currentTab.value !== nextTab)
+        currentTab.value = nextTab
+}
+
 const onSubmit = async () => {
     // Validación manual ANTES de usar VForm.validate()
         // Verificar tab 0 (Försäljning)
@@ -1816,28 +1838,29 @@ onBeforeRouteLeave((to, from, next) => {
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
                 <VTabs 
-                    v-model="currentTab" 
+                    :model-value="currentTab"
+                    @update:modelValue="onTabChange"
                     grow
                     :show-arrows="false"
                     class="agreements-tabs" 
                 >
-                    <VTab :class="{ 'tab-completed': currentTab > 0 }">
+                    <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-bribery" />
                         Försäljning
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
+                    <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-car" />
                         Inbytesfordon
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 2 }">
+                    <VTab :value="2" :class="{ 'tab-completed': currentTab > 2 }">
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 3 }">
+                    <VTab :value="3" :class="{ 'tab-completed': currentTab > 3 }">
                         <VIcon size="24" icon="custom-cash-2" />
                         Pris
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 4 }">
+                    <VTab :value="4" :class="{ 'tab-completed': currentTab > 4 }">
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
@@ -3352,7 +3375,6 @@ onBeforeRouteLeave((to, from, next) => {
     .v-tabs.agreements-tabs {
         .v-btn {
             min-width: 50px !important;
-            pointer-events: none;
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;

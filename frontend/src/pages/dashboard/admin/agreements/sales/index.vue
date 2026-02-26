@@ -1047,13 +1047,27 @@ const showError = () => {
 
 };
 
-const onSubmit = async () => {
-    // Validación manual ANTES de usar VForm.validate()
-    // Verificar tab 0 (Försäljning)
+const showTabValidationWarning = (message) => {
+    advisor.value = {
+        type: 'warning',
+        message,
+        show: true,
+    }
+
+    setTimeout(() => {
+        advisor.value = {
+            type: '',
+            message: '',
+            show: false,
+        }
+    }, 3000)
+}
+
+const getTabValidationErrors = () => {
     const hasTab0Errors = !reg_num.value || 
                           !brand_id.value || 
-                          (model_id.value !== 0 && !model_id.value) || // si no es 0 y está vacío → error
-                          (model_id.value === 0 && !model.value) || // si es 0, el campo texto debe tener valor
+                          (model_id.value !== 0 && !model_id.value) ||
+                          (model_id.value === 0 && !model.value) ||
                           !car_body_id.value ||
                           !year.value ||
                           !mileage.value || 
@@ -1067,7 +1081,6 @@ const onSubmit = async () => {
                           (insurance_company.value === null || insurance_company.value === undefined) ||
                           (insurance_company.value !== 0 && !insurance_company_description.value)
 
-    // Tab 1 (Inbytesfordon) - Validaciones condicionales si reg_num_interchange tiene valor
     const hasTab1Errors = reg_num_interchange.value && (
                           !mileage_interchange.value ||
                           !purchase_date.value ||
@@ -1081,12 +1094,11 @@ const onSubmit = async () => {
                           (last_service_interchange.value !== null && last_service_interchange.value !== undefined && `${last_service_interchange.value}`.trim() !== '' && (!last_service_date_interchange.value || `${last_service_date_interchange.value}`.trim() === '')) ||
                           (last_dist_belt_interchange.value !== null && last_dist_belt_interchange.value !== undefined && `${last_dist_belt_interchange.value}`.trim() !== '' && (!last_dist_belt_date_interchange.value || `${last_dist_belt_date_interchange.value}`.trim() === '')) ||
                           !trade_price.value ||
-                          trade_price.value <= 0  ||           
+                          trade_price.value <= 0  ||
                           (residual_debt.value !== 0 && !residual_price.value) ||
                           !iva_purchase_id_interchange.value
                         )
 
-    // Verificar tab 2 (Kund)
     const hasTab2Errors = !organization_number.value || 
                         (client_type_id.value !== 3 && organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
                         !client_type_id.value || 
@@ -1100,7 +1112,6 @@ const onSubmit = async () => {
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
 
-    // Verificar tab 3 (Pris)
     const hasTab3Errors = !price.value || 
                           price.value <= 0 ||
                           !iva_id.value ||
@@ -1111,114 +1122,100 @@ const onSubmit = async () => {
                           !payment_type_id.value ||
                           (payment_type_id.value === 0 && !payment_type.value)
 
-    // Lógica de navegación entre tabs (0, 1, 2, 3)
-    if (currentTab.value === 0) {
-        if (hasTab0Errors) {
-            // Validar el formulario para mostrar errores visuales
-            await nextTick()
-            refForm.value?.validate()
-            
-            advisor.value = {
-                type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Försäljning',
-                show: true
-            }
-            
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
-            
-            return
-        } else {
-            // Avanzar al siguiente tab
-            currentTab.value++
+    return {
+        hasTab0Errors,
+        hasTab1Errors,
+        hasTab2Errors,
+        hasTab3Errors,
+    }
+}
+
+const validateTabByIndex = async (tabIndex, tabErrors = getTabValidationErrors()) => {
+    const tabMessages = {
+        0: 'Vänligen fyll i alla obligatoriska fält i fliken Försäljning',
+        1: 'Vänligen fyll i alla obligatoriska fält i fliken Inbytesfordon',
+        2: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+        3: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
+    }
+
+    const hasErrorsByTab = {
+        0: tabErrors.hasTab0Errors,
+        1: tabErrors.hasTab1Errors,
+        2: tabErrors.hasTab2Errors,
+        3: tabErrors.hasTab3Errors,
+    }
+
+    if (hasErrorsByTab[tabIndex]) {
+        await nextTick()
+        refForm.value?.validate()
+        showTabValidationWarning(tabMessages[tabIndex])
+        return false
+    }
+
+    return true
+}
+
+const onTabChange = async (targetTab) => {
+    const nextTab = Number(targetTab)
+    if (Number.isNaN(nextTab) || nextTab === currentTab.value) return
+
+    if (nextTab < currentTab.value) {
+        currentTab.value = nextTab
+        return
+    }
+
+    const tabErrors = getTabValidationErrors()
+
+    for (let tabIndex = 0; tabIndex < nextTab; tabIndex++) {
+        const isCurrentStepValid = await validateTabByIndex(tabIndex, tabErrors)
+        if (!isCurrentStepValid) {
+            currentTab.value = tabIndex
             return
         }
+    }
+
+    currentTab.value = nextTab
+}
+
+const onSubmit = async () => {
+    const {
+        hasTab0Errors,
+        hasTab1Errors,
+        hasTab2Errors,
+        hasTab3Errors,
+    } = getTabValidationErrors()
+
+    // Lógica de navegación entre tabs (0, 1, 2, 3)
+    if (currentTab.value === 0) {
+        const isTabValid = await validateTabByIndex(0, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
+        if (!isTabValid) return
+
+        currentTab.value++
+        return
     }
     
     if (currentTab.value === 1) {
-        if (hasTab1Errors) {
-            await nextTick()
-            refForm.value?.validate()
-            
-            advisor.value = {
-                type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Inbytesfordon',
-                show: true
-            }
-            
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
-            
-            return
-        } else {
-            // Avanzar al siguiente tab
-            currentTab.value++
-            return
-        }
+        const isTabValid = await validateTabByIndex(1, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
+        if (!isTabValid) return
+
+        currentTab.value++
+        return
     }
 
     if (currentTab.value === 2) {
-        if (hasTab2Errors) {
-            await nextTick()
-            refForm.value?.validate()
-            
-            advisor.value = {
-                type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
-                show: true
-            }
-            
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
-            
-            return
-        } else {
-            // Avanzar al siguiente tab
-            currentTab.value++
-            return
-        }
+        const isTabValid = await validateTabByIndex(2, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
+        if (!isTabValid) return
+
+        currentTab.value++
+        return
     }
 
     if (currentTab.value === 3) {
-        if (hasTab3Errors) {
-            await nextTick()
-            refForm.value?.validate()
-            
-            advisor.value = {
-                type: 'warning',
-                message: 'Vänligen fyll i alla obligatoriska fält i fliken Pris',
-                show: true
-            }
-            
-            setTimeout(() => {
-                advisor.value = {
-                    type: '',
-                    message: '',
-                    show: false
-                }
-            }, 3000)
-            
-            return
-        } else {
-            // Avanzar al siguiente tab
-            currentTab.value++
-            return
-        }
+        const isTabValid = await validateTabByIndex(3, { hasTab0Errors, hasTab1Errors, hasTab2Errors, hasTab3Errors })
+        if (!isTabValid) return
+
+        currentTab.value++
+        return
     }
 
     // Si estamos en el último tab (4), verificar TODOS los tabs antes de enviar
@@ -1679,28 +1676,29 @@ onBeforeRouteLeave((to, from, next) => {
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
                 <VTabs 
-                    v-model="currentTab" 
+                    :model-value="currentTab"
+                    @update:modelValue="onTabChange"
                     grow             
                     :show-arrows="false"
                     class="agreements-tabs" 
                 >
-                    <VTab :class="{ 'tab-completed': currentTab > 0 }">
+                    <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-bribery" />
                         Försäljning
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 1 }">
+                    <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-car" />
                         Inbytesfordon
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 2 }">
+                    <VTab :value="2" :class="{ 'tab-completed': currentTab > 2 }">
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 3 }">
+                    <VTab :value="3" :class="{ 'tab-completed': currentTab > 3 }">
                         <VIcon size="24" icon="custom-cash-2" />
                         Pris
                     </VTab>
-                    <VTab :class="{ 'tab-completed': currentTab > 4 }">
+                    <VTab :value="4" :class="{ 'tab-completed': currentTab > 4 }">
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
@@ -3222,7 +3220,6 @@ onBeforeRouteLeave((to, from, next) => {
     .v-tabs.agreements-tabs {
         .v-btn {
             min-width: 50px !important;
-            pointer-events: none;
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
