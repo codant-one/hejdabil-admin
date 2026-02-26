@@ -1185,7 +1185,6 @@ const onSubmit = async () => {
                               !car_name.value ||
                               (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
                               (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
-                              !number_keys.value ||
                               !sale_date.value ||
                               (guaranty.value === null || guaranty.value === undefined) ||
                               (guaranty.value !== 0 && !guaranty_description.value) ||
@@ -1205,7 +1204,6 @@ const onSubmit = async () => {
                               !car_name_interchange.value ||
                               (last_service_interchange.value !== null && last_service_interchange.value !== undefined && `${last_service_interchange.value}`.trim() !== '' && (!last_service_date_interchange.value || `${last_service_date_interchange.value}`.trim() === '')) ||
                               (last_dist_belt_interchange.value !== null && last_dist_belt_interchange.value !== undefined && `${last_dist_belt_interchange.value}`.trim() !== '' && (!last_dist_belt_date_interchange.value || `${last_dist_belt_date_interchange.value}`.trim() === '')) ||
-                              !number_keys_interchange.value ||
                               !trade_price.value ||
                               trade_price.value <= 0 ||  
                               (residual_debt.value !== 0 && !residual_price.value) ||
@@ -2143,12 +2141,11 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>                                        
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                                                 <VTextField
                                                     v-model="number_keys"
                                                     type="number"
                                                     min="1"
-                                                    :rules="[requiredValidator]"
                                                 />
                                         </div>                                         
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
@@ -2533,13 +2530,11 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>                                        
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="reg_num_interchange" class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                                             <VTextField
                                                 v-model="number_keys_interchange"
                                                 type="number"
                                                 min="1"
-                                                :rules="reg_num_interchange ? [requiredValidator] : []"
                                             />
                                         </div>     
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

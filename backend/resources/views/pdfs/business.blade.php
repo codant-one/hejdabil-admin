@@ -422,7 +422,7 @@
                 <td class="column-cell column-cell-right">
                     <h2 style="color: white;">.</h2>                 
                     <table class="info-table">     
-                        @if($agreement->offer->control_inspection)
+                        @if($agreement->offer->control_inspection && $agreement->offer->number_keys)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -437,7 +437,16 @@
                                 </div>
                             </td>
                         </tr>   
-                        @else
+                        @elseif($agreement->offer->control_inspection)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kontrollbesiktning gäller tom</div>
+                                <div class="value">
+                                    {{ $agreement->offer->control_inspection }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @elseif($agreement->offer->number_keys)
                         <tr>
                             <td colspan="2">
                                 <div class="label">Antal nycklar till fordonet</div>

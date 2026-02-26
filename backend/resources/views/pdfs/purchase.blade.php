@@ -413,7 +413,7 @@
                             </td>
                         </tr>
                         @endif
-                        @if($agreement->vehicle_client->vehicle->control_inspection)
+                        @if($agreement->vehicle_client->vehicle->control_inspection && $agreement->vehicle_client->vehicle->number_keys)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -427,16 +427,25 @@
                                 {{ $agreement->vehicle_client->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>
-                        @else
-                         <tr>
+                        </tr>   
+                        @elseif($agreement->vehicle_client->vehicle->control_inspection)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kontrollbesiktning gäller tom</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->control_inspection }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @elseif($agreement->vehicle_client->vehicle->number_keys)
+                        <tr>
                             <td colspan="2">
                                 <div class="label">Antal nycklar till fordonet</div>
                                 <div class="value">
                                 {{ $agreement->vehicle_client->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>
+                        </tr> 
                         @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">

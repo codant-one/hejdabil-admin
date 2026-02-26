@@ -1404,10 +1404,7 @@ const onSubmit = async () => {
                           !year.value || 
                           yearValidator(year.value) !== true ||
                           !chassis.value ||
-                          !car_name.value ||
-                          number_keys.value === null || 
-                          number_keys.value === undefined || 
-                          number_keys.value === ''
+                          !car_name.value
 
     // Verificar tab-2 (Prisinformation)
     const hasTab2Errors = purchase_price.value === null || 
@@ -1914,12 +1911,11 @@ onBeforeRouteLeave((to, from, next) => {
                                         />
                                     </div>
                                     <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                          <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                                             <VTextField
                                                 v-model="number_keys"
                                                 type="number"
                                                 min="1"
-                                                :rules="[requiredValidator]"
                                             />
                                     </div>  
                                     <div class="d-flex flex-column gap-4" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

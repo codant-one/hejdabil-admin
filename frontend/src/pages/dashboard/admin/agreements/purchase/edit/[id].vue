@@ -938,8 +938,7 @@ const onSubmit = async () => {
                           !mileage.value || 
                           !car_body_id.value ||
                           (last_service.value !== null && last_service.value !== undefined && `${last_service.value}`.trim() !== '' && (!last_service_date.value || `${last_service_date.value}`.trim() === '')) ||
-                          (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === '')) ||
-                          !number_keys.value
+                          (last_dist_belt.value !== null && last_dist_belt.value !== undefined && `${last_dist_belt.value}`.trim() !== '' && (!last_dist_belt_date.value || `${last_dist_belt_date.value}`.trim() === ''))
 
     // Verificar tab 1 (Kund)
     const hasTab1Errors = !organization_number.value || 
@@ -1738,12 +1737,11 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>                                        
                                         </div>                                        
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Antal nycklar" />
                                                 <VTextField
                                                     v-model="number_keys"
                                                     type="number"
                                                     min="1"
-                                                    :rules="[requiredValidator]"
                                                 />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">

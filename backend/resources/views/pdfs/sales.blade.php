@@ -432,7 +432,7 @@
                             </td>
                         </tr>
                         @endif
-                        @if($agreement->vehicle_client->vehicle->control_inspection)
+                        @if($agreement->vehicle_client->vehicle->control_inspection && $agreement->vehicle_client->vehicle->number_keys)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -446,16 +446,25 @@
                                 {{ $agreement->vehicle_client->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>
-                        @else
-                        <tr>                         
+                        </tr>   
+                        @elseif($agreement->vehicle_client->vehicle->control_inspection)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kontrollbesiktning gäller tom</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->control_inspection }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @elseif($agreement->vehicle_client->vehicle->number_keys)
+                        <tr>
                             <td colspan="2">
                                 <div class="label">Antal nycklar till fordonet</div>
                                 <div class="value">
                                 {{ $agreement->vehicle_client->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>
+                        </tr> 
                         @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">
@@ -732,30 +741,39 @@
                                 </td>
                             </tr>
                             @endif
-                            @if($agreement->vehicle_interchange?->control_inspection)
+                            @if($agreement->vehicle_interchange?->control_inspection && $agreement->vehicle_interchange?->number_keys)
                             <tr>
                                 <td class="column-cell column-cell-left-2">
                                     <div class="label">Kontrollbesiktning gäller tom</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_interchange?->control_inspection ?? ' ' }}
+                                        {{ $agreement->vehicle_interchange?->control_inspection }}
                                     </div>
                                 </td>
                                 <td class="column-cell column-cell-right-2">
                                     <div class="label">Antal nycklar till fordonet</div>
                                     <div class="value">
-                                    {{ $agreement->vehicle_interchange?->number_keys ?? ' '}}
+                                    {{ $agreement->vehicle_interchange?->number_keys }}
                                     </div>
                                 </td>
-                            </tr>
-                            @else
+                            </tr>   
+                            @elseif($agreement->vehicle_interchange?->control_inspection)
+                            <tr>
+                                <td colspan="2">
+                                    <div class="label">Kontrollbesiktning gäller tom</div>
+                                    <div class="value">
+                                        {{ $agreement->vehicle_interchange?->control_inspection }}
+                                    </div>
+                                </td>
+                            </tr> 
+                            @elseif($agreement->vehicle_interchange?->number_keys)
                             <tr>
                                 <td colspan="2">
                                     <div class="label">Antal nycklar till fordonet</div>
                                     <div class="value">
-                                    {{ $agreement->vehicle_interchange?->number_keys ?? ' '}}
+                                    {{ $agreement->vehicle_interchange?->number_keys }}
                                     </div>
                                 </td>
-                            </tr>
+                            </tr> 
                             @endif
                             <tr>
                                 <td class="column-cell column-cell-left-2">

@@ -394,7 +394,7 @@
                 <td class="column-cell column-cell-right">
                     <h2 style="color: white;">.</h2>                 
                     <table class="info-table">    
-                        @if($agreement->commission->vehicle->control_inspection) 
+                        @if($agreement->commission->vehicle->control_inspection && $agreement->commission->vehicle->number_keys)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Kontrollbesiktning gäller tom</div>
@@ -408,8 +408,17 @@
                                 {{ $agreement->commission->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>  
-                        @else
+                        </tr>   
+                        @elseif($agreement->commission->vehicle->control_inspection)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Kontrollbesiktning gäller tom</div>
+                                <div class="value">
+                                    {{ $agreement->commission->vehicle->control_inspection }}
+                                </div>
+                            </td>
+                        </tr> 
+                        @elseif($agreement->commission->vehicle->number_keys)
                         <tr>
                             <td colspan="2">
                                 <div class="label">Antal nycklar till fordonet</div>
@@ -417,8 +426,8 @@
                                 {{ $agreement->commission->vehicle->number_keys }}
                                 </div>
                             </td>
-                        </tr>
-                        @endif 
+                        </tr> 
+                        @endif
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Servicebok finns?</div>
