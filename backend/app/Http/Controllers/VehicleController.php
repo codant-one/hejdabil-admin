@@ -224,7 +224,8 @@ class VehicleController extends Controller
                     'clients' => $clients,
                     'client_types' => CacheService::getClientTypes(),
                     'identifications' => CacheService::getIdentifications(),
-                    'currencies' => CacheService::getActiveCurrencies()
+                    'currencies' => CacheService::getActiveCurrencies(),
+                    'countries' => CacheService::getCountries()
                 ]
             ]);
 
@@ -388,7 +389,8 @@ class VehicleController extends Controller
                             'clients' => $clients,
                             'client_types' => ClientType::all(),
                             'identifications' => Identification::all(),
-                            'currencies' => Currency::where('state_id', 2)->get()
+                            'currencies' => Currency::where('state_id', 2)->get(),
+                            'countries' => CacheService::getCountries()
                         ]
                     ]
                 ], 200);

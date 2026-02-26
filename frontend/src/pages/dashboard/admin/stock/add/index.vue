@@ -11,7 +11,6 @@ import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { yearValidator, requiredValidator, emailValidator, phoneValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
-import { useTasksStores } from '@/stores/useTasks'
 import { useAuthStores } from '@/stores/useAuth'
 import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -24,7 +23,6 @@ const ability = useAppAbility()
 const authStores = useAuthStores()
 const vehiclesStores = useVehiclesStores()
 const carInfoStores = useCarInfoStores()
-const tasksStores = useTasksStores()
 const documentsStores = useDocumentsStores()
 const configsStores = useConfigsStores()
 const companyInfoStores = useCompanyInfoStores()
@@ -33,7 +31,6 @@ const personInfoStores = usePersonInfoStores()
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const emitter = inject("emitter")
-const route = useRoute()
 
 const advisor = ref({
   type: '',
@@ -147,7 +144,9 @@ const mail = ref(null)
 const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
-const identifications = ref([])
+const countries = ref([])
+const country_id = ref(null)
+const failedExternalFlags = ref({})
 
 const organization_number = ref('')
 const address = ref('')
@@ -275,6 +274,7 @@ const currentVehicleData = computed(() => ({
   // Datos del cliente (tab-3)
   client_type_id: client_type_id.value,
   client_id: client_id.value,
+  country_id: country_id.value,
   fullname: fullname.value,
   email: email.value,
   organization_number: organization_number.value,
@@ -401,7 +401,7 @@ async function fetchData() {
     states.value = data.states
     clients.value = data.clients
     client_types.value = data.client_types
-    identifications.value = data.identifications
+    countries.value = data.countries
     currencies.value = data.currencies
 
     await searchVehicleByPlate()
@@ -450,6 +450,62 @@ const selectBrand = brand => {
         modelsByBrand.value = models.value.filter(item => item.brand_id === _brand.id)
     }
 }
+
+const findCountry = country => {
+  if (!country || !Array.isArray(countries.value)) return null
+
+  const normalizeText = value =>
+    String(value ?? '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+  if (typeof country === 'object') {
+    return countries.value.find(item => item.id === country.id) || null
+  }
+
+  return countries.value.find(item => String(item.id) === String(country))
+      || countries.value.find(item => normalizeText(item.name) === normalizeText(country))
+
+}
+
+const getFlagFromDb = selectedCountry => {
+  const flag = String(selectedCountry?.flag ?? '').trim()
+  if (!flag) return ''
+
+  if (/^https?:\/\//i.test(flag)) return flag
+
+  const basePublicUrl = String(themeConfig.settings.urlStorage ?? '').replace(/\/+$/, '')
+  const cleanFlag = flag.replace(/^\/+/, '')
+
+  if (cleanFlag.startsWith('/'))
+    return `${basePublicUrl}/${cleanFlag}`
+
+  return `${basePublicUrl}/${cleanFlag}`
+}
+
+const getFlagCountry = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry) return ''
+
+  const hasExternalError = !!failedExternalFlags.value[selectedCountry.id]
+
+  if (selectedCountry?.iso && !hasExternalError)
+    return `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+
+  return getFlagFromDb(selectedCountry)
+}
+
+const onCountryFlagError = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry?.id || !selectedCountry?.iso) return
+
+  failedExternalFlags.value = {
+    ...failedExternalFlags.value,
+    [selectedCountry.id]: true,
+  }
+}
+
 
 /**
  * Buscar información del vehículo por matrícula usando la API car.info
@@ -583,15 +639,6 @@ const createTask = async () => {
 
     refTask.value?.validate().then(async({ valid }) => {
             if (valid) {
-                // let formData = new FormData()
-
-                // formData.append('vehicle_id', vehicle_id.value)
-                // formData.append('measure', measure.value)
-                // formData.append('cost', cost.value)
-                // formData.append('description', description.value)
-                // formData.append('start_date', start_date.value)
-                // formData.append('end_date', end_date.value)
-                // formData.append('is_cost', is_cost.value)
 
                 var currentTasks = tasks.value || [];
 
@@ -609,38 +656,6 @@ const createTask = async () => {
                 tasks.value = currentTasks
 
                 isConfirmTaskMobileDialogVisible.value = false
-                // isRequestOngoing.value = true
-
-                // tasksStores.addTask(formData)
-                //     .then(async (res) => {
-                //         if (res.data.success) {
-                //             advisor.value = {
-                //                 type: 'success',
-                //                 message: 'Uppgift skapad!',
-                //                 show: true
-                //             }
-                //         }
-                //         isRequestOngoing.value = false
-
-                //         measure.value = null
-                //         cost.value = null
-                //         description.value = null
-                //         start_date.value = null
-                //         end_date.value = null
-                //         is_cost.value = 0
-
-                //         await fetchData()
-                //     })
-                //     .catch((err) => {
-                        
-                //         advisor.value = {
-                //             type: 'error',
-                //             message: err.message,
-                //             show: true
-                //         }
-
-                //         isRequestOngoing.value = false
-                //     })
                 
                 isRequestOngoing.value = false
 
@@ -656,14 +671,6 @@ const createTask = async () => {
                 savedVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
 
                 isConfirmTaskDialogVisible.value = false
-
-                // setTimeout(() => {
-                //     advisor.value = {
-                //         type: '',
-                //         message: '',
-                //         show: false
-                //     }
-                // }, 3000)
             }
     })
 }
@@ -683,57 +690,8 @@ const updateTask = async () => {
                     tasks.value[taskIndex] = { ...selectedTask.value }
                 }
 
-
-                // let formData = new FormData()
-
-                // formData.append('id', selectedTask.value.id)
-                // formData.append('_method', 'PUT')
-                // formData.append('vehicle_id', selectedTask.value.vehicle_id)
-                // formData.append('measure', selectedTask.value.measure)
-                // formData.append('description', selectedTask.value.description)
-                // formData.append('cost', selectedTask.value.cost)
-                // formData.append('start_date', selectedTask.value.start_date)
-                // formData.append('end_date', selectedTask.value.end_date)
-
                 isRequestOngoing.value = true
                 isConfirmUpdateTaskMobileDialogVisible.value = false
-                
-                // let data = {
-                //     data: formData, 
-                //     id: selectedTask.value.id
-                // }
-
-                // tasksStores.updateTask(data)
-                //     .then(async(res) => {
-                //         if (res.data.success) {
-                //             advisor.value = {
-                //                 type: 'success',
-                //                 message: 'Uppgift uppdaterad!',
-                //                 show: true
-                //             }
-                //         }
-
-                //         isRequestOngoing.value = false
-                //         selectedTask.value.vehicle_id = null
-                //         selectedTask.value.measure = null
-                //         selectedTask.value.cost = null
-                //         selectedTask.value.description = null
-                //         selectedTask.value.start_date = null
-                //         selectedTask.value.end_date = null
-                //         selectedTask.value.is_cost = 0
-
-                //         await fetchData()
-                //     })
-                //     .catch((err) => {
-                        
-                //         advisor.value = {
-                //             type: 'error',
-                //             message: err.message,
-                //             show: true
-                //         }
-
-                //         isRequestOngoing.value = false
-                //     })
                 
                 isRequestOngoing.value = false
                 selectedTask.value.vehicle_id = null
@@ -790,8 +748,6 @@ const showStatusModal = (taskData) => {
 const updateTypeTask = async () => {
     isRequestOngoing.value = true
 
-    // await tasksStores.typeTask(selectedTask.value.id)
-
     const taskData = { ...selectedTask.value }
     selectedTask.value = {
         ...taskData,
@@ -818,8 +774,6 @@ const updateTypeTask = async () => {
         message: 'Uppgift uppdaterad!',
         show: true
     }
-
-    // await fetchData()
 
     setTimeout(() => {
         advisor.value = {
@@ -849,7 +803,6 @@ const showTask = (taskData, isMobile = false, is_edit = false) => {
 }
 
 const removeTask = async (task) => {
-    // let res = await tasksStores.deleteTask(task.id)
 
     const taskId = task.id
     const taskIndex = tasks.value.findIndex(item => item.id === taskId)
@@ -863,8 +816,6 @@ const removeTask = async (task) => {
         message: 'Uppgift borttagen!',
         show: true
     }
-
-    // await fetchData()
 
     await nextTick();
     initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
@@ -904,11 +855,7 @@ const sendComment = async () => {
             tasks.value[taskIndex].comments = currentComments
         }
         
-        // await tasksStores.sendComment({ id: taskId, comment: comment.value})
-        
         isRequestOngoing.value = false
-        
-        // await refreshTasks()
         
         await nextTick()
         
@@ -961,17 +908,8 @@ const editComment = async (commentData) => {
         if (taskIndex !== -1) {
             tasks.value[taskIndex].comments = currentComments
         }
-
-        
-        // await tasksStores.updateComment({ 
-        //     task_id: taskId, 
-        //     comment_id: commentData.id, 
-        //     comment: commentData.comment
-        // })
         
         isRequestOngoing.value = false
-        
-        // await refreshTasks()
         
         await nextTick()
         
@@ -1022,14 +960,7 @@ const deleteComment = async (commentData) => {
         tasks.value[taskIndex].comments = currentComments
     }
     
-    // await tasksStores.deleteComment({ 
-    //     task_id: taskId, 
-    //     comment_id: commentData.id
-    // })
-    
     isRequestOngoing.value = false
-    
-    // await refreshTasks()
     
     await nextTick()
     
@@ -1070,17 +1001,6 @@ const formatDecimal = (value) => {
     return number.toString();
 }
 
-// Función para refrescar solo los tasks sin recargar toda la data
-const refreshTasks = async () => {
-    const data = await vehiclesStores.showVehicle(Number(route.params.id))
-    if (data && data.vehicle && data.vehicle.tasks) {
-        tasks.value = data.vehicle.tasks.map(task => ({
-            ...task,
-            cost: task.cost
-        }))
-    }
-}
-
 const showDocument = (isMobile = false) => {
     alertFile.value = null
     document_type_id.value = null
@@ -1110,13 +1030,6 @@ const handleFileUpload = async (event) => {
             const file = filename.value[0]
             if (!file) return
 
-            let formData = new FormData()
-
-            // formData.append('vehicle_id', vehicle_id.value)
-            // formData.append('document_type_id', document_type_id.value)
-            // formData.append('reference', reference.value)
-            // formData.append('file', file)
-
             isRequestOngoing.value = true
 
             // var currentDocuments = documents.value || [];
@@ -1134,50 +1047,6 @@ const handleFileUpload = async (event) => {
                 user_id: userData.value.id,
             })
 
-            // currentTasks.push({
-                    
-            //         measure: measure.value,
-            //         cost: cost.value,
-            //         description: description.value,
-            //         start_date: start_date.value,
-            //         end_date: end_date.value,
-            //         is_cost: is_cost.value,
-            //         comments: []
-            //     })
-
-            // documents.value = currentDocuments
-
-            // documentsStores.addDocument(formData)
-            //     .then(async(res) => {
-            //         if (res.data.success) {
-            //             advisor.value = {
-            //                 type: 'success',
-            //                 message: 'Dokument skapad!',
-            //                 show: true
-            //             }
-
-            //             closeDocument()
-            //             await fetchData()
-            //         } else {
-            //             alertFile.value = res.data.message
-            //             setTimeout(() => {
-            //                 alertFile.value = null
-            //             }, 5000)
-            //         }
-                     
-            //         isRequestOngoing.value = false
-            //     })
-            //     .catch((err) => {
-                    
-            //         advisor.value = {
-            //             type: 'error',
-            //             message: err.message,
-            //             show: true
-            //         }
-
-            //         isRequestOngoing.value = false
-            //     })
-
             advisor.value = {
                 type: 'success',
                 message: 'Dokument skapad!',
@@ -1185,7 +1054,6 @@ const handleFileUpload = async (event) => {
             }
 
             closeDocument()
-            // await fetchData()
 
             await nextTick();
             initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
@@ -1241,8 +1109,6 @@ const downloadDocument = (doc) => {
 
 const removeDocument = async (document) => {
 
-    // let res = await documentsStores.deleteDocument(document.id)
-
     const documentId = document.id
     const documentIndex = documents.value.findIndex(item => item.id === documentId)
 
@@ -1257,8 +1123,6 @@ const removeDocument = async (document) => {
         message: 'Dokument borttagen!',
         show: true
     }
-
-    // await fetchData()
 
     await nextTick();
     initialVehicleData.value = JSON.parse(JSON.stringify(currentVehicleData.value));
@@ -1276,12 +1140,20 @@ const removeDocument = async (document) => {
 }
 
 const formatOrgNumber = () => {
+  if (!organization_number.value) return
 
-    let numbers = organization_number.value.replace(/\D/g, '')
-    if (numbers.length > 4) {
-        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
-    }
-    organization_number.value = numbers
+  let numbers = organization_number.value.replace(/\D/g, '')
+  if (numbers.length > 4 && client_type_id.value !== 3) {
+    numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+  }
+  organization_number.value = numbers
+}
+
+const truncateText = (text, length = 30) => {
+  if (text && text.length > length)
+    return text.substring(0, length) + '...'
+
+  return text
 }
 
 /**
@@ -1433,6 +1305,10 @@ const selectClient = client => {
         postal_code.value = _client.postal_code
         phone.value = _client.phone
 
+        // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
+        client_type_id.value = _client.client_type_id ?? client_type_id.value
+        country_id.value = _client.country_id
+
         save_client.value = false
         disabled_client.value = true
     }
@@ -1446,6 +1322,8 @@ const clearClient = () => {
     street.value = null
     postal_code.value = null
     phone.value = null
+    client_type_id.value = null
+    country_id.value = null
 
     save_client.value = true
     disabled_client.value = false
@@ -1577,15 +1455,18 @@ const onSubmit = async () => {
                           !iva_purchase_id.value
 
     // Verificar tab-3 (Kund)
-    const hasTab3Errors = !client_type_id.value || 
-                          !organization_number.value || 
-                          (organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
-                          !fullname.value || 
-                          !street.value || 
-                          !address.value || 
-                          !postal_code.value ||
-                          (email.value && emailValidator(email.value) !== true) ||
-                          (phone.value && phoneValidator(phone.value) !== true)
+    const hasTab3Errors = !organization_number.value || 
+                        (client_type_id.value !== 3 && organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                        !client_type_id.value || 
+                        !fullname.value || 
+                        !address.value || 
+                        !postal_code.value || 
+                        !street.value || 
+                        !phone.value || 
+                        (phone.value && phoneValidator(phone.value) !== true) ||
+                        !email.value || 
+                        (email.value && emailValidator(email.value) !== true) ||
+                        (client_type_id.value === 3 && !country_id.value)
 
     // Si hay errores, ir al primer tab con error
     if (hasTab1Errors) {
@@ -1665,12 +1546,6 @@ const onSubmit = async () => {
 
             state_id.value = state_idOld.value
 
-            // if(state_id.value === 12) {
-            //     router.push({ name : 'dashboard-admin-sold-id'})
-            //     return false;
-            // }
-
-            // formData.append('id', Number(route.params.id))
             formData.append('_method', 'POST')
             formData.append('reg_num', reg_num.value)
             formData.append('brand_id', brand_id.value)
@@ -1708,6 +1583,7 @@ const onSubmit = async () => {
             formData.append('type', 2)
             formData.append('save_client', save_client.value)
             formData.append('client_type_id', client_type_id.value)
+            formData.append('country_id', country_id.value)
             formData.append('client_id', client_id.value)
             formData.append('fullname', fullname.value)
             formData.append('email', email.value)
@@ -1718,7 +1594,6 @@ const onSubmit = async () => {
             formData.append('phone', phone.value)
 
             formData.append('tasks', JSON.stringify(tasks.value))
-            // formData.append('documents', JSON.stringify(documents.value))
             
             documents.value.forEach((doc, index) => {
                 if (doc.fileObj) {
@@ -1733,10 +1608,6 @@ const onSubmit = async () => {
 
             isConfirmStatusDialogVisible.value = false
             isRequestOngoing.value = true
-
-            // let data = {
-            //     data: formData
-            // }
 
             vehiclesStores.addVehicle(formData)
                 .then((res) => {
@@ -1764,7 +1635,11 @@ const onSubmit = async () => {
 }
 
 const getFlag = (currency_id) => {
-    return currencies.value.filter(item => item.id === currency_id)[0].flag
+    if (!Array.isArray(currencies.value)) return ''
+
+    const selectedCurrency = currencies.value.find(item => item.id === currency_id)
+
+    return selectedCurrency?.flag || ''
 }
 
 function resizeSectionToRemainingViewport() {
@@ -2306,26 +2181,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectClient"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
-                                            <div class="d-flex gap-2">
-                                                <VTextField
-                                                    v-model="organization_number"
-                                                    style="flex: 1;"
-                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                                    minLength="11"
-                                                    maxlength="13"
-                                                    @input="formatOrgNumber()"
-                                                />
-                                                <VBtn
-                                                    class="btn-light w-auto px-4"
-                                                    @click="searchEntity"
-                                                >
-                                                    <VIcon icon="custom-search" size="24" />
-                                                    Hämta
-                                                </VBtn>
-                                            </div>
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <AppAutocomplete
                                                 v-model="client_type_id"
                                                 label="Säljaren är*"
@@ -2336,6 +2191,35 @@ onBeforeRouteLeave((to, from, next) => {
                                                 :rules="[requiredValidator]"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
+                                            <div class="d-flex gap-2">
+                                                <VTextField
+                                                    v-if="client_type_id !== 3"
+                                                    v-model="organization_number"
+                                                    style="flex: 1;"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="13"
+                                                    @input="formatOrgNumber()"
+                                                />
+                                                <VTextField
+                                                    v-else
+                                                    v-model="organization_number"
+                                                    style="flex: 1;"
+                                                    :rules="[requiredValidator]"
+                                                    @input="formatOrgNumber()"
+                                                />
+                                                <VBtn
+                                                    v-if="client_type_id !== 3"
+                                                    class="btn-light w-auto px-4"
+                                                    @click="searchEntity"
+                                                >
+                                                    <VIcon icon="custom-search" size="24" />
+                                                    Hämta
+                                                </VBtn>
+                                            </div>
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
                                                 v-model="fullname"
@@ -2343,11 +2227,42 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />                                            
                                             <VTextField
-                                                v-model="street"
-                                               :rules="[requiredValidator]"
-                                            /> 
+                                                v-model="phone"
+                                                :rules="[phoneValidator]"
+                                            />
+                                        </div> 
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="client_type_id === 3">
+                                            <AppAutocomplete
+                                                v-model="country_id"
+                                                label="Land*"
+                                                :items="countries"
+                                                :item-title="item => truncateText(item.name, windowWidth < 1024 ? 35 : 100)"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '200px' }"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                class="selector-country selector-truncate"
+                                            >
+                                                <template
+                                                v-if="country_id"
+                                                #prepend
+                                                >
+                                                <VAvatar
+                                                    start
+                                                    style="margin-top: -7px;"
+                                                    size="44">
+                                                    <VImg
+                                                    :src="getFlagCountry(country_id)"
+                                                    cover
+                                                    @error="onCountryFlagError(country_id)"
+                                                    />
+                                                </VAvatar>
+                                                </template>
+                                            </AppAutocomplete>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />                                            
@@ -2362,14 +2277,14 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="postal_code"
                                                 :rules="[requiredValidator]"
                                             />
-                                        </div>
+                                        </div>  
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />                                            
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Stad*" />
                                             <VTextField
-                                                v-model="phone"
-                                                :rules="[phoneValidator]"
-                                            />
-                                        </div>                                        
+                                                v-model="street"
+                                               :rules="[requiredValidator]"
+                                            /> 
+                                        </div>                                                                     
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />                                            
                                             <VTextField
@@ -4074,6 +3989,12 @@ onBeforeRouteLeave((to, from, next) => {
                         padding-top: 0px;
                     }
                 }
+            }
+        }
+
+        .selector-country {
+            .v-input__prepend {
+                margin-inline-end: 6px !important;
             }
         }
 

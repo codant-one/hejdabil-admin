@@ -29,6 +29,10 @@ class VehicleClient extends Model
         return $this->belongsTo(ClientType::class, 'client_type_id', 'id');
     }
 
+    public function country(){
+        return $this->belongsTo(country::class, 'country_id', 'id');
+    }
+
     public function agreement(){
         return $this->hasOne(Agreement::class, 'vehicle_client_id', 'id');
     }
@@ -71,6 +75,7 @@ class VehicleClient extends Model
         $client = self::create([
             'vehicle_id' => $request->vehicle_id === 'null' ? null : $request->vehicle_id,
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
+            'country_id' => $request->country_id === 'null' ? null : $request->country_id,
             'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
             'client_id' => $request->client_id === 'null' ? null : $request->client_id,
             'type' => $request->type ?? 1,
@@ -89,6 +94,7 @@ class VehicleClient extends Model
     public static function updateClient($request, $client) {
         $client->update([
             'client_type_id' => $request->client_type_id === 'null' ? null : $request->client_type_id,
+            'country_id' => $request->country_id === 'null' ? null : $request->country_id,
             'identification_id' => $request->identification_id === 'null' ? null : $request->identification_id,
             'client_id' => $request->client_id === 'null' ? null : $request->client_id,
             'type' => $request->type ?? 1,
