@@ -77,7 +77,7 @@ const last_dist_belt_date = ref(null)
 const comments = ref(null)
 const sale_comments = ref(null)
 
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 const tasks = ref([])
 

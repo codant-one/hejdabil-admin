@@ -168,7 +168,7 @@ const end_date = ref(null)
 const is_cost = ref(0)
 const isEdit = ref(false);
 
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 const initialVehicleData = ref(null);
 const savedVehicleData = ref(null);

@@ -85,7 +85,7 @@ const winter_tire = ref(0)
 const gearboxes = ref([])
 const carbodies = ref([])
 const fuels = ref([])
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 const generation = ref(null)
 const car_body_id = ref(null)

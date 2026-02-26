@@ -85,7 +85,7 @@ const dist_belt = ref(0)
 const last_dist_belt = ref(null)
 const last_dist_belt_date = ref(null)
 
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 // Kund
 const clients = ref([])

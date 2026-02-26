@@ -77,7 +77,7 @@ const last_dist_belt_date = ref(null)
 const comments = ref(null)
 const sale_comments = ref(null)
 
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 const tasks = ref([])
 
@@ -463,7 +463,7 @@ const setThumbsSwiper = (swiper) => {
                                             <div class="flex-1-1 d-flex flex-column gap-4">
                                                 <div class="d-flex flex-column gap-2">
                                                     <span class="title-detail"> Kamrem bytt? </span>
-                                                    <span class="subtitle-detail ml-2">
+                                                    <span class="subtitle-detail ml-2 mt-3">
                                                         <VRadioGroup v-model="dist_belt" inline readonly class="radio-form">
                                                             <VRadio
                                                                 v-for="(radio, index) in optionsRadio"

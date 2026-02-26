@@ -138,7 +138,7 @@ const paid_bank = ref(null)
 const selling_price = ref(null)
 const residual_debt = ref(0)
 const optionsSettled = ['Bilhandlare', 'Kund']
-const optionsRadio = ['Ja', 'Nej', 'Vet ej']
+const optionsRadio = ['Ja', 'Nej', 'Kamkedja', 'Vet ej']
 
 // const tab 4
 const bank_name = ref(null) 

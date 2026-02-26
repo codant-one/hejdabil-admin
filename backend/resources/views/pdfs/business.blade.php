@@ -505,13 +505,7 @@
                                 <td>
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
-                                        {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->offer->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->offer->dist_belt] ?? 'Vet ej' }}
                                     </div>
                                 </td>                            
                                 <td class="column-cell column-cell-right-2">
@@ -530,13 +524,7 @@
                                 <td colspan="2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
-                                        {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->offer->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->offer->dist_belt] ?? 'Vet ej' }}
                                     </div>
                                 </td>                           
                             </tr>
@@ -546,13 +534,7 @@
                             <td colspan="2">
                                 <div class="label">Kamrem bytt?</div>
                                 <div class="value">
-                                    {{ $agreement->offer->dist_belt === 0 ? 'Ja' : 
-                                      (
-                                        $agreement->offer->dist_belt === 1 ? 
-                                        'Nej' : 
-                                        'Vet ej'
-                                      ) 
-                                    }}
+                                    {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->offer->dist_belt] ?? 'Vet ej' }}
                                 </div>
                             </td>                          
                         </tr> 

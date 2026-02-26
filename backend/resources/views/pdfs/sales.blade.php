@@ -516,13 +516,7 @@
                                     <td>
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                            
                                     <td class="column-cell column-cell-right-2">
@@ -541,13 +535,7 @@
                                     <td colspan="2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                         
                                 </tr>
@@ -557,13 +545,7 @@
                                 <td colspan="2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                     </div>
                                 </td>                           
                             </tr> 
@@ -840,13 +822,7 @@
                                     <td>
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_interchange?->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                            
                                     <td class="column-cell column-cell-right-2">
@@ -865,13 +841,7 @@
                                     <td colspan="2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                           {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_interchange?->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                            
                                 </tr>
@@ -882,13 +852,7 @@
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
                                         @if($agreement->vehicle_interchange)
-                                            {{ $agreement->vehicle_interchange?->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_interchange?->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_interchange?->dist_belt] ?? 'Vet ej' }}
                                         @else
                                              
                                         @endif
@@ -992,13 +956,7 @@
                                     <td>
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                            
                                     <td class="column-cell column-cell-right-2">
@@ -1017,13 +975,7 @@
                                     <td colspan="2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
-                                            {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                            (
-                                                $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                                'Nej' : 
-                                                'Vet ej'
-                                            ) 
-                                            }}
+                                            {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                         </div>
                                     </td>                         
                                 </tr>
@@ -1033,13 +985,7 @@
                                 <td colspan="2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
-                                        {{ $agreement->vehicle_client->vehicle->dist_belt === 0 ? 'Ja' : 
-                                        (
-                                            $agreement->vehicle_client->vehicle->dist_belt === 1 ? 
-                                            'Nej' : 
-                                            'Vet ej'
-                                        ) 
-                                        }}
+                                        {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
                                     </div>
                                 </td>                           
                             </tr> 
