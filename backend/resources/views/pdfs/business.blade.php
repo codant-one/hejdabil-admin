@@ -610,7 +610,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <div class="signature-box">(Köparens underskrift)</div>
+                                <div class="signature-box">(Säljarens underskrift)</div>
                             </td>
                         </tr>
                         <tr>
@@ -631,7 +631,7 @@
                         </tr>
                         <tr>
                             <td style="text-align: right;">
-                                <div class="signature-box">(Säljföretagets underskrift)</div>
+                                <div class="signature-box">(Köparens underskrift)</div>
                             </td>
                         </tr>
                         <tr>
