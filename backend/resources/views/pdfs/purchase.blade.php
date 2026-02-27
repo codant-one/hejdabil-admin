@@ -148,6 +148,11 @@
             padding-bottom: 8px;
         }
 
+        .financials-table .moms-row td { 
+            font-weight: normal; 
+            padding-top: 0;
+        }
+
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
@@ -575,33 +580,79 @@
                             </td>
                         </tr>
                         @endif
-                        @if($agreement->vehicle_client->vehicle->payment->settled_by === 1)
+                        @if(!is_null($agreement->payment_type_id))
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Typ av utbetalning till säljaren</div>
+                                <div class="value">
+                                    @if($agreement->vehicle_client->vehicle->payment->payment_types)
+                                        {{ $agreement->vehicle_client->vehicle->payment->payment_types->name }}
+                                    @else   
+                                        En annan..
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @elseif($agreement->payment_type)
                         <tr>
                             <td class="column-cell column-cell-left-2">
                                 <div class="label">Typ av utbetalning till säljaren</div>
                                 <div class="value">
-                                    {{ $agreement->vehicle_client->vehicle->payment->payment_types->name }}
+                                    @if($agreement->vehicle_client->vehicle->payment->payment_types)
+                                        {{ $agreement->vehicle_client->vehicle->payment->payment_types->name }}
+                                    @else   
+                                        En annan..
+                                    @endif
                                 </div>
                             </td>
                             <td class="column-cell column-cell-right-2">
-                                <div class="label">Restsumma</div>
+                                <div class="label">Betalsätt</div>
                                 <div class="value">
-                                    {{ formatCurrency($agreement->vehicle_client->vehicle->payment->remaining_amount) }} kr
+                                    {{ $agreement->payment_type }}
                                 </div>
                             </td>
                         </tr>
-
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->payment->bank && $agreement->vehicle_client->vehicle->payment->account)
                         <tr>
                             <td class="column-cell column-cell-left-2">
+                                <div class="label">Namn på banken</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->payment->bank }}
+                                </div>                                
+                            </td>
+                            <td class="column-cell column-cell-right-2">
                                 <div class="label">Clearing/kontonummer</div>
                                 <div class="value">
                                     {{ $agreement->vehicle_client->vehicle->payment->account }}
                                 </div>
                             </td>
-                            <td class="column-cell column-cell-right-2">
+                        </tr>
+                        @elseif($agreement->vehicle_client->vehicle->payment->bank)
+                        <tr>
+                            <td colspan="2">
                                 <div class="label">Namn på banken</div>
                                 <div class="value">
                                     {{ $agreement->vehicle_client->vehicle->payment->bank }}
+                                </div>                                
+                            </td>
+                        </tr>
+                        @elseif($agreement->vehicle_client->vehicle->payment->account)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Clearing/kontonummer</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->payment->account }}
+                                </div>                                
+                            </td>
+                        </tr>
+                        @endif
+                        @if($agreement->vehicle_client->vehicle->payment->description)
+                        <tr>
+                            <td colspan="2">
+                                <div class="label">Betalningsbeskrivning</div>
+                                <div class="value">
+                                    {{ $agreement->vehicle_client->vehicle->payment->description }}
                                 </div>
                             </td>
                         </tr>
@@ -614,28 +665,30 @@
                 <td colspan="2" class="section-cell">
                     <h2>Kontantfaktura</h2>
                     <table class="financials-table">
-                        <thead>
-                            <tr>
-                                <td>Specifikation</td>
-                                <td>Pris</td>
-                                <td>Moms</td>
-                            </tr>
-                        </thead>
                         <tbody>
                             <tr>
-                                <td>{{ $agreement->vehicle_client->vehicle->reg_num }}</td>
+                                <td>Bilens begärda pris</td>
                                 <td>{{ formatCurrency($agreement->vehicle_client->vehicle->purchase_price) }} kr</td>
-                                <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
+                            </tr>
+                            <tr>
+                                <td>Kreditbelopp</td>
+                                <td>
+                                    @if($agreement->vehicle_client->vehicle->payment->loan_amount !== null && $agreement->vehicle_client->vehicle->payment->loan_amount > 0)
+                                        - {{ formatCurrency($agreement->vehicle_client->vehicle->payment->loan_amount) }} kr
+                                    @else
+                                        {{ formatCurrency($agreement->vehicle_client->vehicle->payment->loan_amount) }} kr
+                                    @endif
+                                </td>
                             </tr>
                         </tbody>
                         <tfoot>
-                            <tr>
-                                <td colspan="2">Varav moms</td>
-                                <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
-                            </tr>
                             <tr class="total-row">
-                                <td colspan="2">Totalsumma</td>
-                                <td>{{ formatCurrency($agreement->vehicle_client->vehicle->purchase_price) }} kr</td>
+                                <td>Restsumma</td>
+                                <td> {{ formatCurrency($agreement->vehicle_client->vehicle->payment->remaining_amount) }} kr</td>
+                            </tr>
+                            <tr class="moms-row">
+                                <td>Varav moms (20%)</td>
+                                <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
                             </tr>
                         </tfoot>
                     </table>

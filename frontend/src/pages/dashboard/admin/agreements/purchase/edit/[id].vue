@@ -163,9 +163,6 @@ const remaining_amount = computed(()=>{
     return price.value - loan_amount.value
 })
 
-const conditionalRules = computed(() => {
-    return settled_by.value === 1 ? [requiredValidator] : []
-})
 
 const conditionalRulesJa = computed(() => {
     return is_loan.value === 0 ? [requiredValidator] : []
@@ -305,7 +302,7 @@ async function fetchData() {
         iva_purchase_exclusive.value = formatDecimal(agreement.value.iva_purchase_exclusive ?? 0)
         registration_fee.value = formatDecimal(agreement.value.registration_fee ?? 0)
         payment_type.value = agreement.value.payment_type
-        payment_type_id.value = agreement.value.payment_type_id
+        payment_type_id.value = agreement.value.payment_type_id === null && agreement.value.payment_type !== null ? 0 : agreement.value.payment_type_id
         advance_id.value = agreement.value.advance_id
 
         is_loan.value = agreement.value.vehicle_client.vehicle.payment.is_loan
@@ -741,20 +738,6 @@ const handleChange = (val) => {
     }
 }
 
-const handleChangeTwo = (val) => {
-    if(val === 0) {
-        payment_type_id.value = null
-        payment_type.value = null
-        bank.value = null
-        account.value = null
-        description.value = null
-    }
-
-    if (refForm.value) {
-        refForm.value.validate()
-    }
-}
-
 /**
  * Buscar información del vehículo por matrícula usando la API car.info
  * Llena automáticamente los campos: Modell, Kaross, Drivmedel, etc.
@@ -979,9 +962,8 @@ const onSubmit = async () => {
     // Verificar tab 2 (Pris)
     const hasTab2Errors = !price.value || 
                           !iva_id.value ||
-                          (payment_type_id.value === 0 && !payment_type.value) ||
                           (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
-                          (settled_by.value === 1 && (!payment_type_id.value || !bank.value || !account.value || !description.value))
+                          (settled_by.value === 1 && (!description.value))
 
     // Lógica de navegación entre tabs (0, 1, 2)
     if (currentTab.value === 0) {
@@ -2143,8 +2125,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <VRadioGroup 
                                                     v-model="settled_by" 
                                                     inline 
-                                                    class="radio-form" 
-                                                    @update:modelValue="handleChangeTwo">
+                                                    class="radio-form">
                                                     <VRadio
                                                         v-for="(radio, index) in optionsSettled"
                                                         :key="index"
@@ -2156,18 +2137,15 @@ onBeforeRouteLeave((to, from, next) => {
                                             </div>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="settled_by === 1" class="mb-1 text-body-2 text-high-emphasis" text="Typ av utbetalning till säljaren*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Typ av utbetalning till säljaren" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Typ av utbetalning till säljaren" />
                                             <AppAutocomplete
                                                 v-model="payment_type_id"
                                                 :items="getPaymentTypes"
                                                 autocomplete="off"
                                                 clearable
                                                 clear-icon="tabler-x"
-                                                :rules="conditionalRules"
                                                 @update:modelValue="selectPaymentType"
                                                 @click:clear="selectPaymentType"
-                                                :disabled="settled_by !== 1 ? true : false"
                                                 :menu-props="{ maxHeight: '300px' }"
                                             />
                                         </div>
@@ -2179,30 +2157,21 @@ onBeforeRouteLeave((to, from, next) => {
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="settled_by === 1" class="mb-1 text-body-2 text-high-emphasis" text="Namn på banken*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Namn på banken" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn på banken" />
                                             <VTextField
                                                 v-model="bank"
-                                                :rules="conditionalRules"
-                                                :disabled="settled_by !== 1 ? true : false"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="settled_by === 1" class="mb-1 text-body-2 text-high-emphasis" text="Clearing/kontonummer*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Clearing/kontonummer" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Clearing/kontonummer" />
                                             <VTextField
                                                 v-model="account"
-                                                :rules="conditionalRules"
-                                                :disabled="settled_by !== 1 ? true : false"
                                             />
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel v-if="settled_by === 1" class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning*" />
-                                            <VLabel v-else class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning" />
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalningsbeskrivning" />
                                             <VTextField
                                                 v-model="description"
-                                                :rules="conditionalRules"
-                                                :disabled="settled_by !== 1 ? true : false"
                                             />
                                         </div>
                                     </div>
