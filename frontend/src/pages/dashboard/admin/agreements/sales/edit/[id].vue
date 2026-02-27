@@ -284,7 +284,7 @@ watch(() => reg_num_interchange.value, (val) => {
         chassis_interchange.value = null
         engine_interchange.value = null
         car_name_interchange.value = null
-        trade_price.value = 0
+        trade_price.value = null
         residual_debt.value = 0
         residual_price.value = null
         iva_purchase_id_interchange.value = null
@@ -429,7 +429,7 @@ async function fetchData() {
             chassis_interchange.value = agreement.value.vehicle_interchange.chassis
             engine_interchange.value = agreement.value.vehicle_interchange.engine
             car_name_interchange.value = agreement.value.vehicle_interchange.car_name
-            trade_price.value = formatDecimal(agreement.value.vehicle_interchange.purchase_price ?? 0)
+            trade_price.value = agreement.value.vehicle_interchange.purchase_price ? formatDecimal(agreement.value.vehicle_interchange.purchase_price) : null
             residual_debt.value = agreement.value.residual_debt
             residual_price.value = agreement.value.residual_price ? formatDecimal(agreement.value.residual_price) : null
             iva_purchase_id_interchange.value = agreement.value.vehicle_interchange.iva_purchase_id

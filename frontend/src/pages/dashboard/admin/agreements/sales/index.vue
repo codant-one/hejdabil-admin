@@ -282,7 +282,7 @@ watch(() => reg_num_interchange.value, (val) => {
         chassis_interchange.value = null
         engine_interchange.value = null
         car_name_interchange.value = null
-        trade_price.value = 0
+        trade_price.value = null
         residual_debt.value = 0
         residual_price.value = null
         iva_purchase_id_interchange.value = null
