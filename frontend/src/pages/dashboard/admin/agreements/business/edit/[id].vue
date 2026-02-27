@@ -1388,7 +1388,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <AppAutocomplete
                           :menu-props="{ maxHeight: '300px' }"
                           v-model="client_type_id"
-                          label="Köparen är*"
+                          label="Säljaren är*"
                           :items="client_types"
                           :item-title="item => item.name"
                           :item-value="item => item.id"
