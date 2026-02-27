@@ -962,7 +962,8 @@ const onSubmit = async () => {
     // Verificar tab 2 (Pris)
     const hasTab2Errors = !price.value || 
                           !iva_id.value ||
-                          (is_loan.value === 0 && (!loan_amount.value || !lessor.value))
+                          (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
+                          (payment_type_id.value === 0 && (!payment_type.value))
 
     // Lógica de navegación entre tabs (0, 1, 2)
     if (currentTab.value === 0) {
