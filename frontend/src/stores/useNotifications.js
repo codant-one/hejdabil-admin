@@ -4,6 +4,27 @@ import router from '@/router'
 
 // Callback global para notificaciones
 let globalNotificationCallback = null
+let notificationAudio = null
+const NOTIFICATION_SOUND_PATH = '/sounds/notification-random.wav'
+
+const playNotificationSound = () => {
+  if (typeof window === 'undefined') return
+
+  try {
+    if (!notificationAudio) {
+      notificationAudio = new Audio(NOTIFICATION_SOUND_PATH)
+      notificationAudio.preload = 'auto'
+    }
+
+    notificationAudio.currentTime = 0
+    const playPromise = notificationAudio.play()
+
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {})
+    }
+  } catch (error) {
+  }
+}
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
@@ -252,6 +273,7 @@ export const useNotificationsStore = defineStore('notifications', {
       }
       
       this.notifications.unshift(mapped)
+      playNotificationSound()
       
       // Llamar al callback global si existe
       if (globalNotificationCallback) {

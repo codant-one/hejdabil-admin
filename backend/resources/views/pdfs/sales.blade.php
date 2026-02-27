@@ -1052,9 +1052,90 @@
                     </table>                            
                 </td>
             </tr>
+            
+            <!-- === PAYMENT INFORMATION === -->
+            <tr @if(!is_null($agreement->vehicle_interchange)) class="page-break" @endif>
+                <td colspan="2" class="section-cell">
+                    <h2>Betalningsinformation</h2>                    
+                </td>
+            </tr>
+            <tr>
+                <td class="column-cell column-cell-left">                    
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="label">Kontant / Handpenning</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->payment_received) }} kr
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Återstående belopp / Finansiering</div>
+                                <div class="value">
+                                    {{ formatCurrency($agreement->installment_amount) }} kr
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Plusgiro</div>
+                                <div class="value">
+                                    {{ $company->plus_spin }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Betalsätt för kontant / handpenning</div>
+                                <div class="value">
+                                    {{ $agreement->payment_method_forcash}}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td class="column-cell column-cell-right">         
+                    <table class="info-table">
+                        <tr>
+                            <td>
+                                <div class="label">Betalsätt</div>
+                                <div class="value">
+                                    {{ $agreement->payment_types->name }} 
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Bank för inbetalning</div>
+                                <div class="value">
+                                    {{ $company->bank }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Kontonummer</div>
+                                <div class="value">
+                                    {{ $company->account_number }}
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="label">Betalningsbeskrivning</div>
+                                <div class="value">
+                                    {{ $agreement->payment_description }}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>                           
+                </td>
+            </tr>            
 
             <!-- === FINANCIAL OVERVIEW === -->
-            <tr>
+            <tr @if(is_null($agreement->vehicle_interchange)) class="page-break" @endif>
                 <td colspan="2" class="section-cell">
                     <h2>Ekonomisk Översikt</h2>
                     <table class="financials-table">
@@ -1076,7 +1157,7 @@
                                 @endif
                             </tr>
                             <tr>
-                                <td>Kontant / Handpenning</td>
+                                <td>Summa kontant / handpenning</td>
                                 @if($agreement->payment_received !== null && $agreement->payment_received > 0)
                                 <td>- {{ formatCurrency($agreement->payment_received) }} kr</td>
                                 @else
@@ -1109,73 +1190,8 @@
                     </table>
                 </td>
             </tr>
-            
-            <!-- === PAYMENT INFORMATION === -->
-            <tr @if(is_null($agreement->vehicle_interchange)) class="page-break" @endif>
-                <td colspan="2" class="section-cell">
-                    <h2>Betalningsinformation</h2>                    
-                </td>
-            </tr>
-            <tr>
-                <td class="column-cell column-cell-left">                    
-                    <table class="info-table">
-                        <tr>
-                            <td>
-                                <div class="label">Kontant / Handpenning</div>
-                                <div class="value">
-                                    {{ formatCurrency($agreement->payment_received) }} kr
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Återstående belopp / Finansiering</div>
-                                <div class="value">
-                                    {{ formatCurrency($agreement->installment_amount) }} kr
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Plusgiro</div>
-                                <div class="value">
-                                    {{ $company->plus_spin }}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>
-                </td>
-                <td class="column-cell column-cell-right">         
-                    <table class="info-table">
-                        <tr>
-                            <td>
-                                <div class="label">Betalsätt för handpenning</div>
-                                <div class="value">
-                                    {{ $agreement->payment_types->name }} 
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Bank för inbetalning</div>
-                                <div class="value">
-                                    {{ $company->bank }}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="label">Kontonummer</div>
-                                <div class="value">
-                                    {{ $company->account_number }}
-                                </div>
-                            </td>
-                        </tr>
-                    </table>                           
-                </td>
-            </tr>            
 
-            @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
+                        @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
             <tr>
                 <td colspan="2" class="section-cell">
                     <h2>Villkor</h2>
@@ -1210,36 +1226,36 @@
             </tr>
         </tbody>
     </table>
-        <!-- === FOOTER === -->
-        <div class="footer-section">
-            <div class="consent-text">
-                <p style="margin: 0;">
-                    Köparen samtycker till att personuppgifter behandlas och lagras för att uppfylla rättsliga skyldigheter avseende räkenskapsinformation enligt bokföringslagen (2010:1514), 2 kap. 8 § första stycket 8 b.
-                </p>
-            </div>
-            <table class="signatures-table" style="width: 100%;">
-                <tr>
-                    <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->
-                    <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
-                        <div style="min-height: 70px;">
-                            @if(isset($signature_url))  
-                                <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
-                            @endif
-                        </div>
-                        <div class="signature-box">(Köparens underskrift)</div>
-                    </td>
-                    
-                    <!-- Celda Derecha: Firma del Vendedor (Säljföretagets) - VACÍA -->
-                    <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
-                        <div style="min-height: 70px;">
-                            @if($company->img_signature)
-                                <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
-                            @endif
-                        </div>
-                        <div class="signature-box">(Säljföretagets underskrift)</div>
-                    </td>
-                </tr>
-            </table>
+    <!-- === FOOTER === -->
+    <div class="footer-section">
+        <div class="consent-text">
+            <p style="margin: 0;">
+                Köparen samtycker till att personuppgifter behandlas och lagras för att uppfylla rättsliga skyldigheter avseende räkenskapsinformation enligt bokföringslagen (2010:1514), 2 kap. 8 § första stycket 8 b.
+            </p>
         </div>
+        <table class="signatures-table" style="width: 100%;">
+            <tr>
+                <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->
+                <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
+                    <div style="min-height: 70px;">
+                        @if(isset($signature_url))  
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                        @endif
+                    </div>
+                    <div class="signature-box">(Köparens underskrift)</div>
+                </td>
+                
+                <!-- Celda Derecha: Firma del Vendedor (Säljföretagets) - VACÍA -->
+                <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
+                    <div style="min-height: 70px;">
+                        @if($company->img_signature)
+                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                        @endif
+                    </div>
+                    <div class="signature-box">(Säljföretagets underskrift)</div>
+                </td>
+            </tr>
+        </table>
+    </div>
 </body>
 </html>
