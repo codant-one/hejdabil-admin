@@ -3,7 +3,7 @@
 import { useDisplay } from "vuetify";
 import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
-import { excelParser } from '@/plugins/csv/excelParser'
+import { useConfigsStores } from '@/stores/useConfigs'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
@@ -11,6 +11,8 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { formatNumber } from '@/@core/utils/formatters'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import html2pdf from 'html2pdf.js'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import html2canvas from 'html2canvas';
@@ -27,6 +29,7 @@ const hasLoaded = ref(false);
 const authStores = useAuthStores()
 const clientsStores = useClientsStores()
 const payoutsStores = usePayoutsStores()
+const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -64,6 +67,7 @@ const selectedPayoutForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 const userData = ref(null)
 const role = ref(null)
+const company = ref({})
 const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
@@ -133,6 +137,26 @@ async function fetchData(cleanFilters = false) {
   ability.update(userAbilities)
 
   localStorage.setItem('user_data', JSON.stringify(user_data))
+
+  if (role.value === 'Supplier') {
+    company.value = user_data.user_detail
+    company.value.email = user_data.email
+    company.value.billings = user_data.supplier.billings
+    company.value.name = user_data.name
+    company.value.last_name = user_data.last_name
+  } else if (role.value === 'User') {
+    company.value = user_data.supplier.boss.user.user_detail
+    company.value.email = user_data.supplier.boss.user.email
+    company.value.billings = user_data.supplier.boss.billings
+    company.value.name = user_data.supplier.boss.user.name
+    company.value.last_name = user_data.supplier.boss.user.last_name
+  } else {
+    await configsStores.getFeature('company')
+    await configsStores.getFeature('logo')
+
+    company.value = configsStores.getFeaturedConfig('company')
+    company.value.logo = configsStores.getFeaturedConfig('logo').logo
+  }
 
   if(role.value === 'Supplier') {
     payer_alias.value = user_data.supplier.payout_number
@@ -368,36 +392,6 @@ const submitCreate = payoutData => {
           }
       }, 3000)
     })
-}
-
-const downloadCSV = async () => {
-
-  isRequestOngoing.value = true
-
-  let data = { limit: -1 }
-
-  await payoutsStores.fetchPayouts(data)
-
-  let dataArray = [];
-      
-  payoutsStores.getPayouts.forEach(element => {
-
-    let data = {
-      ID: element.id,
-      USER: element.user.name + ' ' + (element.user.last_name ?? ''),
-      AMOUNT: element.amount,
-      PAYEE_ALIAS: element.payee_alias,
-      STATE: element.state.name
-    }
-          
-    dataArray.push(data)
-  })
-
-  excelParser()
-    .exportDataFromJSON(dataArray, "payouts", "csv");
-
-  isRequestOngoing.value = false
-
 }
 
 const openPayoutDialog = () => {  
@@ -654,6 +648,119 @@ const handleSendPayout = () => {
   })
 }
 
+const downloadPDF = async () => {
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    let data = { limit: -1 }
+
+    await payoutsStores.fetchPayouts(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const rows = payoutsStores.getPayouts.map(element => ({
+      message: element.message,
+      date: formatDateTime(element.created_at),
+      payeeSSN: element.payee_ssn,
+      payeeAlias: element.payee_alias,
+      amount: formatNumber(element.amount ?? 0),
+      supplier: element.supplier
+        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        : '',
+      state: element.state.name,
+    }))
+
+    const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+    const columnWidth = includeSupplierColumn ? '14.28%' : '16.66%'
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'SWISH',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      <tr style="height: 48px;">
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.message)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.date)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.payeeSSN)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">+${escapeHtml(item.payeeAlias)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.amount)} kr</td>
+        ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.state)}</td>
+      </tr>
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Referens</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Datum</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Personnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Belopp</td>
+                      ${includeSupplierColumn ? `<td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Leverantör</td>` : ''}
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Status</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'payouts.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
+}
 </script>
 
 <template>
@@ -685,7 +792,7 @@ const handleSendPayout = () => {
           <VBtn 
             class="btn-light w-auto" 
             block
-            @click="downloadCSV">
+            @click="downloadPDF">
             <VIcon icon="custom-export" size="24" />
             Exportera
           </VBtn>
@@ -1695,4 +1802,4 @@ const handleSendPayout = () => {
   meta:
     action: view
     subject: payouts
-</route>
+</route>ute>
