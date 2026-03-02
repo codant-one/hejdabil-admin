@@ -963,7 +963,7 @@ const onSubmit = async () => {
     const hasTab2Errors = !price.value || 
                           !iva_id.value ||
                           (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
-                          (settled_by.value === 1 && (!description.value))
+                          (payment_type_id.value === 0 && (!payment_type.value))
 
     // Lógica de navegación entre tabs (0, 1, 2)
     if (currentTab.value === 0) {
