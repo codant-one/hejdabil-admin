@@ -606,7 +606,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Kunder <span v-if="hasLoaded">({{ clients.length }})</span></h2>
+          <h2>Kunder <span v-if="hasLoaded">({{ totalClients }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

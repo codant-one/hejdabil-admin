@@ -503,7 +503,7 @@ onBeforeUnmount(() => {
       >
         <div class="align-center font-blauer">
           <h2>
-            Fakturor <span v-if="hasLoaded">({{ billings.length }})</span>
+            Fakturor <span v-if="hasLoaded">({{ totalBillings }})</span>
           </h2>
         </div>
 

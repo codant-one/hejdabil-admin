@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
         ]"
       >
         <div class="align-center font-blauer">
-          <h2>Sålda fordon <span v-if="hasLoaded">({{ vehicles.length }})</span></h2>
+          <h2>Sålda fordon <span v-if="hasLoaded">({{ totalVehicles }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
