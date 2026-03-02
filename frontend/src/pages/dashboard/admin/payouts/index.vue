@@ -15,6 +15,7 @@ import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 
 import billogg from "@/assets/images/billogg_img.svg";
@@ -72,11 +73,20 @@ const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
+const date = ref(null)
+const isExportMenuVisible = ref(false)
+const isExportingPdf = ref(false)
+const lastExportSelectionKey = ref(null)
 
 const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+watch(isExportMenuVisible, isVisible => {
+  if (isVisible)
+    lastExportSelectionKey.value = null
 })
 
 // 👉 Computing pagination data
@@ -664,6 +674,74 @@ const downloadPDF = async () => {
   try {
     let data = { limit: -1 }
 
+    const toYmd = value => {
+      if (!value)
+        return null
+
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const year = value.getFullYear()
+        const month = `${value.getMonth() + 1}`.padStart(2, '0')
+        const day = `${value.getDate()}`.padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+
+      if (typeof value === 'string') {
+        const normalized = value.trim()
+        const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+        if (ymdMatch)
+          return ymdMatch[0]
+
+        const parsed = new Date(normalized)
+        if (!Number.isNaN(parsed.getTime())) {
+          const year = parsed.getFullYear()
+          const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+          const day = `${parsed.getDate()}`.padStart(2, '0')
+          return `${year}-${month}-${day}`
+        }
+      }
+
+      return null
+    }
+
+    const getDateRangePayload = () => {
+      if (!date.value)
+        return {}
+
+      if (Array.isArray(date.value)) {
+        const from = toYmd(date.value[0])
+        const to = toYmd(date.value[1] ?? date.value[0])
+        if (from && to)
+          return { date_from: from, date_to: to }
+      }
+
+      if (typeof date.value === 'string') {
+        const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+        if (splitByRange.length >= 2) {
+          const from = toYmd(splitByRange[0])
+          const to = toYmd(splitByRange[1])
+          if (from && to)
+            return { date_from: from, date_to: to }
+        }
+
+        const single = toYmd(date.value)
+        if (single)
+          return { date_from: single, date_to: single }
+      }
+
+      if (date.value instanceof Date) {
+        const single = toYmd(date.value)
+        if (single)
+          return { date_from: single, date_to: single }
+      }
+
+      return {}
+    }
+
+    data = {
+      ...data,
+      ...getDateRangePayload(),
+    }
+
     await payoutsStores.fetchPayouts(data)
 
     if (document.fonts?.load) {
@@ -761,6 +839,90 @@ const downloadPDF = async () => {
   }
 
 }
+
+const exportPDFAndCloseMenu = async () => {
+  if (isExportingPdf.value)
+    return
+
+  isExportingPdf.value = true
+  try {
+    await downloadPDF()
+    isExportMenuVisible.value = false
+  } finally {
+    isExportingPdf.value = false
+  }
+}
+
+const buildRangeSelectionKey = value => {
+  if (!value)
+    return null
+
+  const normalize = item => {
+    if (!item)
+      return ''
+
+    if (item instanceof Date && !Number.isNaN(item.getTime())) {
+      const year = item.getFullYear()
+      const month = `${item.getMonth() + 1}`.padStart(2, '0')
+      const day = `${item.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof item === 'string')
+      return item.trim()
+
+    return String(item)
+  }
+
+  if (Array.isArray(value)) {
+    const first = normalize(value[0])
+    const second = normalize(value[1] ?? value[0])
+
+    return `${first}__${second}`
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return `${chunks[0]}__${chunks[1]}`
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const single = normalize(value)
+  return `${single}__${single}`
+}
+
+const isCompleteRangeSelection = value => {
+  if (!value)
+    return false
+
+  if (Array.isArray(value))
+    return value.length >= 2 && !!value[0] && !!value[1]
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+  }
+
+  return false
+}
+
+const onDatePickerUpdate = value => {
+  if (!isCompleteRangeSelection(value))
+    return
+
+  const selectionKey = buildRangeSelectionKey(value)
+  if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+    return
+
+  lastExportSelectionKey.value = selectionKey
+
+  if (!isExportingPdf.value)
+    exportPDFAndCloseMenu()
+}
 </script>
 
 <template>
@@ -789,13 +951,11 @@ const downloadPDF = async () => {
         </div>
 
         <div class="d-flex gap-4">
-          <VBtn 
-            class="btn-light w-auto" 
-            block
-            @click="downloadPDF">
-            <VIcon icon="custom-export" size="24" />
-            Exportera
-          </VBtn>
+          <ExportDateMenu
+            v-model="date"
+            v-model:menuVisible="isExportMenuVisible"
+            @update:modelValue="onDatePickerUpdate"
+          />
           <VBtn
             v-if="$can('create', 'payouts') && (role === 'Supplier' || role === 'User')"
             class="btn-gradient"
@@ -1802,4 +1962,4 @@ const downloadPDF = async () => {
   meta:
     action: view
     subject: payouts
-</route>ute>
+</route>

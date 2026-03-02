@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 
 use App\Models\UserDetails;
 use App\Models\User;
@@ -60,6 +61,14 @@ class Payout extends Model
 
         if ($filters->get('state_id') !== null) {
             $query->where('payout_state_id', $filters->get('state_id'));
+        }
+
+        if ($filters->get('date_from') && $filters->get('date_to')) {
+            $filter = [
+                [Carbon::parse($filters->get('date_from'))->format('Y-m-d').' 00:00:00'],
+                [Carbon::parse($filters->get('date_to'))->format('Y-m-d').' 23:59:59']
+            ];
+            $query->whereBetween('created_at', $filter);
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {

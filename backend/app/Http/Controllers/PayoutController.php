@@ -58,16 +58,19 @@ class PayoutController extends Controller
                                     'orderByField',
                                     'orderBy',
                                     'supplier_id',
-                                    'state_id'
+                                    'state_id',
+                                    'date_from',
+                                    'date_to'
                                 ])
                             );
 
             if ($limit == -1) {
                 $allPayouts = $query->get();
+                $perPage = max(1, $allPayouts->count());
                 $payouts = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allPayouts,
                     $allPayouts->count(),
-                    $allPayouts->count(),
+                    $perPage,
                     1
                 );
             } else {
