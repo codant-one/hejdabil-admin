@@ -567,9 +567,9 @@
                         @if($agreement->vehicle_client->vehicle->payment->is_loan === 0)
                         <tr>
                             <td class="column-cell column-cell-left-2">
-                                <div class="label">Kreditbelopp</div>
+                                <div class="label">Restskulden löses av</div>
                                 <div class="value">
-                                    {{ formatCurrency($agreement->vehicle_client->vehicle->payment->loan_amount) }} kr
+                                    {{ $agreement->vehicle_client->vehicle->payment->settled_by === 0 ? 'Bilhandlare' : 'Kund' }} 
                                 </div>
                             </td>
                             <td class="column-cell column-cell-right-2">
