@@ -39,10 +39,19 @@ const props = defineProps({
 const emit = defineEmits([
   'update:modelValue',
   'update:menuVisible',
+  'update:filtrera',
 ])
 
 const internalMenuVisible = ref(false)
 const pickerKey = ref(0)
+const filtrera = ref(false)
+const pendingValue = ref(props.modelValue)
+
+const applyFilter = () => {
+  emit('update:modelValue', pendingValue.value)
+  filtrera.value = true
+  emit('update:filtrera', true)
+}
 
 const resolvedMenuVisible = computed({
   get: () => (props.menuVisible === undefined ? internalMenuVisible.value : props.menuVisible),
@@ -59,11 +68,15 @@ watch(resolvedMenuVisible, isVisible => {
     return
 
   pickerKey.value += 1
-  emit('update:modelValue', null)
+  pendingValue.value = null
+})
+
+watch(() => props.modelValue, value => {
+  pendingValue.value = value
 })
 
 const onPickerUpdate = value => {
-  emit('update:modelValue', value)
+  pendingValue.value = value
 }
 </script>
 
@@ -86,12 +99,21 @@ const onPickerUpdate = value => {
     <VCard class="export-date-menu-card">
       <AppDateTimePicker
         :key="pickerKey"
-        :model-value="modelValue"
+        :model-value="pendingValue"
         @update:modelValue="onPickerUpdate"
         :label="pickerLabel"
         :placeholder="pickerPlaceholder"
         :config="pickerConfig"
       />
+      <div class="d-flex justify-end mt-2">
+        <VBtn
+          class="btn-white-2 px-3"
+          @click="applyFilter"
+        >
+          <VIcon icon="custom-filter" size="24" />
+          <span class="d-none d-md-block">Filtrera efter datum</span>
+        </VBtn>
+      </div>
     </VCard>
   </VMenu>
 </template>

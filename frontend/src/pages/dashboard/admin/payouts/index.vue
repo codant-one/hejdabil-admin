@@ -740,6 +740,8 @@ const downloadPDF = async () => {
     data = {
       ...data,
       ...getDateRangePayload(),
+      orderByField: 'id',
+      orderBy: 'desc'
     }
 
     await payoutsStores.fetchPayouts(data)
