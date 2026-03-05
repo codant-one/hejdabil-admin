@@ -473,7 +473,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
               class="btn-light w-100 mb-4"
               @click="duplicate"
             >
@@ -544,7 +544,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
+            v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
             @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>

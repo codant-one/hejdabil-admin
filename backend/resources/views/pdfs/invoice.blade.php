@@ -306,6 +306,9 @@
                                                     : $column['value'] 
                                                 }}
                                                 </span>
+                                                @if($column['id'] === 3 || $column['id'] === 4)
+                                                <span>kr</span>
+                                                @endif
                                             </td>
                                             @elseif($column['id'] === 5 && $billing->rabatt)
                                             <td 
