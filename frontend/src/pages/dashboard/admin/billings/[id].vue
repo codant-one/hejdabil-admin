@@ -7,6 +7,7 @@ import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
 
 const billingsStores = useBillingsStores();
 const route = useRoute();
@@ -384,6 +385,7 @@ onBeforeUnmount(() => {
 
           <div class="invoice-panel">
             <VuePdfEmbed
+              text-layer
               :source="
                 themeConfig.settings.urlbase +
                 'proxy-image?url=' +
