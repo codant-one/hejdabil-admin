@@ -432,6 +432,65 @@ const resolveStatus = state_id => {
     return { class: 'error' }
 }
 
+const hasStatusTooltip = (stateId) => [7, 9].includes(stateId)
+
+const getStatusTooltipLabel = (stateId) => {
+  if (stateId === 7) return 'Betaldatum'
+  if (stateId === 9) return 'Krediteradatum'
+  return ''
+}
+
+const getStatusTooltipDate = (billing) => {
+  if (billing.state.id === 7) return billing.updated_at
+  if (billing.state.id === 9) return billing.created_at
+  return null
+}
+
+const formatStatusDate = (date) => {
+  if (!date) return ''
+
+  return new Date(date).toLocaleString('sv-SE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour12: false,
+  })
+}
+
+const getBillingDetailRows = (rawDetail) => {
+  if (!rawDetail) return []
+
+  try {
+    const parsed = typeof rawDetail === 'string' ? JSON.parse(rawDetail) : rawDetail
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .map(row => {
+        if (!Array.isArray(row)) return null
+
+        const noteCell = row.find(column => column?.note)
+        if (noteCell?.note)
+          return {
+            note: noteCell.note,
+          }
+
+        const values = {}
+
+        row.forEach(column => {
+          if (column?.id)
+            values[column.id] = column.value
+        })
+
+        return {
+          values,
+        }
+      })
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
 const truncateText = (text, length = 15) => {
   if (text && text.length > length) {
     return text.substring(0, length) + '...';
@@ -1079,13 +1138,61 @@ onBeforeUnmount(() => {
                     </span>
                   </td>
                   <td class="text-center">
-                    {{ formatNumber(billing.total + billing.amount_discount) ?? "0,00" }} kr
+                    <VTooltip 
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          {{ formatNumber(billing.total + billing.amount_discount) ?? "0,00" }} kr
+                        </span>
+                      </template>
+                      <div class="billing-detail-tooltip">
+                        <table
+                          v-if="getBillingDetailRows(billing.detail).length"
+                          class="billing-detail-table"
+                        >
+                          <tbody>
+                            <tr
+                              v-for="(row, rowIndex) in getBillingDetailRows(billing.detail)"
+                              :key="rowIndex"
+                            >
+                              <td v-if="row.note" colspan="5">{{ row.note }}</td>
+                              <template v-else>
+                                <td>{{ row.values[1] ?? '-' }}</td>
+                                <td>{{ formatNumber(row.values[2] ?? '0.00') }}</td>
+                                <td>{{ formatNumber(row.values[3] ?? '0.00') }} kr</td>
+                                <td>{{ formatNumber(row.values[4] ?? '0.00') }} kr</td>
+                                <td v-if="row.values[5] > 0">{{ formatNumber(row.values[5] ?? '0.00') }} %</td>
+                              </template>
+                            </tr>
+                          </tbody>
+                        </table>
+                        <span v-else>Ingen detaljinformation</span>
+                      </div>
+                    </VTooltip>              
                   </td>
                   <td class="text-center">{{ billing.invoice_date }}</td>
                   <td class="text-center">{{ billing.due_date }}</td>
                   <!-- 😵 Statuses -->
                   <td class="text-center text-wrap d-flex justify-center align-center">
+                    <VTooltip 
+                      v-if="hasStatusTooltip(billing.state.id)"
+                      location="bottom">
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          <div                
+                            class="status-chip"
+                            :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
+                          >
+                            {{ billing.state.name }}
+                          </div>
+                        </span>
+                      </template>
+                      <span>{{ getStatusTooltipLabel(billing.state.id) }}:
+                        {{ formatStatusDate(getStatusTooltipDate(billing)) }}
+                      </span>
+                    </VTooltip>
                     <div
+                      v-else
                       class="status-chip"
                       :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
                     >
@@ -1186,7 +1293,7 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Visa som PDF</VListItemTitle>
                         </VListItem>
                         <VListItem
-                          v-if="$can('edit', 'billings')"
+                          v-if="$can('edit', 'billings') && billing.state_id !== 9"
                           @click="duplicate(billing)"
                         >
                           <template #prepend>
@@ -1814,7 +1921,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Visa som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings')"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9"
             @click="duplicate(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -2172,6 +2279,21 @@ onBeforeUnmount(() => {
 </style>
 
 <style lang="scss" scoped>
+
+  .billing-detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .billing-detail-table th,
+  .billing-detail-table td {
+    padding: 8px;
+    border-bottom: 1px solid #E7E7E7;
+    text-align: left;
+    vertical-align: top;
+  } 
+
   .bottom-sheet-card {
     border-radius: 20px 20px 0 0;
     width: 100%;

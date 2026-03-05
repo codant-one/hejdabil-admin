@@ -128,7 +128,6 @@
         }
 
         .financials-table .total-row td {
-            font-size: 12px;
             font-weight: 700;
             color: #008C91;
             border-top: 2px solid #E7E7E7;

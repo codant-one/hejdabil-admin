@@ -7,8 +7,6 @@ use Illuminate\Validation\Rule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
-use App\Models\Supplier;
-
 class SupplierSwishRequest extends FormRequest
 {
     /**
@@ -26,7 +24,10 @@ class SupplierSwishRequest extends FormRequest
      */
     public function rules(): array
     {
-        $supplier = Supplier::find($this->supplier);
+        $supplierId = $this->route('id')
+            ?? $this->route('supplier')
+            ?? $this->input('id')
+            ?? $this->input('supplier_id');
 
         $rules = [
             'is_payout' => [
@@ -34,7 +35,7 @@ class SupplierSwishRequest extends FormRequest
             ],
             'payout_number' => [
                 'required',
-                 Rule::unique('suppliers', 'payout_number')->ignore($this->supplier)
+                Rule::unique('suppliers', 'payout_number')->ignore($supplierId, 'id')
             ]
         ];
 

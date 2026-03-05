@@ -139,7 +139,6 @@
         }
 
         .financials-table .total-row td {
-            font-size: 12px;
             font-weight: 700;
             color: #008C91;
             border-top: 2px solid #E7E7E7;
@@ -683,11 +682,11 @@
                         </tbody>
                         <tfoot>
                             <tr class="total-row">
-                                <td>Restsumma</td>
+                                <td>RESTSUMMA</td>
                                 <td> {{ formatCurrency($agreement->vehicle_client->vehicle->payment->remaining_amount) }} kr</td>
                             </tr>
                             <tr class="moms-row">
-                                <td>Varav moms (20%)</td>
+                                <td>Varav moms (25%)</td>
                                 <td>{{ formatCurrency($agreement->iva_purchase_amount) }} kr</td>
                             </tr>
                         </tfoot>

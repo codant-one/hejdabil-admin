@@ -192,6 +192,9 @@ class Supplier extends Model
         $payoutNumberClean = preg_replace('/[^0-9]/', '', $request->payout_number);
         $common_name = $payoutNumberClean;
 
+        $supplier->is_payout = $request->is_payout;
+        $supplier->payout_number = $request->payout_number;
+
         //Si se va a guardar el PEM file
         if ($request->hasFile('file')) {
             $file = $request->file('file');
@@ -206,9 +209,6 @@ class Supplier extends Model
             Storage::disk('public')->put($filePath, file_get_contents($file));
             $supplier->pem_url = $filePath;
         } else { //Se se van a generar CSR y KEY
-            $supplier->is_payout = $request->is_payout;
-            $supplier->payout_number = $request->payout_number;
-
             $sslService = new OpenSslService();
 
             //Se crea CSR y KEY
@@ -245,7 +245,11 @@ class Supplier extends Model
             $supplier->key_url = $filePath;
         }
 
-        $supplier->save();
+        if ($supplier->isDirty()) {
+            $supplier->save();
+        } else {
+            $supplier->touch();
+        }
 
         return $supplier;
     }

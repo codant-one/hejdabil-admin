@@ -165,12 +165,27 @@ const formatDateForPreset = date => {
   return `${year}-${month}-${day}`
 }
 
+const parsePresetDate = value => {
+  if (!value)
+    return null
+
+  const parsed = value instanceof Date ? new Date(value) : new Date(value)
+
+  if (Number.isNaN(parsed.getTime()))
+    return null
+
+  return parsed
+}
+
 const applyPreset = preset => {
   if (!refFlatPicker.value?.fp)
     return
 
+  const calendarConfig = refFlatPicker.value.fp.config ?? {}
   const today = new Date()
-  const end = new Date(today)
+  const maxFromConfig = parsePresetDate(calendarConfig.maxDate ?? props.config?.maxDate)
+  const minFromConfig = parsePresetDate(calendarConfig.minDate ?? props.config?.minDate)
+  const end = maxFromConfig ?? new Date(today)
   let start = new Date(today)
 
   if (preset === 'today') {
@@ -178,9 +193,12 @@ const applyPreset = preset => {
   } else if (preset === 'lastWeek') {
     start.setDate(today.getDate() - 6)
   } else if (preset === 'lastMonth') {
-    start.setMonth(today.getMonth() - 1)
+    start.setDate(today.getDate() - 29)
   } else if (preset === 'lastYear') {
-    start.setFullYear(today.getFullYear() - 1)
+    start = minFromConfig ?? new Date(today)
+
+    if (!minFromConfig)
+      start.setFullYear(today.getFullYear() - 1)
   }
 
   selectedPreset.value = preset
@@ -284,7 +302,7 @@ const applyPreset = preset => {
           :class="{ active: selectedPreset === 'lastWeek' }"
           @click="applyPreset('lastWeek')"
         >
-          Förra veckan
+          Senaste 7 dagar
         </button>
         <button
           type="button"
@@ -292,7 +310,7 @@ const applyPreset = preset => {
           :class="{ active: selectedPreset === 'lastMonth' }"
           @click="applyPreset('lastMonth')"
         >
-          För en månad sedan
+          Senaste 30 dagar
         </button>
         <button
           type="button"
@@ -300,7 +318,7 @@ const applyPreset = preset => {
           :class="{ active: selectedPreset === 'lastYear' }"
           @click="applyPreset('lastYear')"
         >
-          Förra året
+          Hela perioden
         </button>
       </div>
 

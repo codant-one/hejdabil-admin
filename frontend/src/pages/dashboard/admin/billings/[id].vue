@@ -7,6 +7,7 @@ import VuePdfEmbed from "vue-pdf-embed";
 import Toaster from "@/components/common/Toaster.vue";
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import "/node_modules/vue-pdf-embed/dist/styles/textLayer.css";
 
 const billingsStores = useBillingsStores();
 const route = useRoute();
@@ -384,6 +385,7 @@ onBeforeUnmount(() => {
 
           <div class="invoice-panel">
             <VuePdfEmbed
+              text-layer
               :source="
                 themeConfig.settings.urlbase +
                 'proxy-image?url=' +
@@ -471,7 +473,7 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
               class="btn-light w-100 mb-4"
               @click="duplicate"
             >
@@ -542,7 +544,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ladda ner som PDF</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null"
+            v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
             @click="duplicate(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
