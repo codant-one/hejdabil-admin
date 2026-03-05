@@ -276,7 +276,7 @@
                                             width: 15%; 
                                             padding-right: 16px !important;
                                             height: 48px !important;"> 
-                                        Rabbat
+                                        Rabatt
                                     </td>
                                     @endif
                                 </tr>

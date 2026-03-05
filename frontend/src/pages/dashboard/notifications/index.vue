@@ -6,6 +6,8 @@ import { useNotificationsStore } from '@/stores/useNotifications'
 import { avatarText } from "@core/utils/formatters";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
+import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
+import navItems from "@/navigation/vertical";
 import UserProfile from "@/layouts/components/UserProfile.vue";
 import logo from "@images/logos/billogg-logo.svg";
 
@@ -16,6 +18,7 @@ const emitter = inject("emitter")
 const { width: windowWidth } = useWindowSize()
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null);
 
 const notifications = ref([])
 const searchQuery = ref('')
@@ -187,105 +190,155 @@ const formatTime = (dateString) => {
   return date.toLocaleDateString('sv-SE')
 }
 
+function resizeSectionToRemainingViewport() {
+  const el = sectionEl.value;
+  if (!el) return;
+
+  const rect = el.getBoundingClientRect();
+  const remaining = Math.max(0, window.innerHeight - rect.top - 25);
+  el.style.minHeight = `${remaining}px`;
+  console.log('remaining',remaining)
+}
+
+onMounted(() => {
+  resizeSectionToRemainingViewport();
+  window.addEventListener("resize", resizeSectionToRemainingViewport);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", resizeSectionToRemainingViewport);
+});
+
 </script>
 
 <template>
-  <LoadingOverlay :is-loading="isRequestOngoing" />
-  <VSnackbar
-    v-model="advisor.show"
-    transition="scroll-y-reverse-transition"
-    :location="snackbarLocation"
-    :color="advisor.type"
-    class="snackbar-alert snackbar-dashboard"
-  >
-    {{ advisor.message }}
-  </VSnackbar>
+  <section class="page-section" ref="sectionEl">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
 
-  <VCard class="page-notifications pa-6 d-flex flex-column" style="min-height: 100vh;">
-
-    <!--Menu horizontal-->
-    <div class="d-flex justify-between align-center mb-6 flex-wrap gap-y-4"> 
-      <div class="d-flex align-center flex-0 cursor-pointer" 
-          :class="windowWidth < 1024 ? 'justify-center' : ''"
-          @click="redirectTo('dashboard-panel')"
-      >
-        <img :src="logo" width="121" height="40" alt="Billogg" />
-      </div>
-
-      <div class="d-flex gap-x-3 buttons-center">
-        <VBtn
-          class="btn-blue px-6"
-          @click="redirectTo('dashboard-admin-agreements-purchase')"
+    <VCard 
+      class="page-notifications card-fill pa-6 d-flex flex-column" 
+      :class="windowWidth < 1024 ? '' : ''"
+    >
+      <!--Menu horizontal-->
+      <div class="d-flex justify-between align-center mb-6 flex-wrap gap-y-4 navigation-notification-bar"> 
+        <div class="d-flex align-center flex-0 cursor-pointer" 
+            :class="windowWidth < 1024 ? 'justify-center' : ''"
+            @click="redirectTo('dashboard-panel')"
         >
-          Köp
-          <VIcon icon="custom-car-close" size="24" />
-        </VBtn>
-        <VBtn
-          class="btn-green px-6"
-          @click="redirectTo('dashboard-admin-agreements-sales')"
-        >
-          Sälj
-          <VIcon icon="custom-car-open" size="24" />
-        </VBtn>
-      </div>
+          <img :src="logo" width="121" height="40" alt="Billogg" />
+        </div>
 
-      <div class="d-flex align-center gap-x-2">
-        <NavBarNotifications />
-        <VBtn
-          variant="flat"
-          :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
-          class="btn-white-3"
-          height="48"
-          width="48"
-        >
-          <VIcon icon="custom-settings" size="24" />
-        </VBtn>
-        <UserProfile />
-      </div>
-    </div>
-   
-    <template  
-      v-if="!$vuetify.display.mdAndDown"
-      v-show="notifications.length">
-
-      <div class="d-flex align-center w-100 w-md-auto margin-notifications my-6" v-if="notifications.length">
-        <span class="title-notifications">Alla meddelanden</span>
-
-        <VSpacer />
-
-        <div class="d-flex gap-4">
-          <VBtn 
-            class="btn-light" 
-            block
-            @click="onReadAll"
-           >
-            <VIcon icon="custom-eye" size="24" />
-            Markera alla som läst
+        <div class="d-flex gap-x-3 buttons-center" v-if="windowWidth >= 1024">
+          <VBtn
+            class="btn-blue px-6"
+            @click="redirectTo('dashboard-admin-agreements-purchase')"
+          >
+            Köp
+            <VIcon icon="custom-car-close" size="24" />
           </VBtn>
-          <VBtn 
-            class="btn-light" 
-            block
-            @click="onDeleteAll"
-           >
-            <VIcon icon="custom-waste" size="24" />
-            Rensa allt
+          <VBtn
+            class="btn-green px-6"
+            @click="redirectTo('dashboard-admin-agreements-sales')"
+          >
+            Sälj
+            <VIcon icon="custom-car-open" size="24" />
           </VBtn>
         </div>
+
+        <div class="d-flex align-center gap-x-2">
+          <NavBarNotifications />
+          <VBtn
+            variant="flat"
+            :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+            class="btn-white-3"
+            height="48"
+            width="48"
+          >
+            <VIcon icon="custom-settings" size="24" />
+          </VBtn>
+          <UserProfile />
+        </div>
+      </div>
+    
+      <!--Buttons-->
+      <div class="d-flex w-auto margin-notifications">
+        <VBtn                
+          class="btn-light" 
+          :to="{ name: 'dashboard-panel' }"
+          >
+          <VIcon icon="custom-return" size="24" />
+          <span v-if="windowWidth < 1024">Gå ut</span>
+          <span v-else>Tillbaka</span>                    
+        </VBtn>
       </div>
 
-      <VCardText 
-        v-for="notification in notifications"
-        :key="notification.id"
-        class="bg-white mb-2 card-notification d-flex gap-2 align-center justify-between cursor-pointer"
-        @click="onNotificationClick(notification)"
-      >
-        
-        <VBadge
-          v-if="notification.read === 0"
-          location="top start"
-          dot
+      <!--List desktop-->
+      <div  
+        v-if="!$vuetify.display.mdAndDown"
+        v-show="notifications.length"
+        class="pb-6">
+
+        <div class="d-flex align-center w-auto margin-notifications my-6" v-if="notifications.length">
+          <span class="title-notifications">Alla meddelanden</span>
+
+          <VSpacer />
+
+          <div class="d-flex gap-4">
+            <VBtn 
+              class="btn-light" 
+              block
+              @click="onReadAll"
+            >
+              <VIcon icon="custom-eye" size="24" />
+              Markera alla som läst
+            </VBtn>
+            <VBtn 
+              class="btn-light" 
+              block
+              @click="onDeleteAll"
+            >
+              <VIcon icon="custom-waste" size="24" />
+              Rensa allt
+            </VBtn>
+          </div>
+        </div>
+
+        <VCardText 
+          v-for="notification in notifications"
+          :key="notification.id"
+          class="bg-white mb-2 card-notification d-flex gap-2 align-center justify-between cursor-pointer"
+          @click="onNotificationClick(notification)"
         >
+          
+          <VBadge
+            v-if="notification.read === 0"
+            location="top start"
+            dot
+          >
+            <VAvatar
+              :color="notification.color || 'primary'"
+              :image="notification.img || undefined"
+              :icon="notification.icon || undefined"
+              variant="tonal"
+              size="40"
+            >
+              <span v-if="notification.text">{{
+                avatarText(notification.text)
+              }}</span>
+            </VAvatar>
+          </VBadge>
+
           <VAvatar
+            v-else
             :color="notification.color || 'primary'"
             :image="notification.img || undefined"
             :icon="notification.icon || undefined"
@@ -296,64 +349,161 @@ const formatTime = (dateString) => {
               avatarText(notification.text)
             }}</span>
           </VAvatar>
-        </VBadge>
+          
+          <div class="d-flex flex-column gap-1">          
+            <span class="notification-title">{{ notification.title }}</span>
+            <span class="notification-text">{{ notification.text }}</span>
+          </div>
+          <VSpacer />
+          <div class="me-6">
+            <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+          </div>
+          <VBtn
+            icon
+            class="btn-white close-btn"
+            @click.stop="onDeleteNotification(notification.id)"
+          >
+            <VIcon size="16" icon="custom-close" />
+          </VBtn>
 
-        <VAvatar
-          v-else
-          :color="notification.color || 'primary'"
-          :image="notification.img || undefined"
-          :icon="notification.icon || undefined"
-          variant="tonal"
-          size="40"
-        >
-          <span v-if="notification.text">{{
-            avatarText(notification.text)
-          }}</span>
-        </VAvatar>
-        
-        <div class="d-flex flex-column gap-1">          
-          <span class="notification-title">{{ notification.title }}</span>
-          <span class="notification-text">{{ notification.text }}</span>
+        </VCardText>
+      </div>
+
+      <!--List empty-->
+      <div
+        v-if="!isRequestOngoing && !notifications.length"
+        class="empty-state mt-10"
+        :class="$vuetify.display.mdAndDown ? 'px-6 py-0' : 'pa-4'"
+      >
+        <VIcon
+          :size="$vuetify.display.mdAndDown ? 80 : 120"
+          icon="custom-f-notifications"
+        />
+        <div class="empty-state-content">
+          <div class="empty-state-title">Inga nya notifikationer</div>
+          <div class="empty-state-text">
+            Här samlas alla dina viktiga uppdateringar. 
+            Vi meddelar dig när en faktura betalas, ett avtal signeras eller när något annat viktigt händer. 
+            Just nu är allt lugnt!
+          </div>
         </div>
-        <VSpacer />
-        <div class="me-6">
-          <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+      </div>
+
+      <!--List mobile-->
+      <div v-if="notifications.length && $vuetify.display.mdAndDown">
+
+        <div class="d-flex flex-column gap-2 w-100 margin-notifications mb-6" v-if="notifications.length">
+          <span class="title-notifications my-6">Alla meddelanden</span>
+
+          <VBtn 
+            class="btn-light" 
+            block
+            @click="onReadAll"
+            >
+            <VIcon icon="custom-eye" size="24" />
+            Markera alla som läst
+          </VBtn>
+          <VBtn 
+            class="btn-light" 
+            block
+            @click="onDeleteAll"
+            >
+            <VIcon icon="custom-waste" size="24" />
+            Rensa allt
+          </VBtn>
+  
         </div>
-        <VBtn
-          icon
-          class="btn-white close-btn"
-          @click.stop="onDeleteNotification(notification.id)"
+
+        <VCardText 
+          v-for="notification in notifications"
+          :key="notification.id"
+          class="bg-white mb-2 card-notification align-center d-flex gap-1 cursor-pointer"
+          @click="onNotificationClick(notification)"
         >
-          <VIcon size="16" icon="custom-close" />
-        </VBtn>
+          <div class="d-flex gap-2">
+            <VBadge
+              v-if="notification.read === 0"
+              location="top start"
+              dot
+            >
+              <VAvatar
+                :color="notification.color || 'primary'"
+                :image="notification.img || undefined"
+                :icon="notification.icon || undefined"
+                class="notification-avatar-mobile"
+                variant="tonal"
+                size="x-small"
+              />
+            </VBadge>
 
-      </VCardText>
-    </template>
-    
-    <VCardText
-      v-if="notifications.length"
-      :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-      class="align-center flex-wrap gap-4 mb-6 px-0 margin-notifications pagination-bottom"
-    >
-      <span class="text-pagination-results">
-        {{ paginationData }}
-      </span>
+            <VAvatar
+              v-else
+              class="notification-avatar-mobile"
+              :color="notification.color || 'primary'"
+              :image="notification.img || undefined"
+              :icon="notification.icon || undefined"
+              variant="tonal"
+              size="x-small"
+            />
 
-      <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+            <div class="d-flex flex-column gap-1">          
+              <span class="notification-title">{{ notification.title }}</span>
+              <span class="notification-text">{{ notification.text }}</span>
+              <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
+          </div>
+          </div>
+
+          <VBtn
+            icon
+            class="close-btn px-1"
+            @click.stop="onDeleteNotification(notification.id)"
+          >
+            <VIcon size="10" icon="custom-close" />
+          </VBtn>
+
+        </VCardText>
+      </div>
       
-      <VPagination
-        v-model="currentPage"
-        size="small"
-        :total-visible="4"
-        :length="totalPages"
-        next-icon="custom-chevron-right"
-        prev-icon="custom-chevron-left"
-      />
-    </VCardText>
-  </VCard>
+      <!--pagination-->
+      <VCardText
+        v-if="notifications.length"
+        :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
+        class="align-center flex-wrap gap-4 pt-0 px-0 margin-notifications pagination-bottom"
+      >
+        <span class="text-pagination-results">
+          {{ paginationData }}
+        </span>
+
+        <VSpacer class="d-none d-md-block"/>
+        
+        <VPagination
+          v-model="currentPage"
+          size="small"
+          :total-visible="4"
+          :length="totalPages"
+          next-icon="custom-chevron-right"
+          prev-icon="custom-chevron-left"
+        />
+      </VCardText>
+    </VCard>
+  </section>
+
+  <MobileBottomBar :nav-items="navItems" />
 </template>
 
-<style>
+<style lang="scss">
+
+  .navigation-notification-bar {
+    background: linear-gradient(90deg, #eafff1 0%, #eafff8 50%, #ecffff 100%) !important;
+    inset-block-start: 0rem;
+    padding: 24px 24px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    z-index: 9999;
+  }
+
   .card-notification {
     border-radius: 16px;
     height: 94px !important;
@@ -361,6 +511,30 @@ const formatTime = (dateString) => {
     max-height: 94px !important;
     margin: 0 96px;
     padding: 24px !important;
+
+    @media (max-width: 1023px) {
+      margin: 0;
+      padding: 18px 12px !important;
+      position: relative;
+    }
+
+  }
+
+  @media (max-width: 1023px) {
+    .card-notification .close-btn {
+      position: absolute;
+      top: -6px;
+      right: 6px;
+      z-index: 1;
+      width: 24px !important;
+      background: transparent !important;
+    }
+
+    .notification-avatar-mobile > svg,
+    .notification-avatar-mobile .v-icon svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 
   .pagination-bottom {
@@ -368,10 +542,17 @@ const formatTime = (dateString) => {
     height: 48px;
     min-height: 48px;
     max-height: 48px;
+    @media (max-width: 1023px) {
+      margin-top: 8px !important;
+    }
   }
 
   .margin-notifications {
     margin: 0 96px;
+
+    @media (max-width: 1023px) {
+      margin: 0;
+    }
   }
 
   .title-notifications {
@@ -388,6 +569,10 @@ const formatTime = (dateString) => {
     line-height: 100%;
     letter-spacing: 0px;
     color: #1C2925;
+
+    @media (max-width: 1023px) {
+      font-size: 14px;
+    }
   }
 
   .notification-text {
@@ -396,6 +581,10 @@ const formatTime = (dateString) => {
     line-height: 100%;
     letter-spacing: 0px;
     color: #454545;
+
+    @media (max-width: 1023px) {
+      font-size: 14px;
+    }
   }
 
   .notification-time {
@@ -404,10 +593,19 @@ const formatTime = (dateString) => {
     line-height: 100%;
     letter-spacing: 0px;
     color: #878787;
+
+    @media (max-width: 1023px) {
+      font-size: 14px;
+    }
   }
 
   .page-notifications {
+    margin-top: 80px;
     background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+
+    @media (max-width: 1023px) {
+      padding-bottom: 120px !important;
+    }
   }
 </style>
 

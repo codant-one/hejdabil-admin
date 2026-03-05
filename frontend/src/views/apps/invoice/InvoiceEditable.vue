@@ -850,7 +850,7 @@ const handleFocus = (element, fieldId) => {
                             </td>
                           </template>
                           <td style="width: 15%">
-                            <span class=""> Rabbat </span>
+                            <span class=""> Rabatt </span>
                           </td>
                         </tr>
                       </thead>
@@ -1413,7 +1413,7 @@ const handleFocus = (element, fieldId) => {
                                 </td>
                               </template>
                               <td style="width: 15%">
-                                <span class=""> Rabbat </span>
+                                <span class=""> Rabatt </span>
                               </td>
                             </tr>
                           </thead>

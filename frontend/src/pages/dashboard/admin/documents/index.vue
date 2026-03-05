@@ -1243,7 +1243,7 @@ onBeforeUnmount(() => {
         ]"
       >
          <div class="align-center font-blauer">
-          <h2>Dokument <span v-if="hasLoaded">({{ documents.length }})</span></h2>
+          <h2>Dokument <span v-if="hasLoaded">({{ totalDocuments }})</span></h2>
         </div>
 
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>

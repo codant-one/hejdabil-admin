@@ -49,6 +49,11 @@ const refFlatPicker = ref()
 const { focused } = useFocus(refFlatPicker)
 const isCalendarOpen = ref(false)
 const isInlinePicker = ref(false)
+const selectedPreset = ref(null)
+
+const isRangeMode = computed(() => props.config?.mode === 'range')
+const showRangePresets = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.rangePresets !== false)
+const showSplitRangeInputs = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.splitRangeInputs !== false)
 
 const datepickerConfig = computed(() => {
   const config = { ...props.config }
@@ -102,13 +107,100 @@ onMounted(() => {
 })
 
 const emitModelValue = val => {
+  selectedPreset.value = null
   emit('update:modelValue', val)
+}
+
+const toYmd = value => {
+  if (!value)
+    return ''
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+  }
+
+  return ''
+}
+
+const splitRangeValue = computed(() => {
+  if (!props.modelValue)
+    return { start: '', end: '' }
+
+  if (Array.isArray(props.modelValue)) {
+    const start = toYmd(props.modelValue[0])
+    const end = toYmd(props.modelValue[1] ?? props.modelValue[0])
+
+    return { start, end }
+  }
+
+  if (typeof props.modelValue === 'string') {
+    const chunks = props.modelValue.split(/\s+to\s+|\s+till\s+/i)
+    if (chunks.length >= 2)
+      return { start: toYmd(chunks[0]), end: toYmd(chunks[1]) }
+
+    const single = toYmd(props.modelValue)
+    return { start: single, end: single }
+  }
+
+  const single = toYmd(props.modelValue)
+  return { start: single, end: single }
+})
+
+const formatDateForPreset = date => {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const applyPreset = preset => {
+  if (!refFlatPicker.value?.fp)
+    return
+
+  const today = new Date()
+  const end = new Date(today)
+  let start = new Date(today)
+
+  if (preset === 'today') {
+    start = new Date(today)
+  } else if (preset === 'lastWeek') {
+    start.setDate(today.getDate() - 6)
+  } else if (preset === 'lastMonth') {
+    start.setMonth(today.getMonth() - 1)
+  } else if (preset === 'lastYear') {
+    start.setFullYear(today.getFullYear() - 1)
+  }
+
+  selectedPreset.value = preset
+
+  const startValue = formatDateForPreset(start)
+  const endValue = formatDateForPreset(end)
+
+  refFlatPicker.value.fp.setDate(
+    [startValue, endValue],
+    false,
+  )
+
+  emitModelValue([startValue, endValue])
 }
 </script>
 
 <template>
   <!-- v-input -->
   <VInput
+    v-if="!showSplitRangeInputs"
     v-bind="{ ...inputProps, ...rootAttrs }"
     :model-value="modelValue"
     :hide-details="props.hideDetails"
@@ -159,16 +251,70 @@ const emitModelValue = val => {
   </VInput>
 
   <!-- flat picker for inline props -->
-  <FlatPickr
+  <div
     v-if="isInlinePicker"
-    v-bind="datepickerAttrs"
-    :config="datepickerConfig"
-    ref="refFlatPicker"
-    :model-value="modelValue"
-    @update:model-value="emitModelValue"
-    @on-open="isCalendarOpen = true"
-    @on-close="isCalendarOpen = false"
-  />
+    class="app-inline-picker-layout"
+    :class="{ 'has-range-presets': showRangePresets }"
+  >
+    <div v-if="showSplitRangeInputs" class="app-inline-range-header">
+      <div class="app-inline-range-field">
+        <VIcon icon="custom-calendar-2" size="24" />
+        <span class="app-inline-range-text">{{ splitRangeValue.start || 'Startdatum' }}</span>
+      </div>
+
+      <div class="app-inline-range-field">
+        <VIcon icon="custom-calendar-2" size="24" />
+        <span class="app-inline-range-text">{{ splitRangeValue.end || 'Slutdatum' }}</span>
+      </div>
+    </div>
+
+    <div class="d-flex justify-between gap-4">
+      <div v-if="showRangePresets" class="app-inline-picker-presets">
+        <button
+          type="button"
+          class="app-inline-picker-preset"
+          :class="{ active: selectedPreset === 'today' }"
+          @click="applyPreset('today')"
+        >
+          Idag
+        </button>
+        <button
+          type="button"
+          class="app-inline-picker-preset"
+          :class="{ active: selectedPreset === 'lastWeek' }"
+          @click="applyPreset('lastWeek')"
+        >
+          Förra veckan
+        </button>
+        <button
+          type="button"
+          class="app-inline-picker-preset"
+          :class="{ active: selectedPreset === 'lastMonth' }"
+          @click="applyPreset('lastMonth')"
+        >
+          För en månad sedan
+        </button>
+        <button
+          type="button"
+          class="app-inline-picker-preset"
+          :class="{ active: selectedPreset === 'lastYear' }"
+          @click="applyPreset('lastYear')"
+        >
+          Förra året
+        </button>
+      </div>
+
+      <FlatPickr
+        v-bind="datepickerAttrs"
+        :config="datepickerConfig"
+        ref="refFlatPicker"
+        :model-value="modelValue"
+        @update:model-value="emitModelValue"
+        @on-open="isCalendarOpen = true"
+        @on-close="isCalendarOpen = false"
+      />
+    </div>
+  </div>
 </template>
 
 <style lang="scss">
@@ -186,7 +332,7 @@ const emitModelValue = val => {
 }
 
 $heading-color: rgba(var(--v-theme-on-background), var(--v-high-emphasis-opacity));
-$body-color: rgba(var(--v-theme-on-background), var(--v-medium-emphasis-opacity));
+$body-color: #5D5D5D;
 $disabled-color: rgba(var(--v-theme-on-background), var(--v-disabled-opacity));
 
 // hide the input when your picker is inline
@@ -194,10 +340,76 @@ input[altinputclass="inlinePicker"] {
   display: none;
 }
 
+.app-inline-picker-layout {
+  display: block;
+}
+
+.app-inline-range-header {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  margin-block-end: 12px;
+}
+
+.app-inline-range-field {
+  align-items: center;
+  background: #F6F6F6;
+  border: 1px solid #E7E7E7;
+  border-radius: 8px;
+  color: #5D5D5D;
+  display: flex;
+  gap: 8px;
+  min-block-size: 52px;
+  padding-inline: 16px;
+}
+
+.app-inline-range-text {
+  color: #5D5D5D;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.app-inline-picker-layout.has-range-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-inline-picker-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-inline-size: 180px;
+  border-inline-end: 1px solid #F6F6F6;
+  padding-inline-end: 12px;
+}
+
+.app-inline-picker-preset {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #5D5D5D;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 10px 8px;
+  text-align: start;
+}
+
+.app-inline-picker-preset:hover,
+.app-inline-picker-preset.active {
+  background-color: #F6F6F6;
+  border-radius: 64px;
+  color: #454545;
+}
+
 .flatpickr-calendar {
-  background-color: rgb(var(--v-theme-surface));
+  background-color: white !important;
+  box-shadow: none !important;
+  border: 1px solid #F6F6F6 !important;
+  border-radius: 8px !important;  
   inline-size: 16.625rem;
-  margin-block-start: 0.1875rem;
+  margin-block-start: 0;
 
   .flatpickr-rContainer {
     .flatpickr-weekdays {
@@ -213,6 +425,7 @@ input[altinputclass="inlinePicker"] {
         min-inline-size: 16.625rem;
         padding-block-end: 0.5rem;
         padding-block-start: 0;
+        gap: 1px;
 
         .flatpickr-day {
           block-size: 2.125rem;
@@ -228,7 +441,10 @@ input[altinputclass="inlinePicker"] {
     color: $body-color;
 
     &.today {
-      border-color: rgb(var(--v-theme-secondary));
+      border-radius: 8px !important;
+      border-color: #454545;
+      background: #454545;
+      color: white;
 
       &:hover {
         border-color: rgb(var(--v-theme-secondary));
@@ -239,17 +455,19 @@ input[altinputclass="inlinePicker"] {
 
     &.selected,
     &.selected:hover {
-      border-color: rgb(var(--v-theme-secondary));
-      background: rgb(var(--v-theme-secondary));
-      color: rgb(var(--v-theme-on-secondary));
+      border: 0;
+      border-radius: 8px !important;
+      border-color: transparent !important;
+      background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%);
+      color: #454545 !important;
     }
 
     &.inRange,
     &.inRange:hover {
       border: none;
-      background: rgba(var(--v-theme-secondary), 0.1) !important;
+      background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%) !important;
       box-shadow: none !important;
-      color: rgb(var(--v-theme-secondary));
+      color: #5D5D5D !important;
     }
 
     &.startRange {
@@ -264,9 +482,11 @@ input[altinputclass="inlinePicker"] {
     &.endRange,
     &.startRange:hover,
     &.endRange:hover {
-      border-color: rgb(var(--v-theme-secondary));
-      background: rgb(var(--v-theme-secondary));
-      color: rgb(var(--v-theme-on-secondary));
+      border: 0;
+      border-radius: 8px !important;
+      border-color: transparent !important;
+      background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%) !important;
+      color: #454545 !important;
     }
 
     &.selected.startRange + .endRange:not(:nth-child(7n + 1)),
@@ -282,8 +502,10 @@ input[altinputclass="inlinePicker"] {
     }
 
     &:hover {
-      border-color: rgba(var(--v-theme-surface-variant), var(--v-hover-opacity));
-      background: rgba(var(--v-theme-surface-variant), var(--v-hover-opacity));
+      color: #5D5D5D !important;
+      border-radius: 8px !important;
+      border-color: transparent !important;
+      background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%) !important;
     }
   }
 
@@ -303,7 +525,6 @@ input[altinputclass="inlinePicker"] {
   }
 
   .flatpickr-months {
-    border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
 
     .flatpickr-prev-month,
     .flatpickr-next-month {
@@ -319,7 +540,7 @@ input[altinputclass="inlinePicker"] {
   .flatpickr-current-month span.cur-month {
     font-weight: 300;
   }
-
+   
   &.open {
     z-index: 9999;
   }
@@ -373,11 +594,6 @@ input[altinputclass="inlinePicker"] {
   opacity: 1 !important;
 }
 
-// week sections
-.flatpickr-weekdays {
-  margin-block-start: 8px;
-}
-
 // Month and year section
 .flatpickr-current-month {
   .flatpickr-monthDropdown-months {
@@ -386,6 +602,8 @@ input[altinputclass="inlinePicker"] {
 
   .flatpickr-monthDropdown-months,
   .numInputWrapper {
+    height: 28px;
+    margin: 0 2px 0 0;
     padding: 2px;
     border-radius: 4px;
     color: $heading-color;
@@ -398,7 +616,7 @@ input[altinputclass="inlinePicker"] {
     }
 
     .flatpickr-monthDropdown-month {
-      background-color: rgb(var(--v-theme-surface));
+      background-color: white;
     }
 
     .numInput.cur-year {
@@ -451,6 +669,14 @@ input[altinputclass="inlinePicker"] {
       inset-inline-start: 0;
       padding-block-start: 0.2rem;
       text-align: start;
+    }
+  }
+}
+
+@media (min-width: 1024px) {
+  .flatpickr-calendar {
+    &.inline {
+      top: 0 !important;
     }
   }
 }

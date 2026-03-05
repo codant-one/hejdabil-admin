@@ -3,7 +3,7 @@
 import { useDisplay } from "vuetify";
 import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
-import { excelParser } from '@/plugins/csv/excelParser'
+import { useConfigsStores } from '@/stores/useConfigs'
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
@@ -11,8 +11,11 @@ import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { formatNumber } from '@/@core/utils/formatters'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import html2pdf from 'html2pdf.js'
 import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
 
 import billogg from "@/assets/images/billogg_img.svg";
@@ -27,6 +30,7 @@ const hasLoaded = ref(false);
 const authStores = useAuthStores()
 const clientsStores = useClientsStores()
 const payoutsStores = usePayoutsStores()
+const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
 
@@ -64,15 +68,25 @@ const selectedPayoutForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 const userData = ref(null)
 const role = ref(null)
+const company = ref({})
 const payer_alias = ref(null)
 const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
+const date = ref(null)
+const isExportMenuVisible = ref(false)
+const isExportingPdf = ref(false)
+const lastExportSelectionKey = ref(null)
 
 const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+watch(isExportMenuVisible, isVisible => {
+  if (isVisible)
+    lastExportSelectionKey.value = null
 })
 
 // 👉 Computing pagination data
@@ -133,6 +147,26 @@ async function fetchData(cleanFilters = false) {
   ability.update(userAbilities)
 
   localStorage.setItem('user_data', JSON.stringify(user_data))
+
+  if (role.value === 'Supplier') {
+    company.value = user_data.user_detail
+    company.value.email = user_data.email
+    company.value.billings = user_data.supplier.billings
+    company.value.name = user_data.name
+    company.value.last_name = user_data.last_name
+  } else if (role.value === 'User') {
+    company.value = user_data.supplier.boss.user.user_detail
+    company.value.email = user_data.supplier.boss.user.email
+    company.value.billings = user_data.supplier.boss.billings
+    company.value.name = user_data.supplier.boss.user.name
+    company.value.last_name = user_data.supplier.boss.user.last_name
+  } else {
+    await configsStores.getFeature('company')
+    await configsStores.getFeature('logo')
+
+    company.value = configsStores.getFeaturedConfig('company')
+    company.value.logo = configsStores.getFeaturedConfig('logo').logo
+  }
 
   if(role.value === 'Supplier') {
     payer_alias.value = user_data.supplier.payout_number
@@ -368,36 +402,6 @@ const submitCreate = payoutData => {
           }
       }, 3000)
     })
-}
-
-const downloadCSV = async () => {
-
-  isRequestOngoing.value = true
-
-  let data = { limit: -1 }
-
-  await payoutsStores.fetchPayouts(data)
-
-  let dataArray = [];
-      
-  payoutsStores.getPayouts.forEach(element => {
-
-    let data = {
-      ID: element.id,
-      USER: element.user.name + ' ' + (element.user.last_name ?? ''),
-      AMOUNT: element.amount,
-      PAYEE_ALIAS: element.payee_alias,
-      STATE: element.state.name
-    }
-          
-    dataArray.push(data)
-  })
-
-  excelParser()
-    .exportDataFromJSON(dataArray, "payouts", "csv");
-
-  isRequestOngoing.value = false
-
 }
 
 const openPayoutDialog = () => {  
@@ -654,6 +658,273 @@ const handleSendPayout = () => {
   })
 }
 
+const downloadPDF = async () => {
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    let data = { limit: -1 }
+
+    const toYmd = value => {
+      if (!value)
+        return null
+
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        const year = value.getFullYear()
+        const month = `${value.getMonth() + 1}`.padStart(2, '0')
+        const day = `${value.getDate()}`.padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+
+      if (typeof value === 'string') {
+        const normalized = value.trim()
+        const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+        if (ymdMatch)
+          return ymdMatch[0]
+
+        const parsed = new Date(normalized)
+        if (!Number.isNaN(parsed.getTime())) {
+          const year = parsed.getFullYear()
+          const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+          const day = `${parsed.getDate()}`.padStart(2, '0')
+          return `${year}-${month}-${day}`
+        }
+      }
+
+      return null
+    }
+
+    const getDateRangePayload = () => {
+      if (!date.value)
+        return {}
+
+      if (Array.isArray(date.value)) {
+        const from = toYmd(date.value[0])
+        const to = toYmd(date.value[1] ?? date.value[0])
+        if (from && to)
+          return { date_from: from, date_to: to }
+      }
+
+      if (typeof date.value === 'string') {
+        const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+        if (splitByRange.length >= 2) {
+          const from = toYmd(splitByRange[0])
+          const to = toYmd(splitByRange[1])
+          if (from && to)
+            return { date_from: from, date_to: to }
+        }
+
+        const single = toYmd(date.value)
+        if (single)
+          return { date_from: single, date_to: single }
+      }
+
+      if (date.value instanceof Date) {
+        const single = toYmd(date.value)
+        if (single)
+          return { date_from: single, date_to: single }
+      }
+
+      return {}
+    }
+
+    data = {
+      ...data,
+      ...getDateRangePayload(),
+      orderByField: 'id',
+      orderBy: 'desc'
+    }
+
+    await payoutsStores.fetchPayouts(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const rows = payoutsStores.getPayouts.map(element => ({
+      message: element.message,
+      date: formatDateTime(element.created_at),
+      payeeSSN: element.payee_ssn,
+      payeeAlias: element.payee_alias,
+      amount: formatNumber(element.amount ?? 0),
+      supplier: element.supplier
+        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        : '',
+      state: element.state.name,
+    }))
+
+    const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+    const columnWidth = includeSupplierColumn ? '14.28%' : '16.66%'
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'SWISH',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      <tr style="height: 48px;">
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.message)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.date)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.payeeSSN)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">+${escapeHtml(item.payeeAlias)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.amount)} kr</td>
+        ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.state)}</td>
+      </tr>
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Referens</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Datum</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Personnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Mobilnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Belopp</td>
+                      ${includeSupplierColumn ? `<td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Leverantör</td>` : ''}
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Status</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'payouts.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
+}
+
+const exportPDFAndCloseMenu = async () => {
+  if (isExportingPdf.value)
+    return
+
+  isExportingPdf.value = true
+  try {
+    await downloadPDF()
+    isExportMenuVisible.value = false
+  } finally {
+    isExportingPdf.value = false
+  }
+}
+
+const buildRangeSelectionKey = value => {
+  if (!value)
+    return null
+
+  const normalize = item => {
+    if (!item)
+      return ''
+
+    if (item instanceof Date && !Number.isNaN(item.getTime())) {
+      const year = item.getFullYear()
+      const month = `${item.getMonth() + 1}`.padStart(2, '0')
+      const day = `${item.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof item === 'string')
+      return item.trim()
+
+    return String(item)
+  }
+
+  if (Array.isArray(value)) {
+    const first = normalize(value[0])
+    const second = normalize(value[1] ?? value[0])
+
+    return `${first}__${second}`
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return `${chunks[0]}__${chunks[1]}`
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const single = normalize(value)
+  return `${single}__${single}`
+}
+
+const isCompleteRangeSelection = value => {
+  if (!value)
+    return false
+
+  if (Array.isArray(value))
+    return value.length >= 2 && !!value[0] && !!value[1]
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+  }
+
+  return false
+}
+
+const onDatePickerUpdate = value => {
+  if (!isCompleteRangeSelection(value))
+    return
+
+  const selectionKey = buildRangeSelectionKey(value)
+  if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+    return
+
+  lastExportSelectionKey.value = selectionKey
+
+  if (!isExportingPdf.value)
+    exportPDFAndCloseMenu()
+}
 </script>
 
 <template>
@@ -682,13 +953,11 @@ const handleSendPayout = () => {
         </div>
 
         <div class="d-flex gap-4">
-          <VBtn 
-            class="btn-light w-auto" 
-            block
-            @click="downloadCSV">
-            <VIcon icon="custom-export" size="24" />
-            Exportera
-          </VBtn>
+          <ExportDateMenu
+            v-model="date"
+            v-model:menuVisible="isExportMenuVisible"
+            @update:modelValue="onDatePickerUpdate"
+          />
           <VBtn
             v-if="$can('create', 'payouts') && (role === 'Supplier' || role === 'User')"
             class="btn-gradient"
