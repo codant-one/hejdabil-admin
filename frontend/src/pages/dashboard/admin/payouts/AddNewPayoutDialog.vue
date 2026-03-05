@@ -26,6 +26,8 @@ const currentStep = ref(1)
 const isFormValid = ref(false)
 const refForm = ref()
 const refFormStep1 = ref()
+const shouldShowStep1Validation = ref(false)
+const shouldShowStep2Validation = ref(false)
 
 const payee_alias = ref(null)
 const message = ref(null)
@@ -40,6 +42,21 @@ const { width: windowWidth } = useWindowSize();
 
 const personInfoStores = usePersonInfoStores()
 
+const normalizePayeeAliasForInput = value => {
+  const digits = String(value ?? '').replace(/\D/g, '')
+
+  if (digits.length === 11 && digits.startsWith('46'))
+    return digits.slice(2)
+
+  return digits
+}
+
+const formatPayeeAliasForPayload = value => {
+  const localNumber = normalizePayeeAliasForInput(value)
+
+  return localNumber ? `46${localNumber}` : null
+}
+
 const getTitle = computed(() => {
   return props.payoutData && Object.keys(props.payoutData).length > 0 
     ? 'Bekräfta betalning' 
@@ -52,7 +69,7 @@ watchEffect(() => {
     
     // Pre-fill form if payoutData exists
     if (props.payoutData && Object.keys(props.payoutData).length > 0) {
-      payee_alias.value = props.payoutData.payee_alias || null
+      payee_alias.value = normalizePayeeAliasForInput(props.payoutData.payee_alias) || null
       amount.value = props.payoutData.amount || null
       payee_ssn.value = props.payoutData.payee_ssn || null
       message.value = props.payoutData.message || null
@@ -81,6 +98,8 @@ const closeDialog = () => {
     payee_ssn.value = null
     message.value = null
     master_password.value = null
+    shouldShowStep1Validation.value = false
+    shouldShowStep2Validation.value = false
   })
 }
 
@@ -97,7 +116,8 @@ const format_number = (value) => {
 }
 
 const nextStep = async () => {
-  // Validar solo el formulario del paso 1
+  shouldShowStep1Validation.value = true
+
   const { valid } = await refFormStep1.value.validate()
   
   if (valid) {
@@ -135,22 +155,25 @@ const searchPerson = async () => {
     }
 }
 
-const onSubmit = () => {
-  refForm.value?.validate().then(({ valid }) => {
-    if (valid) {
-      const payload = {
-        payee_alias: payee_alias.value,
-        amount: amount.value,
-        payee_ssn: payee_ssn.value,
-        message: message.value,
-        master_password: master_password.value,
-        fullname: fullname.value
-      }
+const onSubmit = async () => {
+  shouldShowStep1Validation.value = true
+  shouldShowStep2Validation.value = true
 
-      emit('payoutData', { data: payload })
-      closeDialog()
+  const { valid } = await refForm.value.validate()
+
+  if (valid) {
+    const payload = {
+      payee_alias: formatPayeeAliasForPayload(payee_alias.value),
+      amount: amount.value,
+      payee_ssn: payee_ssn.value,
+      message: message.value,
+      master_password: master_password.value,
+      fullname: fullname.value
     }
-  })
+
+    emit('payoutData', { data: payload })
+    closeDialog()
+  }
 }
 
 </script>
@@ -167,7 +190,7 @@ const onSubmit = () => {
 
     <VBtn
       icon
-      class="btn-white close-btn"
+      class="close-btn"
       @click="closeDialog"
     >
       <VIcon size="16" icon="custom-close" />
@@ -221,10 +244,11 @@ const onSubmit = () => {
                     <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Mobilnummer*" />
                     <VTextField
                       v-model="payee_alias"
-                      placeholder="Mobilnummer"
-                      :rules="[requiredValidator, minLengthDigitsValidator(11)]"
-                      minLength="11"
-                      maxlength="11"
+                      class="always-show-prefix"
+                      :rules="shouldShowStep1Validation ? [requiredValidator, minLengthDigitsValidator(9)] : []"
+                      minLength="9"
+                      maxlength="9"
+                      prefix="+46"
                       @input="format_number('payee_alias')"
                     />
                   </div>
@@ -233,7 +257,7 @@ const onSubmit = () => {
                     <VTextField
                       v-model="payee_ssn"
                       placeholder="Personnummer"
-                      :rules="[requiredValidator, minLengthDigitsValidator(12)]"
+                      :rules="shouldShowStep1Validation ? [requiredValidator, minLengthDigitsValidator(12)] : []"
                       minLength="12"
                       maxlength="12"
                       @input="format_number('payee_ssn')"
@@ -246,7 +270,7 @@ const onSubmit = () => {
                       type="number"
                       suffix="KR"
                       placeholder="Belopp (kr)"
-                      :rules="[requiredValidator]"
+                      :rules="shouldShowStep1Validation ? [requiredValidator] : []"
                       min="1"
                     />
                   </div>
@@ -293,7 +317,7 @@ const onSubmit = () => {
                     v-model="master_password"
                     :type="isMasterPasswordVisible ? 'text' : 'password'"
                     :append-inner-icon="isMasterPasswordVisible ? 'tabler-eye-off' : 'tabler-eye'"
-                    :rules="[requiredValidator]"
+                    :rules="shouldShowStep2Validation ? [requiredValidator] : []"
                     placeholder="Ange ditt säkerhetslösenord för att bekräfta"
                     @click:append-inner="isMasterPasswordVisible = !isMasterPasswordVisible"
                   />
@@ -427,6 +451,60 @@ const onSubmit = () => {
 .stepper-line.active {
   background-color: rgb(var(--v-theme-success));
 }
+
+</style>
+
+<style lang="scss">
+  .always-show-prefix .v-text-field__prefix {
+    opacity: 1 !important;
+  }
+
+  .card-form {
+    .v-input {
+      .v-input__control {
+        .v-field {
+          background-color: #f6f6f6 !important;
+          min-height: 48px !important;
+
+          .v-text-field__suffix {
+              padding: 12px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 48px !important;
+            padding: 12px 16px !important;
+
+            input {
+              min-height: 48px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+
+          .v-text-field__prefix {
+            height: 48px;
+          }
+        }
+      }
+    }
+
+    .v-input.always-show-prefix {
+      .v-input__control {
+        .v-field {
+          .v-field__input {
+            padding: 12px 0 !important;
+          }
+        }
+      }
+    }
+  }
 </style>
 
 
