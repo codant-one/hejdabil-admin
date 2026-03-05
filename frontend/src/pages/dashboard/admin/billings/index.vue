@@ -1544,7 +1544,7 @@ onBeforeUnmount(() => {
     border-bottom: 1px solid #E7E7E7;
     text-align: left;
     vertical-align: top;
-  }
+  } 
 
   @media (max-width: 991px) {
     .billings-pills {

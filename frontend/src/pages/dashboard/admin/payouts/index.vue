@@ -4,6 +4,7 @@ import { useDisplay } from "vuetify";
 import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { useConfigsStores } from '@/stores/useConfigs'
+import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from '@themeConfig'
 import { avatarText } from '@/@core/utils/formatters'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
@@ -74,8 +75,10 @@ const newlyCreatedPayout = ref(null)
 const payoutReceiptRef = ref(null)
 const payoutReceiptMobileRef = ref(null)
 const date = ref(null)
+const selectedExportType = ref(null)
+const isExportTypeMenuVisible = ref(false)
 const isExportMenuVisible = ref(false)
-const isExportingPdf = ref(false)
+const isExportingFile = ref(false)
 const lastExportSelectionKey = ref(null)
 
 const advisor = ref({
@@ -658,6 +661,109 @@ const handleSendPayout = () => {
   })
 }
 
+const toYmd = value => {
+  if (!value)
+    return null
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+
+    const parsed = new Date(normalized)
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear()
+      const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+      const day = `${parsed.getDate()}`.padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  }
+
+  return null
+}
+
+const getDateRangePayload = () => {
+  if (!date.value)
+    return {}
+
+  if (Array.isArray(date.value)) {
+    const from = toYmd(date.value[0])
+    const to = toYmd(date.value[1] ?? date.value[0])
+    if (from && to)
+      return { date_from: from, date_to: to }
+  }
+
+  if (typeof date.value === 'string') {
+    const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+      if (from && to)
+        return { date_from: from, date_to: to }
+    }
+
+    const single = toYmd(date.value)
+    if (single)
+      return { date_from: single, date_to: single }
+  }
+
+  if (date.value instanceof Date) {
+    const single = toYmd(date.value)
+    if (single)
+      return { date_from: single, date_to: single }
+  }
+
+  return {}
+}
+
+const downloadCSV = async () => {
+  isRequestOngoing.value = true
+
+  try {
+    const data = {
+      limit: -1,
+      ...getDateRangePayload(),
+      orderByField: 'id',
+      orderBy: 'desc',
+    }
+
+    await payoutsStores.fetchPayouts(data)
+
+    const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+
+    const dataArray = payoutsStores.getPayouts.map(element => {
+      const row = {
+        Referens: element.message ?? '',
+        Datum: formatDateTime(element.created_at),
+        Personnummer: element.payee_ssn ?? '',
+        Mobilnummer: `+${element.payee_alias ?? ''}`,
+        Belopp: `${formatNumber(element.amount ?? 0)} kr`,
+        Status: element.state?.name ?? '',
+      }
+
+      if (includeSupplierColumn) {
+        row.Leverantör = element.supplier
+          ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+          : ''
+      }
+
+      return row
+    })
+
+    excelParser().exportDataFromJSON(dataArray, 'payouts', 'csv')
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
 const downloadPDF = async () => {
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
@@ -672,73 +778,8 @@ const downloadPDF = async () => {
   let pdfContainer = null
 
   try {
-    let data = { limit: -1 }
-
-    const toYmd = value => {
-      if (!value)
-        return null
-
-      if (value instanceof Date && !Number.isNaN(value.getTime())) {
-        const year = value.getFullYear()
-        const month = `${value.getMonth() + 1}`.padStart(2, '0')
-        const day = `${value.getDate()}`.padStart(2, '0')
-        return `${year}-${month}-${day}`
-      }
-
-      if (typeof value === 'string') {
-        const normalized = value.trim()
-        const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
-        if (ymdMatch)
-          return ymdMatch[0]
-
-        const parsed = new Date(normalized)
-        if (!Number.isNaN(parsed.getTime())) {
-          const year = parsed.getFullYear()
-          const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
-          const day = `${parsed.getDate()}`.padStart(2, '0')
-          return `${year}-${month}-${day}`
-        }
-      }
-
-      return null
-    }
-
-    const getDateRangePayload = () => {
-      if (!date.value)
-        return {}
-
-      if (Array.isArray(date.value)) {
-        const from = toYmd(date.value[0])
-        const to = toYmd(date.value[1] ?? date.value[0])
-        if (from && to)
-          return { date_from: from, date_to: to }
-      }
-
-      if (typeof date.value === 'string') {
-        const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
-        if (splitByRange.length >= 2) {
-          const from = toYmd(splitByRange[0])
-          const to = toYmd(splitByRange[1])
-          if (from && to)
-            return { date_from: from, date_to: to }
-        }
-
-        const single = toYmd(date.value)
-        if (single)
-          return { date_from: single, date_to: single }
-      }
-
-      if (date.value instanceof Date) {
-        const single = toYmd(date.value)
-        if (single)
-          return { date_from: single, date_to: single }
-      }
-
-      return {}
-    }
-
-    data = {
-      ...data,
+    const data = {
+      limit: -1,
       ...getDateRangePayload(),
       orderByField: 'id',
       orderBy: 'desc'
@@ -843,16 +884,34 @@ const downloadPDF = async () => {
 }
 
 const exportPDFAndCloseMenu = async () => {
-  if (isExportingPdf.value)
+  if (isExportingFile.value)
     return
 
-  isExportingPdf.value = true
+  if (!selectedExportType.value)
+    return
+
+  isExportingFile.value = true
   try {
-    await downloadPDF()
+    if (selectedExportType.value === 'excel') {
+      await downloadCSV()
+    } else {
+      await downloadPDF()
+    }
+
     isExportMenuVisible.value = false
   } finally {
-    isExportingPdf.value = false
+    selectedExportType.value = null
+    isExportingFile.value = false
   }
+}
+
+const openExportDateMenu = type => {
+  selectedExportType.value = type
+  isExportTypeMenuVisible.value = false
+
+  nextTick(() => {
+    isExportMenuVisible.value = true
+  })
 }
 
 const buildRangeSelectionKey = value => {
@@ -913,6 +972,9 @@ const isCompleteRangeSelection = value => {
 }
 
 const onDatePickerUpdate = value => {
+  if (!selectedExportType.value)
+    return
+
   if (!isCompleteRangeSelection(value))
     return
 
@@ -922,7 +984,7 @@ const onDatePickerUpdate = value => {
 
   lastExportSelectionKey.value = selectionKey
 
-  if (!isExportingPdf.value)
+  if (!isExportingFile.value)
     exportPDFAndCloseMenu()
 }
 </script>
@@ -953,11 +1015,37 @@ const onDatePickerUpdate = value => {
         </div>
 
         <div class="d-flex gap-4">
+          <VMenu v-model="isExportTypeMenuVisible">
+            <template #activator="{ props }">
+              <VBtn
+                id="payout-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
+
+            <VList>
+              <VListItem @click="openExportDateMenu('pdf')">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="openExportDateMenu('excel')">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
           <ExportDateMenu
             v-model="date"
             v-model:menuVisible="isExportMenuVisible"
+            :show-activator="false"
+            activator="#payout-export-button"
             @update:modelValue="onDatePickerUpdate"
           />
+          
           <VBtn
             v-if="$can('create', 'payouts') && (role === 'Supplier' || role === 'User')"
             class="btn-gradient"

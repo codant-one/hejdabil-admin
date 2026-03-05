@@ -1,4 +1,5 @@
 <script setup>
+
 import AppDateTimePicker from '@/@core/components/AppDateTimePicker.vue'
 
 const props = defineProps({
@@ -33,6 +34,14 @@ const props = defineProps({
       mode: 'range',
       rangePresets: true,
     }),
+  },
+  showActivator: {
+    type: Boolean,
+    default: true,
+  },
+  activator: {
+    type: [String, Object, Function],
+    default: undefined,
   },
 })
 
@@ -84,8 +93,16 @@ const onPickerUpdate = value => {
   <VMenu
     v-model="resolvedMenuVisible"
     :close-on-content-click="false"
+    :activator="activator"
+    :open-on-click="showActivator"
+    location="bottom"
+    origin="top center"
+    :offset="8"
   >
-    <template #activator="{ props: activatorProps }">
+    <template
+      v-if="showActivator"
+      #activator="{ props: activatorProps }"
+    >
       <VBtn
         class="btn-light w-auto"
         block
@@ -119,13 +136,13 @@ const onPickerUpdate = value => {
 </template>
 
 <style scoped>
-    .export-date-menu-card {
-        width: 544px;
-        height: 388px;
-        border-radius: 8px !important;
-        opacity: 1;
-        padding: 16px;
-        gap: 16px;
-        box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;
-    }
+  .export-date-menu-card {
+    width: 544px;
+    height: 388px;
+    border-radius: 8px !important;
+    opacity: 1;
+    padding: 16px;
+    gap: 16px;
+    box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;
+  }
 </style>
