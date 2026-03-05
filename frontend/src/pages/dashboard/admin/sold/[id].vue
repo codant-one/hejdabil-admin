@@ -85,7 +85,9 @@ const clients = ref([])
 const client_id = ref(null)
 const client_types = ref([])
 const client_type_id = ref(null)
-const identifications = ref([])
+const countries = ref([])
+const country_id = ref(null)
+const failedExternalFlags = ref({})
 
 const isConfirmLeaveVisible = ref(false)
 const initialData = ref(null)
@@ -163,7 +165,7 @@ const calculate = () => {
     const value = (sale + fee) - disc 
 
     if(iva_sale_id.value === 2)
-        iva_sale_amount.value = ((Number(value) || 0) * 0.2)
+        iva_sale_amount.value = ((Number(value) || 0) * 0.25)
     else
         iva_sale_amount.value = 0
 
@@ -206,7 +208,7 @@ async function fetchData() {
         fuels.value = data.fuels
         clients.value = data.clients
         client_types.value = data.client_types
-        identifications.value = data.identifications
+        countries.value = data.countries
 
         vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
@@ -259,6 +261,8 @@ const clearClient = () => {
     street.value = null
     postal_code.value = null
     phone.value = null
+    client_type_id.value = null
+    country_id.value = null
 
     save_client.value = true
     disabled_client.value = false
@@ -275,6 +279,10 @@ const selectClient = client => {
         street.value = _client.street
         postal_code.value = _client.postal_code
         phone.value = _client.phone
+
+        // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
+        client_type_id.value = _client.client_type_id ?? client_type_id.value
+        country_id.value = _client.country_id
 
         save_client.value = false
         disabled_client.value = true
@@ -407,15 +415,77 @@ const searchPerson = async () => {
     }
 }
 
-const formatOrgNumber = () => {
+const findCountry = country => {
+  if (!country || !Array.isArray(countries.value)) return null
 
-    let numbers = organization_number.value.replace(/\D/g, '')
-    if (numbers.length > 4) {
-        numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
-    }
-    organization_number.value = numbers
+  const normalizeText = value =>
+    String(value ?? '')
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+
+  if (typeof country === 'object') {
+    return countries.value.find(item => item.id === country.id) || null
+  }
+
+  return countries.value.find(item => String(item.id) === String(country))
+      || countries.value.find(item => normalizeText(item.name) === normalizeText(country))
+
 }
 
+const getFlagFromDb = selectedCountry => {
+  const flag = String(selectedCountry?.flag ?? '').trim()
+  if (!flag) return ''
+
+  if (/^https?:\/\//i.test(flag)) return flag
+
+  const basePublicUrl = String(themeConfig.settings.urlStorage ?? '').replace(/\/+$/, '')
+  const cleanFlag = flag.replace(/^\/+/, '')
+
+  if (cleanFlag.startsWith('/'))
+    return `${basePublicUrl}/${cleanFlag}`
+
+  return `${basePublicUrl}/${cleanFlag}`
+}
+
+const getFlagCountry = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry) return ''
+
+  const hasExternalError = !!failedExternalFlags.value[selectedCountry.id]
+
+  if (selectedCountry?.iso && !hasExternalError)
+    return `https://hatscripts.github.io/circle-flags/flags/${String(selectedCountry.iso).toLowerCase()}.svg`
+
+  return getFlagFromDb(selectedCountry)
+}
+
+const onCountryFlagError = country => {
+  const selectedCountry = findCountry(country)
+  if (!selectedCountry?.id || !selectedCountry?.iso) return
+
+  failedExternalFlags.value = {
+    ...failedExternalFlags.value,
+    [selectedCountry.id]: true,
+  }
+}
+
+const formatOrgNumber = () => {
+  if (!organization_number.value) return
+
+  let numbers = organization_number.value.replace(/\D/g, '')
+  if (numbers.length > 4 && client_type_id.value !== 3) {
+    numbers = numbers.slice(0, -4) + '-' + numbers.slice(-4)
+  }
+  organization_number.value = numbers
+}
+
+const truncateText = (text, length = 30) => {
+  if (text && text.length > length)
+    return text.substring(0, length) + '...'
+
+  return text
+}
 
 const goToVehicles = () => {
 
@@ -488,9 +558,18 @@ const onSubmit = async () => {
         discount.value === null || registration_fee.value === null || total_sale.value === null;
 
     // Tab-2: Kund
-    const hasTab2Errors = !client_type_id.value ||
-        !fullname.value || !organization_number.value || !address.value || !street.value ||
-        !postal_code.value || !phone.value || !email.value;
+    const hasTab2Errors = !organization_number.value || 
+                            (client_type_id.value !== 3 && organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                            !client_type_id.value || 
+                            !fullname.value || 
+                            !address.value || 
+                            !postal_code.value || 
+                            !street.value || 
+                            !phone.value || 
+                            (phone.value && phoneValidator(phone.value) !== true) ||
+                            !email.value || 
+                            (email.value && emailValidator(email.value) !== true) ||
+                            (client_type_id.value === 3 && !country_id.value)
 
     if (hasTab1Errors) {
         currentTab.value = 'tab-1';
@@ -932,26 +1011,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 @update:modelValue="selectClient"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
-                                            <div class="d-flex gap-2">
-                                                <VTextField
-                                                    v-model="organization_number"
-                                                    style="flex: 1;"
-                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-                                                    minLength="11"
-                                                    maxlength="13"
-                                                    @input="formatOrgNumber()"
-                                                />
-                                                <VBtn
-                                                    class="btn-light w-auto px-4"
-                                                    @click="searchEntity"
-                                                >
-                                                    <VIcon icon="custom-search" size="24" />
-                                                    Hämta
-                                                </VBtn>
-                                            </div>
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <AppAutocomplete
                                                 v-model="client_type_id"
                                                 label="Köparen är*"
@@ -962,11 +1021,78 @@ onBeforeRouteLeave((to, from, next) => {
                                                 autocomplete="off"/>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Org/personnummer*" />
+                                            <div class="d-flex gap-2">
+                                                <VTextField
+                                                    v-if="client_type_id !== 3"
+                                                    v-model="organization_number"
+                                                    style="flex: 1;"
+                                                    :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                                                    minLength="11"
+                                                    maxlength="13"
+                                                    @input="formatOrgNumber()"
+                                                />
+                                                <VTextField
+                                                    v-else
+                                                    v-model="organization_number"
+                                                    style="flex: 1;"
+                                                    :rules="[requiredValidator]"
+                                                    @input="formatOrgNumber()"
+                                                />
+                                                <VBtn
+                                                    v-if="client_type_id !== 3"
+                                                    class="btn-light w-auto px-4"
+                                                    @click="searchEntity"
+                                                >
+                                                    <VIcon icon="custom-search" size="24" />
+                                                    Hämta
+                                                </VBtn>
+                                            </div>
+                                        </div>                                       
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Namn*" />
                                             <VTextField
                                                 v-model="fullname"
                                                 :rules="[requiredValidator]"
                                             />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon" />                                            
+                                            <VTextField
+                                                v-model="phone"
+                                                :rules="[phoneValidator]"
+                                            />
+                                        </div>
+                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'" v-if="client_type_id === 3">
+                                            <AppAutocomplete
+                                                v-model="country_id"
+                                                label="Land*"
+                                                :items="countries"
+                                                :item-title="item => truncateText(item.name, windowWidth < 1024 ? 35 : 100)"
+                                                :item-value="item => item.id"
+                                                :rules="[requiredValidator]"
+                                                :menu-props="{ maxHeight: '200px' }"
+                                                autocomplete="off"
+                                                clearable
+                                                clear-icon="tabler-x"
+                                                class="selector-country selector-truncate"
+                                            >
+                                                <template
+                                                v-if="country_id"
+                                                #prepend
+                                                >
+                                                <VAvatar
+                                                    start
+                                                    style="margin-top: -7px;"
+                                                    size="44">
+                                                    <VImg
+                                                    :src="getFlagCountry(country_id)"
+                                                    cover
+                                                    @error="onCountryFlagError(country_id)"
+                                                    />
+                                                </VAvatar>
+                                                </template>
+                                            </AppAutocomplete>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Adress*" />
@@ -988,19 +1114,12 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="street"
                                                 :rules="[requiredValidator]"
                                             /> 
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Telefon*" />                                            
-                                            <VTextField
-                                                v-model="phone"
-                                                :rules="[requiredValidator, phoneValidator]"
-                                            />
-                                        </div>
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post*" />                                            
+                                        </div>                                        
+                                        <div :style="windowWidth < 1024 || client_type_id !== 3 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="E-post" />                                            
                                             <VTextField
                                                 v-model="email"
-                                                :rules="[emailValidator, requiredValidator]"
+                                                :rules="[emailValidator]"
                                             />
                                         </div>
                                         <div style="width: 100%">

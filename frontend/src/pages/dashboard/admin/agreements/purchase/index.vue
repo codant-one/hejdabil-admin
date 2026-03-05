@@ -150,7 +150,7 @@ const calculate = () => {
     const value = (prince_ + fee)
 
     if(iva_id.value === 2)
-        iva_purchase_amount.value = ((Number(value) || 0) * 0.2)
+        iva_purchase_amount.value = ((Number(value) || 0) * 0.25)
     else
         iva_purchase_amount.value = 0
 
