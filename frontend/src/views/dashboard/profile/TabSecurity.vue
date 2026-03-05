@@ -28,7 +28,7 @@ const refForm = ref()
 const isFormValid = ref(false)
 const isMasterPasswordVisible = ref(false)
 const masterPassword = ref('')
-const csrUrl = ref('')
+const csrUrl = ref(null)
 const isFileMissingDialogVisible = ref(false)
 const setting = ref([])
 
@@ -363,10 +363,10 @@ const onSubmitKey = async () => {
       </VTable>
     </VCardText>
    
-    <VDivider v-if="role === 'Supplier'" />
+    <VDivider v-if="role === 'Supplier' && csrUrl !== null" />
 
     <VForm
-        v-if="role === 'Supplier'"
+        v-if="role === 'Supplier' && csrUrl !== null"
         ref="refForm"
         class="card-form"
         v-model="isFormValid"
@@ -409,9 +409,9 @@ const onSubmitKey = async () => {
         </VCardText>
     </VForm>
 
-    <VDivider v-if="role === 'Supplier'" />
+    <VDivider v-if="role === 'Supplier' && csrUrl !== null" />
 
-    <VCardText class="px-0" v-if="role === 'Supplier'">
+    <VCardText class="px-0" v-if="role === 'Supplier' && csrUrl !== null">
       <div class="title-tabs-profile mb-5">
         Certifikat
       </div>
