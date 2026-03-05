@@ -46,9 +46,20 @@ const tabs = [
   },
 ]
 
+const visibleTabs = computed(() => {
+  if (role.value === 'Supplier') return tabs
+
+  return tabs.filter(tab => tab.title !== 'Mitt team')
+})
+
 const setTabFromRoute = (tabQuery) => {
-  if (tabQuery === 'mitt-team') {
+  if (tabQuery === 'mitt-team' && role.value === 'Supplier') {
     userTab.value = 2
+    return
+  }
+
+  if (userTab.value !== null && userTab.value >= visibleTabs.value.length) {
+    userTab.value = 0
     return
   }
 
@@ -60,6 +71,10 @@ const setTabFromRoute = (tabQuery) => {
 watch(() => route.query.tab, tab => {
   setTabFromRoute(tab)
 }, { immediate: true })
+
+watch(role, () => {
+  setTabFromRoute(route.query.tab)
+})
 
 onBeforeRouteLeave((to, from, next) => {
   if (isFormEdited.value) {
@@ -226,7 +241,7 @@ onBeforeUnmount(() => {
           :show-arrows="false"
           class="profile-tabs mt-4" 
         >
-          <VTab v-for="tab in tabs" :key="tab.title">
+          <VTab v-for="tab in visibleTabs" :key="tab.title">
               <VIcon size="24" :icon="'' + tab.icon" />
               {{ tab.title }}
           </VTab>
@@ -244,7 +259,7 @@ onBeforeUnmount(() => {
               @alert="showAlert"
               @window="showWindow"/>
           </VWindowItem>
-          <VWindowItem>
+          <VWindowItem v-if="role === 'Supplier'">
             <TabMyTeam 
               @alert="showAlert"/>
           </VWindowItem>
