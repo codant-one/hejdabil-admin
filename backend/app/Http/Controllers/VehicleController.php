@@ -47,7 +47,11 @@ class VehicleController extends Controller
     {
         try {
 
-            $limit = $request->has('limit') ? $request->limit : 10;
+            $limit = (int) $request->input('limit', 10);
+
+            // Keep -1 as export-all sentinel, but prevent invalid per-page values.
+            if ($limit !== -1)
+                $limit = max(1, $limit);
         
             $query = Vehicle::with([
                         'supplier' => function ($q) {
@@ -82,16 +86,19 @@ class VehicleController extends Controller
                             'model_id',
                             'year',
                             'gearbox_id',
-                            'supplier_id'
+                            'supplier_id',
+                            'date_from',
+                            'date_to'                            
                         ])
                     );
 
             if ($limit == -1) {
                 $allVehicles = $query->get();
+                $perPage = max(1, $allVehicles->count());
                 $vehicles = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allVehicles,
                     $allVehicles->count(),
-                    $allVehicles->count(),
+                    $perPage,
                     1
                 );
             } else {

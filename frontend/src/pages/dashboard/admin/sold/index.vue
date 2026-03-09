@@ -2,12 +2,17 @@
 
 import { useDisplay } from "vuetify";
 import { useVehiclesStores } from '@/stores/useVehicles'
+import { useAuthStores } from '@/stores/useAuth';
+import { useConfigsStores } from '@/stores/useConfigs';
+import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from '@/plugins/csv/excelParser'
 import { yearValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { formatNumberInteger } from '@/@core/utils/formatters'
 import { avatarText } from '@/@core/utils/formatters'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import html2pdf from 'html2pdf.js'
 import show from "@/components/vehicles/show.vue";
 import showMobile from "@/components/vehicles/showMobile.vue"
 import router from '@/router'
@@ -16,10 +21,14 @@ import Toaster from "@/components/common/Toaster.vue";
 import eyeIcon from "@/assets/images/icons/figma/eye.svg";
 import downloadIcon from "@/assets/images/icons/figma/download.svg";
 import wasteIcon from "@/assets/images/icons/figma/waste.svg";
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
 const { width: windowWidth } = useWindowSize();
 
 const vehiclesStores = useVehiclesStores()
+const configsStores = useConfigsStores();
+const authStores = useAuthStores();
+const ability = useAppAbility()
 const emitter = inject("emitter")
 
 const userData = ref(null)
@@ -68,6 +77,34 @@ const models = ref([])
 const model_id = ref(null)
 const modelsByBrand = ref([])
 
+const date = ref(null)
+const selectedExportType = ref(null)
+const isExportTypeMenuVisible = ref(false)
+const isExportMenuVisible = ref(false)
+const isExportingFile = ref(false)
+const lastExportSelectionKey = ref(null)
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const company = ref(readCachedCompany())
+
+const setCompany = (value) => {
+  const normalized = value && typeof value === 'object' ? { ...value } : {};
+  company.value = normalized;
+  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
+};
+
 const advisor = ref({
   type: '',
   message: '',
@@ -106,6 +143,11 @@ watch(
   },
   { deep: true }
 )
+
+watch(isExportMenuVisible, isVisible => {
+  if (isVisible)
+    lastExportSelectionKey.value = null
+})
 
 const isColVisible = (id) => visibleColumns.value.includes(id)
 
@@ -293,38 +335,349 @@ const downloadCSV = async () => {
 
   isRequestOngoing.value = true
 
-  let data = { limit: -1, state_id: 12}
+  try {
+
+  const data = {
+      limit: -1,
+      ...getDateRangePayload(),
+      orderByField: 'id',
+      orderBy: "desc",
+      state_id: 12
+  };
 
   await vehiclesStores.fetchVehicles(data)
 
-  let dataArray = [];
+  const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
       
-  vehiclesStores.getVehicles.forEach(element => {
+  const dataArray = vehiclesStores.getVehicles.map(element => {
 
-    const bilinfo =
-      (element.model?.brand?.name ?? '') + ' ' +
-      (element.model?.name ?? '') +
-      (element.year == null ? '' : ', ' + element.year);
-
-    let data = {
-      FÖRSÄLJNINGSDATUM: element.sale_date ?? '',
-      BILINFO: bilinfo,
-      INKÖPSPRIS: formatNumber(element.purchase_price ?? 0) + ' kr',
-      KOSTNADER: formatNumber((element.tasks ?? []).reduce((sum, item) => sum + parseFloat(item.cost), 0)),
-      FÖRSÄLJNINGSPRIS: formatNumber(element.total_sale ?? 0) + ' kr',
-      VINST: formatNumber(element.total_sale - element.purchase_price) + ' kr',
-      KÖPAREN: element.client_sale?.fullname
+    const row = {
+      Försäljningsdatum: element.sale_date ?? '',
+      Bilinfo: element.car_name,
+      Regnr: element.reg_num,
+      Inköpspris: formatNumber(element.purchase_price ?? 0) + ' kr',
+      Försäljningspris: formatNumber(element.total_sale ?? 0) + ' kr',
+      Miltal: element.mileage === null ? '' : formatNumberInteger(element.mileage ?? '0,00') + ' Mil',
+      Anteckningar:  element.comments ?? '',
+      Status: element.state.name,
+      VAT: element.iva_purchase?.name,
+      Besiktigas: element.control_inspection ?? '',
+      Köparen: element.client_sale?.fullname ?? '',
+      Telefon: element.client_sale?.phone ?? ''
     }
 
-    dataArray.push(data)
-  })
+    if (includeSupplierColumn) {
+        row.Leverantör = element.supplier
+          ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+          : ''
+      }
 
-  excelParser()
-    .exportDataFromJSON(dataArray, "vehicles", "csv");
+      return row
+   })
 
-  isRequestOngoing.value = false
+  excelParser().exportDataFromJSON(dataArray, "vehicles", "csv");
 
+  } finally {
+    isRequestOngoing.value = false
+  }
+
+};
+
+const toYmd = value => {
+  if (!value)
+    return null
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim()
+    const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+    if (ymdMatch)
+      return ymdMatch[0]
+
+    const parsed = new Date(normalized)
+    if (!Number.isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear()
+      const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+      const day = `${parsed.getDate()}`.padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+  }
+
+  return null
 }
+
+const getDateRangePayload = () => {
+  if (!date.value)
+    return {}
+
+  if (Array.isArray(date.value)) {
+    const from = toYmd(date.value[0])
+    const to = toYmd(date.value[1] ?? date.value[0])
+    if (from && to)
+      return { date_from: from, date_to: to }
+  }
+
+  if (typeof date.value === 'string') {
+    const splitByRange = date.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    if (splitByRange.length >= 2) {
+      const from = toYmd(splitByRange[0])
+      const to = toYmd(splitByRange[1])
+      if (from && to)
+        return { date_from: from, date_to: to }
+    }
+
+    const single = toYmd(date.value)
+    if (single)
+      return { date_from: single, date_to: single }
+  }
+
+  if (date.value instanceof Date) {
+    const single = toYmd(date.value)
+    if (single)
+      return { date_from: single, date_to: single }
+  }
+
+  return {}
+}
+
+const downloadPDF = async () => {
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1,
+      ...getDateRangePayload(),
+      orderByField: 'id',
+      orderBy: 'desc',
+      state_id: 12
+    }
+
+    await vehiclesStores.fetchVehicles(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+    const columnWidth = includeSupplierColumn ? '13%' : '14%'
+
+    const rows = vehiclesStores.getVehicles.map(element => ({
+      sale_date: element.sale_date,
+      info: element.car_name,
+      reg_num: element.reg_num,
+      purchase_price: `${formatNumber(element.purchase_price ?? 0)} kr`,
+      total_sale: `${formatNumber(element.total_sale ?? 0)} kr`,
+      buyerName: element.client_sale?.fullname ?? '',
+      buyerPhone: element.client_sale?.phone ?? '',
+      supplier: element.supplier
+        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        : ''
+    }))
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'Sålda fordon',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      ${(() => {
+        const buyerLines = [item.buyerName, item.buyerPhone].filter(Boolean)
+        const buyerMarkup = buyerLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
+      <tr style="height: 44px;">
+        <td style="width: ${includeSupplierColumn ? '22%' : '30%'}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: start; vertical-align: middle;">${escapeHtml(item.info)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sale_date)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.reg_num)}</td>        
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.purchase_price)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.total_sale)}</td>
+        ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${buyerMarkup}</td>
+      </tr>
+    `
+      })()}
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 11px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 11px;">
+                  <thead>
+                    <tr style="height: 44px;">
+                      <td style="text-align: start; width: ${includeSupplierColumn ? '22%' : '30%'}; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Bilinfo</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Försäljningsdatum</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Reg nr</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Inköpspris</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Försäljningspris</td>
+                      ${includeSupplierColumn ? `<td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Leverantör</td>` : ''}
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Köparen</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'vehicles.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+}
+
+const exportPDFAndCloseMenu = async () => {
+  if (isExportingFile.value)
+    return
+
+  if (!selectedExportType.value)
+    return
+
+  isExportingFile.value = true
+  try {
+    if (selectedExportType.value === 'excel') {
+      await downloadCSV()
+    } else {
+      await downloadPDF()
+    }
+
+    isExportMenuVisible.value = false
+  } finally {
+    selectedExportType.value = null
+    isExportingFile.value = false
+  }
+}
+
+const openExportDateMenu = type => {
+  selectedExportType.value = type
+  isExportTypeMenuVisible.value = false
+
+  nextTick(() => {
+    isExportMenuVisible.value = true
+  })
+}
+
+const buildRangeSelectionKey = value => {
+  if (!value)
+    return null
+
+  const normalize = item => {
+    if (!item)
+      return ''
+
+    if (item instanceof Date && !Number.isNaN(item.getTime())) {
+      const year = item.getFullYear()
+      const month = `${item.getMonth() + 1}`.padStart(2, '0')
+      const day = `${item.getDate()}`.padStart(2, '0')
+
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof item === 'string')
+      return item.trim()
+
+    return String(item)
+  }
+
+  if (Array.isArray(value)) {
+    const first = normalize(value[0])
+    const second = normalize(value[1] ?? value[0])
+
+    return `${first}__${second}`
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return `${chunks[0]}__${chunks[1]}`
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const single = normalize(value)
+  return `${single}__${single}`
+}
+
+const isCompleteRangeSelection = value => {
+  if (!value)
+    return false
+
+  if (Array.isArray(value))
+    return value.length >= 2 && !!value[0] && !!value[1]
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+    return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+  }
+
+  return false
+}
+
+const onDatePickerUpdate = value => {
+  if (!selectedExportType.value)
+    return
+
+  if (!isCompleteRangeSelection(value))
+    return
+
+  const selectionKey = buildRangeSelectionKey(value)
+  if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+    return
+
+  lastExportSelectionKey.value = selectionKey
+
+  if (!isExportingFile.value)
+    exportPDFAndCloseMenu()
+}
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -334,14 +687,64 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
-onMounted(() => {
-  resizeSectionToRemainingViewport();
-  window.addEventListener("resize", resizeSectionToRemainingViewport);
+onMounted(async () => {
+  try {
+    resizeSectionToRemainingViewport();
+    window.addEventListener("resize", resizeSectionToRemainingViewport);
+    
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+    role.value = userData.value.roles[0].name;
+
+    if (!role.value) return;
+
+    if (role.value === "SuperAdmin" || role.value === "Administrator") {
+      suppliers.value = vehiclesStores.getSuppliers
+    }
+
+    const { user_data, userAbilities } = await authStores.me(userData.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+    ability.update(userAbilities)
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
+    if (role.value === 'Supplier') {
+      setCompany({
+        ...(user_data?.user_detail ?? {}),
+        email: user_data?.email ?? '',
+        name: user_data?.name ?? '',
+        last_name: user_data?.last_name ?? '',
+      });
+    } else if (role.value === 'User') {
+      setCompany({
+        ...(user_data?.supplier?.boss?.user?.user_detail ?? {}),
+        email: user_data?.supplier?.boss?.user?.email ?? '',
+        name: user_data?.supplier?.boss?.user?.name ?? '',
+        last_name: user_data?.supplier?.boss?.user?.last_name ?? '',
+      });
+    } else {
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
+
+      const companyConfig = configsStores.getFeaturedConfig('company') ?? {};
+      const logoConfig = configsStores.getFeaturedConfig('logo') ?? {};
+
+      setCompany({
+        ...companyConfig,
+        logo: logoConfig.logo ?? companyConfig.logo ?? '',
+      });
+    }
+
+  } catch (error) {
+    console.error('Failed to load company data:', error);
+  }
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
 });
+
 </script>
 
 <template>
@@ -375,13 +778,36 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VBtn 
-            class="btn-light w-auto" 
-            block
-            @click="downloadCSV">
-            <VIcon icon="custom-export" size="24" />
-            Exportera
-          </VBtn>
+          <VMenu v-model="isExportTypeMenuVisible">
+            <template #activator="{ props }">
+              <VBtn
+                id="payout-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
+
+            <VList>
+              <VListItem @click="openExportDateMenu('pdf')">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="openExportDateMenu('excel')">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
+          <ExportDateMenu
+            v-model="date"
+            v-model:menuVisible="isExportMenuVisible"
+            :show-activator="false"
+            activator="#payout-export-button"
+            @update:modelValue="onDatePickerUpdate"
+          />
         </div>
       </VCardTitle>
 

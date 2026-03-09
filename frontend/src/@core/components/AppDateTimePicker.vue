@@ -187,9 +187,11 @@ const applyPreset = preset => {
   const minFromConfig = parsePresetDate(calendarConfig.minDate ?? props.config?.minDate)
   const end = maxFromConfig ?? new Date(today)
   let start = new Date(today)
+  let resolvedEnd = new Date(end)
 
   if (preset === 'today') {
     start = new Date(today)
+    resolvedEnd = new Date(today)
   } else if (preset === 'lastWeek') {
     start.setDate(today.getDate() - 6)
   } else if (preset === 'lastMonth') {
@@ -204,7 +206,7 @@ const applyPreset = preset => {
   selectedPreset.value = preset
 
   const startValue = formatDateForPreset(start)
-  const endValue = formatDateForPreset(end)
+  const endValue = formatDateForPreset(resolvedEnd)
 
   refFlatPicker.value.fp.setDate(
     [startValue, endValue],

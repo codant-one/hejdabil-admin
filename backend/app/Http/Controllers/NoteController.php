@@ -31,7 +31,11 @@ class NoteController extends Controller
     {
         try {
 
-            $limit = $request->has('limit') ? $request->limit : 10;
+            $limit = (int) $request->input('limit', 10);
+
+            // Avoid invalid per-page values (0/negative) in paginator calculations.
+            if ($limit !== -1)
+                $limit = max(1, $limit);
         
             $query = Note::with([
                            'supplier' => function ($q) {
@@ -49,16 +53,19 @@ class NoteController extends Controller
                                     'search',
                                     'orderByField',
                                     'orderBy',
-                                    'supplier_id'
+                                    'supplier_id',
+                                    'date_from',
+                                    'date_to'
                                 ])
                             );
 
             if ($limit == -1) {
                 $allNotes = $query->get();
+                $perPage = max(1, $allNotes->count());
                 $notes = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allNotes,
                     $allNotes->count(),
-                    $allNotes->count(),
+                    $perPage,
                     1
                 );
             } else {
