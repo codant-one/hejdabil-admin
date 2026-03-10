@@ -18,9 +18,6 @@ import showMobile from "@/components/vehicles/showMobile.vue"
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
-import eyeIcon from "@/assets/images/icons/figma/eye.svg";
-import downloadIcon from "@/assets/images/icons/figma/download.svg";
-import wasteIcon from "@/assets/images/icons/figma/waste.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
 const { width: windowWidth } = useWindowSize();
@@ -84,6 +81,9 @@ const isExportMenuVisible = ref(false)
 const isExportingFile = ref(false)
 const lastExportSelectionKey = ref(null)
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const selectedVehicleForAction = ref({});
+const isMobileActionDialogVisible = ref(false);
 
 const readCachedCompany = () => {
   try {
@@ -252,6 +252,10 @@ const showVehicle = async (id, mobile = false) => {
   isVehicleDetailDialog.value = true
   isMobile.value = mobile
   selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
+}
+
+const editVehicle = vehicleData => {
+  router.push({ name : 'dashboard-admin-sold-edit-id', params: { id: vehicleData.id } })
 }
 
 const showDeleteDialog = vehicleData => {
@@ -998,19 +1002,28 @@ onBeforeUnmount(() => {
                 <VList>
                   <VListItem v-if="$can('edit', 'stock')" @click="showVehicle(vehicle.id, false)">
                     <template #prepend>
-                      <img :src="eyeIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-eye" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Visa</VListItemTitle>
                   </VListItem>
+                  <VListItem 
+                    v-if="$can('edit', 'stock')" 
+                    @click="editVehicle(vehicle)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-pencil" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Redigera</VListItemTitle>
+                  </VListItem>
                   <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
                     <template #prepend>
-                      <img :src="downloadIcon" alt="See Icon" class="mr-2" />
+                      <VIcon icon="custom-download" class="mr-2" size="24" />
                     </template>
                     <VListItemTitle>Ladda ner</VListItemTitle>
                   </VListItem>
                   <VListItem v-if="$can('delete','stock')" @click="showDeleteDialog(vehicle)">
                     <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
+                      <VIcon icon="custom-waste" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
@@ -1091,33 +1104,14 @@ onBeforeUnmount(() => {
                 {{ formatNumberInteger(vehicle.mileage ?? 0) }} Mil
               </div>
             </div>
-            <div class="d-flex">
+            <div class="d-flex gap-4">
               <VBtn class="btn-light flex-fill"  @click="showVehicle(vehicle.id, true)">
-                <VIcon icon="custom-eye" size="24" />
+                <VIcon icon="custom-eye" size="24" class="me-2"/>
                 Se detaljer
               </VBtn>
-              <VMenu>
-                <template #activator="{ props }">
-                  <VBtn v-bind="props" icon variant="text" class="btn-light ms-4">
-                    <VIcon icon="custom-dots-vertical" size="22" />
-                  </VBtn>
-                </template>
-
-                <VList>
-                  <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
-                    <template #prepend>
-                      <img :src="downloadIcon" alt="See Icon" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Ladda ner</VListItemTitle>
-                  </VListItem>
-                  <VListItem v-if="$can('delete','stock')" @click="showDeleteDialog(vehicle)">
-                    <template #prepend>
-                      <img :src="wasteIcon" alt="Delete Icon" class="mr-2" />
-                    </template>
-                    <VListItemTitle>Ta bort</VListItemTitle>
-                  </VListItem>
-                </VList>
-              </VMenu>
+              <VBtn class="btn-light" icon @click="selectedVehicleForAction = vehicle; isMobileActionDialogVisible = true">
+                <VIcon icon="custom-dots-vertical" size="24" />
+              </VBtn>
             </div>
           </VExpansionPanelText>
         </VExpansionPanel>
@@ -1399,6 +1393,45 @@ onBeforeUnmount(() => {
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions pt-0">
           <VBtn class="btn-light" @click="isColumnsDialogVisible = false">Stäng</VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Mobile Action Dialog -->
+    <VDialog
+      v-model="isMobileActionDialogVisible"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem
+            v-if="$can('view', 'stock')"
+            @click="showVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-eye" size="24" />
+            </template>
+            <VListItemTitle>Visa</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('view', 'stock')"
+            @click="editVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-pencil" size="24" />
+            </template>
+            <VListItemTitle>Redigera</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'stock')"
+            @click="showDeleteDialog(selectedVehicleForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-waste" size="24" />
+            </template>
+            <VListItemTitle>Ta bort</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
 

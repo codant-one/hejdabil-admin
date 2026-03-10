@@ -197,7 +197,6 @@ function resizeSectionToRemainingViewport() {
   const rect = el.getBoundingClientRect();
   const remaining = Math.max(0, window.innerHeight - rect.top - 25);
   el.style.minHeight = `${remaining}px`;
-  console.log('remaining',remaining)
 }
 
 onMounted(() => {

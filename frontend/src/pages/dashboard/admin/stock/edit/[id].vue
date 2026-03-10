@@ -400,7 +400,7 @@ async function fetchData() {
         color.value = vehicle.value.color ?? color.value
         fuel_id.value = vehicle.value.fuel_id ?? fuel_id.value
         gearbox_id.value = vehicle.value.gearbox_id ?? gearbox_id.value
-        purchase_price.value = vehicle.value.purchase_price ?? purchase_price.value
+        purchase_price.value = formatDecimal(vehicle.value.purchase_price) ?? formatDecimal(purchase_price.value)
         iva_purchase_id.value = vehicle.value.iva_purchase_id ?? iva_purchase_id.value
         state.value = vehicle.value.state.name
         state_id.value = vehicle.value.state_id ?? state_id.value

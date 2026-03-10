@@ -78,8 +78,6 @@ const postal_code = ref('')
 const phone = ref('')
 const fullname = ref('')
 const email = ref('')
-const save_client = ref(false)
-const disabled_client = ref(false)
 
 const clients = ref([])
 const client_id = ref(null)
@@ -113,7 +111,6 @@ const currentData = computed(() => ({
     postal_code: postal_code.value,
     phone: phone.value,
     email: email.value,
-    save_client: save_client.value
 }))
 
 const isDirty = computed(() => {
@@ -195,9 +192,9 @@ async function fetchData() {
 
     isRequestOngoing.value = true
 
-    if(Number(route.params.id) && route.name === 'dashboard-admin-sold-id') {
+    if(Number(route.params.id) && route.name === 'dashboard-admin-sold-edit-id') {
         const data = await vehiclesStores.showVehicle(Number(route.params.id))
-    
+
         vehicle.value = data.vehicle
         brands.value = data.brands
         models.value = data.models
@@ -213,6 +210,21 @@ async function fetchData() {
         vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
 
+        //para editar lo nuevo
+        discount.value = formatDecimal(vehicle.value.discount)
+        registration_fee.value = formatDecimal(vehicle.value.registration_fee)
+
+        client_type_id.value = vehicle.value.client_sale?.client_type_id ?? client_type_id.value
+        country_id.value = vehicle.value.client_sale?.country_id ?? country_id.value
+        client_id.value = vehicle.value.client_sale?.client_id ?? client_id.value
+        fullname.value = vehicle.value.client_sale?.fullname ?? fullname.value
+        email.value = vehicle.value.client_sale?.email ?? email.value
+        organization_number.value = vehicle.value.client_sale?.organization_number ?? organization_number.value
+        address.value = vehicle.value.client_sale?.address ?? address.value
+        postal_code.value = vehicle.value.client_sale?.postal_code ?? postal_code.value
+        phone.value = vehicle.value.client_sale?.phone ?? phone.value
+        street.value = vehicle.value.client_sale?.street ?? street.value
+
         mileage.value = vehicle.value.mileage
         generation.value = vehicle.value.generation
         car_body_id.value = vehicle.value.car_body_id
@@ -226,8 +238,8 @@ async function fetchData() {
         purchase_date.value = vehicle.value.purchase_date
         currency_id.value = vehicle.value.currency_purchase_id ?? 1
 
-        sale_price.value = vehicle.value.sale_price
-        sale_date.value = formatDate(new Date())
+        sale_price.value = formatDecimal(vehicle.value.sale_price)
+        sale_date.value = vehicle.value.sale_date ?? formatDate(new Date())
         iva_sale_id.value = vehicle.value.iva_sale_id
         sale_comments.value = vehicle.value.sale_comments
 
@@ -244,6 +256,16 @@ async function fetchData() {
     }
 
     isRequestOngoing.value = false
+}
+
+const formatDecimal = (value) => {
+    const number = parseFloat(value);
+
+    if (number % 1 !== 0) {
+        return number.toFixed(2);
+    }
+
+    return number.toString();
 }
 
 const formatDate = (date) => {
@@ -263,9 +285,6 @@ const clearClient = () => {
     phone.value = null
     client_type_id.value = null
     country_id.value = null
-
-    save_client.value = true
-    disabled_client.value = false
 }
 
 const selectClient = client => {
@@ -283,9 +302,6 @@ const selectClient = client => {
         // Si el cliente seleccionado tiene tipo/identificación, asigna si existen
         client_type_id.value = _client.client_type_id ?? client_type_id.value
         country_id.value = _client.country_id
-
-        save_client.value = false
-        disabled_client.value = true
     }
 }
 
@@ -487,18 +503,10 @@ const truncateText = (text, length = 30) => {
   return text
 }
 
-const goToVehicles = () => {
-
-    let data = {
-        message: 'Aktie uppdaterad framgångsrikt.!',
-        error: false
-    }
-
-    router.push({ name : 'dashboard-admin-stock'})
-
-    emitter.emit('toast', data)                 
-
-};
+// Recargar la página al crear otro acuerdo
+function reloadPage() {
+  window.location.reload();
+}
 
 const sendVehicles = () => {
 
@@ -609,7 +617,6 @@ const onSubmit = async () => {
             formData.append('total_sale', total_sale.value);
             formData.append('iva_sale_id', iva_sale_id.value);
             formData.append('sale_comments', sale_comments.value);
-            formData.append('save_client', save_client.value);
 
             formData.append('client_type_id', client_type_id.value);
             formData.append('client_id', client_id.value);
@@ -726,7 +733,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VBtn 
                             class="btn-light w-auto" 
                             block
-                            :to="{ name: 'dashboard-admin-stock' }">
+                            :to="{ name: 'dashboard-admin-sold' }">
                             <VIcon icon="custom-return" size="24" />
                             Tillbaka
                         </VBtn>
@@ -736,8 +743,8 @@ onBeforeRouteLeave((to, from, next) => {
                             block
                             type="submit"
                         >
-                            <VIcon icon="custom-car-open"  size="24" />
-                            Sälj
+                            <VIcon icon="custom-save"  size="24" />
+                            Uppdatering
                         </VBtn>
                     </div>
                     </div>                
@@ -1122,15 +1129,6 @@ onBeforeRouteLeave((to, from, next) => {
                                                 v-model="sale_comments"
                                             />
                                         </div>
-                                        <div class="ms-2">
-                                            <VCheckbox
-                                                v-model="save_client"
-                                                :readonly="disabled_client"
-                                                color="primary"
-                                                label="Spara kund?"
-                                                class="w-100 text-center d-flex justify-start"
-                                            />
-                                        </div>
                                     </div>
                                 </VCol>
                             </VRow>
@@ -1149,9 +1147,7 @@ onBeforeRouteLeave((to, from, next) => {
             <VBtn
                 icon
                 class="btn-white close-btn"
-                @click="router.push({
-                    name: 'dashboard-admin-sold'
-                })"
+                @click="reloadPage"
             >
                 <VIcon size="16" icon="custom-close" />
             </VBtn>
@@ -1161,17 +1157,17 @@ onBeforeRouteLeave((to, from, next) => {
                     <VIcon size="72" icon="custom-f-sedan" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
-                    <div class="dialog-title">Fordonet har markerats som sålt!</div>
+                    <div class="dialog-title">Fordonet har uppdaterats!</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
-                    "Märke och modell" har flyttats från ditt lager till listan över sålda fordon.
+                    Ändringarna har sparats och fordonet är nu uppdaterat  i din lista över sålda fordon.
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-                    <VBtn class="btn-light" @click="goToVehicles">
-                        Stäng
+                    <VBtn class="btn-light" @click="sendVehicles">
+                        Gå till sålda fordon
                     </VBtn>
-                    <VBtn class="btn-gradient" @click="sendVehicles"> Gå till sålda fordon </VBtn>
+                    <VBtn class="btn-gradient" @click="reloadPage"> Redigera fordon</VBtn>
                 </VCardText>
             </VCard>
         </VDialog>
