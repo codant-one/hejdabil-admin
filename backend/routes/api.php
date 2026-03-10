@@ -214,6 +214,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::group(['prefix' => 'vehicles'], function () {
         Route::post('send', [VehicleController::class, 'send']);
         Route::post('findByRegNum', [VehicleController::class, 'findByRegNum']);
+        Route::get('cancel/{id}', [VehicleController::class, 'cancel']);
     });
 
     //Currencies

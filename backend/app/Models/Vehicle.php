@@ -615,7 +615,39 @@ class Vehicle extends Model
                 'vehicle_id' => $vehicle->id
             ]);
 
-        VehicleClient::createClient($request);
+        $vehicleClientType = $request->type ?? 1;
+        $existingVehicleClient = VehicleClient::where('vehicle_id', $vehicle->id)
+            ->where('type', $vehicleClientType)
+            ->first();
+
+        if ($existingVehicleClient) {
+            VehicleClient::updateClient($request, $existingVehicleClient);
+        } else {
+            VehicleClient::createClient($request);
+        }
+
+        return $vehicle;
+    }
+
+    public static function cancelVehicle($vehicle) {
+
+        $vehicle->update([
+            'state_id' => 10,           
+            'sale_price' => null,
+            'sale_date' => null,
+            'iva_sale_id' => null,
+            'sale_comments' => null,
+            'iva_sale_amount' => null,
+            'iva_sale_exclusive' => null,
+            'total_sale' => null,
+            'discount' => null,
+            'registration_fee' => null
+        ]);
+
+        VehicleClient::where([
+            ['vehicle_id', $vehicle->id],
+            ['type', 1]
+        ])->delete(); // eliminar el cliente de la venta
 
         return $vehicle;
     }

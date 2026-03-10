@@ -42,6 +42,7 @@ const totalVehicles = ref(0)
 const isRequestOngoing = ref(true)
 const isConfirmDeleteDialogVisible = ref(false)
 const isVehicleDetailDialog = ref(false)
+const isConfirmCancelSendVisible = ref(false)
 const isMobile = ref(false)
 const selectedVehicle = ref({})
 const isFilterDialogVisible = ref(false);
@@ -252,6 +253,35 @@ const showVehicle = async (id, mobile = false) => {
   isVehicleDetailDialog.value = true
   isMobile.value = mobile
   selectedVehicle.value = vehicles.value.filter((element) => element.id === id )[0]
+}
+
+const showCancelSend = vehicleData => {
+  isConfirmCancelSendVisible.value = true
+  selectedVehicle.value = { ...vehicleData }
+}
+
+const cancelSend = async () => {
+  isConfirmCancelSendVisible.value = false
+  let res = await vehiclesStores.cancelSend(selectedVehicle.value.id)
+  selectedVehicle.value = {}
+
+  advisor.value = {
+    type: res.data.success ? 'success' : 'error',
+    message: res.data.success ? 'Försäljning avbruten!' : res.data.message,
+    show: true
+  }
+
+  await fetchData()
+
+  setTimeout(() => {
+    advisor.value = {
+      type: '',
+      message: '',
+      show: false
+    }
+  }, 3000)
+
+  return true
 }
 
 const editVehicle = vehicleData => {
@@ -1008,13 +1038,22 @@ onBeforeUnmount(() => {
                   </VListItem>
                   <VListItem 
                     v-if="$can('edit', 'stock')" 
+                    @click="showCancelSend(vehicle)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Ångra försäljning</VListItemTitle>
+                  </VListItem>
+                  <VListItem 
+                    v-if="$can('edit', 'stock')" 
                     @click="editVehicle(vehicle)"
                   >
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Redigera</VListItemTitle>
-                  </VListItem>
+                  </VListItem>                 
                   <VListItem v-if="$can('edit', 'stock')" @click="download(vehicle)" class="d-none">
                     <template #prepend>
                       <VIcon icon="custom-download" class="mr-2" size="24" />
@@ -1413,6 +1452,15 @@ onBeforeUnmount(() => {
             </template>
             <VListItemTitle>Visa</VListItemTitle>
           </VListItem>
+          <VListItem 
+            v-if="$can('edit', 'stock')" 
+            @click="showCancelSend(selectedVehicleForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Ångra försäljning</VListItemTitle>
+          </VListItem>
           <VListItem
             v-if="$can('view', 'stock')"
             @click="editVehicle(selectedVehicleForAction); isMobileActionDialogVisible = false;"
@@ -1432,6 +1480,48 @@ onBeforeUnmount(() => {
             <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
         </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm Cancel Send -->
+    <VDialog
+      v-model="isConfirmCancelSendVisible"
+      persistent
+      class="action-dialog" >
+
+      <!-- Dialog close btn -->
+      <VBtn
+      icon
+        class="btn-white close-btn"
+        @click="isConfirmCancelSendVisible = !isConfirmCancelSendVisible"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
+          <div class="dialog-title">
+            Ångra försäljning
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          Är du säker på att du vill ångra försäljningen av denna bil <strong>{{ selectedVehicle.reg_num }}</strong>?
+        </VCardText>
+        <VCardText class="dialog-text">
+          Bilen flyttas tillbaka till lager och markeras som tillgänglig igen.
+        </VCardText>
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn
+            class="btn-light"
+            @click="isConfirmCancelSendVisible = false">
+              Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="cancelSend">
+              Bekräfta
+          </VBtn>
+        </VCardText>
       </VCard>
     </VDialog>
 

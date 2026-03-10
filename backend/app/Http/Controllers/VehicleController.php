@@ -343,6 +343,36 @@ class VehicleController extends Controller
         }
     }
 
+    public function cancel($id): JsonResponse
+    {
+        try {
+            $vehicle = Vehicle::find($id);
+        
+            if (!$vehicle)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Fordon hittades inte'
+                ], 404);
+
+            $vehicle->cancelVehicle($vehicle); 
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'vehicle' => $vehicle
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function findByRegNum(Request $request): JsonResponse
     {
         try {
