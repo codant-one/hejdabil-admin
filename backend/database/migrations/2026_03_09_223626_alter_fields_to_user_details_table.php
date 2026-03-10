@@ -11,10 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            $table->unsignedBigInteger('supplier_id')->nullable()->after('user_id');
-
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
+        Schema::table('user_details', function (Blueprint $table) {
+            $table->unsignedBigInteger('avatar_id')->default(5)->after('user_id');
         });
     }
 
@@ -23,8 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            $table->dropColumn('supplier_id');
+        Schema::table('user_details', function (Blueprint $table) {
+            $table->dropColumn('avatar_id');
         });
     }
 };
