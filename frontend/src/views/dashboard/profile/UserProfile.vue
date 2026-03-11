@@ -581,9 +581,9 @@ const closeUserEditDialog = ()=>{
       <VCard>    
         <VCardTitle class="dialog-title-box mt-2">
           <VIcon size="32" icon="custom-user-outlined" />
-          <div class="dialog-title" style="white-space: pre-line">Redigera personlig information</div>
+          <div class="dialog-title" style="white-space: pre-line; font-size: 22px!important;">Redigera personlig information</div>
         </VCardTitle>        
-        <VCardText class="p-0">
+        <VCardText class="p-0" style="overflow-y: auto; overflow-x: hidden;">
           <VForm
             ref="refVForm"
             class="card-form"
