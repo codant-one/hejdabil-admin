@@ -31,7 +31,8 @@ class UserDetails extends Model
         'logo',
         'img_signature',
         'personal_phone',
-        'personal_address'
+        'personal_address',
+        'avatar_id'
     ];
 
     /**** Relationship ****/
@@ -69,7 +70,8 @@ class UserDetails extends Model
                 'swish' => $request->swish === 'null' ? null : $request->swish,
                 'vat' => $request->vat === 'null' ? null : $request->vat,
                 'personal_phone' => $request->personal_phone === 'null' ? null : $request->personal_phone,
-                'personal_address' => $request->personal_address
+                'personal_address' => $request->personal_address,
+                'avatar_id' => $request->avatar_id === 'null' ? 5 : $request->avatar_id
             ]
         );
 
