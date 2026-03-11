@@ -134,6 +134,18 @@ export const useVehiclesStores = defineStore('vehicles', {
                 })
          
         },
+        cancelSend(id) {
+            this.setLoading(true)
+
+            return Vehicles.cancel(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })  
+        },
         findByRegNum(data) {
             this.setLoading(true)
             

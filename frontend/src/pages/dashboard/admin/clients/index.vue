@@ -3,10 +3,15 @@
 import { ref, toRaw } from "vue";
 import { useDisplay } from "vuetify";
 import { useSuppliersStores } from "@/stores/useSuppliers";
+import { useAuthStores } from '@/stores/useAuth';
+import { useConfigsStores } from '@/stores/useConfigs';
 import { useClientsStores } from "@/stores/useClients";
+import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
 import { avatarText, formatDateYMD, formatNumber } from "@/@core/utils/formatters";
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate';
+import html2pdf from 'html2pdf.js';
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from "@/router";
@@ -17,6 +22,9 @@ const { width: windowWidth } = useWindowSize();
 
 const clientsStores = useClientsStores();
 const suppliersStores = useSuppliersStores();
+const configsStores = useConfigsStores();
+const authStores = useAuthStores();
+const ability = useAppAbility();
 const emitter = inject("emitter");
 
 const suppliers = ref([]);
@@ -56,6 +64,27 @@ const supplier_id = ref(null);
 const state_id = ref(null);
 const userData = ref(null);
 const role = ref(null);
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const company = ref(readCachedCompany())
+
+const setCompany = (value) => {
+  const normalized = value && typeof value === 'object' ? { ...value } : {};
+  company.value = normalized;
+  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
+};
 
 const sectionEl = ref(null);
 
@@ -98,17 +127,60 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-  role.value = userData.value.roles[0].name;
+  try {
+    userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
+    role.value = userData.value?.roles?.[0]?.name ?? null;
 
-  if (role.value === "SuperAdmin" || role.value === "Administrator") {
-    await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
-    suppliers.value = toRaw(suppliersStores.getSuppliers);
-  }
+    if (!role.value) return;
 
-  if (role.value !== "Supplier" && role.value !== "User") {
-    await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
-    suppliers.value = toRaw(suppliersStores.getSuppliers);
+    if (role.value === "SuperAdmin" || role.value === "Administrator") {
+      await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
+      suppliers.value = toRaw(suppliersStores.getSuppliers);
+    }
+
+    if (role.value !== "Supplier" && role.value !== "User") {
+      await suppliersStores.fetchSuppliers({ limit: -1, state_id: 2 });
+      suppliers.value = toRaw(suppliersStores.getSuppliers);
+    }
+
+    const { user_data, userAbilities } = await authStores.me(userData.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+    ability.update(userAbilities)
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
+    if (role.value === 'Supplier') {
+      setCompany({
+        ...(user_data?.user_detail ?? {}),
+        email: user_data?.email ?? '',
+        billings: user_data?.supplier?.billings ?? [],
+        name: user_data?.name ?? '',
+        last_name: user_data?.last_name ?? '',
+      });
+    } else if (role.value === 'User') {
+      setCompany({
+        ...(user_data?.supplier?.boss?.user?.user_detail ?? {}),
+        email: user_data?.supplier?.boss?.user?.email ?? '',
+        billings: user_data?.supplier?.boss?.billings ?? [],
+        name: user_data?.supplier?.boss?.user?.name ?? '',
+        last_name: user_data?.supplier?.boss?.user?.last_name ?? '',
+      });
+    } else {
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
+
+      const companyConfig = configsStores.getFeaturedConfig('company') ?? {};
+      const logoConfig = configsStores.getFeaturedConfig('logo') ?? {};
+
+      setCompany({
+        ...companyConfig,
+        logo: logoConfig.logo ?? companyConfig.logo ?? '',
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load company data:', error);
   }
 });
 
@@ -532,24 +604,151 @@ const showError = () => {
 
 };
 
+const downloadPDF = async () => {
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1 ,
+      orderByField: "id",
+      orderBy: "desc"
+    }
+
+    await clientsStores.fetchClients(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const rows = clientsStores.getClients.map(element => ({
+      id: element.order_id,
+      fullname: element.fullname,
+      organizationNumber: element.organization_number ?? "",
+      phone: element.phone,
+      address: element.address,
+      supplier: element.supplier
+        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        : ''
+    }))
+
+    const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
+    const columnWidth = includeSupplierColumn ? '18.4%' : '23%'
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'Kunder',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      <tr style="height: 48px;">
+        <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.fullname)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.organizationNumber)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
+        ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.address)}</td>
+      </tr>
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 12px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 12px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: 8%; padding: 0 12px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Id</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Kontakt</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Organisationsnummer</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Telefon</td>
+                      ${includeSupplierColumn ? `<td style="text-align: center; width: ${columnWidth}; padding: 0 12px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Leverantör</td>` : ''}
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 12px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Adress</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+    
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'clients.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+
+}
+
 const downloadCSV = async () => {
   isRequestOngoing.value = true;
 
-  let data = { limit: -1 };
+  let data = { 
+      limit: -1 ,
+      orderByField: "id",
+      orderBy: "desc"
+  };
 
   await clientsStores.fetchClients(data);
 
-  let dataArray = [];
+ const includeSupplierColumn = role.value === 'SuperAdmin' || role.value === 'Administrator'
 
-  clientsStores.getClients.forEach((element) => {
-    let data = {
-      ID: element.order_id,
-      KONTAKT: element.fullname,
-      E_POST: element.email,
-      ORGANISATIONSNUMMER: element.organization_number ?? "",
+  const dataArray = clientsStores.getClients.map((element) => {
+    const row = {
+      Id: element.order_id,
+      Kontakt: element.fullname,
+      Organisationsnummer: element.organization_number ?? "",
+      Telefon: element.phone,
+      Adress: element.address,
+      E_post: element.email
     };
 
-    dataArray.push(data);
+    if (includeSupplierColumn) {
+      row.Leverantör = element.supplier
+        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        : ''
+    }
+
+    return row
   });
 
   excelParser().exportDataFromJSON(dataArray, "clients", "csv");
@@ -612,13 +811,29 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VBtn 
-            class="btn-light w-auto" 
-            block
-            @click="downloadCSV">
-            <VIcon icon="custom-export" size="24" />
-            Exportera
-          </VBtn>
+          <VMenu>
+            <template #activator="{ props }">
+              <VBtn
+                id="payout-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
+
+            <VList>
+              <VListItem @click="downloadPDF">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="downloadCSV">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
           <VBtn
             v-if="$can('create', 'clients') && windowWidth >= 1024"
             class="btn-gradient"

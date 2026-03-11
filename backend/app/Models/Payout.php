@@ -36,7 +36,12 @@ class Payout extends Model
         $query->where(function ($q) use ($search) {
             $q->where('reference', 'LIKE', '%' . $search . '%')
                 ->orWhere('amount', 'LIKE', '%' . $search . '%')
-                ->orWhere('payer_alias', 'LIKE', '%' . $search . '%');
+                ->orWhere('created_at', 'LIKE', '%' . $search . '%')
+                ->orWhere('message', 'LIKE', '%' . $search . '%')
+                ->orWhere('payee_ssn', 'LIKE', '%' . $search . '%')
+                ->orWhere('payee_alias', 'LIKE', '%' . $search . '%')
+                ->orWhere('payer_alias', 'LIKE', '%' . $search . '%')
+                ->orWhere('fullname', 'LIKE', '%' . $search . '%');
         });
     }
 

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
+use Carbon\Carbon;
+
 class Note extends Model
 {
     use HasFactory;
@@ -60,6 +62,14 @@ class Note extends Model
 
         if ($filters->get('search')) {
             $query->whereSearch($filters->get('search'));
+        }
+
+        if ($filters->get('date_from') && $filters->get('date_to')) {
+            $filter = [
+                [Carbon::parse($filters->get('date_from'))->format('Y-m-d').' 00:00:00'],
+                [Carbon::parse($filters->get('date_to'))->format('Y-m-d').' 23:59:59']
+            ];
+            $query->whereBetween('created_at', $filter);
         }
 
         if ($filters->get('orderByField') || $filters->get('orderBy')) {

@@ -182,6 +182,22 @@ class Vehicle extends Model
             $query->where('gearbox_id', $filters->get('gearbox_id'));
         }
 
+        if ($filters->get('date_from') && $filters->get('date_to')) {
+            $filter = [
+                [Carbon::parse($filters->get('date_from'))->format('Y-m-d').' 00:00:00'],
+                [Carbon::parse($filters->get('date_to'))->format('Y-m-d').' 23:59:59']
+            ];
+            
+
+            if ($filters->get('state_id') === null) {
+                $query->whereBetween('created_at', $filter) 
+                      ->where('state_id', '<>', 12);
+            } else {   
+                $query->whereBetween('sale_date', $filter) 
+                      ->where('state_id', 12);
+            }
+        }
+
         if ($filters->get('orderByField') || $filters->get('orderBy')) {
             $field = $filters->get('orderByField') ? $filters->get('orderByField') : 'order_id';
             $orderBy = $filters->get('orderBy') ? $filters->get('orderBy') : 'asc';
@@ -599,7 +615,39 @@ class Vehicle extends Model
                 'vehicle_id' => $vehicle->id
             ]);
 
-        VehicleClient::createClient($request);
+        $vehicleClientType = $request->type ?? 1;
+        $existingVehicleClient = VehicleClient::where('vehicle_id', $vehicle->id)
+            ->where('type', $vehicleClientType)
+            ->first();
+
+        if ($existingVehicleClient) {
+            VehicleClient::updateClient($request, $existingVehicleClient);
+        } else {
+            VehicleClient::createClient($request);
+        }
+
+        return $vehicle;
+    }
+
+    public static function cancelVehicle($vehicle) {
+
+        $vehicle->update([
+            'state_id' => 10,           
+            'sale_price' => null,
+            'sale_date' => null,
+            'iva_sale_id' => null,
+            'sale_comments' => null,
+            'iva_sale_amount' => null,
+            'iva_sale_exclusive' => null,
+            'total_sale' => null,
+            'discount' => null,
+            'registration_fee' => null
+        ]);
+
+        VehicleClient::where([
+            ['vehicle_id', $vehicle->id],
+            ['type', 1]
+        ])->delete(); // eliminar el cliente de la venta
 
         return $vehicle;
     }

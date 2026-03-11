@@ -56,8 +56,56 @@ const pickerKey = ref(0)
 const filtrera = ref(false)
 const pendingValue = ref(props.modelValue)
 
+const toDateString = value => {
+  if (!value)
+    return ''
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear()
+    const month = `${value.getMonth() + 1}`.padStart(2, '0')
+    const day = `${value.getDate()}`.padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  if (typeof value === 'string')
+    return value.trim()
+
+  return String(value)
+}
+
+const normalizeRangeValue = value => {
+  if (!value)
+    return value
+
+  if (Array.isArray(value)) {
+    const start = toDateString(value[0])
+    const end = toDateString(value[1] ?? value[0])
+    if (!start || !end)
+      return value
+
+    return [start, end]
+  }
+
+  if (typeof value === 'string') {
+    const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+    if (chunks.length >= 2)
+      return [chunks[0], chunks[1]]
+
+    const single = toDateString(value)
+    return single ? [single, single] : value
+  }
+
+  if (value instanceof Date) {
+    const single = toDateString(value)
+    return single ? [single, single] : value
+  }
+
+  return value
+}
+
 const applyFilter = () => {
-  emit('update:modelValue', pendingValue.value)
+  emit('update:modelValue', normalizeRangeValue(pendingValue.value))
   filtrera.value = true
   emit('update:filtrera', true)
 }

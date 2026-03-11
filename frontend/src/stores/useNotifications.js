@@ -5,7 +5,7 @@ import router from '@/router'
 // Callback global para notificaciones
 let globalNotificationCallback = null
 let notificationAudio = null
-const NOTIFICATION_SOUND_PATH = '/sounds/notification-random.wav'
+const NOTIFICATION_SOUND_PATH = '/sounds/notification-2.wav'
 
 const playNotificationSound = () => {
   if (typeof window === 'undefined') return

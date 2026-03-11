@@ -39,7 +39,11 @@ class BillingController extends Controller
     {
         try {
 
-            $limit = $request->has('limit') ? $request->limit : 10;
+            $limit = (int) $request->input('limit', 10);
+
+            // Avoid invalid per-page values (0/negative) in paginator calculations.
+            if ($limit !== -1)
+                $limit = max(1, $limit);
         
             // Build base query for aggregates with same filters/role rules as listing
             $baseQuery = Billing::query()->applyFilters(
@@ -47,7 +51,9 @@ class BillingController extends Controller
                     'search',
                     'supplier_id',
                     'client_id',
-                    'state_id'
+                    'state_id',
+                    'date_from',
+                    'date_to'
                 ])
             );
             
@@ -76,16 +82,19 @@ class BillingController extends Controller
                     'orderBy',
                     'supplier_id',
                     'client_id',
-                    'state_id'
+                    'state_id',
+                    'date_from',
+                    'date_to'
                 ])
             );
             
             if ($limit == -1) {
                 $allBillings = $query->get();
+                $perPage = max(1, $allBillings->count());
                 $billings = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allBillings,
                     $allBillings->count(),
-                    $allBillings->count(),
+                    $perPage,
                     1
                 );
             } else {

@@ -26,6 +26,10 @@ class Vehicles {
         return axios.post('/vehicles/send', data)
     }
 
+    cancel(id){
+        return axios.get(`/vehicles/cancel/${id}`)
+    }
+
     findByRegNum(data) {
         return axios.post('/vehicles/findByRegNum', data)
     }
