@@ -748,7 +748,7 @@ const closeUserEditDialog = ()=>{
             Välj en avatar
           </div>
         </VCardText>
-        <VCardText class="dialog-text">
+        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">
           <div class="avatar-picker-grid">
             <button
               v-for="item in avatarOptions"
@@ -772,13 +772,9 @@ const closeUserEditDialog = ()=>{
                
             </button>
           </div> 
-        </VCardText>
-
-        <VCardText class="dialog-text my-6">
-          <VDivider />
-        </VCardText>
-        
-        <VCardText class="dialog-text">
+ 
+          <VDivider class="dialog-text my-6"/>
+   
           <VBtn
             class="btn-light w-100"
             block
@@ -786,13 +782,17 @@ const closeUserEditDialog = ()=>{
              <VIcon size="24" icon="custom-upload" />
               Ladda upp bild
           </VBtn>
-        </VCardText>
 
-        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-
-          <VBtn class="btn-gradient" :disabled="!selectedDialogAvatar" @click="applySelectedAvatar">
+          <div class="d-flex justify-end mt-3 mb-6 flex-wrap">
+            <VBtn 
+              :class="windowWidth < 1024 ? 'w-100' : ''"`
+              class="btn-gradient" 
+              :disabled="!selectedDialogAvatar" 
+              @click="applySelectedAvatar"
+              >
               Spara
-          </VBtn>
+            </VBtn>
+          </div>
         </VCardText>
       </VCard>
     </VDialog>

@@ -71,7 +71,7 @@ class UserDetails extends Model
                 'vat' => $request->vat === 'null' ? null : $request->vat,
                 'personal_phone' => $request->personal_phone === 'null' ? null : $request->personal_phone,
                 'personal_address' => $request->personal_address,
-                'avatar_id' => $request->avatar_id === 'null' ? 5 : $request->avatar_id
+                'avatar_id' => $request->avatar_id ?? 5
             ]
         );
 
