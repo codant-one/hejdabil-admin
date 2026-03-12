@@ -8,7 +8,7 @@ import { useConfigsStores } from '@/stores/useConfigs';
 import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
-import { avatarText , formatNumber, formatDateTime } from '@/@core/utils/formatters'
+import { formatNumber, formatDateTime } from '@/@core/utils/formatters'
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
@@ -18,6 +18,7 @@ import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewNoteMobile from "./AddNewNoteMobile.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const notesStores = useNotesStores()
 const configsStores = useConfigsStores();
@@ -1140,7 +1141,7 @@ onBeforeUnmount(() => {
                     <div class="text-no-wrap">
                         <VAvatar
                             color="#E3DEEB"
-                            :variant="note.user.avatar ? 'outlined' : 'tonal'"
+                            variant="outlined"
                             size="40"
                         >
                             <VImg
@@ -1148,7 +1149,10 @@ onBeforeUnmount(() => {
                                 style="border-radius: 50%;"
                                 :src="themeConfig.settings.urlStorage + note.user.avatar"
                             />
-                            <span v-else>{{ avatarText(note.user.name) }}</span>
+                            <PresetAvatarImage
+                              v-else
+                              :avatar-id="note.user?.user_detail?.avatar_id"
+                            />
                         </VAvatar>
                         <span class="ms-2 text-comments text-neutral-3">{{ note.user.name }} {{ note.user.last_name }}</span>
                     </div>
@@ -1492,7 +1496,7 @@ onBeforeUnmount(() => {
                   <div class="text-no-wrap w-100">
                       <VAvatar
                           color="#E3DEEB"
-                          :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                          variant="outlined"
                           size="40"
                       >
                           <VImg
@@ -1500,7 +1504,10 @@ onBeforeUnmount(() => {
                               style="border-radius: 50%;"
                               :src="themeConfig.settings.urlStorage + comment.user.avatar"
                           />
-                          <span v-else>{{ avatarText(comment.user.name) }}</span>
+                          <PresetAvatarImage
+                            v-else
+                            :avatar-id="comment.user?.user_detail?.avatar_id"
+                          />
                       </VAvatar>
                       <span class="ms-2 user-comments">
                           {{ comment.user.name }} {{ comment.user.last_name }}
@@ -1660,7 +1667,7 @@ onBeforeUnmount(() => {
                     <div class="text-no-wrap w-100">
                         <VAvatar
                             color="#E3DEEB"
-                            :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                            variant="outlined"
                             size="40"
                         >
                             <VImg
@@ -1668,7 +1675,10 @@ onBeforeUnmount(() => {
                                 style="border-radius: 50%;"
                                 :src="themeConfig.settings.urlStorage + comment.user.avatar"
                             />
-                            <span v-else>{{ avatarText(comment.user.name) }}</span>
+                            <PresetAvatarImage
+                              v-else
+                              :avatar-id="comment.user?.user_detail?.avatar_id"
+                            />
                         </VAvatar>
                         <span class="ms-2 user-comments">
                             {{ comment.user.name }} {{ comment.user.last_name }}

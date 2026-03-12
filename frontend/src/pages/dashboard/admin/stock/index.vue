@@ -10,7 +10,6 @@ import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber, formatNumberInteger } from '@/@core/utils/formatters'
 import { yearValidator, requiredValidator } from '@/@core/utils/validators'
-import { avatarText } from '@/@core/utils/formatters'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import show from "@/components/vehicles/show.vue";
@@ -19,6 +18,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const vehiclesStores = useVehiclesStores()
 const configsStores = useConfigsStores();
@@ -262,7 +262,7 @@ async function fetchData(cleanFilters = false) {
   totalVehicles.value = vehiclesStores.vehiclesTotalCount
 
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
-  role.value = userData.value.roles[0].name
+  role.value = userData.value?.roles?.[0]?.name ?? null
 
   if(role.value === 'SuperAdmin' || role.value === 'Administrator') {
     suppliers.value = vehiclesStores.getSuppliers
@@ -778,7 +778,7 @@ onMounted(async () => {
     }
 
     userData.value = JSON.parse(localStorage.getItem("user_data") || "null");
-    role.value = userData.value.roles[0].name;
+    role.value = userData.value?.roles?.[0]?.name ?? null;
 
     if (!role.value) return;
 
@@ -1069,7 +1069,7 @@ onBeforeUnmount(() => {
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('created_by')">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="vehicle.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1077,7 +1077,10 @@ onBeforeUnmount(() => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + vehicle.user.avatar"
                   />
-                  <span v-else>{{ avatarText(vehicle.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="vehicle.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

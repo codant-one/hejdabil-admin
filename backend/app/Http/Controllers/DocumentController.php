@@ -50,7 +50,8 @@ class DocumentController extends Controller
                         },
                         'token:id,document_id,signing_token,recipient_email,signature_status',
                         'token.histories:id,token_id,event_type,description,created_at',
-                        'user:id,name,last_name,email,avatar'
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                        'user.userDetail:user_id,avatar_id,logo',
                     ])
                     ->applyFilters(
                         $request->only([

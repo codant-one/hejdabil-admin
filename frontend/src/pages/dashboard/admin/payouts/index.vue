@@ -6,7 +6,6 @@ import { usePayoutsStores } from '@/stores/usePayouts'
 import { useConfigsStores } from '@/stores/useConfigs'
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from '@themeConfig'
-import { avatarText } from '@/@core/utils/formatters'
 import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { useAuthStores } from '@/stores/useAuth'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
@@ -18,6 +17,7 @@ import AddNewPayoutDialog from './AddNewPayoutDialog.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import html2canvas from 'html2canvas';
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 import billogg from "@/assets/images/billogg_img.svg";
 import swish from "@/assets/images/swish_img.svg";
@@ -1229,7 +1229,7 @@ const onDatePickerUpdate = value => {
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="payout.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1237,7 +1237,10 @@ const onDatePickerUpdate = value => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + payout.user.avatar"
                   />
-                  <span v-else>{{ avatarText(payout.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="payout.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

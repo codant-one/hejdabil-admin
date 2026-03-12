@@ -10,7 +10,6 @@ import { yearValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
 import { formatNumberInteger } from '@/@core/utils/formatters'
-import { avatarText } from '@/@core/utils/formatters'
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import show from "@/components/vehicles/show.vue";
@@ -19,6 +18,7 @@ import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Toaster from "@/components/common/Toaster.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -393,7 +393,7 @@ const downloadCSV = async () => {
       Försäljningspris: formatNumber(element.total_sale ?? 0) + ' kr',
       Miltal: element.mileage === null ? '' : formatNumberInteger(element.mileage ?? '0,00') + ' Mil',
       Anteckningar:  element.comments ?? '',
-      Status: element.state.name,
+      Status: element.state?.name ?? '',
       VAT: element.iva_purchase?.name,
       Besiktigas: element.control_inspection ?? '',
       Köparen: element.client_sale?.fullname ?? '',
@@ -402,7 +402,7 @@ const downloadCSV = async () => {
 
     if (includeSupplierColumn) {
         row.Leverantör = element.supplier
-          ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+          ? `${element.supplier?.user?.name ?? ''} ${element.supplier?.user?.last_name ?? ''}`.trim()
           : ''
       }
 
@@ -523,7 +523,7 @@ const downloadPDF = async () => {
       buyerName: element.client_sale?.fullname ?? '',
       buyerPhone: element.client_sale?.phone ?? '',
       supplier: element.supplier
-        ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
+        ? `${element.supplier?.user?.name ?? ''} ${element.supplier?.user?.last_name ?? ''}`.trim()
         : ''
     }))
 
@@ -983,39 +983,42 @@ onBeforeUnmount(() => {
             </td> 
             <td style="width: 1%; white-space: nowrap" v-if="(role === 'SuperAdmin' || role === 'Administrator') && isColVisible('supplier')">
               <span v-if="vehicle.supplier">
-                {{ vehicle.supplier.user.name }}
-                {{ vehicle.supplier.user.last_name ?? "" }}
+                {{ vehicle.supplier?.user?.name ?? '' }}
+                {{ vehicle.supplier?.user?.last_name ?? "" }}
               </span>
             </td>            
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('created_by')">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="vehicle.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
-                    v-if="vehicle.user.avatar"
+                    v-if="vehicle.user?.avatar"
                     style="border-radius: 50%"
-                    :src="themeConfig.settings.urlStorage + vehicle.user.avatar"
+                    :src="themeConfig.settings.urlStorage + vehicle.user?.avatar"
                   />
-                  <span v-else>{{ avatarText(vehicle.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="vehicle.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">
-                    {{ vehicle.user.name }} {{ vehicle.user.last_name ?? "" }}
+                    {{ vehicle.user?.name ?? '' }} {{ vehicle.user?.last_name ?? "" }}
                   </span>
                   <span class="text-sm text-disabled">
                     <VTooltip 
-                      v-if="vehicle.user.email && vehicle.user.email.length > 20"
+                      v-if="vehicle.user?.email && vehicle.user.email.length > 20"
                       location="bottom">
                       <template #activator="{ props }">
                         <span v-bind="props" class="cursor-pointer">
-                          {{ truncateText(vehicle.user.email, 20) }}
+                          {{ truncateText(vehicle.user?.email, 20) }}
                         </span>
                       </template>
-                      <span>{{ vehicle.user.email }}</span>
+                      <span>{{ vehicle.user?.email }}</span>
                     </VTooltip>
-                    <span class="text-sm text-disabled"v-else>{{ vehicle.user.email }}</span>
+                    <span class="text-sm text-disabled"v-else>{{ vehicle.user?.email }}</span>
                   </span>
                 </div>
               </div>
@@ -1263,7 +1266,7 @@ onBeforeUnmount(() => {
               <AppAutocomplete
                 v-model="brand_id"
                 :items="brands"
-                :item-title="item => item.name"
+                :item-title="item => item?.name ?? ''"
                 :item-value="item => item.id"
                 autocomplete="off"
                 clearable
@@ -1294,7 +1297,7 @@ onBeforeUnmount(() => {
               <AppAutocomplete
                 v-model="gearbox_id"
                 :items="gearboxes"
-                :item-title="item => item.name"
+                :item-title="item => item?.name ?? ''"
                 :item-value="item => item.id"
                 autocomplete="off"
                 clearable
@@ -1341,7 +1344,7 @@ onBeforeUnmount(() => {
             <AppAutocomplete
               v-model="brand_id"
               :items="brands"
-              :item-title="item => item.name"
+              :item-title="item => item?.name ?? ''"
               :item-value="item => item.id"
               autocomplete="off"
               clearable
@@ -1372,7 +1375,7 @@ onBeforeUnmount(() => {
             <AppAutocomplete
               v-model="gearbox_id"
               :items="gearboxes"
-              :item-title="item => item.name"
+              :item-title="item => item?.name ?? ''"
               :item-value="item => item.id"
               autocomplete="off"
               clearable

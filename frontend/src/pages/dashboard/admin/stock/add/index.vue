@@ -5,7 +5,7 @@ import { useDisplay } from "vuetify";
 import { PerfectScrollbar } from 'vue3-perfect-scrollbar'
 import { ref, nextTick, onMounted, onBeforeUnmount, computed, inject, watch } from 'vue'
 import { themeConfig } from '@themeConfig'
-import { avatarText, formatNumber } from '@/@core/utils/formatters'
+import { formatNumber } from '@/@core/utils/formatters'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
@@ -17,6 +17,7 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import router from '@/router'
 
 const ability = useAppAbility()
@@ -2483,7 +2484,10 @@ onBeforeRouteLeave((to, from, next) => {
                                                             style="border-radius: 50%;"
                                                             :src="userData.avatar"
                                                         />
-                                                        <span v-else>{{ avatarText(userData.name) }}</span>
+                                                        <PresetAvatarImage
+                                                            v-else
+                                                            :avatar-id="userData?.user_detail?.avatar_id"
+                                                        />
                                                     </VAvatar>
                                                     <span class="ms-2 text-comments text-neutral-3">{{ userData.name }} {{ userData.last_name }}</span>
                                                 </div>
@@ -3190,7 +3194,10 @@ onBeforeRouteLeave((to, from, next) => {
                                             style="border-radius: 50%;"
                                             :src="comment.user.avatar"
                                         />
-                                        <span v-else>{{ avatarText(comment.user.name) }}</span>
+                                        <PresetAvatarImage
+                                            v-else
+                                            :avatar-id="comment.user?.user_detail?.avatar_id"
+                                        />
                                     </VAvatar>
                                     <span class="ms-2 user-comments">
                                         {{ comment.user.name }} {{ comment.user.last_name }}
@@ -3367,7 +3374,10 @@ onBeforeRouteLeave((to, from, next) => {
                                         style="border-radius: 50%;"
                                         :src="themeConfig.settings.urlStorage + comment.user.avatar"
                                     />
-                                    <span v-else>{{ avatarText(comment.user.name) }}</span>
+                                    <PresetAvatarImage
+                                        v-else
+                                        :avatar-id="comment.user?.user_detail?.avatar_id"
+                                    />
                                 </VAvatar>
                                 <span class="ms-2 user-comments">
                                     {{ comment.user.name }} {{ comment.user.last_name }}

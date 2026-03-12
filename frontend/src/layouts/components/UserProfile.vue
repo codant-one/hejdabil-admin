@@ -1,8 +1,9 @@
 <script setup>
-import { avatarText } from "@/@core/utils/formatters";
+
 import { initialAbility } from "@/plugins/casl/ability";
 import { useAppAbility } from "@/plugins/casl/useAppAbility";
 import { useAuthStores } from "@/stores/useAuth";
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const authStores = useAuthStores();
 const router = useRouter();
@@ -33,6 +34,10 @@ const userData = field =>{
 
   if (values && field === "email") {
     return values.email;
+  }
+
+  if (values && field === "avatar_id") {
+    return values.user_detail.avatar_id;
   }
 
   return false;
@@ -81,9 +86,10 @@ const logout = async () => {
         style="border-radius: 50%"
         :src="userData('avatar')"
       />
-      <span v-else class="font-weight-semibold">
-        {{ avatarText(userData("name")) }}
-      </span>
+      <PresetAvatarImage
+        v-else
+        :avatar-id="userData('avatar_id')"
+      />
     </VAvatar>
     <VIcon icon="custom-chevron-down" size="16" />
 
@@ -111,12 +117,10 @@ const logout = async () => {
                     style="border-radius: 50%;"
                     :src="userData('avatar')"
                   />
-                  <span
+                  <PresetAvatarImage
                     v-else
-                    class="font-weight-semibold"
-                  >
-                    {{ avatarText(userData('name')) }}
-                  </span>
+                    :avatar-id="userData('avatar_id')"
+                  />
                 </VAvatar>
               </VBadge>
               </VListItemAction>

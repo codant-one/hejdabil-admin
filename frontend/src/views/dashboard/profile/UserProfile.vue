@@ -1,15 +1,14 @@
 <script setup>
 
-import { avatarText } from '@/@core/utils/formatters'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import avatar1 from '@/assets/images/avatars/1.svg'
 import avatar2 from '@/assets/images/avatars/2.svg'
 import avatar3 from '@/assets/images/avatars/3.svg'
 import avatar4 from '@/assets/images/avatars/4.svg'
 import avatar5 from '@/assets/images/avatars/5.svg'
 import avatar6 from '@/assets/images/avatars/6.svg'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const props = defineProps({
   user: {
@@ -289,12 +288,11 @@ const closeUserEditDialog = ()=>{
                 v-if="avatarCommitted"
                 :src="avatarCommitted"
               />
-              <span
+              <PresetAvatarImage
                 v-else
-                class="text-5xl font-weight-semibold"
-              >
-                {{ avatarText(name) }}
-              </span>
+                :radius="0"
+                :avatar-id="avatarId"
+              />
             </VAvatar>
           </div>
         
@@ -443,12 +441,11 @@ const closeUserEditDialog = ()=>{
                         style="border-radius: 6px;"
                         :src="avatarPreview"
                       />
-                      <span
+                      <PresetAvatarImage
                         v-else
-                        class="text-5xl font-weight-semibold"
-                      >
-                        {{ avatarText(name) }}
-                      </span>
+                        :radius="0"
+                        :avatar-id="avatarId"
+                      />
                     </VAvatar>
                   </span>
                   <!-- 👉 Upload Photo -->
@@ -609,12 +606,11 @@ const closeUserEditDialog = ()=>{
                         style="border-radius: 6px;"
                         :src="avatarPreview"
                       />
-                      <span
+                      <PresetAvatarImage
                         v-else
-                        class="text-5xl font-weight-semibold"
-                      >
-                        {{ avatarText(name) }}
-                      </span>
+                        :radius="0"
+                        :avatar-id="avatarId"
+                      />
                     </VAvatar>
                   </span>
                   <!-- 👉 Upload Photo -->
@@ -748,7 +744,7 @@ const closeUserEditDialog = ()=>{
             Välj en avatar
           </div>
         </VCardText>
-        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">
+        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">>
           <div class="avatar-picker-grid">
             <button
               v-for="item in avatarOptions"
@@ -772,9 +768,13 @@ const closeUserEditDialog = ()=>{
                
             </button>
           </div> 
- 
-          <VDivider class="dialog-text my-6"/>
-   
+        </VCardText>
+
+        <VCardText class="dialog-text my-6">
+          <VDivider />
+        </VCardText>
+        
+        <VCardText class="dialog-text">
           <VBtn
             class="btn-light w-100"
             block
@@ -782,17 +782,13 @@ const closeUserEditDialog = ()=>{
              <VIcon size="24" icon="custom-upload" />
               Ladda upp bild
           </VBtn>
+        </VCardText>
 
-          <div class="d-flex justify-end mt-3 mb-6 flex-wrap">
-            <VBtn 
-              :class="windowWidth < 1024 ? 'w-100' : ''"`
-              class="btn-gradient" 
-              :disabled="!selectedDialogAvatar" 
-              @click="applySelectedAvatar"
-              >
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+
+          <VBtn class="btn-gradient" :disabled="!selectedDialogAvatar" @click="applySelectedAvatar">
               Spara
-            </VBtn>
-          </div>
+          </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

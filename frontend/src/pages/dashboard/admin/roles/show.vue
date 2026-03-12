@@ -407,7 +407,7 @@ const closeRoleDetailDialog = function(){
                             />
                         </div>
                         <VLabel style="font-weight: bold;">
-                            Signera dokument
+                            E-signering
                         </VLabel>
                         <div class="demo-space-x ml-5">
                             <VCheckbox

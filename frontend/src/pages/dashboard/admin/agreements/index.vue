@@ -8,12 +8,12 @@ import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { themeConfig } from '@themeConfig'
 import { formatNumber } from '@/@core/utils/formatters'
-import { avatarText } from '@/@core/utils/formatters'
 import { useRoute } from 'vue-router'
 import Toaster from "@/components/common/Toaster.vue";
 import router from '@/router'
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -1267,7 +1267,7 @@ onBeforeUnmount(() => {
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('created_by')">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1275,7 +1275,10 @@ onBeforeUnmount(() => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + agreement.user.avatar"
                   />
-                  <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="agreement.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

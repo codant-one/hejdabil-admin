@@ -2,10 +2,11 @@
 
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useBillingsStores } from "@/stores/useBillings";
-import { avatarText, formatNumber } from "@/@core/utils/formatters";
+import { formatNumber } from "@/@core/utils/formatters";
 import { themeConfig } from "@themeConfig";
 import router from "@/router";
 import VuePdfEmbed from 'vue-pdf-embed'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const props = defineProps({
   client_id: {
@@ -1202,7 +1203,7 @@ onBeforeUnmount(() => {
                   <td style="width: 1%; white-space: nowrap">
                     <div class="d-flex align-center gap-x-1">
                       <VAvatar
-                        :variant="billing.user.avatar ? 'outlined' : 'tonal'"
+                        variant="outlined"
                         size="38"
                       >
                         <VImg
@@ -1210,7 +1211,10 @@ onBeforeUnmount(() => {
                           style="border-radius: 50%"
                           :src="themeConfig.settings.urlStorage + billing.user.avatar"
                         />
-                        <span v-else>{{ avatarText(billing.user.name) }}</span>
+                        <PresetAvatarImage
+                          v-else
+                          :avatar-id="billing.user?.user_detail?.avatar_id"
+                        />
                       </VAvatar>
                       <div class="d-flex flex-column">
                         <span class="font-weight-medium">
@@ -1531,7 +1535,7 @@ onBeforeUnmount(() => {
                   <td style="width: 1%; white-space: nowrap">
                     <div class="d-flex align-center gap-x-1">
                       <VAvatar
-                        :variant="agreement.user.avatar ? 'outlined' : 'tonal'"
+                        variant="outlined"
                         size="38"
                       >
                         <VImg
@@ -1539,7 +1543,10 @@ onBeforeUnmount(() => {
                           style="border-radius: 50%"
                           :src="themeConfig.settings.urlStorage + agreement.user.avatar"
                         />
-                        <span v-else>{{ avatarText(agreement.user.name) }}</span>
+                        <PresetAvatarImage
+                          v-else
+                          :avatar-id="agreement.user?.user_detail?.avatar_id"
+                        />
                       </VAvatar>
                       <div class="d-flex flex-column">
                         <span class="font-weight-medium">

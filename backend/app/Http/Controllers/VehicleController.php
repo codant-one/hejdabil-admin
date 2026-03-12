@@ -59,8 +59,8 @@ class VehicleController extends Controller
                               ->withTrashed()
                               ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                         },
-                        'user:id,name,last_name,email,avatar',
-                        'user.userDetail:user_id,logo',
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                        'user.userDetail:user_id,avatar_id,logo',
                         'model:id,name,brand_id',
                         'model.brand:id,name,logo', 
                         'state:id,name', 
@@ -189,10 +189,10 @@ class VehicleController extends Controller
         try {
 
             $vehicle = Vehicle::with([
-                'tasks.user', 
-                'tasks.comments.user', 
-                'tasks.histories.user',
-                'documents.user',
+                'tasks.user.userDetail', 
+                'tasks.comments.user.userDetail', 
+                'tasks.histories.user.userDetail',
+                'documents.user.userDetail',
                 'documents.type',
                 'client_purchase.client',
                 'client_sale.client',

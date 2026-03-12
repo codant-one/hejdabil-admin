@@ -1,5 +1,5 @@
 <script setup>
-import { avatarText } from "@core/utils/formatters";
+
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -97,11 +97,7 @@ const closeMenu = () => {
                     :icon="notification.icon || undefined"
                     variant="tonal"
                     size="40"
-                  >
-                    <span v-if="notification.text">{{
-                      avatarText(notification.text)
-                    }}</span>
-                  </VAvatar>
+                  />
                 </VListItemAction>
               </template>
               <!-- Slot: Append -->

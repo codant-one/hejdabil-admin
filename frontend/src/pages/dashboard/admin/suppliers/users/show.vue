@@ -339,7 +339,7 @@ const hasAssignedPermission = permission => {
                                 $can('delete','signed-documents')
                             "
                         >
-                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Signera dokument" />
+                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="E-signering" />
                             <div class="ml-1"
                                 :class="windowWidth < 1024 ? 'd-flex flex-column align-start' : 'permissions-grid'"
                             >

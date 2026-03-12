@@ -61,7 +61,7 @@ export default [
     subject: 'agreements'
   },
   { 
-    title: 'Signera dokument', 
+    title: 'E-signering', 
     icon: { icon: 'custom-signature' },
     to: 'dashboard-admin-documents', 
     action: 'view', 
@@ -69,7 +69,7 @@ export default [
   },
   { 
     title: 'Swish', 
-    icon: { icon: 'custom-cash-2' },
+    icon: { icon: 'custom-swish' },
     to: 'dashboard-admin-payouts', 
     action: 'view', 
     subject: 'payouts'
