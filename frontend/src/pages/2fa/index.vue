@@ -14,6 +14,7 @@ const router = useRouter();
 
 const load = ref(false);
 const otp = ref("");
+const otpInputKey = ref(0);
 
 const handleOtp = (value) => {
   otp.value = value;
@@ -38,11 +39,18 @@ const onSubmit = () => {
     authStores
       .validate(data)
       .then((response) => {
+        localStorage.removeItem("is_2fa");
+        localStorage.removeItem("two_factor");
+        localStorage.removeItem("token");
+        localStorage.removeItem("qr");
+
         // Redirect to `to` query if exist or redirect to index route
         router.replace(route.query.to ? String(route.query.to) : "/info");
       })
       .catch((err) => {
         load.value = false;
+        otp.value = "";
+        otpInputKey.value += 1;
 
         if (err.message === "invalid_code") {
           advisor.value.show = true;
@@ -85,15 +93,18 @@ const onSubmit = () => {
         icon="custom-f-two-factor-auth"
         size="120"
         class="mx-auto"
-      ></VIcon>
+      />
 
       <h2 class="login-title">Autentiserare</h2>
 
       <p class="letter">Ange din 6-siffriga säkerhetskod</p>
 
-      <VForm @submit.prevent="onSubmit" class="auth-form d-flex flex-column gap-6">
+      <VForm 
+        class="auth-form d-flex flex-column gap-6"
+        @submit.prevent="onSubmit">
+
         <div class="form-field form-field-2fa d-flex flex-column align-center gap-4">
-          <AppOtpInput @updateOtp="handleOtp" />
+          <AppOtpInput :key="otpInputKey" @updateOtp="handleOtp" />
         </div>
 
         <!-- reset password -->

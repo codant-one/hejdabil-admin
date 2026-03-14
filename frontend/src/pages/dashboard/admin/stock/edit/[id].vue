@@ -2489,7 +2489,6 @@ onBeforeRouteLeave((to, from, next) => {
                                             <div class="d-flex align-center px-0">
                                                 <div class="text-no-wrap">
                                                     <VAvatar
-                                                        color="#E3DEEB"
                                                         variant="outlined"
                                                         size="40"
                                                     >
@@ -3199,7 +3198,6 @@ onBeforeRouteLeave((to, from, next) => {
                             > 
                                 <div class="text-no-wrap w-100">
                                     <VAvatar
-                                        color="#E3DEEB"
                                         variant="outlined"
                                         size="40"
                                     >
@@ -3379,7 +3377,6 @@ onBeforeRouteLeave((to, from, next) => {
                         >
                             <div class="text-no-wrap w-100">
                                 <VAvatar
-                                    color="#E3DEEB"
                                     variant="outlined"
                                     size="40"
                                 >

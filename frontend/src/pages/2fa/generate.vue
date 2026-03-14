@@ -15,6 +15,7 @@ const router = useRouter()
 
 const load = ref(false)
 const otp = ref('')
+const otpInputKey = ref(0)
 
 const token  = localStorage.getItem('token')
 const otpauthUri  = localStorage.getItem('qr')
@@ -50,11 +51,18 @@ const onSubmit = () => {
 
         authStores.validate(data)
             .then(response => {
+            localStorage.removeItem('is_2fa')
+            localStorage.removeItem('two_factor')
+            localStorage.removeItem('token')
+            localStorage.removeItem('qr')
+
                 // Redirect to `to` query if exist or redirect to index route
                 router.replace(route.query.to ? String(route.query.to) : '/info')
             }).catch(err => {
 
                 load.value = false
+                otp.value = ''
+                otpInputKey.value += 1
 
                 if(err.message === 'invalid_code'){
                   advisor.value.show = true
@@ -76,17 +84,17 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
-    <VSnackbar
-      v-model="advisor.show"
-      transition="scroll-y-reverse-transition"
-      :location="snackbarLocation"
-      :color="advisor.type"
-      class="snackbar-alert"
-    >
-      {{ advisor.message }}
-    </VSnackbar> 
+  <VSnackbar
+    v-model="advisor.show"
+    transition="scroll-y-reverse-transition"
+    :location="snackbarLocation"
+    :color="advisor.type"
+    class="snackbar-alert"
+  >
+    {{ advisor.message }}
+  </VSnackbar> 
 
+  <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
     <div class="d-flex logo-box mt-2 mt-md-0">
       <RouterLink to="/login">
         <img :src="logo" width="121" height="40" />
@@ -94,11 +102,10 @@ const onSubmit = () => {
     </div>
 
     <div class="d-flex flex-column align-center text-center box-2fa gap-3">
-       <img :src="qrCodeDataUrl"  width="200" height="200" class="mx-auto"/>
+      <img :src="qrCodeDataUrl"  width="200" height="200" class="mx-auto"/>
          
-       <h2 class="login-title">
-        Skanna QR-koden
-       </h2>
+      <h2 class="login-title">Skanna QR-koden</h2>
+
       <p class="letter">
         Alternativt kan du använda koden <strong>{{ token }}</strong>.
       </p>
@@ -106,62 +113,54 @@ const onSubmit = () => {
       <VForm
         class="auth-form d-flex flex-column gap-6"
         @submit.prevent="onSubmit">
-        <VRow>
-          <!-- email -->
-          <VCol cols="12">
-            <AppOtpInput @updateOtp="handleOtp"/>
-          </VCol>
 
-          <!-- reset password -->
-          <VCol cols="12">
-            <VBtn
-              block
-              type="submit"
-              class="btn-gradient w-100"
-            >
-              Send
-              <VProgressCircular
-                v-if="load"
-                indeterminate
-                color="#fff"
-              />
-            </VBtn>
-          </VCol>
-        </VRow>
+        <div class="form-field form-field-2fa d-flex flex-column align-center gap-4">
+          <AppOtpInput :key="otpInputKey" @updateOtp="handleOtp" />
+        </div>
+
+        <VBtn 
+          class="btn-gradient w-100" 
+          type="submit"
+          :loading="load"
+          >Skicka
+            <VProgressCircular
+              v-if="load"
+              indeterminate
+              color="#fff"
+            />
+        </VBtn>
       </VForm>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-    @use "@core/scss/template/pages/page-auth.scss";
+@use "@core/scss/template/pages/page-auth.scss";
 
-    .auth .v-card-item__prepend {
-        padding-inline-end: 0 !important;
-    }
+.box-2fa {
+  max-width: 442px;
+  width: 100%;
+  margin: 0 auto;
+}
 
-    .auth .v-card-item {
-        padding: 0 24px !important;
-    }
+.login-title {
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 56px;
+  letter-spacing: 0;
+  text-align: center;
+  color: #454545;
+}
 
-    @media(max-width: 991px){
-      .auth .v-card--variant-elevated {
-        box-shadow: none !important;
-      }
-
-      .letter, .v-selection-control--inline .v-label {
-        font-size: 11.5px !important;
-      }
-
-      .v-selection-control__wrapper {
-        width: 28px !important;
-        margin-left: 4px;
-      }
-      
-      .text-h5 {
-        font-size: 1.25rem !important;
-      }
-    }
+@media (max-width: 991px) {
+  .logo-box {
+    position: relative;
+    top: auto;
+    left: auto;
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+}
 </style>
 
 <route lang="yaml">

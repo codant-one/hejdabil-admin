@@ -1140,7 +1140,6 @@ onBeforeUnmount(() => {
                 <div class="d-flex align-center px-0">
                     <div class="text-no-wrap">
                         <VAvatar
-                            color="#E3DEEB"
                             variant="outlined"
                             size="40"
                         >
@@ -1495,7 +1494,6 @@ onBeforeUnmount(() => {
               >                
                   <div class="text-no-wrap w-100">
                       <VAvatar
-                          color="#E3DEEB"
                           variant="outlined"
                           size="40"
                       >
@@ -1666,7 +1664,6 @@ onBeforeUnmount(() => {
                 >
                     <div class="text-no-wrap w-100">
                         <VAvatar
-                            color="#E3DEEB"
                             variant="outlined"
                             size="40"
                         >
