@@ -45,13 +45,9 @@ class PayoutController extends Controller
                             'state:id,name', 
                             'supplier:id,user_id',
                             'supplier.user:id,name,last_name,email,avatar',
-                            'user' => function($query) {
-                                $query->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')
-                                      ->whereNull('deleted_at');
-                            }])
-                           ->whereHas('user', function($query) {
-                                $query->whereNull('deleted_at');
-                            })
+                            'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                            'user.userDetail:user_id,avatar_id,logo'
+                           ])
                            ->applyFilters(
                                 $request->only([
                                     'search',

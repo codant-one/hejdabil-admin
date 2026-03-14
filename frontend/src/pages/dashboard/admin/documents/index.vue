@@ -7,13 +7,14 @@ import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { themeConfig } from '@themeConfig'
-import { avatarText, formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
+import { formatDate, formatDateTime, formatDateYMD } from '@/@core/utils/formatters'
 import { excelParser } from '@/plugins/csv/excelParser'
 import { useRoute } from 'vue-router'
 import logo from "@images/logos/billogg-logo.svg";
 import Toaster from "@/components/common/Toaster.vue";
 import VuePdfEmbed from 'vue-pdf-embed'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const documentsStores = useSignableDocumentsStores()
 const clientsStores = useClientsStores()
@@ -1462,7 +1463,7 @@ onBeforeUnmount(() => {
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="document.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1470,7 +1471,10 @@ onBeforeUnmount(() => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + document.user.avatar"
                   />
-                  <span v-else>{{ avatarText(document.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="document.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

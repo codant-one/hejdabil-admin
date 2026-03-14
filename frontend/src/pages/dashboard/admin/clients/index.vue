@@ -9,7 +9,7 @@ import { useClientsStores } from "@/stores/useClients";
 import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { avatarText, formatDateYMD, formatNumber } from "@/@core/utils/formatters";
+import { formatDateYMD, formatNumber } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate';
 import html2pdf from 'html2pdf.js';
 import AddNewClientDrawer from "./AddNewClientDrawer.vue";
@@ -17,6 +17,7 @@ import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.sv
 import router from "@/router";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import AddNewClientMobile from "./AddNewClientMobile.vue";
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 
@@ -1024,7 +1025,7 @@ onBeforeUnmount(() => {
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="client.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1032,7 +1033,10 @@ onBeforeUnmount(() => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + client.user.avatar"
                   />
-                  <span v-else>{{ avatarText(client.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="client.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

@@ -1,4 +1,5 @@
 <script setup>
+
 import { useDisplay } from "vuetify";
 import { useBillingsStores } from "@/stores/useBillings";
 import { useAuthStores } from '@/stores/useAuth';
@@ -7,13 +8,13 @@ import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
 import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
-import { avatarText } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
 import Toaster from "@/components/common/Toaster.vue";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const billingsStores = useBillingsStores();
 const configsStores = useConfigsStores();
@@ -1274,7 +1275,7 @@ onBeforeUnmount(() => {
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
-                  :variant="billing.user.avatar ? 'outlined' : 'tonal'"
+                  variant="outlined"
                   size="38"
                 >
                   <VImg
@@ -1282,7 +1283,10 @@ onBeforeUnmount(() => {
                     style="border-radius: 50%"
                     :src="themeConfig.settings.urlStorage + billing.user.avatar"
                   />
-                  <span v-else>{{ avatarText(billing.user.name) }}</span>
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="billing.user?.user_detail?.avatar_id"
+                  />
                 </VAvatar>
                 <div class="d-flex flex-column">
                   <span class="font-weight-medium">

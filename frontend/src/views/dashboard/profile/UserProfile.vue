@@ -1,9 +1,14 @@
 <script setup>
 
-import { avatarText } from '@/@core/utils/formatters'
 import { emailValidator, requiredValidator, phoneValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import avatar1 from '@/assets/images/avatars/1.svg'
+import avatar2 from '@/assets/images/avatars/2.svg'
+import avatar3 from '@/assets/images/avatars/3.svg'
+import avatar4 from '@/assets/images/avatars/4.svg'
+import avatar5 from '@/assets/images/avatars/5.svg'
+import avatar6 from '@/assets/images/avatars/6.svg'
+import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const props = defineProps({
   user: {
@@ -17,11 +22,21 @@ const props = defineProps({
   avatar: {
     type: [String, null],
     required: true
+  },
+  haveAvatar: {
+    type: Boolean,
+    required: true
+  },
+  avatarId: {
+    type: [String, Number, null],
+    required: true
   }
 })
 
 const emit = defineEmits([
   'onImageSelected',
+  'loading',
+  'alert'
 ])
 
 const { width: windowWidth } = useWindowSize();
@@ -30,8 +45,8 @@ const profileStores = useProfileStores()
 
 const refVForm = ref()
 const refAlert = ref()
+const refAvatarFileInput = ref()
 const isUserEditDialog = ref(false)
-const isRequestOngoing = ref(false)
 
 const userData = ref(props.user)
 const user_id = ref('')
@@ -40,9 +55,22 @@ const name = ref('')
 const last_name = ref('')
 const phone = ref('')
 const address = ref('')
-const avatar = ref(props.avatar)
+const avatarCommitted = ref(props.avatar)
+const avatarPreview = ref(props.avatar)
 
 const avatarOld = ref(props.avatarOld)
+
+const isConfirmEditAvatarVisible = ref(false)
+const selectedDialogAvatar = ref(props.avatarId)
+
+const avatarOptions = [
+  { id: 1, src: avatar1 },
+  { id: 2, src: avatar2 },
+  { id: 3, src: avatar3 },
+  { id: 4, src: avatar4 },
+  { id: 5, src: avatar5 },
+  { id: 6, src: avatar6 },
+]
 
 const alert = ref({
     message: '',
@@ -52,7 +80,10 @@ const alert = ref({
 
 watch(() =>  
   props.avatar, (avatar_) => {
-    avatar.value = avatar_
+    if (!isUserEditDialog.value)
+      avatarCommitted.value = avatar_
+
+    avatarPreview.value = avatar_
   });
 
 watch(() => 
@@ -81,14 +112,25 @@ async function fetchData() {
 }
 
 const resetAvatar = () => {
-  avatar.value = null
+  avatarPreview.value = null
+}
+
+const presetAvatarToFile = async selectedPresetAvatar => {
+  const response = await fetch(selectedPresetAvatar.src)
+  const blob = await response.blob()
+  const extension = blob.type?.split('/')[1] || 'png'
+
+  return new File([blob], `avatar-${selectedPresetAvatar.id}.${extension}`, {
+    type: blob.type || 'application/octet-stream',
+  })
 }
 
 const onSubmit = () => {
-  refVForm.value?.validate().then(({ valid: isValid }) => {
+  refVForm.value?.validate().then(async ({ valid: isValid }) => {
     if (isValid) {
 
       let formData = new FormData()
+      const selectedPresetAvatar = avatarOptions.find(option => option.src === avatarPreview.value)
       
       formData.append('user_id', user_id.value)
       formData.append('email', email.value)
@@ -96,7 +138,16 @@ const onSubmit = () => {
       formData.append('last_name', last_name.value)
       formData.append('personal_phone', phone.value)
       formData.append('personal_address', address.value)
-      formData.append('image', avatarOld.value)
+
+      if (selectedPresetAvatar) {
+        const selectedPresetAvatarFile = await presetAvatarToFile(selectedPresetAvatar)
+
+        formData.append('image', selectedPresetAvatarFile)
+        formData.append('avatar_id', selectedPresetAvatar.id)
+      } else {
+        formData.append('image', avatarOld.value)
+        formData.append('avatar_id', props.avatarId)
+      }
 
       formData.append('logo',  userData.value.user_detail?.logo)
       formData.append('company', userData.value.user_detail?.company)
@@ -115,40 +166,41 @@ const onSubmit = () => {
       formData.append('swish', userData.value.user_detail?.swish)
       formData.append('vat', userData.value.user_detail?.vat)
 
-      isRequestOngoing.value = true
+      emit("loading", true);
+      isUserEditDialog.value = false
 
       profileStores.updateData(formData)
         .then(response => {    
 
-          window.scrollTo(0, 0)
-                    
           alert.value.type = 'success'
           alert.value.message = 'Uppgifterna har sparats. Sidan laddas om automatiskt för att visa ändringarna.'
           alert.value.show = true
-                    
+          emit("alert", alert);
+
           localStorage.setItem('user_data', JSON.stringify(response.user_data))
-                    
-          fetchData()
+
+          // Commit avatar preview to profile card only after successful save.
+          avatarCommitted.value = avatarPreview.value
+          emit("loading", false);
 
           setTimeout(() => {
-            alert.value.show = false,
-            alert.value.message = ''
             location.reload()
-          }, 5000)
-
-          isRequestOngoing.value = false
+          }, 3000)
 
         }).catch(error => {
+          
           alert.value.type = 'error'
           alert.value.show = true
           alert.value.message = 'Ett serverfel uppstod. Försök igen.'
-                    
+
+          emit("alert", alert);
+          emit("loading", false);
+
           setTimeout(() => {
             alert.value.show = false,
             alert.value.message = ''
+            emit("alert", alert);
           }, 5000) 
-
-          isRequestOngoing.value = false
         })
       }
             
@@ -161,19 +213,61 @@ const deleteAvatar = ()=>{
 }
 
 const showUserEditDialog = u =>{
+  avatarPreview.value = avatarCommitted.value
+  avatarOld.value = props.avatarOld
   isUserEditDialog.value = true
+}
+
+const showConfirmEditAvatarDialog = () => {
+  const selectedFromCurrent = avatarOptions.find(option => option.src === avatarPreview.value)
+  selectedDialogAvatar.value = selectedFromCurrent?.id ?? props.avatarId
+  isConfirmEditAvatarVisible.value = true
+}
+
+const selectDialogAvatar = id => {
+  selectedDialogAvatar.value = id
+}
+
+const applySelectedAvatar = () => {
+  const selected = avatarOptions.find(option => option.id === selectedDialogAvatar.value)
+
+  if (!selected)
+    return
+
+  avatarPreview.value = selected.src
+  avatarOld.value = selected.src
+  isConfirmEditAvatarVisible.value = false
+}
+
+const onAvatarSelected = event => {
+  emit('onImageSelected', event)
+
+  if (event?.target?.files?.length) {
+    const selectedFile = event.target.files[0]
+
+    avatarOld.value = selectedFile
+    avatarPreview.value = URL.createObjectURL(selectedFile)
+    selectedDialogAvatar.value = null
+    isConfirmEditAvatarVisible.value = false
+  }
+}
+
+const triggerAvatarUpload = () => {
+  nextTick(() => {
+    const fileInput = refAvatarFileInput.value?.$el?.querySelector('input[type="file"]')
+    fileInput?.click()
+  })
 }
 
 const closeUserEditDialog = ()=>{
   isUserEditDialog.value = false
-  fetchData()
+  avatarPreview.value = avatarCommitted.value
+  avatarOld.value = props.avatarOld
 }
 </script>
 
 <template>
   <section>
-    <LoadingOverlay :is-loading="isRequestOngoing" />
-
     <VCardText class="p-0">
       <div class="bg-alert">
         <div 
@@ -187,20 +281,18 @@ const closeUserEditDialog = ()=>{
             <VAvatar
               rounded
               :size="144"
-              :color="avatar ? 'default' : 'primary'"
+              :color="avatarCommitted ? 'default' : 'primary'"
               variant="tonal"
             >
               <VImg
-                v-if="avatar"
-                style="border-radius: 16px;"
-                :src="avatar"
+                v-if="avatarCommitted"
+                :src="avatarCommitted"
               />
-              <span
+              <PresetAvatarImage
                 v-else
-                class="text-5xl font-weight-semibold"
-              >
-                {{ avatarText(name) }}
-              </span>
+                :radius="0"
+                :avatar-id="avatarId"
+              />
             </VAvatar>
           </div>
         
@@ -299,8 +391,9 @@ const closeUserEditDialog = ()=>{
       </div>
     </VCardText>
       
-    <!-- DIALOG Edit personal information -->
+    <!-- DIALOG Edit personal information desktop -->
     <VDialog
+      v-if="windowWidth >= 1024"
       v-model="isUserEditDialog"
       :width="windowWidth < 1024 ? '' : '1022'"
       class="action-dialog"
@@ -321,26 +414,8 @@ const closeUserEditDialog = ()=>{
         <VCardTitle class="dialog-title-box mt-2">
           <VIcon size="32" icon="custom-user-outlined" />
           <div class="dialog-title" style="white-space: pre-line">Redigera personlig information</div>
-        </VCardTitle>
-        
+        </VCardTitle>        
         <VCardText class="p-0">
-          <VCol 
-            v-if="alert.show" 
-            cols="12"
-            class="px-4 py-0 mb-4"
-          >
-            <VAlert
-              ref="refAlert"
-              v-if="alert.show"
-              :color="alert.type"
-              class="alert-no-shrink custom-alert mt-4"
-              style="flex: none;"
-            >
-              <VAlertTitle>{{ alert.message }}</VAlertTitle>
-            </VAlert>
-
-          </VCol>
-
           <VForm
             ref="refVForm"
             class="card-form"
@@ -353,48 +428,54 @@ const closeUserEditDialog = ()=>{
                     :class="windowWidth < 1024 ? 'flex-column me-4' : 'flex-row'"
                     :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                 >
-                  <span class="d-block d-md-flex text-center justify-start">
+                  <span class="d-block d-md-flex text-center justify-center">
                     <VAvatar
                       rounded
                       :size="120"
-                      class="me-md-6 mb-2"
-                      :color="avatar ? 'default' : 'primary'"
+                      class="mb-2"
+                      :color="avatarPreview ? 'default' : 'primary'"
                       variant="tonal"
                     >
                       <VImg
-                        v-if="avatar"
+                        v-if="avatarPreview"
                         style="border-radius: 6px;"
-                        :src="avatar"
+                        :src="avatarPreview"
                       />
-                      <span
+                      <PresetAvatarImage
                         v-else
-                        class="text-5xl font-weight-semibold"
-                      >
-                        {{ avatarText(name) }}
-                      </span>
+                        :radius="0"
+                        :avatar-id="avatarId"
+                      />
                     </VAvatar>
                   </span>
                   <!-- 👉 Upload Photo -->
-                  <div class="d-flex flex-column justify-center gap-2 my-2 my-md-0">
-                    <div class="d-flex flex-wrap gap-2">
+                  <div class="d-flex justify-center gap-2 my-2 my-md-0">
+                    <div class="d-none flex-wrap gap-2">
                       <VIcon size="48" icon="custom-camera" />
                       <VFileInput                          
+                        ref="refAvatarFileInput"
                         accept="image/png, image/jpeg, image/bmp"
                         placeholder="Avatar"
                         prepend-icon=""
-                        @change="$emit('onImageSelected', $event)"
+                        @change="onAvatarSelected"
                         @click:clear="resetAvatar"
                       />
                     </div>
-                    <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Tillåtna format JPG, GIF, PNG." />
                     <VBtn 
-                      class="btn-light w-auto" 
+                      class="btn-light w-auto d-none" 
                       block
                       @click="deleteAvatar"
                     >
                       <VIcon icon="custom-waste" size="24" />
                       Ta bort avatar
-                    </VBtn>            
+                    </VBtn>     
+                    <VBtn 
+                      class="btn-light w-auto" 
+                      @click="showConfirmEditAvatarDialog"
+                    >
+                      <VIcon icon="custom-pencil" size="24" />
+                      Redigera
+                    </VBtn>        
                   </div>
                 </div>
               </div>
@@ -473,6 +554,244 @@ const closeUserEditDialog = ()=>{
         </VCardText>
       </VCard>
     </VDialog> 
+
+    <!-- DIALOG Edit personal information mobile -->
+    <VDialog
+      v-else
+      v-model="isUserEditDialog"
+      fullscreen
+      persistent
+      :scrim="false"
+      transition="dialog-bottom-transition"
+      class="action-dialog dialog-fullscreen"
+      content-class="clients-pending-mobile-fullscreen">
+
+      <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="closeUserEditDialog"
+      >
+          <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>    
+        <VCardTitle class="dialog-title-box mt-2">
+          <VIcon size="32" icon="custom-user-outlined" />
+          <div class="dialog-title" style="white-space: pre-line; font-size: 22px!important;">Redigera personlig information</div>
+        </VCardTitle>        
+        <VCardText class="p-0" style="overflow-y: auto; overflow-x: hidden;">
+          <VForm
+            ref="refVForm"
+            class="card-form"
+            @submit.prevent="onSubmit"
+          >
+            <div class="dialog-form-grid">
+              <div class="dialog-form-col-5">
+                <div 
+                    class="bg-alert ms-4"
+                    :class="windowWidth < 1024 ? 'flex-column me-4' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                >
+                  <span class="d-block d-md-flex text-center justify-center">
+                    <VAvatar
+                      rounded
+                      :size="120"
+                      class="mb-2"
+                      :color="avatarPreview ? 'default' : 'primary'"
+                      variant="tonal"
+                    >
+                      <VImg
+                        v-if="avatarPreview"
+                        style="border-radius: 6px;"
+                        :src="avatarPreview"
+                      />
+                      <PresetAvatarImage
+                        v-else
+                        :radius="0"
+                        :avatar-id="avatarId"
+                      />
+                    </VAvatar>
+                  </span>
+                  <!-- 👉 Upload Photo -->
+                  <div class="d-flex justify-center gap-2 my-2 my-md-0">
+                    <div class="d-none flex-wrap gap-2">
+                      <VIcon size="48" icon="custom-camera" />
+                      <VFileInput                          
+                        ref="refAvatarFileInput"
+                        accept="image/png, image/jpeg, image/bmp"
+                        placeholder="Avatar"
+                        prepend-icon=""
+                        @change="onAvatarSelected"
+                        @click:clear="resetAvatar"
+                      />
+                    </div>
+                    <VBtn 
+                      class="btn-light w-auto d-none" 
+                      block
+                      @click="deleteAvatar"
+                    >
+                      <VIcon icon="custom-waste" size="24" />
+                      Ta bort avatar
+                    </VBtn>     
+                    <VBtn 
+                      class="btn-light w-auto" 
+                      @click="showConfirmEditAvatarDialog"
+                    >
+                      <VIcon icon="custom-pencil" size="24" />
+                      Redigera
+                    </VBtn>        
+                  </div>
+                </div>
+              </div>
+
+              <div class="dialog-form-col-7">
+                <div 
+                    class="d-flex flex-wrap me-4"
+                    :class="windowWidth < 1024 ? 'ms-4 flex-column' : 'flex-row'"
+                    :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
+                >
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Namn*" />
+                      <VTextField
+                        v-model="name"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Efternamn*" />
+                      <VTextField
+                        v-model="last_name"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="E-post*" />
+                      <VTextField
+                        v-model="email"
+                        type="email"
+                        :rules="[requiredValidator, emailValidator]"
+                        disabled
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Telefon*" />
+                      <VTextField
+                        v-model="phone"
+                        placeholder="+(XX) XXXXXXXXX"
+                        :rules="[requiredValidator, phoneValidator]"
+                      />
+                    </div>
+                    <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                      <VLabel class="mb-1 text-body-profile text-high-emphasis" text="Adress*" />
+                      <VTextField
+                        v-model="address"
+                        :rules="[requiredValidator]"
+                      />
+                    </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 👉 Form Actions -->
+            <div 
+              class="d-flex justify-end gap-3 flex-wrap dialog-actions"
+              :class="windowWidth < 1024 ? 'px-4' : 'my-4 me-4'"
+            >
+              <VBtn
+                class="btn-light"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+                @click="closeUserEditDialog"
+                >
+                <VIcon icon="custom-return" size="24" />
+                Avbryt
+              </VBtn>
+              <VBtn 
+                type="submit" 
+                class="btn-gradient"
+                :class="windowWidth < 1024 ? 'w-100' : 'w-auto'"
+              >
+                <VIcon icon="custom-save"  size="24" />
+                Spara
+              </VBtn>
+            </div>
+          </VForm>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm edit avatar -->
+    <VDialog
+      v-model="isConfirmEditAvatarVisible"
+      :z-index="3000"
+      persistent
+      class="action-dialog" >
+
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmEditAvatarVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-name" class="action-icon" />
+          <div class="dialog-title">
+            Välj en avatar
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">>
+          <div class="avatar-picker-grid">
+            <button
+              v-for="item in avatarOptions"
+              :key="item.id"
+              type="button"
+              class="avatar-picker-item"
+              :class="selectedDialogAvatar === item.id ? 'is-selected' : ''"
+              @click="selectDialogAvatar(item.id)"
+            >
+              <img
+                :src="item.src"
+                :alt="`Avatar ${item.id}`"
+                class="avatar-picker-image"
+              >
+              <span
+                v-if="selectedDialogAvatar === item.id"
+                class="avatar-picker-check"
+              >
+                <VIcon v-if="selectedDialogAvatar === item.id" size="72" icon="custom-check-avatar" class="action-icon" />
+              </span>
+               
+            </button>
+          </div> 
+        </VCardText>
+
+        <VCardText class="dialog-text my-6">
+          <VDivider />
+        </VCardText>
+        
+        <VCardText class="dialog-text">
+          <VBtn
+            class="btn-light w-100"
+            block
+            @click="triggerAvatarUpload">
+             <VIcon size="24" icon="custom-upload" />
+              Ladda upp bild
+          </VBtn>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+
+          <VBtn class="btn-gradient" :disabled="!selectedDialogAvatar" @click="applySelectedAvatar">
+              Spara
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -733,5 +1052,49 @@ const closeUserEditDialog = ()=>{
                 left: 0px;
             }
         }
+    }
+
+    .avatar-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(88px, 1fr));
+      gap: 16px;
+      justify-items: center;
+
+      @media (max-width: 600px) {
+        grid-template-columns: repeat(2, minmax(88px, 1fr));
+        gap: 32px;
+      }
+    }
+
+    .avatar-picker-item {
+      position: relative;
+      display: grid;
+      place-items: center;
+      inline-size: 138px;
+      block-size: 138px;
+      border-radius: 50%;
+      border: 0;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .avatar-picker-image {
+      inline-size: 138px;
+      block-size: 138px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .avatar-picker-check {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      inline-size: 138px;
+      block-size: 138px;
+      border-radius: 50%;
+      border: 0;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+      background: linear-gradient(90deg, rgba(216, 255, 228, 0.9) 0%, rgba(198, 255, 235, 0.9) 50%, rgba(192, 254, 255, 0.9) 100%);
     }
 </style>

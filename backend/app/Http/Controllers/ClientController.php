@@ -43,8 +43,8 @@ class ClientController extends Controller
             $query = Client::with([
                         'supplier:id,user_id,boss_id',
                         'supplier.user:id,name,last_name,email',
-                        'user:id,name,last_name,email,avatar',
-                        'user.userDetail:user_id,logo',
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                        'user.userDetail:user_id,avatar_id,logo',
                         'state:id,name',
                         'country:id,name',
                     ])->applyFilters(

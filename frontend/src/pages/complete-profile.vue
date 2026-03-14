@@ -16,6 +16,12 @@ import { themeConfig } from "@themeConfig";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import background from "@images/pages/complete-profile/complete-profile-background.jpg";
 import logo_gradient from "@images/logo.svg";
+import avatar1 from "@/assets/images/avatars/1.svg";
+import avatar2 from "@/assets/images/avatars/2.svg";
+import avatar3 from "@/assets/images/avatars/3.svg";
+import avatar4 from "@/assets/images/avatars/4.svg";
+import avatar5 from "@/assets/images/avatars/5.svg";
+import avatar6 from "@/assets/images/avatars/6.svg";
 
 import "vue-advanced-cropper/dist/style.css";
 import SignaturePad from "signature_pad";
@@ -23,6 +29,7 @@ import { nextTick } from "vue";
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const { width: windowWidth } = useWindowSize();
 
 const authStores = useAuthStores();
 const profileStores = useProfileStores();
@@ -34,7 +41,19 @@ const name = ref("");
 const last_name = ref("");
 const phone = ref("");
 const address = ref("");
-const avatar = ref("");
+const avatar = ref(null);
+const avatarId = ref(5);
+const isConfirmEditAvatarVisible = ref(false);
+const selectedDialogAvatar = ref(null);
+
+const avatarOptions = [
+  { id: 1, src: avatar1 },
+  { id: 2, src: avatar2 },
+  { id: 3, src: avatar3 },
+  { id: 4, src: avatar4 },
+  { id: 5, src: avatar5 },
+  { id: 6, src: avatar6 },
+];
 
 const avatarOld = ref("");
 const isRequestOngoing = ref(false);
@@ -308,8 +327,10 @@ async function fetchData() {
     ? await fetchImageAsBlob(themeConfig.settings.urlStorage + userSignature)
     : null;
 
-  avatarOld.value = userData.value.avatar;
-  avatar.value = userData.value.avatar;
+  avatarOld.value = userData.value.avatar || avatar5;
+  avatar.value = userData.value.avatar || avatar5;
+  avatarId.value = userData.value.user_detail.avatar_id ?? 5;
+  selectedDialogAvatar.value = avatarId.value ?? 5;
 
   isRequestOngoing.value = false;
 }
@@ -339,6 +360,48 @@ const resetAvatar = () => {
   avatar.value = null;
 };
 
+const presetAvatarToFile = async (selectedPresetAvatar) => {
+  const response = await fetch(selectedPresetAvatar.src);
+  const blob = await response.blob();
+  const extension = blob.type?.split("/")[1] || "png";
+
+  return new File([blob], `avatar-${selectedPresetAvatar.id}.${extension}`, {
+    type: blob.type || "application/octet-stream",
+  });
+};
+
+const showConfirmEditAvatarDialog = () => {
+  const selectedFromCurrent = avatarOptions.find(
+    (option) => option.src === avatar.value
+  );
+  selectedDialogAvatar.value = selectedFromCurrent?.id ?? avatarId.value ?? 5;
+  isConfirmEditAvatarVisible.value = true;
+};
+
+const selectDialogAvatar = (id) => {
+  selectedDialogAvatar.value = id;
+};
+
+const applySelectedAvatar = () => {
+  const selected = avatarOptions.find(
+    (option) => option.id === selectedDialogAvatar.value
+  );
+
+  if (!selected) return;
+
+  avatar.value = selected.src;
+  avatarOld.value = selected.src;
+  avatarId.value = selected.id;
+  isConfirmEditAvatarVisible.value = false;
+};
+
+const triggerAvatarUpload = () => {
+  nextTick(() => {
+    const fileInput = document.querySelector('input[data-avatar-upload="true"]');
+    fileInput?.click();
+  });
+};
+
 const handleSubmit = () => {
   return role.value === "Supplier" || role.value === "User"
     ? onSubmit()
@@ -346,9 +409,12 @@ const handleSubmit = () => {
 };
 
 const submitCompleteProfile = async () => {
-  refVForm.value?.validate().then(({ valid: isValid }) => {
+  refVForm.value?.validate().then(async ({ valid: isValid }) => {
     if (isValid) {
       let formData = new FormData();
+      const selectedPresetAvatar = avatarOptions.find(
+        (option) => option.id === selectedDialogAvatar.value
+      );
 
       formData.append("user_id", user_id.value);
       formData.append("email", email.value);
@@ -356,7 +422,15 @@ const submitCompleteProfile = async () => {
       formData.append("last_name", last_name.value);
       formData.append("personal_phone", phone.value);
       formData.append("personal_address", address.value);
-      formData.append("image", avatarOld.value);
+
+      if (selectedPresetAvatar) {
+        const selectedPresetAvatarFile = await presetAvatarToFile(selectedPresetAvatar);
+        formData.append("image", selectedPresetAvatarFile);
+        formData.append("avatar_id", String(selectedPresetAvatar.id));
+      } else {
+        formData.append("image", avatarOld.value);
+        formData.append("avatar_id", String(avatarId.value ?? 5));
+      }
 
       formData.append("logo", logoOld.value);
 
@@ -459,8 +533,10 @@ const onImageSelected = (event) => {
 
   resizeImage(file, 400, 400, 0.9).then(async (blob) => {
     avatarOld.value = blob;
+    selectedDialogAvatar.value = null;
     let r = await blobToBase64(blob);
     avatar.value = "data:image/jpeg;base64," + r;
+    isConfirmEditAvatarVisible.value = false;
   });
 };
 
@@ -810,7 +886,7 @@ const dataURLtoBlob = (dataURL) => {
               <div class="d-flex flex-column align-center justify-center gap-4">
                 <VBtn
                   class="upload-avatar-btn"
-                  @click="$refs.avatarInput.click()"
+                  @click="showConfirmEditAvatarDialog"
                   style="padding: 0; min-width: auto"
                 >
                   <VAvatar class="avatar-box" size="128">
@@ -824,6 +900,7 @@ const dataURLtoBlob = (dataURL) => {
                 <input
                   ref="avatarInput"
                   type="file"
+                  data-avatar-upload="true"
                   accept="image/png, image/jpeg, image/bmp"
                   @change="onImageSelected"
                   style="display: none"
@@ -883,13 +960,6 @@ const dataURLtoBlob = (dataURL) => {
                   </VAvatar>
                 </VBtn>
 
-                <input
-                  ref="avatarInput"
-                  type="file"
-                  accept="image/png, image/jpeg, image/bmp"
-                  @change="onImageSelected"
-                  style="display: none"
-                />
               </div>
 
               <p
@@ -1069,7 +1139,7 @@ const dataURLtoBlob = (dataURL) => {
           <div class="d-flex flex-column align-center justify-center gap-4">
             <VBtn
               class="upload-avatar-btn"
-              @click="$refs.avatarInput.click()"
+              @click="showConfirmEditAvatarDialog"
               style="padding: 0; min-width: auto"
             >
               <VAvatar class="avatar-box" size="128">
@@ -1083,6 +1153,7 @@ const dataURLtoBlob = (dataURL) => {
             <input
               ref="avatarInput"
               type="file"
+              data-avatar-upload="true"
               accept="image/png, image/jpeg, image/bmp"
               @change="onImageSelected"
               style="display: none"
@@ -1325,6 +1396,79 @@ const dataURLtoBlob = (dataURL) => {
       </VCardText>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Confirm edit avatar -->
+  <VDialog
+      v-model="isConfirmEditAvatarVisible"
+      :z-index="3000"
+      persistent
+      class="action-dialog" >
+
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmEditAvatarVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-name" class="action-icon" />
+          <div class="dialog-title">
+            Välj en avatar
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">
+          <div class="avatar-picker-grid">
+            <button
+              v-for="item in avatarOptions"
+              :key="item.id"
+              type="button"
+              class="avatar-picker-item"
+              :class="selectedDialogAvatar === item.id ? 'is-selected' : ''"
+              @click="selectDialogAvatar(item.id)"
+            >
+              <img
+                :src="item.src"
+                :alt="`Avatar ${item.id}`"
+                class="avatar-picker-image"
+              >
+              <span
+                v-if="selectedDialogAvatar === item.id"
+                class="avatar-picker-check"
+              >
+                <VIcon v-if="selectedDialogAvatar === item.id" size="72" icon="custom-check-avatar" class="action-icon" />
+              </span>
+               
+            </button>
+          </div> 
+ 
+          <VDivider class="dialog-text my-6"/>
+   
+          <VBtn
+            class="btn-light w-100"
+            block
+            @click="triggerAvatarUpload">
+             <VIcon size="24" icon="custom-upload" />
+              Ladda upp bild
+          </VBtn>
+
+          <div class="d-flex justify-end mt-3 mb-6 flex-wrap">
+            <VBtn 
+              :class="windowWidth < 1024 ? 'w-100' : ''"`
+              class="btn-gradient" 
+              :disabled="!selectedDialogAvatar" 
+              @click="applySelectedAvatar"
+              >
+              Spara
+            </VBtn>
+          </div>
+        </VCardText>
+      </VCard>
+    </VDialog>
 </template>
 
 <style lang="scss">
@@ -1408,11 +1552,12 @@ const dataURLtoBlob = (dataURL) => {
 
 .v-tabs.profile-tabs {
   .v-btn {
-    .v-btn__content {
-      font-size: 14px !important;
-      color: #454545;
+      min-width: 50px !important;
+      .v-btn__content {
+        font-size: 14px !important;
+        color: #454545;
+      }
     }
-  }
 }
 
 @media (max-width: 991px) {
@@ -1569,6 +1714,50 @@ const dataURLtoBlob = (dataURL) => {
   cursor: crosshair;
 }
 
+.avatar-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(88px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}
+
+.avatar-picker-item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 138px;
+  block-size: 138px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.avatar-picker-image {
+  inline-size: 138px;
+  block-size: 138px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-picker-check {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  inline-size: 138px;
+  block-size: 138px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  background: linear-gradient(
+    90deg,
+    rgba(216, 255, 228, 0.9) 0%,
+    rgba(198, 255, 235, 0.9) 50%,
+    rgba(192, 254, 255, 0.9) 100%
+  );
+}
+
 @media (max-width: 776px) {
   .v-tabs.profile-tabs {
     .v-icon {
@@ -1606,6 +1795,11 @@ const dataURLtoBlob = (dataURL) => {
 
   .store-address {
     margin-inline-start: 0;
+  }
+
+  .avatar-picker-grid {
+    grid-template-columns: repeat(2, minmax(88px, 1fr));
+    gap: 32px;
   }
 }
 </style>

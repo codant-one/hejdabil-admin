@@ -17,6 +17,8 @@ const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
 const avatar = ref('')
 const avatarOld = ref('')
+const haveAvatar = ref(false)
+const avatar_id = ref(null)
 const userData = ref(null)
 const role = ref(null)
 const userTab = ref(null)
@@ -93,6 +95,8 @@ async function fetchData() {
 
   avatarOld.value = userData.value.avatar
   avatar.value = userData.value.avatar
+  haveAvatar.value = userData.value.avatar === null ? false : true
+  avatar_id.value = userData.value.user_detail.avatar_id
   role.value = userData.value.roles[0].name
 }
 
@@ -184,6 +188,10 @@ const onImageSelected = event => {
     })
 }
 
+const showLoading = function (value) {
+  isRequestOngoing.value = value;
+};
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -231,7 +239,11 @@ onBeforeUnmount(() => {
         :user="userData"
         :avatarOld="avatarOld"
         :avatar="avatar"
+        :haveAvatar="haveAvatar"
+        :avatarId="avatar_id"
         @onImageSelected="onImageSelected" 
+        @loading="showLoading"
+        @alert="showAlert"
       />
   
       <div v-if="role !== 'SuperAdmin' && role !== 'Administrator'">

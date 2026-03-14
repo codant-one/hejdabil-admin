@@ -43,8 +43,8 @@ class NoteController extends Controller
                                   ->withTrashed()
                                   ->with(['user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'deleted_at')->withTrashed()]);
                             },
-                            'user:id,name,last_name,email,avatar',
-                            'user.userDetail:user_id,logo',
+                            'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                            'user.userDetail:user_id,avatar_id,logo',
                             'comments:id,note_id,user_id,comment,created_at',
                             'comments.user:id,name,last_name'
                         ])

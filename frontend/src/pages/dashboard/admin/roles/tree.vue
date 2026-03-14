@@ -121,17 +121,17 @@ const closeTreeDialog  = function(){
                             </li>
                         </ul>
                         <li class="tab n2">
-                            <strong>Signera dokument</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till signerad dokumentmodul</code>
+                            <strong>E-signering</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till signerad dokumentmodul</code>
                         </li>
                         <ul class="tab">
                             <li class="tab n3">
-                                <strong>Skapa signera dokument</strong>&emsp;/&emsp;<code>Möjliggör skapande av signerad dokument</code>
+                                <strong>Skapa E-signering</strong>&emsp;/&emsp;<code>Möjliggör skapande av signerad dokument</code>
                             </li>
                             <li class="tab n3">
-                                <strong>Redigera signera dokument</strong>&emsp;/&emsp;<code>Möjliggör redigering av signerad dokument</code>
+                                <strong>Redigera E-signering</strong>&emsp;/&emsp;<code>Möjliggör redigering av signerad dokument</code>
                             </li>
                             <li class="tab n3">
-                                <strong>Radera signera dokument</strong>&emsp;/&emsp;<code>Möjliggör borttagning av signerad dokument</code>
+                                <strong>Radera E-signering</strong>&emsp;/&emsp;<code>Möjliggör borttagning av signerad dokument</code>
                             </li>
                         </ul>
                         <li class="tab n2">

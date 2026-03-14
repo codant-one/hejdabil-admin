@@ -26,8 +26,8 @@ class NotificationController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Notification::with([
-                            'user:id,name,last_name,email,avatar',
-                            'user.userDetail:user_id,logo'
+                            'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                            'user.userDetail:user_id,avatar_id,logo'
                         ])
                          ->applyFilters(
                                 $request->only([

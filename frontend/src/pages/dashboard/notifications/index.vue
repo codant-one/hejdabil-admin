@@ -3,7 +3,6 @@
 import { useDisplay } from "vuetify";
 import { useRouter } from 'vue-router'
 import { useNotificationsStore } from '@/stores/useNotifications'
-import { avatarText } from "@core/utils/formatters";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
@@ -329,11 +328,7 @@ onBeforeUnmount(() => {
               :icon="notification.icon || undefined"
               variant="tonal"
               size="40"
-            >
-              <span v-if="notification.text">{{
-                avatarText(notification.text)
-              }}</span>
-            </VAvatar>
+            />
           </VBadge>
 
           <VAvatar
@@ -343,11 +338,7 @@ onBeforeUnmount(() => {
             :icon="notification.icon || undefined"
             variant="tonal"
             size="40"
-          >
-            <span v-if="notification.text">{{
-              avatarText(notification.text)
-            }}</span>
-          </VAvatar>
+          />
           
           <div class="d-flex flex-column gap-1">          
             <span class="notification-title">{{ notification.title }}</span>

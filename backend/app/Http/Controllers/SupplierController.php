@@ -45,7 +45,7 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user:id,name,last_name,email,avatar',
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
                         'user.userDetail:user_id,logo,company',
                         'creator:id,name,last_name,avatar',
                         'creator.userDetail:user_id,company',

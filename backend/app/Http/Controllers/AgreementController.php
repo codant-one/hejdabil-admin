@@ -89,7 +89,7 @@ class AgreementController extends Controller
                                 $q->select('id', 'name', 'last_name', 'email', 'avatar')
                                     ->withTrashed();
                         },
-                        'user.userDetail:user_id,logo'
+                        'user.userDetail:user_id,avatar_id,logo'
                     ])->applyFilters(
                         $request->only([
                             'search',
