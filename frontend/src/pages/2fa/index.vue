@@ -64,13 +64,13 @@ const onSubmit = () => {
 
 <template>
   <VSnackbar
-    v-model="alert.show"
+    v-model="advisor.show"
     transition="scroll-y-reverse-transition"
     :location="snackbarLocation"
-    :color="alert.type"
+    :color="advisor.type"
     class="snackbar-alert"
   >
-    {{ alert.message }}
+    {{ advisor.message }}
   </VSnackbar> 
   
   <div class="v-application__wrap bg-gradient d-flex justify-md-center pa-6">
@@ -92,7 +92,7 @@ const onSubmit = () => {
       <p class="letter">Ange din 6-siffriga säkerhetskod</p>
 
       <VForm @submit.prevent="onSubmit" class="auth-form d-flex flex-column gap-6">
-        <div class="form-field form-field-2fa d-flex flex-column gap-4">
+        <div class="form-field form-field-2fa d-flex flex-column align-center gap-4">
           <AppOtpInput @updateOtp="handleOtp" />
         </div>
 
