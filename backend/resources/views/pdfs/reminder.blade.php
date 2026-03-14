@@ -393,14 +393,6 @@
                                 <p class="m-0">{{ $company->phone }}</p>
                             </span>
                         </p>
-                        <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0">
-                                Bolagets säte
-                            </h4>
-                            <span class="info-supplier">
-                                <span>Stockholm, Sweden</span>
-                            </span>
-                        </p>
                         @if(!is_null($company->swish))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">

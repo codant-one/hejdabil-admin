@@ -1067,8 +1067,6 @@ const handleFocus = (element, fieldId) => {
               <span class="text-footer">{{ company.street }}</span>
               <span class="text-footer">{{ company.phone }}</span>
             </span>
-            <span class="me-2 mt-4 text-bold text-footer"> Bolagets säte </span>
-            <span class="text-footer"> Stockholm, Sweden </span>
             <span class="me-2 mt-4 text-bold text-footer" v-if="company.swish">
               Swish
             </span>
@@ -1665,11 +1663,6 @@ const handleFocus = (element, fieldId) => {
                     <span class="text-footer">{{ company.street }}</span>
                     <span class="text-footer">{{ company.phone }}</span>
                   </span>
-                <span class="me-2 mt-4 text-bold text-footer">
-                  Bolagets säte
-                </span>
-                <span class="text-footer"> Stockholm, Sweden </span>
-
                 <span
                   class="me-2 mt-4 text-bold text-footer"
                   v-if="company.swish"
