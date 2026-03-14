@@ -79,7 +79,7 @@ const logout = async () => {
     <VAvatar
       class="cursor-pointer"
       :color="userData('avatar') ? 'default' : 'primary'"
-      variant="tonal"
+      variant="outlined"
     >
       <VImg
         v-if="userData('avatar')"
@@ -109,7 +109,7 @@ const logout = async () => {
               >
                 <VAvatar
                   :color="userData('avatar') ? 'default' : 'primary'" 
-                  variant="tonal"
+                  variant="outlined"
                   size="40"
                 >
                   <VImg

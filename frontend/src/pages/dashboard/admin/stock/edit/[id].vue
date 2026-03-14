@@ -2490,7 +2490,7 @@ onBeforeRouteLeave((to, from, next) => {
                                                 <div class="text-no-wrap">
                                                     <VAvatar
                                                         color="#E3DEEB"
-                                                        :variant="task.user.avatar ? 'outlined' : 'tonal'"
+                                                        variant="outlined"
                                                         size="40"
                                                     >
                                                         <VImg
@@ -3200,7 +3200,7 @@ onBeforeRouteLeave((to, from, next) => {
                                 <div class="text-no-wrap w-100">
                                     <VAvatar
                                         color="#E3DEEB"
-                                        :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                                        variant="outlined"
                                         size="40"
                                     >
                                         <VImg
@@ -3380,7 +3380,7 @@ onBeforeRouteLeave((to, from, next) => {
                             <div class="text-no-wrap w-100">
                                 <VAvatar
                                     color="#E3DEEB"
-                                    :variant="comment.user.avatar ? 'outlined' : 'tonal'"
+                                    variant="outlined"
                                     size="40"
                                 >
                                     <VImg

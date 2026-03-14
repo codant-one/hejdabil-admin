@@ -282,7 +282,7 @@ const closeUserEditDialog = ()=>{
               rounded
               :size="144"
               :color="avatarCommitted ? 'default' : 'primary'"
-              variant="tonal"
+              variant="outlined"
             >
               <VImg
                 v-if="avatarCommitted"
@@ -434,7 +434,7 @@ const closeUserEditDialog = ()=>{
                       :size="120"
                       class="mb-2"
                       :color="avatarPreview ? 'default' : 'primary'"
-                      variant="tonal"
+                      variant="outlined"
                     >
                       <VImg
                         v-if="avatarPreview"
@@ -599,7 +599,7 @@ const closeUserEditDialog = ()=>{
                       :size="120"
                       class="mb-2"
                       :color="avatarPreview ? 'default' : 'primary'"
-                      variant="tonal"
+                      variant="outlined"
                     >
                       <VImg
                         v-if="avatarPreview"
@@ -744,7 +744,7 @@ const closeUserEditDialog = ()=>{
             Välj en avatar
           </div>
         </VCardText>
-        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">>
+        <VCardText class="dialog-text" style="overflow-y: auto; overflow-x: hidden;">
           <div class="avatar-picker-grid">
             <button
               v-for="item in avatarOptions"
