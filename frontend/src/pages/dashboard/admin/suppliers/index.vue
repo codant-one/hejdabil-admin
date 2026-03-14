@@ -105,6 +105,36 @@ const editSupplier = supplierData => {
   router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
 }
 
+const resendInvitation = async supplierData => {
+  isRequestOngoing.value = true
+
+  try {
+    const res = await suppliersStores.resendInvitation(supplierData.id)
+
+    advisor.value = {
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.message ?? 'Inbjudan har skickats igen med ett nytt lösenord.',
+      show: true,
+    }
+  } catch (err) {
+    advisor.value = {
+      type: 'error',
+      message: err.response?.data?.message || err.message,
+      show: true,
+    }
+  } finally {
+    isRequestOngoing.value = false
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+  }
+}
+
 const showDeleteDialog = supplierData => {
   isConfirmDeleteDialogVisible.value = true
   selectedSupplier.value = { ...supplierData }
@@ -501,6 +531,14 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                        v-if="$can('edit', 'suppliers') && supplier.state_id === 2 && supplier.user.full_profile === 0"
+                        @click="resendInvitation(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-mail-forward" />
+                        </template>
+                        <VListItemTitle>Vidarebefordra inbjudan</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','suppliers') && supplier.state_id === 2"

@@ -26,6 +26,10 @@ class Suppliers {
         return axios.get(`/suppliers/activate/${id}`)
     }
 
+    resendInvitation(id) {
+        return axios.post(`/suppliers/resend-invitation/${id}`)
+    }
+
     getUsers(params) {
         return axios.get('suppliers/supplier/users', {params})
     }

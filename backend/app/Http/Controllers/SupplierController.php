@@ -45,7 +45,7 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'full_profile', 'deleted_at')->withTrashed(),
                         'user.userDetail:user_id,logo,company',
                         'creator:id,name,last_name,avatar',
                         'creator.userDetail:user_id,company',
@@ -149,6 +149,84 @@ class SupplierController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'database_error '.$ex->getMessage(),
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function resendInvitation($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::with(['user'])->where('id', $id)->first();
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            if (!$supplier->user) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+            }
+
+            $password = Str::random(8);
+            $supplier->user->password = Hash::make($password);
+            $supplier->user->save();
+
+            UserRegisterToken::updateOrCreate(
+                ['user_id' => $supplier->user_id],
+                ['token' => Str::random(60)]
+            );
+
+            $email = $supplier->user->email;
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+
+            $data = [
+                'title' => 'Välkommen till Billogg',
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
+                'email' => $email,
+                'password' => $password,
+                'buttonLink' => env('APP_DOMAIN'),
+                'icon' => asset('/images/users.png'),
+            ];
+
+            $responseMail = 'E-post schemalagd för att skickas till leverantör.';
+
+            try {
+                SendEmailJob::dispatch(
+                    'emails.auth.client_created',
+                    $data,
+                    $email,
+                    $subject
+                )->onQueue('emails');
+            } catch (\Exception $e) {
+                $responseMail = $e->getMessage();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'mail_send_error',
+                    'email_response' => $responseMail
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Inbjudan skickad på nytt.',
+                'email_response' => $responseMail,
+                'data' => [
+                    'supplier' => Supplier::with(['user.userDetail'])->find($supplier->id)
+                ]
+            ]);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
                 'exception' => $ex->getMessage()
             ], 500);
         }
