@@ -235,7 +235,6 @@ class Supplier extends Model
                 4096
             );
 
-
             //Save CSR file
             $path = 'suppliers/csr/';
 

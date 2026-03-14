@@ -38,9 +38,11 @@ const deleteInfo = ref({
 })
 const isDeleteInfoLoading = ref(false)
 const csr_url = ref(null)
+const pem_url = ref(null)
 const payout_number = ref(null)
 const pemFile = ref([])
 const is_payout = ref(false)
+const swishStep = ref(1)
 const state_id = ref(null)
 const refForm = ref(null)
 const isFormValid = ref(false)
@@ -197,11 +199,47 @@ const showSwishDialog = supplierData => {
   selectedSupplier.value = { ...supplierData }
   payout_number.value = supplierData.payout_number || null
   csr_url.value = supplierData.csr_url || null
+  pem_url.value = supplierData.pem_url || null
   is_payout.value = supplierData.is_payout === 0 ? false : true
   pemFile.value = []
+  swishStep.value = 1
 
   nextTick(() => {
     refForm.value?.resetValidation()
+  })
+}
+
+const closeSwishDialog = () => {
+  isConfirmSwishDialogVisible.value = false
+  swishStep.value = 1
+}
+
+const swishHasSteps = computed(() => !!csr_url.value)
+
+const pemFileRules = computed(() => {
+  if (!swishHasSteps.value || !is_payout.value)
+    return []
+
+  return [
+    value => {
+      const hasNewFile = Array.isArray(value) && value.length > 0
+      const hasExistingPem = !!pem_url.value
+      return hasNewFile || hasExistingPem || 'Ladda upp en PEM-fil för att aktivera Swish-utbetalningar.'
+    },
+  ]
+})
+
+const openStorageFileUrl = filePath => {
+  if (!filePath) return ''
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath
+  return `${themeConfig.settings.urlStorage}${filePath}`
+}
+
+const goToSwishStepTwo = () => {
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      swishStep.value = 2
+    }
   })
 }
 
@@ -570,7 +608,7 @@ const downloadCSV = async () => {
 
                     <VList>
                       <VListItem 
-                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1"
+                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1 && supplier.user.full_profile === 1"
                         @click="showSwishDialog(supplier)">
                         <template #prepend>
                           <VIcon icon="mdi-payment" />
@@ -711,7 +749,7 @@ const downloadCSV = async () => {
       class="v-dialog-sm" >
       <!-- Dialog close btn -->
         
-      <DialogCloseBtn @click="isConfirmSwishDialogVisible = !isConfirmSwishDialogVisible" />
+      <DialogCloseBtn @click="closeSwishDialog" />
 
       <!-- Dialog Content -->
       <VCard title="Swish">
@@ -724,40 +762,126 @@ const downloadCSV = async () => {
           ref="refForm"
           v-model="isFormValid"
           @submit.prevent="swish">
-          <VCardText class="d-flex flex-column gap-2">
-            <VTextField
-              v-model="payout_number"
-              label="Utbetalningsnummer"
-              :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-              minLength="11"
-              maxlength="11"
-              @input="formatOrgNumber()"
-            />
-            <VFileInput
-              v-if="csr_url !== null"
-              v-model="pemFile"
-              label="Ladda upp PEM-fil"
-              accept=".pem"
-              prepend-icon="tabler-file"
-            />
-            <VCheckbox
-              v-if="csr_url !== null"
-              v-model="is_payout"
-              label="Aktivera Swish utbetalningar"
-            />
-          </VCardText>
+          <template v-if="!swishHasSteps">
+            <VCardText class="d-flex flex-column gap-2">
+              <VTextField
+                v-model="payout_number"
+                label="Utbetalningsnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                minLength="11"
+                maxlength="11"
+                @input="formatOrgNumber()"
+              />
+              <VCheckbox
+                v-model="is_payout"
+                label="Aktivera Swish utbetalningar"
+              />
+            </VCardText>
 
-          <VCardText class="d-flex justify-end gap-3 flex-wrap">
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="isConfirmSwishDialogVisible = false">
-                Avbryt
-            </VBtn>
-            <VBtn type="submit">
-              Acceptera
-            </VBtn>
-          </VCardText>
+            <VCardText class="d-flex justify-end gap-3 flex-wrap">
+              <VBtn
+                color="secondary"
+                variant="tonal"
+                @click="closeSwishDialog">
+                  Avbryt
+              </VBtn>
+              <VBtn type="submit">
+                Acceptera
+              </VBtn>
+            </VCardText>
+          </template>
+
+          <template v-else>
+            <VCardText class="pt-4 pb-0 d-flex align-center gap-2">
+              <VChip :color="swishStep === 1 ? 'primary' : 'default'" variant="tonal" size="small">1</VChip>
+              <VIcon icon="tabler-arrow-right" size="16" />
+              <VChip :color="swishStep === 2 ? 'primary' : 'default'" variant="tonal" size="small">2</VChip>
+            </VCardText>
+
+            <VCardText v-if="swishStep === 1" class="d-flex flex-column gap-2">
+              <VTextField
+                v-model="payout_number"
+                label="Utbetalningsnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                minLength="11"
+                maxlength="11"
+                @input="formatOrgNumber()"
+              />
+              <VCheckbox
+                v-model="is_payout"
+                label="Aktivera Swish utbetalningar"
+              />
+            </VCardText>
+
+            <VCardText v-if="swishStep === 2" class="d-flex flex-column gap-3">
+              <div>
+                <div class="text-body-2 mb-1">CSR-fil</div>
+                <VBtn
+                  v-if="csr_url"
+                  color="secondary"
+                  variant="tonal"
+                  :href="openStorageFileUrl(csr_url)"
+                  target="_blank"
+                >
+                  Ladda ner CSR
+                </VBtn>
+                <div v-else class="text-disabled">Ingen CSR-fil tillgänglig.</div>
+              </div>
+
+              <div>
+                <div class="text-body-2 mb-1">PEM-fil</div>
+                <VBtn
+                  v-if="pem_url"
+                  color="secondary"
+                  variant="tonal"
+                  :href="openStorageFileUrl(pem_url)"
+                  target="_blank"
+                >
+                  Ladda ner PEM
+                </VBtn>
+                <div v-else class="text-disabled">Ingen PEM-fil uppladdad än.</div>
+              </div>
+
+              <VFileInput
+                v-model="pemFile"
+                label="Ladda upp PEM-fil"
+                accept=".pem"
+                prepend-icon="tabler-file"
+                :rules="pemFileRules"
+              />
+            </VCardText>
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap">
+              <VBtn
+                color="secondary"
+                variant="tonal"
+                @click="closeSwishDialog">
+                  Avbryt
+              </VBtn>
+
+              <VBtn
+                v-if="swishStep === 2"
+                variant="tonal"
+                @click="swishStep = 1"
+              >
+                Tillbaka
+              </VBtn>
+
+              <VBtn
+                v-if="swishStep === 1"
+                @click="goToSwishStepTwo"
+              >
+                Nästa
+              </VBtn>
+
+              <VBtn
+                v-else
+                type="submit"
+              >
+                Spara
+              </VBtn>
+            </VCardText>
+          </template>
         </VForm>
       </VCard>
     </VDialog>
