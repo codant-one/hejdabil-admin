@@ -1044,7 +1044,7 @@ onBeforeUnmount(() => {
                     @click="showCancelSend(vehicle)"
                   >
                     <template #prepend>
-                      <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+                      <VIcon icon="custom-return-vehicle" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Ångra försäljning</VListItemTitle>
                   </VListItem>
@@ -1460,7 +1460,7 @@ onBeforeUnmount(() => {
             @click="showCancelSend(selectedVehicleForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
-              <VIcon icon="custom-unavailable" size="24" class="mr-2" />
+              <VIcon icon="custom-return-vehicle" size="24" class="mr-2" />
             </template>
             <VListItemTitle>Ångra försäljning</VListItemTitle>
           </VListItem>
@@ -1504,7 +1504,7 @@ onBeforeUnmount(() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box">
-          <VIcon size="32" icon="custom-unavailable" class="action-icon" />
+          <VIcon size="32" icon="custom-return-vehicle" class="action-icon" />
           <div class="dialog-title">
             Ångra försäljning
           </div>
