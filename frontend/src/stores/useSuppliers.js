@@ -104,6 +104,18 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.setLoading(false)
                 })  
         },
+        getDeletionInfo(id) {
+            this.setLoading(true)
+
+            return Suppliers.getDeletionInfo(id)
+                .then((response) => {
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
         resendInvitation(id) {
             this.setLoading(true)
 

@@ -168,6 +168,22 @@ onBeforeUnmount(() => {
     <Toaster />
 
     <VCard class="client-slug card-fill h-100">
+
+      <VCardText
+        class="pt-4 pb-0 px-4"
+        :class="$vuetify.display.smAndDown ? 'pt-6 pb-0 px-6' : ''"
+      >
+        <VBtn
+          class="btn-light"
+          :class="$vuetify.display.smAndDown ? 'flex-1 order-1' : 'w-auto'"
+          :to="{ name: 'dashboard-admin-clients' }"
+        >
+          <template #prepend>
+            <VIcon icon="custom-return" size="24" />
+          </template>
+          Tillbaka
+        </VBtn>
+      </VCardText>
       <VCardText
         class="d-flex flex-column pa-4 gap-4"
         :class="$vuetify.display.smAndDown ? 'pa-6 gap-6 pt-8' : ''"

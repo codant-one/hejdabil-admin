@@ -160,6 +160,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     //Suppliers
     Route::group(['prefix' => 'suppliers'], function () {
         Route::get('/activate/{id}', [SupplierController::class, 'activate']);
+        Route::get('/deletion-info/{id}', [SupplierController::class, 'deletionInfo']);
         Route::post('/resend-invitation/{id}', [SupplierController::class, 'resendInvitation']);
         Route::get('supplier/users', [SupplierController::class, 'users']);
         Route::post('supplier/inactive-user', [SupplierController::class, 'inactiveRelatedUser']);

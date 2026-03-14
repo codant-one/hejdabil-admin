@@ -23,6 +23,20 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const deleteInfo = ref({
+  can_force_delete: false,
+  total_associations: 0,
+  associations: {
+    clients: 0,
+    billings: 0,
+    vehicles: 0,
+    agreements: 0,
+    payouts: 0,
+    documents: 0,
+    notes: 0,
+  },
+})
+const isDeleteInfoLoading = ref(false)
 const csr_url = ref(null)
 const payout_number = ref(null)
 const pemFile = ref([])
@@ -135,9 +149,47 @@ const resendInvitation = async supplierData => {
   }
 }
 
-const showDeleteDialog = supplierData => {
-  isConfirmDeleteDialogVisible.value = true
+const showDeleteDialog = async supplierData => {
   selectedSupplier.value = { ...supplierData }
+
+  deleteInfo.value = {
+    can_force_delete: false,
+    total_associations: 0,
+    associations: {
+      clients: 0,
+      billings: 0,
+      vehicles: 0,
+      agreements: 0,
+      payouts: 0,
+      documents: 0,
+      notes: 0,
+    },
+  }
+
+  isDeleteInfoLoading.value = true
+  isRequestOngoing.value = true
+  try {
+    const res = await suppliersStores.getDeletionInfo(supplierData.id)
+    deleteInfo.value = res.data?.data ?? deleteInfo.value
+    isConfirmDeleteDialogVisible.value = true
+  } catch (err) {
+      advisor.value = {
+        type: 'error',
+        message: err.response?.data?.message || err.message,
+        show: true,
+      }
+
+      setTimeout(() => {
+        advisor.value = {
+          type: '',
+          message: '',
+          show: false,
+        }
+      }, 3000)
+  } finally {
+    isDeleteInfoLoading.value = false
+    isRequestOngoing.value = false
+  }
 }
 
 const showSwishDialog = supplierData => {
@@ -167,9 +219,18 @@ const removeSupplier = async () => {
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
+  const deletionMode = res.data?.data?.deletion_mode
+
+  let successMessage = 'Leverantör borttagen!'
+  if (deletionMode === 'force') {
+    successMessage = 'Leverantören och användarkontot raderades permanent.'
+  } else if (deletionMode === 'soft') {
+    successMessage = 'Leverantören inaktiverades eftersom associerade poster finns.'
+  }
+
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör borttagen!' : res.data.message,
+    message: res.data.success ? (res.data.message ?? successMessage) : res.data.message,
     show: true
   }
 
@@ -605,8 +666,28 @@ const downloadCSV = async () => {
       <!-- Dialog Content -->
       <VCard title="Ta bort leverantör">
         <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+        <VCardText class="pb-0">
+          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
+        </VCardText>
+
+        <VCardText class="pt-2">
+          <div v-if="deleteInfo.can_force_delete">
+            Inga associerade poster hittades. Leverantören och användarkontot kommer att raderas permanent.
+          </div>
+          <div v-else>
+            Associerade poster hittades. Leverantören kommer att inaktiveras för att bevara data.
+          </div>
+        </VCardText>
+
+        <VCardText v-if="!deleteInfo.can_force_delete" class="pt-0">
+          <div>Associerade poster:</div>
+          <div v-if="deleteInfo.associations?.clients">Kunder: {{ deleteInfo.associations.clients }}</div>
+          <div v-if="deleteInfo.associations?.billings">Faktureringar: {{ deleteInfo.associations.billings }}</div>
+          <div v-if="deleteInfo.associations?.vehicles">Fordon: {{ deleteInfo.associations.vehicles }}</div>
+          <div v-if="deleteInfo.associations?.agreements">Avtal: {{ deleteInfo.associations.agreements }}</div>
+          <div v-if="deleteInfo.associations?.payouts">Utbetalningar: {{ deleteInfo.associations.payouts }}</div>
+          <div v-if="deleteInfo.associations?.documents">Dokument: {{ deleteInfo.associations.documents }}</div>
+          <div v-if="deleteInfo.associations?.notes">Noteringar: {{ deleteInfo.associations.notes }}</div>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
