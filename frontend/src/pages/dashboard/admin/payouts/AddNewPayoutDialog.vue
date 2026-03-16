@@ -190,7 +190,7 @@ const onSubmit = async () => {
 
     <VBtn
       icon
-      class="close-btn"
+      class="btn-ghost close-btn me-3"
       @click="closeDialog"
     >
       <VIcon size="16" icon="custom-close" />
