@@ -443,6 +443,11 @@ body {
   background-color: #F6F6F6;
 }
 
+
+.text-neutral-25 {
+  color: #BFBFBF !important;
+}
+
 .text-neutral-3 {
   color: #878787 !important;
 }
@@ -643,6 +648,25 @@ body {
   line-height: 16px;
   text-align: center;
   letter-spacing: 0;
+}
+
+.status-chip-mobile {
+  border-radius: 56px;
+  padding: 4px 8px;
+  height: 24px !important;
+  width: fit-content;
+
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.status-chip-disabled {
+  background: #E7E7E7;
+  border: 1px solid #E7E7E7;
+  color: #878787;
 }
 
 .status-chip-pending {

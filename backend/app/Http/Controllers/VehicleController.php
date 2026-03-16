@@ -71,8 +71,8 @@ class VehicleController extends Controller
                         'carbody:id,name',
                         'gearbox:id,name',
                         'fuel:id,name',
-                        'client_purchase',
-                        'client_purchase.client:id,fullname,email',
+                        'client_purchase',                        
+                        'client_purchase.client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
                         'client_sale',
                         'tasks'
                     ])->applyFilters(
