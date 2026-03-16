@@ -980,6 +980,7 @@ onBeforeUnmount(() => {
             v-model="date"
             v-model:menuVisible="isExportMenuVisible"
             :show-activator="false"
+            :is-mobile="windowWidth < 1024"
             activator="#payout-export-button"
             @update:modelValue="onDatePickerUpdate"
           />

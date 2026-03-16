@@ -43,6 +43,10 @@ const props = defineProps({
     type: [String, Object, Function],
     default: undefined,
   },
+  isMobile: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits([
@@ -146,6 +150,7 @@ const onPickerUpdate = value => {
     location="bottom"
     origin="top center"
     :offset="8"
+    v-if="!isMobile"
   >
     <template
       v-if="showActivator"
@@ -172,15 +177,64 @@ const onPickerUpdate = value => {
       />
       <div class="d-flex justify-end mt-2">
         <VBtn
-          class="btn-white-2 px-3"
+          class="btn-light px-3"
           @click="applyFilter"
+          style="width: 264px;"
         >
-          <VIcon icon="custom-filter" size="24" />
-          <span class="d-none d-md-block">Filtrera efter datum</span>
+          <VIcon :icon="buttonIcon" size="24" />
+          <span class="d-none d-md-block">{{ buttonText }}</span>
         </VBtn>
       </div>
     </VCard>
   </VMenu>
+
+  <VDialog
+    v-model="resolvedMenuVisible"
+    fullscreen
+    persistent
+    :scrim="false"
+    transition="dialog-bottom-transition"
+    class="action-dialog dialog-fullscreen"
+    content-class="clients-pending-mobile-fullscreen"
+    v-else
+  >
+    <VBtn
+        icon
+        class="btn-ghost close-btn me-2"
+        @click="resolvedMenuVisible = false"
+    >
+        <VIcon size="16" icon="custom-close" />
+    </VBtn>
+
+    <VCard flat class="h-100 d-flex flex-column">
+      <VCardText class="dialog-title-box mt-2 pb-0 flex-0">
+        <div class="dialog-title"></div>
+      </VCardText>
+
+      <VCardText class="py-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+        <AppDateTimePicker
+          :key="pickerKey"
+          :model-value="pendingValue"
+          @update:modelValue="onPickerUpdate"
+          :label="pickerLabel"
+          :placeholder="pickerPlaceholder"
+          :config="pickerConfig"
+          :is-mobile="true"
+        />
+
+        <div class="d-flex justify-end mt-2 mt-auto">
+          <VBtn
+            class="btn-light px-3"
+            block
+            @click="applyFilter"
+          >
+            <VIcon :icon="buttonIcon" size="24" />
+            {{ buttonText }}
+          </VBtn>
+        </div>
+      </VCardText>
+    </VCard>
+  </VDialog>
 </template>
 
 <style scoped>
