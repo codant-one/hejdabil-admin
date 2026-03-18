@@ -127,7 +127,7 @@ const closeMenu = () => {
                 icon="custom-f-checkmark"
               />
               <div class="empty-state-content w-100">
-                <div class="empty-state-title">Du är helt uppdaterad</div>
+                <div class="empty-state-title font-16">Du är helt uppdaterad</div>
                 <div class="empty-state-text">
                   Här var det tomt! Vi meddelar dig när något nytt händer.
                 </div>
