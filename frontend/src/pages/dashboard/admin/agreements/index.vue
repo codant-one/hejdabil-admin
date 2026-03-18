@@ -944,6 +944,31 @@ const truncateText = (text, length = 15) => {
   return text;
 };
 
+const resolveAgreementClient = (agreement) => {
+  if (!agreement)
+    return null
+
+  return agreement.agreement_client?.client
+    ?? agreement.vehicle_client?.client
+    ?? agreement.agreement_client
+    ?? agreement.vehicle_client
+    ?? null
+}
+
+const getAgreementClientName = (agreement) => {
+  return resolveAgreementClient(agreement)?.fullname ?? ''
+}
+
+const isAgreementClientDeleted = (agreement) => {
+  return !!(
+    agreement?.agreement_client?.client_id
+    && agreement?.agreement_client?.client?.deleted_at
+  ) || !!(
+    agreement?.vehicle_client?.client_id
+    && agreement?.vehicle_client?.client?.deleted_at
+  )
+}
+
 // Watch for route changes to open tracker automatically
 watch(() => route.query.file_id, async (fileId) => {
   if (fileId && hasLoaded.value) {
@@ -1223,15 +1248,13 @@ onBeforeUnmount(() => {
             </td>      
             <td v-if="isColVisible('customer')">
               <span
-                class="d-flex justify-between align-center font-weight-medium text-neutral-3"
+                class="d-flex gap-1 align-center font-weight-medium text-neutral-3"
               >
-              {{ agreement.agreement_type_id === 4 ?
-                agreement.agreement_client?.fullname : 
-                ( agreement.agreement_type_id === 3 ? 
-                  agreement.commission?.client?.fullname : 
-                  agreement.agreement_client?.fullname
-                )                    
-              }}
+              {{ getAgreementClientName(agreement) }}
+
+              <span v-if="isAgreementClientDeleted(agreement)" class="text-neutral-25">
+                  (Borttagen)
+                </span>
               </span>
             </td>   
             <td class="text-center" v-if="isColVisible('created')">  

@@ -1212,23 +1212,15 @@ onBeforeUnmount(() => {
             </td>
             <td class="text-wrap">
               <span
-                class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
-                @click="showBilling(billing)"
-              >
-                {{ billing.client.fullname ?? "" }}
-              </span>
-            </td>
-            <td class="text-wrap d-none">
-              <span
                 v-if="billing.client.deleted_at"
-                class="d-flex flex-column gap-1 align-start font-weight-medium cursor-pointer text-neutral-25"
+                class="d-flex gap-1 align-start font-weight-medium cursor-pointer text-aqua"
                 @click="showBilling(billing)"
               >
                 {{ billing.client.fullname ?? "" }} 
 
-                <div class="status-chip status-chip-disabled" >
-                  Borttagen
-                </div>
+                <span class="text-neutral-25">
+                  (Borttagen)
+                </span>
               </span>
               <span
                 v-else
@@ -1491,8 +1483,11 @@ onBeforeUnmount(() => {
             <div class="order-title-box flex-row justify-space-between align-center w-100">
               <div>
                 <span class="title-panel">
-                  {{ billing.client.fullname ?? "" }}</span
-                >
+                  {{ billing.client.fullname ?? "" }}
+                </span>
+                <span class="text-neutral-25 font-12" v-if="billing.client.deleted_at">
+                  (Borttagen)
+                </span>
                 <div class="title-organization">
                   Summa
                   <div class="text-black">
@@ -1503,9 +1498,6 @@ onBeforeUnmount(() => {
                     kr
                   </div>
                 </div>
-              </div>
-              <div class="status-chip-mobile status-chip-disabled" v-if="billing.is_sent">
-                  Skickad
               </div>
             </div>
           </VExpansionPanelTitle>
@@ -1524,12 +1516,15 @@ onBeforeUnmount(() => {
             </div>
             <div class="mb-6">
               <div class="expansion-panel-item-label">Status:</div>
-              <div class="expansion-panel-item-value">
+              <div class="expansion-panel-item-value d-flex gap-2">
                 <div
                   class="status-chip"
                   :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
                 >
                   {{ billing.state.name }}
+                </div>
+                <div class="status-chip status-chip-disabled" v-if="billing.is_sent">
+                    Skickad
                 </div>
               </div>
             </div>

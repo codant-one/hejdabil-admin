@@ -76,9 +76,11 @@ class AgreementController extends Controller
                         'commission.vehicle:id,commission_id,reg_num,model_id',
                         'commission.client:id,fullname,email,phone',
                         'agreement_type:id,name',
-                        'agreement_client:id,agreement_id,fullname,email,phone',
+                        'agreement_client:id,agreement_id,client_id,fullname,email,phone',
+                        'agreement_client.client:id,fullname,deleted_at',
                         'vehicle_interchange:id,reg_num,model_id',
                         'vehicle_client:id,vehicle_id,client_id,fullname,email',
+                        'vehicle_client.client:id,fullname,deleted_at',
                         'vehicle_client.vehicle:id,reg_num,model_id',
                         'supplier' => function ($q) {
                             $q->select('id', 'user_id', 'boss_id', 'deleted_at')

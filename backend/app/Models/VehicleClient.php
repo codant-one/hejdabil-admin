@@ -14,7 +14,7 @@ class VehicleClient extends Model
 
     /**** Relationship ****/
     public function client(){
-        return $this->belongsTo(Client::class, 'client_id', 'id');
+        return $this->belongsTo(Client::class, 'client_id', 'id')->withTrashed();
     }
 
     public function vehicle(){
