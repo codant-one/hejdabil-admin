@@ -44,6 +44,13 @@ export default defineConfig({
     Components({
       dirs: ['src/@core/components', 'src/views/demos'],
       dts: true,
+      resolvers: [
+        componentName => {
+          // Auto import `VueApexCharts`
+          if (componentName === 'VueApexCharts')
+            return { name: 'default', from: 'vue3-apexcharts', as: 'VueApexCharts' }
+        },
+      ],
     }),
     AutoImport({
       eslintrc: {

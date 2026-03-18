@@ -1,9 +1,18 @@
 <script setup>
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import Activities from "@/components/dashboard/Activities.vue";
+import Indicators from "@/components/dashboard/KeyIndicators.vue";
+import Statisticians from "@/components/dashboard/Statisticians.vue";
+import Profit from "@/components/dashboard/Profit.vue";
+import Information from "@/components/dashboard/Information.vue";
+import Measures from "@/components/dashboard/Measures.vue";
+import VehicleInfo from "@/components/dashboard/VehicleInfo.vue";
+import Team from "@/components/dashboard/Team.vue";
 
 const userDataJ = ref('')
 const name = ref('')
+const role = ref('')
 
 const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
@@ -14,10 +23,12 @@ async function fetchData() {
 
   isRequestOngoing.value = true
 
-  const userData = localStorage.getItem('user_data')
+  const userData = localStorage.getItem('user_data') || 'null'
     
   userDataJ.value = JSON.parse(userData)
   name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
+
+  role.value = userDataJ.value.roles[0].name
 
   isRequestOngoing.value = false
 }
@@ -46,7 +57,8 @@ onBeforeUnmount(() => {
   <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
-    <VCard title="" class="card-fill">
+    <!-- 👉 Administrador -->
+    <VCard title="" class="card-fill" v-if="role !== 'Supplier' && role !== 'User'">
       <VRow class="py-6 px-md-6 px-2">
         <VCol
           cols="12"
@@ -67,13 +79,41 @@ onBeforeUnmount(() => {
 
           </div>
         </VCol>
-        <!-- <VCol
-          cols="12"
-          md="5"
-          lg="4"
-        >
-          <Congratulations/>
-        </VCol> -->
+      </VRow>
+    </VCard>
+
+    <!-- 👉 Supplier / User -->
+    <VCard title="" class="card-transparent" v-else>
+      <VRow nclass="py-6 px-md-6 px-2">
+
+        <VCol cols="12" md="6">
+          <Activities />
+        </VCol>
+        <VCol cols="12" md="6">
+          <Indicators />
+        </VCol>
+
+        <VCol cols="12" md="10">
+          <Statisticians />
+        </VCol>
+        <VCol cols="12" md="2">
+          <Profit />
+        </VCol>
+
+        <VCol cols="12" md="6">
+          <Information />
+        </VCol>
+        <VCol cols="12" md="6" >
+          <Measures />
+        </VCol>
+
+        <VCol cols="12" md="12" >
+          <VehicleInfo />
+        </VCol>
+
+        <VCol cols="12" md="12">
+          <Team />
+        </VCol>
       </VRow>
     </VCard>
   </section>
