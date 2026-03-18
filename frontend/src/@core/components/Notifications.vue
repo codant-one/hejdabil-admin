@@ -77,6 +77,7 @@ const closeMenu = () => {
         <div style="max-height: 400px; overflow-y: auto;">
           <template
             v-for="notification in props.notifications"
+            v-if="props.notifications.length > 0"
             :key="notification.id || notification.title"
           >
             <VListItem
@@ -118,11 +119,26 @@ const closeMenu = () => {
             </VListItem>
             <VDivider />
           </template>
+
+          <template v-else>
+            <div class="empty-state pa-6 mb-0">
+              <VIcon
+                size="64"
+                icon="custom-f-checkmark"
+              />
+              <div class="empty-state-content w-100">
+                <div class="empty-state-title">Du är helt uppdaterad</div>
+                <div class="empty-state-text">
+                  Här var det tomt! Vi meddelar dig när något nytt händer.
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
 
         <!-- 👉 Footer -->
-        <VListItem class="notification-section" @click="$emit('click:readAllNotifications')">
-         <VBtn block class="px-0">
+        <VListItem class="notification-section notification-all" @click="$emit('click:readAllNotifications')">
+         <VBtn class="btn-ghost px-0">
             Läs alla meddelanden
           </VBtn>
         </VListItem>
@@ -134,6 +150,16 @@ const closeMenu = () => {
 <style lang="scss" scoped>
 .notification-section {
   padding: 14px !important;
+}
+
+.notification-all {
+  width: 100%;
+  justify-content: center !important;
+}
+
+.notification-all :deep(.v-list-item__content) {
+  display: flex;
+  justify-content: center;
 }
 
 .notification-header {

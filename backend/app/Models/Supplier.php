@@ -47,6 +47,22 @@ class Supplier extends Model
         return $this->hasMany(Agreement::class, 'supplier_id', 'id');
     }
 
+    public function vehicles() {
+        return $this->hasMany(Vehicle::class, 'supplier_id', 'id');
+    }
+
+    public function documents() {
+        return $this->hasMany(Document::class, 'supplier_id', 'id');
+    }
+
+    public function payouts() {
+        return $this->hasMany(Payout::class, 'supplier_id', 'id');
+    }
+
+    public function notes() {
+        return $this->hasMany(Note::class, 'supplier_id', 'id');
+    }
+
     /**** Scopes ****/
     public function scopeClientsCount($query)
     {
@@ -218,7 +234,6 @@ class Supplier extends Model
                 trim("swish"),
                 4096
             );
-
 
             //Save CSR file
             $path = 'suppliers/csr/';

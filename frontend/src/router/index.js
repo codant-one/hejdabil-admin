@@ -14,10 +14,10 @@ const router = createRouter({
         const is_2fa = JSON.parse(localStorage.getItem('is_2fa') || 'null')
         const two_factor = JSON.parse(localStorage.getItem('two_factor') || 'null')
 
-        if (two_factor && is_2fa?.status) {
-          if (two_factor.generate_qr) { 
+        if (is_2fa?.status) {
+          if (two_factor?.generate_qr) {
             return { name: '2fa-generate' }
-          } else {            
+          } else {
             return { name: '2fa' }
           }
         }
@@ -63,6 +63,23 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const isLoggedIn = isUserLoggedIn()
+  const is_2fa = JSON.parse(localStorage.getItem('is_2fa') || 'null')
+  const two_factor = JSON.parse(localStorage.getItem('two_factor') || 'null')
+  const hasPending2FA = Boolean(is_2fa?.status)
+  const target2FARoute = two_factor?.generate_qr ? '2fa-generate' : '2fa'
+  const is2FARoute = to.name === '2fa' || to.name === '2fa-generate'
+
+  if (hasPending2FA) {
+    if (!is2FARoute || to.name !== target2FARoute) {
+      return {
+        name: target2FARoute,
+        query: to.fullPath !== '/' ? { to: to.fullPath } : {},
+      }
+    }
+
+    return true
+  }
+
   if (to.meta?.redirectIfLoggedIn === false || to.meta?.public === true) {
     return true
   }

@@ -15,6 +15,7 @@ import Toaster from "@/components/common/Toaster.vue";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+import { is } from "date-fns/locale";
 
 const billingsStores = useBillingsStores();
 const configsStores = useConfigsStores();
@@ -548,8 +549,6 @@ const sendMails = async () => {
 
     let res = await billingsStores.sendMails(data);
 
-    isRequestOngoing.value = false;
-
     advisor.value = {
       type: res.data.success ? "success" : "error",
       message: res.data.success ? "Fakturan är skickad!" : res.data.message,
@@ -567,6 +566,9 @@ const sendMails = async () => {
         show: false,
       };
     }, 3000);
+
+    await loadData();
+    await fetchData();
 
     return true;
   }
@@ -978,6 +980,7 @@ onBeforeUnmount(() => {
             v-model="date"
             v-model:menuVisible="isExportMenuVisible"
             :show-activator="false"
+            :is-mobile="windowWidth < 1024"
             activator="#payout-export-button"
             @update:modelValue="onDatePickerUpdate"
           />
@@ -1177,7 +1180,8 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th scope="col"># Faktura</th>
+            <th class="text-center"># Faktura</th>
+            <th class="text-center" scope="col">Skickad</th>
             <th scope="col">Kund</th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'">Leverantör</th>
             <th class="text-center" scope="col">Summa</th>
@@ -1195,9 +1199,39 @@ onBeforeUnmount(() => {
             :key="billing.id"
             style="height: 3rem"
           >
-            <td>{{ billing.invoice_id }}</td>
+            <td class="text-center">{{ billing.invoice_id }}</td>
+            <td class="text-center">
+              <VIcon 
+                v-if="billing.is_sent"
+                icon="custom-check-mark-disabled" 
+                size="24" 
+              />
+              <span v-else>
+                -
+              </span>
+            </td>
             <td class="text-wrap">
               <span
+                class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
+                @click="showBilling(billing)"
+              >
+                {{ billing.client.fullname ?? "" }}
+              </span>
+            </td>
+            <td class="text-wrap d-none">
+              <span
+                v-if="billing.client.deleted_at"
+                class="d-flex flex-column gap-1 align-start font-weight-medium cursor-pointer text-neutral-25"
+                @click="showBilling(billing)"
+              >
+                {{ billing.client.fullname ?? "" }} 
+
+                <div class="status-chip status-chip-disabled" >
+                  Borttagen
+                </div>
+              </span>
+              <span
+                v-else
                 class="d-flex justify-between align-center font-weight-medium cursor-pointer text-aqua"
                 @click="showBilling(billing)"
               >
@@ -1417,6 +1451,7 @@ onBeforeUnmount(() => {
           </tr>
         </tbody>
       </VTable>
+
       <div
         v-if="!isRequestOngoing && hasLoaded && !billings.length"
         class="empty-state"
@@ -1453,19 +1488,24 @@ onBeforeUnmount(() => {
             expand-icon="custom-chevron-down"
           >
             <span class="order-id">{{ billing.invoice_id }}</span>
-            <div class="order-title-box">
-              <span class="title-panel">
-                {{ billing.client.fullname ?? "" }}</span
-              >
-              <div class="title-organization">
-                Summa
-                <div class="text-black">
-                  {{
-                    formatNumber(billing.total + billing.amount_discount) ??
-                    "0,00"
-                  }}
-                  kr
+            <div class="order-title-box flex-row justify-space-between align-center w-100">
+              <div>
+                <span class="title-panel">
+                  {{ billing.client.fullname ?? "" }}</span
+                >
+                <div class="title-organization">
+                  Summa
+                  <div class="text-black">
+                    {{
+                      formatNumber(billing.total + billing.amount_discount) ??
+                      "0,00"
+                    }}
+                    kr
+                  </div>
                 </div>
+              </div>
+              <div class="status-chip-mobile status-chip-disabled" v-if="billing.is_sent">
+                  Skickad
               </div>
             </div>
           </VExpansionPanelTitle>

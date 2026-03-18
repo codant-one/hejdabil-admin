@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -45,7 +46,7 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
         
             $query = Supplier::with([
-                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'deleted_at')->withTrashed(),
+                        'user' => fn($u) => $u->select('id', 'name', 'last_name', 'email', 'avatar', 'full_profile', 'deleted_at')->withTrashed(),
                         'user.userDetail:user_id,logo,company',
                         'creator:id,name,last_name,avatar',
                         'creator.userDetail:user_id,company',
@@ -154,6 +155,84 @@ class SupplierController extends Controller
         }
     }
 
+    public function resendInvitation($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::with(['user'])->where('id', $id)->first();
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            if (!$supplier->user) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Användaren hittades inte'
+                ], 404);
+            }
+
+            $password = Str::random(8);
+            $supplier->user->password = Hash::make($password);
+            $supplier->user->save();
+
+            UserRegisterToken::updateOrCreate(
+                ['user_id' => $supplier->user_id],
+                ['token' => Str::random(60)]
+            );
+
+            $email = $supplier->user->email;
+            $subject = 'Välkommen till Billogg - ditt konto är skapat';
+
+            $data = [
+                'title' => 'Välkommen till Billogg',
+                'user' => $supplier->user->name . ' ' . $supplier->user->last_name,
+                'email' => $email,
+                'password' => $password,
+                'buttonLink' => env('APP_DOMAIN'),
+                'icon' => asset('/images/users.png'),
+            ];
+
+            $responseMail = 'E-post schemalagd för att skickas till leverantör.';
+
+            try {
+                SendEmailJob::dispatch(
+                    'emails.auth.client_created',
+                    $data,
+                    $email,
+                    $subject
+                )->onQueue('emails');
+            } catch (\Exception $e) {
+                $responseMail = $e->getMessage();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'mail_send_error',
+                    'email_response' => $responseMail
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Inbjudan skickad på nytt.',
+                'email_response' => $responseMail,
+                'data' => [
+                    'supplier' => Supplier::with(['user.userDetail'])->find($supplier->id)
+                ]
+            ]);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Display the specified resource.
      */
@@ -238,13 +317,36 @@ class SupplierController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Leverantören hittades inte'
                 ], 404);
-            
-            $supplier->deleteSupplier($id);
+
+            $deletionSummary = $this->buildDeletionSummary($supplier);
+            $isForceDelete = $deletionSummary['can_force_delete'];
+
+            if ($isForceDelete) {
+                DB::transaction(function () use ($supplier) {
+                    UserRegisterToken::where('user_id', $supplier->user_id)->delete();
+
+                    $user = User::withTrashed()->find($supplier->user_id);
+                    if ($user) {
+                        $user->forceDelete();
+                    } else {
+                        $supplier->forceDelete();
+                    }
+                });
+            } else {
+                $supplier->deleteSupplier($id);
+            }
+
+            $message = $isForceDelete
+                ? 'Leverantören och användarkontot har raderats permanent.'
+                : 'Leverantören inaktiverades eftersom associerade poster finns.';
 
             return response()->json([
                 'success' => true,
+                'message' => $message,
                 'data' => [ 
-                    'supplier' => $supplier
+                    'supplier' => $supplier,
+                    'deletion_mode' => $isForceDelete ? 'force' : 'soft',
+                    'deletion_summary' => $deletionSummary
                 ]
             ], 200);
 
@@ -255,6 +357,53 @@ class SupplierController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    public function deletionInfo($id): JsonResponse
+    {
+        try {
+            $supplier = Supplier::find($id);
+
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Leverantören hittades inte'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $this->buildDeletionSummary($supplier)
+            ], 200);
+        } catch (\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    private function buildDeletionSummary(Supplier $supplier): array
+    {
+        $associations = [
+            'clients' => $supplier->clients()->count(),
+            'billings' => $supplier->billings()->count(),
+            'vehicles' => $supplier->vehicles()->count(),
+            'agreements' => $supplier->agreements()->count(),
+            'payouts' => $supplier->payouts()->count(),
+            'documents' => $supplier->documents()->count(),
+            'notes' => $supplier->notes()->count(),
+        ];
+
+        $totalAssociations = array_sum($associations);
+
+        return [
+            'can_force_delete' => $totalAssociations === 0,
+            'total_associations' => $totalAssociations,
+            'associations' => $associations,
+        ];
     }
 
     public function activate($id)

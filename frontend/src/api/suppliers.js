@@ -26,6 +26,14 @@ class Suppliers {
         return axios.get(`/suppliers/activate/${id}`)
     }
 
+    getDeletionInfo(id) {
+        return axios.get(`/suppliers/deletion-info/${id}`)
+    }
+
+    resendInvitation(id) {
+        return axios.post(`/suppliers/resend-invitation/${id}`)
+    }
+
     getUsers(params) {
         return axios.get('suppliers/supplier/users', {params})
     }

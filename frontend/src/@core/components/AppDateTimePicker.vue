@@ -27,6 +27,10 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  isMobile: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits([
@@ -54,6 +58,7 @@ const selectedPreset = ref(null)
 const isRangeMode = computed(() => props.config?.mode === 'range')
 const showRangePresets = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.rangePresets !== false)
 const showSplitRangeInputs = computed(() => isInlinePicker.value && isRangeMode.value && props.config?.splitRangeInputs !== false)
+const isMobile = computed(() => props.isMobile)
 
 const datepickerConfig = computed(() => {
   const config = { ...props.config }
@@ -276,8 +281,8 @@ const applyPreset = preset => {
     class="app-inline-picker-layout"
     :class="{ 'has-range-presets': showRangePresets }"
   >
-    <div v-if="showSplitRangeInputs" class="app-inline-range-header">
-      <div class="app-inline-range-field">
+    <div v-if="showSplitRangeInputs && !isMobile" class="app-inline-range-header">
+      <div class="app-inline-range-field"> 
         <VIcon icon="custom-calendar-2" size="24" />
         <span class="app-inline-range-text">{{ splitRangeValue.start || 'Startdatum' }}</span>
       </div>
@@ -288,7 +293,7 @@ const applyPreset = preset => {
       </div>
     </div>
 
-    <div class="d-flex justify-between gap-4">
+    <div class="d-flex justify-between" :class="isMobile ? 'gap-2' : 'gap-4'">
       <div v-if="showRangePresets" class="app-inline-picker-presets">
         <button
           type="button"
@@ -322,6 +327,18 @@ const applyPreset = preset => {
         >
           Hela perioden
         </button>
+      </div>
+
+      <div v-if="showSplitRangeInputs && isMobile" class="app-inline-range-header mb-0">
+        <div class="app-inline-range-field"> 
+          <VIcon icon="custom-calendar-2" size="22" />
+          <span class="app-inline-range-text">{{ splitRangeValue.start || 'Startdatum' }}</span>
+        </div>
+
+        <div class="app-inline-range-field">
+          <VIcon icon="custom-calendar-2" size="22" />
+          <span class="app-inline-range-text">{{ splitRangeValue.end || 'Slutdatum' }}</span>
+        </div>
       </div>
 
       <FlatPickr
@@ -703,12 +720,73 @@ input[altinputclass="inlinePicker"] {
 
 // Mobile calendar positioning fix for dialogs/modals
 @media (max-width: 1023px) {
-  .flatpickr-calendar {
+
+  .app-inline-range-field {
+    min-block-size: 40px;
+  }
+
+  .app-inline-range-text {
+    font-size: 12px;
+  }
+
+  .app-inline-picker-layout .d-flex.justify-between.gap-4,
+  .app-inline-picker-layout .d-flex.justify-between.gap-2 {
+    flex-direction: column;
+  }
+
+  .app-inline-picker-presets {
+    border-inline-end: 0;
+    border-block-end: 1px solid #F6F6F6;
+    min-inline-size: 0;
+    padding-block-end: 8px;
+    padding-inline-end: 0;
+    gap: 4px;
+  }
+
+  .app-inline-picker-layout .flatpickr-calendar.inline {
+    inline-size: 16.625rem;
+    margin-inline: auto;
+    position: relative !important;
+    inset-block-start: auto !important;
+    inset-inline-start: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    width: 100%;
+  }
+
+  .flatpickr-calendar:not(.inline) {
     position: fixed !important;
     inset-block-start: 50% !important;
     inset-inline-start: 50% !important;
     transform: translate(-50%, -50%) !important;
     z-index: 99999 !important;
+  }
+
+  .flatpickr-innerContainer {
+    justify-content: center;
+  }
+
+  .app-inline-picker-layout .flatpickr-calendar .flatpickr-months {
+    max-inline-size: 17rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    position: relative;
+
+    .flatpickr-prev-month,
+    .flatpickr-next-month {
+      inset-block-start: 0.75rem !important;
+      left: unset !important;
+    }
+
+    .flatpickr-next-month {
+      position: absolute !important;
+      right: 1rem !important;
+    }
+
+    .flatpickr-prev-month {
+      position: absolute !important;
+      right: 3.5rem !important;
+    }
   }
 
   .flatpickr-calendar.arrowTop::before,

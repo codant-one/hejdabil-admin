@@ -1019,6 +1019,7 @@ onBeforeUnmount(() => {
             v-model="date"
             v-model:menuVisible="isExportMenuVisible"
             :show-activator="false"
+            :is-mobile="windowWidth < 1024"
             activator="#payout-export-button"
             @update:modelValue="onDatePickerUpdate"
           />
@@ -1140,7 +1141,6 @@ onBeforeUnmount(() => {
                 <div class="d-flex align-center px-0">
                     <div class="text-no-wrap">
                         <VAvatar
-                            color="#E3DEEB"
                             variant="outlined"
                             size="40"
                         >
@@ -1495,7 +1495,6 @@ onBeforeUnmount(() => {
               >                
                   <div class="text-no-wrap w-100">
                       <VAvatar
-                          color="#E3DEEB"
                           variant="outlined"
                           size="40"
                       >
@@ -1666,7 +1665,6 @@ onBeforeUnmount(() => {
                 >
                     <div class="text-no-wrap w-100">
                         <VAvatar
-                            color="#E3DEEB"
                             variant="outlined"
                             size="40"
                         >

@@ -32,7 +32,7 @@ const isRequestOngoing = ref(true)
 
 const isFormValid = ref(false)
 const refForm = ref()
-const currentTab = ref('tab-1')
+const currentTab = ref(0)
 const isMobile = ref(false)
 
 const brands = ref([])
@@ -105,6 +105,7 @@ const currentData = computed(() => ({
     client_id: client_id.value,
     organization_number: organization_number.value,
     client_type_id: client_type_id.value,
+    country_id: country_id.value,
     fullname: fullname.value,
     address: address.value,
     street: street.value,
@@ -558,97 +559,173 @@ const showError = () => {
 
 };
 
+const onTabChange = async (targetTab) => {
+  const nextTab = Number(targetTab)
+  if (Number.isNaN(nextTab) || nextTab === currentTab.value) return
+
+  if (nextTab < currentTab.value) {
+    currentTab.value = nextTab
+    return
+  }
+
+  currentTab.value = 0
+
+  while (currentTab.value < nextTab) {
+    const beforeTab = currentTab.value
+    await onSubmit()
+
+    if (currentTab.value === beforeTab) return
+  }
+
+  if (currentTab.value !== nextTab)
+    currentTab.value = nextTab
+}
 
 const onSubmit = async () => {
     // Tab-1: Försäljningsuppgifter
-    const hasTab1Errors = !sale_price.value || !sale_date.value || !iva_sale_id.value ||
+    const hasTab0Errors = !sale_price.value || !sale_date.value || !iva_sale_id.value ||
         iva_sale_amount.value === null || iva_sale_exclusive.value === null ||
         discount.value === null || registration_fee.value === null || total_sale.value === null;
 
     // Tab-2: Kund
-    const hasTab2Errors = !organization_number.value || 
-                            (client_type_id.value !== 3 && organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
-                            !client_type_id.value || 
-                            !fullname.value || 
-                            !address.value || 
-                            !postal_code.value || 
-                            !street.value || 
-                            !phone.value || 
-                            (phone.value && phoneValidator(phone.value) !== true) ||
-                            !email.value || 
-                            (email.value && emailValidator(email.value) !== true) ||
-                            (client_type_id.value === 3 && !country_id.value)
+    const hasTab1Errors = !organization_number.value || 
+                        (client_type_id.value !== 3 && organization_number.value && minLengthDigitsValidator(10)(organization_number.value) !== true) ||
+                        !client_type_id.value || 
+                        !fullname.value || 
+                        !address.value || 
+                        !postal_code.value || 
+                        !street.value || 
+                        !phone.value || 
+                        (phone.value && phoneValidator(phone.value) !== true) ||
+                        !email.value || 
+                        (email.value && emailValidator(email.value) !== true) ||
+                        (client_type_id.value === 3 && !country_id.value)
 
-    if (hasTab1Errors) {
-        currentTab.value = 'tab-1';
-        await nextTick();
-        refForm.value?.validate();
-        advisor.value = {
-            type: 'warning',
-            message: 'Vänligen fyll i alla obligatoriska fält i fliken Försäljningsuppgifter',
-            show: true
-        };
-        setTimeout(() => { advisor.value = { type: '', message: '', show: false }; }, 3000);
-        return;
-    }
-    if (hasTab2Errors) {
-        currentTab.value = 'tab-2';
-        await nextTick();
-        refForm.value?.validate();
-        advisor.value = {
-            type: 'warning',
-            message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
-            show: true
-        };
-        setTimeout(() => { advisor.value = { type: '', message: '', show: false }; }, 3000);
-        return;
-    }
 
-    refForm.value?.validate().then(({ valid }) => {
-        if (valid) {
-            let formData = new FormData();
-            formData.append('id', Number(route.params.id));
-            formData.append('sale_price', sale_price.value);
-            formData.append('sale_date', sale_date.value);
-            formData.append('iva_sale_amount', iva_sale_amount.value);
-            formData.append('iva_sale_exclusive', iva_sale_exclusive.value);
-            formData.append('discount', discount.value);
-            formData.append('registration_fee', registration_fee.value);
-            formData.append('total_sale', total_sale.value);
-            formData.append('iva_sale_id', iva_sale_id.value);
-            formData.append('sale_comments', sale_comments.value);
 
-            formData.append('client_type_id', client_type_id.value);
-            formData.append('client_id', client_id.value);
-            formData.append('fullname', fullname.value);
-            formData.append('email', email.value);
-            formData.append('organization_number', organization_number.value);
-            formData.append('address', address.value);
-            formData.append('street', street.value);
-            formData.append('postal_code', postal_code.value);
-            formData.append('phone', phone.value);
-
-            isRequestOngoing.value = true;
-
-            vehiclesStores.sendVehicle(formData)
-                .then((res) => {
-                    if (res.data.success) {
-                        allowNavigation.value = true;
-
-                        // Save current state so the dirty-check stops blocking navigation
-                        initialData.value = JSON.parse(JSON.stringify(currentData.value));
-
-                        skapatsDialog.value = true;
-                    }
-                    isRequestOngoing.value = false;
-                })
-                .catch((error) => {
-                    err.value = error;
-                    inteSkapatsDialog.value = true;
-                    isRequestOngoing.value = false;
-                });
+    // Si estamos en el tab 0, solo validar y avanzar (NO guardar)
+    if (currentTab.value === 0) {
+        if (hasTab0Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordon',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
         }
-    });
+        
+        // Si no hay errores, avanzar al siguiente tab
+        currentTab.value = 1
+        return
+    }
+  
+    // Si estamos en el tab 1, verificar TODOS los tabs y GUARDAR
+    if (currentTab.value === 1) {
+        // Si hay errores en el tab 0, regresar
+        if (hasTab0Errors) {
+            currentTab.value = 0
+            
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Fordon',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+        
+        // Si hay errores en el tab 1
+        if (hasTab1Errors) {
+            await nextTick()
+            refForm.value?.validate()
+            
+            advisor.value = {
+                type: 'warning',
+                message: 'Vänligen fyll i alla obligatoriska fält i fliken Kund',
+                show: true
+            }
+            
+            setTimeout(() => {
+                advisor.value = {
+                    type: '',
+                    message: '',
+                    show: false
+                }
+            }, 3000)
+            
+            return
+        }
+
+        refForm.value?.validate().then(({ valid }) => {
+            if (valid) {
+                let formData = new FormData();
+                formData.append('id', Number(route.params.id));
+                formData.append('sale_price', sale_price.value);
+                formData.append('sale_date', sale_date.value);
+                formData.append('iva_sale_amount', iva_sale_amount.value);
+                formData.append('iva_sale_exclusive', iva_sale_exclusive.value);
+                formData.append('discount', discount.value);
+                formData.append('registration_fee', registration_fee.value);
+                formData.append('total_sale', total_sale.value);
+                formData.append('iva_sale_id', iva_sale_id.value);
+                formData.append('sale_comments', sale_comments.value);
+
+                formData.append('client_type_id', client_type_id.value);
+                formData.append('country_id', country_id.value)
+                formData.append('client_id', client_id.value);
+                formData.append('fullname', fullname.value);
+                formData.append('email', email.value);
+                formData.append('organization_number', organization_number.value);
+                formData.append('address', address.value);
+                formData.append('street', street.value);
+                formData.append('postal_code', postal_code.value);
+                formData.append('phone', phone.value);
+
+                isRequestOngoing.value = true;
+
+                vehiclesStores.sendVehicle(formData)
+                    .then((res) => {
+                        if (res.data.success) {
+                            allowNavigation.value = true;
+
+                            // Save current state so the dirty-check stops blocking navigation
+                            initialData.value = JSON.parse(JSON.stringify(currentData.value));
+
+                            skapatsDialog.value = true;
+                        }
+                        isRequestOngoing.value = false;
+                    })
+                    .catch((error) => {
+                        err.value = error;
+                        inteSkapatsDialog.value = true;
+                        isRequestOngoing.value = false;
+                    });
+            }
+        });
+    }    
 }
 
 const getFlag = (currency_id) => {
@@ -688,6 +765,7 @@ onBeforeRouteLeave((to, from, next) => {
 <template>
     <section class="page-section" ref="sectionEl">
         <LoadingOverlay :is-loading="isRequestOngoing" />
+
         <VSnackbar
             v-model="advisor.show"
             transition="scroll-y-reverse-transition"
@@ -703,7 +781,9 @@ onBeforeRouteLeave((to, from, next) => {
             ref="refForm"
             class="card-form"
             v-model="isFormValid"
+            validate-on="submit"
             @submit.prevent="onSubmit">
+
             <VCard 
                 flat 
                 class="card-fill"
@@ -713,64 +793,79 @@ onBeforeRouteLeave((to, from, next) => {
                 ]"
             >
                 <VCardText class="p-0">
-                    <div class="d-flex flex-wrap gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between">
-                
-                    <div class="d-flex flex-column gap-4">
-                        <span class="title-page">
-                            Försäljningsuppgifter
-                        </span>
-                        <span 
-                            class="d-flex subtitle-page justify-start">
-                            {{ reg_num }}
-                        </span>
-                    </div>
-
-                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
-
                     <div 
-                        class="d-flex gap-4"
-                        :class="windowWidth < 1024 ? 'w-100' : 'align-center'">
-                        <VBtn 
-                            class="btn-light w-auto" 
-                            block
-                            :to="{ name: 'dashboard-admin-sold' }">
-                            <VIcon icon="custom-return" size="24" />
-                            Tillbaka
-                        </VBtn>
-                        <VBtn
-                            v-if="$can('edit', 'stock')"
-                            class="btn-gradient"
-                            block
-                            type="submit"
+                        class="d-flex  gap-y-4 gap-x-6 mb-4 justify-start justify-sm-space-between"
+                        :class="windowWidth < 1024 ? 'flex-column' : 'flex-wrap'"
+                    >
+
+                         <VBtn
+                            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
+                            class="btn-light"
+                            style="width: 120px;"
+                            :to="{ name: 'dashboard-admin-sold' }"
                         >
-                            <VIcon icon="custom-save"  size="24" />
-                            Uppdatering
+                            <VIcon icon="custom-return" size="24" />
+                            Gå ut
                         </VBtn>
-                    </div>
+                
+                        <div class="d-flex flex-column gap-4">
+                            <span class="title-page">
+                                Försäljningsuppgifter
+                            </span>
+                            <span 
+                                class="d-flex subtitle-page justify-start">
+                                {{ reg_num }}
+                            </span>
+                        </div>
+
+                        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+
+                        <div 
+                            :class="windowWidth < 1024 ? 'd-none' : 'd-flex gap-4 align-center'"
+                        >
+                            <VBtn 
+                                class="btn-light w-auto" 
+                                block
+                                :to="{ name: 'dashboard-admin-sold' }">
+                                <VIcon icon="custom-return" size="24" />
+                                Avbryt
+                            </VBtn>
+                            <VBtn
+                                v-if="$can('edit', 'stock')"
+                                class="btn-gradient d-none"
+                                block
+                                type="submit"
+                            >
+                                <VIcon icon="custom-save"  size="24" />
+                                Uppdatering
+                            </VBtn>
+                        </div>
                     </div>                
                 </VCardText>
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
                 <VTabs 
-                    v-model="currentTab"   
-                    :grow="windowWidth < 1024 ? true : false"                
+                    :model-value="currentTab"
+                    @update:modelValue="onTabChange"
+                    grow             
                     :show-arrows="false"
                     class="vehicles-tabs"
                 >
-                    <VTab value="tab-1">
+                    <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-autofordon" />
                         Fordon
                     </VTab>
-                    <VTab value="tab-2">
+                    <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
                 </VTabs>
+
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab" class="pt-3">
                         <!-- Fordon -->
-                        <VWindowItem value="tab-1" class="px-md-0">
+                        <VWindowItem :value="0" class="px-md-0">
                             <VRow class="px-md-5">
                                 <VCol cols="12" class="d-flex flex-column gap-6 pa-6 mb-5 card-info">
                                     <div class="title-tabs mb-5">
@@ -986,8 +1081,9 @@ onBeforeRouteLeave((to, from, next) => {
                                 </VCol>
                             </VRow>
                         </VWindowItem>
+
                         <!-- Kund -->
-                        <VWindowItem value="tab-2" class="px-md-0">
+                        <VWindowItem :value="1" class="px-md-0">
                             <VRow class="px-md-5">
                                 <VCol cols="12" :class="windowWidth < 1024 ? '' : 'px-0'">
                                     <div class="title-tabs mb-5">
@@ -1134,7 +1230,33 @@ onBeforeRouteLeave((to, from, next) => {
                             </VRow>
                         </VWindowItem>
                     </VWindow>
-                </VCardText>                
+                </VCardText>      
+                       
+                <VCardText class="p-0 d-flex w-100">
+                    <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'"/>
+                    <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
+                        <VBtn
+                            v-if="currentTab > 0"
+                            class="btn-light"
+                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            :block="windowWidth < 1024"
+                            @click="currentTab--"
+                            >
+                            <VIcon icon="custom-return" size="24" />
+                            Tillbaka
+                        </VBtn>
+                        <VBtn 
+                            type="button" 
+                            :block="windowWidth < 1024"
+                            class="btn-gradient"
+                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
+                            @click="onSubmit"
+                        >
+                            <VIcon v-if="currentTab === 1" icon="custom-save"  size="24" />
+                            {{ (currentTab === 1) ? 'Uppdatering' : 'Nästa' }}
+                        </VBtn>
+                    </div>
+                </VCardText>
             </VCard>
         </VForm>
     
@@ -1289,6 +1411,32 @@ onBeforeRouteLeave((to, from, next) => {
             .v-btn__content {
                 font-size: 14px !important;
                 color: #454545;
+            }
+        }
+        .v-btn.tab-completed {
+            .v-tab__slider {
+                display: block;
+                opacity: 1;
+                block-size: 1px;
+                background: linear-gradient(
+                90deg,
+                #57f287 0%,
+                #00eeb0 50%,
+                #00ffff 100%
+                );
+            }
+        }
+    }
+
+    @media (max-width: 776px) {
+        .v-tabs.vehicles-tabs {
+            .v-icon {
+                display: none !important;
+            }
+            .v-btn {
+                .v-btn__content {
+                    white-space: break-spaces;
+                }
             }
         }
     }

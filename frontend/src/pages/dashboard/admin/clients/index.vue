@@ -637,9 +637,11 @@ const downloadPDF = async () => {
     const rows = clientsStores.getClients.map(element => ({
       id: element.order_id,
       fullname: element.fullname,
+      email: element.email,
       organizationNumber: element.organization_number ?? "",
       phone: element.phone,
-      address: element.address,
+      address: element.address + ',',
+      street: element.postal_code  + ' ' + element.street,
       supplier: element.supplier
         ? `${element.supplier.user.name} ${element.supplier.user.last_name ?? ''}`.trim()
         : ''
@@ -657,14 +659,24 @@ const downloadPDF = async () => {
     })
 
     const rowsMarkup = rows.map(item => `
+      ${(() => {
+        const contactLines = [item.fullname, item.email].filter(Boolean)
+        const contactMarkup = contactLines.map(line => escapeHtml(line)).join('<br />')
+
+        const addressLines = [item.address, item.street].filter(Boolean)
+        const addressMarkup = addressLines.map(line => escapeHtml(line)).join('<br />')
+
+        return `
       <tr style="height: 48px;">
         <td style="width: 8%; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.id)}</td>
-        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.fullname)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${contactMarkup}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.organizationNumber)}</td>
         <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
         ${includeSupplierColumn ? `<td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.supplier)}</td>` : ''}
-        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.address)}</td>
+        <td style="width: ${columnWidth}; padding: 0 12px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${addressMarkup}</td>
       </tr>
+    `
+      })()}
     `).join('')
 
     pdfContainer = document.createElement('div')
@@ -737,10 +749,12 @@ const downloadCSV = async () => {
     const row = {
       Id: element.order_id,
       Kontakt: element.fullname,
+      E_post: element.email,
       Organisationsnummer: element.organization_number ?? "",
       Telefon: element.phone,
       Adress: element.address,
-      E_post: element.email
+      Postnummer: element.postal_code,
+      Stad: element.street,
     };
 
     if (includeSupplierColumn) {

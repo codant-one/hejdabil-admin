@@ -281,7 +281,6 @@ const closeUserEditDialog = ()=>{
             <VAvatar
               rounded
               :size="144"
-              :color="avatarCommitted ? 'default' : 'primary'"
               variant="outlined"
             >
               <VImg
@@ -433,7 +432,6 @@ const closeUserEditDialog = ()=>{
                       rounded
                       :size="120"
                       class="mb-2"
-                      :color="avatarPreview ? 'default' : 'primary'"
                       variant="outlined"
                     >
                       <VImg
@@ -598,7 +596,6 @@ const closeUserEditDialog = ()=>{
                       rounded
                       :size="120"
                       class="mb-2"
-                      :color="avatarPreview ? 'default' : 'primary'"
                       variant="outlined"
                     >
                       <VImg

@@ -23,10 +23,26 @@ const isConfirmDeleteDialogVisible = ref(false)
 const isConfirmActiveDialogVisible = ref(false)
 const isConfirmSwishDialogVisible = ref(false)
 const selectedSupplier = ref({})
+const deleteInfo = ref({
+  can_force_delete: false,
+  total_associations: 0,
+  associations: {
+    clients: 0,
+    billings: 0,
+    vehicles: 0,
+    agreements: 0,
+    payouts: 0,
+    documents: 0,
+    notes: 0,
+  },
+})
+const isDeleteInfoLoading = ref(false)
 const csr_url = ref(null)
+const pem_url = ref(null)
 const payout_number = ref(null)
 const pemFile = ref([])
 const is_payout = ref(false)
+const swishStep = ref(1)
 const state_id = ref(null)
 const refForm = ref(null)
 const isFormValid = ref(false)
@@ -105,9 +121,77 @@ const editSupplier = supplierData => {
   router.push({ name : 'dashboard-admin-suppliers-edit-id', params: { id: supplierData.id } })
 }
 
-const showDeleteDialog = supplierData => {
-  isConfirmDeleteDialogVisible.value = true
+const resendInvitation = async supplierData => {
+  isRequestOngoing.value = true
+
+  try {
+    const res = await suppliersStores.resendInvitation(supplierData.id)
+
+    advisor.value = {
+      type: res.data.success ? 'success' : 'error',
+      message: res.data.message ?? 'Inbjudan har skickats igen med ett nytt lösenord.',
+      show: true,
+    }
+  } catch (err) {
+    advisor.value = {
+      type: 'error',
+      message: err.response?.data?.message || err.message,
+      show: true,
+    }
+  } finally {
+    isRequestOngoing.value = false
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false,
+      }
+    }, 3000)
+  }
+}
+
+const showDeleteDialog = async supplierData => {
   selectedSupplier.value = { ...supplierData }
+
+  deleteInfo.value = {
+    can_force_delete: false,
+    total_associations: 0,
+    associations: {
+      clients: 0,
+      billings: 0,
+      vehicles: 0,
+      agreements: 0,
+      payouts: 0,
+      documents: 0,
+      notes: 0,
+    },
+  }
+
+  isDeleteInfoLoading.value = true
+  isRequestOngoing.value = true
+  try {
+    const res = await suppliersStores.getDeletionInfo(supplierData.id)
+    deleteInfo.value = res.data?.data ?? deleteInfo.value
+    isConfirmDeleteDialogVisible.value = true
+  } catch (err) {
+      advisor.value = {
+        type: 'error',
+        message: err.response?.data?.message || err.message,
+        show: true,
+      }
+
+      setTimeout(() => {
+        advisor.value = {
+          type: '',
+          message: '',
+          show: false,
+        }
+      }, 3000)
+  } finally {
+    isDeleteInfoLoading.value = false
+    isRequestOngoing.value = false
+  }
 }
 
 const showSwishDialog = supplierData => {
@@ -115,11 +199,47 @@ const showSwishDialog = supplierData => {
   selectedSupplier.value = { ...supplierData }
   payout_number.value = supplierData.payout_number || null
   csr_url.value = supplierData.csr_url || null
+  pem_url.value = supplierData.pem_url || null
   is_payout.value = supplierData.is_payout === 0 ? false : true
   pemFile.value = []
+  swishStep.value = 1
 
   nextTick(() => {
     refForm.value?.resetValidation()
+  })
+}
+
+const closeSwishDialog = () => {
+  isConfirmSwishDialogVisible.value = false
+  swishStep.value = 1
+}
+
+const swishHasSteps = computed(() => !!csr_url.value)
+
+const pemFileRules = computed(() => {
+  if (!swishHasSteps.value || !is_payout.value)
+    return []
+
+  return [
+    value => {
+      const hasNewFile = Array.isArray(value) && value.length > 0
+      const hasExistingPem = !!pem_url.value
+      return hasNewFile || hasExistingPem || 'Ladda upp en PEM-fil för att aktivera Swish-utbetalningar.'
+    },
+  ]
+})
+
+const openStorageFileUrl = filePath => {
+  if (!filePath) return ''
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath
+  return `${themeConfig.settings.urlStorage}${filePath}`
+}
+
+const goToSwishStepTwo = () => {
+  refForm.value?.validate().then(({ valid }) => {
+    if (valid) {
+      swishStep.value = 2
+    }
   })
 }
 
@@ -137,9 +257,18 @@ const removeSupplier = async () => {
   let res = await suppliersStores.deleteSupplier(selectedSupplier.value.id)
   selectedSupplier.value = {}
 
+  const deletionMode = res.data?.data?.deletion_mode
+
+  let successMessage = 'Leverantör borttagen!'
+  if (deletionMode === 'force') {
+    successMessage = 'Leverantören och användarkontot raderades permanent.'
+  } else if (deletionMode === 'soft') {
+    successMessage = 'Leverantören inaktiverades eftersom associerade poster finns.'
+  }
+
   advisor.value = {
     type: res.data.success ? 'success' : 'error',
-    message: res.data.success ? 'Leverantör borttagen!' : res.data.message,
+    message: res.data.success ? (res.data.message ?? successMessage) : res.data.message,
     show: true
   }
 
@@ -479,7 +608,7 @@ const downloadCSV = async () => {
 
                     <VList>
                       <VListItem 
-                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1"
+                        v-if="$can('view', 'suppliers') && supplier.state_id !== 1 && supplier.user.full_profile === 1"
                         @click="showSwishDialog(supplier)">
                         <template #prepend>
                           <VIcon icon="mdi-payment" />
@@ -501,6 +630,14 @@ const downloadCSV = async () => {
                           <VIcon icon="tabler-edit" />
                         </template>
                         <VListItemTitle>Redigera</VListItemTitle>
+                      </VListItem>
+                      <VListItem
+                        v-if="$can('edit', 'suppliers') && supplier.state_id === 2 && supplier.user.full_profile === 0"
+                        @click="resendInvitation(supplier)">
+                        <template #prepend>
+                          <VIcon icon="tabler-mail-forward" />
+                        </template>
+                        <VListItemTitle>Vidarebefordra inbjudan</VListItemTitle>
                       </VListItem>
                       <VListItem 
                         v-if="$can('delete','suppliers') && supplier.state_id === 2"
@@ -567,8 +704,28 @@ const downloadCSV = async () => {
       <!-- Dialog Content -->
       <VCard title="Ta bort leverantör">
         <VDivider class="mt-4"/>
-        <VCardText>
-          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user.name }} {{ selectedSupplier.user.last_name ?? '' }}</strong>?.
+        <VCardText class="pb-0">
+          Är du säker att du vill ta bort leverantör <strong>{{ selectedSupplier.user?.name }} {{ selectedSupplier.user?.last_name ?? '' }}</strong>?
+        </VCardText>
+
+        <VCardText class="pt-2">
+          <div v-if="deleteInfo.can_force_delete">
+            Inga associerade poster hittades. Leverantören och användarkontot kommer att raderas permanent.
+          </div>
+          <div v-else>
+            Associerade poster hittades. Leverantören kommer att inaktiveras för att bevara data.
+          </div>
+        </VCardText>
+
+        <VCardText v-if="!deleteInfo.can_force_delete" class="pt-0">
+          <div>Associerade poster:</div>
+          <div v-if="deleteInfo.associations?.clients">Kunder: {{ deleteInfo.associations.clients }}</div>
+          <div v-if="deleteInfo.associations?.billings">Faktureringar: {{ deleteInfo.associations.billings }}</div>
+          <div v-if="deleteInfo.associations?.vehicles">Fordon: {{ deleteInfo.associations.vehicles }}</div>
+          <div v-if="deleteInfo.associations?.agreements">Avtal: {{ deleteInfo.associations.agreements }}</div>
+          <div v-if="deleteInfo.associations?.payouts">Utbetalningar: {{ deleteInfo.associations.payouts }}</div>
+          <div v-if="deleteInfo.associations?.documents">Dokument: {{ deleteInfo.associations.documents }}</div>
+          <div v-if="deleteInfo.associations?.notes">Noteringar: {{ deleteInfo.associations.notes }}</div>
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap">
@@ -592,7 +749,7 @@ const downloadCSV = async () => {
       class="v-dialog-sm" >
       <!-- Dialog close btn -->
         
-      <DialogCloseBtn @click="isConfirmSwishDialogVisible = !isConfirmSwishDialogVisible" />
+      <DialogCloseBtn @click="closeSwishDialog" />
 
       <!-- Dialog Content -->
       <VCard title="Swish">
@@ -605,40 +762,126 @@ const downloadCSV = async () => {
           ref="refForm"
           v-model="isFormValid"
           @submit.prevent="swish">
-          <VCardText class="d-flex flex-column gap-2">
-            <VTextField
-              v-model="payout_number"
-              label="Utbetalningsnummer"
-              :rules="[requiredValidator, minLengthDigitsValidator(10)]"
-              minLength="11"
-              maxlength="11"
-              @input="formatOrgNumber()"
-            />
-            <VFileInput
-              v-if="csr_url !== null"
-              v-model="pemFile"
-              label="Ladda upp PEM-fil"
-              accept=".pem"
-              prepend-icon="tabler-file"
-            />
-            <VCheckbox
-              v-if="csr_url !== null"
-              v-model="is_payout"
-              label="Aktivera Swish utbetalningar"
-            />
-          </VCardText>
+          <template v-if="!swishHasSteps">
+            <VCardText class="d-flex flex-column gap-2">
+              <VTextField
+                v-model="payout_number"
+                label="Utbetalningsnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                minLength="11"
+                maxlength="11"
+                @input="formatOrgNumber()"
+              />
+              <VCheckbox
+                v-model="is_payout"
+                label="Aktivera Swish utbetalningar"
+              />
+            </VCardText>
 
-          <VCardText class="d-flex justify-end gap-3 flex-wrap">
-            <VBtn
-              color="secondary"
-              variant="tonal"
-              @click="isConfirmSwishDialogVisible = false">
-                Avbryt
-            </VBtn>
-            <VBtn type="submit">
-              Acceptera
-            </VBtn>
-          </VCardText>
+            <VCardText class="d-flex justify-end gap-3 flex-wrap">
+              <VBtn
+                color="secondary"
+                variant="tonal"
+                @click="closeSwishDialog">
+                  Avbryt
+              </VBtn>
+              <VBtn type="submit">
+                Acceptera
+              </VBtn>
+            </VCardText>
+          </template>
+
+          <template v-else>
+            <VCardText class="pt-4 pb-0 d-flex align-center gap-2">
+              <VChip :color="swishStep === 1 ? 'primary' : 'default'" variant="tonal" size="small">1</VChip>
+              <VIcon icon="tabler-arrow-right" size="16" />
+              <VChip :color="swishStep === 2 ? 'primary' : 'default'" variant="tonal" size="small">2</VChip>
+            </VCardText>
+
+            <VCardText v-if="swishStep === 1" class="d-flex flex-column gap-2">
+              <VTextField
+                v-model="payout_number"
+                label="Utbetalningsnummer"
+                :rules="[requiredValidator, minLengthDigitsValidator(10)]"
+                minLength="11"
+                maxlength="11"
+                @input="formatOrgNumber()"
+              />
+              <VCheckbox
+                v-model="is_payout"
+                label="Aktivera Swish utbetalningar"
+              />
+            </VCardText>
+
+            <VCardText v-if="swishStep === 2" class="d-flex flex-column gap-3">
+              <div>
+                <div class="text-body-2 mb-1">CSR-fil</div>
+                <VBtn
+                  v-if="csr_url"
+                  color="secondary"
+                  variant="tonal"
+                  :href="openStorageFileUrl(csr_url)"
+                  target="_blank"
+                >
+                  Ladda ner CSR
+                </VBtn>
+                <div v-else class="text-disabled">Ingen CSR-fil tillgänglig.</div>
+              </div>
+
+              <div>
+                <div class="text-body-2 mb-1">PEM-fil</div>
+                <VBtn
+                  v-if="pem_url"
+                  color="secondary"
+                  variant="tonal"
+                  :href="openStorageFileUrl(pem_url)"
+                  target="_blank"
+                >
+                  Ladda ner PEM
+                </VBtn>
+                <div v-else class="text-disabled">Ingen PEM-fil uppladdad än.</div>
+              </div>
+
+              <VFileInput
+                v-model="pemFile"
+                label="Ladda upp PEM-fil"
+                accept=".pem"
+                prepend-icon="tabler-file"
+                :rules="pemFileRules"
+              />
+            </VCardText>
+
+            <VCardText class="d-flex justify-end gap-3 flex-wrap">
+              <VBtn
+                color="secondary"
+                variant="tonal"
+                @click="closeSwishDialog">
+                  Avbryt
+              </VBtn>
+
+              <VBtn
+                v-if="swishStep === 2"
+                variant="tonal"
+                @click="swishStep = 1"
+              >
+                Tillbaka
+              </VBtn>
+
+              <VBtn
+                v-if="swishStep === 1"
+                @click="goToSwishStepTwo"
+              >
+                Nästa
+              </VBtn>
+
+              <VBtn
+                v-else
+                type="submit"
+              >
+                Spara
+              </VBtn>
+            </VCardText>
+          </template>
         </VForm>
       </VCard>
     </VDialog>
