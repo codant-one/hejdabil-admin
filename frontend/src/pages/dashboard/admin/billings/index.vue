@@ -1180,14 +1180,14 @@ onBeforeUnmount(() => {
         <!-- 👉 table head -->
         <thead>
           <tr>
-            <th class="text-center"># Faktura</th>
-            <th class="text-center" scope="col">Skickad</th>
+            <th class="text-center"># Faktura</th>            
             <th scope="col">Kund</th>
             <th scope="col" v-if="role === 'SuperAdmin' || role === 'Administrator'">Leverantör</th>
             <th class="text-center" scope="col">Summa</th>
             <th class="text-center" scope="col">Fakturadatum</th>
             <th class="text-center" scope="col">Förfaller</th>
             <th class="text-center" scope="col">Status</th>
+            <th class="text-center" scope="col">Skickad</th>
             <th scope="col">Skapad av</th>
             <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
           </tr>
@@ -1200,16 +1200,6 @@ onBeforeUnmount(() => {
             style="height: 3rem"
           >
             <td class="text-center">{{ billing.invoice_id }}</td>
-            <td class="text-center">
-              <VIcon 
-                v-if="billing.is_sent"
-                icon="custom-check-mark-disabled" 
-                size="24" 
-              />
-              <span v-else>
-                -
-              </span>
-            </td>
             <td class="text-wrap">
               <span
                 v-if="billing.client.deleted_at"
@@ -1298,6 +1288,16 @@ onBeforeUnmount(() => {
                 {{ billing.state.name }}
               </div>
             </td>
+            <td class="text-center">
+              <VIcon 
+                v-if="billing.is_sent"
+                icon="custom-check-mark-disabled" 
+                size="24" 
+              />
+              <span v-else>
+                -
+              </span>
+            </td>
             <td style="width: 1%; white-space: nowrap">
               <div class="d-flex align-center gap-x-1">
                 <VAvatar
@@ -1364,6 +1364,15 @@ onBeforeUnmount(() => {
                       <VIcon icon="custom-cash-2" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Markera som betald</VListItemTitle>
+                  </VListItem>
+                  <VListItem
+                    v-if="$can('edit', 'billings') && billing.state_id === 7"
+                    @click="updateBilling(billing)"
+                  >
+                    <template #prepend>
+                      <VIcon icon="custom-return" size="24" class="mr-2" />
+                    </template>
+                    <VListItemTitle>Markera som obetald</VListItemTitle>
                   </VListItem>
                   <VListItem
                     v-if="
@@ -1727,7 +1736,8 @@ onBeforeUnmount(() => {
         </VCardText>
         <VCardText class="dialog-text">
           Är du säker på att du vill uppdatera fakturans status
-          <strong>#{{ selectedBilling.invoice_id }}</strong> till betalda?
+          <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+          {{ selectedBilling.state_id === 4 ? 'betalda' : 'obetald' }}?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1874,6 +1884,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-cash-2" size="24" />
             </template>
             <VListItemTitle>Markera som betald</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7"
+            @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-return" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="

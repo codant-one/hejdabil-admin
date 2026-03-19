@@ -274,7 +274,7 @@ class BillingController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
             
-            $billing->state_id = 7;
+            $billing->state_id = $billing->state_id == 4 ? 7 : 4; // Toggle between pending and paid
             $billing->update();
 
             return response()->json([

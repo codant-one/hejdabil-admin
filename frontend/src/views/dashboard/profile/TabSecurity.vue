@@ -103,7 +103,7 @@ const chance2fa = (code) => {
   authStores.validate(data)
     .then(response => {
       advisor.value.show = true
-      advisor.value.message = is_2fa.value ? '2FA är aktiverad' : '2FA är avaktivera'
+      advisor.value.message = is_2fa.value ? '2FA är aktiverad' : '2FA är avaktiverad'
       advisor.value.type = 'success' 
       
       emit('alert', advisor)
