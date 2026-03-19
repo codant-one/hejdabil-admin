@@ -123,6 +123,13 @@ const isDirty = computed(() => {
   }
 })
 
+const isDeletedClientSelected = computed(() => {
+        if (client_id.value === null || client_id.value === undefined) return false
+
+        const selectedClient = clients.value.find(item => String(item?.id) === String(client_id.value))
+        return selectedClient?.deleted_at !== null
+})
+
 // Confirm-leave is handled further down (single guard).
 
 const startDateTimePickerConfig = computed(() => {
@@ -204,9 +211,25 @@ async function fetchData() {
         gearboxes.value = data.gearboxes
         ivas.value = data.ivas
         fuels.value = data.fuels
-        clients.value = data.clients
         client_types.value = data.client_types
         countries.value = data.countries
+
+        const allClients = Array.isArray(data.clients) ? data.clients : []
+        const currentClientId = data.vehicle?.client_sale?.client_id
+
+        clients.value = allClients
+            .filter(client => client?.deleted_at === null || (currentClientId !== null && currentClientId !== undefined && String(client?.id) === String(currentClientId)))
+            .map(client => {
+                const isCurrentDeletedClient = client?.deleted_at !== null && currentClientId !== null && currentClientId !== undefined && String(client?.id) === String(currentClientId)
+
+                return {
+                    ...client,
+                    display_fullname: isCurrentDeletedClient
+                        ? `${String(client?.fullname ?? '').trim()} (Borttagen)`
+                        : String(client?.fullname ?? ''),
+                }
+            })
+
 
         vehicle_id.value = vehicle.value.id
         reg_num.value = vehicle.value.reg_num
@@ -1094,17 +1117,35 @@ onBeforeRouteLeave((to, from, next) => {
                                         :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
                                         :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
                                     >
-                                        <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                                        <div
+                                            :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
+                                            :class="{ 'deleted-selected-client': isDeletedClientSelected }"
+                                        >
                                             <AppAutocomplete
                                                 v-model="client_id"
                                                 label="Kunder"
                                                 :items="clients"
-                                                :item-title="item => item.fullname"
+                                                :item-title="item => item.display_fullname ?? item.fullname"
                                                 :item-value="item => item.id"
                                                 autocomplete="off"
                                                 clearable
                                                 @click:clear="clearClient"
-                                                @update:modelValue="selectClient"/>
+                                                @update:modelValue="selectClient">
+                                                <template #item="{ props, item }">
+                                                    <VListItem
+                                                        v-bind="props"
+                                                        :class="{ 'deleted-client-option': item?.raw?.deleted_at !== null }"
+                                                    >
+                                                        <template #title>
+                                                            <span
+                                                                :class="{ 'deleted-client-text': item?.raw?.deleted_at !== null }"
+                                                            >
+                                                                {{ item?.raw?.display_fullname ?? item?.raw?.fullname }}
+                                                            </span>
+                                                        </template>
+                                                    </VListItem>
+                                                </template>
+                                            </AppAutocomplete>
                                         </div>
                                         <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                                             <AppAutocomplete
@@ -1394,6 +1435,18 @@ onBeforeRouteLeave((to, from, next) => {
 
     .v-btn--disabled {
         opacity: 1 !important;
+    }
+
+    .deleted-client-option .deleted-client-text {
+        text-decoration: line-through;
+        opacity: 0.75;
+    }
+
+    .deleted-selected-client .v-field__input,
+    .deleted-selected-client .v-autocomplete__selection-text,
+    .deleted-selected-client .v-field--focused .v-autocomplete__selection-text,
+    .deleted-selected-client .v-field--focused .v-field__input input {
+        text-decoration: line-through !important;
     }
 
     .border-bottom-secondary {

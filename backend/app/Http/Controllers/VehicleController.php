@@ -73,7 +73,7 @@ class VehicleController extends Controller
                         'fuel:id,name',
                         'client_purchase',                        
                         'client_purchase.client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
-                        'client_sale',
+                        'client_sale.client' => fn($q) => $q->select('id', 'fullname', 'email', 'deleted_at')->withTrashed(),
                         'tasks'
                     ])->applyFilters(
                         $request->only([
@@ -407,7 +407,7 @@ class VehicleController extends Controller
                 Auth::check() && Auth::user()->hasRole('User'), function ($query) {
                     return $query->where('supplier_id', Auth::user()->supplier->boss_id);
                 }
-            )->withTrashed()->get();
+            )->get();
         
             if (!$vehicle)
                 return response()->json([

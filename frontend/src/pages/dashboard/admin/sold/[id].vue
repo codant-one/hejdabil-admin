@@ -207,7 +207,7 @@ async function fetchData() {
         gearboxes.value = data.gearboxes
         ivas.value = data.ivas
         fuels.value = data.fuels
-        clients.value = data.clients
+        clients.value = (data.clients ?? []).filter(client => client?.deleted_at === null)
         client_types.value = data.client_types
         countries.value = data.countries
 
