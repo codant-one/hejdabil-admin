@@ -972,7 +972,7 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('costs')"> {{ formatNumber((vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr </td>                
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('buyer')">
               <div v-if="vehicle.client_sale" class="d-flex flex-column">
-                <span v-if="vehicle.client_sale.client_id !== null && !vehicle.client_sale.client.deleted_at" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_sale.client)">
+                <span v-if="vehicle.client_sale?.client_id !== null && !vehicle.client_sale?.client?.deleted_at" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_sale.client)">
                   {{ vehicle.client_sale.fullname }}
                 </span>
                 <span v-else class="font-weight-medium text-aqua">
