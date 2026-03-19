@@ -1136,15 +1136,18 @@ onBeforeUnmount(() => {
           </VExpansionPanelTitle>
           <VExpansionPanelText>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">Inköpspris:</div>
+              <div class="expansion-panel-item-label">Försäljningspris:</div>
               <div class="expansion-panel-item-value">
-                {{ formatNumber(vehicle.purchase_price ?? 0) }} kr
+                {{ formatNumber(vehicle.sale_price ?? 0) }} kr
               </div>
             </div>
             <div class="mb-6">
-              <div class="expansion-panel-item-label">Mital:</div>
+              <div class="expansion-panel-item-label">Vinst:</div>
               <div class="expansion-panel-item-value">
-                {{ formatNumberInteger(vehicle.mileage ?? 0) }} Mil
+                <span v-if="vehicle.purchase_price === null"> 0.00 kr </span>
+                <span v-else>
+                  {{ formatNumber(vehicle.total_sale - vehicle.purchase_price - (vehicle.tasks ?? []).filter(t => t.is_cost == 1).reduce((sum, item) => sum + parseFloat(item.cost), 0)) }} kr
+                </span> 
               </div>
             </div>
             <div class="d-flex gap-4">
