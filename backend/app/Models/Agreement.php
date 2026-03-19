@@ -623,9 +623,18 @@ class Agreement extends Model
         
         //Update Vehicle.
         $vehicle = Vehicle::find($vehicleClient->vehicle_id);
+        $request->request->add(['vehicle_id' => $vehicleClient->vehicle_id]);
         $request->request->add(['state_id' => $vehicle->state_id]);
-        $request->request->add(['iva_sale_id' => $request->iva_id ]);  
-        $vehicle->updateVehicle($request, $vehicle);
+        $request->request->add(['iva_sale_id' => $request->iva_id]);
+        
+        $vehicleRequest = VehicleRequest::createFrom($request);
+
+        $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+        if($validate->fails()){
+            $vehicleRequest->failedValidation($validate);
+        }
+
+        $vehicle->updateVehicle($vehicleRequest, $vehicle);
 
         //Update Vehicle interchange.
         if ($request->has("interchange") && $request->interchange === 'true') {
@@ -669,7 +678,15 @@ class Agreement extends Model
                 
                 if ($vehicleInterchange) {
                     $request->request->add(['state_id' => $vehicleInterchange->state_id]);
-                    $vehicleInterchange->updateVehicle($request, $vehicleInterchange);
+                    $request->request->add(['vehicle_id' => $request->vehicle_interchange_id]);
+                    $vehicleRequest = VehicleRequest::createFrom($request);
+
+                    $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+                    if($validate->fails()){
+                        $vehicleRequest->failedValidation($validate);
+                    }
+
+                    $vehicleInterchange->updateVehicle($vehicleRequest, $vehicleInterchange);
                 }
             } else {
                 // Crear nuevo vehículo interchange
@@ -784,9 +801,17 @@ class Agreement extends Model
         $vehicleClient->updateClient($request, $vehicleClient);
        
         //Update Vehicle.
+        $request->request->add(['vehicle_id' => $vehicleClient->vehicle_id]);//agrega el vehiculo al request si existe
+        $vehicleRequest = VehicleRequest::createFrom($request);
+
+        $validate = Validator::make($vehicleRequest->all(), $vehicleRequest->rules(), $vehicleRequest->messages());
+        if($validate->fails()){
+            $vehicleRequest->failedValidation($validate);
+        }
+
         $vehicle = Vehicle::find($vehicleClient->vehicle_id);
-        $request->request->add(['state_id' => 10]);
-        $vehicle->updateVehicle($request, $vehicle);
+        $vehicleRequest->request->add(['state_id' => 10]);
+        $vehicle->updateVehicle($vehicleRequest, $vehicle);
 
         //Update Vehicle Payment.
         $vehicle_payment = VehiclePayment::where('vehicle_id', $vehicle->id)->first();
@@ -890,5 +915,4 @@ class Agreement extends Model
         }
 
     }
-    
 }

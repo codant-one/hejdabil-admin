@@ -1085,6 +1085,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->payment_method_forcash)
                         <tr>
                             <td>
                                 <div class="label">Betalsätt för kontant / handpenning</div>
@@ -1093,6 +1094,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @endif
                     </table>
                 </td>
                 <td class="column-cell column-cell-right">         
@@ -1121,6 +1123,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @if($agreement->payment_method)
                         <tr>
                             <td>
                                 <div class="label">Betalningsbeskrivning</div>
@@ -1129,6 +1132,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @endif
                     </table>                           
                 </td>
             </tr>            

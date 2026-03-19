@@ -32,6 +32,7 @@ const initialData = ref(null)
 const allowNavigation = ref(false)
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
+const showVehicleExistentDialog = ref(false)
 
 const agreementsStores = useAgreementsStores()
 const authStores = useAuthStores()
@@ -1606,7 +1607,8 @@ const onSubmit = async () => {
                     .catch((error) => {
                         err.value = error;
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
-                        inteSkapatsDialog.value = true;
+                        inteSkapatsDialog.value = error.message === "Fordonsnumret är redan registrerat" ? false : true
+                        showVehicleExistentDialog.value = error.message === "Fordonsnumret är redan registrerat" ? true : false
                         isRequestOngoing.value = false
                     })
             }
@@ -3190,6 +3192,38 @@ onBeforeRouteLeave((to, from, next) => {
             </VCard>
         </VDialog>
 
+        <!-- 👉 Vehicle Existent Dialog -->
+        <VDialog
+            v-model="showVehicleExistentDialog"
+            persistent
+            class="action-dialog dialog-big-icon"
+        >
+            <VBtn
+                icon
+                class="btn-white close-btn"
+                @click="showVehicleExistentDialog = !showVehicleExistentDialog"
+            >
+                <VIcon size="16" icon="custom-close" />
+            </VBtn>
+            <VCard>
+                <VCardText class="dialog-title-box big-icon justify-center pb-0">
+                    <VIcon size="90" icon="custom-steering-wheel" />
+                </VCardText>
+                <VCardText class="dialog-title-box justify-center">
+                    <div class="dialog-title">Kunde inte skapa avtalet</div>
+                </VCardText>
+                <VCardText class="dialog-text text-center">
+                    Fordonsnumret är redan registrerat
+                </VCardText>
+
+                <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+                    <VBtn class="btn-light" @click="showVehicleExistentDialog = false">
+                        Stäng
+                    </VBtn>
+                </VCardText>
+            </VCard>
+        </VDialog>
+        
         <VDialog
             v-model="inteSkapatsDialog"
             persistent

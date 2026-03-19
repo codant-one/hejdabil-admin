@@ -67,6 +67,7 @@ const refForm = ref()
 const selectedVehicleForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
 const hasProcessedCreateAction = ref(false);
+const showVehicleExistentDialog = ref(false)
 
 const date = ref(null)
 const selectedExportType = ref(null)
@@ -355,20 +356,7 @@ const onSubmit = async () => {
       
       if(carRes.success === true && carRes.data.vehicle) {     
         plate.value = null
-        advisor.value = {
-            type: 'error',
-            message: 'Fordonsnumret är redan registrerat',
-            show: true
-        }
-
-        setTimeout(() => {
-          advisor.value = {
-            type: '',
-            message: '',
-            show: false
-          }
-        }, 3000)
-
+        showVehicleExistentDialog.value = true
         isRequestOngoing.value = false
       } else {
         vehiclesStores.setRegNum(plate.value)
@@ -1677,6 +1665,38 @@ onBeforeUnmount(() => {
         </VListItem>
       </VList>
     </VCard>
+  </VDialog>
+
+  <!-- 👉 Vehicle Existent Dialog -->
+  <VDialog
+      v-model="showVehicleExistentDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+  >
+      <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="showVehicleExistentDialog = !showVehicleExistentDialog"
+      >
+          <VIcon size="16" icon="custom-close" />
+      </VBtn>
+      <VCard>
+          <VCardText class="dialog-title-box big-icon justify-center pb-0">
+              <VIcon size="90" icon="custom-steering-wheel" />
+          </VCardText>
+          <VCardText class="dialog-title-box justify-center">
+              <div class="dialog-title">Kunde inte skapa fordonet</div>
+          </VCardText>
+          <VCardText class="dialog-text text-center">
+              Fordonsnumret är redan registrerat
+          </VCardText>
+
+          <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+              <VBtn class="btn-light" @click="showVehicleExistentDialog = false">
+                  Stäng
+              </VBtn>
+          </VCardText>
+      </VCard>
   </VDialog>
 
   <show 

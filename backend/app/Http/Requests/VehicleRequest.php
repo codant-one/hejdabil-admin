@@ -36,6 +36,11 @@ class VehicleRequest extends FormRequest
             default => $this->supplier_id,
         };
 
+        $vehicleId = $this->route('id')
+            ?? $this->route('vehicle')
+            ?? $this->input('vehicle_id')
+            ?? $this->input('id');
+
         $rules = [
             'reg_num' => [
                 'required',
@@ -45,7 +50,7 @@ class VehicleRequest extends FormRequest
                     }
 
                     return $query->where('supplier_id', $supplierId);
-                }),
+                })->ignore($vehicleId, 'id'),
             ]
         ];
 

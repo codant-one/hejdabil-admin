@@ -248,7 +248,7 @@ class VehicleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id): JsonResponse
+    public function update(VehicleRequest $request, $id): JsonResponse
     {
         try {
             $vehicle = Vehicle::find($id);
