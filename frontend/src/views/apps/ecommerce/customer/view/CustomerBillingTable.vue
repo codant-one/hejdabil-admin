@@ -15,7 +15,11 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["alert", "loading"]);
+const emit = defineEmits([
+  "alert", 
+  "loading",
+  "update:billings",
+]);
 
 const agreementsStores = useAgreementsStores()
 const billingsStores = useBillingsStores();
@@ -120,7 +124,7 @@ watch(tabBilling, () => {
 watchEffect(fetchData);
 
 async function fetchData() {
-  emit("loading", true);
+  emit("loading", searchQuery.value !== "" ? false : true);
 
   // Obtener datos de usuario
   userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
@@ -200,6 +204,7 @@ const updateState = async () => {
   };
 
   emit("alert", advisor);
+  emit("update:billings", billings.value);
 
   setTimeout(() => {
     advisor.value = {
@@ -1120,6 +1125,7 @@ onBeforeUnmount(() => {
                   <th scope="col" class="text-center">Fakturadatum</th>
                   <th scope="col" class="text-center">Förfaller</th>
                   <th scope="col" class="text-center">Status</th>
+                  <th class="text-center" scope="col">Skickad</th>
                   <th scope="col">Skapad av</th>
                   <th scope="col" v-if="$can('edit', 'billings') || $can('delete', 'billings')"></th>
                 </tr>
@@ -1200,6 +1206,16 @@ onBeforeUnmount(() => {
                       {{ billing.state.name }}
                     </div>
                   </td>
+                  <td class="text-center">
+                    <VIcon 
+                      v-if="billing.is_sent"
+                      icon="custom-check-mark-disabled" 
+                      size="24" 
+                    />
+                    <span v-else>
+                      -
+                    </span>
+                  </td>
                   <td style="width: 1%; white-space: nowrap">
                     <div class="d-flex align-center gap-x-1">
                       <VAvatar
@@ -1267,6 +1283,15 @@ onBeforeUnmount(() => {
                           <VListItemTitle>Markera som betald</VListItemTitle>
                         </VListItem>
                         <VListItem
+                          v-if="$can('edit', 'billings') && billing.state_id === 7 && billing.is_credit === 0"
+                          @click="updateBilling(billing)"
+                        >
+                          <template #prepend>
+                            <VIcon icon="custom-return" size="24" class="mr-2" />
+                          </template>
+                          <VListItemTitle>Markera som obetald</VListItemTitle>
+                        </VListItem>
+                        <VListItem
                           v-if="
                             $can('view', 'billings') &&
                             (billing.state_id === 4 || billing.state_id === 8)
@@ -1325,7 +1350,7 @@ onBeforeUnmount(() => {
                         </VListItem>
 
                         <VListItem
-                          v-if="$can('edit', 'billings') && billing.state_id !== 9"
+                          v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.is_credit === 0"
                           @click="credit(billing)"
                         >
                           <template #prepend>
@@ -1402,12 +1427,15 @@ onBeforeUnmount(() => {
                   </div>
                   <div class="mb-6">
                     <div class="expansion-panel-item-label">Status:</div>
-                    <div class="expansion-panel-item-value">
+                    <div class="expansion-panel-item-value d-flex gap-2">
                       <div
                         class="status-chip"
                         :class="`status-chip-${resolveStatus(billing.state.id)?.class}`"
                       >
                         {{ billing.state.name }}
+                      </div>
+                      <div class="status-chip status-chip-disabled" v-if="billing.is_sent">
+                          Skickad
                       </div>
                     </div>
                   </div>
@@ -1871,7 +1899,8 @@ onBeforeUnmount(() => {
         </VCardText>
         <VCardText class="dialog-text">
           Är du säker på att du vill uppdatera fakturans status
-          <strong>#{{ selectedBilling.invoice_id }}</strong> till betalda?
+          <strong>#{{ selectedBilling.invoice_id }}</strong> till 
+          {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1899,6 +1928,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-cash-2" size="24" />
             </template>
             <VListItemTitle>Markera som betald</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
+            @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
+          >
+            <template #prepend>
+              <VIcon icon="custom-return" size="24" class="mr-2" />
+            </template>
+            <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings') &&  (selectedBillingForAction.state_id === 4 || selectedBillingForAction.state_id === 8)"
@@ -1955,7 +1993,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.is_credit === 0"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>

@@ -366,11 +366,19 @@ class Billing extends Model
             }
         }
 
+        // Marcar la factura original como crédito
+        $oldBilling = self::find($billing->id);
+        $oldBilling->update([
+            'is_credit' => 1,
+            'state_id' => 7
+        ]);
+
         $billing = self::create([
             'user_id' => $billing->user_id,
             'supplier_id' => $billing->supplier_id,
             'client_id' =>  $billing->client_id,
             'state_id' => 9,
+            'credit_id' => $billing->id,
             'invoice_id' =>  $invoice_id,
             'invoice_date' => now(),
             'due_date' =>  now(),

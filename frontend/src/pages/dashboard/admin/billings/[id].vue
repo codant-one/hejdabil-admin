@@ -442,6 +442,17 @@ onBeforeUnmount(() => {
             </VBtn>
 
             <VBtn
+              v-if="$can('edit', 'billings') && invoice.state_id === 7 && invoice.is_credit === 0"
+              class="btn-light w-100 mb-4"
+              @click="updateBilling"
+            >
+              <template #prepend>
+                <VIcon icon="custom-return" size="24" />
+              </template>
+              Markera som obetald
+            </VBtn>
+
+            <VBtn
               v-if="$can('view', 'billings')"
               class="btn-light w-100 mb-4"
               @click="send"
@@ -494,7 +505,7 @@ onBeforeUnmount(() => {
               Påminnelse
             </VBtn>
             <VBtn
-              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null"
+              v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null && invoice.is_credit === 0"
               class="btn-light w-100"
               @click="credit"
             >
@@ -524,6 +535,15 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-cash-2" size="24" />
             </template>
             <VListItemTitle>Markera som betald</VListItemTitle>
+          </VListItem>
+          <VListItem
+            v-if="$can('edit', 'billings') && invoice.state_id === 7 && invoice.is_credit === 0"
+            @click="updateBilling(); isMobileActionDialogVisible = false"
+          >
+            <template #prepend>
+              <VIcon icon="custom-return" size="24" />
+            </template>
+            <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
           <VListItem
             v-if="$can('view', 'billings')"
@@ -562,7 +582,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Påminnelse</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null && invoice.state_id !== 9"
+            v-if="$can('edit', 'billings') && invoice.client.deleted_at === null && invoice.state_id !== 9 && invoice.is_credit === 0"
             @click="credit(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
@@ -731,7 +751,8 @@ onBeforeUnmount(() => {
         </VCardText>
         <VCardText class="dialog-text">
           Är du säker på att du vill uppdatera fakturans status
-          <strong>#{{ invoice.invoice_id }}</strong> till betalda?
+          <strong>#{{ invoice.invoice_id }}</strong> till 
+          {{ invoice.state_id === 7 ? 'obetald' : 'betald' }}?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">

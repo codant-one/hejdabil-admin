@@ -210,6 +210,7 @@ onBeforeUnmount(() => {
           :client_id="Number(route.params.id)"
           @alert="showAlert"
           @loading="showLoading"
+          @update:billings="fetchData"
         />
       </VCardText>
     </VCard>

@@ -15,7 +15,6 @@ import Toaster from "@/components/common/Toaster.vue";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-import { is } from "date-fns/locale";
 
 const billingsStores = useBillingsStores();
 const configsStores = useConfigsStores();
@@ -1103,7 +1102,7 @@ onBeforeUnmount(() => {
               <VListItemTitle>Förfallna</VListItemTitle>
             </VListItem>
 
-            <VListItem @click="updateStateId(9)">
+            <VListItem @click="updateStateId(9)" class="d-none">
               <template #prepend>
                 <VListItemAction>
                   <VCheckbox
@@ -1366,7 +1365,7 @@ onBeforeUnmount(() => {
                     <VListItemTitle>Markera som betald</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id === 7"
+                    v-if="$can('edit', 'billings') && billing.state_id === 7 && billing.is_credit === 0"
                     @click="updateBilling(billing)"
                   >
                     <template #prepend>
@@ -1434,7 +1433,7 @@ onBeforeUnmount(() => {
                   </VListItem>
 
                   <VListItem
-                    v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.client.deleted_at === null" 
+                    v-if="$can('edit', 'billings') && billing.state_id !== 9 && billing.client.deleted_at === null && billing.is_credit === 0" 
                     @click="credit(billing)"
                   >
                     <template #prepend>
@@ -1737,7 +1736,7 @@ onBeforeUnmount(() => {
         <VCardText class="dialog-text">
           Är du säker på att du vill uppdatera fakturans status
           <strong>#{{ selectedBilling.invoice_id }}</strong> till 
-          {{ selectedBilling.state_id === 4 ? 'betalda' : 'obetald' }}?
+          {{ selectedBilling.state_id === 7 ? 'obetald' : 'betald' }}?
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
@@ -1793,7 +1792,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Förfallna</VListItemTitle>
           </VListItem>
 
-           <VListItem @click="updateStateId(9)">
+           <VListItem @click="updateStateId(9)" class="d-none">
             <template #prepend>
               <VListItemAction>
                 <VCheckbox
@@ -1886,7 +1885,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Markera som betald</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id === 7 && selectedBillingForAction.is_credit === 0"
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
@@ -1952,7 +1951,7 @@ onBeforeUnmount(() => {
             <VListItemTitle>Skicka</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.client.deleted_at === null"
+            v-if="$can('edit', 'billings') && selectedBillingForAction.state_id !== 9 && selectedBillingForAction.client.deleted_at === null && selectedBillingForAction.is_credit === 0"
             @click="credit(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
