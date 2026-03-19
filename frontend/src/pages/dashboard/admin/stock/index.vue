@@ -1040,7 +1040,7 @@ onBeforeUnmount(() => {
             <td class="text-center" v-if="isColVisible('control_inspection')"> {{ vehicle.control_inspection }} </td>
             <td style="width: 1%; white-space: nowrap" v-if="isColVisible('seller')">
               <div class="d-flex flex-column">
-                <span v-if="vehicle.client_purchase?.client_id !== null  && !vehicle.client_purchase.client.deleted_at" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_purchase?.client)">
+                <span v-if="vehicle.client_purchase?.client_id !== null  && !vehicle.client_purchase.client?.deleted_at" class="font-weight-medium cursor-pointer text-aqua" @click="seeClient(vehicle.client_purchase?.client)">
                   {{ vehicle.client_purchase?.fullname }}     
                 </span>
                 <span v-else class="font-weight-medium text-aqua">
