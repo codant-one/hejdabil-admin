@@ -7,7 +7,7 @@ import { useConfigsStores } from '@/stores/useConfigs';
 import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import { excelParser } from "@/plugins/csv/excelParser";
 import { themeConfig } from "@themeConfig";
-import { formatNumber, formatNumberInteger } from "@/@core/utils/formatters";
+import { formatNumber, formatNumberInteger, formatDateTime } from "@/@core/utils/formatters";
 import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
 import html2pdf from 'html2pdf.js'
 import router from "@/router";
@@ -1288,11 +1288,37 @@ onBeforeUnmount(() => {
               </div>
             </td>
             <td class="text-center">
-              <VIcon 
-                v-if="billing.is_sent"
-                icon="custom-check-mark-disabled" 
-                size="24" 
-              />
+              <template v-if="billing.is_sent">
+                <VTooltip 
+                  v-if="billing.sent_at"
+                  location="bottom">
+                    <template #activator="{ props }">
+                      <span v-bind="props" class="cursor-pointer">
+                        <VIcon 
+                          icon="custom-check-mark-disabled" 
+                          size="24" 
+                        />
+                      </span>
+                    </template>
+                    <span>Skickaddatum:
+                      {{ new Date(billing.sent_at).toLocaleString('sv-SE', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false
+                        }) }}
+                    </span>
+                  </VTooltip>
+
+                <VIcon 
+                  v-else
+                  icon="custom-check-mark-disabled" 
+                  size="24" 
+                />
+
+              </template>
               <span v-else>
                 -
               </span>

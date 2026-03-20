@@ -414,6 +414,7 @@ class BillingController extends Controller
 
             $billing = Billing::with(['client', 'supplier.user.userDetail'])->find($id);
             $billing->is_sent = 1;
+            $billing->sent_at = now();
             $billing->save();
 
             if($billing->supplier_id === null) {
