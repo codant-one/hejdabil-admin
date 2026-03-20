@@ -50,6 +50,7 @@ export const { themeConfig, layoutConfig } = defineThemeConfig({
     urlbase: import.meta.env.VITE_APP_DOMAIN_API_URL + '/api/',
     urlStorage: import.meta.env.VITE_APP_DOMAIN_API_URL + '/storage/',
     urlPublic: import.meta.env.VITE_APP_DOMAIN_API_URL + '/',
-    urlDomain: import.meta.env.VITE_APP_DOMAIN_URL + '/'
+    urlDomain: import.meta.env.VITE_APP_DOMAIN_URL + '/',
+    enviroment: import.meta.env.VITE_ENVIRONMENT,
   },
 })

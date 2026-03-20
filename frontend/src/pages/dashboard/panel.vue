@@ -9,6 +9,7 @@ import Information from "@/components/dashboard/Information.vue";
 import Measures from "@/components/dashboard/Measures.vue";
 import VehicleInfo from "@/components/dashboard/VehicleInfo.vue";
 import Team from "@/components/dashboard/Team.vue";
+import { themeConfig } from '@themeConfig'
 
 const userDataJ = ref('')
 const name = ref('')
@@ -16,6 +17,7 @@ const role = ref('')
 
 const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
+const environment = ref(null)
 
 watchEffect(fetchData)
 
@@ -29,6 +31,7 @@ async function fetchData() {
   name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
 
   role.value = userDataJ.value.roles[0].name
+  environment.value = themeConfig.settings.enviroment
 
   isRequestOngoing.value = false
 }
@@ -58,7 +61,7 @@ onBeforeUnmount(() => {
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <!-- 👉 Administrador -->
-    <VCard title="" class="card-fill" v-if="role !== 'Supplier' && role !== 'User'">
+    <VCard title="" class="card-fill" v-if="(role !== 'Supplier' && role !== 'User') || environment === 'production'">
       <VRow class="py-6 px-md-6 px-2">
         <VCol
           cols="12"

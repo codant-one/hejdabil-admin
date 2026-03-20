@@ -59,7 +59,8 @@ export const defineThemeConfig = userConfig => {
         urlbase: userConfig.settings.urlbase,
         urlStorage: userConfig.settings.urlStorage,
         urlPublic: userConfig.settings.urlPublic,
-        urlDomain: userConfig.settings.urlDomain
+        urlDomain: userConfig.settings.urlDomain,
+        enviroment: userConfig.settings.enviroment,
       },
     },
     layoutConfig: {
