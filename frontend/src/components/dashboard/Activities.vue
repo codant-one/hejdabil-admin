@@ -1,4 +1,6 @@
 <script setup>
+  import avatarImg from "@/assets/images/avatar-example.jpg";
+
   const activeTab = ref(0);
   const { width: windowWidth } = useWindowSize()
 
@@ -26,8 +28,22 @@
     return `${diffDays} dagar sedan`;
   };
 
+  const activities = ref([
+    { id: 1, icon: 'custom-facture', color: 'primary', title: 'Faktura #2847 betald', text: '125,000 kr mottagen via Swish från Andersson Bil AB', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 2 * 3600000).toISOString() },
+    { id: 2, icon: 'custom-contract', color: 'primary', title: 'Avtal signerat', text: 'Köpeavtal för Volvo XC90 2023 - Kund: Maria Svensson', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 5 * 3600000).toISOString() },
+    { id: 3, icon: 'custom-autofordon', color: 'primary', title: 'Nytt fordon tillagt', text: 'BMW 330e 2024 - Reg.nr: ABC123', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 26 * 3600000).toISOString() },
+    { id: 4, icon: 'custom-signature', color: 'primary', title: 'Dokument signerat', text: 'Leveransavtal för Audi A4 2023 - Dokument ID: 2090', user: 'Anna Karlsson', created_at: new Date(now.getTime() - 28 * 3600000).toISOString() },
+    { id: 5, icon: 'custom-facture', color: 'primary', title: 'Faktura #2843 betald', text: '89,500 kr mottagen via faktura från Nordic Cars AB', user: 'Erik Svensson', created_at: new Date(now.getTime() - 32 * 3600000).toISOString() },
+    { id: 6, icon: 'custom-sold', color: 'primary', title: 'Fordon sålt', text: 'Tesla Model 3 2023 - Reg.nr: DEF456 - Kund: Johan Berg', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 40 * 3600000).toISOString() },
+    { id: 7, icon: 'custom-contract', color: 'primary', title: 'Avtal skapat', text: 'Nytt köpeavtal för Mercedes GLC 2024', user: 'Anna Karlsson', created_at: new Date(now.getTime() - 46 * 3600000).toISOString() },
+  ]);
+
   const onNotificationClick = (notification) => {
     console.log('Clicked notification:', notification.id);
+  };
+
+  const onActivityClick = (activity) => {
+    console.log('Clicked activity:', activity.id);
   };
 </script>
 
@@ -132,9 +148,43 @@
               </div>
             </div>
           </VCardText>
-         </VWindowItem>
-         <VWindowItem :value="1" class="px-md-0">
-            Actividades
+        </VWindowItem>
+        <VWindowItem :value="1" class="px-md-0">
+          <VCardText 
+            v-for="activity in activities"
+            :key="activity.id"
+            class="bg-white pt-4 mx-0 card-activity d-flex gap-6 align-start cursor-pointer"
+            @click="onActivityClick(activity)"
+          >
+            <VAvatar
+              color="#F5F8F6"
+              :icon="activity.icon || undefined"
+              variant="flat"
+              size="40"
+              rounded="lg"
+              class="activity-avatar"
+            />
+            
+            <div class="d-flex flex-column gap-1 w-100">
+              <span class="activity-title d-flex justify-between align-center gap-2">
+                {{ activity.title }}
+                <span class="activity-time">{{ formatTime(activity.created_at) }}</span>
+              </span>
+              <span class="activity-text">{{ activity.text }}</span>
+              <span class="activity-user d-flex align-center gap-1">
+                <VAvatar
+                  variant="outlined"
+                  size="16"
+                >
+                  <VImg
+                    style="border-radius: 50%"
+                    :src="avatarImg"
+                  />
+                </VAvatar>
+                {{ activity.user }}
+              </span>
+            </div>            
+          </VCardText>
          </VWindowItem>
       </VWindow>
     </VCardText>
@@ -162,12 +212,12 @@
   display: none;
 }
 
-.card-notification {
+.card-notification, .card-activity {
     height: 94px !important;
     min-height: 94px !important;
     max-height: 94px !important;
     margin: 0 96px;
-    padding: 0 24px !important;
+    padding: 0 24px;
     border-bottom: 1px solid #F6F6F6;
 
     &:last-of-type {
@@ -196,6 +246,12 @@
     .notification-avatar-mobile .v-icon svg {
       width: 16px;
       height: 16px;
+    }
+
+    .card-activity {
+      height: 116px !important;
+      min-height: 116px !important;
+      max-height: 116px !important;
     }
   }
 
@@ -261,12 +317,43 @@
     }
   }
 
-  .page-notifications {
-    margin-top: 80px;
-    background: linear-gradient(90deg, #EAFFF1 0%, #EAFFF8 50%, #ECFFFF 100%);
+  .activity-title {
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0px;
+    color: #454545;
 
     @media (max-width: 1023px) {
-      padding-bottom: 120px !important;
+      font-size: 14px;
     }
+  }
+
+  .activity-time {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0px;
+    color: #878787;
+  }
+
+  .activity-text {
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 20px;
+    letter-spacing: 0px;
+    color: #878787;
+  } 
+
+  .activity-user {
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #5d5d5d;
+  }
+
+  .activity-avatar .v-icon {
+    color: #6E9383 !important;
   }
 </style>
