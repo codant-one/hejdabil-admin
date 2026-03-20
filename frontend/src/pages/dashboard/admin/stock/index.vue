@@ -1688,7 +1688,7 @@ onBeforeUnmount(() => {
               <div class="dialog-title">Kunde inte skapa fordonet</div>
           </VCardText>
           <VCardText class="dialog-text text-center">
-              Fordonsnumret är redan registrerat
+              Fordonet är redan registrerad
           </VCardText>
 
           <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">

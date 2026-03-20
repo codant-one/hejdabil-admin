@@ -50,6 +50,8 @@ const allowNavigation = ref(false)
 const skapatsDialog = ref(false);
 const inteSkapatsDialog = ref(false);
 const showVehicleExistentDialog = ref(false)
+const messageVehicleExistentDialog = ref('')
+const redirectTo = ref(null)
 
 const userData = ref(null)
 const role = ref(null)
@@ -1132,8 +1134,10 @@ const onSubmit = async () => {
                     .catch((error) => {
                         err.value = error;
                         initialData.value = JSON.parse(JSON.stringify(currentData.value));
-                        inteSkapatsDialog.value = error.message === "Fordonsnumret är redan registrerat" ? false : true
-                        showVehicleExistentDialog.value = error.message === "Fordonsnumret är redan registrerat" ? true : false
+                        messageVehicleExistentDialog.value = error.message
+                        redirectTo.value = error.redirect
+                        inteSkapatsDialog.value = error.feedback === "vehicle_already_exists" ? false : true
+                        showVehicleExistentDialog.value = error.feedback === "vehicle_already_exists" ? true : false
                         isRequestOngoing.value = false
                     })
             }
@@ -2214,12 +2218,15 @@ onBeforeRouteLeave((to, from, next) => {
                     <div class="dialog-title">Kunde inte skapa avtalet</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
-                    Fordonsnumret är redan registrerat
+                    {{ messageVehicleExistentDialog }}
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
                     <VBtn class="btn-light" @click="showVehicleExistentDialog = false">
                         Stäng
+                    </VBtn>
+                    <VBtn class="btn-gradient" :to="{ name: redirectTo }" >
+                        Gå till fordonet
                     </VBtn>
                 </VCardText>
             </VCard>

@@ -1735,8 +1735,8 @@ const onSubmit = async () => {
                     })
                     .catch((error) => {
                         err.value = error;
-                        inteSkapatsDialog.value = error.message === "Fordonsnumret är redan registrerat" ? false : true
-                        showVehicleExistentDialog.value = error.message === "Fordonsnumret är redan registrerat" ? true : false
+                        inteSkapatsDialog.value = error.feedback === "vehicle_already_exists" ? false : true
+                        showVehicleExistentDialog.value = error.feedback === "vehicle_already_exists" ? true : false
                         isRequestOngoing.value = false
                     })
             }
@@ -3853,7 +3853,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <div class="dialog-title">Kunde inte skapa fordonet</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
-                    Fordonsnumret är redan registrerat
+                    Fordonet är redan registrerad
                 </VCardText>
 
                 <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">

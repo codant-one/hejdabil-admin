@@ -54,7 +54,6 @@ class VehicleRequest extends FormRequest
             ]
         ];
 
-
         return $rules;
     }
 
@@ -72,9 +71,43 @@ class VehicleRequest extends FormRequest
     */
     public function failedValidation(Validator $validator)
     {
+        $feedback = 'params_validation_failed';
+        $redirect = null;
+
+        if ($validator->errors()->has('reg_num') && $this->reg_num) {
+            $isSupplier = auth()->check() && auth()->user()->getRoleNames()[0] === 'Supplier';
+            $isUser = auth()->check() && auth()->user()->getRoleNames()[0] === 'User';
+
+            $supplierId = match (true) {
+                $isSupplier => auth()->user()->supplier->id,
+                $isUser => auth()->user()->supplier->boss_id,
+                $this->supplier_id === 'null' || $this->supplier_id === null => null,
+                default => $this->supplier_id,
+            };
+
+            $existing = Vehicle::where('reg_num', $this->reg_num)
+                ->when($supplierId === null, fn($q) => $q->whereNull('supplier_id'), fn($q) => $q->where('supplier_id', $supplierId))
+                ->first();
+
+            if ($existing) {
+                $validator->errors()->forget('reg_num');
+
+                $message = match ((int) $existing->state_id) {
+                    10 => 'Detta fordon är redan markerat som befintligt i lager.',
+                    12 => 'Detta fordon är redan markerat som sålt.',
+                    default => 'Fordonsnumret är redan registrerat',
+                };
+
+                $validator->errors()->add('reg_num', $message);
+                $feedback = 'vehicle_already_exists';
+                $redirect = $existing->state_id === 10 ? 'dashboard-admin-stock' : ($existing->state_id === 12 ? 'dashboard-admin-sold' : null);
+            }
+        }
+
         throw new HttpResponseException(response()->json([
             'success' => false,
-            'feedback' => 'params_validation_failed',
+            'feedback' => $feedback,
+            'redirect' => $redirect,
             'message' => implode (', ', $validator->errors()->all())
         ], 400));
     }
