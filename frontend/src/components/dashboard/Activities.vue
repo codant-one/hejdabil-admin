@@ -69,83 +69,45 @@
     <VCardText class="p-0">
       <VWindow v-model="activeTab">
         <VWindowItem :value="0" class="px-md-0">
-          <!-- Desktop -->
           <VCardText 
             v-for="notification in notifications"
             :key="notification.id"
-            class="bg-white mx-0 card-notification d-none d-md-flex gap-1 align-center justify-between cursor-pointer"
+            class="bg-white py-2 mx-0 card-activity d-flex align-center cursor-pointer"
+            :class="windowWidth < 1024 ? 'gap-3' : 'gap-6'"
+            style="height: 80px !important; min-height: 80px !important; max-height: 80px !important;"
             @click="onNotificationClick(notification)"
           >
-            
             <VBadge
               v-if="notification.read === 0"
               location="top start"
               dot
             >
               <VAvatar
-                :color="notification.color || 'primary'"
-                :image="notification.img || undefined"
+                color="#F5F8F6"
                 :icon="notification.icon || undefined"
-                variant="tonal"
+                variant="flat"
                 size="40"
+                rounded="lg"
+                class="activity-avatar"
               />
             </VBadge>
 
             <VAvatar
               v-else
-              :color="notification.color || 'primary'"
-              :image="notification.img || undefined"
+              color="#F5F8F6"
               :icon="notification.icon || undefined"
-              variant="tonal"
+              variant="flat"
               size="40"
+              rounded="lg"
+              class="activity-avatar"
             />
             
-            <div class="d-flex flex-column gap-1">          
-              <span class="notification-title">{{ notification.title }}</span>
-              <span class="notification-text">{{ notification.text }}</span>
-            </div>
-            <VSpacer />
-            <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
-          </VCardText>
-
-          <!-- Mobile -->
-          <VCardText 
-            v-for="notification in notifications"
-            :key="'m-' + notification.id"
-            class="bg-white card-notification align-center d-flex d-md-none gap-1 cursor-pointer"
-            @click="onNotificationClick(notification)"
-          >
-            <div class="d-flex gap-2">
-              <VBadge
-                v-if="notification.read === 0"
-                location="top start"
-                dot
-              >
-                <VAvatar
-                  :color="notification.color || 'primary'"
-                  :image="notification.img || undefined"
-                  :icon="notification.icon || undefined"
-                  class="notification-avatar-mobile"
-                  variant="tonal"
-                  size="x-small"
-                />
-              </VBadge>
-
-              <VAvatar
-                v-else
-                class="notification-avatar-mobile"
-                :color="notification.color || 'primary'"
-                :image="notification.img || undefined"
-                :icon="notification.icon || undefined"
-                variant="tonal"
-                size="x-small"
-              />
-
-              <div class="d-flex flex-column gap-1">          
-                <span class="notification-title">{{ notification.title }}</span>
-                <span class="notification-text">{{ notification.text }}</span>
-                <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
-              </div>
+            <div class="d-flex flex-column gap-1 w-100">
+              <span class="activity-title d-flex justify-between align-center gap-2">
+                {{ notification.title }} {{ windowWidth }}
+                <span class="activity-time">{{ formatTime(notification.created_at) }}</span>
+              </span>
+              <span class="activity-text">{{ notification.text }}</span>
             </div>
           </VCardText>
         </VWindowItem>
@@ -193,26 +155,26 @@
 
 <style lang="scss">
 
-.card-dashboard {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
+  .card-dashboard {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-.activities-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
+  .activities-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 
-.activities-scroll::-webkit-scrollbar {
-  display: none;
-}
+  .activities-scroll::-webkit-scrollbar {
+    display: none;
+  }
 
-.card-notification, .card-activity {
+  .card-activity {
     height: 94px !important;
     min-height: 94px !important;
     max-height: 94px !important;
@@ -233,15 +195,6 @@
   }
 
   @media (max-width: 1023px) {
-    .card-notification .close-btn {
-      position: absolute;
-      top: -6px;
-      right: 6px;
-      z-index: 1;
-      width: 24px !important;
-      background: transparent !important;
-    }
-
     .notification-avatar-mobile > svg,
     .notification-avatar-mobile .v-icon svg {
       width: 16px;
@@ -252,68 +205,6 @@
       height: 116px !important;
       min-height: 116px !important;
       max-height: 116px !important;
-    }
-  }
-
-  .pagination-bottom {
-    margin-top: auto !important;
-    height: 48px;
-    min-height: 48px;
-    max-height: 48px;
-    @media (max-width: 1023px) {
-      margin-top: 8px !important;
-    }
-  }
-
-  .margin-notifications {
-    margin: 0 96px;
-
-    @media (max-width: 1023px) {
-      margin: 0;
-    }
-  }
-
-  .title-notifications {
-    font-weight: 700;
-    font-size: 32px;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1C2925;
-  }
-
-  .notification-title {
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #1C2925;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
-    }
-  }
-
-  .notification-text {
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #454545;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
-    }
-  }
-
-  .notification-time {
-    font-weight: 400;
-    font-size: 16px;
-    line-height: 100%;
-    letter-spacing: 0px;
-    color: #878787;
-
-    @media (max-width: 1023px) {
-      font-size: 14px;
     }
   }
 
