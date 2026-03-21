@@ -86,7 +86,7 @@ onBeforeUnmount(() => {
     </VCard>
 
     <!-- 👉 Supplier / User -->
-    <VCard title="" class="card-transparent" v-else>
+    <VCard title="" class="card-transparent pt-0" v-else>
       <VRow nclass="py-6 px-md-6 px-2">
 
         <VCol cols="12" md="6" class="h-card">
