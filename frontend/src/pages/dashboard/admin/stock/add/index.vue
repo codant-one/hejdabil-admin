@@ -3795,7 +3795,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <VIcon size="90" icon="custom-steering-wheel" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
-                    <div class="dialog-title">Kunde inte skapa fordonet</div>
+                    <div class="dialog-title">Kunde inte lägga till fordonet</div>
                 </VCardText>
                 <VCardText class="dialog-text text-center">
                     Fordonet är redan registrerad
