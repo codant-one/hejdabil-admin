@@ -751,14 +751,13 @@ body {
 .card-transparent {
   background-color: transparent !important;
   box-shadow: none !important;
-  padding: 24px;
+  padding: 24px !important;
 }
 
 //card-dashboard
 .card-dashboard {
   border-radius: 8px !important;
   flex: 1 1 auto;
-  padding-bottom: 60px !important;
 
   .title-box {
     display: flex;
@@ -774,6 +773,7 @@ body {
     @media (max-width: 1023px) {
       flex-direction: column;
       align-items: start;
+      padding: 16px;
     }
 
     .title-text {
@@ -797,12 +797,6 @@ body {
     .h-40 {
       height: 40px !important;
     }
-  }
-}
-
-@media (min-width: 1024px) {
-  .card-dashboard {
-    padding-bottom: 0 !important;
   }
 }
 

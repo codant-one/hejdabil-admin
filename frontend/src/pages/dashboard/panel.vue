@@ -89,7 +89,7 @@ onBeforeUnmount(() => {
     <VCard title="" class="card-transparent" v-else>
       <VRow nclass="py-6 px-md-6 px-2">
 
-        <VCol cols="12" md="6">
+        <VCol cols="12" md="6" class="h-card">
           <Activities />
         </VCol>
         <VCol cols="12" md="6">
@@ -128,6 +128,11 @@ onBeforeUnmount(() => {
   }
 </style>
 
+<style lang="scss">
+  .h-card {
+    height: 392px !important;
+  }
+</style>
 <route lang="yaml">
   meta:
     action: view

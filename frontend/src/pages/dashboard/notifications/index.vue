@@ -323,21 +323,25 @@ onBeforeUnmount(() => {
             dot
           >
             <VAvatar
-              :color="notification.color || 'primary'"
+              color="#F5F8F6"
               :image="notification.img || undefined"
               :icon="notification.icon || undefined"
-              variant="tonal"
+              variant="flat"
               size="40"
+              rounded="lg"
+              class="notification-avatar"
             />
           </VBadge>
 
           <VAvatar
             v-else
-            :color="notification.color || 'primary'"
+            color="#F5F8F6"
             :image="notification.img || undefined"
             :icon="notification.icon || undefined"
-            variant="tonal"
+            variant="flat"
             size="40"
+            rounded="lg"
+            class="notification-avatar"
           />
           
           <div class="d-flex flex-column gap-1">          
@@ -417,23 +421,25 @@ onBeforeUnmount(() => {
               dot
             >
               <VAvatar
-                :color="notification.color || 'primary'"
+                color="#F5F8F6"
                 :image="notification.img || undefined"
                 :icon="notification.icon || undefined"
-                class="notification-avatar-mobile"
-                variant="tonal"
+                class="notification-avatar-mobile notification-avatar"
+                variant="flat"
                 size="x-small"
+                rounded="sm"
               />
             </VBadge>
 
             <VAvatar
               v-else
-              class="notification-avatar-mobile"
-              :color="notification.color || 'primary'"
+              color="#F5F8F6"
               :image="notification.img || undefined"
               :icon="notification.icon || undefined"
-              variant="tonal"
+              class="notification-avatar-mobile notification-avatar"
+              variant="flat"
               size="x-small"
+              rounded="sm"
             />
 
             <div class="d-flex flex-column gap-1">          
@@ -596,6 +602,10 @@ onBeforeUnmount(() => {
     @media (max-width: 1023px) {
       padding-bottom: 120px !important;
     }
+  }
+
+  .notification-avatar .v-icon {
+    color: #6E9383 !important;
   }
 </style>
 

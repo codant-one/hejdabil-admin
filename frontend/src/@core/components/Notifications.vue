@@ -54,10 +54,13 @@ const closeMenu = () => {
             <div class="d-flex align-center gap-2">
               <VChip
                 v-if="props.notifications.filter(n => !n.read).length"
-                color="primary"
+                color="#D8FFE4"
                 size="small"
+                variant="elevated"
               >
-                {{ props.notifications.filter(n => !n.read).length }} Nytt
+                <span class="nytt-class">
+                  {{ props.notifications.filter(n => !n.read).length }} Nytt
+                </span>
               </VChip>
               <VBtn
                 icon
@@ -81,37 +84,65 @@ const closeMenu = () => {
             :key="notification.id || notification.title"
           >
             <VListItem
-              :title="notification.title"
-              :subtitle="notification.subtitle"
               link
               lines="one"
               min-height="66px"
               :class="{ 'notification-read': notification.read }"
               @click="handleNotificationClick(notification)"
             >
+            <VListItemTitle>
+              <div class="d-flex justify-between">
+                {{ notification.title }}
+                <small class="whitespace-no-wrap text-medium-emphasiso notification-time">
+                  {{ notification.time }} 
+                </small>
+              </div>
+            </VListItemTitle>
+            <VListItemSubtitle>
+              {{ notification.subtitle }}
+            </VListItemSubtitle>
               <!-- Slot: Prepend -->
               <template #prepend>
                 <VListItemAction start>
+                   <VBadge
+                    v-if="!notification.read"
+                    location="top start"
+                    dot
+                  >
+                    <VAvatar
+                      color="#F5F8F6"
+                      :image="notification.img || undefined"
+                      :icon="notification.icon || undefined"
+                      variant="flat"
+                      size="40"
+                      rounded="lg"
+                      class="notification-avatar"
+                    />
+                  </VBadge>
                   <VAvatar
-                    :color="notification.color || 'primary'"
+                    v-else
+                    color="#F5F8F6"
                     :image="notification.img || undefined"
                     :icon="notification.icon || undefined"
-                    variant="tonal"
+                    variant="flat"
                     size="40"
+                    rounded="lg"
+                    class="notification-avatar"
                   />
                 </VListItemAction>
               </template>
+
               <!-- Slot: Append -->
               <template #append>
-                <div class="d-flex flex-column align-end">
-                  <small class="whitespace-no-wrap text-medium-emphasis">{{
-                    notification.time
-                  }}</small>
+                <div class="d-none flex-column align-end mb-auto">
+                  <small class="whitespace-no-wrap text-medium-emphasiso">
+                    {{ notification.time }} 
+                  </small>
                   <VIcon 
                     v-if="!notification.read"
                     icon="tabler-circle-filled" 
                     size="8"
-                    color="primary"
+                    color="primary d-none"
                     class="mt-1"
                   />
                 </div>
@@ -172,5 +203,30 @@ const closeMenu = () => {
 .notification-read {
   opacity: 0.6;
   background-color: rgba(var(--v-theme-on-surface), 0.02);
+}
+
+.notification-avatar .v-icon {
+  color: #6E9383 !important;
+}
+
+.notification-time {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0px;
+  vertical-align: middle;
+  color: #878787;
+}
+
+.nytt-class {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  letter-spacing: 0;
+  color: #0D6E2D;
+}
+
+.v-chip--variant-elevated {
+  box-shadow: none !important;
 }
 </style>
