@@ -91,7 +91,7 @@ import { hexToRgb } from '@layouts/utils'
           breakpoint: 590,
           options: {
             plotOptions: {
-              bar: { columnWidth: '50%', borderRadius: 4, borderRadiusApplication: 'end', distributed: true, dataLabels: { position: 'top' } },
+              bar: { columnWidth: '60%', borderRadius: 4, borderRadiusApplication: 'end', distributed: true, dataLabels: { position: 'top' } },
             },
             yaxis: { labels: { show: false } },
             dataLabels: {
@@ -200,7 +200,7 @@ import { hexToRgb } from '@layouts/utils'
         :key="currentTab"
         :options="chartConfigs[Number(currentTab)].chartOptions"
         :series="chartConfigs[Number(currentTab)].series"
-        height="280"
+        :height="windowWidth < 1024 ? 200 : 280"
       />
     </VCardText>
   </VCard>
