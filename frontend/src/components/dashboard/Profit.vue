@@ -1,5 +1,9 @@
 <script setup>
 
+import { useTheme } from 'vuetify'
+
+const vuetifyTheme = useTheme()
+const currentTheme = vuetifyTheme.current.value.colors
 const { width: windowWidth } = useWindowSize();
 
 const series = [{
@@ -26,37 +30,37 @@ const chartOptions = computed(() => {
     tooltip: { enabled: false },
     plotOptions: {
       bar: {
-        barHeight: '100%',
-        columnWidth: '30%',
-        startingShape: 'rounded',
-        endingShape: 'rounded',
+        barHeight: '92%',
+        columnWidth: '38%',
         borderRadius: 4,
+        borderRadiusApplication: 'around',
+        borderRadiusWhenStacked: 'all',
         colors: {
           backgroundBarColors: [
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
+            '#C0FEFF',
           ],
           backgroundBarRadius: 4,
         },
       },
     },
-    colors: ['rgba(var(--v-theme-primary),1)'],
+    colors: ['#008C91'],
     grid: {
       show: false,
       padding: {
-        top: -30,
+        top: -24,
         left: -16,
         bottom: 0,
         right: -6,
@@ -85,8 +89,9 @@ const chartOptions = computed(() => {
         options: {
           plotOptions: {
             bar: {
-              columnWidth: '30%',
+              columnWidth: '40%',
               borderRadius: 4,
+              borderRadiusApplication: 'around',
             },
           },
         },
@@ -101,6 +106,7 @@ const chartOptions = computed(() => {
           plotOptions: {
             bar: {
               borderRadius: 6,
+              borderRadiusApplication: 'around',
               columnWidth: '30%',
               colors: { backgroundBarRadius: 6 },
             },
@@ -114,6 +120,7 @@ const chartOptions = computed(() => {
             bar: {
               columnWidth: '15%',
               borderRadius: 4,
+              borderRadiusApplication: 'around',
             },
           },
         },
@@ -131,8 +138,9 @@ const chartOptions = computed(() => {
         options: {
           plotOptions: {
             bar: {
-              columnWidth: '15%',
+              columnWidth: '22%',
               borderRadius: 4,
+              borderRadiusApplication: 'around',
             },
             colors: { backgroundBarRadius: 9 },
           },
@@ -142,29 +150,41 @@ const chartOptions = computed(() => {
         breakpoint: 479,
         options: {
           plotOptions: {
-            bar: { borderRadius: 4 },
+            bar: { borderRadius: 4, borderRadiusApplication: 'around', columnWidth: '36%' },
             colors: { backgroundBarRadius: 9 },
           },
           grid: {
             padding: {
-              right: -15,
-              left: -15,
+              right: 0,
+              left: -5,
+              bottom: 12,
             },
           },
         },
       },
       {
         breakpoint: 400,
-        options: { plotOptions: { bar: { borderRadius: 3 } } },
+        options: {
+          plotOptions: {
+            bar: {
+              borderRadius: 3,
+              borderRadiusApplication: 'around',
+              columnWidth: '42%',
+            },
+          },
+          grid: {
+            padding: {
+              top: -18,
+              left: -2,
+              right: 0,
+              bottom: 14,
+            },
+          },
+        },
       },
     ],
   }
 })
-
-import { useTheme } from 'vuetify'
-
-const vuetifyTheme = useTheme()
-const currentTheme = vuetifyTheme.current.value.colors
 
 const series2 = [{
   name: 'Subscribers',
@@ -188,22 +208,25 @@ const chartOptions2 = {
     strokeColors: 'transparent',
   },
   grid: { show: false },
-  colors: [currentTheme.success],
+  colors: ['#009875'],
   fill: {
     type: 'gradient',
+    colors: ['#C6FFEB'],
     gradient: {
-      shadeIntensity: 0.9,
-      opacityFrom: 0.5,
-      opacityTo: 0.07,
+      shadeIntensity: 0,
+      type: 'vertical',
+      gradientToColors: ['#FFFFFF'],
+      opacityFrom: 1,
+      opacityTo: 1,
       stops: [
         0,
-        80,
-        100,
+        66,
       ],
     },
   },
   dataLabels: { enabled: false },
   stroke: {
+    colors: ['#009875'],
     width: 2,
     curve: 'smooth',
   },
@@ -223,58 +246,132 @@ const chartOptions2 = {
 </script>
 
 <template>
-   <div class="d-flex gap-4 justify-between" :class="windowWidth < 1024 ? '' : 'flex-column'">
+  <div class="profit-cards">
+    <VCard title="" class="card-dashboard profit-card">
+      <VCardTitle 
+          class="title-box pt-6 pb-3 border-none"
+          :class="windowWidth < 1024 ? 'flex-row' : ''"
+      >
+        <div class="title-text d-flex flex-column gap-2">
+            Total vinst
+            <span>Senaste månaden</span>
+        </div>
+      </VCardTitle>
 
-      <VCard title="" class="card-dashboard">
-         <VCardItem class="pb-3">
-            <VCardTitle>Total vinst</VCardTitle>
-            <VCardSubtitle>Last Week</VCardSubtitle>
-         </VCardItem>
-
-         <VCardText>
-            <VueApexCharts
+      <VCardText class="profit-card__content">
+        <div class="profit-bar-chart">
+          <VueApexCharts
             :options="chartOptions"
             :series="series"
-            :height="70"
-            />
+            :height="windowWidth <= 400 ? 82 : 100"
+          />
+        </div>
 
-            <div class="d-flex align-center justify-space-between gap-x-2 mt-3">
-            <h4 class="text-h4 text-center">
-               124k
-            </h4>
-            <div class="text-sm text-success">
-               +12.6%
-            </div>
-            </div>
-         </VCardText>
-      </VCard>
+        <div class="d-flex align-center">
+          <span class="text-number-grafic">
+            237
+          </span>
+          <span class="currency-number-grafic">
+            SEK
+          </span>
+        </div>
+      </VCardText>
+    </VCard>
 
-      <VCard title="" class="card-dashboard">
-      <VCardItem class="pb-3">
-      <VCardTitle>
-        Sales
+    <VCard title="" class="card-dashboard profit-card">
+      <VCardTitle 
+          class="title-box py-6 border-none"
+          :class="windowWidth < 1024 ? 'flex-row' : ''"
+      >
+        <div class="title-text d-flex flex-column gap-2">
+            Total försäljning
+            <span>Senaste månaden</span>
+        </div>
       </VCardTitle>
-      <VCardSubtitle>
-        Last Year
-      </VCardSubtitle>
-    </VCardItem>
 
-    <VueApexCharts
-      :options="chartOptions2"
-      :series="series2"
-      :height="76"
-    />
+      <VCardText class="profit-card__content profit-card__content--compact px-0">
+        <VueApexCharts
+          :options="chartOptions2"
+          :series="series2"
+          :height="76"
+        />
 
-    <VCardText class="pt-1">
-      <div class="d-flex align-center justify-space-between gap-x-2">
-        <h4 class="text-h4 text-center">
-          175k
-        </h4>
-        <span class="text-sm text-error">
-          -16.2%
-        </span>
-      </div>
-    </VCardText>
+        <div class="d-flex align-center px-6">
+          <span class="text-number-grafic">
+            237
+          </span>
+          <span class="currency-number-grafic">
+            SEK
+          </span>
+        </div>
+      </VCardText>
    </VCard>
    </div>
 </template>
+
+<style lang="scss">
+  .profit-cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+  }
+
+  .profit-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+  }
+
+  .profit-card__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .profit-card__content--compact {
+    padding-top: 4px;
+  }
+
+  .profit-bar-chart {
+    padding-bottom: 4px;
+  }
+
+  .profit-bar-chart .apexcharts-canvas,
+  .profit-bar-chart .apexcharts-svg,
+  .profit-bar-chart .apexcharts-inner {
+    overflow: visible !important;
+  }
+
+  .profit-bar-chart .apexcharts-bar-area {
+    clip-path: inset(0 round 4px) !important;
+  }
+
+  @media (min-width: 1024px) {
+    .profit-cards {
+      height: 100%;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .text-number-grafic {
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    vertical-align: middle;
+    color: #454545;
+  }
+
+  .currency-number-grafic {
+    font-weight: 300;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    vertical-align: middle;
+    color: #454545;
+  }
+</style>

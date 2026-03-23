@@ -12,12 +12,9 @@ import { hexToRgb } from '@layouts/utils'
   const chartConfigs = computed(() => {
     const currentTheme = vuetifyTheme.current.value.colors
     const variableTheme = vuetifyTheme.current.value.variables
-    const labelPrimaryColor = `rgba(${ hexToRgb(currentTheme.primary) },${ variableTheme['dragged-opacity'] })`
     const legendColor = `rgba(${ hexToRgb(currentTheme['on-background']) },${ variableTheme['high-emphasis-opacity'] })`
     const borderColor = `rgba(${ hexToRgb(String(variableTheme['border-color'])) },${ variableTheme['border-opacity'] })`
     const labelColor = `rgba(${ hexToRgb(currentTheme['on-surface']) },${ variableTheme['disabled-opacity'] })`
-    const primaryColor = `rgba(${ hexToRgb(currentTheme.primary) }, 1)`
-
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
     const makeColors = (activeIndex, activeColor, inactiveColor) =>
@@ -200,7 +197,7 @@ import { hexToRgb } from '@layouts/utils'
         :key="currentTab"
         :options="chartConfigs[Number(currentTab)].chartOptions"
         :series="chartConfigs[Number(currentTab)].series"
-        :height="windowWidth < 1024 ? 200 : 280"
+        :height="windowWidth < 1024 ? 220 : 280"
       />
     </VCardText>
   </VCard>

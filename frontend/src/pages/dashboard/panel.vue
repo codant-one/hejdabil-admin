@@ -86,43 +86,74 @@ onBeforeUnmount(() => {
     </VCard>
 
     <!-- 👉 Supplier / User -->
-    <VCard title="" class="card-transparent pt-0" v-else>
-      <VRow nclass="py-6 px-md-6 px-2">
-
-        <VCol cols="12" md="6" class="h-card">
+    <VCard title="" class="card-transparent" v-else>
+      <div class="dashboard-grid">
+        <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
           <Activities />
-        </VCol>
-        <VCol cols="12" md="6">
+        </div>
+        <div class="dashboard-grid__item dashboard-grid__item--md-6">
           <Indicators />
-        </VCol>
+        </div>
 
-        <VCol cols="12" md="10">
+        <div class="dashboard-grid__item dashboard-grid__item--md-10">
           <Statisticians />
-        </VCol>
-        <VCol cols="12" md="2">
+        </div>
+        <div class="dashboard-grid__item dashboard-grid__item--md-2">
           <Profit />
-        </VCol>
+        </div>
 
-        <VCol cols="12" md="6">
+        <div class="dashboard-grid__item dashboard-grid__item--md-6">
           <Information />
-        </VCol>
-        <VCol cols="12" md="6" >
+        </div>
+        <div class="dashboard-grid__item dashboard-grid__item--md-6">
           <Measures />
-        </VCol>
+        </div>
 
-        <VCol cols="12" md="12" >
+        <div class="dashboard-grid__item dashboard-grid__item--md-12">
           <VehicleInfo />
-        </VCol>
+        </div>
 
-        <VCol cols="12" md="12">
+        <div class="dashboard-grid__item dashboard-grid__item--md-12">
           <Team />
-        </VCol>
-      </VRow>
+        </div>
+      </div>
     </VCard>
   </section>
 </template>
 
 <style lang="scss" scoped>
+  .dashboard-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-grid__item {
+    min-width: 0;
+  }
+
+  @media (min-width: 960px) {
+    .dashboard-grid {
+      grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+
+    .dashboard-grid__item--md-2 {
+      grid-column: span 2;
+    }
+
+    .dashboard-grid__item--md-6 {
+      grid-column: span 6;
+    }
+
+    .dashboard-grid__item--md-10 {
+      grid-column: span 10;
+    }
+
+    .dashboard-grid__item--md-12 {
+      grid-column: span 12;
+    }
+  }
+
   .card-list {
     --v-card-list-gap: 30px;
   }
