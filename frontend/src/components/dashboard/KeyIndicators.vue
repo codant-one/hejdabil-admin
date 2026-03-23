@@ -29,21 +29,22 @@
    <VCard title="" class="card-dashboard">
       <VCardTitle 
          class="title-box"
-         :class="windowWidth < 1024 ? 'flex-row' : ''"
+         :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
       >
          <div class="title-text">Nyckeltal</div>
 
          <div class="d-flex gap-2">
             <VBtn
-               :class="windowWidth < 1024 ? 'btn-ghost' : 'btn-light'"
-               class="w-auto h-40"
+               :class="windowWidth < 1024 ? 'btn-white-2 px-2 h-24' : 'btn-light h-40'"
+               class="w-auto"
             >
                <VIcon icon="custom-export" size="24" />               
                <span class="d-none d-md-block">Exportera</span>
             </VBtn>
 
             <VBtn
-               class="btn-white-2 px-3 h-40"
+              class="btn-white-2 h-40"
+              :class="windowWidth < 1024 ? 'px-0 h-24' : 'px-3 h-40'"
             >
                <VIcon icon="custom-filter" size="24" />
                <span class="d-none d-md-block">Filtrera efter datum</span>

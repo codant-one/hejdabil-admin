@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
           <Profit />
         </div>
 
-        <div class="dashboard-grid__item dashboard-grid__item--md-6">
+        <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
           <Information />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6">
