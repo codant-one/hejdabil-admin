@@ -48,7 +48,7 @@
 </script>
 
 <template>
-  <VCard title="" class="card-dashboard activities-scroll">
+  <VCard title="" class="card-dashboard">
     <VCardTitle class="title-box">
       <div class="title-text">Senaste aktivitet</div>
 
@@ -159,19 +159,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-  }
-
-  .activities-scroll {
-    flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .activities-scroll::-webkit-scrollbar {
-    display: none;
+    overflow: hidden;
   }
 
   .card-activity {

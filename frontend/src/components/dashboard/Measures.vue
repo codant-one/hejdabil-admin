@@ -20,7 +20,7 @@
 </script>
 
 <template>
-   <VCard title="" class="card-dashboard  measures-scroll">
+   <VCard title="" class="card-dashboard">
       <VCardTitle 
          class="title-box"
          :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
@@ -83,19 +83,8 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
-   }
-
-   .measures-scroll {
-      flex: 1;
       min-height: 0;
-      overflow-y: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-   }
-
-   .measures-scroll::-webkit-scrollbar {
-      display: none;
+      overflow: hidden;
    }
 
    .measures-card-text {

@@ -130,6 +130,7 @@ onBeforeUnmount(() => {
 
   .dashboard-grid__item {
     min-width: 0;
+    min-height: 0;
   }
 
   @media (min-width: 960px) {
@@ -161,7 +162,36 @@ onBeforeUnmount(() => {
 
 <style lang="scss">
   .h-card {
+    display: flex;
     height: 392px !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .h-card > * {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .h-card > .card-dashboard {
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .h-card > .card-dashboard::-webkit-scrollbar {
+    display: none;
+  }
+
+  .h-card > .card-dashboard > .v-card-title,
+  .h-card > .card-dashboard > .v-card-text,
+  .h-card > .card-dashboard > .v-card-item,
+  .h-card > .card-dashboard > .v-window {
+    flex-shrink: 0;
   }
 </style>
 <route lang="yaml">
