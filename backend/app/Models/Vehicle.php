@@ -190,7 +190,7 @@ class Vehicle extends Model
             
 
             if ($filters->get('state_id') === null) {
-                $query->whereBetween('created_at', $filter) 
+                $query->whereBetween('purchase_date', $filter) 
                       ->where('state_id', '<>', 12);
             } else {   
                 $query->whereBetween('sale_date', $filter) 

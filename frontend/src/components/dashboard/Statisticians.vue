@@ -3,6 +3,36 @@
 import { useTheme } from 'vuetify'
 import { hexToRgb } from '@layouts/utils'
 
+  const props = defineProps({
+    statisticians: {
+      type: Object,
+      default: () => ({}),
+    },
+  })
+
+  const defaultMonthlySeries = Array.from({ length: 12 }, () => ({
+    total_purchase_price: 0,
+    total_sale_price: 0,
+    total_cost: 0,
+    total_profit: 0,
+  }))
+
+  const statisticiansData = computed(() => props.statisticians?.statisticians ?? props.statisticians ?? {})
+
+  const monthlyStats = computed(() => {
+    const priceByMonth = statisticiansData.value?.priceByMonth
+
+    if (!Array.isArray(priceByMonth) || priceByMonth.length === 0)
+      return defaultMonthlySeries
+
+    return priceByMonth.slice(0, 12)
+  })
+
+  const purchaseSeries = computed(() => monthlyStats.value.map(item => Number(item.total_purchase_price ?? 0)))
+  const saleSeries = computed(() => monthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
+  const costSeries = computed(() => monthlyStats.value.map(item => Number(item.total_cost ?? 0)))
+  const profitSeries = computed(() => monthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+
   const { width: windowWidth } = useWindowSize();
 
   const vuetifyTheme = useTheme()
@@ -104,7 +134,7 @@ import { hexToRgb } from '@layouts/utils'
         title: 'Inköp',
         icon: 'custom-car-close',
         chartOptions: createChartOptions(makeColors(2, '#6E9383', '#BDD2C8')),
-        series: [{ data: [28, 10, 45, 38, 15, 30, 35, 30, 8, 20, 25, 18] }],
+        series: [{ data: purchaseSeries.value }],
         border: 'border-selected-inventary',
         bgColor: '#F5F8F6',
       },
@@ -112,7 +142,7 @@ import { hexToRgb } from '@layouts/utils'
         title: 'Försäljning',
         icon: 'custom-car-open',
         chartOptions: createChartOptions(makeColors(6, '#79FCA2', '#D8FFE4')),
-        series: [{ data: [35, 25, 15, 40, 42, 25, 48, 8, 30, 22, 38, 15] }],
+        series: [{ data: saleSeries.value }],
         border: 'border-selected-sales',
         bgColor: '#D8FFE4',
       },
@@ -120,7 +150,7 @@ import { hexToRgb } from '@layouts/utils'
         title: 'Extra kostnader',
         icon: 'custom-costs',
         chartOptions: createChartOptions(makeColors(4, '#4DFFD1', '#C6FFEB')),
-        series: [{ data: [10, 22, 27, 33, 42, 32, 27, 22, 8, 15, 20, 12] }],
+        series: [{ data: costSeries.value }],
         border: 'border-selected-costs',
         bgColor: '#C6FFEB',
       },
@@ -128,7 +158,7 @@ import { hexToRgb } from '@layouts/utils'
         title: 'Vinst',
         icon: 'custom-profit',
         chartOptions: createChartOptions(makeColors(11, '#3AF8FF', '#C0FEFF')),
-        series: [{ data: [5, 9, 12, 18, 20, 25, 30, 36, 48, 40, 33, 28] }],
+        series: [{ data: profitSeries.value }],
         border: 'border-selected-profit',
         bgColor: '#C0FEFF',
       },

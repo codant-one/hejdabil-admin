@@ -116,6 +116,10 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     /* DASHBOARD */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
 
+    Route::group(['prefix' => 'dashboard'], function () {
+        Route::get('/statisticians', [DashboardController::class, 'statisticians'])->name('dashboard.statisticians');
+    });
+
     /* NOTIFICATIONS */
     Route::group(['prefix' => 'notifications'], function () {
         Route::get('/list/recent', [NotificationController::class, 'listRecent'])->name('notifications.listRecent');

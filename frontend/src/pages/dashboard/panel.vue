@@ -1,5 +1,7 @@
 <script setup>
 
+import { themeConfig } from '@themeConfig'
+import { useDashboardStores } from '@/stores/useDashboard'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Activities from "@/components/dashboard/Activities.vue";
 import Indicators from "@/components/dashboard/KeyIndicators.vue";
@@ -9,8 +11,10 @@ import Information from "@/components/dashboard/Information.vue";
 import Measures from "@/components/dashboard/Measures.vue";
 import VehicleInfo from "@/components/dashboard/VehicleInfo.vue";
 import Team from "@/components/dashboard/Team.vue";
-import { themeConfig } from '@themeConfig'
 
+const dashboardStore = useDashboardStores()
+
+const statisticians = ref(null)
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
@@ -32,6 +36,14 @@ async function fetchData() {
 
   role.value = userDataJ.value.roles[0].name
   environment.value = themeConfig.settings.enviroment
+
+  if (role.value === 'Supplier' || role.value === 'User') {
+    await dashboardStore.fetchStatisticians()
+
+    statisticians.value = dashboardStore.getStatisticians
+
+    console.log('statisticians data:', statisticians.value)
+  }
 
   isRequestOngoing.value = false
 }
@@ -96,7 +108,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-10">
-          <Statisticians />
+          <Statisticians :statisticians="statisticians" />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-2">
           <Profit />
