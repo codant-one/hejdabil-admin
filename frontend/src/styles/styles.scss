@@ -751,9 +751,9 @@ body {
 .card-transparent {
   background-color: transparent !important;
   box-shadow: none !important;
-  padding: 0 !important;
+  padding-bottom: 8px !important;
   @media (max-width: 1023px) {
-    padding: 0 24px !important;
+    padding: 0px 24px 72px 24px !important;
   }
 
 }
