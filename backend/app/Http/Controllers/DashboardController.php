@@ -25,22 +25,18 @@ class DashboardController extends Controller
             $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from) : null;
             $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to) : null;
 
-            // Dashboard charts are always built for the current year.
-            $yearStart = $today->copy()->startOfYear();
-            $yearEnd = $today->copy()->endOfYear();
-
-            $requestedStart = ($dateFrom ?: $yearStart)->copy()->startOfDay();
-            $requestedEnd = ($dateTo ?: $today)->copy()->endOfDay();
-
-            $filterStart = $requestedStart->copy();
-            if ($filterStart->lt($yearStart)) {
-                $filterStart = $yearStart->copy()->startOfDay();
+            if ($dateFrom && $dateTo && $dateFrom->gt($dateTo)) {
+                [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
             }
 
-            $filterEnd = $requestedEnd->copy();
-            if ($filterEnd->gt($yearEnd)) {
-                $filterEnd = $yearEnd->copy()->endOfDay();
-            }
+            $defaultRangeStart = $today->copy()->startOfYear();
+            $defaultRangeEnd = $today->copy()->endOfYear();
+
+            $filterStart = ($dateFrom ?: $defaultRangeStart)->copy()->startOfDay();
+            $filterEnd = ($dateTo ?: $defaultRangeEnd)->copy()->endOfDay();
+
+            $chartStartMonth = $filterStart->copy()->startOfMonth();
+            $chartEndMonth = $filterEnd->copy()->startOfMonth();
 
             $supplierId = $this->getCurrentSupplierId();
 
@@ -48,8 +44,8 @@ class DashboardController extends Controller
                 $supplierId,
                 $filterStart,
                 $filterEnd,
-                $yearStart,
-                $yearEnd,
+                $chartStartMonth,
+                $chartEndMonth,
             );
 
             return response()->json([
@@ -61,7 +57,9 @@ class DashboardController extends Controller
                     'totalCost' => $vehiclePriceSummary['totalCost'],
                     'totalProfit' => $vehiclePriceSummary['totalProfit'],
                     'dateRange' => [
-                        'year' => $today->year,
+                        'year' => $chartStartMonth->year,
+                        'year_from' => $chartStartMonth->year,
+                        'year_to' => $chartEndMonth->year,
                         'date_from' => $filterStart->toDateString(),
                         'date_to' => $filterEnd->toDateString(),
                     ]
@@ -81,8 +79,8 @@ class DashboardController extends Controller
         int $supplierId,
         Carbon $filterStart,
         Carbon $filterEnd,
-        Carbon $yearStart,
-        Carbon $yearEnd,
+        Carbon $chartStartMonth,
+        Carbon $chartEndMonth,
     ): array {
         $purchasePriceByMonth = $this->getMonthlyVehicleTotals(
             'purchase_date',
@@ -129,15 +127,17 @@ class DashboardController extends Controller
         });
 
         $months = [];
-        $cursor = $yearStart->copy();
+        $cursor = $chartStartMonth->copy();
 
-        while ($cursor->lte($yearEnd)) {
+        while ($cursor->lte($chartEndMonth)) {
             $monthKey = $cursor->format('Y-m');
             $totalPurchasePrice = $totalsByMonth->get($monthKey, 0);
             $totalSalePrice = $totalsSaleByMonth->get($monthKey, 0);
             $totalCost = $totalsTaskCostByMonth->get($monthKey, 0);
 
             $months[] = [
+                'month' => $monthKey,
+                'month_label' => $cursor->format('M y'),
                 'total_purchase_price' => $totalPurchasePrice,
                 'total_sale_price' => $totalSalePrice,
                 'total_cost' => $totalCost,

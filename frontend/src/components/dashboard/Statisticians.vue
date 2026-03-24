@@ -14,11 +14,15 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
   })
 
   const defaultMonthlySeries = Array.from({ length: 12 }, () => ({
+    month: null,
+    month_label: null,
     total_purchase_price: 0,
     total_sale_price: 0,
     total_cost: 0,
     total_profit: 0,
   }))
+
+  const defaultMonthCategories = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
   const exporteraMobile = ref(false);
   const filterMenuVisible = ref(false)
@@ -67,13 +71,38 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
     if (!Array.isArray(priceByMonth) || priceByMonth.length === 0)
       return defaultMonthlySeries
 
-    return priceByMonth.slice(0, 12)
+    return priceByMonth
+  })
+
+  const monthCategories = computed(() => {
+    const categories = monthlyStats.value.map((item, index) => {
+      if (item?.month_label)
+        return item.month_label
+
+      if (item?.month)
+        return item.month
+
+      return defaultMonthCategories[index] ?? `M${index + 1}`
+    })
+
+    return categories.length ? categories : defaultMonthCategories
   })
 
   const purchaseSeries = computed(() => monthlyStats.value.map(item => Number(item.total_purchase_price ?? 0)))
   const saleSeries = computed(() => monthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
   const costSeries = computed(() => monthlyStats.value.map(item => Number(item.total_cost ?? 0)))
   const profitSeries = computed(() => monthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+
+  const chartRenderKey = computed(() => {
+    return [
+      currentTab.value,
+      monthCategories.value.join('|'),
+      purchaseSeries.value.length,
+      saleSeries.value.length,
+      costSeries.value.length,
+      profitSeries.value.length,
+    ].join('::')
+  })
 
   const { width: windowWidth } = useWindowSize();
 
@@ -87,10 +116,17 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
     const legendColor = `rgba(${ hexToRgb(currentTheme['on-background']) },${ variableTheme['high-emphasis-opacity'] })`
     const borderColor = `rgba(${ hexToRgb(String(variableTheme['border-color'])) },${ variableTheme['border-opacity'] })`
     const labelColor = `rgba(${ hexToRgb(currentTheme['on-surface']) },${ variableTheme['disabled-opacity'] })`
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+    const months = monthCategories.value
+    const isMobile = windowWidth.value < 590
+    const xAxisOffsetY = isMobile && months.length > 9 ? 16 : 0
+    const xAxisFontSize = isMobile ? '9px' : '13px'
 
-    const makeColors = (activeIndex, activeColor, inactiveColor) =>
-      months.map((_, i) => (i === activeIndex ? activeColor : inactiveColor))
+    const makeColors = (seriesData, activeColor, inactiveColor) => {
+      const maxValue = Math.max(...seriesData, 0)
+      const highlightedIndex = Math.max(seriesData.findIndex(item => item === maxValue), 0)
+
+      return months.map((_, i) => (i === highlightedIndex ? activeColor : inactiveColor))
+    }
 
     const createChartOptions = (colors) => ({
       chart: {
@@ -109,7 +145,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
       },
       grid: {
         show: false,
-        padding: { top: 0, bottom: 0, left: -10, right: -10 },
+        padding: { top: 0, bottom: 0, left: 0, right: 0 },
       },
       colors,
       dataLabels: {
@@ -132,7 +168,9 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
         axisBorder: { show: true, color: borderColor },
         axisTicks: { show: false },
         labels: {
-          style: { colors: labelColor, fontSize: '13px', fontFamily: 'Public Sans' },
+          hideOverlappingLabels: false,
+          offsetY: xAxisOffsetY,
+          style: { colors: labelColor, fontSize: xAxisFontSize, fontFamily: 'Public Sans' },
         },
       },
       yaxis: {
@@ -175,7 +213,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
       {
         title: 'Inköp',
         icon: 'custom-car-close',
-        chartOptions: createChartOptions(makeColors(2, '#6E9383', '#BDD2C8')),
+        chartOptions: createChartOptions(makeColors(purchaseSeries.value, '#6E9383', '#BDD2C8')),
         series: [{ data: purchaseSeries.value }],
         border: 'border-selected-inventary',
         bgColor: '#F5F8F6',
@@ -183,7 +221,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
       {
         title: 'Försäljning',
         icon: 'custom-car-open',
-        chartOptions: createChartOptions(makeColors(6, '#79FCA2', '#D8FFE4')),
+        chartOptions: createChartOptions(makeColors(saleSeries.value, '#79FCA2', '#D8FFE4')),
         series: [{ data: saleSeries.value }],
         border: 'border-selected-sales',
         bgColor: '#D8FFE4',
@@ -191,7 +229,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
       {
         title: 'Extra kostnader',
         icon: 'custom-costs',
-        chartOptions: createChartOptions(makeColors(4, '#4DFFD1', '#C6FFEB')),
+        chartOptions: createChartOptions(makeColors(costSeries.value, '#4DFFD1', '#C6FFEB')),
         series: [{ data: costSeries.value }],
         border: 'border-selected-costs',
         bgColor: '#C6FFEB',
@@ -199,7 +237,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
       {
         title: 'Vinst',
         icon: 'custom-profit',
-        chartOptions: createChartOptions(makeColors(11, '#3AF8FF', '#C0FEFF')),
+        chartOptions: createChartOptions(makeColors(profitSeries.value, '#3AF8FF', '#C0FEFF')),
         series: [{ data: profitSeries.value }],
         border: 'border-selected-profit',
         bgColor: '#C0FEFF',
@@ -309,10 +347,10 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
 
       <VueApexCharts
         ref="refVueApexChart"
-        :key="currentTab"
+        :key="chartRenderKey"
         :options="chartConfigs[Number(currentTab)].chartOptions"
         :series="chartConfigs[Number(currentTab)].series"
-        :height="windowWidth < 1024 ? 220 : 280"
+        :height="windowWidth < 1024 ? 210 : 280"
       />
     </VCardText>
   </VCard>
@@ -418,7 +456,7 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
     color: #878787;
 
     @media (max-width: 767px) {
-      font-size: 10px;
+      font-size: 8px;
     }
   }
 
