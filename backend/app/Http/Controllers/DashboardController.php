@@ -29,8 +29,8 @@ class DashboardController extends Controller
                 [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
             }
 
-            $defaultRangeStart = $today->copy()->startOfYear();
-            $defaultRangeEnd = $today->copy()->endOfYear();
+            $defaultRangeStart = $today->copy()->subMonthsNoOverflow(11)->startOfMonth();
+            $defaultRangeEnd = $today->copy()->endOfDay();
 
             $filterStart = ($dateFrom ?: $defaultRangeStart)->copy()->startOfDay();
             $filterEnd = ($dateTo ?: $defaultRangeEnd)->copy()->endOfDay();

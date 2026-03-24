@@ -2,6 +2,9 @@
 
 import { themeConfig } from '@themeConfig'
 import { useDashboardStores } from '@/stores/useDashboard'
+import { useAuthStores } from '@/stores/useAuth';
+import { useConfigsStores } from '@/stores/useConfigs';
+import { useAppAbility } from '@/plugins/casl/useAppAbility';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import Activities from "@/components/dashboard/Activities.vue";
 import Indicators from "@/components/dashboard/KeyIndicators.vue";
@@ -13,6 +16,9 @@ import VehicleInfo from "@/components/dashboard/VehicleInfo.vue";
 import Team from "@/components/dashboard/Team.vue";
 
 const dashboardStore = useDashboardStores()
+const authStores = useAuthStores();
+const configsStores = useConfigsStores();
+const ability = useAppAbility()
 
 const statisticians = ref(null)
 const statisticiansFilters = ref({})
@@ -24,7 +30,81 @@ const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
 const environment = ref(null)
 
-watchEffect(fetchData)
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
+    if (!cached) return {};
+
+    const parsed = JSON.parse(cached);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const company = ref(readCachedCompany())
+
+const setCompany = (value) => {
+  const normalized = value && typeof value === 'object' ? { ...value } : {};
+  company.value = normalized;
+  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized));
+};
+
+onMounted(async () => {
+  try {
+  
+    const userData = localStorage.getItem('user_data') || 'null'
+    
+    userDataJ.value = JSON.parse(userData)
+    name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
+
+    role.value = userDataJ.value.roles[0].name
+
+    if (!role.value) return;
+
+    const { user_data, userAbilities } = await authStores.me(userDataJ.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+    ability.update(userAbilities)
+
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
+    if (role.value === 'Supplier') {
+      setCompany({
+        ...(user_data?.user_detail ?? {}),
+        email: user_data?.email ?? '',
+        name: user_data?.name ?? '',
+        last_name: user_data?.last_name ?? '',
+      });
+    } else if (role.value === 'User') {
+      setCompany({
+        ...(user_data?.supplier?.boss?.user?.user_detail ?? {}),
+        email: user_data?.supplier?.boss?.user?.email ?? '',
+        name: user_data?.supplier?.boss?.user?.name ?? '',
+        last_name: user_data?.supplier?.boss?.user?.last_name ?? '',
+      });
+    } else {
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
+
+      const companyConfig = configsStores.getFeaturedConfig('company') ?? {};
+      const logoConfig = configsStores.getFeaturedConfig('logo') ?? {};
+
+      setCompany({
+        ...companyConfig,
+        logo: logoConfig.logo ?? companyConfig.logo ?? '',
+      });
+    }
+
+  } catch (error) {
+    console.error('Failed to load company data:', error);
+  }
+});
+
+onMounted(fetchData)
 
 async function fetchData() {
 
@@ -63,6 +143,10 @@ async function handleStatisticiansFilter(filters) {
   } finally {
     isRequestOngoing.value = false
   }
+}
+
+function handleStatisticiansLoading(value) {
+  isRequestOngoing.value = value
 }
 
 function resizeSectionToRemainingViewport() {
@@ -125,7 +209,12 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-10">
-          <Statisticians :statisticians="statisticians" @filter="handleStatisticiansFilter" />
+          <Statisticians 
+            :company="company"
+            :statisticians="statisticians" 
+            @loading="handleStatisticiansLoading"
+            @filter="handleStatisticiansFilter" 
+          />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-2">
           <Profit />

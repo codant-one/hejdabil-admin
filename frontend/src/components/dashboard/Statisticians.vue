@@ -2,12 +2,22 @@
 
 import { useTheme } from 'vuetify'
 import { hexToRgb } from '@layouts/utils'
+import { excelParser } from '@/plugins/csv/excelParser'
+import { formatNumber } from '@/@core/utils/formatters'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import { themeConfig } from '@themeConfig'
 import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+import html2pdf from 'html2pdf.js'
+import Dashboard from '@/api/dashboard'
 
-  const emit = defineEmits(['filter'])
+  const emit = defineEmits(['filter', 'loading'])
 
   const props = defineProps({
     statisticians: {
+      type: Object,
+      default: () => ({}),
+    },
+    company: {
       type: Object,
       default: () => ({}),
     },
@@ -27,6 +37,24 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
   const exporteraMobile = ref(false);
   const filterMenuVisible = ref(false)
   const filterDateRange = ref(null)
+
+  // 👉 Export management refs
+  const selectedExportType = ref(null)
+  const isExportMenuVisible = ref(false)
+  const isExportingFile = ref(false)
+  const exportDateRange = ref(null)
+  const lastExportSelectionKey = ref(null)
+  const lastFilterSelectionKey = ref(null)
+
+  watch(isExportMenuVisible, isVisible => {
+    if (isVisible)
+      lastExportSelectionKey.value = null
+  })
+
+  watch(filterMenuVisible, isVisible => {
+    if (isVisible)
+      lastFilterSelectionKey.value = null
+  })
 
   const statisticiansData = computed(() => props.statisticians?.statisticians ?? props.statisticians ?? {})
 
@@ -57,12 +85,330 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
     if (!range)
       return
 
+    const selectionKey = `${range[0]}__${range[1]}`
+    if (selectionKey === lastFilterSelectionKey.value)
+      return
+
+    lastFilterSelectionKey.value = selectionKey
+
     filterMenuVisible.value = false
+    emit('loading', true)
 
     emit('filter', {
       date_from: range[0],
       date_to: range[1],
     })
+  }
+
+  // 👉 Export functions
+  const buildRangeSelectionKey = value => {
+    if (!value)
+      return null
+
+    const normalize = item => {
+      if (!item)
+        return ''
+
+      if (item instanceof Date && !Number.isNaN(item.getTime())) {
+        const year = item.getFullYear()
+        const month = `${item.getMonth() + 1}`.padStart(2, '0')
+        const day = `${item.getDate()}`.padStart(2, '0')
+
+        return `${year}-${month}-${day}`
+      }
+
+      if (typeof item === 'string')
+        return item.trim()
+
+      return String(item)
+    }
+
+    if (Array.isArray(value)) {
+      const first = normalize(value[0])
+      const second = normalize(value[1] ?? value[0])
+
+      return `${first}__${second}`
+    }
+
+    if (typeof value === 'string') {
+      const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+      if (chunks.length >= 2)
+        return `${chunks[0]}__${chunks[1]}`
+
+      const single = normalize(value)
+      return `${single}__${single}`
+    }
+
+    const single = normalize(value)
+    return `${single}__${single}`
+  }
+
+  const isCompleteRangeSelection = value => {
+    if (!value)
+      return false
+
+    if (Array.isArray(value))
+      return value.length >= 2 && !!value[0] && !!value[1]
+
+    if (typeof value === 'string') {
+      const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+      return chunks.length >= 2 && !!chunks[0]?.trim() && !!chunks[1]?.trim()
+    }
+
+    return false
+  }
+
+  const toYmd = value => {
+    if (!value)
+      return null
+
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+      const year = value.getFullYear()
+      const month = `${value.getMonth() + 1}`.padStart(2, '0')
+      const day = `${value.getDate()}`.padStart(2, '0')
+      return `${year}-${month}-${day}`
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim()
+      const ymdMatch = normalized.match(/^\d{4}-\d{2}-\d{2}/)
+      if (ymdMatch)
+        return ymdMatch[0]
+
+      const parsed = new Date(normalized)
+      if (!Number.isNaN(parsed.getTime())) {
+        const year = parsed.getFullYear()
+        const month = `${parsed.getMonth() + 1}`.padStart(2, '0')
+        const day = `${parsed.getDate()}`.padStart(2, '0')
+        return `${year}-${month}-${day}`
+      }
+    }
+
+    return null
+  }
+
+  const getExportDateRangePayload = () => {
+    if (!exportDateRange.value)
+      return {}
+
+    if (Array.isArray(exportDateRange.value)) {
+      const from = toYmd(exportDateRange.value[0])
+      const to = toYmd(exportDateRange.value[1] ?? exportDateRange.value[0])
+      if (from && to)
+        return { date_from: from, date_to: to }
+    }
+
+    if (typeof exportDateRange.value === 'string') {
+      const splitByRange = exportDateRange.value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i)
+      if (splitByRange.length >= 2) {
+        const from = toYmd(splitByRange[0])
+        const to = toYmd(splitByRange[1])
+        if (from && to)
+          return { date_from: from, date_to: to }
+      }
+
+      const single = toYmd(exportDateRange.value)
+      if (single)
+        return { date_from: single, date_to: single }
+    }
+
+    if (exportDateRange.value instanceof Date) {
+      const single = toYmd(exportDateRange.value)
+      if (single)
+        return { date_from: single, date_to: single }
+    }
+
+    return {}
+  }
+
+  const getExportMonthlyStats = async () => {
+    const params = getExportDateRangePayload()
+
+    if (!params.date_from || !params.date_to)
+      return monthlyStats.value
+
+    const response = await Dashboard.statisticians(params)
+    const exportData = response?.data?.data?.priceByMonth
+
+    return Array.isArray(exportData) && exportData.length ? exportData : []
+  }
+
+  const openExportDateMenu = type => {
+    exporteraMobile.value = false
+    selectedExportType.value = type
+    exportDateRange.value = null
+    lastExportSelectionKey.value = null
+    nextTick(() => {
+      isExportMenuVisible.value = true
+    })
+  }
+
+  const downloadCSV = async () => {
+    exporteraMobile.value = false
+    isExportMenuVisible.value = false
+    isExportingFile.value = true
+    emit('loading', true)
+
+    try {
+      const filteredData = await getExportMonthlyStats()
+
+      const data = filteredData.map(item => ({
+        Månad: item.month_label ?? item.month ?? '',
+        Inköp: `${formatNumber(item.total_purchase_price ?? 0)} kr`,
+        Försäljning: `${formatNumber(item.total_sale_price ?? 0)} kr`,
+        'Extra kostnader': `${formatNumber(item.total_cost ?? 0)} kr`,
+        Vinst: `${formatNumber(item.total_profit ?? 0)} kr`,
+      }))
+
+      excelParser().exportDataFromJSON(data, 'statisticians', 'csv')
+    } finally {
+      isExportingFile.value = false
+      emit('loading', false)
+    }
+  }
+
+  const downloadPDF = async () => {
+    exporteraMobile.value = false
+    isExportMenuVisible.value = false
+    isExportingFile.value = true
+    emit('loading', true)
+    const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+    const escapeHtml = value => String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+
+    let pdfContainer = null
+
+    try {
+      const rowsData = await getExportMonthlyStats()
+
+      if (document.fonts?.load) {
+        await Promise.all([
+          document.fonts.load(`400 12px ${pdfFontFamily}`),
+          document.fonts.load(`600 32px ${pdfFontFamily}`),
+        ])
+      }
+
+      const rows = rowsData.map(item => ({
+        month: item.month_label ?? item.month ?? '',
+        purchase: formatNumber(item.total_purchase_price ?? 0) + ' kr',
+        sale: formatNumber(item.total_sale_price ?? 0) + ' kr',
+        cost: formatNumber(item.total_cost ?? 0) + ' kr',
+        profit: formatNumber(item.total_profit ?? 0) + ' kr',
+      }))
+
+      const { headerMarkup } = await buildPdfTopHeader({
+        company: props.company,
+        title: 'Viktiga statistikuppgifter',
+        themeConfig,
+        escapeHtml,
+        showCompanyDetailsWhenLogo: true,
+      })
+
+      const rowsMarkup = rows.map(item => `
+        <tr style="height: 44px;">
+          <td style="width: 20%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.month)}</td>
+          <td style="width: 20%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.purchase)}</td>
+          <td style="width: 20%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.sale)}</td>
+          <td style="width: 20%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.cost)}</td>
+          <td style="width: 20%; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.profit)}</td>
+        </tr>
+      `).join('')
+
+      pdfContainer = document.createElement('div')
+      pdfContainer.innerHTML = `
+        <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+          <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 11px; font-weight: 400;">
+            <tbody>
+              <tr>
+                <td>
+                  ${headerMarkup}
+
+                  <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 11px;">
+                    <thead>
+                      <tr style="height: 44px;">
+                        <td style="text-align: center; width: 20%; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Månad</td>
+                        <td style="text-align: center; width: 20%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Inköp</td>
+                        <td style="text-align: center; width: 20%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Försäljning</td>
+                        <td style="text-align: center; width: 20%; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Extra kostnader</td>
+                        <td style="text-align: center; width: 20%; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Vinst</td>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${rowsMarkup}
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `
+
+      document.body.appendChild(pdfContainer)
+
+      await html2pdf()
+        .set({
+          margin: [12, 10, 12, 10],
+          filename: 'statisticians.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['css', 'legacy'] },
+        })
+        .from(pdfContainer)
+        .save()
+    } finally {
+      if (pdfContainer?.parentNode)
+        pdfContainer.parentNode.removeChild(pdfContainer)
+
+      isExportingFile.value = false
+      emit('loading', false)
+    }
+  }
+
+  const exportPDFAndCloseMenu = async () => {
+    if (isExportingFile.value)
+      return
+
+    if (!selectedExportType.value)
+      return
+
+    isExportingFile.value = true
+    try {
+      if (selectedExportType.value === 'excel') {
+        await downloadCSV()
+      } else {
+        await downloadPDF()
+      }
+
+      isExportMenuVisible.value = false
+    } finally {
+      selectedExportType.value = null
+      isExportingFile.value = false
+    }
+  }
+
+  const onDatePickerUpdate = value => {
+    if (!selectedExportType.value)
+      return
+
+    if (!isCompleteRangeSelection(value))
+      return
+
+    const selectionKey = buildRangeSelectionKey(value)
+    if (!selectionKey || selectionKey === lastExportSelectionKey.value)
+      return
+
+    lastExportSelectionKey.value = selectionKey
+    isExportMenuVisible.value = false
+
+    if (!isExportingFile.value)
+      exportPDFAndCloseMenu()
   }
 
   const monthlyStats = computed(() => {
@@ -273,10 +619,10 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
             </template>
 
             <VList>
-              <VListItem>
+              <VListItem @click="openExportDateMenu('pdf')">
                 <VListItemTitle>Exportera PDF</VListItemTitle>
               </VListItem>
-              <VListItem>
+              <VListItem @click="openExportDateMenu('excel')">
                 <VListItemTitle>Exportera Excel</VListItemTitle>
               </VListItem>
             </VList>
@@ -286,7 +632,6 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
             v-else
             id="payout-export-button"
             class="btn-ghost px-2 h-24 w-auto"
-            v-bind="props"
             block
             @click="exporteraMobile = true"
           >
@@ -363,16 +708,31 @@ import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
   >
     <VCard>
       <VList>
-        <VListItem>
+        <VListItem @click="openExportDateMenu('pdf')">
           <VListItemTitle>Exportera PDF</VListItemTitle>
         </VListItem>
 
-        <VListItem>
+        <VListItem @click="openExportDateMenu('excel')">
           <VListItemTitle>Exportera Excel</VListItemTitle>
         </VListItem>
       </VList>
     </VCard>
   </VDialog>
+
+  <!-- 👉 Export Date Menu -->
+  <ExportDateMenu
+    v-model="exportDateRange"
+    v-model:menuVisible="isExportMenuVisible"
+    :show-activator="false"
+    :is-mobile="windowWidth < 1024"
+    :reset-on-open="true"
+    activator="#payout-export-button"
+    button-text="Exportera"
+    button-icon="custom-export"
+    picker-label="Välj datumintervall för export"
+    picker-placeholder="Välj datum"
+    @update:modelValue="onDatePickerUpdate"
+  />
 </template>
 
 <style lang="scss">
