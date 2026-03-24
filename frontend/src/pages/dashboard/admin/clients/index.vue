@@ -57,6 +57,7 @@ const isClientFormEdited = ref(false);
 const isConfirmLeaveVisible = ref(false);
 const isFilterDialogVisible = ref(false);
 const leaveContext = ref(null); // 'mobile' | 'route' | null
+const exporteraMobile = ref(false);
 
 let nextRoute = null;
 
@@ -606,6 +607,7 @@ const showError = () => {
 };
 
 const downloadPDF = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
@@ -733,6 +735,7 @@ const downloadPDF = async () => {
 }
 
 const downloadCSV = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true;
 
   let data = { 
@@ -826,7 +829,7 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VMenu>
+          <VMenu v-if="windowWidth >= 1024">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -848,6 +851,17 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <VBtn
             v-if="$can('create', 'clients') && windowWidth >= 1024"
@@ -1782,6 +1796,25 @@ onBeforeUnmount(() => {
             Stäng
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="downloadPDF">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="downloadCSV">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
   </section>

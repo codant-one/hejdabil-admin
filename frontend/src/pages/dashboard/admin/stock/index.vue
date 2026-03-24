@@ -77,6 +77,8 @@ const isExportingFile = ref(false)
 const lastExportSelectionKey = ref(null)
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
 
+const exporteraMobile = ref(false);
+
 const readCachedCompany = () => {
   try {
     const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
@@ -395,7 +397,7 @@ const download = async(vehicle) => {
 };
 
 const downloadCSV = async () => {
-
+  exporteraMobile.value = false
   isRequestOngoing.value = true
 
   try {
@@ -507,6 +509,7 @@ const getDateRangePayload = () => {
 }
 
 const downloadPDF = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
@@ -647,6 +650,7 @@ const exportPDFAndCloseMenu = async () => {
 }
 
 const openExportDateMenu = type => {
+  exporteraMobile.value = false
   selectedExportType.value = type
   isExportTypeMenuVisible.value = false
 
@@ -848,7 +852,9 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="d-flex gap-4">
-          <VMenu v-model="isExportTypeMenuVisible">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -870,6 +876,17 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <ExportDateMenu
             v-model="date"
@@ -1697,6 +1714,25 @@ onBeforeUnmount(() => {
               </VBtn>
           </VCardText>
       </VCard>
+  </VDialog>
+
+  <!-- 👉 Export Mobile Dialog -->
+  <VDialog
+    v-model="exporteraMobile"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard>
+      <VList>
+        <VListItem @click="openExportDateMenu('pdf')">
+          <VListItemTitle>Exportera PDF</VListItemTitle>
+        </VListItem>
+
+        <VListItem @click="openExportDateMenu('excel')">
+          <VListItemTitle>Exportera Excel</VListItemTitle>
+        </VListItem>
+      </VList>
+    </VCard>
   </VDialog>
 
   <show 
