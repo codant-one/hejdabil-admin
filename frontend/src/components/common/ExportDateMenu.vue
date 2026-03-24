@@ -47,6 +47,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  resetOnOpen: {
+    type: Boolean,
+    default: true,
+  },
 })
 
 const emit = defineEmits([
@@ -129,7 +133,7 @@ watch(resolvedMenuVisible, isVisible => {
     return
 
   pickerKey.value += 1
-  pendingValue.value = null
+  pendingValue.value = props.resetOnOpen ? null : props.modelValue
 })
 
 watch(() => props.modelValue, value => {
@@ -211,7 +215,7 @@ const onPickerUpdate = value => {
         <div class="dialog-title"></div>
       </VCardText>
 
-      <VCardText class="py-4 flex-grow-1" style="overflow-y: auto; overflow-x: hidden;">
+      <VCardText class="py-4 d-flex flex-column" style="overflow-y: auto; overflow-x: hidden;">
         <AppDateTimePicker
           :key="pickerKey"
           :model-value="pendingValue"

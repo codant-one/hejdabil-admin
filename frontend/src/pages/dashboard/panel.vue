@@ -15,6 +15,7 @@ import Team from "@/components/dashboard/Team.vue";
 const dashboardStore = useDashboardStores()
 
 const statisticians = ref(null)
+const statisticiansFilters = ref({})
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
@@ -38,14 +39,30 @@ async function fetchData() {
   environment.value = themeConfig.settings.enviroment
 
   if (role.value === 'Supplier' || role.value === 'User') {
-    await dashboardStore.fetchStatisticians()
-
-    statisticians.value = dashboardStore.getStatisticians
-
-    console.log('statisticians data:', statisticians.value)
+    await loadStatisticians(statisticiansFilters.value)
   }
 
   isRequestOngoing.value = false
+}
+
+async function loadStatisticians(params = {}) {
+  await dashboardStore.fetchStatisticians(params)
+  statisticians.value = dashboardStore.getStatisticians
+}
+
+async function handleStatisticiansFilter(filters) {
+  statisticiansFilters.value = {
+    ...(filters?.date_from ? { date_from: filters.date_from } : {}),
+    ...(filters?.date_to ? { date_to: filters.date_to } : {}),
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    await loadStatisticians(statisticiansFilters.value)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 function resizeSectionToRemainingViewport() {
@@ -108,7 +125,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-10">
-          <Statisticians :statisticians="statisticians" />
+          <Statisticians :statisticians="statisticians" @filter="handleStatisticiansFilter" />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-2">
           <Profit />

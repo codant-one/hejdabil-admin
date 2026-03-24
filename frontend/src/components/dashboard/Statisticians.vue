@@ -2,6 +2,9 @@
 
 import { useTheme } from 'vuetify'
 import { hexToRgb } from '@layouts/utils'
+import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+
+  const emit = defineEmits(['filter'])
 
   const props = defineProps({
     statisticians: {
@@ -17,7 +20,46 @@ import { hexToRgb } from '@layouts/utils'
     total_profit: 0,
   }))
 
+  const exporteraMobile = ref(false);
+  const filterMenuVisible = ref(false)
+  const filterDateRange = ref(null)
+
   const statisticiansData = computed(() => props.statisticians?.statisticians ?? props.statisticians ?? {})
+
+  const normalizeRangeValue = value => {
+    if (!value)
+      return null
+
+    if (Array.isArray(value)) {
+      const start = value[0] ?? null
+      const end = value[1] ?? value[0] ?? null
+
+      return start && end ? [start, end] : null
+    }
+
+    if (typeof value === 'string') {
+      const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+      if (chunks.length >= 2)
+        return [chunks[0], chunks[1]]
+
+      return null
+    }
+
+    return null
+  }
+
+  const onFilterDateUpdate = value => {
+    const range = normalizeRangeValue(value)
+    if (!range)
+      return
+
+    filterMenuVisible.value = false
+
+    emit('filter', {
+      date_from: range[0],
+      date_to: range[1],
+    })
+  }
 
   const monthlyStats = computed(() => {
     const priceByMonth = statisticiansData.value?.priceByMonth
@@ -179,21 +221,63 @@ import { hexToRgb } from '@layouts/utils'
         </div>
 
         <div class="d-flex gap-2">
+          <VMenu 
+            v-if="windowWidth >= 1024">
+            <template #activator="{ props }">
+              <VBtn
+                id="payout-export-button"
+                class="btn-light h-40 w-auto"
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
+
+            <VList>
+              <VListItem>
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem>
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
           <VBtn
-              :class="windowWidth < 1024 ? 'btn-white-2 px-2 h-24' : 'btn-light h-40'"
-              class="w-auto"
+            v-else
+            id="payout-export-button"
+            class="btn-ghost px-2 h-24 w-auto"
+            v-bind="props"
+            block
+            @click="exporteraMobile = true"
           >
-              <VIcon icon="custom-export" size="24" />               
-              <span class="d-none d-md-block">Exportera</span>
+            <VIcon icon="custom-export" size="24" color="#454545"/>
           </VBtn>
 
           <VBtn
-              class="btn-white-2 h-40"
-              :class="windowWidth < 1024 ? 'px-0 h-24' : 'px-3 h-40'"
+              class="h-40"
+              id="statistics-filter-button"
+              :class="windowWidth < 1024 ? 'btn-ghost px-0 h-24' : 'btn-white-2 px-3 h-40'"
+              @click="filterMenuVisible = true"
           >
-              <VIcon icon="custom-filter" size="24" />
+              <VIcon icon="custom-filter" size="24" color="#454545"/>
               <span class="d-none d-md-block">Filtrera efter datum</span>
           </VBtn>
+
+          <ExportDateMenu
+            v-model="filterDateRange"
+            v-model:menuVisible="filterMenuVisible"
+            :show-activator="false"
+            :is-mobile="windowWidth < 1024"
+            :reset-on-open="false"
+            activator="#statistics-filter-button"
+            button-text="Filtrera"
+            button-icon="custom-filter"
+            picker-label="Filtrera efter datum"
+            picker-placeholder="Välj datum"
+            @update:modelValue="onFilterDateUpdate"
+          />
         </div>
     </VCardTitle>
 
@@ -232,6 +316,25 @@ import { hexToRgb } from '@layouts/utils'
       />
     </VCardText>
   </VCard>
+
+  <!-- 👉 Export Mobile Dialog -->
+  <VDialog
+    v-model="exporteraMobile"
+    transition="dialog-bottom-transition"
+    content-class="dialog-bottom-full-width"
+  >
+    <VCard>
+      <VList>
+        <VListItem>
+          <VListItemTitle>Exportera PDF</VListItemTitle>
+        </VListItem>
+
+        <VListItem>
+          <VListItemTitle>Exportera Excel</VListItemTitle>
+        </VListItem>
+      </VList>
+    </VCard>
+  </VDialog>
 </template>
 
 <style lang="scss">

@@ -25,14 +25,22 @@ class DashboardController extends Controller
             $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from) : null;
             $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to) : null;
 
-            $referenceDate = $dateFrom ?: ($dateTo ?: $today);
-            $yearStart = $referenceDate->copy()->startOfYear();
-            $yearEnd = $referenceDate->copy()->endOfYear();
+            // Dashboard charts are always built for the current year.
+            $yearStart = $today->copy()->startOfYear();
+            $yearEnd = $today->copy()->endOfYear();
 
-            $filterStart = ($dateFrom ?: $yearStart)->copy()->startOfDay();
-            $filterEnd = $dateTo
-                ? $dateTo->copy()->endOfDay()
-                : ($dateFrom ? $yearEnd->copy()->endOfDay() : $today->copy()->endOfDay());
+            $requestedStart = ($dateFrom ?: $yearStart)->copy()->startOfDay();
+            $requestedEnd = ($dateTo ?: $today)->copy()->endOfDay();
+
+            $filterStart = $requestedStart->copy();
+            if ($filterStart->lt($yearStart)) {
+                $filterStart = $yearStart->copy()->startOfDay();
+            }
+
+            $filterEnd = $requestedEnd->copy();
+            if ($filterEnd->gt($yearEnd)) {
+                $filterEnd = $yearEnd->copy()->endOfDay();
+            }
 
             $supplierId = $this->getCurrentSupplierId();
 
@@ -53,7 +61,7 @@ class DashboardController extends Controller
                     'totalCost' => $vehiclePriceSummary['totalCost'],
                     'totalProfit' => $vehiclePriceSummary['totalProfit'],
                     'dateRange' => [
-                        'year' => $referenceDate->year,
+                        'year' => $today->year,
                         'date_from' => $filterStart->toDateString(),
                         'date_to' => $filterEnd->toDateString(),
                     ]
@@ -148,7 +156,7 @@ class DashboardController extends Controller
             'totalPurchasePrice' => $totalPurchasePrice,
             'totalSalePrice' => $totalSalePrice,
             'totalCost' => $totalCost,
-            'totalProfit' => round((float) ($totalSalePrice - $totalPurchasePrice), 2),
+            'totalProfit' => round((float) ($totalSalePrice - $totalPurchasePrice - $totalCost), 2),
         ];
     }
 
