@@ -2212,7 +2212,7 @@ onBeforeRouteLeave((to, from, next) => {
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
-                    <VIcon size="90" icon="custom-steering-wheel" />
+                    <VIcon size="90" icon="custom-vehicle-exist" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
                     <div class="dialog-title">Kunde inte skapa avtalet</div>

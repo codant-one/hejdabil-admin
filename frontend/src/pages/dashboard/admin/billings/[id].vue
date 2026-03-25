@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
               @click="updateBilling"
             >
               <template #prepend>
-                <VIcon icon="custom-return" size="24" />
+                <VIcon icon="custom-unpaid" size="24" />
               </template>
               Markera som obetald
             </VBtn>
@@ -541,7 +541,7 @@ onBeforeUnmount(() => {
             @click="updateBilling(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
-              <VIcon icon="custom-return" size="24" />
+              <VIcon icon="custom-unpaid" size="24" />
             </template>
             <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
