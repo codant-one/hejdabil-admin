@@ -22,6 +22,7 @@ class DashboardController extends Controller
 
             //Filters dates
             $today = Carbon::today();
+            $hasDateFilter = $request->filled('date_from') || $request->filled('date_to');
             $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from) : null;
             $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to) : null;
 
@@ -29,8 +30,12 @@ class DashboardController extends Controller
                 [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
             }
 
-            $defaultRangeStart = $today->copy()->subMonthsNoOverflow(11)->startOfMonth();
-            $defaultRangeEnd = $today->copy()->endOfDay();
+            $defaultRangeStart = $hasDateFilter
+                ? $today->copy()->subMonthsNoOverflow(11)->startOfMonth()
+                : $today->copy()->startOfYear();
+            $defaultRangeEnd = $hasDateFilter
+                ? $today->copy()->endOfDay()
+                : $today->copy()->endOfYear();
 
             $filterStart = ($dateFrom ?: $defaultRangeStart)->copy()->startOfDay();
             $filterEnd = ($dateTo ?: $defaultRangeEnd)->copy()->endOfDay();

@@ -438,6 +438,13 @@ import Dashboard from '@/api/dashboard'
   const saleSeries = computed(() => monthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
   const costSeries = computed(() => monthlyStats.value.map(item => Number(item.total_cost ?? 0)))
   const profitSeries = computed(() => monthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+  const currentMonthKey = computed(() => {
+    const currentDate = new Date()
+    const year = currentDate.getFullYear()
+    const month = `${currentDate.getMonth() + 1}`.padStart(2, '0')
+
+    return `${year}-${month}`
+  })
 
   const chartRenderKey = computed(() => {
     return [
@@ -467,12 +474,11 @@ import Dashboard from '@/api/dashboard'
     const xAxisOffsetY = isMobile && months.length > 9 ? 16 : 0
     const xAxisFontSize = isMobile ? '9px' : '13px'
 
-    const makeColors = (seriesData, activeColor, inactiveColor) => {
-      const maxValue = Math.max(...seriesData, 0)
-      const highlightedIndex = Math.max(seriesData.findIndex(item => item === maxValue), 0)
+    const makeColors = (activeColor, inactiveColor) => monthlyStats.value.map(item => {
+      const normalizedMonth = typeof item?.month === 'string' ? item.month.slice(0, 7) : null
 
-      return months.map((_, i) => (i === highlightedIndex ? activeColor : inactiveColor))
-    }
+      return normalizedMonth === currentMonthKey.value ? activeColor : inactiveColor
+    })
 
     const createChartOptions = (colors) => ({
       chart: {
@@ -559,7 +565,7 @@ import Dashboard from '@/api/dashboard'
       {
         title: 'Inköp',
         icon: 'custom-car-close',
-        chartOptions: createChartOptions(makeColors(purchaseSeries.value, '#6E9383', '#BDD2C8')),
+        chartOptions: createChartOptions(makeColors('#6E9383', '#BDD2C8')),
         series: [{ data: purchaseSeries.value }],
         border: 'border-selected-inventary',
         bgColor: '#F5F8F6',
@@ -567,7 +573,7 @@ import Dashboard from '@/api/dashboard'
       {
         title: 'Försäljning',
         icon: 'custom-car-open',
-        chartOptions: createChartOptions(makeColors(saleSeries.value, '#79FCA2', '#D8FFE4')),
+        chartOptions: createChartOptions(makeColors('#79FCA2', '#D8FFE4')),
         series: [{ data: saleSeries.value }],
         border: 'border-selected-sales',
         bgColor: '#D8FFE4',
@@ -575,7 +581,7 @@ import Dashboard from '@/api/dashboard'
       {
         title: 'Extra kostnader',
         icon: 'custom-costs',
-        chartOptions: createChartOptions(makeColors(costSeries.value, '#4DFFD1', '#C6FFEB')),
+        chartOptions: createChartOptions(makeColors('#4DFFD1', '#C6FFEB')),
         series: [{ data: costSeries.value }],
         border: 'border-selected-costs',
         bgColor: '#C6FFEB',
@@ -583,7 +589,7 @@ import Dashboard from '@/api/dashboard'
       {
         title: 'Vinst',
         icon: 'custom-profit',
-        chartOptions: createChartOptions(makeColors(profitSeries.value, '#3AF8FF', '#C0FEFF')),
+        chartOptions: createChartOptions(makeColors('#3AF8FF', '#C0FEFF')),
         series: [{ data: profitSeries.value }],
         border: 'border-selected-profit',
         bgColor: '#C0FEFF',
