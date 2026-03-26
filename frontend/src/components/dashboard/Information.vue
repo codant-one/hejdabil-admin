@@ -14,21 +14,14 @@
 <template>
    <VCard title="" class="card-dashboard">
       <VCardTitle 
-         class="title-box border-none pb-0"
+         class="title-box border-none pb-2"
          :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
       >
-         <div class="title-text">Mina uppgifter</div>
-
-         <VBtn
-            class="btn-white-2 px-3 h-24"
-         >
-            <VIcon icon="custom-eye" size="24" />
-            Visa avslutade
-         </VBtn>
+         <div class="title-text mb-2">Mina uppgifter</div>
 
       </VCardTitle>
 
-      <VCardText class="pt-4 form-dashboard" :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
+      <VCardText class="pt-2 form-dashboard" :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
          <div class="d-flex flex-column gap-2">
             <div>
                <VTextField

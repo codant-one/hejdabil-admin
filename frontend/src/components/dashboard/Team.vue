@@ -94,15 +94,12 @@
 
 <template>
    <VCard title="" class="card-dashboard border-team">
-      <VCardTitle 
-         class="title-box"
-         :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
-      >
+      <VCardTitle class="title-box">
          <div class="title-text">Teamstatistik</div>
 
-         <VBtn class="btn-white-2 px-3 h-40">
-            <VIcon icon="custom-filter" size="24" />
-            <span class="d-none d-md-block">Filtrera efter datum</span>
+         <VBtn class="btn-white-2 px-3 h-40" :class="windowWidth < 1024 ? 'w-100' : ''">
+            <VIcon icon="custom-filter" size="24" color="#6E9383"/>
+            <span class="text-gunmetal-3">Filtrera efter datum</span>
          </VBtn>
       </VCardTitle>
       <VCardText class="px-0 py-0">
@@ -132,11 +129,6 @@
          :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
       >
          <div class="title-text">Individuell prestation</div>
-
-         <VBtn class="btn-ghost px-3 h-40">
-            <VIcon icon="custom-export" size="24" />
-            <span class="d-none d-md-block">Exportera</span>
-         </VBtn>
       </VCardTitle>
       <VCardText class="pb-0">
          <VTable

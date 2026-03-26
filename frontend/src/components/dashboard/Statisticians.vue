@@ -601,22 +601,19 @@ import Dashboard from '@/api/dashboard'
 
 <template>
   <VCard title="" class="card-dashboard">
-    <VCardTitle 
-        class="title-box"
-        :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
-    >
+    <VCardTitle class="title-box">
         <div class="title-text d-flex flex-column gap-2">
           Viktiga statistikuppgifter
           <span>Inköpta bilar</span>
         </div>
 
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
           <VMenu 
             v-if="windowWidth >= 1024">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
-                class="btn-light h-40 w-auto"
+                class="btn-light w-auto h-40"
                 v-bind="props"
               >
                 <VIcon icon="custom-export" size="24" />
@@ -637,21 +634,21 @@ import Dashboard from '@/api/dashboard'
           <VBtn
             v-else
             id="payout-export-button"
-            class="btn-ghost px-2 h-24 w-auto"
+            class="btn-light w-auto h-40"
             block
             @click="exporteraMobile = true"
           >
-            <VIcon icon="custom-export" size="24" color="#454545"/>
+            <VIcon icon="custom-export" size="24" />
+             Exportera
           </VBtn>
 
           <VBtn
-              class="h-40"
-              id="statistics-filter-button"
-              :class="windowWidth < 1024 ? 'btn-ghost px-0 h-24' : 'btn-white-2 px-3 h-40'"
-              @click="filterMenuVisible = true"
+            id="statistics-filter-button"
+            class="btn-white-2 h-40"
+            @click="filterMenuVisible = true"
           >
-              <VIcon icon="custom-filter" size="24" color="#454545"/>
-              <span class="d-none d-md-block">Filtrera efter datum</span>
+              <VIcon icon="custom-filter" size="24" color="#6E9383"/>
+              <span class="text-gunmetal-3">Filtrera efter datum</span>
           </VBtn>
 
           <ExportDateMenu
