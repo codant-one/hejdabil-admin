@@ -40,6 +40,7 @@ use App\Http\Controllers\{
     PayoutController,
     NotificationController,
     CountryController,
+    ReminderController
 };
 
 use App\Http\Controllers\Services\{
@@ -112,10 +113,9 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('payouts', PayoutController::class);
     Route::apiResource('countries', CountryController::class);
     Route::apiResource('notifications', NotificationController::class);
+    Route::apiResource('reminders', ReminderController::class);
 
     /* DASHBOARD */
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
-
     Route::group(['prefix' => 'dashboard'], function () {
         Route::get('/statisticians', [DashboardController::class, 'statisticians'])->name('dashboard.statisticians');
         Route::get('/indicators', [DashboardController::class, 'indicators'])->name('dashboard.indicators');
@@ -123,6 +123,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/measures', [DashboardController::class, 'measures'])->name('dashboard.measures');
         Route::get('/team', [DashboardController::class, 'team'])->name('dashboard.team');
         Route::get('/vehicles', [DashboardController::class, 'vehicles'])->name('dashboard.vehicles');
+        Route::get('/reminders', [DashboardController::class, 'reminders'])->name('dashboard.reminders');
     });
 
     /* NOTIFICATIONS */
@@ -254,6 +255,11 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
         Route::post('/{payout}/save-receipt-image', [PayoutController::class, 'saveReceiptImage'])->name('payouts.saveReceiptImage');
         Route::post('/send', [PayoutController::class, 'send']);
+    });
+
+    //Reminders
+    Route::group(['prefix' => 'reminders'], function () {
+        Route::post('updateState/{id}', [ReminderController::class, 'updateState'])->name('reminders.updateState');
     });
 
     //Configs

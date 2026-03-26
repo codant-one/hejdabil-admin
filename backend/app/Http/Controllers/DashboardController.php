@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 use App\Models\Agreement;
 use App\Models\Billing;
 use App\Models\Payout;
+use App\Models\Reminder;
 use App\Models\Supplier;
 use App\Models\Vehicle;
 use App\Models\VehicleTask;
@@ -430,6 +431,32 @@ class DashboardController extends Controller
                         'date_from' => $filterStart?->toDateString(),
                         'date_to' => $filterEnd?->toDateString(),
                     ],
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reminders(): JsonResponse
+    {
+        try {
+            $reminders = Reminder::query()
+                ->with(['user'])
+                ->where('user_id', Auth::id())
+                ->orderBy('is_done')
+                ->orderBy('start_date')
+                ->orderBy('id')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'reminders' => $reminders,
                 ]
             ]);
         } catch(\Illuminate\Database\QueryException $ex) {

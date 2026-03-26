@@ -17,6 +17,8 @@
 
    const router = useRouter()
    const tasksStores = useTasksStores()
+   const animatedMeasureId = ref(null)
+   let measureAnimationTimeout = null
 
    const measureItems = computed(() => props.measures?.measures ?? props.measures ?? {})
 
@@ -54,6 +56,16 @@
    }
 
    const handleCheckboxChange = (taskData, value) => {
+      animatedMeasureId.value = taskData?.id ?? null
+
+      if (measureAnimationTimeout)
+         clearTimeout(measureAnimationTimeout)
+
+      measureAnimationTimeout = setTimeout(() => {
+         if (animatedMeasureId.value === taskData?.id)
+            animatedMeasureId.value = null
+      }, 320)
+
       selectedTaskSource.value = taskData
       selectedTaskOriginalStatus.value = taskData?.is_cost ?? 0
       taskData.is_cost = value
@@ -123,19 +135,29 @@
                :key="item.id"
                class="measure-item d-flex align-start"
             >
-               <VCheckbox
-                  :model-value="item.is_cost"
-                  :true-value="1"
-                  :false-value="0"
-                  true-icon="custom-filled-checkbox"
-                  color="#454545"
-                  :ripple="false"
-                  hide-details
-                  class="measure-item__checkbox ms-2"
-                  @update:model-value="handleCheckboxChange(item, $event)"
-               />
+               <div
+                  :class="[
+                     'measure-item__checkbox ms-2',
+                     animatedMeasureId === item.id ? 'measure-item__checkbox--animating' : ''
+                  ]"
+               >
+                  <VCheckbox
+                     :model-value="item.is_cost"
+                     :true-value="1"
+                     :false-value="0"
+                     true-icon="custom-filled-checkbox"
+                     false-icon="custom-empty-checkbox"
+                     color="#454545"
+                     :ripple="false"
+                     hide-details
+                     @update:model-value="handleCheckboxChange(item, $event)"
+                  />
+               </div>
 
-               <div class="measure-item__content">
+               <div
+                  class="measure-item__content"
+                  :class="{ 'measure-item__content--animating': animatedMeasureId === item.id }"
+               >
                   <div
                      class="measure-item__header cursor-pointer d-flex align-center flex-wrap"
                      @click="goToTask(item.vehicle_id)"
@@ -150,7 +172,10 @@
                      <VIcon icon="custom-arrow-right" size="16" :color="item.is_cost ? '#878787' : '#6E9383'" />
                   </div>
 
-                  <div class="measure-item__description">
+                  <div 
+                     class="measure-item__description"
+                     :class="{ 'measure-item__title--completed': !!item.is_cost }"
+                  >
                      {{ truncateText(
                         item.measure + '. ' + (item.description ?? '')
                      , windowWidth < 1024 ? 70 : 130) }}
@@ -245,6 +270,13 @@
 
    .measure-item__checkbox {
       flex: 0 0 auto;
+      display: flex;
+      align-items: flex-start;
+      transform-origin: center;
+
+      &.measure-item__checkbox--animating {
+         animation: dashboard-checkbox-pop 0.28s ease;
+      }
    }
 
    .measure-item__content {
@@ -253,6 +285,11 @@
       flex: 1 1 auto;
       flex-direction: column;
       gap: 4px;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+   }
+
+   .measure-item__content--animating {
+      animation: dashboard-item-highlight 0.32s ease;
    }
 
    .measure-item__header {
@@ -275,7 +312,7 @@
    .measure-item__title--completed {
       text-decoration: line-through;
       text-decoration-thickness: 1px;
-      color: #878787;
+      color: #878787 !important;
    }
 
    .measure-item__description {
@@ -305,5 +342,32 @@
 
    .measure-item__meta-group {
       gap: 4px;
+   }
+
+   @keyframes dashboard-checkbox-pop {
+      0% {
+         transform: scale(1);
+      }
+      45% {
+         transform: scale(1.18);
+      }
+      100% {
+         transform: scale(1);
+      }
+   }
+
+   @keyframes dashboard-item-highlight {
+      0% {
+         transform: translateX(0);
+         opacity: 1;
+      }
+      35% {
+         transform: translateX(4px);
+         opacity: 0.82;
+      }
+      100% {
+         transform: translateX(0);
+         opacity: 1;
+      }
    }
 </style>

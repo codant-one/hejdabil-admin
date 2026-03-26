@@ -25,6 +25,10 @@ class Dashboard {
     vehicles(params) {
         return axios.get('dashboard/vehicles', {params})
     }
+
+    reminders() {
+        return axios.get('dashboard/reminders')
+    }
 }
 
 const dashboard = new Dashboard();

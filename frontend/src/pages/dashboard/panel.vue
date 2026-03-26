@@ -1,5 +1,6 @@
 <script setup>
 
+import { useDisplay } from "vuetify";
 import { themeConfig } from '@themeConfig'
 import { useDashboardStores } from '@/stores/useDashboard'
 import { useAuthStores } from '@/stores/useAuth';
@@ -20,12 +21,16 @@ const authStores = useAuthStores();
 const configsStores = useConfigsStores();
 const ability = useAppAbility()
 
+const { mdAndDown } = useDisplay();
+const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
 const statisticians = ref(null)
 const indicators = ref({})
 const profit = ref({})
 const measures = ref({})
 const team = ref({})
 const vehicles = ref({})
+const reminders = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const teamFilters = ref({})
@@ -35,6 +40,12 @@ const vehicleFilters = ref({
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
+
+const advisor = ref({
+  type: '',
+  message: '',
+  show: false
+})
 
 const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
@@ -132,6 +143,7 @@ async function fetchData() {
     await loadProfit()
     await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
+    await loadReminders()
     await loadMeasures()
     await loadVehicles(vehicleFilters.value)
     await loadTeam()
@@ -158,6 +170,21 @@ async function loadProfit() {
 async function loadMeasures() {
   await dashboardStore.fetchMeasures()
   measures.value = dashboardStore.getMeasures
+}
+
+async function loadReminders() {
+  await dashboardStore.fetchReminders()
+  reminders.value = dashboardStore.getReminders
+}
+
+async function handleRemindersRefresh() {
+  isRequestOngoing.value = true
+
+  try {
+    await loadReminders()
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 async function loadVehicles(params = {}) {
@@ -272,6 +299,16 @@ onBeforeUnmount(() => {
   <section class="page-section" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
+    <VSnackbar
+      v-model="advisor.show"
+      transition="scroll-y-reverse-transition"
+      :location="snackbarLocation"
+      :color="advisor.type"
+      class="snackbar-alert snackbar-dashboard"
+    >
+      {{ advisor.message }}
+    </VSnackbar>
+
     <!-- 👉 Administrador -->
     <VCard title="" class="card-fill" v-if="(role !== 'Supplier' && role !== 'User') || environment === 'production'">
       <VRow class="py-6 px-md-6 px-2">
@@ -325,7 +362,10 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-          <Information />
+          <Information
+            :reminders="reminders?.reminders"
+            @refresh="handleRemindersRefresh"
+          />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
           <Measures

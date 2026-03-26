@@ -9,6 +9,7 @@ export const useDashboardStores = defineStore('dashboard', {
         measures: {},
         team: {},
         vehicles: {},
+        reminders: {},
         loading: false,
         last_page: 1,
     }),
@@ -30,6 +31,9 @@ export const useDashboardStores = defineStore('dashboard', {
         },
         getVehicles(){
             return this.vehicles
+        },
+        getReminders(){
+            return this.reminders
         }
     },
     actions: {
@@ -98,6 +102,17 @@ export const useDashboardStores = defineStore('dashboard', {
             return Dashboard.vehicles(params)
                 .then((response) => {
                     this.vehicles = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        fetchReminders() {
+            this.setLoading(true)
+            return Dashboard.reminders()
+                .then((response) => {
+                    this.reminders = response.data.data
                 })
                 .catch(error => console.log(error))
                 .finally(() => {
