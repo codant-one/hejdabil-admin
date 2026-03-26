@@ -234,6 +234,40 @@ class DashboardController extends Controller
         }
     }
 
+    public function measures(): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+            $measures = VehicleTask::query()
+                ->with([
+                    'vehicle:id,reg_num,model_id,year',
+                    'vehicle.model:id,name,brand_id',
+                    'vehicle.model.brand:id,name'
+                ])
+                ->where('is_cost', 0)
+                ->whereHas('vehicle', function ($query) use ($supplierId) {
+                    $query->where('supplier_id', $supplierId);
+                })
+                ->orderByRaw('CASE WHEN start_date IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('start_date')
+                ->orderByDesc('id')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'measures' => $measures,
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function getVehiclePriceSummaryByMonth(
         int $supplierId,
         Carbon $filterStart,

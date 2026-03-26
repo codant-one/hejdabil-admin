@@ -23,6 +23,7 @@ const ability = useAppAbility()
 const statisticians = ref(null)
 const indicators = ref({})
 const profit = ref({})
+const measures = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const userDataJ = ref('')
@@ -125,6 +126,7 @@ async function fetchData() {
     await loadProfit()
     await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
+    await loadMeasures()
   }
 
   isRequestOngoing.value = false
@@ -143,6 +145,21 @@ async function loadIndicators(params = {}) {
 async function loadProfit() {
   await dashboardStore.fetchProfit()
   profit.value = dashboardStore.getProfit
+}
+
+async function loadMeasures() {
+  await dashboardStore.fetchMeasures()
+  measures.value = dashboardStore.getMeasures
+}
+
+async function handleMeasuresRefresh() {
+  isRequestOngoing.value = true
+
+  try {
+    await loadMeasures()
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 async function handleIndicatorsFilter(filters) {
@@ -263,7 +280,11 @@ onBeforeUnmount(() => {
           <Information />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-          <Measures />
+          <Measures
+            :measures="measures"
+            @loading="handleStatisticiansLoading"
+            @refresh="handleMeasuresRefresh"
+          />
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-12">

@@ -13,6 +13,10 @@ class Dashboard {
     profit() {
         return axios.get('dashboard/profit')
     }
+
+    measures() {
+        return axios.get('dashboard/measures')
+    }
 }
 
 const dashboard = new Dashboard();
