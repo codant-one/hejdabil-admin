@@ -54,8 +54,8 @@ const visibleTabs = computed(() => {
   return tabs.filter(tab => tab.title !== 'Mitt team')
 })
 
-const setTabFromRoute = (tabQuery) => {
-  if (tabQuery === 'mitt-team' && role.value === 'Supplier') {
+const setTabFromRoute = (tabQuery, hash) => {
+  if ((hash === '#tab-team' || tabQuery === 'mitt-team') && role.value === 'Supplier') {
     userTab.value = 2
     return
   }
@@ -70,12 +70,12 @@ const setTabFromRoute = (tabQuery) => {
   }
 }
 
-watch(() => route.query.tab, tab => {
-  setTabFromRoute(tab)
+watch(() => [route.query.tab, route.hash], ([tab, hash]) => {
+  setTabFromRoute(tab, hash)
 }, { immediate: true })
 
 watch(role, () => {
-  setTabFromRoute(route.query.tab)
+  setTabFromRoute(route.query.tab, route.hash)
 })
 
 onBeforeRouteLeave((to, from, next) => {

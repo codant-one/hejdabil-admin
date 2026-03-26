@@ -1,78 +1,94 @@
 
 <script setup>
    import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
-   import avatarImg from "@/assets/images/avatar-example.jpg";
+   import ExportDateMenu from '@/components/common/ExportDateMenu.vue'
+   import { themeConfig } from '@themeConfig'
+   
+   const emit = defineEmits(['filter', 'loading'])
 
    const { width: windowWidth } = useWindowSize();
+   const filterMenuVisible = ref(false)
+   const filterDateRange = ref(null)
+   const lastFilterSelectionKey = ref(null)
 
-   const teamTotals = [
+   const props = defineProps({
+      teamMembers: {
+         type: Array,
+         default: () => [],
+      },
+      teamTotals: {
+         type: Object,
+         default: () => ({}),
+      },
+   });
+
+   const teamTotals = computed(() => [
       {
-         value: 20,
+         value: props.teamTotals?.billings ?? 0,
          label: 'Fakturor',
          icon: 'custom-facture',
          iconClass: 'team-stat-card__icon--mint',
       },
       {
-         value: 20,
+         value: props.teamTotals?.payouts ?? 0,
          label: 'Swish',
          icon: 'custom-swish',
          iconClass: 'team-stat-card__icon--cyan',
       },
       {
-         value: 20,
+         value: props.teamTotals?.agreements ?? 0,
          label: 'Avtal',
          icon: 'custom-contract',
          iconClass: 'team-stat-card__icon--neutral',
       },
-   ];
+   ]);
 
-   const teamMembers = [
-      {
-         id: 1,
-         name: 'Förnamn och efternamn',
-         email: 'Lorem Ipsum',
-         invoices: 3,
-         swish: 22,
-         agreements: 30,
-         avatar: avatarImg,
-      },
-      {
-         id: 2,
-         name: 'Förnamn och efternamn',
-         email: 'Lorem Ipsum',
-         invoices: 6,
-         swish: 4,
-         agreements: 3,
-         avatar: avatarImg,
-      },
-      {
-         id: 3,
-         name: 'Förnamn och efternamn',
-         email: 'Lorem Ipsum',
-         invoices: 2,
-         swish: 8,
-         agreements: 6,
-         avatar: avatarImg,
-      },
-      {
-         id: 4,
-         name: 'Förnamn och efternamn',
-         email: 'Lorem Ipsum',
-         invoices: 1,
-         swish: 12,
-         agreements: 8,
-         avatar: avatarImg,
-      },
-      {
-         id: 5,
-         name: 'Förnamn och efternamn',
-         email: 'Lorem Ipsum',
-         invoices: 0,
-         swish: 3,
-         agreements: 1,
-         avatar: avatarImg,
-      },
-   ];
+   const teamMembers = computed(() => props.teamMembers ?? []);
+
+   watch(filterMenuVisible, isVisible => {
+      if (isVisible)
+         lastFilterSelectionKey.value = null
+   })
+
+   const normalizeRangeValue = value => {
+      if (!value)
+         return null
+
+      if (Array.isArray(value)) {
+         const start = value[0] ?? null
+         const end = value[1] ?? value[0] ?? null
+
+         return start && end ? [start, end] : null
+      }
+
+      if (typeof value === 'string') {
+         const chunks = value.split(/\s+to\s+|\s+till\s+|\s+a\s+/i).map(item => item.trim()).filter(Boolean)
+         if (chunks.length >= 2)
+            return [chunks[0], chunks[1]]
+
+         return null
+      }
+
+      return null
+   }
+
+   const onFilterDateUpdate = value => {
+      const range = normalizeRangeValue(value)
+      if (!range)
+         return
+
+      const selectionKey = `${range[0]}__${range[1]}`
+      if (selectionKey === lastFilterSelectionKey.value)
+         return
+
+      lastFilterSelectionKey.value = selectionKey
+      filterMenuVisible.value = false
+      emit('loading', true)
+      emit('filter', {
+         date_from: range[0],
+         date_to: range[1],
+      })
+   }
 
    const truncateText = (text, length = 15) => {
       if (text && text.length > length) {
@@ -83,7 +99,7 @@
 
    // 👉 Computing pagination data
    const paginationData = computed(() => {
-      const totalMembers = teamMembers.length;
+      const totalMembers = teamMembers.value.length;
 
       if (!totalMembers)
          return 'Visar 0 av 0 teammedlemmar';
@@ -97,10 +113,29 @@
       <VCardTitle class="title-box">
          <div class="title-text">Teamstatistik</div>
 
-         <VBtn class="btn-white-2 px-3 h-40" :class="windowWidth < 1024 ? 'w-100' : ''">
+         <VBtn
+            id="team-filter-button"
+            class="btn-white-2 px-3 h-40"
+            :class="windowWidth < 1024 ? 'w-100' : ''"
+            @click="filterMenuVisible = true"
+         >
             <VIcon icon="custom-filter" size="24" color="#6E9383"/>
             <span class="text-gunmetal-3">Filtrera efter datum</span>
          </VBtn>
+
+         <ExportDateMenu
+            v-model="filterDateRange"
+            v-model:menuVisible="filterMenuVisible"
+            :show-activator="false"
+            :is-mobile="windowWidth < 1024"
+            :reset-on-open="false"
+            activator="#team-filter-button"
+            button-text="Filtrera"
+            button-icon="custom-filter"
+            picker-label="Filtrera efter datum"
+            picker-placeholder="Välj datum"
+            @update:modelValue="onFilterDateUpdate"
+         />
       </VCardTitle>
       <VCardText class="px-0 py-0">
          <div class="team-stats-panel">
@@ -145,7 +180,7 @@
             </thead>
 
             <tbody>
-               <tr v-for="member in teamMembers" :key="member.id">
+               <tr v-for="member in teamMembers" :key="member?.id ?? member?.supplier_id">
                   <td style="width: 1%; white-space: nowrap">
                      <div class="d-flex align-center gap-x-1">
                         <VAvatar
@@ -155,29 +190,29 @@
                            <VImg
                               v-if="member.avatar"
                               style="border-radius: 50%"
-                              :src="member.avatar"
+                              :src="themeConfig.settings.urlStorage + member.avatar"
                            />
                            <PresetAvatarImage
-                           v-else
-                           :avatar-id="member.user_detail?.avatar_id"
+                              v-else
+                              :avatar-id="member.user_detail?.avatar_id"
                            />
                         </VAvatar>
                         <div class="d-flex flex-column">
                            <span class="font-weight-medium">
-                           {{ member.name }} {{ member.last_name ?? "" }}
+                              {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
                            </span>
                            <span class="text-sm text-disabled">
                            <VTooltip 
-                              v-if="member.email && member.email.length > 20"
+                              v-if="member?.email && member.email.length > 20"
                               location="bottom">
                               <template #activator="{ props }">
                                  <span v-bind="props" class="cursor-pointer">
-                                 {{ truncateText(member.email, 20) }}
+                                 {{ truncateText(member?.email, 20) }}
                                  </span>
                               </template>
-                              <span>{{ member.email }}</span>
+                              <span>{{ member?.email }}</span>
                            </VTooltip>
-                           <span class="text-sm text-disabled"v-else>{{ member.email }}</span>
+                           <span class="text-sm text-disabled"v-else>{{ member?.email ?? '' }}</span>
                            </span>
                         </div>
                      </div>
@@ -200,70 +235,76 @@
         class="expansion-panels pb-4 px-4"
         v-if="teamMembers.length && $vuetify.display.mdAndDown"
       >
-        <VExpansionPanel v-for="member in teamMembers" :key="member.id">
-          <VExpansionPanelTitle
-            collapse-icon="custom-chevron-right"
-            expand-icon="custom-chevron-down"
-          >
-            <span class="order-id">
-               <VAvatar
-                  variant="outlined"
-                  size="38"
-               >
-                  <VImg
-                     v-if="member.avatar"
-                     style="border-radius: 50%"
-                     :src="member.avatar"
-                  />
-                  <PresetAvatarImage
-                  v-else
-                  :avatar-id="member.user_detail?.avatar_id"
-                  />
-               </VAvatar>
-            </span>
-            <div class="order-title-box">
-              <span class="title-panel">{{ member.name }} {{ member.last_name ?? "" }}</span>
-              <div class="title-organization">
-                {{ truncateText(member.email, 20) }}
-              </div>
-            </div>
-          </VExpansionPanelTitle>
-          <VExpansionPanelText>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Fakturor:</div>
-              <div class="expansion-panel-item-value">
-                {{ member.invoices ?? "" }}
-              </div>
-            </div>
-            <div class="mb-6">
-              <div class="expansion-panel-item-label">Swish:</div>
-              <div class="expansion-panel-item-value">
-                {{ member.swish ?? "" }}
-              </div>
-            </div>
-            <div>
-              <div class="expansion-panel-item-label">Avtal:</div>
-              <div class="expansion-panel-item-value">
-                {{ member.agreements ?? "" }}
-              </div>
-            </div>
-          </VExpansionPanelText>
-        </VExpansionPanel>
+         <VExpansionPanel v-for="member in teamMembers" :key="member?.id ?? member?.supplier_id">
+            <VExpansionPanelTitle
+               collapse-icon="custom-chevron-right"
+               expand-icon="custom-chevron-down"
+            >
+               <span class="order-id">
+                  <VAvatar
+                     variant="outlined"
+                     size="38"
+                  >
+                     <VImg
+                        v-if="member.avatar"
+                        style="border-radius: 50%"
+                        :src="themeConfig.settings.urlStorage + member.avatar"
+                     />
+                     <PresetAvatarImage
+                        v-else
+                        :avatar-id="member.user_detail?.avatar_id"
+                     />
+                  </VAvatar>
+               </span>
+               <div class="order-title-box">
+                  <span class="title-panel">
+                     {{ member?.name ?? '' }} {{ member?.last_name ?? "" }}
+                  </span>
+                  <div class="title-organization">
+                     {{ truncateText(member?.email, 20) }}
+                  </div>
+               </div>
+            </VExpansionPanelTitle>
+            <VExpansionPanelText>
+               <div class="mb-6">
+                  <div class="expansion-panel-item-label">Fakturor:</div>
+                  <div class="expansion-panel-item-value">
+                     {{ member.invoices ?? "" }}
+                  </div>
+               </div>
+               <div class="mb-6">
+                  <div class="expansion-panel-item-label">Swish:</div>
+                  <div class="expansion-panel-item-value">
+                     {{ member.swish ?? "" }}
+                  </div>
+               </div>
+               <div>
+                  <div class="expansion-panel-item-label">Avtal:</div>
+                  <div class="expansion-panel-item-value">
+                     {{ member.agreements ?? "" }}
+                  </div>
+               </div>
+            </VExpansionPanelText>
+         </VExpansionPanel>
       </VExpansionPanels>
 
       <VCardText
-        v-if="teamMembers.length"
-        :class="windowWidth < 1024 ? 'flex-column px-4' : 'px-6'"
-        class="d-flex align-center gap-4 pt-0"
+         v-if="teamMembers.length"
+         :class="windowWidth < 1024 ? 'flex-column px-4' : 'px-6'"
+         class="d-flex align-center gap-4 pt-0"
       >
-        <span class="text-pagination-results">
-          {{ paginationData }}
-        </span>
+         <span class="text-pagination-results">
+            {{ paginationData }}
+         </span>
 
-        <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
+         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-block'" />
 
-        <VBtn class="btn-light px-3 h-40" :class="windowWidth < 1024 ? 'w-100' : ''">
-           Visa alla rapporter
+           <VBtn
+              class="btn-light px-3 h-40"
+              :class="windowWidth < 1024 ? 'w-100' : ''"
+              :to="{ name: 'dashboard-profile', hash: '#tab-team' }"
+           >
+            Visa alla rapporter
          </VBtn>
       </VCardText>
 

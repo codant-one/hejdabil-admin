@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 
+use App\Models\Agreement;
+use App\Models\Billing;
+use App\Models\Payout;
+use App\Models\Supplier;
 use App\Models\Vehicle;
 use App\Models\VehicleTask;
 
@@ -268,6 +272,124 @@ class DashboardController extends Controller
         }
     }
 
+    public function team(Request $request): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+            [$hasDateFilter, $dateFrom, $dateTo] = $this->resolveDateFilters($request);
+
+            $filterStart = $hasDateFilter
+                ? ($dateFrom ?: Carbon::today()->copy()->subMonthsNoOverflow(11)->startOfMonth())->copy()->startOfDay()
+                : null;
+            $filterEnd = $hasDateFilter
+                ? ($dateTo ?: Carbon::today()->copy()->endOfDay())->copy()->endOfDay()
+                : null;
+
+            $teamSuppliers = Supplier::query()
+                ->with(['user.userDetail'])
+                ->where('boss_id', $supplierId)
+                ->orderBy('order_id')
+                ->orderBy('id')
+                ->get();
+
+            $teamUserIds = $teamSuppliers
+                ->pluck('user_id')
+                ->filter()
+                ->values()
+                ->all();
+
+            $billingCountsByUser = $this->getTeamDocumentCountsByUser(
+                Billing::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+            $payoutCountsByUser = $this->getTeamDocumentCountsByUser(
+                Payout::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+            $agreementCountsByUser = $this->getTeamDocumentCountsByUser(
+                Agreement::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+                $filterStart,
+                $filterEnd,
+            );
+
+            $teamMembers = $teamSuppliers->map(function ($teamSupplier) use (
+                $billingCountsByUser,
+                $payoutCountsByUser,
+                $agreementCountsByUser,
+            ) {
+                $user = $teamSupplier->user;
+                $userId = $teamSupplier->user_id;
+                $invoices = (int) ($billingCountsByUser->get($userId, 0));
+                $swish = (int) ($payoutCountsByUser->get($userId, 0));
+                $agreements = (int) ($agreementCountsByUser->get($userId, 0));
+
+                return [
+                    'id' => $user?->id,
+                    'supplier_id' => $teamSupplier->id,
+                    'name' => $user?->name,
+                    'last_name' => $user?->last_name,
+                    'email' => $user?->email,
+                    'avatar' => $user?->avatar,
+                    'user_detail' => $user?->userDetail,
+                    'invoices' => $invoices,
+                    'swish' => $swish,
+                    'agreements' => $agreements,
+                    'total_actions' => $invoices + $swish + $agreements,
+                ];
+            })
+                ->sortByDesc('total_actions')
+                ->take(5)
+                ->values()
+                ->map(function ($teamMember) {
+                    unset($teamMember['total_actions']);
+
+                    return $teamMember;
+                });
+
+            $totalBillings = $this->getTeamDocumentTotalCount(
+                Billing::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+            $totalPayouts = $this->getTeamDocumentTotalCount(
+                Payout::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+            $totalAgreements = $this->getTeamDocumentTotalCount(
+                Agreement::query()->where('supplier_id', $supplierId),
+                $filterStart,
+                $filterEnd,
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'teamMembers' => $teamMembers,
+                    'teamTotals' => [
+                        'billings' => $totalBillings,
+                        'payouts' => $totalPayouts,
+                        'agreements' => $totalAgreements,
+                    ],
+                    'dateRange' => [
+                        'date_from' => $filterStart?->toDateString(),
+                        'date_to' => $filterEnd?->toDateString(),
+                    ],
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
     private function getVehiclePriceSummaryByMonth(
         int $supplierId,
         Carbon $filterStart,
@@ -449,6 +571,52 @@ class DashboardController extends Controller
                 $filterStart->toDateString(),
                 $filterEnd->toDateString(),
             ]);
+    }
+
+    private function applyDateTimeFilterToQuery($query, string $dateField, ?Carbon $filterStart, ?Carbon $filterEnd)
+    {
+        $scopedQuery = clone $query;
+
+        if (!$filterStart || !$filterEnd) {
+            return $scopedQuery;
+        }
+
+        return $scopedQuery
+            ->whereNotNull($dateField)
+            ->whereBetween($dateField, [
+                $filterStart->toDateTimeString(),
+                $filterEnd->toDateTimeString(),
+            ]);
+    }
+
+    private function getTeamDocumentCountsByUser(
+        $query,
+        array $userIds,
+        ?Carbon $filterStart,
+        ?Carbon $filterEnd,
+    ) {
+        if (empty($userIds)) {
+            return collect();
+        }
+
+        $filteredQuery = $this->applyDateTimeFilterToQuery($query, 'created_at', $filterStart, $filterEnd);
+
+        return (clone $filteredQuery)
+            ->whereNotNull('user_id')
+            ->whereIn('user_id', $userIds)
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+    }
+
+    private function getTeamDocumentTotalCount(
+        $query,
+        ?Carbon $filterStart,
+        ?Carbon $filterEnd,
+    ): int {
+        $filteredQuery = $this->applyDateTimeFilterToQuery($query, 'created_at', $filterStart, $filterEnd);
+
+        return (clone $filteredQuery)->count();
     }
 
     private function getQueryCountByDateRange(

@@ -17,6 +17,10 @@ class Dashboard {
     measures() {
         return axios.get('dashboard/measures')
     }
+
+    team(params) {
+        return axios.get('dashboard/team', {params})
+    }
 }
 
 const dashboard = new Dashboard();

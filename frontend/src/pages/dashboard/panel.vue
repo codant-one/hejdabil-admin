@@ -24,8 +24,10 @@ const statisticians = ref(null)
 const indicators = ref({})
 const profit = ref({})
 const measures = ref({})
+const team = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
+const teamFilters = ref({})
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
@@ -127,6 +129,7 @@ async function fetchData() {
     await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
     await loadMeasures()
+    await loadTeam()
   }
 
   isRequestOngoing.value = false
@@ -150,6 +153,26 @@ async function loadProfit() {
 async function loadMeasures() {
   await dashboardStore.fetchMeasures()
   measures.value = dashboardStore.getMeasures
+}
+
+async function loadTeam(params = {}) {
+  await dashboardStore.fetchTeam(params)
+  team.value = dashboardStore.getTeam
+}
+
+async function handleTeamFilter(filters) {
+  teamFilters.value = {
+    ...(filters?.date_from ? { date_from: filters.date_from } : {}),
+    ...(filters?.date_to ? { date_to: filters.date_to } : {}),
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    await loadTeam(teamFilters.value)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 async function handleMeasuresRefresh() {
@@ -292,7 +315,12 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-12">
-          <Team />
+          <Team
+            :team-members="team?.teamMembers"
+            :team-totals="team?.teamTotals"
+            @loading="handleStatisticiansLoading"
+            @filter="handleTeamFilter"
+          />
         </div>
       </div>
     </VCard>

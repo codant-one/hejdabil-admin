@@ -7,6 +7,7 @@ export const useDashboardStores = defineStore('dashboard', {
         indicators: {},
         profit: {},
         measures: {},
+        team: {},
         loading: false,
         last_page: 1,
     }),
@@ -22,6 +23,9 @@ export const useDashboardStores = defineStore('dashboard', {
         },
         getMeasures(){
             return this.measures
+        },
+        getTeam(){
+            return this.team
         }
     },
     actions: {
@@ -73,6 +77,17 @@ export const useDashboardStores = defineStore('dashboard', {
                 .finally(() => {
                     this.setLoading(false)
                 })
-        }
+        },
+        fetchTeam(params) {
+            this.setLoading(true)   
+            return Dashboard.team(params)
+                .then((response) => {
+                    this.team = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            }
     }
 })

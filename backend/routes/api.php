@@ -121,6 +121,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/indicators', [DashboardController::class, 'indicators'])->name('dashboard.indicators');
         Route::get('/profit', [DashboardController::class, 'profit'])->name('dashboard.profit');
         Route::get('/measures', [DashboardController::class, 'measures'])->name('dashboard.measures');
+        Route::get('/team', [DashboardController::class, 'team'])->name('dashboard.team');
     });
 
     /* NOTIFICATIONS */
