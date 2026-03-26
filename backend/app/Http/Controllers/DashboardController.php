@@ -390,6 +390,57 @@ class DashboardController extends Controller
             ], 500);
         }
     }
+
+    public function vehicles(Request $request): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+            [$hasDateFilter, $dateFrom, $dateTo] = $this->resolveDateFilters($request);
+            $sortBy = $request->input('sort_by', 'latest_added');
+
+            $filterStart = $hasDateFilter
+                ? ($dateFrom ?: Carbon::today()->copy()->subMonthsNoOverflow(11)->startOfMonth())->copy()->startOfDay()
+                : null;
+            $filterEnd = $hasDateFilter
+                ? ($dateTo ?: Carbon::today()->copy()->endOfDay())->copy()->endOfDay()
+                : null;
+
+            $stockVehicles = $this->getDashboardVehiclesByState(
+                10,
+                $supplierId,
+                $filterStart,
+                $filterEnd,
+                $sortBy,
+            );
+
+            $soldVehicles = $this->getDashboardVehiclesByState(
+                12,
+                $supplierId,
+                $filterStart,
+                $filterEnd,
+                $sortBy,
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'stockVehicles' => $stockVehicles,
+                    'soldVehicles' => $soldVehicles,
+                    'dateRange' => [
+                        'date_from' => $filterStart?->toDateString(),
+                        'date_to' => $filterEnd?->toDateString(),
+                    ],
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function getVehiclePriceSummaryByMonth(
         int $supplierId,
         Carbon $filterStart,
@@ -788,6 +839,95 @@ class DashboardController extends Controller
         }
 
         return round((($currentValue - $previousValue) / $previousValue) * 100, 2);
+    }
+
+    private function getDashboardVehiclesByState(
+        int $stateId,
+        int $supplierId,
+        ?Carbon $filterStart,
+        ?Carbon $filterEnd,
+        string $sortBy = 'latest_added',
+    ) {
+        $dateField = $stateId === 12 ? 'sale_date' : 'purchase_date';
+
+        $query = Vehicle::query()
+            ->with([
+                'tasks:id,vehicle_id,cost,is_cost',
+                'model:id,name,brand_id',
+                'model.brand:id,name,logo',
+            ])
+            ->where('supplier_id', $supplierId)
+            ->where('state_id', $stateId);
+
+        $filteredQuery = $this->applyDateFilterToQuery($query, $dateField, $filterStart, $filterEnd);
+
+        $sortedQuery = $this->applyVehicleSortToQuery(
+            $filteredQuery,
+            $sortBy,
+            $stateId,
+        );
+
+        return (clone $sortedQuery)
+            ->limit(6)
+            ->get()
+            ->map(function ($vehicle) use ($stateId) {
+                $purchaseDate = $vehicle->purchase_date ? Carbon::parse($vehicle->purchase_date) : null;
+                $saleDate = $vehicle->sale_date ? Carbon::parse($vehicle->sale_date) : null;
+                $comparisonDate = $stateId === 12
+                    ? ($saleDate ?: Carbon::today())
+                    : Carbon::today();
+                $weeksInStock = $purchaseDate
+                    ? max(0, (int) ceil($purchaseDate->diffInDays($comparisonDate) / 7))
+                    : 0;
+                $totalCosts = round((float) $vehicle->tasks
+                    ->where('is_cost', 1)
+                    ->sum('cost'), 2);
+                $purchasePrice = round((float) ($vehicle->purchase_price ?? 0), 2);
+                $salePrice = round((float) ($vehicle->sale_price ?? 0), 2);
+                $profitAmount = $stateId === 12
+                    ? round((float) ($salePrice - $purchasePrice - $totalCosts), 2)
+                    : 0.0;
+                $profitMargin = $stateId === 12 && $salePrice > 0
+                    ? round((($profitAmount / $salePrice) * 100), 2)
+                    : 0.0;
+
+                return [
+                    'id' => $vehicle->id,
+                    'created_at' => $vehicle->created_at,
+                    'reg_num' => $vehicle->reg_num,
+                    'year' => $vehicle->year,
+                    'purchase_price' => $purchasePrice,
+                    'sale_price' => $salePrice,
+                    'purchase_date' => $vehicle->purchase_date,
+                    'sale_date' => $vehicle->sale_date,
+                    'weeks_in_stock' => $weeksInStock,
+                    'total_costs' => $totalCosts,
+                    'profit_amount' => $profitAmount,
+                    'profit_margin' => $profitMargin,
+                    'title' => $vehicle->model?->name,
+                    'model' => $vehicle->model,
+                    'tasks' => $vehicle->tasks,
+                ];
+            })
+            ->values();
+    }
+
+    private function applyVehicleSortToQuery($query, string $sortBy, int $stateId)
+    {
+        $scopedQuery = clone $query;
+
+        return match ($sortBy) {
+            'oldest_in_stock' => $scopedQuery
+                ->orderBy('created_at')
+                ->orderBy('id'),
+            'highest_price' => $scopedQuery
+                ->orderByDesc($stateId === 12 ? 'sale_price' : 'purchase_price')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id'),
+            default => $scopedQuery
+                ->orderByDesc('created_at')
+                ->orderByDesc('id'),
+        };
     }
 
     private function getCurrentSupplierId(): int

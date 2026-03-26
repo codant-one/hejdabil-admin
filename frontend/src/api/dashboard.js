@@ -21,6 +21,10 @@ class Dashboard {
     team(params) {
         return axios.get('dashboard/team', {params})
     }
+
+    vehicles(params) {
+        return axios.get('dashboard/vehicles', {params})
+    }
 }
 
 const dashboard = new Dashboard();

@@ -25,9 +25,13 @@ const indicators = ref({})
 const profit = ref({})
 const measures = ref({})
 const team = ref({})
+const vehicles = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const teamFilters = ref({})
+const vehicleFilters = ref({
+  sort_by: 'latest_added',
+})
 const userDataJ = ref('')
 const name = ref('')
 const role = ref('')
@@ -129,6 +133,7 @@ async function fetchData() {
     await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
     await loadMeasures()
+    await loadVehicles(vehicleFilters.value)
     await loadTeam()
   }
 
@@ -153,6 +158,26 @@ async function loadProfit() {
 async function loadMeasures() {
   await dashboardStore.fetchMeasures()
   measures.value = dashboardStore.getMeasures
+}
+
+async function loadVehicles(params = {}) {
+  await dashboardStore.fetchVehicles(params)
+  vehicles.value = dashboardStore.getVehicles
+}
+
+async function handleVehiclesFilter(filters) {
+  vehicleFilters.value = {
+    ...vehicleFilters.value,
+    ...(filters?.sort_by ? { sort_by: filters.sort_by } : {}),
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    await loadVehicles(vehicleFilters.value)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 async function loadTeam(params = {}) {
@@ -311,7 +336,12 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-12">
-          <VehicleInfo />
+          <VehicleInfo
+            :stock-vehicles="vehicles?.stockVehicles"
+            :sold-vehicles="vehicles?.soldVehicles"
+            @loading="handleStatisticiansLoading"
+            @filter="handleVehiclesFilter"
+          />
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-12">
