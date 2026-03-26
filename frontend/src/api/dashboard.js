@@ -9,6 +9,10 @@ class Dashboard {
     indicators(params) {
         return axios.get('dashboard/indicators', {params})
     }
+
+    profit() {
+        return axios.get('dashboard/profit')
+    }
 }
 
 const dashboard = new Dashboard();

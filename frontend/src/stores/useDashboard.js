@@ -5,6 +5,7 @@ export const useDashboardStores = defineStore('dashboard', {
     state: () => ({
         statisticians: {},
         indicators: {},
+        profit: {},
         loading: false,
         last_page: 1,
     }),
@@ -14,6 +15,9 @@ export const useDashboardStores = defineStore('dashboard', {
         },
         getIndicators(){
             return this.indicators
+        },
+        getProfit(){
+            return this.profit
         }
     },
     actions: {
@@ -43,6 +47,17 @@ export const useDashboardStores = defineStore('dashboard', {
                 .finally(() => {
                     this.setLoading(false)
                 })
+        },
+        fetchProfit() {
+            this.setLoading(true)
+            return Dashboard.profit()
+                .then((response) => {
+                    this.profit = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })                
         }
     }
 })

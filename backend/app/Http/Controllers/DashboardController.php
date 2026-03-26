@@ -160,6 +160,80 @@ class DashboardController extends Controller
         }
     }
 
+    public function profit(): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+            $comparisonMonth = Carbon::today()->copy()->startOfMonth();
+
+            $stockVehiclesBaseQuery = Vehicle::query()
+                ->where('supplier_id', $supplierId)
+                ->where('state_id', 10);
+            $soldVehiclesBaseQuery = Vehicle::query()
+                ->where('supplier_id', $supplierId)
+                ->where('state_id', 12)
+                ->whereNotNull('sale_price')
+                ->whereNotNull('sale_date');
+            $taskCostBaseQuery = VehicleTask::query()
+                ->where('is_cost', 1)
+                ->whereHas('vehicle', function ($query) use ($supplierId) {
+                    $query->where('supplier_id', $supplierId);
+                });
+
+            $totalSale = $this->getFilteredQuerySum(
+                $soldVehiclesBaseQuery,
+                'sale_date',
+                'sale_price',
+                null,
+                null,
+            );
+            $totalPurchase = $this->getFilteredQuerySum(
+                $stockVehiclesBaseQuery,
+                'purchase_date',
+                'purchase_price',
+                null,
+                null,
+            );
+            $totalCost = $this->getFilteredQuerySum(
+                $taskCostBaseQuery,
+                'updated_at',
+                'cost',
+                null,
+                null,
+            );
+
+            $totalProfit = round((float) ($totalSale - $totalPurchase - $totalCost), 2);
+            $saleMonthlyVariation = $this->getMonthlySumVariationForQuery(
+                $soldVehiclesBaseQuery,
+                'sale_date',
+                'sale_price',
+                $comparisonMonth,
+            );
+            $profitMonthlyVariation = $this->getProfitMonthlyVariation(
+                $soldVehiclesBaseQuery,
+                $stockVehiclesBaseQuery,
+                $taskCostBaseQuery,
+                $comparisonMonth,
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'totalSale' => $totalSale,
+                    'totalSaleMonthlyVariation' => $saleMonthlyVariation,
+                    'totalProfit' => $totalProfit,
+                    'totalProfitMonthlyVariation' => $profitMonthlyVariation,
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function getVehiclePriceSummaryByMonth(
         int $supplierId,
         Carbon $filterStart,
@@ -358,6 +432,37 @@ class DashboardController extends Controller
             ->count();
     }
 
+    private function getQuerySumByDateRange(
+        $query,
+        string $dateField,
+        string $sumField,
+        Carbon $startDate,
+        Carbon $endDate,
+    ): float {
+        return round((float) (clone $query)
+            ->whereNotNull($dateField)
+            ->whereNotNull($sumField)
+            ->whereBetween($dateField, [
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            ])
+            ->sum($sumField), 2);
+    }
+
+    private function getFilteredQuerySum(
+        $query,
+        string $dateField,
+        string $sumField,
+        ?Carbon $filterStart,
+        ?Carbon $filterEnd,
+    ): float {
+        $filteredQuery = $this->applyDateFilterToQuery($query, $dateField, $filterStart, $filterEnd);
+
+        return round((float) (clone $filteredQuery)
+            ->whereNotNull($sumField)
+            ->sum($sumField), 2);
+    }
+
     private function getMonthlyVariationForQuery($query, string $dateField, Carbon $comparisonMonth): float
     {
         $currentMonthStart = $comparisonMonth->copy()->startOfMonth();
@@ -380,6 +485,98 @@ class DashboardController extends Controller
         );
 
         return $this->calculatePercentageChange($previousMonthCount, $currentMonthCount);
+    }
+
+    private function getMonthlySumVariationForQuery(
+        $query,
+        string $dateField,
+        string $sumField,
+        Carbon $comparisonMonth,
+    ): float {
+        $currentMonthStart = $comparisonMonth->copy()->startOfMonth();
+        $currentMonthEnd = $comparisonMonth->copy()->endOfMonth();
+        $previousMonthStart = $comparisonMonth->copy()->subMonth()->startOfMonth();
+        $previousMonthEnd = $comparisonMonth->copy()->subMonth()->endOfMonth();
+
+        $currentMonthSum = $this->getQuerySumByDateRange(
+            $query,
+            $dateField,
+            $sumField,
+            $currentMonthStart,
+            $currentMonthEnd,
+        );
+
+        $previousMonthSum = $this->getQuerySumByDateRange(
+            $query,
+            $dateField,
+            $sumField,
+            $previousMonthStart,
+            $previousMonthEnd,
+        );
+
+        return $this->calculatePercentageChange((int) round($previousMonthSum), (int) round($currentMonthSum));
+    }
+
+    private function getProfitMonthlyVariation(
+        $soldVehiclesBaseQuery,
+        $stockVehiclesBaseQuery,
+        $taskCostBaseQuery,
+        Carbon $comparisonMonth,
+    ): float {
+        $currentMonthStart = $comparisonMonth->copy()->startOfMonth();
+        $currentMonthEnd = $comparisonMonth->copy()->endOfMonth();
+        $previousMonthStart = $comparisonMonth->copy()->subMonth()->startOfMonth();
+        $previousMonthEnd = $comparisonMonth->copy()->subMonth()->endOfMonth();
+
+        $currentProfit = $this->calculateProfitForDateRange(
+            $soldVehiclesBaseQuery,
+            $stockVehiclesBaseQuery,
+            $taskCostBaseQuery,
+            $currentMonthStart,
+            $currentMonthEnd,
+        );
+
+        $previousProfit = $this->calculateProfitForDateRange(
+            $soldVehiclesBaseQuery,
+            $stockVehiclesBaseQuery,
+            $taskCostBaseQuery,
+            $previousMonthStart,
+            $previousMonthEnd,
+        );
+
+        return $this->calculatePercentageChange((int) round($previousProfit), (int) round($currentProfit));
+    }
+
+    private function calculateProfitForDateRange(
+        $soldVehiclesBaseQuery,
+        $stockVehiclesBaseQuery,
+        $taskCostBaseQuery,
+        Carbon $startDate,
+        Carbon $endDate,
+    ): float {
+        $totalSale = $this->getQuerySumByDateRange(
+            $soldVehiclesBaseQuery,
+            'sale_date',
+            'sale_price',
+            $startDate,
+            $endDate,
+        );
+        $totalPurchase = $this->getQuerySumByDateRange(
+            $stockVehiclesBaseQuery,
+            'purchase_date',
+            'purchase_price',
+            $startDate,
+            $endDate,
+        );
+        $totalCost = $this->getQuerySumByDateRange(
+            $taskCostBaseQuery,
+            'updated_at',
+            'cost',
+            $startDate,
+            $endDate,
+        );
+
+        return round((float) ($totalSale - $totalPurchase - $totalCost), 2);
     }
 
     private function calculatePercentageChange(int $previousValue, int $currentValue): float

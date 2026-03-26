@@ -1,6 +1,26 @@
 <script setup>
+import { formatNumber } from '@/@core/utils/formatters'
+
+const props = defineProps({
+  profit: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
 const { width: windowWidth } = useWindowSize();
+
+const profitData = computed(() => props.profit?.profit ?? props.profit ?? {})
+
+const formatAmount = value => formatNumber(value ?? 0)
+
+const formatVariation = value => {
+  const numericValue = Number(value ?? 0)
+  const roundedValue = Math.round(numericValue)
+  const prefix = roundedValue > 0 ? '+' : ''
+
+  return `${prefix}${roundedValue}% denna månad`
+}
 
 </script>
 
@@ -34,7 +54,7 @@ const { width: windowWidth } = useWindowSize();
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
           <span class="text-number-grafic text-aqua-5">
-            237
+            {{ formatAmount(profitData?.totalProfit) }}
           </span>
           <span class="currency-number-grafic text-aqua-5">
             SEK
@@ -47,7 +67,7 @@ const { width: windowWidth } = useWindowSize();
           size="small"
           class="chip-profit"
         >
-            +12% denna månad
+            {{ formatVariation(profitData?.totalProfitMonthlyVariation) }}
         </VChip>
       </VCardText>
     </VCard>
@@ -80,7 +100,7 @@ const { width: windowWidth } = useWindowSize();
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
           <span class="text-number-grafic text-green-5">
-            237
+            {{ formatAmount(profitData?.totalSale) }}
           </span>
           <span class="currency-number-grafic text-green-5">
             SEK
@@ -93,7 +113,7 @@ const { width: windowWidth } = useWindowSize();
           size="small"
           class="chip-profit"
         >
-            +12% denna månad
+            {{ formatVariation(profitData?.totalSaleMonthlyVariation) }}
         </VChip>
       </VCardText>
    </VCard>

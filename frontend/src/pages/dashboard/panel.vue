@@ -22,6 +22,7 @@ const ability = useAppAbility()
 
 const statisticians = ref(null)
 const indicators = ref({})
+const profit = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const userDataJ = ref('')
@@ -121,6 +122,7 @@ async function fetchData() {
   environment.value = themeConfig.settings.enviroment
 
   if (role.value === 'Supplier' || role.value === 'User') {
+    await loadProfit()
     await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
   }
@@ -136,6 +138,11 @@ async function loadStatisticians(params = {}) {
 async function loadIndicators(params = {}) {
   await dashboardStore.fetchIndicators(params)
   indicators.value = dashboardStore.getIndicators
+}
+
+async function loadProfit() {
+  await dashboardStore.fetchProfit()
+  profit.value = dashboardStore.getProfit
 }
 
 async function handleIndicatorsFilter(filters) {
@@ -249,7 +256,7 @@ onBeforeUnmount(() => {
           />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-2">
-          <Profit />
+          <Profit :profit="profit" />
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
