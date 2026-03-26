@@ -22,6 +22,7 @@ const ability = useAppAbility()
 
 const statisticians = ref(null)
 const indicators = ref({})
+const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const userDataJ = ref('')
 const name = ref('')
@@ -120,7 +121,7 @@ async function fetchData() {
   environment.value = themeConfig.settings.enviroment
 
   if (role.value === 'Supplier' || role.value === 'User') {
-    await loadIndicators()
+    await loadIndicators(indicatorFilters.value)
     await loadStatisticians(statisticiansFilters.value)
   }
 
@@ -135,6 +136,21 @@ async function loadStatisticians(params = {}) {
 async function loadIndicators(params = {}) {
   await dashboardStore.fetchIndicators(params)
   indicators.value = dashboardStore.getIndicators
+}
+
+async function handleIndicatorsFilter(filters) {
+  indicatorFilters.value = {
+    ...(filters?.date_from ? { date_from: filters.date_from } : {}),
+    ...(filters?.date_to ? { date_to: filters.date_to } : {}),
+  }
+
+  isRequestOngoing.value = true
+
+  try {
+    await loadIndicators(indicatorFilters.value)
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 async function handleStatisticiansFilter(filters) {
@@ -153,6 +169,10 @@ async function handleStatisticiansFilter(filters) {
 }
 
 function handleStatisticiansLoading(value) {
+  isRequestOngoing.value = value
+}
+
+function handleIndicatorsLoading(value) {
   isRequestOngoing.value = value
 }
 
@@ -212,7 +232,12 @@ onBeforeUnmount(() => {
           <Activities />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6">
-          <Indicators :indicators="indicators" />
+          <Indicators
+            :company="company"
+            :indicators="indicators"
+            @loading="handleIndicatorsLoading"
+            @filter="handleIndicatorsFilter"
+          />
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-10">

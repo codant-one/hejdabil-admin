@@ -84,52 +84,70 @@ class DashboardController extends Controller
     {
         try {
             $supplierId = $this->getCurrentSupplierId();
-            $stockVehiclesQuery = Vehicle::query()
+            [$hasDateFilter, $dateFrom, $dateTo] = $this->resolveDateFilters($request);
+
+            $filterStart = $hasDateFilter
+                ? ($dateFrom ?: Carbon::today()->copy()->subMonthsNoOverflow(11)->startOfMonth())->copy()->startOfDay()
+                : null;
+            $filterEnd = $hasDateFilter
+                ? ($dateTo ?: Carbon::today()->copy()->endOfDay())->copy()->endOfDay()
+                : null;
+            $comparisonMonth = ($filterEnd ?: Carbon::today()->copy())->copy()->startOfMonth();
+
+            $stockVehiclesBaseQuery = Vehicle::query()
                 ->where('supplier_id', $supplierId)
                 ->where('state_id', 10);
-            $purchasedVehiclesQuery = Vehicle::query()
+            $purchasedVehiclesBaseQuery = Vehicle::query()
                 ->where('supplier_id', $supplierId)
                 ->whereNotNull('purchase_price')
                 ->whereNotNull('purchase_date');
-            $soldVehiclesQuery = Vehicle::query()
+            $soldVehiclesBaseQuery = Vehicle::query()
                 ->where('supplier_id', $supplierId)
                 ->where('state_id', 12)
                 ->whereNotNull('sale_price')
                 ->whereNotNull('sale_date');
 
-            $vehiclesInStock = (clone $stockVehiclesQuery)->count();
-            $stockVehiclesPurchasePrice = round((float) (clone $stockVehiclesQuery)->sum('purchase_price'), 2);
-            $stockVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
-                $stockVehiclesQuery,
+            $stockIndicator = $this->buildIndicatorSummary(
+                $stockVehiclesBaseQuery,
                 'purchase_date',
+                'purchase_price',
+                $comparisonMonth,
+                $filterStart,
+                $filterEnd,
             );
-
-            $purchasedVehiclesCount = (clone $purchasedVehiclesQuery)->count();
-            $purchasedVehiclesPrice = round((float) (clone $purchasedVehiclesQuery)->sum('purchase_price'), 2);
-            $purchasedVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
-                $purchasedVehiclesQuery,
+            $purchasedIndicator = $this->buildIndicatorSummary(
+                $purchasedVehiclesBaseQuery,
                 'purchase_date',
+                'purchase_price',
+                $comparisonMonth,
+                $filterStart,
+                $filterEnd,
             );
-
-            $soldVehiclesCount = (clone $soldVehiclesQuery)->count();
-            $soldVehiclesPrice = round((float) (clone $soldVehiclesQuery)->sum('sale_price'), 2);
-            $soldVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
-                $soldVehiclesQuery,
+            $soldIndicator = $this->buildIndicatorSummary(
+                $soldVehiclesBaseQuery,
                 'sale_date',
+                'sale_price',
+                $comparisonMonth,
+                $filterStart,
+                $filterEnd,
             );
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'vehiclesInStock' => $vehiclesInStock,
-                    'stockVehiclesPurchasePrice' => $stockVehiclesPurchasePrice,
-                    'stockVehiclesMonthlyVariation' => $stockVehiclesMonthlyVariation,
-                    'purchasedVehiclesCount' => $purchasedVehiclesCount,
-                    'purchasedVehiclesPrice' => $purchasedVehiclesPrice,
-                    'purchasedVehiclesMonthlyVariation' => $purchasedVehiclesMonthlyVariation,
-                    'soldVehiclesCount' => $soldVehiclesCount,
-                    'soldVehiclesPrice' => $soldVehiclesPrice,
-                    'soldVehiclesMonthlyVariation' => $soldVehiclesMonthlyVariation,
+                    'vehiclesInStock' => $stockIndicator['count'],
+                    'stockVehiclesPurchasePrice' => $stockIndicator['totalPrice'],
+                    'stockVehiclesMonthlyVariation' => $stockIndicator['monthlyVariation'],
+                    'purchasedVehiclesCount' => $purchasedIndicator['count'],
+                    'purchasedVehiclesPrice' => $purchasedIndicator['totalPrice'],
+                    'purchasedVehiclesMonthlyVariation' => $purchasedIndicator['monthlyVariation'],
+                    'soldVehiclesCount' => $soldIndicator['count'],
+                    'soldVehiclesPrice' => $soldIndicator['totalPrice'],
+                    'soldVehiclesMonthlyVariation' => $soldIndicator['monthlyVariation'],
+                    'dateRange' => [
+                        'date_from' => $filterStart?->toDateString(),
+                        'date_to' => $filterEnd?->toDateString(),
+                    ],
                 ]
             ]);
 
@@ -275,6 +293,56 @@ class DashboardController extends Controller
             ->get();
     }
 
+    private function resolveDateFilters(Request $request): array
+    {
+        $hasDateFilter = $request->filled('date_from') || $request->filled('date_to');
+        $dateFrom = $request->filled('date_from') ? Carbon::parse($request->date_from) : null;
+        $dateTo = $request->filled('date_to') ? Carbon::parse($request->date_to) : null;
+
+        if ($dateFrom && $dateTo && $dateFrom->gt($dateTo)) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        return [$hasDateFilter, $dateFrom, $dateTo];
+    }
+
+    private function buildIndicatorSummary(
+        $baseQuery,
+        string $dateField,
+        string $priceField,
+        Carbon $comparisonMonth,
+        ?Carbon $filterStart,
+        ?Carbon $filterEnd,
+    ): array {
+        $filteredQuery = $this->applyDateFilterToQuery($baseQuery, $dateField, $filterStart, $filterEnd);
+
+        return [
+            'count' => (clone $filteredQuery)->count(),
+            'totalPrice' => round((float) (clone $filteredQuery)->sum($priceField), 2),
+            'monthlyVariation' => $this->getMonthlyVariationForQuery(
+                $baseQuery,
+                $dateField,
+                $comparisonMonth,
+            ),
+        ];
+    }
+
+    private function applyDateFilterToQuery($query, string $dateField, ?Carbon $filterStart, ?Carbon $filterEnd)
+    {
+        $scopedQuery = clone $query;
+
+        if (!$filterStart || !$filterEnd) {
+            return $scopedQuery;
+        }
+
+        return $scopedQuery
+            ->whereNotNull($dateField)
+            ->whereBetween($dateField, [
+                $filterStart->toDateString(),
+                $filterEnd->toDateString(),
+            ]);
+    }
+
     private function getQueryCountByDateRange(
         $query,
         string $dateField,
@@ -290,12 +358,12 @@ class DashboardController extends Controller
             ->count();
     }
 
-    private function getMonthlyVariationForQuery($query, string $dateField): float
+    private function getMonthlyVariationForQuery($query, string $dateField, Carbon $comparisonMonth): float
     {
-        $currentMonthStart = Carbon::today()->startOfMonth();
-        $currentMonthEnd = Carbon::today()->endOfMonth();
-        $previousMonthStart = $currentMonthStart->copy()->subMonth()->startOfMonth();
-        $previousMonthEnd = $currentMonthStart->copy()->subMonth()->endOfMonth();
+        $currentMonthStart = $comparisonMonth->copy()->startOfMonth();
+        $currentMonthEnd = $comparisonMonth->copy()->endOfMonth();
+        $previousMonthStart = $comparisonMonth->copy()->subMonth()->startOfMonth();
+        $previousMonthEnd = $comparisonMonth->copy()->subMonth()->endOfMonth();
 
         $currentMonthCount = $this->getQueryCountByDateRange(
             $query,
