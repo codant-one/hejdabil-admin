@@ -3,26 +3,37 @@
 
    import { formatNumber } from "@/@core/utils/formatters";
 
+    const props = defineProps({
+         indicators: {
+             type: Object,
+             default: () => ({}),
+         },
+    })
+
    const activeTab = ref(0);
    const { width: windowWidth } = useWindowSize();
 
-    const tabData = {
-     0: [
-       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: '20', label: 'Antal' },
-       { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatNumber('20000'), suffix: 'KR', label: 'Värde' },
-       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: '46%', suffix: '', label: 'Månadsförändring' },
-     ],
-     1: [
-       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: '12', label: 'Antal' },
-       { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatNumber('14500'), suffix: 'KR', label: 'Värde' },
-       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: '23%', suffix: '', label: 'Månadsförändring' },
-     ],
-     2: [
-       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: '8', label: 'Antal' },
-       { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatNumber('98000'), suffix: 'KR', label: 'Värde' },
-       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: '31%', suffix: '', label: 'Månadsförändring' },
-     ],
-   };
+    const formatCurrencyValue = value => formatNumber(value ?? 0)
+
+    const formatVariationValue = value => `${Math.round(Number(value ?? 0))}%`
+
+    const tabData = computed(() => ({
+       0: [
+          { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: props.indicators?.vehiclesInStock ?? 0, label: 'Antal' },
+          { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(props.indicators?.stockVehiclesPurchasePrice), suffix: 'KR', label: 'Värde' },
+          { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(props.indicators?.stockVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+       ],
+       1: [
+          { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: props.indicators?.purchasedVehiclesCount ?? 0, label: 'Antal' },
+          { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(props.indicators?.purchasedVehiclesPrice), suffix: 'KR', label: 'Värde' },
+          { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(props.indicators?.purchasedVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+       ],
+       2: [
+          { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: props.indicators?.soldVehiclesCount ?? 0, label: 'Antal' },
+          { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(props.indicators?.soldVehiclesPrice), suffix: 'KR', label: 'Värde' },
+          { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(props.indicators?.soldVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+       ],
+    }));
 </script>
 
 <template>

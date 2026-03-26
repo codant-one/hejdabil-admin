@@ -21,6 +21,7 @@ const configsStores = useConfigsStores();
 const ability = useAppAbility()
 
 const statisticians = ref(null)
+const indicators = ref({})
 const statisticiansFilters = ref({})
 const userDataJ = ref('')
 const name = ref('')
@@ -119,6 +120,7 @@ async function fetchData() {
   environment.value = themeConfig.settings.enviroment
 
   if (role.value === 'Supplier' || role.value === 'User') {
+    await loadIndicators()
     await loadStatisticians(statisticiansFilters.value)
   }
 
@@ -128,6 +130,11 @@ async function fetchData() {
 async function loadStatisticians(params = {}) {
   await dashboardStore.fetchStatisticians(params)
   statisticians.value = dashboardStore.getStatisticians
+}
+
+async function loadIndicators(params = {}) {
+  await dashboardStore.fetchIndicators(params)
+  indicators.value = dashboardStore.getIndicators
 }
 
 async function handleStatisticiansFilter(filters) {
@@ -205,7 +212,7 @@ onBeforeUnmount(() => {
           <Activities />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6">
-          <Indicators />
+          <Indicators :indicators="indicators" />
         </div>
 
         <div class="dashboard-grid__item dashboard-grid__item--md-10">

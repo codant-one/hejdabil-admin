@@ -6,6 +6,9 @@ class Dashboard {
         return axios.get('dashboard/statisticians', {params})
     }
     
+    indicators(params) {
+        return axios.get('dashboard/indicators', {params})
+    }
 }
 
 const dashboard = new Dashboard();

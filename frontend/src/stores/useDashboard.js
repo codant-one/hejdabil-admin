@@ -4,12 +4,16 @@ import Dashboard from '@/api/dashboard'
 export const useDashboardStores = defineStore('dashboard', {
     state: () => ({
         statisticians: {},
+        indicators: {},
         loading: false,
         last_page: 1,
     }),
     getters:{
         getStatisticians(){
             return this.statisticians
+        },
+        getIndicators(){
+            return this.indicators
         }
     },
     actions: {
@@ -28,6 +32,17 @@ export const useDashboardStores = defineStore('dashboard', {
                     this.setLoading(false)
                 })
             
+        },
+        fetchIndicators(params) {
+            this.setLoading(true)
+            return Dashboard.indicators(params)
+                .then((response) => {
+                    this.indicators = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
         }
     }
 })

@@ -80,6 +80,68 @@ class DashboardController extends Controller
         }
     }
 
+    public function indicators(Request $request): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+            $stockVehiclesQuery = Vehicle::query()
+                ->where('supplier_id', $supplierId)
+                ->where('state_id', 10);
+            $purchasedVehiclesQuery = Vehicle::query()
+                ->where('supplier_id', $supplierId)
+                ->whereNotNull('purchase_price')
+                ->whereNotNull('purchase_date');
+            $soldVehiclesQuery = Vehicle::query()
+                ->where('supplier_id', $supplierId)
+                ->where('state_id', 12)
+                ->whereNotNull('sale_price')
+                ->whereNotNull('sale_date');
+
+            $vehiclesInStock = (clone $stockVehiclesQuery)->count();
+            $stockVehiclesPurchasePrice = round((float) (clone $stockVehiclesQuery)->sum('purchase_price'), 2);
+            $stockVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
+                $stockVehiclesQuery,
+                'purchase_date',
+            );
+
+            $purchasedVehiclesCount = (clone $purchasedVehiclesQuery)->count();
+            $purchasedVehiclesPrice = round((float) (clone $purchasedVehiclesQuery)->sum('purchase_price'), 2);
+            $purchasedVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
+                $purchasedVehiclesQuery,
+                'purchase_date',
+            );
+
+            $soldVehiclesCount = (clone $soldVehiclesQuery)->count();
+            $soldVehiclesPrice = round((float) (clone $soldVehiclesQuery)->sum('sale_price'), 2);
+            $soldVehiclesMonthlyVariation = $this->getMonthlyVariationForQuery(
+                $soldVehiclesQuery,
+                'sale_date',
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'vehiclesInStock' => $vehiclesInStock,
+                    'stockVehiclesPurchasePrice' => $stockVehiclesPurchasePrice,
+                    'stockVehiclesMonthlyVariation' => $stockVehiclesMonthlyVariation,
+                    'purchasedVehiclesCount' => $purchasedVehiclesCount,
+                    'purchasedVehiclesPrice' => $purchasedVehiclesPrice,
+                    'purchasedVehiclesMonthlyVariation' => $purchasedVehiclesMonthlyVariation,
+                    'soldVehiclesCount' => $soldVehiclesCount,
+                    'soldVehiclesPrice' => $soldVehiclesPrice,
+                    'soldVehiclesMonthlyVariation' => $soldVehiclesMonthlyVariation,
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     private function getVehiclePriceSummaryByMonth(
         int $supplierId,
         Carbon $filterStart,
@@ -211,6 +273,54 @@ class DashboardController extends Controller
             ->groupBy(DB::raw("DATE_FORMAT(updated_at, '%Y-%m')"))
             ->orderBy('month')
             ->get();
+    }
+
+    private function getQueryCountByDateRange(
+        $query,
+        string $dateField,
+        Carbon $startDate,
+        Carbon $endDate,
+    ): int {
+        return (clone $query)
+            ->whereNotNull($dateField)
+            ->whereBetween($dateField, [
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            ])
+            ->count();
+    }
+
+    private function getMonthlyVariationForQuery($query, string $dateField): float
+    {
+        $currentMonthStart = Carbon::today()->startOfMonth();
+        $currentMonthEnd = Carbon::today()->endOfMonth();
+        $previousMonthStart = $currentMonthStart->copy()->subMonth()->startOfMonth();
+        $previousMonthEnd = $currentMonthStart->copy()->subMonth()->endOfMonth();
+
+        $currentMonthCount = $this->getQueryCountByDateRange(
+            $query,
+            $dateField,
+            $currentMonthStart,
+            $currentMonthEnd,
+        );
+
+        $previousMonthCount = $this->getQueryCountByDateRange(
+            $query,
+            $dateField,
+            $previousMonthStart,
+            $previousMonthEnd,
+        );
+
+        return $this->calculatePercentageChange($previousMonthCount, $currentMonthCount);
+    }
+
+    private function calculatePercentageChange(int $previousValue, int $currentValue): float
+    {
+        if ($previousValue === 0) {
+            return $currentValue > 0 ? 100.0 : 0.0;
+        }
+
+        return round((($currentValue - $previousValue) / $previousValue) * 100, 2);
     }
 
     private function getCurrentSupplierId(): int
