@@ -4,7 +4,7 @@
    import { useRemindersStores } from '@/stores/useReminders';
    import { requiredValidator } from '@validators';
 
-   const emit = defineEmits(['refresh'])
+   const emit = defineEmits(['refresh', 'advisor'])
 
    const props = defineProps({
       reminders: {
@@ -16,8 +16,14 @@
    const { width: windowWidth } = useWindowSize();
    const remindersStores = useRemindersStores()
 
-   const skapatsDialog = ref(false);
-   const inteSkapatsDialog = ref(false);
+   const skapatsDialog = ref(false)
+   const inteSkapatsDialog = ref(false)
+   const err = ref(null)
+
+   const confirmDeleteDialog = ref(false)
+   const deletedDialog = ref(false)
+   const deleteErrorDialog = ref(false)
+   const isDeleting = ref(false)
 
    const animatedReminderId = ref(null)
    let reminderAnimationTimeout = null
@@ -72,6 +78,24 @@
       formInstanceKey.value += 1
    }
 
+   const showError = () => {
+      inteSkapatsDialog.value = false
+
+      const responseData = err.value?.response?.data
+      let message = ''
+
+      if (responseData?.message) {
+         message = responseData.message
+      } else if (responseData?.errors) {
+         message = Object.values(responseData.errors).flat().join('<br>')
+      } else if (err.value?.message) {
+         message = err.value.message
+      } else {
+         message = 'Ett serverfel uppstod. Försök igen.'
+      }
+
+      emit('advisor', { type: 'error', message })
+   }
 
    const onSubmit = async () => {
       const { valid } = await refVForm.value?.validate()
@@ -84,32 +108,21 @@
       try {
          await remindersStores.addReminder({ ...form.value })
          await resetForm()
+         skapatsDialog.value = true
          emit('refresh')
       } catch (error) {
-         const message = error?.message ?? 'Det gick inte att skapa påminnelsen.'
-         console.error(message)
+         err.value = error
+         inteSkapatsDialog.value = true
       } finally {
          isSubmitting.value = false
       }
    }
 
-   const formatDate = value => {
-      if (!value)
-         return ''
-
-      const parsedDate = new Date(value)
-
-      if (Number.isNaN(parsedDate.getTime()))
-         return value
-
-      return parsedDate.toLocaleDateString('sv-SE')
-   }
-
    const mapReminderItem = item => ({
       id: item?.id,
       title: item?.description ?? '',
-      startDate: formatDate(item?.start_date),
-      endDate: formatDate(item?.end_date),
+      startDate: item?.start_date,
+      endDate: item?.end_date,
       completed: Boolean(item?.is_done),
       raw: item,
    })
@@ -134,6 +147,41 @@
          if (animatedReminderId.value === id)
             animatedReminderId.value = null
       }, 320)
+   }
+
+   const onDeleteCompleted = async () => {
+      confirmDeleteDialog.value = false
+      isDeleting.value = true
+
+      try {
+         await remindersStores.deleteCompleted()
+         deletedDialog.value = true
+         emit('refresh')
+      } catch (error) {
+         err.value = error
+         deleteErrorDialog.value = true
+      } finally {
+         isDeleting.value = false
+      }
+   }
+
+   const showDeleteError = () => {
+      deleteErrorDialog.value = false
+
+      const responseData = err.value?.response?.data
+      let message = ''
+
+      if (responseData?.message) {
+         message = responseData.message
+      } else if (responseData?.errors) {
+         message = Object.values(responseData.errors).flat().join('<br>')
+      } else if (err.value?.message) {
+         message = err.value.message
+      } else {
+         message = 'Ett serverfel uppstod. Försök igen.'
+      }
+
+      emit('advisor', { type: 'error', message })
    }
 
    const handleCheckboxChange = async (item, value) => {
@@ -161,6 +209,16 @@
       >
          <div class="title-text mb-2">Mina uppgifter</div>
 
+         <VBtn
+            v-if="taskItems.some(item => item.completed)"
+            class="btn-white-2 px-3 h-24"
+            :disabled="isDeleting"
+            @click="confirmDeleteDialog = true"
+         >
+            <VIcon icon="custom-waste" size="24" />
+            TA BORT ALLA ??
+         </VBtn>
+
       </VCardTitle>
 
       <VCardText class="pt-2 form-dashboard" :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
@@ -181,7 +239,6 @@
                         v-model="form.start_date"
                         density="default"
                         :config="startDateTimePickerConfig"
-                        clearable
                         class="field-solo-flat"
                         placeholder="Startdatum"
                         :rules="[requiredValidator]"
@@ -194,7 +251,6 @@
                         v-model="form.end_date"
                         density="default"
                         :config="endDateTimePickerConfig"
-                        clearable
                         class="field-solo-flat"
                         placeholder="Slutdatum"
                         :rules="[requiredValidator, endDateAfterOrEqualValidator]"
@@ -218,11 +274,8 @@
       </VCardText>
 
       <VCardText 
-         class="pt-4" 
-         :class="[
-            windowWidth < 1024 ? 'px-4' : 'px-6', 
-            !taskItems.length ? 'h-100' : ''
-         ]"
+         class="pt-4 h-50" 
+         :class="windowWidth < 1024 ? 'px-4' : 'px-6'"
       >
          <div class="information-list d-flex flex-column">
             <div
@@ -271,6 +324,169 @@
          </div>
       </VCardText>
    </VCard>
+
+   <!-- 👉 Skapats Dialog (success) -->
+   <VDialog
+      v-model="skapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+   >
+      <VBtn
+         icon
+         class="btn-white close-btn"
+         @click="skapatsDialog = false"
+      >
+         <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+         <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-coffee" />
+         </VCardText>
+         <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Uppgiften har skapats!</div>
+         </VCardText>
+         <VCardText class="dialog-text text-center">
+            Din nya uppgift har registrerats.
+         </VCardText>
+         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-gradient" @click="skapatsDialog = false">
+               Stäng
+            </VBtn>
+         </VCardText>
+      </VCard>
+   </VDialog>
+
+   <!-- 👉 Inte Skapats Dialog (error) -->
+   <VDialog
+      v-model="inteSkapatsDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+   >
+      <VBtn
+         icon
+         class="btn-white close-btn"
+         @click="inteSkapatsDialog = false"
+      >
+         <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+         <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-cancel" />
+         </VCardText>
+         <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Kunde inte skapa uppgiften</div>
+         </VCardText>
+         <VCardText class="dialog-text text-center">
+            Ett fel uppstod. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
+         </VCardText>
+         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="showError">
+               Stäng
+            </VBtn>
+         </VCardText>
+      </VCard>
+   </VDialog>
+
+   <!-- 👉 Confirm Delete Dialog -->
+   <VDialog
+      v-model="confirmDeleteDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+   >
+      <VBtn
+         icon
+         class="btn-white close-btn"
+         @click="confirmDeleteDialog = false"
+      >
+         <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+         <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-cancel" />
+         </VCardText>
+         <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Ta bort alla slutförda uppgifter?</div>
+         </VCardText>
+         <VCardText class="dialog-text text-center">
+            Alla uppgifter markerade som klara kommer att tas bort permanent.
+         </VCardText>
+         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="confirmDeleteDialog = false">
+               Avbryt
+            </VBtn>
+            <VBtn class="btn-gradient" @click="onDeleteCompleted">
+               Ta bort
+            </VBtn>
+         </VCardText>
+      </VCard>
+   </VDialog>
+
+   <!-- 👉 Deleted Dialog (success) -->
+   <VDialog
+      v-model="deletedDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+   >
+      <VBtn
+         icon
+         class="btn-white close-btn"
+         @click="deletedDialog = false"
+      >
+         <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+         <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-coffee" />
+         </VCardText>
+         <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Uppgifterna har tagits bort!</div>
+         </VCardText>
+         <VCardText class="dialog-text text-center">
+            Alla slutförda uppgifter har raderats.
+         </VCardText>
+         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-gradient" @click="deletedDialog = false">
+               Stäng
+            </VBtn>
+         </VCardText>
+      </VCard>
+   </VDialog>
+
+   <!-- 👉 Delete Error Dialog -->
+   <VDialog
+      v-model="deleteErrorDialog"
+      persistent
+      class="action-dialog dialog-big-icon"
+   >
+      <VBtn
+         icon
+         class="btn-white close-btn"
+         @click="deleteErrorDialog = false"
+      >
+         <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+         <VCardText class="dialog-title-box big-icon justify-center pb-0">
+            <VIcon size="72" icon="custom-f-cancel" />
+         </VCardText>
+         <VCardText class="dialog-title-box justify-center">
+            <div class="dialog-title">Kunde inte ta bort uppgifterna</div>
+         </VCardText>
+         <VCardText class="dialog-text text-center">
+            Ett fel uppstod vid borttagning. Försök igen.
+         </VCardText>
+         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
+            <VBtn class="btn-light" @click="showDeleteError">
+               Stäng
+            </VBtn>
+         </VCardText>
+      </VCard>
+   </VDialog>
 </template>
 
 <style lang="scss">
@@ -336,6 +552,10 @@
                }
                input {
                   min-height: 48px !important;
+
+                  @media (max-width: 767px) {
+                     font-size: 13px !important;
+                  }
                }
             }
 

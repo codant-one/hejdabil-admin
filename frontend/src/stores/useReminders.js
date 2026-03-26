@@ -58,6 +58,19 @@ export const useRemindersStores = defineStore('reminders', {
                 .finally(() => {
                     this.setLoading(false)
                 })  
+        },
+        deleteCompleted() {
+            this.setLoading(true)
+
+            return Reminders.deleteCompleted()
+                .then((response) => {
+                    this.reminders = this.reminders.filter(item => !item.is_done)
+                    return Promise.resolve(response)
+                })
+                .catch(error => Promise.reject(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
         }
     }
 })

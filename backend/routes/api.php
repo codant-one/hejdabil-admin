@@ -260,6 +260,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     //Reminders
     Route::group(['prefix' => 'reminders'], function () {
         Route::post('updateState/{id}', [ReminderController::class, 'updateState'])->name('reminders.updateState');
+        Route::delete('destroy/completed', [ReminderController::class, 'destroyCompleted'])->name('reminders.destroyCompleted');
     });
 
     //Configs

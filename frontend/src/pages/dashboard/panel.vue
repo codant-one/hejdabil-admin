@@ -187,6 +187,18 @@ async function handleRemindersRefresh() {
   }
 }
 
+function handleAdvisor(data) {
+  advisor.value.type = data.type
+  advisor.value.message = data.message
+  advisor.value.show = true
+
+  setTimeout(() => {
+    advisor.value.show = false
+    advisor.value.type = ''
+    advisor.value.message = ''
+  }, 3000)
+}
+
 async function loadVehicles(params = {}) {
   await dashboardStore.fetchVehicles(params)
   vehicles.value = dashboardStore.getVehicles
@@ -365,6 +377,7 @@ onBeforeUnmount(() => {
           <Information
             :reminders="reminders?.reminders"
             @refresh="handleRemindersRefresh"
+            @advisor="handleAdvisor"
           />
         </div>
         <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">

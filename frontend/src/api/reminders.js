@@ -14,6 +14,10 @@ class Reminders {
         return axios.delete(`/reminders/${id}`)
     }
 
+    deleteCompleted() {
+        return axios.delete('/reminders/destroy/completed')
+    }
+
     
 }
 

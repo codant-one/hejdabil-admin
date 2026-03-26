@@ -98,6 +98,30 @@ class ReminderController extends Controller
         }
     }
 
+    public function destroyCompleted(): JsonResponse
+    {
+        try {
+
+            $deleted = Reminder::where('user_id', Auth::id())
+                ->where('is_done', 1)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'deleted_count' => $deleted
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
     public function updateState(Request $request, $id): JsonResponse
     {
         try {

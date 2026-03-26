@@ -450,6 +450,7 @@ class DashboardController extends Controller
                 ->where('user_id', Auth::id())
                 ->orderBy('is_done')
                 ->orderBy('start_date')
+                ->orderBy('end_date')
                 ->orderBy('id')
                 ->get();
 
