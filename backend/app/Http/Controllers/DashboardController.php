@@ -265,7 +265,7 @@ class DashboardController extends Controller
             $supplierId = $this->getCurrentSupplierId();
             $measures = VehicleTask::query()
                 ->with([
-                    'vehicle:id,reg_num,state_id,model_id,year',
+                    'vehicle:id,reg_num,model_id,year',
                     'vehicle.model:id,name,brand_id',
                     'vehicle.model.brand:id,name'
                 ])
