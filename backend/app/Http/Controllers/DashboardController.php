@@ -66,6 +66,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
+                    'vehicles' => Vehicle::query()->where('supplier_id', $supplierId)->count(),
                     'priceByMonth' => $vehiclePriceSummary['months'],
                     'totalPurchasePrice' => $totalPurchasePrice,
                     'totalPurchasePriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalPurchasePrice),

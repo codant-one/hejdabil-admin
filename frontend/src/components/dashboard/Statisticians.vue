@@ -33,6 +33,7 @@ import Dashboard from '@/api/dashboard'
   }))
 
   const defaultMonthCategories = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
+  const emptyStateChartValues = [28000, 10000, 45000, 38000, 0, 30000, 35000, 30000, 8000, 0, 0, 0]
 
   const exporteraMobile = ref(false);
   const filterMenuVisible = ref(false)
@@ -460,8 +461,34 @@ import Dashboard from '@/api/dashboard'
     return priceByMonth
   })
 
+  const vehiclesCount = computed(() => {
+    const vehicles = statisticiansData.value?.vehicles
+
+     if (typeof vehicles !== 'number' || Number.isNaN(vehicles))
+       return 0
+
+     return vehicles  
+  })
+
+  const hasEmptyStatisticsState = computed(() => vehiclesCount.value === 0)
+  const activeChartTab = computed(() => hasEmptyStatisticsState.value ? 0 : Number(currentTab.value))
+
+  const chartMonthlyStats = computed(() => {
+    if (!hasEmptyStatisticsState.value)
+      return monthlyStats.value
+
+    return defaultMonthCategories.map((monthLabel, index) => ({
+      month: null,
+      month_label: monthLabel,
+      total_purchase_price: emptyStateChartValues[index] ?? 0,
+      total_sale_price: emptyStateChartValues[index] ?? 0,
+      total_cost: emptyStateChartValues[index] ?? 0,
+      total_profit: emptyStateChartValues[index] ?? 0,
+    }))
+  })
+
   const monthCategories = computed(() => {
-    const categories = monthlyStats.value.map((item, index) => {
+    const categories = chartMonthlyStats.value.map((item, index) => {
       if (item?.month_label)
         return item.month_label
 
@@ -474,21 +501,21 @@ import Dashboard from '@/api/dashboard'
     return categories.length ? categories : defaultMonthCategories
   })
 
-  const purchaseSeries = computed(() => monthlyStats.value.map(item => Number(item.total_purchase_price ?? 0)))
-  const saleSeries = computed(() => monthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
-  const costSeries = computed(() => monthlyStats.value.map(item => Number(item.total_cost ?? 0)))
-  const profitSeries = computed(() => monthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+  const purchaseSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_purchase_price ?? 0)))
+  const saleSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
+  const costSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_cost ?? 0)))
+  const profitSeries = computed(() => chartMonthlyStats.value.map(item => Number(item.total_profit ?? 0)))
   const currentChartAmountField = computed(() => {
     return [
       'total_purchase_price',
       'total_sale_price',
       'total_cost',
       'total_profit',
-    ][Number(currentTab.value)] ?? 'total_purchase_price'
+    ][activeChartTab.value] ?? 'total_purchase_price'
   })
 
   const getCurrentMonthAbbreviatedValue = dataPointIndex => {
-    const item = monthlyStats.value[dataPointIndex] ?? {}
+    const item = chartMonthlyStats.value[dataPointIndex] ?? {}
     const field = currentChartAmountField.value
     const abbreviatedField = `${field}_abbreviated`
 
@@ -505,7 +532,7 @@ import Dashboard from '@/api/dashboard'
 
   const chartRenderKey = computed(() => {
     return [
-      currentTab.value,
+      activeChartTab.value,
       monthCategories.value.join('|'),
       purchaseSeries.value.length,
       saleSeries.value.length,
@@ -531,8 +558,11 @@ import Dashboard from '@/api/dashboard'
     const xAxisOffsetY = isMobile && months.length > 9 ? 16 : 0
     const xAxisFontSize = isMobile ? '9px' : '13px'
 
-    const makeColors = (activeColor, inactiveColor) => monthlyStats.value.map(item => {
+    const makeColors = (activeColor, inactiveColor) => chartMonthlyStats.value.map(item => {
       const normalizedMonth = typeof item?.month === 'string' ? item.month.slice(0, 7) : null
+
+      if (hasEmptyStatisticsState.value)
+        return inactiveColor
 
       return normalizedMonth === currentMonthKey.value ? activeColor : inactiveColor
     })
@@ -624,32 +654,32 @@ import Dashboard from '@/api/dashboard'
         icon: 'custom-car-close',
         chartOptions: createChartOptions(makeColors('#6E9383', '#BDD2C8')),
         series: [{ data: purchaseSeries.value }],
-        border: 'border-selected-inventary',
-        bgColor: '#F5F8F6',
+        border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-inventary',
+        bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#F5F8F6',
       },
       {
         title: 'Försäljning',
         icon: 'custom-car-open',
         chartOptions: createChartOptions(makeColors('#79FCA2', '#D8FFE4')),
         series: [{ data: saleSeries.value }],
-        border: 'border-selected-sales',
-        bgColor: '#D8FFE4',
+        border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-sales',
+        bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#D8FFE4',
       },
       {
         title: 'Extra kostnader',
         icon: 'custom-costs',
         chartOptions: createChartOptions(makeColors('#4DFFD1', '#C6FFEB')),
         series: [{ data: costSeries.value }],
-        border: 'border-selected-costs',
-        bgColor: '#C6FFEB',
+        border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-costs',
+        bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#C6FFEB',
       },
       {
         title: 'Vinst',
         icon: 'custom-profit',
         chartOptions: createChartOptions(makeColors('#3AF8FF', '#C0FEFF')),
         series: [{ data: profitSeries.value }],
-        border: 'border-selected-profit',
-        bgColor: '#C0FEFF',
+        border: vehiclesCount.value === 0 ? 'border-selected' : 'border-selected-profit',
+        bgColor: vehiclesCount.value === 0 ? '#F6F6F6' : '#C0FEFF',
       },
     ]
   })
@@ -735,18 +765,21 @@ import Dashboard from '@/api/dashboard'
     </VCardTitle>
 
     <VCardText class="pt-5 pb-3 px-4 px-md-6">
-      <div class="stats-container mb-0">
+      <div class="stats-container mb-0" :class="hasEmptyStatisticsState ? 'stats-container-empty' : ''">
         <div
           v-for="(report, index) in chartConfigs"
           :key="report.title"
-          :class="currentTab === index ? report.border : ''"
+          :class="[
+            activeChartTab === index ? report.border : '',
+            hasEmptyStatisticsState ? 'stats-item-disabled' : '',
+          ]"
           class="d-flex flex-column justify-center align-center cursor-pointer border-default stats-item"
-          @click="currentTab = index"
+          @click="!hasEmptyStatisticsState && (currentTab = index)"
         >
           <VAvatar
             rounded="lg"
             size="32"
-            :style="{ backgroundColor: currentTab === index ? report.bgColor : '#F6F6F6' }"
+            :style="{ backgroundColor: activeChartTab === index ? report.bgColor : '#F6F6F6' }"
           >
             <VIcon
               size="16"
@@ -760,13 +793,24 @@ import Dashboard from '@/api/dashboard'
         </div>
       </div>
 
-      <VueApexCharts
-        ref="refVueApexChart"
-        :key="chartRenderKey"
-        :options="chartConfigs[Number(currentTab)].chartOptions"
-        :series="chartConfigs[Number(currentTab)].series"
-        :height="windowWidth < 1024 ? 210 : 280"
-      />
+      <div class="statistics-chart-wrapper">
+        <VueApexCharts
+          ref="refVueApexChart"
+          :key="chartRenderKey"
+          :options="chartConfigs[activeChartTab].chartOptions"
+          :series="chartConfigs[activeChartTab].series"
+          :height="windowWidth < 1024 ? 210 : 280"
+          :class="hasEmptyStatisticsState ? 'statistics-chart-empty' : ''"
+        />
+
+        <div v-if="hasEmptyStatisticsState" class="statistics-empty-state">
+          <div class="statistics-empty-title">Följ din utveckling</div>
+          <div class="statistics-empty-text">
+            Se inköp, försäljning och vinst - allt på ett ställe.<br>
+            Statistiken uppdateras automatiskt.
+          </div>
+        </div>
+      </div>
     </VCardText>
   </VCard>
 
@@ -814,6 +858,7 @@ import Dashboard from '@/api/dashboard'
     opacity: 1;
     border-radius: 8px;
     padding: 8px;
+    border: 1px solid #E7E7E7;
   }
 
   .border-selected-inventary {
@@ -857,6 +902,56 @@ import Dashboard from '@/api/dashboard'
     gap: 16px;
   }
 
+  .stats-container-empty {
+    opacity: 0.45;
+  }
+
+  .stats-item-disabled {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .statistics-chart-wrapper {
+    position: relative;
+  }
+
+  .statistics-chart-empty {
+    opacity: 0.2;
+    filter: grayscale(1);
+  }
+
+  .statistics-empty-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .statistics-empty-title {
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: 0;
+    text-align: center;
+    color: #878787;
+  }
+
+  .statistics-empty-text {
+    max-width: 360px;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    text-align: center;
+    color: #878787;
+  }
+
   @media (max-width: 767px) {
     .stats-container {
       display: grid;
@@ -865,6 +960,17 @@ import Dashboard from '@/api/dashboard'
 
     .stats-item {
       width: 100% !important;
+    }
+
+    .statistics-empty-title {
+      font-size: 18px;
+      line-height: 24px;
+    }
+
+    .statistics-empty-text {
+      max-width: 280px;
+      font-size: 14px;
+      line-height: 20px;
     }
   }
 
