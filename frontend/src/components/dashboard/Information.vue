@@ -344,14 +344,14 @@
             <VIcon size="72" icon="custom-coffee" />
          </VCardText>
          <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Uppgiften har skapats!</div>
+            <div class="dialog-title">Uppgift skapad!</div>
          </VCardText>
          <VCardText class="dialog-text text-center">
-            Din nya uppgift har registrerats.
+            Din uppgift har lagts till.
          </VCardText>
          <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
             <VBtn class="btn-gradient" @click="skapatsDialog = false">
-               Stäng
+               Klar
             </VBtn>
          </VCardText>
       </VCard>
@@ -443,14 +443,14 @@
             <VIcon size="72" icon="custom-coffee" />
          </VCardText>
          <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Uppgifterna har tagits bort!</div>
+            <div class="dialog-title">Uppgifter borttagna!</div>
          </VCardText>
          <VCardText class="dialog-text text-center">
-            Alla slutförda uppgifter har raderats.
+            Alla slutförda uppgifter har tagits bort.
          </VCardText>
          <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
             <VBtn class="btn-gradient" @click="deletedDialog = false">
-               Stäng
+               Klar
             </VBtn>
          </VCardText>
       </VCard>
