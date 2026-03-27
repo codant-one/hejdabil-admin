@@ -20,7 +20,27 @@
    const animatedMeasureId = ref(null)
    let measureAnimationTimeout = null
 
-   const measureItems = computed(() => props.measures?.measures ?? props.measures ?? {})
+   const measureItems = computed(() => {
+      const items = props.measures?.measures ?? props.measures
+
+      return Array.isArray(items) ? items : []
+   })
+
+   const getVehicleDisplayTitle = item => {
+      const regNumber = item?.vehicle?.reg_num ?? ''
+      const brandName = item?.vehicle?.model?.brand?.name ?? ''
+      const year = item?.vehicle?.year ?? ''
+      const primaryText = [regNumber, brandName].filter(Boolean).join(' ')
+
+      return [primaryText, year].filter(Boolean).join(', ')
+   }
+
+   const getMeasureDescription = item => {
+      const measureName = item?.measure ?? ''
+      const description = item?.description ?? ''
+
+      return [measureName, description].filter(Boolean).join('. ')
+   }
 
    const isConfirmStatusTaskDialogVisible = ref(false)
    const selectedTaskSource = ref(null)
@@ -167,7 +187,7 @@
                         class="measure-item__title"
                         :class="{ 'measure-item__title--completed': !!item.is_cost }"
                      >
-                        {{ item.vehicle.reg_num }} {{ item.vehicle.model.brand.name }}, {{ item.vehicle.year }} 
+                        {{ getVehicleDisplayTitle(item) }}
                      </span>
                      <VIcon icon="custom-arrow-right" size="16" :color="item.is_cost ? '#878787' : '#6E9383'" />
                   </div>
@@ -178,7 +198,7 @@
                   >
                      {{ 
                         truncateText(
-                           item.measure + '. ' + (item.description ?? ''), 
+                           getMeasureDescription(item), 
                            windowWidth < 1024 ? 70 : 130
                         ) 
                      }}
