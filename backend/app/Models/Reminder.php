@@ -13,6 +13,10 @@ class Reminder extends Model
     use HasFactory;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'completed_at' => 'datetime',
+    ];
     
     /**** Relationship ****/
     public function user(){
@@ -119,8 +123,11 @@ class Reminder extends Model
 
     public static function updateStateReminder($reminder, $isDone) {
 
+        $isDone = (int) $isDone;
+
         $reminder->update([
-            'is_done' => $isDone
+            'is_done' => $isDone,
+            'completed_at' => $isDone === 1 ? now() : null,
         ]);
 
         return $reminder;
