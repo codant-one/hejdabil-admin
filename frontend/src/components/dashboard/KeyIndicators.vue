@@ -93,6 +93,15 @@ const onFilterDateUpdate = value => {
    })
 }
 
+const clearFilter = () => {
+   filterDateRange.value = null
+   lastFilterSelectionKey.value = null
+   filterMenuVisible.value = false
+
+   emit('loading', true)
+   emit('filter', {})
+}
+
 const buildRangeSelectionKey = value => {
    if (!value)
       return null
@@ -460,6 +469,15 @@ const tabData = computed(() => ({
             >
                <VIcon icon="custom-export" size="24" />
                Exportera
+            </VBtn>
+
+            <VBtn
+               class="btn-light w-auto h-40"
+               block
+               @click="clearFilter"
+            >
+               <VIcon icon="custom-clean" size="24" />
+               Rengör filter
             </VBtn>
 
             <VBtn

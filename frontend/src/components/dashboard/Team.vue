@@ -90,6 +90,15 @@
       })
    }
 
+   const clearFilter = () => {
+      filterDateRange.value = null
+      lastFilterSelectionKey.value = null
+      filterMenuVisible.value = false
+
+      emit('loading', true)
+      emit('filter', {})
+   }
+
    const truncateText = (text, length = 15) => {
       if (text && text.length > length) {
          return text.substring(0, length) + "...";
@@ -113,15 +122,26 @@
       <VCardTitle class="title-box">
          <div class="title-text">Teamstatistik</div>
 
-         <VBtn
-            id="team-filter-button"
-            class="btn-white-2 px-3 h-40"
-            :class="windowWidth < 1024 ? 'w-100' : ''"
-            @click="filterMenuVisible = true"
-         >
-            <VIcon icon="custom-filter" size="24" color="#6E9383"/>
-            <span class="text-gunmetal-3">Filtrera efter datum</span>
-         </VBtn>
+         <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
+            <VBtn
+               class="btn-light w-auto h-40"
+               :class="windowWidth < 1024 ? 'w-100' : ''"
+               @click="clearFilter"
+            >
+               <VIcon icon="custom-clean" size="24" />
+               Rengör filter
+            </VBtn>
+
+            <VBtn
+               id="team-filter-button"
+               class="btn-white-2 px-3 h-40"
+               :class="windowWidth < 1024 ? 'w-100' : ''"
+               @click="filterMenuVisible = true"
+            >
+               <VIcon icon="custom-filter" size="24" color="#6E9383"/>
+               <span class="text-gunmetal-3">Filtrera efter datum</span>
+            </VBtn>
+         </div>
 
          <ExportDateMenu
             v-model="filterDateRange"

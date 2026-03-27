@@ -129,6 +129,15 @@ import Dashboard from '@/api/dashboard'
     })
   }
 
+  const clearFilter = () => {
+    filterDateRange.value = null
+    lastFilterSelectionKey.value = null
+    filterMenuVisible.value = false
+
+    emit('loading', true)
+    emit('filter', {})
+  }
+
   // 👉 Export functions
   const buildRangeSelectionKey = value => {
     if (!value)
@@ -686,6 +695,15 @@ import Dashboard from '@/api/dashboard'
           >
             <VIcon icon="custom-export" size="24" />
              Exportera
+          </VBtn>
+
+          <VBtn
+            class="btn-light w-auto h-40"
+            block
+            @click="clearFilter"
+          >
+            <VIcon icon="custom-clean" size="24" />
+             Rengör filter
           </VBtn>
 
           <VBtn
