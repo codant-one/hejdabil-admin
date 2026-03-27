@@ -12,9 +12,19 @@ const { width: windowWidth } = useWindowSize();
 
 const profitData = computed(() => props.profit?.profit ?? props.profit ?? {})
 
+const hasProfitLoaded = computed(() => {
+  const source = props.profit?.profit ?? props.profit
+
+  return !!source && typeof source === 'object' && Object.keys(source).length > 0
+})
+
+const isProfitEmptyState = computed(() => !hasProfitLoaded.value || (profitData.value?.vehicles ?? 0) === 0)
+
 const formatAmount = value => formatNumber(value ?? 0)
 
 const getAbbreviatedAmount = field => profitData.value?.[`${field}Abbreviated`] ?? formatAmount(profitData.value?.[field] ?? 0)
+
+const getDisplayAmount = field => hasProfitLoaded.value ? getAbbreviatedAmount(field) : '--'
 
 const formatVariation = value => {
   const numericValue = Number(value ?? 0)
@@ -24,11 +34,16 @@ const formatVariation = value => {
   return `${prefix}${roundedValue}% denna månad`
 }
 
+const getDisplayVariation = value => hasProfitLoaded.value ? formatVariation(value) : '-- denna månad'
+
 </script>
 
 <template>
   <div class="profit-cards">
-    <VCard title="" class="card-dashboard profit-card bg-aqua-1">
+    <VCard title="" 
+      class="card-dashboard profit-card" 
+      :class="isProfitEmptyState ? 'bg-neutral-2' : 'bg-aqua-1'"
+    >
       <VCardText class="px-4 pt-4 pb-0">
           <VAvatar
             rounded="lg"
@@ -38,7 +53,7 @@ const formatVariation = value => {
             <VIcon
               icon="custom-profit"
               size="24"
-              color="#04585D"
+                :color="isProfitEmptyState ? '#878787' : '#04585D'" 
             />
           </VAvatar>          
       </VCardText>
@@ -47,7 +62,7 @@ const formatVariation = value => {
           class="title-box px-4 py-0 border-none"
           :class="windowWidth < 1024 ? 'flex-row' : ''"
       >
-        <div class="title-text d-flex flex-column gap-2">
+        <div class="d-flex flex-column gap-2" :class="isProfitEmptyState ? 'title-text-empty' : 'title-text'">
             Total vinst
             <span>Sedan start</span>
         </div>
@@ -55,10 +70,10 @@ const formatVariation = value => {
 
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
-          <span class="text-number-grafic text-aqua-5">
-            {{ getAbbreviatedAmount('totalProfit') }}
+          <span class="text-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-aqua-5'">
+            {{ getDisplayAmount('totalProfit') }}
           </span>
-          <span class="currency-number-grafic text-aqua-5">
+          <span class="currency-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-aqua-5'">
             SEK
           </span>
         </div>
@@ -68,13 +83,18 @@ const formatVariation = value => {
           label
           size="small"
           class="chip-profit"
+          :class="isProfitEmptyState ? 'chip-profit-empty' : ''"
         >
-            {{ formatVariation(profitData?.totalProfitMonthlyVariation) }}
+            {{ getDisplayVariation(profitData?.totalProfitMonthlyVariation) }}
         </VChip>
       </VCardText>
     </VCard>
 
-    <VCard title="" class="card-dashboard profit-card bg-green-1">
+    <VCard 
+      title="" 
+      class="card-dashboard profit-card"
+      :class="isProfitEmptyState ? 'bg-neutral-2' : 'bg-green-1'">
+
       <VCardText class="px-4 pt-4 pb-0">
         <VAvatar
           rounded="lg"
@@ -84,7 +104,7 @@ const formatVariation = value => {
           <VIcon
             icon="custom-car-open"
             size="24"
-            color="#0C5B27"
+            :color="isProfitEmptyState ? '#878787' : '#0C5B27'"
           />
         </VAvatar>          
       </VCardText>
@@ -93,7 +113,7 @@ const formatVariation = value => {
         class="title-box px-4 py-0 border-none"
         :class="windowWidth < 1024 ? 'flex-row' : ''"
       >
-        <div class="title-text d-flex flex-column gap-2">
+        <div class="d-flex flex-column gap-2" :class="isProfitEmptyState ? 'title-text-empty' : 'title-text'">
             Total försäljning
             <span>Sedan start</span>
         </div>
@@ -101,10 +121,10 @@ const formatVariation = value => {
 
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
-          <span class="text-number-grafic text-green-5">
-            {{ getAbbreviatedAmount('totalSale') }}
+          <span class="text-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-green-5'">
+            {{ getDisplayAmount('totalSale') }}
           </span>
-          <span class="currency-number-grafic text-green-5">
+          <span class="currency-number-grafic"  :class="isProfitEmptyState ? 'text-neutral-3' : 'text-green-5'">
             SEK
           </span>
         </div>
@@ -114,8 +134,9 @@ const formatVariation = value => {
           label
           size="small"
           class="chip-profit"
+          :class="isProfitEmptyState ? 'chip-profit-empty' : ''"
         >
-            {{ formatVariation(profitData?.totalSaleMonthlyVariation) }}
+            {{ getDisplayVariation(profitData?.totalSaleMonthlyVariation) }}
         </VChip>
       </VCardText>
    </VCard>
@@ -139,6 +160,10 @@ const formatVariation = value => {
     letter-spacing: 0px;
     vertical-align: middle;
     color: #5D5D5D;
+  }
+
+  .chip-profit-empty.v-chip {
+    color: #878787;
   }
 
   .chip-profit .v-chip__underlay {

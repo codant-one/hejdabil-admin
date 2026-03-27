@@ -241,6 +241,7 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
+                    'vehicles' => Vehicle::query()->where('supplier_id', $supplierId)->count(),
                     'totalSale' => $totalSale,
                     'totalSaleAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalSale),
                     'totalSaleMonthlyVariation' => $saleMonthlyVariation,
