@@ -102,6 +102,8 @@ const clearFilter = () => {
    emit('filter', {})
 }
 
+const hasActiveFilter = computed(() => !!normalizeRangeValue(filterDateRange.value))
+
 const buildRangeSelectionKey = value => {
    if (!value)
       return null
@@ -472,6 +474,7 @@ const tabData = computed(() => ({
             </VBtn>
 
             <VBtn
+               v-if="hasActiveFilter"
                class="btn-light w-auto h-40"
                block
                @click="clearFilter"

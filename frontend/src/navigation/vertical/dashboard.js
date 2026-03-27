@@ -1,6 +1,6 @@
 export default [
     {
-        title: 'Översikt', 
+        title: 'Instrumentpanel', 
         icon: { icon: 'custom-tabler' },
         to: 'dashboard-panel', 
         action: 'view' , 

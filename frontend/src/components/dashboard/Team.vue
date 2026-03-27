@@ -99,6 +99,8 @@
       emit('filter', {})
    }
 
+   const hasActiveFilter = computed(() => !!normalizeRangeValue(filterDateRange.value))
+
    const truncateText = (text, length = 15) => {
       if (text && text.length > length) {
          return text.substring(0, length) + "...";
@@ -124,6 +126,7 @@
 
          <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
             <VBtn
+               v-if="hasActiveFilter"
                class="btn-light w-auto h-40"
                :class="windowWidth < 1024 ? 'w-100' : ''"
                @click="clearFilter"

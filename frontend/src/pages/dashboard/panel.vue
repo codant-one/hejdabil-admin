@@ -21,6 +21,8 @@ const authStores = useAuthStores();
 const configsStores = useConfigsStores();
 const ability = useAppAbility()
 
+const { width: windowWidth } = useWindowSize();
+
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -347,70 +349,90 @@ onBeforeUnmount(() => {
     </VCard>
 
     <!-- 👉 Supplier / User -->
-    <VCard title="" class="card-transparent" v-else>
-      <div class="dashboard-grid">
-        <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-          <Activities />
-        </div>
-        <div class="dashboard-grid__item dashboard-grid__item--md-6">
-          <Indicators
-            :company="company"
-            :indicators="indicators"
-            @loading="handleIndicatorsLoading"
-            @filter="handleIndicatorsFilter"
-          />
-        </div>
+    <template  v-else>
+      <span class="title-dashboard" v-if="windowWidth < 1024">Instrumentpanel</span>
+    
+      <VCard title="" class="card-transparent">
+        
+        <div class="dashboard-grid">
+          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+            <Activities />
+          </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-6">
+            <Indicators
+              :company="company"
+              :indicators="indicators"
+              @loading="handleIndicatorsLoading"
+              @filter="handleIndicatorsFilter"
+            />
+          </div>
 
-        <div class="dashboard-grid__item dashboard-grid__item--md-10">
-          <Statisticians 
-            :company="company"
-            :statisticians="statisticians" 
-            @loading="handleStatisticiansLoading"
-            @filter="handleStatisticiansFilter" 
-          />
-        </div>
-        <div class="dashboard-grid__item dashboard-grid__item--md-2">
-          <Profit :profit="profit" />
-        </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-10">
+            <Statisticians 
+              :company="company"
+              :statisticians="statisticians" 
+              @loading="handleStatisticiansLoading"
+              @filter="handleStatisticiansFilter" 
+            />
+          </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-2">
+            <Profit :profit="profit" />
+          </div>
 
-        <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-          <Information
-            :reminders="reminders?.reminders"
-            @refresh="handleRemindersRefresh"
-            @advisor="handleAdvisor"
-          />
-        </div>
-        <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-          <Measures
-            :measures="measures"
-            @loading="handleStatisticiansLoading"
-            @refresh="handleMeasuresRefresh"
-          />
-        </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+            <Information
+              :reminders="reminders?.reminders"
+              @refresh="handleRemindersRefresh"
+              @advisor="handleAdvisor"
+            />
+          </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+            <Measures
+              :measures="measures"
+              @loading="handleStatisticiansLoading"
+              @refresh="handleMeasuresRefresh"
+            />
+          </div>
 
-        <div class="dashboard-grid__item dashboard-grid__item--md-12">
-          <VehicleInfo
-            :stock-vehicles="vehicles?.stockVehicles"
-            :sold-vehicles="vehicles?.soldVehicles"
-            @loading="handleStatisticiansLoading"
-            @filter="handleVehiclesFilter"
-          />
-        </div>
+          <div class="dashboard-grid__item dashboard-grid__item--md-12">
+            <VehicleInfo
+              :stock-vehicles="vehicles?.stockVehicles"
+              :sold-vehicles="vehicles?.soldVehicles"
+              @loading="handleStatisticiansLoading"
+              @filter="handleVehiclesFilter"
+            />
+          </div>
 
-        <div class="dashboard-grid__item dashboard-grid__item--md-12">
-          <Team
-            :team-members="team?.teamMembers"
-            :team-totals="team?.teamTotals"
-            @loading="handleStatisticiansLoading"
-            @filter="handleTeamFilter"
-          />
+          <div class="dashboard-grid__item dashboard-grid__item--md-12">
+            <Team
+              :team-members="team?.teamMembers"
+              :team-totals="team?.teamTotals"
+              @loading="handleStatisticiansLoading"
+              @filter="handleTeamFilter"
+            />
+          </div>
         </div>
-      </div>
-    </VCard>
+      </VCard>
+    </template>
   </section>
 </template>
 
 <style lang="scss" scoped>
+  .title-dashboard {
+    display: flex;
+    gap: 24px;
+    padding: 24px;
+    border-bottom: 1px solid #E7E7E7;
+    margin-bottom: 24px;
+
+    font-family: "Blauer Nue";
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 100%;
+    letter-spacing: 0;
+    color: #1C2925
+  }
+
   .dashboard-grid {
     display: grid;
     gap: 16px;
