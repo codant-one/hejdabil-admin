@@ -46,6 +46,12 @@ watch(filterMenuVisible, isVisible => {
 
 const indicatorsData = computed(() => props.indicators?.indicators ?? props.indicators ?? {})
 
+const hasIndicatorsLoaded = computed(() => {
+   const source = props.indicators?.indicators ?? props.indicators
+
+   return !!source && typeof source === 'object' && Object.keys(source).length > 0
+})
+
 const formatCurrencyValue = value => formatNumber(value ?? 0)
 
 const getAbbreviatedPriceValue = field => indicatorsData.value?.[`${field}Abbreviated`] ?? formatCurrencyValue(indicatorsData.value?.[field] ?? 0)
@@ -415,21 +421,121 @@ const onDatePickerUpdate = value => {
       exportPDFAndCloseMenu()
 }
 
+const tabEmptyState = {
+   0: {
+      text: 'Ditt lager är tomt just nu.',
+      buttonText: 'Lägg till första fordonet',
+   },
+   1: {
+      text: 'Inga inköp har registrerats ännu.',
+      buttonText: 'Registrera inköp',
+   },
+   2: {
+      text: 'Du har inte registrerat några sålda bilar ännu.',
+      buttonText: 'Registrera försäljning',
+   },
+}
+
+const hasTabData = tabIndex => {
+   if (!hasIndicatorsLoaded.value)
+      return false
+
+   return !!tabData.value?.[tabIndex]?.some(card => card.isExist)
+}
+
+const getTabEmptyState = tabIndex => {
+   if (hasTabData(tabIndex))
+      return null
+
+   return tabEmptyState[tabIndex] ?? null
+}
+
+const activeTabEmptyState = computed(() => getTabEmptyState(activeTab.value))
+
 const tabData = computed(() => ({
    0: [
-      { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.vehiclesInStock ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('stockVehiclesPurchasePrice'), suffix: 'kr', label: 'Värde' },
-      { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.stockVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+      { 
+         icon: 'custom-autofordon', 
+         iconColor: '#6E9383', 
+         iconBg: '#D8FFE4', 
+         value: hasIndicatorsLoaded.value ? indicatorsData.value?.vehiclesInStock ?? 0 : '--', 
+         label: 'Antal',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.vehiclesInStock ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-pris-information', 
+         iconColor: '#4BBFBF', 
+         iconBg: '#C0FEFF', 
+         value: hasIndicatorsLoaded.value ? getAbbreviatedPriceValue('stockVehiclesPurchasePrice') : '--', 
+         suffix: 'kr', 
+         label: 'Värde',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.vehiclesInStock ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-calendar', 
+         iconColor: '#878787', 
+         iconBg: '#F6F6F6', 
+         value: hasIndicatorsLoaded.value ? formatVariationValue(indicatorsData.value?.stockVehiclesMonthlyVariation) : '--', 
+         suffix: '', 
+         label: 'Månadsförändring',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.vehiclesInStock ?? 0) !== 0,
+      },
    ],
    1: [
-      { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.purchasedVehiclesCount ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('purchasedVehiclesPrice'), suffix: 'kr', label: 'Värde' },
-      { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.purchasedVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+      { 
+         icon: 'custom-autofordon', 
+         iconColor: '#6E9383', 
+         iconBg: '#D8FFE4', 
+         value: hasIndicatorsLoaded.value ? indicatorsData.value?.purchasedVehiclesCount ?? 0 : '--', 
+         label: 'Antal',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.purchasedVehiclesCount ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-pris-information', 
+         iconColor: '#4BBFBF', 
+         iconBg: '#C0FEFF', 
+         value: hasIndicatorsLoaded.value ? getAbbreviatedPriceValue('purchasedVehiclesPrice') : '--', 
+         suffix: 'kr', 
+         label: 'Värde',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.purchasedVehiclesCount ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-calendar', 
+         iconColor: '#878787', 
+         iconBg: '#F6F6F6', 
+         value: hasIndicatorsLoaded.value ? formatVariationValue(indicatorsData.value?.purchasedVehiclesMonthlyVariation) : '--', 
+         suffix: '', 
+         label: 'Månadsförändring',
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.purchasedVehiclesCount ?? 0) !== 0,
+      },
    ],
    2: [
-      { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.soldVehiclesCount ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('soldVehiclesPrice'), suffix: 'kr', label: 'Värde' },
-      { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.soldVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
+      { 
+         icon: 'custom-autofordon', 
+         iconColor: '#6E9383', 
+         iconBg: '#D8FFE4', 
+         value: hasIndicatorsLoaded.value ? indicatorsData.value?.soldVehiclesCount ?? 0 : '--', 
+         label: 'Antal', 
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.soldVehiclesCount ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-pris-information', 
+         iconColor: '#4BBFBF', 
+         iconBg: '#C0FEFF', 
+         value: hasIndicatorsLoaded.value ? getAbbreviatedPriceValue('soldVehiclesPrice') : '--', 
+         suffix: 'kr', 
+         label: 'Värde', 
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.soldVehiclesCount ?? 0) !== 0,
+      },
+      { 
+         icon: 'custom-calendar', 
+         iconColor: '#878787', 
+         iconBg: '#F6F6F6', 
+         value: hasIndicatorsLoaded.value ? formatVariationValue(indicatorsData.value?.soldVehiclesMonthlyVariation) : '--', 
+         suffix: '', 
+         label: 'Månadsförändring', 
+         isExist: hasIndicatorsLoaded.value && (indicatorsData.value?.soldVehiclesCount ?? 0) !== 0,
+      },
    ],
 }))
 </script>
@@ -509,7 +615,7 @@ const tabData = computed(() => ({
          </div>
       </VCardTitle>
 
-      <VCardText class="pt-0 h-0 px-4 px-md-6">
+      <VCardText class="pt-0 h-0 px-4 px-md-6" :class="activeTabEmptyState ? (windowWidth < 1024 ? '' : 'pb-8') : ''">
          <VTabs
             v-model="activeTab"
             grow          
@@ -534,23 +640,39 @@ const tabData = computed(() => ({
       <VCardText class="pt-0 flex-grow-1 d-flex flex-column">
         <VWindow v-model="activeTab" class="flex-grow-1">
          <VWindowItem v-for="tab in 3" :key="tab" :value="tab - 1" class="px-md-0 h-100">
-            <div class="indicator-grid">
-               <div v-for="(card, i) in tabData[tab - 1]" :key="i" class="indicator-card">
-                  <VAvatar
-                     :color="card.iconBg"
-                     :icon="card.icon"
-                     variant="flat"
-                     size="56"
-                     rounded="lg"
-                     class="indicator-icon"
-                     :style="{ '--icon-color': card.iconColor }"
-                  />
-                  <div class="indicator-info">
-                     <div class="indicator-value">
-                        {{ card.value }}<span v-if="card.suffix" class="indicator-suffix">{{ card.suffix }}</span>
+            <div class="indicator-tab-content">
+               <div class="indicator-grid">
+                  <div v-for="(card, i) in tabData[tab - 1]" :key="i" class="indicator-card">
+                     <VAvatar
+                        :color="card.isExist ? card.iconBg : '#F6F6F6'"
+                        :icon="card.icon"
+                        variant="flat"
+                        size="56"
+                        rounded="lg"
+                        class="indicator-icon"
+                        :style="{ '--icon-color': card.isExist ? card.iconColor : '#BFBFBF' }"
+                     />
+                     <div class="indicator-info">
+                        <div class="indicator-value">
+                           {{ card.value }}<span v-if="card.suffix" class="indicator-suffix">{{ card.suffix }}</span>
+                        </div>
+                        <div class="indicator-label">{{ card.label }}</div>
                      </div>
-                     <div class="indicator-label">{{ card.label }}</div>
+
                   </div>
+               </div>
+
+               <div v-if="getTabEmptyState(tab - 1)" class="indicator-note">
+                  {{ getTabEmptyState(tab - 1)?.text }}
+
+                  <VBtn
+                     class="btn-white-2 h-40"
+                     :to="{ name: 'dashboard-admin-stock' }"
+                  >                     
+                     <span class="text-gunmetal-3">{{ getTabEmptyState(tab - 1)?.buttonText }}</span>
+                     <VIcon icon="custom-arrow-right" size="24" color="#6E9383"/>
+                  </VBtn>
+
                </div>
             </div>
          </VWindowItem>
@@ -631,11 +753,17 @@ const tabData = computed(() => ({
       }
    }
 
+   .indicator-tab-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+   }
+
    .indicator-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
-      height: 100%;
+      flex: 1 1 auto;
 
       @media (max-width: 1023px) {
          grid-template-columns: 1fr;
@@ -663,6 +791,28 @@ const tabData = computed(() => ({
          gap: 16px;
          height: 67px;
       }
+   }
+
+   .indicator-note {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 0 0 0;
+      justify-content: center;
+
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 24px;
+      letter-spacing: 0;
+      text-align: center;
+      color: #878787;
+
+      @media (max-width: 767px) {
+         flex-direction: column;
+         gap: 4px;
+         font-size: 14px;
+      }
+
    }
 
    .indicator-content-mobile {
