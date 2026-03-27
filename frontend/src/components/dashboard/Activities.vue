@@ -66,11 +66,29 @@
       </VTabs>
     </VCardTitle>
 
-    <VCardText class="p-0">
-      <VWindow v-model="activeTab">
-        <VWindowItem :value="0" class="px-md-0">
+    <VCardText class="p-0 flex-grow-1 d-flex min-h-0">
+      <VWindow v-model="activeTab" class="activities-window flex-grow-1">
+        <VWindowItem :value="0" class="px-md-0 activities-window-item">
+          <div
+            v-if="notifications.length > 0"
+            class="empty-state mb-0"
+            :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+          >
+            <VIcon
+              size="80"
+              icon="custom-f-notifications"
+            />
+            <div class="empty-state-content w-100 pa-4">
+              <div class="empty-state-title">Inga nya meddelanden</div>
+              <div class="empty-state-text">
+                Här visas viktiga notiser, till exempel när ett avtal har signerats eller när en faktura har betalats.
+              </div>
+            </div>
+          </div>
+
           <VCardText 
             v-for="notification in notifications"
+            v-else
             :key="notification.id"
             class="bg-white py-2 mx-0 card-activity d-flex align-center cursor-pointer"
             :class="windowWidth < 1024 ? 'gap-3' : 'gap-6'"
@@ -111,9 +129,27 @@
             </div>
           </VCardText>
         </VWindowItem>
-        <VWindowItem :value="1" class="px-md-0">
+        <VWindowItem :value="1" class="px-md-0 activities-window-item">
+          <div
+            v-if="activities.length > 0"
+            class="empty-state mb-0"
+            :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+          >
+            <VIcon
+              size="80"
+              icon="custom-f-hourglass"
+            />
+            <div class="empty-state-content w-100 pa-4">
+              <div class="empty-state-title">Ingen aktivitet ännu</div>
+              <div class="empty-state-text">
+                Här visas allt som händer i systemet - till exempel när fordon läggs till, fakturor skapas eller affärer uppdateras.
+              </div>
+            </div>
+          </div>
+
           <VCardText 
             v-for="activity in activities"
+            v-else
             :key="activity.id"
             class="bg-white pt-4 mx-0 card-activity d-flex gap-6 align-start cursor-pointer"
             @click="onActivityClick(activity)"
@@ -161,6 +197,54 @@
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
+  }
+
+  .activities-window {
+    height: 100%;
+    min-height: 0;
+
+    .v-window__container,
+    .v-window-item {
+      height: 100%;
+      min-height: 0;
+    }
+  }
+
+  .activities-window-item {
+    height: 100%;
+  }
+
+  .empty-state {
+    height: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .empty-state-content {
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-state-title {
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 24px;
+    color: #454545;
+  }
+
+  .empty-state-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: #878787;
   }
 
   .card-activity {
