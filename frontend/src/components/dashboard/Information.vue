@@ -211,12 +211,12 @@
 
          <VBtn
             v-if="taskItems.some(item => item.completed)"
-            class="btn-white-2 px-3 h-24"
+            class="btn-white-2 px-3 h-40"
             :disabled="isDeleting"
             @click="confirmDeleteDialog = true"
          >
-            <VIcon icon="custom-waste" size="24" />
-            TA BORT ALLA ??
+            <VIcon icon="custom-clean" size="24" color="#6E9383"/>
+            <span class="text-gunmetal-3">Rengöring avslutad</span>
          </VBtn>
 
       </VCardTitle>
