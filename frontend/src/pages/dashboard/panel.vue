@@ -379,14 +379,14 @@ onBeforeUnmount(() => {
             <Profit :profit="profit" />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card" style="height: 480px !important;">
             <Information
               :reminders="reminders?.reminders"
               @refresh="handleRemindersRefresh"
               @advisor="handleAdvisor"
             />
           </div>
-          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
+          <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card" style="height: 480px !important;">
             <Measures
               :measures="measures"
               @loading="handleStatisticiansLoading"

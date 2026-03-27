@@ -221,7 +221,10 @@
 
       </VCardTitle>
 
-      <VCardText class="pt-2 form-dashboard" :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
+      <VCardText 
+         class="pt-2 form-dashboard" 
+         :class="windowWidth < 1024 ? 'px-4' : 'px-6'"
+         style="height: 70px;">
          <VForm :key="formInstanceKey" ref="refVForm" @submit.prevent="onSubmit">
             <div class="d-flex flex-column gap-2">
                <div class="information-form__field information-form__field--full">
@@ -318,8 +321,21 @@
                   </div>
                </div>
             </div>
-            <div v-if="!taskItems.length" class="information-item__empty">
-               Inga uppgifter hittades.
+            <div 
+               v-if="!taskItems.length"  
+               class="empty-state mb-0"
+            >
+               <VIcon
+                  size="80"
+                  icon="custom-coffee"
+               />
+               <div class="empty-state-content w-100 pa-4">
+                  <div class="empty-state-title">Inga uppgifter ännu</div>
+                  <div class="empty-state-text">
+                     Håll koll på kunder, samtal och bokningar.<br>
+                     Lägg till din första uppgift ovan.
+                  </div>
+               </div>
             </div>
          </div>
       </VCardText>
