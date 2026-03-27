@@ -279,6 +279,7 @@
          <VWindow v-model="activeTab" :touch="false">
             <VWindowItem :value="0" class="px-md-0">
                <div
+                  v-if="inventoryVehicles.length > 0"
                   class="vehicle-scroll-row"
                   :class="{ 'vehicle-scroll-row--dragging': dragScroll.isDragging }"
                   @mousedown="onDragStart"
@@ -332,9 +333,34 @@
                      </div>
                   </article>
                </div>
+
+               <div
+                  v-else
+                  class="empty-state mb-0"
+                  :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+               >
+                  <VIcon
+                     size="80"
+                     icon="custom-vehicle-stock"
+                  />
+                  <div class="empty-state-content w-100 pa-4">
+                     <div class="empty-state-title">Inga fordon ännu</div>
+                     <div class="empty-state-text">                     
+                        Kom igång genom att lägga till ditt första fordon.<br>Din lageröversikt visas här.
+                     </div>
+                  </div>
+                  <VBtn
+                     class="btn-ghost"
+                     :to="{ name : 'dashboard-admin-stock'}"
+                  >
+                     Lägg till fordon
+                     <VIcon icon="custom-arrow-right" size="24" />
+                  </VBtn>
+               </div>
             </VWindowItem>
             <VWindowItem :value="1" class="px-md-0">
                <div
+                  v-if="soldVehicles.length > 0"
                   class="vehicle-scroll-row"
                   :class="{ 'vehicle-scroll-row--dragging': dragScroll.isDragging }"
                   @mousedown="onDragStart"
@@ -399,6 +425,22 @@
                         </div>
                      </div>
                   </article>
+               </div>
+               <div
+                  v-else
+                  class="empty-state mb-0"
+                  :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+               >
+                  <VIcon
+                     size="80"
+                     icon="custom-vehicle-sold"
+                  />
+                  <div class="empty-state-content w-100 pa-4">
+                     <div class="empty-state-title">Inga försäljningar ännu</div>
+                     <div class="empty-state-text">                        
+                        Dina sålda fordon visas här när du gör din första affär.
+                     </div>
+                  </div>
                </div>
             </VWindowItem>
          </VWindow>
