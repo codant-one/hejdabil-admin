@@ -129,7 +129,7 @@
       </VCardTitle>
 
       <VCardText class="pt-6 measures-card-text" :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
-         <div class="measure-list d-flex flex-column">
+         <div class="measure-list d-flex flex-column h-100">
             <div
                v-for="item in measureItems"
                :key="item.id"
@@ -176,9 +176,12 @@
                      class="measure-item__description"
                      :class="{ 'measure-item__title--completed': !!item.is_cost }"
                   >
-                     {{ truncateText(
-                        item.measure + '. ' + (item.description ?? '')
-                     , windowWidth < 1024 ? 70 : 130) }}
+                     {{ 
+                        truncateText(
+                           item.measure + '. ' + (item.description ?? ''), 
+                           windowWidth < 1024 ? 70 : 130
+                        ) 
+                     }}
                   </div>
 
                   <div class="measure-item__meta d-flex align-center">
@@ -191,6 +194,22 @@
                         <VIcon icon="custom-calendar" size="16" color="#878787" />
                         <span>{{ formatDateYMD(item.start_date) }} - {{ formatDateYMD(item.end_date) }}</span>
                      </div>
+                  </div>
+               </div>
+            </div>
+
+            <div 
+               v-if="!measureItems.length"  
+               class="empty-state mb-0"
+            >
+               <VIcon
+                  size="80"
+                  icon="custom-settings-2"
+               />
+               <div class="empty-state-content w-100 pa-4">
+                  <div class="empty-state-title">Inga åtgärder ännu</div>
+                  <div class="empty-state-text">
+                     Lägg till service eller arbete på ett fordon för att se det här.
                   </div>
                </div>
             </div>
