@@ -48,6 +48,8 @@ const indicatorsData = computed(() => props.indicators?.indicators ?? props.indi
 
 const formatCurrencyValue = value => formatNumber(value ?? 0)
 
+const getAbbreviatedPriceValue = field => indicatorsData.value?.[`${field}Abbreviated`] ?? formatCurrencyValue(indicatorsData.value?.[field] ?? 0)
+
 const formatVariationValue = value => `${Math.round(Number(value ?? 0))}%`
 
 const normalizeRangeValue = value => {
@@ -405,17 +407,17 @@ const onDatePickerUpdate = value => {
 const tabData = computed(() => ({
    0: [
       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.vehiclesInStock ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(indicatorsData.value?.stockVehiclesPurchasePrice), suffix: 'KR', label: 'Värde' },
+      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('stockVehiclesPurchasePrice'), suffix: 'kr', label: 'Värde' },
       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.stockVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
    ],
    1: [
       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.purchasedVehiclesCount ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(indicatorsData.value?.purchasedVehiclesPrice), suffix: 'KR', label: 'Värde' },
+      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('purchasedVehiclesPrice'), suffix: 'kr', label: 'Värde' },
       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.purchasedVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
    ],
    2: [
       { icon: 'custom-autofordon', iconColor: '#6E9383', iconBg: '#D8FFE4', value: indicatorsData.value?.soldVehiclesCount ?? 0, label: 'Antal' },
-      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: formatCurrencyValue(indicatorsData.value?.soldVehiclesPrice), suffix: 'KR', label: 'Värde' },
+      { icon: 'custom-pris-information', iconColor: '#4BBFBF', iconBg: '#C0FEFF', value: getAbbreviatedPriceValue('soldVehiclesPrice'), suffix: 'kr', label: 'Värde' },
       { icon: 'custom-calendar', iconColor: '#878787', iconBg: '#F6F6F6', value: formatVariationValue(indicatorsData.value?.soldVehiclesMonthlyVariation), suffix: '', label: 'Månadsförändring' },
    ],
 }))
@@ -673,6 +675,7 @@ const tabData = computed(() => ({
    }
 
    .indicator-suffix {
+      margin-left: 4px;
       font-weight: 400;
       font-size: 16px;
       line-height: 100%;

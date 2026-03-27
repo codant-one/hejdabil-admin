@@ -58,14 +58,23 @@ class DashboardController extends Controller
                 $chartEndMonth,
             );
 
+            $totalPurchasePrice = $vehiclePriceSummary['totalPurchasePrice'];
+            $totalSalePrice = $vehiclePriceSummary['totalSalePrice'];
+            $totalCost = $vehiclePriceSummary['totalCost'];
+            $totalProfit = $vehiclePriceSummary['totalProfit'];
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'priceByMonth' => $vehiclePriceSummary['months'],
-                    'totalPurchasePrice' => $vehiclePriceSummary['totalPurchasePrice'],
-                    'totalSalePrice' => $vehiclePriceSummary['totalSalePrice'],
-                    'totalCost' => $vehiclePriceSummary['totalCost'],
-                    'totalProfit' => $vehiclePriceSummary['totalProfit'],
+                    'totalPurchasePrice' => $totalPurchasePrice,
+                    'totalPurchasePriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalPurchasePrice),
+                    'totalSalePrice' => $totalSalePrice,
+                    'totalSalePriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalSalePrice),
+                    'totalCost' => $totalCost,
+                    'totalCostAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalCost),
+                    'totalProfit' => $totalProfit,
+                    'totalProfitAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalProfit),
                     'dateRange' => [
                         'year' => $chartStartMonth->year,
                         'year_from' => $chartStartMonth->year,
@@ -137,17 +146,24 @@ class DashboardController extends Controller
                 $filterEnd,
             );
 
+            $stockVehiclesPurchasePrice = $stockIndicator['totalPrice'];
+            $purchasedVehiclesPrice = $purchasedIndicator['totalPrice'];
+            $soldVehiclesPrice = $soldIndicator['totalPrice'];
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'vehiclesInStock' => $stockIndicator['count'],
-                    'stockVehiclesPurchasePrice' => $stockIndicator['totalPrice'],
+                    'stockVehiclesPurchasePrice' => $stockVehiclesPurchasePrice,
+                    'stockVehiclesPurchasePriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($stockVehiclesPurchasePrice),
                     'stockVehiclesMonthlyVariation' => $stockIndicator['monthlyVariation'],
                     'purchasedVehiclesCount' => $purchasedIndicator['count'],
-                    'purchasedVehiclesPrice' => $purchasedIndicator['totalPrice'],
+                    'purchasedVehiclesPrice' => $purchasedVehiclesPrice,
+                    'purchasedVehiclesPriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($purchasedVehiclesPrice),
                     'purchasedVehiclesMonthlyVariation' => $purchasedIndicator['monthlyVariation'],
                     'soldVehiclesCount' => $soldIndicator['count'],
-                    'soldVehiclesPrice' => $soldIndicator['totalPrice'],
+                    'soldVehiclesPrice' => $soldVehiclesPrice,
+                    'soldVehiclesPriceAbbreviated' => $this->formatSwedishAbbreviatedCurrency($soldVehiclesPrice),
                     'soldVehiclesMonthlyVariation' => $soldIndicator['monthlyVariation'],
                     'dateRange' => [
                         'date_from' => $filterStart?->toDateString(),
@@ -225,8 +241,10 @@ class DashboardController extends Controller
                 'success' => true,
                 'data' => [
                     'totalSale' => $totalSale,
+                    'totalSaleAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalSale),
                     'totalSaleMonthlyVariation' => $saleMonthlyVariation,
                     'totalProfit' => $totalProfit,
+                    'totalProfitAbbreviated' => $this->formatSwedishAbbreviatedCurrency($totalProfit),
                     'totalProfitMonthlyVariation' => $profitMonthlyVariation,
                 ]
             ]);
@@ -528,14 +546,19 @@ class DashboardController extends Controller
             $totalPurchasePrice = $totalsByMonth->get($monthKey, 0);
             $totalSalePrice = $totalsSaleByMonth->get($monthKey, 0);
             $totalCost = $totalsTaskCostByMonth->get($monthKey, 0);
+            $totalProfit = round((float) ($totalSalePrice - $totalPurchasePrice - $totalCost), 2);
 
             $months[] = [
                 'month' => $monthKey,
                 'month_label' => $cursor->format('M y'),
                 'total_purchase_price' => $totalPurchasePrice,
+                'total_purchase_price_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalPurchasePrice),
                 'total_sale_price' => $totalSalePrice,
+                'total_sale_price_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalSalePrice),
                 'total_cost' => $totalCost,
-                'total_profit' => round((float) ($totalSalePrice - $totalPurchasePrice - $totalCost), 2),
+                'total_cost_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalCost),
+                'total_profit' => $totalProfit,
+                'total_profit_abbreviated' => $this->formatSwedishAbbreviatedCurrency($totalProfit),
             ];
 
             $cursor->addMonth();
@@ -867,6 +890,43 @@ class DashboardController extends Controller
         }
 
         return round((($currentValue - $previousValue) / $previousValue) * 100, 2);
+    }
+
+    private function formatSwedishAbbreviatedCurrency(float $amount): string
+    {
+        $absoluteAmount = abs($amount);
+
+        if ($absoluteAmount >= 1000000000) {
+            return $this->formatSwedishAbbreviatedNumber($amount, 1000000000, 'Md');
+        }
+
+        if ($absoluteAmount >= 1000000) {
+            return $this->formatSwedishAbbreviatedNumber($amount, 1000000, 'M');
+        }
+
+        if ($absoluteAmount >= 1000) {
+            return $this->formatSwedishAbbreviatedNumber($amount, 1000, 'k');
+        }
+
+        $roundedAmount = round($amount, 1);
+        $decimals = $this->hasFractionalComponent($roundedAmount) ? 1 : 0;
+
+        return number_format($roundedAmount, $decimals, ',', ' ');
+    }
+
+    private function formatSwedishAbbreviatedNumber(float $amount, int $divisor, string $suffix): string
+    {
+        $scaledAmount = $amount / $divisor;
+        $roundedAmount = round($scaledAmount, 1);
+        $shouldKeepDecimal = $this->hasFractionalComponent($roundedAmount)
+            || ($this->hasFractionalComponent($scaledAmount) && abs($roundedAmount) < 10);
+
+        return number_format($roundedAmount, $shouldKeepDecimal ? 1 : 0, ',', ' ') . $suffix;
+    }
+
+    private function hasFractionalComponent(float $value): bool
+    {
+        return abs($value - round($value)) > 0.00001;
     }
 
     private function getDashboardVehiclesByState(

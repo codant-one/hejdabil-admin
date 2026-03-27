@@ -58,6 +58,35 @@ import Dashboard from '@/api/dashboard'
 
   const statisticiansData = computed(() => props.statisticians?.statisticians ?? props.statisticians ?? {})
 
+  const formatSwedishAbbreviatedCurrency = value => {
+    const numericValue = Number(value ?? 0)
+    const absoluteValue = Math.abs(numericValue)
+
+    let divisor = 1
+    let suffix = ''
+
+    if (absoluteValue >= 1000000000) {
+      divisor = 1000000000
+      suffix = 'Md'
+    } else if (absoluteValue >= 1000000) {
+      divisor = 1000000
+      suffix = 'M'
+    } else if (absoluteValue >= 1000) {
+      divisor = 1000
+      suffix = 'k'
+    }
+
+    const scaledValue = numericValue / divisor
+    const roundedValue = Math.round(scaledValue * 10) / 10
+    const hasFractionalComponent = Math.abs(roundedValue - Math.round(roundedValue)) > 0.00001
+      || (Math.abs(scaledValue - roundedValue) > 0.00001 && Math.abs(roundedValue) < 10)
+
+    return new Intl.NumberFormat('sv-SE', {
+      minimumFractionDigits: hasFractionalComponent ? 1 : 0,
+      maximumFractionDigits: hasFractionalComponent ? 1 : 0,
+    }).format(roundedValue) + suffix
+  }
+
   const normalizeRangeValue = value => {
     if (!value)
       return null
@@ -438,6 +467,23 @@ import Dashboard from '@/api/dashboard'
   const saleSeries = computed(() => monthlyStats.value.map(item => Number(item.total_sale_price ?? 0)))
   const costSeries = computed(() => monthlyStats.value.map(item => Number(item.total_cost ?? 0)))
   const profitSeries = computed(() => monthlyStats.value.map(item => Number(item.total_profit ?? 0)))
+  const currentChartAmountField = computed(() => {
+    return [
+      'total_purchase_price',
+      'total_sale_price',
+      'total_cost',
+      'total_profit',
+    ][Number(currentTab.value)] ?? 'total_purchase_price'
+  })
+
+  const getCurrentMonthAbbreviatedValue = dataPointIndex => {
+    const item = monthlyStats.value[dataPointIndex] ?? {}
+    const field = currentChartAmountField.value
+    const abbreviatedField = `${field}_abbreviated`
+
+    return item?.[abbreviatedField] ?? formatSwedishAbbreviatedCurrency(item?.[field] ?? 0)
+  }
+
   const currentMonthKey = computed(() => {
     const currentDate = new Date()
     const year = currentDate.getFullYear()
@@ -502,8 +548,8 @@ import Dashboard from '@/api/dashboard'
       colors,
       dataLabels: {
         enabled: true,
-        formatter(val) {
-          return `${ val }kr`
+        formatter(_val, opts) {
+          return `${getCurrentMonthAbbreviatedValue(opts?.dataPointIndex)} kr`
         },
         offsetY: -25,
         style: {
@@ -529,7 +575,7 @@ import Dashboard from '@/api/dashboard'
         labels: {
           offsetX: -15,
           formatter(val) {
-            return `${ val / 1 }kr`
+            return `${formatSwedishAbbreviatedCurrency(val)} kr`
           },
           style: { fontSize: '13px', colors: labelColor, fontFamily: 'Public Sans' },
           min: 0,

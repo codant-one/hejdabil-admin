@@ -14,6 +14,8 @@ const profitData = computed(() => props.profit?.profit ?? props.profit ?? {})
 
 const formatAmount = value => formatNumber(value ?? 0)
 
+const getAbbreviatedAmount = field => profitData.value?.[`${field}Abbreviated`] ?? formatAmount(profitData.value?.[field] ?? 0)
+
 const formatVariation = value => {
   const numericValue = Number(value ?? 0)
   const roundedValue = Math.round(numericValue)
@@ -54,7 +56,7 @@ const formatVariation = value => {
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
           <span class="text-number-grafic text-aqua-5">
-            {{ formatAmount(profitData?.totalProfit) }}
+            {{ getAbbreviatedAmount('totalProfit') }}
           </span>
           <span class="currency-number-grafic text-aqua-5">
             SEK
@@ -100,7 +102,7 @@ const formatVariation = value => {
       <VCardText class="profit-card__content px-4 py-0">
         <div class="d-flex align-center">
           <span class="text-number-grafic text-green-5">
-            {{ formatAmount(profitData?.totalSale) }}
+            {{ getAbbreviatedAmount('totalSale') }}
           </span>
           <span class="currency-number-grafic text-green-5">
             SEK
@@ -193,6 +195,7 @@ const formatVariation = value => {
   }
 
   .currency-number-grafic {
+    margin-left: 4px;
     font-weight: 300;
     font-size: 20px;
     line-height: 100%;
