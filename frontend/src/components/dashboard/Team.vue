@@ -27,19 +27,19 @@
          value: props.teamTotals?.billings ?? 0,
          label: 'Fakturor',
          icon: 'custom-facture',
-         iconClass: 'team-stat-card__icon--mint',
+         iconClass: teamMembers.value.length > 0 ? 'team-stat-card__icon--mint' : 'team-stat-card__icon--default',
       },
       {
          value: props.teamTotals?.payouts ?? 0,
          label: 'Swish',
          icon: 'custom-swish',
-         iconClass: 'team-stat-card__icon--cyan',
+         iconClass: teamMembers.value.length > 0 ? 'team-stat-card__icon--cyan' : 'team-stat-card__icon--default',
       },
       {
          value: props.teamTotals?.agreements ?? 0,
          label: 'Avtal',
          icon: 'custom-contract',
-         iconClass: 'team-stat-card__icon--neutral',
+         iconClass: teamMembers.value.length > 0 ? 'team-stat-card__icon--neutral' : 'team-stat-card__icon--default',
       },
    ]);
 
@@ -161,7 +161,7 @@
          />
       </VCardTitle>
       <VCardText class="px-0 py-0">
-         <div class="team-stats-panel">
+         <div class="team-stats-panel" :class="teamMembers.length > 0 ? 'bg-green-1' : 'bg-neutral-1'">
             <div class="team-stats-heading">Företagets total</div>
 
             <div class="team-stats-grid">
@@ -171,7 +171,7 @@
                   class="team-stat-card"
                >
                   <div :class="['team-stat-card__icon', item.iconClass]">
-                     <VIcon :icon="item.icon" size="16" />
+                     <VIcon :icon="item.icon" size="16" :color="teamMembers.length > 0 ? '#1C2925' : '#BFBFBF'"/>
                   </div>
 
                   <div class="team-stat-card__content">
@@ -191,7 +191,7 @@
       <VCardText class="pb-0">
          <VTable
             v-if="!$vuetify.display.mdAndDown"
-            v-show="teamMembers.length"
+            v-show="teamMembers.length > 0"
             class="pb-6 text-no-wrap">
             <thead>
                <tr>
@@ -252,6 +252,30 @@
                </tr>
             </tbody>
          </VTable>
+      
+         <div
+            v-if="!teamMembers.length"
+            class="empty-state mb-0"
+            :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+          >
+            <VIcon
+              size="80"
+              icon="custom-account"
+            />
+            <div class="empty-state-content w-100 pa-4">
+              <div class="empty-state-title">Inget team ännu</div>
+              <div class="empty-state-text">
+                  Bjud in dina medarbetare för att börja följa försäljning och prestation.
+              </div>
+            </div>
+
+            <VBtn
+               class="btn-ghost"
+            >
+               Bjud in medarbetare
+               <VIcon icon="custom-arrow-right" size="24" />
+            </VBtn>
+         </div>
       </VCardText>
 
       <VExpansionPanels
@@ -342,7 +366,6 @@
 
    .team-stats-panel {
       padding: 24px;
-      background: #D8FFE4;
    }
 
    .team-stats-heading {
@@ -380,6 +403,10 @@
       border-radius: 8px;
       color: #1C2925;
       flex: 0 0 auto;
+   }
+
+   .team-stat-card__icon--default {
+      background-color: #F6F6F6;
    }
 
    .team-stat-card__icon--mint {
