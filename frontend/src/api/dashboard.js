@@ -29,6 +29,14 @@ class Dashboard {
     reminders() {
         return axios.get('dashboard/reminders')
     }
+
+    activities() {
+        return axios.get('dashboard/activities')
+    }
+
+    notifications() {
+        return axios.get('dashboard/notifications')
+    }
 }
 
 const dashboard = new Dashboard();

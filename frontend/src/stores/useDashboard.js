@@ -10,6 +10,8 @@ export const useDashboardStores = defineStore('dashboard', {
         team: {},
         vehicles: {},
         reminders: {},
+        activities: {},
+        notifications: {},
         loading: false,
         last_page: 1,
     }),
@@ -34,6 +36,12 @@ export const useDashboardStores = defineStore('dashboard', {
         },
         getReminders(){
             return this.reminders
+        },
+        getActivities(){
+            return this.activities
+        },
+        getNotifications(){
+            return this.notifications
         }
     },
     actions: {
@@ -113,6 +121,28 @@ export const useDashboardStores = defineStore('dashboard', {
             return Dashboard.reminders()
                 .then((response) => {
                     this.reminders = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        fetchActivities() {
+            this.setLoading(true)
+            return Dashboard.activities()
+                .then((response) => {
+                    this.activities = response.data.data
+                })
+                .catch(error => console.log(error))
+                .finally(() => {
+                    this.setLoading(false)
+                })
+        },
+        fetchNotifications() {
+            this.setLoading(true)
+            return Dashboard.notifications()
+                .then((response) => {
+                    this.notifications = response.data.data
                 })
                 .catch(error => console.log(error))
                 .finally(() => {

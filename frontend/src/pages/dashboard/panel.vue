@@ -33,6 +33,8 @@ const measures = ref({})
 const team = ref({})
 const vehicles = ref({})
 const reminders = ref({})
+const activities = ref({})
+const notifications = ref({})
 const indicatorFilters = ref({})
 const statisticiansFilters = ref({})
 const teamFilters = ref({})
@@ -149,6 +151,8 @@ async function fetchData() {
     await loadMeasures()
     await loadVehicles(vehicleFilters.value)
     await loadTeam()
+    await loadActivities()
+    await loadNotifications()
   }
 
   isRequestOngoing.value = false
@@ -224,6 +228,16 @@ async function handleVehiclesFilter(filters) {
 async function loadTeam(params = {}) {
   await dashboardStore.fetchTeam(params)
   team.value = dashboardStore.getTeam
+}
+
+async function loadActivities() {
+  await dashboardStore.fetchActivities()
+  activities.value = dashboardStore.getActivities
+}
+
+async function loadNotifications() {
+  await dashboardStore.fetchNotifications()
+  notifications.value = dashboardStore.getNotifications
 }
 
 async function handleTeamFilter(filters) {
@@ -356,7 +370,10 @@ onBeforeUnmount(() => {
         
         <div class="dashboard-grid">
           <div class="dashboard-grid__item dashboard-grid__item--md-6 h-card">
-            <Activities />
+            <Activities 
+              :activities="activities?.activities" 
+              :notifications="notifications?.notifications"
+            />
           </div>
           <div class="dashboard-grid__item dashboard-grid__item--md-6">
             <Indicators

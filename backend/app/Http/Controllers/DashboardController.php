@@ -10,9 +10,11 @@ use Illuminate\Support\Carbon;
 
 use App\Models\Agreement;
 use App\Models\Billing;
+use App\Models\Notification;
 use App\Models\Payout;
 use App\Models\Reminder;
 use App\Models\Supplier;
+use App\Models\SupplierActivity;
 use App\Models\Vehicle;
 use App\Models\VehicleTask;
 
@@ -479,6 +481,59 @@ class DashboardController extends Controller
                 'success' => true,
                 'data' => [
                     'reminders' => $reminders,
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function notifications(): JsonResponse
+    {
+        try {
+            $notifications = Notification::with(['user:id,name,last_name'])
+                ->where(function ($q) {
+                    $q->where('user_id', Auth::id())
+                      ->orWhereNull('user_id');
+                })
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'notifications' => $notifications,
+                ]
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function activities(): JsonResponse
+    {
+        try {
+            $supplierId = $this->getCurrentSupplierId();
+
+            $activities = SupplierActivity::with(['user:id,name,last_name,avatar'])
+                ->where('supplier_id', $supplierId)
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'activities' => $activities,
                 ]
             ]);
         } catch(\Illuminate\Database\QueryException $ex) {

@@ -124,6 +124,8 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/team', [DashboardController::class, 'team'])->name('dashboard.team');
         Route::get('/vehicles', [DashboardController::class, 'vehicles'])->name('dashboard.vehicles');
         Route::get('/reminders', [DashboardController::class, 'reminders'])->name('dashboard.reminders');
+        Route::get('/activities', [DashboardController::class, 'activities'])->name('dashboard.activities');
+        Route::get('/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
     });
 
     /* NOTIFICATIONS */
