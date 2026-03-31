@@ -908,7 +908,7 @@ class DashboardController extends Controller
         }
 
         if ($absoluteAmount >= 1000) {
-            return $this->formatSwedishAbbreviatedNumber($amount, 1000, 'k');
+            return $this->formatSwedishAbbreviatedNumber($amount, 1000, 'K');
         }
 
         $roundedAmount = round($amount, 1);

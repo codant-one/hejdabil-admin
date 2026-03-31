@@ -3,6 +3,7 @@
 
    import { useRemindersStores } from '@/stores/useReminders';
    import { requiredValidator } from '@validators';
+   import InlineBanner from '@/components/common/InlineBanner.vue'
 
    const emit = defineEmits(['refresh', 'advisor'])
 
@@ -109,6 +110,10 @@
          await remindersStores.addReminder({ ...form.value })
          await resetForm()
          skapatsDialog.value = true
+         setTimeout(() => {
+            skapatsDialog.value = false
+         }, 3000)
+
          emit('refresh')
       } catch (error) {
          err.value = error
@@ -151,11 +156,13 @@
 
    const onDeleteCompleted = async () => {
       confirmDeleteDialog.value = false
-      isDeleting.value = true
 
       try {
          await remindersStores.deleteCompleted()
          deletedDialog.value = true
+         setTimeout(() => {
+            deletedDialog.value = false
+         }, 3000)
          emit('refresh')
       } catch (error) {
          err.value = error
@@ -203,20 +210,18 @@
 
 <template>
    <VCard title="" class="card-dashboard">
-      <VCardTitle 
-         class="title-box border-none pb-2"
-         :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
-      >
+      <VCardTitle class="title-box border-none" :class="windowWidth < 1024 ? '' : 'pb-2'">
          <div class="title-text mb-2">Mina uppgifter</div>
 
          <VBtn
             v-if="taskItems.some(item => item.completed)"
-            class="btn-white-2 px-3 h-40"
+            class="px-3 h-40"
+            :class="windowWidth < 1024 ? 'btn-light w-100' : 'btn-white-2'"
             :disabled="isDeleting"
             @click="confirmDeleteDialog = true"
          >
             <VIcon icon="custom-clean" size="24" color="#6E9383"/>
-            <span class="text-gunmetal-3">Rengöring avslutad</span>
+            <span class="text-gunmetal-3">Rensa markerade</span>
          </VBtn>
 
       </VCardTitle>
@@ -281,6 +286,28 @@
          :class="windowWidth < 1024 ? 'px-4' : 'px-6'"
       >
          <div class="information-list d-flex flex-column">
+            <InlineBanner
+               v-if="skapatsDialog"
+               variant="success"
+               title="Uppgift skapad"
+               icon="custom-check-mark"
+               class="alert-no-shrink"
+               style="flex: none;"
+            >
+               Din uppgift har lagts till.
+            </InlineBanner>
+
+            <InlineBanner
+               v-if="deletedDialog"
+               variant="success"
+               title="Uppgifter borttagna"
+               icon="custom-clean"
+               class="alert-no-shrink"
+               style="flex: none;"
+            >
+               Alla slutförda uppgifter har tagits bort.
+            </InlineBanner>
+
             <div
                v-for="item in taskItems"
                :key="item.id"
@@ -321,6 +348,7 @@
                   </div>
                </div>
             </div>
+
             <div 
                v-if="!taskItems.length"  
                class="empty-state mb-0"
@@ -340,38 +368,6 @@
          </div>
       </VCardText>
    </VCard>
-
-   <!-- 👉 Skapats Dialog (success) -->
-   <VDialog
-      v-model="skapatsDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-   >
-      <VBtn
-         icon
-         class="btn-white close-btn"
-         @click="skapatsDialog = false"
-      >
-         <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-coffee" />
-         </VCardText>
-         <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Uppgift skapad!</div>
-         </VCardText>
-         <VCardText class="dialog-text text-center">
-            Din uppgift har lagts till.
-         </VCardText>
-         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-            <VBtn class="btn-gradient" @click="skapatsDialog = false">
-               Klar
-            </VBtn>
-         </VCardText>
-      </VCard>
-   </VDialog>
 
    <!-- 👉 Inte Skapats Dialog (error) -->
    <VDialog
@@ -435,38 +431,6 @@
             </VBtn>
             <VBtn class="btn-gradient" @click="onDeleteCompleted">
                Ta bort
-            </VBtn>
-         </VCardText>
-      </VCard>
-   </VDialog>
-
-   <!-- 👉 Deleted Dialog (success) -->
-   <VDialog
-      v-model="deletedDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-   >
-      <VBtn
-         icon
-         class="btn-white close-btn"
-         @click="deletedDialog = false"
-      >
-         <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-coffee" />
-         </VCardText>
-         <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Uppgifter borttagna!</div>
-         </VCardText>
-         <VCardText class="dialog-text text-center">
-            Alla slutförda uppgifter har tagits bort.
-         </VCardText>
-         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-            <VBtn class="btn-gradient" @click="deletedDialog = false">
-               Klar
             </VBtn>
          </VCardText>
       </VCard>
