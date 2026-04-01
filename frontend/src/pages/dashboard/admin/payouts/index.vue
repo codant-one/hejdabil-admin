@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useRoute } from 'vue-router'
 import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { useConfigsStores } from '@/stores/useConfigs'
@@ -34,6 +35,7 @@ const payoutsStores = usePayoutsStores()
 const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const payouts = ref([])
 const searchQuery = ref('')
@@ -92,6 +94,59 @@ const advisor = ref({
 watch(isExportMenuVisible, isVisible => {
   if (isVisible)
     lastExportSelectionKey.value = null
+})
+
+// 👉 Open payout detail when payout_id query param is present
+watch(() => route.query.payout_id, async (payoutId) => {
+  if (payoutId && hasLoaded.value) {
+    const id = parseInt(payoutId)
+    let payout = payouts.value.find(p => p.id === id)
+
+    if (!payout) {
+      try {
+        payout = await payoutsStores.showPayout(id)
+      } catch (error) {
+        console.error('Payout not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Utbetalningen kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (payout) {
+      seePayout(payout, windowWidth.value < 1024)
+    }
+  }
+}, { immediate: true })
+
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.payout_id) {
+    const id = parseInt(route.query.payout_id)
+    let payout = payouts.value.find(p => p.id === id)
+
+    if (!payout) {
+      try {
+        payout = await payoutsStores.showPayout(id)
+      } catch (error) {
+        console.error('Payout not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Utbetalningen kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (payout) {
+      seePayout(payout, windowWidth.value < 1024)
+    }
+  }
 })
 
 // 👉 Computing pagination data
@@ -236,6 +291,12 @@ const seePayout = (payoutData, isMobile = false) => {
 const closePayoutDetailDialog = () => {
   isPayoutDetailDialogVisible.value = false
   isPayoutDetailMobileDialogVisible.value = false
+
+  // Limpiar query param payout_id al cerrar
+  if (route.query.payout_id) {
+    const { payout_id, ...rest } = route.query
+    history.replaceState(null, '', location.pathname + (Object.keys(rest).length ? '?' + new URLSearchParams(rest).toString() : ''))
+  }
 
   // Retrasar el reset para evitar errores mientras el diálogo se cierra
   setTimeout(() => {

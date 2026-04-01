@@ -21,6 +21,7 @@ use App\Models\Payout;
 use App\Models\PayoutState;
 use App\Models\Config;
 use App\Models\Supplier;
+use App\Models\SupplierActivity;
 
 class PayoutController extends Controller
 {
@@ -183,6 +184,26 @@ class PayoutController extends Controller
 
                 $payout = Payout::createPayout($request);
 
+                SupplierActivity::createActivity([
+                    'entity_id' => $payout->id,
+                    'entity_type' => 'payouts',
+                    'action_type' => 'create_payout',
+                    'title' => $this->payoutActivityTitle($payout, 'skapad'),
+                    'description' => 'En utbetalning har skapats.',
+                    'icon' => 'custom-swish',
+                    'route' => $this->payoutActivityRoute($payout->id),
+                    'metadata' => json_encode([
+                        'payout_id' => $payout->id,
+                        'new_values' => $payout->only([
+                            'supplier_id', 'payout_state_id', 'fullname', 'reference', 'amount',
+                            'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
+                            'instruction_date', 'payout_instruction_uuid', 'message',
+                            'error_message', 'error_code'
+                        ]),
+                        'master_password_valid' => false,
+                    ])
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Felaktigt säkerhetslösenord',
@@ -238,7 +259,29 @@ class PayoutController extends Controller
                     'error_code'      => $errorCode,
                 ]);
 
-                Payout::createPayout($request);
+                $errorPayout = Payout::createPayout($request);
+
+                SupplierActivity::createActivity([
+                    'entity_id' => $errorPayout->id,
+                    'entity_type' => 'payouts',
+                    'action_type' => 'create_payout',
+                    'title' => $this->payoutActivityTitle($errorPayout, 'misslyckad'),
+                    'description' => 'En utbetalning skapades men Swish returnerade ett fel.',
+                    'icon' => 'custom-swish',
+                    'route' => $this->payoutActivityRoute($errorPayout->id),
+                    'metadata' => json_encode([
+                        'payout_id' => $errorPayout->id,
+                        'new_values' => $errorPayout->only([
+                            'supplier_id', 'payout_state_id', 'fullname', 'reference', 'amount',
+                            'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
+                            'instruction_date', 'payout_instruction_uuid', 'message',
+                            'error_message', 'error_code'
+                        ]),
+                        'swish_error' => true,
+                        'error_code' => $errorCode,
+                        'error_message' => $errorMessage,
+                    ])
+                ]);
 
                 // Avoid logging out on the frontend: map external 401s to 422s
                 $status = $response->status();
@@ -285,6 +328,26 @@ class PayoutController extends Controller
             ]);
 
             $payout = Payout::createPayout($request);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $payout->id,
+                'entity_type' => 'payouts',
+                'action_type' => 'create_payout',
+                'title' => $this->payoutActivityTitle($payout, 'skapad'),
+                'description' => 'En utbetalning har skapats.',
+                'icon' => 'custom-swish',
+                'route' => $this->payoutActivityRoute($payout->id),
+                'metadata' => json_encode([
+                    'payout_id' => $payout->id,
+                    'new_values' => $payout->only([
+                        'supplier_id', 'payout_state_id', 'swish_id', 'fullname', 'reference', 'amount',
+                        'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
+                        'instruction_date', 'payout_instruction_uuid', 'message',
+                        'location_url', 'error_message', 'error_code'
+                    ]),
+                    'swish_response' => $response->json(),
+                ])
+            ]);
  
             return response()->json([
                 'success' => true,
@@ -365,6 +428,15 @@ class PayoutController extends Controller
                     'message' => 'Betalningen hittades inte'
                 ], 404);
             }
+
+            $payoutFields = [
+                'payout_state_id', 'swish_id', 'fullname', 'reference', 'amount',
+                'payer_alias', 'payee_alias', 'payee_ssn', 'currency', 'payout_type',
+                'instruction_date', 'payout_instruction_uuid', 'message',
+                'location_url', 'error_message', 'error_code'
+            ];
+
+            $oldValues = $payout->only($payoutFields);
 
             // Validate master_password
             $user = Auth::user();
@@ -476,6 +548,24 @@ class PayoutController extends Controller
                     'error_code'      => $errorCode,
                 ]);
 
+                SupplierActivity::createActivity([
+                    'entity_id' => $payout->id,
+                    'entity_type' => 'payouts',
+                    'action_type' => 'update_payout',
+                    'title' => $this->payoutActivityTitle($payout, 'misslyckad'),
+                    'description' => 'En utbetalning uppdaterades men Swish returnerade ett fel.',
+                    'icon' => 'custom-swish',
+                    'route' => $this->payoutActivityRoute($payout->id),
+                    'metadata' => json_encode([
+                        'payout_id' => $payout->id,
+                        'old_values' => $oldValues,
+                        'new_values' => $payout->only($payoutFields),
+                        'swish_error' => true,
+                        'error_code' => $errorCode,
+                        'error_message' => $errorMessage,
+                    ])
+                ]);
+
                 $status = $response->status();
                 if ($status === 401) {
                     $status = 422;
@@ -517,6 +607,22 @@ class PayoutController extends Controller
                 'payee_ssn'       => $request->payee_ssn,
                 'amount'          => $request->amount,
                 'message'         => $request->message,
+            ]);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $payout->id,
+                'entity_type' => 'payouts',
+                'action_type' => 'update_payout',
+                'title' => $this->payoutActivityTitle($payout, 'uppdaterad'),
+                'description' => 'En utbetalning har uppdaterats.',
+                'icon' => 'custom-swish',
+                'route' => $this->payoutActivityRoute($payout->id),
+                'metadata' => json_encode([
+                    'payout_id' => $payout->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $payout->only($payoutFields),
+                    'swish_response' => $response->json(),
+                ])
             ]);
  
             return response()->json([
@@ -613,8 +719,31 @@ class PayoutController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Betalningen hittades inte'
                 ], 404);
+
+            $oldValues = $payout->only([
+                'payout_state_id', 'reference', 'amount', 'message', 'swish_id', 'location_url'
+            ]);
             
             $payout->cancelPayout($id);
+
+            $payout->refresh();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $payout->id,
+                'entity_type' => 'payouts',
+                'action_type' => 'cancel_payout',
+                'title' => $this->payoutActivityTitle($payout, 'avbruten'),
+                'description' => 'En utbetalning har avbrutits.',
+                'icon' => 'custom-swish',
+                'route' => $this->payoutActivityRoute($payout->id),
+                'metadata' => json_encode([
+                    'payout_id' => $payout->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $payout->only([
+                        'payout_state_id', 'reference', 'amount', 'message', 'swish_id', 'location_url'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -697,9 +826,31 @@ class PayoutController extends Controller
                 'email' => 'required|email',
             ]);
 
+            $ids = is_array($validated['ids']) ? $validated['ids'] : explode(',', $validated['ids']);
+            $payouts = Payout::with('state')->whereIn('id', $ids)->get();
+
             $result = Payout::sendPayout($request);
 
             if ($result) {
+                foreach ($payouts as $payout) {
+                    SupplierActivity::createActivity([
+                        'entity_id' => $payout->id,
+                        'entity_type' => 'payouts',
+                        'action_type' => 'send_payout_email',
+                        'title' => $this->payoutActivityTitle($payout, 'skickad'),
+                        'description' => 'En utbetalning har skickats via e-post.',
+                        'icon' => 'custom-swish',
+                        'route' => $this->payoutActivityRoute($payout->id),
+                        'metadata' => json_encode([
+                            'payout_id' => $payout->id,
+                            'recipient_email' => $validated['email'],
+                            'reference' => $payout->reference,
+                            'amount' => $payout->amount,
+                            'payout_state_id' => $payout->payout_state_id,
+                        ])
+                    ]);
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Utbetalningen har skickats via e-post'
@@ -717,5 +868,28 @@ class PayoutController extends Controller
                 'message' => 'Ett fel inträffade: ' . $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function payoutActivityRoute(int $payoutId): string
+    {
+        return '/dashboard/admin/payouts?payout_id=' . $payoutId;
+    }
+
+    private function payoutActivityTitle(Payout $payout, string $suffix): string
+    {
+        return trim("Utbetalning '{$this->payoutActivityIdentifier($payout)}' {$suffix}");
+    }
+
+    private function payoutActivityIdentifier(Payout $payout): string
+    {
+        if (!empty($payout->message)) {
+            return $payout->message;
+        }
+
+        if (!empty($payout->fullname)) {
+            return $payout->fullname;
+        }
+
+        return '#' . $payout->id;
     }
 }
