@@ -23,8 +23,8 @@ export const useAuthStores = defineStore('auth', {
                     return Promise.reject(error)
                 })
         },
-        logout(){
-            return Auth.logout()
+        logout(token){
+            return Auth.logout(token)
                 .then((response) => {
                     return Promise.resolve(response.data)
                 }).catch(error => {

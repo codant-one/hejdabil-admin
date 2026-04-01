@@ -9,6 +9,10 @@ const axiosIns = axios.create({
 
 axiosIns.interceptors.request.use(
   config => {
+    if (config.skipAuthHeader) {
+      return config
+    }
+
     const token = localStorage.getItem('accessToken')
     if(token){
       config.headers.Authorization = `Bearer ${token}`
@@ -17,23 +21,30 @@ axiosIns.interceptors.request.use(
     return config
 })
 
+let isRedirectingToLogin = false
+
 axiosIns.interceptors.response.use(response => {
   return response
 }, error => {
   const alertStore = useAlertStore()
   const { config, response: { status }, response: { data } } = error
-  const originalRequest = config
+
+  if (config?.skipAuthRedirect) {
+    return Promise.reject(data)
+  }
 
   if (status === 401) {
-      
     localStorage.removeItem('user_data')
     localStorage.removeItem('userAbilities')
     localStorage.removeItem('accessToken')
 
-    alertStore.setAlert('Du har loggats ut av säkerhetsskäl. Logga in igen för att fortsätta.', 'error')
-    
-    router.push({ name: 'login' } )
-    
+    if (!isRedirectingToLogin) {
+      isRedirectingToLogin = true
+      alertStore.setAlert('Du har loggats ut av säkerhetsskäl. Logga in igen för att fortsätta.', 'error')
+      router.push({ name: 'login' }).finally(() => {
+        isRedirectingToLogin = false
+      })
+    }
   }
 
   return Promise.reject(data)

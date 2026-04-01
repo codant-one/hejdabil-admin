@@ -37,10 +37,10 @@ const userData = field =>{
   }
 
   if (values && field === "avatar_id") {
-    return values.user_detail.avatar_id;
+    return values.user_detail?.avatar_id ?? null;
   }
 
-  return false;
+  return null;
 };
 
 const truncateText = (text, length = 28) => {
@@ -51,24 +51,23 @@ const truncateText = (text, length = 28) => {
 };
 
 const logout = async () => {
-  await nextTick(() => {
-    router.replace("/login");
-  });
+  const token = localStorage.getItem("accessToken");
 
-  authStores.logout().then((response) => {
-    // Remove "user_data" from localStorage
-    localStorage.removeItem("user_data");
+  // Clear auth data BEFORE calling the API to prevent 401s on in-flight requests
+  localStorage.removeItem("user_data");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("userAbilities");
+  ability.update(initialAbility);
 
-    // Remove "accessToken" from localStorage
-    localStorage.removeItem("accessToken");
+  // Navigate to login immediately
+  router.replace("/login");
 
-    // Remove "userAbilities" from localStorage
-    localStorage.removeItem("userAbilities");
-
-    // Reset ability to initial ability
-    ability.update(initialAbility);
-    router.push("/login");
-  });
+  // Then notify the server (best-effort, token already cleared)
+  try {
+    await authStores.logout(token);
+  } catch (e) {
+    // Ignore errors since we already cleaned up locally
+  }
 };
 </script>
 
