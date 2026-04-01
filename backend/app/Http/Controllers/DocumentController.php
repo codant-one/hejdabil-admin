@@ -19,6 +19,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\SupplierActivity;
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
 
@@ -146,6 +147,26 @@ class DocumentController extends Controller
                 ]
             );
 
+            SupplierActivity::createActivity([
+                'entity_id' => $document->id,
+                'entity_type' => 'documents',
+                'action_type' => 'create_document',
+                'title' => $this->documentActivityTitle($document, 'skapad'),
+                'description' => 'Ett dokument har skapats.',
+                'icon' => 'custom-signature',
+                'route' => $this->documentActivityRoute($document->id),
+                'metadata' => json_encode([
+                    'document_id' => $document->id,
+                    'title' => $document->title,
+                    'description' => $document->description,
+                    'supplier_id' => $document->supplier_id,
+                    'file' => $document->file,
+                    'order_id' => $document->order_id,
+                    'token_id' => $token->id,
+                    'signature_status' => $token->signature_status,
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Dokumentet har skapats',
@@ -218,6 +239,27 @@ class DocumentController extends Controller
                 ], 404);
             }
 
+            SupplierActivity::createActivity([
+                'entity_id' => $document->id,
+                'entity_type' => 'documents',
+                'action_type' => 'delete_document',
+                'title' => $this->documentActivityTitle($document, 'borttagen'),
+                'description' => 'Ett dokument har tagits bort.',
+                'icon' => 'custom-signature',
+                'metadata' => json_encode([
+                    'document_id' => $document->id,
+                    'title' => $document->title,
+                    'description' => $document->description,
+                    'supplier_id' => $document->supplier_id,
+                    'file' => $document->file,
+                    'signature_status' => $document->token?->signature_status,
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $document->id)
+                ->where('entity_type', 'documents')
+                ->update(['route' => null]);
+
             Document::deleteDocument($id);
 
             return response()->json([
@@ -245,9 +287,30 @@ class DocumentController extends Controller
                 'email' => 'required|email',
             ]);
 
+            $ids = is_array($validated['ids']) ? $validated['ids'] : explode(',', $validated['ids']);
+            $documents = Document::with('token')->whereIn('id', $ids)->get();
+
             $result = Document::sendDocument($request);
 
             if ($result) {
+                foreach ($documents as $document) {
+                    SupplierActivity::createActivity([
+                        'entity_id' => $document->id,
+                        'entity_type' => 'documents',
+                        'action_type' => 'send_document',
+                        'title' => $this->documentActivityTitle($document, 'skickad'),
+                        'description' => 'Ett dokument har skickats via e-post.',
+                        'icon' => 'custom-signature',
+                        'route' => $this->documentActivityRoute($document->id),
+                        'metadata' => json_encode([
+                            'document_id' => $document->id,
+                            'title' => $document->title,
+                            'recipient_email' => $validated['email'],
+                            'signature_status' => $document->token?->signature_status,
+                        ])
+                    ]);
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Dokumentet har skickats via e-post'
@@ -437,6 +500,27 @@ class DocumentController extends Controller
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
             );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $document->id,
+                'entity_type' => 'documents',
+                'action_type' => 'send_signature_document',
+                'title' => $this->documentActivityTitle($document, 'skickad för signering'),
+                'description' => 'Ett dokument har skickats för signering.',
+                'icon' => 'custom-signature',
+                'route' => $this->documentActivityRoute($document->id),
+                'metadata' => json_encode([
+                    'document_id' => $document->id,
+                    'title' => $document->title,
+                    'token_id' => $token->id,
+                    'recipient_email' => $validated['email'],
+                    'signature_status' => $token->signature_status,
+                    'placement_x' => $token->placement_x,
+                    'placement_y' => $token->placement_y,
+                    'placement_page' => $token->placement_page,
+                    'signature_alignment' => $token->signature_alignment,
+                ])
+            ]);
             
             return response()->json([
                 'message' => 'Begäran om underskrift skickad med framgång.'
@@ -580,6 +664,28 @@ class DocumentController extends Controller
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $token->recipient_email, 'resend' => true]
             );
+
+            SupplierActivity::createActivity([
+                'entity_id' => $document->id,
+                'entity_type' => 'documents',
+                'action_type' => 'resend_signature_document',
+                'title' => $this->documentActivityTitle($document, 'omskickad för signering'),
+                'description' => 'Ett dokument har skickats om för signering.',
+                'icon' => 'custom-signature',
+                'route' => $this->documentActivityRoute($document->id),
+                'metadata' => json_encode([
+                    'document_id' => $document->id,
+                    'title' => $document->title,
+                    'token_id' => $token->id,
+                    'recipient_email' => $token->recipient_email,
+                    'signature_status' => $token->signature_status,
+                    'placement_x' => $token->placement_x,
+                    'placement_y' => $token->placement_y,
+                    'placement_page' => $token->placement_page,
+                    'signature_alignment' => $token->signature_alignment,
+                    'resend' => true,
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -616,6 +722,31 @@ class DocumentController extends Controller
                 'message' => 'Det gick inte att skicka om e-postmeddelandet: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function documentActivityRoute(int $documentId): string
+    {
+        return '/dashboard/admin/documents?file_id=' . $documentId;
+    }
+
+    private function documentActivityTitle(Document $document, string $suffix): string
+    {
+        $identifier = $this->documentActivityIdentifier($document);
+
+        return trim("Dokument '{$identifier}' {$suffix}");
+    }
+
+    private function documentActivityIdentifier(Document $document): string
+    {
+        if (!empty($document->title)) {
+            return $document->title;
+        }
+
+        if (!empty($document->file)) {
+            return basename($document->file);
+        }
+
+        return '#' . $document->id;
     }
 }
 
