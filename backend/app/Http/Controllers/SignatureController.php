@@ -23,6 +23,7 @@ use App\Models\User;
 use App\Models\Config;
 use App\Models\Agreement;
 use App\Models\Document;
+use App\Models\SupplierActivity;
 use App\Models\Token;
 use App\Models\TokenHistory;
 use App\Jobs\SendEmailJob;
@@ -234,6 +235,8 @@ class SignatureController extends Controller
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
             );
+
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], false);
             
             return response()->json([
                 'message' => 'Begäran om underskrift skickad med framgång.'
@@ -446,6 +449,8 @@ class SignatureController extends Controller
                 userAgent: $request->userAgent(),
                 metadata: ['recipient' => $validated['email']]
             );
+
+            $this->createAgreementSignatureSentActivity($agreement, $token, $validated['email'], true);
             
             return response()->json(['message' => 'Begäran om underskrift skickad med framgång.']);
         } catch (\Exception $e) {
@@ -1049,6 +1054,61 @@ class SignatureController extends Controller
         PDF::loadView($viewName, $data)->save(storage_path('app/public/' . $filePath));
         
         return $filePath;
+    }
+
+    private function createAgreementSignatureSentActivity(Agreement $agreement, Token $token, string $recipientEmail, bool $isStaticSignature): void
+    {
+        SupplierActivity::createActivity([
+            'entity_id' => $agreement->id,
+            'entity_type' => 'agreements',
+            'action_type' => 'send_signature_agreement',
+            'title' => $this->agreementActivityTitle($agreement, 'skickad för signering'),
+            'description' => 'Ett avtal har skickats för signering.',
+            'icon' => 'custom-contract',
+            'route' => $this->agreementActivityRoute($agreement->id),
+            'metadata' => json_encode([
+                'agreement_id' => $agreement->id,
+                'token_id' => $token->id,
+                'recipient_email' => $recipientEmail,
+                'signature_status' => $token->signature_status,
+                'static_signature' => $isStaticSignature,
+            ])
+        ]);
+    }
+
+    private function agreementActivityRoute(int $agreementId): string
+    {
+        return '/dashboard/admin/agreements?file_id=' . $agreementId;
+    }
+
+    private function agreementActivityTitle(Agreement $agreement, string $suffix): string
+    {
+        $typeName = $this->agreementActivityTypeName($agreement);
+        $identifier = $this->agreementActivityIdentifier($agreement);
+
+        return trim($typeName . ' ' . $identifier . ' ' . $suffix);
+    }
+
+    private function agreementActivityTypeName(Agreement $agreement): string
+    {
+        $agreement->loadMissing('agreement_type');
+
+        return $agreement->agreement_type?->name ?? 'Avtal';
+    }
+
+    private function agreementActivityIdentifier(Agreement $agreement): string
+    {
+        $agreement->loadMissing([
+            'offer',
+            'commission.vehicle',
+            'vehicle_client.vehicle',
+        ]);
+
+        return match ((int) $agreement->agreement_type_id) {
+            4 => $agreement->offer?->reg_num ?? (string) $agreement->agreement_id,
+            3 => $agreement->commission?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
+            default => $agreement->vehicle_client?->vehicle?->reg_num ?? (string) $agreement->agreement_id,
+        };
     }
 
     public function getUnsignedPdf($tokenString)
