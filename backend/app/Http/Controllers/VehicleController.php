@@ -28,6 +28,8 @@ use App\Models\Identification;
 use App\Models\Currency;
 use App\Models\Supplier;
 use App\Models\VehicleDocument;
+use App\Models\SupplierActivity;
+
 use App\Services\CacheService;
 
 class VehicleController extends Controller
@@ -162,8 +164,31 @@ class VehicleController extends Controller
                 }
             }
             
-            // dd($request->tasks);
             $vehicle = Vehicle::createVehicle($request);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $vehicle->id,
+                'entity_type' => 'vehicles',
+                'action_type' => 'create_vehicle',
+                'title' => 'Fordon '.$vehicle->reg_num.' skapad',
+                'description' => 'Ett nytt fordon har skapats.',
+                'icon' => 'custom-car',
+                'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
+                'metadata' => json_encode([
+                    'vehicle_id' => $vehicle->id,
+                    'new_values' => $request->only([
+                        'supplier_id', 'reg_num', 'year', 'generation',
+                        'brand_id', 'model_id', 'model', 'car_body_id',
+                        'fuel_id', 'gearbox_id', 'color', 'mileage',
+                        'control_inspection', 'purchase_price', 'purchase_date', 'iva_purchase_id',
+                        'currency_id', 'state_id', 'number_keys', 'service_book',
+                        'summer_tire', 'winter_tire', 'last_service', 'last_service_date',
+                        'dist_belt', 'last_dist_belt', 'last_dist_belt_date', 'comments',
+                        'chassis', 'engine', 'car_name', 'iva_purchase_amount', 'iva_purchase_exclusive',
+                        'type', 'client_id', 'tasks', 'documents'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -260,7 +285,40 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
+            $vehicleFields = [
+                'supplier_id', 'reg_num', 'model_id', 'car_body_id',
+                'gearbox_id', 'iva_purchase_id', 'currency_purchase_id', 'currency_sale_id',
+                'fuel_id', 'state_id', 'mileage', 'generation',
+                'year', 'control_inspection', 'color', 'purchase_price',
+                'purchase_date', 'number_keys', 'service_book', 'summer_tire',
+                'winter_tire', 'last_service', 'last_service_date', 'dist_belt',
+                'last_dist_belt', 'last_dist_belt_date', 'comments', 'chassis',
+                'engine', 'car_name', 'sale_price', 'sale_date',
+                'iva_sale_id', 'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
+                'iva_purchase_amount', 'iva_purchase_exclusive', 'total_sale', 'discount',
+                'registration_fee'
+            ];
+
+            $oldValues = $vehicle->only($vehicleFields);
+
             $vehicle->updateVehicle($request, $vehicle); 
+
+            $newValues = $request->only($vehicleFields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $vehicle->id,
+                'entity_type' => 'vehicles',
+                'action_type' => 'update_vehicle',
+                'title' => 'Fordon '.$vehicle->reg_num.' uppdaterad',
+                'description' => 'Ett fordon har uppdaterats.',
+                'icon' => 'custom-car',
+                'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
+                'metadata' => json_encode([
+                    'vehicle_id' => $vehicle->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -293,7 +351,28 @@ class VehicleController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Fordon hittades inte'
                 ], 404);
-            
+
+            $oldValues = $vehicle->only([
+                'supplier_id', 'reg_num', 'state_id', 'model_id',
+                'purchase_price', 'purchase_date', 'sale_price', 'sale_date'
+            ]);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $vehicle->id,
+                'entity_type' => 'vehicles',
+                'action_type' => 'delete_vehicle',
+                'title' => 'Fordon '.$vehicle->reg_num.' borttagen',
+                'description' => 'Ett fordon har tagits bort.',
+                'icon' => 'custom-car',
+                'metadata' => json_encode([
+                    'vehicle_id' => $vehicle->id,
+                    'old_values' => $oldValues
+                ])
+            ]);            
+
+            SupplierActivity::where('entity_id', $vehicle->id)
+                ->where('entity_type', 'vehicles')
+                ->update(['route' => null]);
 
             $vehicle->deleteVehicle($id);
 
@@ -325,7 +404,44 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
-            $vehicle->sendVehicle($request, $vehicle); 
+            $sendFields = [
+                'state_id', 'chassis', 'sale_price', 'sale_date',
+                'iva_sale_id', 'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
+                'iva_purchase_amount', 'iva_purchase_exclusive', 'total_sale', 'discount',
+                'registration_fee'
+            ];
+
+            $oldValues = $vehicle->only($sendFields);
+
+            $isSaleEdition = (int) $vehicle->state_id === 12;
+
+            $vehicle = $vehicle->sendVehicle($request, $vehicle); 
+
+            $newValues = $vehicle->only($sendFields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $vehicle->id,
+                'entity_type' => 'vehicles',
+                'action_type' => 'send_vehicle',
+                'title' => $isSaleEdition
+                    ? 'Fordon '.$vehicle->reg_num.' försäljning uppdaterad'
+                    : 'Fordon '.$vehicle->reg_num.' såld',
+                'description' => $isSaleEdition
+                    ? 'En fordonsförsäljning har uppdaterats.'
+                    : 'Ett fordon har sålts.',
+                'icon' => 'custom-car',
+                'route' => '/dashboard/admin/sold?vehicle_id='.$vehicle->id,
+                'metadata' => json_encode([
+                    'vehicle_id' => $vehicle->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $vehicle->id)
+                ->where('entity_type', 'vehicles')
+                ->update(['route' => '/dashboard/admin/sold?vehicle_id='.$vehicle->id]);
+
 
             return response()->json([
                 'success' => true,
@@ -355,7 +471,36 @@ class VehicleController extends Controller
                     'message' => 'Fordon hittades inte'
                 ], 404);
 
+            $cancelFields = [
+                'state_id', 'sale_price', 'sale_date', 'iva_sale_id',
+                'sale_comments', 'iva_sale_amount', 'iva_sale_exclusive',
+                'total_sale', 'discount', 'registration_fee'
+            ];
+
+            $oldValues = $vehicle->only($cancelFields);
+
             $vehicle->cancelVehicle($vehicle); 
+
+            $newValues = $vehicle->only($cancelFields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $vehicle->id,
+                'entity_type' => 'vehicles',
+                'action_type' => 'cancel_vehicle',
+                'title' => 'Fordon '.$vehicle->reg_num.' avbruten försäljning',
+                'description' => 'En fordonsförsäljning har avbrutits.',
+                'icon' => 'custom-car',
+                'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
+                'metadata' => json_encode([
+                    'vehicle_id' => $vehicle->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $vehicle->id)
+                ->where('entity_type', 'vehicles')
+                ->update(['route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id]);
 
             return response()->json([
                 'success' => true,

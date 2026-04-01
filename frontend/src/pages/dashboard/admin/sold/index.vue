@@ -1,5 +1,6 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
 import { useDisplay } from "vuetify";
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useAuthStores } from '@/stores/useAuth';
@@ -22,6 +23,7 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 
+const route = useRoute()
 const vehiclesStores = useVehiclesStores()
 const configsStores = useConfigsStores();
 const authStores = useAuthStores();
@@ -182,6 +184,73 @@ const paginationData = computed(() => {
   return `${totalVehicles.value} resultat`;
   // return `Visar ${firstIndex} till ${lastIndex} av ${totalClients.value} register`;
 });
+
+// 👉 Open vehicle detail when vehicle_id query param is present
+watch(() => route.query.vehicle_id, async (vehicleId) => {
+  if (vehicleId && hasLoaded.value) {
+    const id = parseInt(vehicleId)
+    let vehicle = vehicles.value.find(v => v.id === id)
+
+    if (!vehicle) {
+      try {
+        vehicle = await vehiclesStores.showVehicle(id)
+      } catch (error) {
+        console.error('Vehicle not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Fordonet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (vehicle) {
+      selectedVehicle.value = vehicle
+      isMobile.value = windowWidth.value < 1024
+      isVehicleDetailDialog.value = true
+    }
+  }
+}, { immediate: true })
+
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.vehicle_id) {
+    const id = parseInt(route.query.vehicle_id)
+    let vehicle = vehicles.value.find(v => v.id === id)
+
+    if (!vehicle) {
+      try {
+        vehicle = await vehiclesStores.showVehicle(id)
+      } catch (error) {
+        console.error('Vehicle not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Fordonet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (vehicle) {
+      selectedVehicle.value = vehicle
+      isMobile.value = windowWidth.value < 1024
+      isVehicleDetailDialog.value = true
+    }
+  }
+})
+
+// Limpiar vehicle_id query param cuando se cierra el detalle
+watch(
+  () => isVehicleDetailDialog.value,
+  (isOpen) => {
+    if (!isOpen && route.query.vehicle_id) {
+      router.replace({ name: route.name, query: {} });
+    }
+  }
+);
 
 // 👉 watching current page
 watchEffect(() => {

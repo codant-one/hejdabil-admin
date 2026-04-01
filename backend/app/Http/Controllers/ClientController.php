@@ -310,6 +310,14 @@ class ClientController extends Controller
             
             $client->deleteClient($id);
 
+            $fields = [
+                'client_type_id', 'country_id', 'email', 'fullname',
+                'organization_number', 'address', 'street', 'postal_code',
+                'phone', 'reference', 'num_iva', 'comments'
+            ];
+
+            $oldValues = $client->only($fields);
+
             SupplierActivity::createActivity([
                 'entity_id' => $client->id,
                 'entity_type' => 'clients',
@@ -317,8 +325,15 @@ class ClientController extends Controller
                 'title' => 'Kund #'.$client->order_id.' raderad',
                 'description' => 'En kund har raderats.',
                 'icon' => 'custom-clients',
-                'metadata' => json_encode(['client_id' => $client->id])
+                'metadata' => json_encode([
+                    'client_id' => $client->id,
+                    'old_values' => $oldValues
+                ])
             ]);
+
+            SupplierActivity::where('entity_id', $client->id)
+                ->where('entity_type', 'clients')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,
