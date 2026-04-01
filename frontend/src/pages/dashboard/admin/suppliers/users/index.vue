@@ -290,7 +290,7 @@ const downloadCSV = async () => {
           </VBtn>
 
           <VBtn
-            v-if="$can('create', 'users')"
+            v-if="$can('create', 'users') || $can('create', 'my-team')"
             class="btn-gradient"
             block
             @click="createUser">
@@ -315,7 +315,10 @@ const downloadCSV = async () => {
             <th class="text-center" scope="col"> E-post </th>
             <th class="text-center" scope="col"> Telefon </th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
+            <th scope="col" 
+              v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users') ||
+                    $can('view', 'my-team') || $can('edit', 'my-team') || $can('delete','my-team')"> 
+            </th>
           </tr>
         </thead>
 
@@ -382,7 +385,7 @@ const downloadCSV = async () => {
                 </template>
                 <VList>
                   <VListItem
-                      v-if="$can('view', 'users')"
+                      v-if="$can('view', 'users') || $can('view', 'my-team')"
                       @click="showUserDetailDialog(user.user, false)">
                     <template #prepend>
                        <VIcon icon="custom-eye" size="24" />
@@ -390,7 +393,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Visa</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      v-if="($can('edit', 'users') || $can('edit', 'my-team')) && user.deleted_at === null"
                       @click="showUserPasswordDialog(user.user)">
                     <template #prepend>
                       <VIcon icon="custom-password-outlined" size="24" />
@@ -398,7 +401,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Ändra lösenord</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      v-if="($can('edit', 'users') || $can('edit', 'my-team')) && user.deleted_at === null"
                       @click="showUserEditDialog(user)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -406,7 +409,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','users') && user.deleted_at === null"
+                    v-if="($can('delete','users') || $can('delete','my-team')) && user.deleted_at === null"
                     @click="showUserDeleteDialog(user.user)">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
@@ -414,7 +417,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('delete','users') && user.deleted_at !== null"
+                    v-if="($can('delete','users') || $can('delete','my-team')) && user.deleted_at !== null"
                     @click="showActivateDialog(user)">
                     <template #prepend>
                       <VIcon icon="tabler-rosette-discount-check" />
@@ -477,7 +480,7 @@ const downloadCSV = async () => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'users') && !$vuetify.display.mdAndDown"
+          v-if="($can('create', 'users') || $can('create', 'my-team')) && !$vuetify.display.mdAndDown"
           @click="createUser"
         >
           Lägg till medarbetare
@@ -486,7 +489,7 @@ const downloadCSV = async () => {
 
         <VBtn
           class="btn-ghost"
-          v-if="$vuetify.display.mdAndDown && $can('create', 'users')"
+          v-if="$vuetify.display.mdAndDown && ($can('create', 'users') || $can('create', 'my-team'))"
           @click="createUser"
         >
           Lägg till ny användare
@@ -586,7 +589,7 @@ const downloadCSV = async () => {
       <VCard>
         <VList>
           <VListItem
-              v-if="$can('view', 'users')"
+              v-if="$can('view', 'users') || $can('view', 'my-team')"
               @click="showUserDetailDialog(selectedUserForAction.user, true); isMobileActionDialogVisible = false;">
             <template #prepend>
                <VIcon icon="custom-eye" size="24" />
@@ -594,7 +597,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Visa</VListItemTitle>
           </VListItem>
           <VListItem
-              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              v-if="($can('edit', 'users') || $can('edit', 'my-team')) && selectedUserForAction.deleted_at === null"
               @click="showUserPasswordDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-password-outlined" size="24" />
@@ -602,7 +605,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Ändra lösenord</VListItemTitle>
           </VListItem>
           <VListItem
-              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              v-if="($can('edit', 'users') || $can('edit', 'my-team')) && selectedUserForAction.deleted_at === null"
               @click="showUserEditDialog(selectedUserForAction)">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
@@ -610,7 +613,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('delete','users') && selectedUserForAction.deleted_at === null"
+            v-if="($can('delete','users') || $can('delete','my-team')) && selectedUserForAction.deleted_at === null"
             @click="showUserDeleteDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-waste" size="24" />
@@ -618,7 +621,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete','users') && selectedUserForAction.deleted_at !== null"
+            v-if="($can('delete','users') || $can('delete','my-team')) && selectedUserForAction.deleted_at !== null"
             @click="showActivateDialog(selectedUserForAction.user)">
             <template #prepend>
               <VIcon icon="tabler-rosette-discount-check" />
@@ -767,6 +770,9 @@ const downloadCSV = async () => {
 
 <route lang="yaml">
   meta:
-    action: view
-    subject: users
+    permissionsAny:
+      - action: view
+        subject: users
+      - action: view
+        subject: my-team
 </route>

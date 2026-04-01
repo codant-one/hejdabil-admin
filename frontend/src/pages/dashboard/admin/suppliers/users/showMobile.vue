@@ -446,6 +446,43 @@ const hasAssignedPermission = permission => {
                                 </div>
                             </div>
                         </div>
+
+                        <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
+                            v-if="
+                                $can('view','my-team') ||
+                                $can('create','my-team') ||
+                                $can('edit','my-team') ||
+                                $can('delete','my-team')
+                            "
+                        >
+                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
+                            <div class="permissions-grid">
+                                <div
+                                    v-if="$can('view','my-team') && hasAssignedPermission('view my-team')"
+                                    class="permission-label"
+                                >
+                                    view my-team
+                                </div>
+                                <div
+                                    v-if="$can('create','my-team') && hasAssignedPermission('create my-team')"
+                                    class="permission-label"
+                                >
+                                    create my-team
+                                </div>
+                                <div
+                                    v-if="$can('edit','my-team') && hasAssignedPermission('edit my-team')"
+                                    class="permission-label"
+                                >
+                                    edit my-team
+                                </div>
+                                <div
+                                    v-if="$can('delete','my-team') && hasAssignedPermission('delete my-team')"
+                                    class="permission-label"
+                                >
+                                    delete my-team
+                                </div>
+                            </div>
+                        </div>
                     </div>            
                 </div>
             </VCardText>

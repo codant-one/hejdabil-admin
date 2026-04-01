@@ -815,6 +815,47 @@ const goToProfile = () => {
                                                 />
                                             </div>
                                         </div>
+
+                                        <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
+                                            v-if="
+                                                $can('view','my-team') ||
+                                                $can('create','my-team') ||
+                                                $can('edit','my-team') ||
+                                                $can('delete','my-team')
+                                            "
+                                        >
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
+                                            <div class="ml-2 permissions-grid">
+                                                <VCheckbox
+                                                    v-if="$can('view','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="view my-team"
+                                                    value="view my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('create','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="create my-team"
+                                                    value="create my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('edit','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="edit my-team"
+                                                    value="edit my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('delete','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="delete my-team"
+                                                    value="delete my-team"
+                                                    :readonly="readonly"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
                                 </VCol>
                             </VRow>
@@ -1243,6 +1284,9 @@ const goToProfile = () => {
 
 <route lang="yaml">
     meta:
-      action: create
-      subject: users
+      permissionsAny:
+        - action: edit
+          subject: users
+        - action: edit
+          subject: my-team
 </route>

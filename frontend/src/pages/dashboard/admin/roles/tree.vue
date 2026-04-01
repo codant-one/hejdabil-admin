@@ -73,6 +73,20 @@ const closeTreeDialog  = function(){
                                 <strong>Radera användare</strong>&emsp;/&emsp;<code>Tillåter borttagning av användare</code>
                             </li>
                         </ul>
+                        <li class="tab n2">
+                            <strong>Mitt team</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till mitt team-modulen</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Skapa mitt team</strong>&emsp;/&emsp;<code>Möjliggör skapande av mitt team</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Redigera mitt team</strong>&emsp;/&emsp;<code>Tillåter redigering av mitt team</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Radera mitt team</strong>&emsp;/&emsp;<code>Tillåter borttagning av mitt team</code>
+                            </li>
+                        </ul>
                     </ul>
                     <ul class="tab">
                         <li class="n1">

@@ -541,6 +541,10 @@ class SupplierController extends Controller
                          ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->id);
                          })
+                         ->when(Auth::user()->getRoleNames()[0] === 'User', function ($query){
+                            $query->where('boss_id', Auth::user()->supplier->boss->id)
+                                  ->where('id', '!=', Auth::user()->supplier->id);
+                         })
                          ->applyFilters(
                             $request->only([
                                 'id',

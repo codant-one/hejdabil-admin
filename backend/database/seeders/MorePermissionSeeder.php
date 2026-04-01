@@ -56,7 +56,13 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'view countries'],
             ['name' => 'create countries'],
             ['name' => 'edit countries'],
-            ['name' => 'delete countries']
+            ['name' => 'delete countries'],
+
+            //my team
+            ['name' => 'view my-team'],
+            ['name' => 'create my-team'],
+            ['name' => 'edit my-team'],
+            ['name' => 'delete my-team'],
 
         ]; 
         // Crear o actualizar permisos
