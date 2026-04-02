@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 
 use App\Http\Controllers\Testing\TestingController;
 
@@ -82,9 +81,6 @@ Route::group([
         Route::get('company', [AuthController::class , 'companyDetail'])->name('companyDetail');
     });
 });
-
-// Broadcasting Authentication (para canales privados de WebSocket)
-Broadcast::routes(['middleware' => ['cors', 'jwt']]);
 
 //Private Endpoints
 Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){

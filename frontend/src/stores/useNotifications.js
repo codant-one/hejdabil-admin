@@ -200,12 +200,13 @@ export const useNotificationsStore = defineStore('notifications', {
           this.privateChannelSubscribed = false
         }
 
-        // Actualizar el token de autorización en Echo antes de suscribirse
         const token = localStorage.getItem('accessToken')
-        
-        if (token && window.Echo.connector.pusher.config.auth) {
-          window.Echo.connector.pusher.config.auth.headers.Authorization = `Bearer ${token}`
+
+        if (!token) {
+          return
         }
+
+        window.syncEchoAuthorization?.()
 
         window.Echo.private(`notifications.${userId}`)
           .listen('.user-notification', data => {

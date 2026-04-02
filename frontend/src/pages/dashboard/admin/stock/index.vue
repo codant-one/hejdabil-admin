@@ -40,7 +40,7 @@ const supplier_id = ref(null)
 
 const vehicles = ref([])
 const searchQuery = ref('')
-const rowPerPage = ref(10)
+const rowPerPage = ref(2)
 const currentPage = ref(1)
 const totalPages = ref(1)
 const totalVehicles = ref(0)
