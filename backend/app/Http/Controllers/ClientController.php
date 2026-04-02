@@ -111,8 +111,8 @@ class ClientController extends Controller
                 'entity_id' => $client->id,
                 'entity_type' => 'clients',
                 'action_type' => 'create_client',
-                'title' => 'Kund #'.$client->order_id.' skapad',
-                'description' => 'En ny kund har skapats.',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' tillagd',
+                'description' => 'En ny kund har lagts till.',
                 'icon' => 'custom-clients',
                 'route' => '/dashboard/admin/clients/'.$client->id,
                 'metadata' => json_encode([
@@ -238,8 +238,8 @@ class ClientController extends Controller
                 'entity_id' => $client->id,
                 'entity_type' => 'clients',
                 'action_type' => 'update_client',
-                'title' => 'Kund #'.$client->order_id.' uppdaterad',
-                'description' => 'En kund har uppdaterats.',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' uppdaterad',
+                'description' => 'Kunden har uppdaterats.',
                 'icon' => 'custom-clients',
                 'route' => '/dashboard/admin/clients/'.$client->id,
                 'metadata' => json_encode([
@@ -322,8 +322,8 @@ class ClientController extends Controller
                 'entity_id' => $client->id,
                 'entity_type' => 'clients',
                 'action_type' => 'delete_client',
-                'title' => 'Kund #'.$client->order_id.' raderad',
-                'description' => 'En kund har raderats.',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' borttagen',
+                'description' => 'Kunden har tagits bort.',
                 'icon' => 'custom-clients',
                 'metadata' => json_encode([
                     'client_id' => $client->id,

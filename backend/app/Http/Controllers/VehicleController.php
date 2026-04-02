@@ -170,8 +170,8 @@ class VehicleController extends Controller
                 'entity_id' => $vehicle->id,
                 'entity_type' => 'vehicles',
                 'action_type' => 'create_vehicle',
-                'title' => 'Fordon '.$vehicle->reg_num.' skapad',
-                'description' => 'Ett nytt fordon har skapats.',
+                'title' => 'Fordon tillagt',
+                'description' => 'Fordon '.$vehicle->reg_num.' har lagts till.',
                 'icon' => 'custom-car',
                 'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
                 'metadata' => json_encode([
@@ -309,8 +309,8 @@ class VehicleController extends Controller
                 'entity_id' => $vehicle->id,
                 'entity_type' => 'vehicles',
                 'action_type' => 'update_vehicle',
-                'title' => 'Fordon '.$vehicle->reg_num.' uppdaterad',
-                'description' => 'Ett fordon har uppdaterats.',
+                'title' => 'Fordon uppdaterat',
+                'description' => 'Fordon '.$vehicle->reg_num.' har uppdaterats.',
                 'icon' => 'custom-car',
                 'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
                 'metadata' => json_encode([
@@ -357,12 +357,18 @@ class VehicleController extends Controller
                 'purchase_price', 'purchase_date', 'sale_price', 'sale_date'
             ]);
 
+            $isSaleEdition = (int) $vehicle->state_id === 12;
+
             SupplierActivity::createActivity([
                 'entity_id' => $vehicle->id,
                 'entity_type' => 'vehicles',
                 'action_type' => 'delete_vehicle',
-                'title' => 'Fordon '.$vehicle->reg_num.' borttagen',
-                'description' => 'Ett fordon har tagits bort.',
+                'title' => $isSaleEdition
+                    ? 'Fordon '.$vehicle->reg_num.' - försäljning borttagen'
+                    : 'Fordon borttaget',
+                'description' => $isSaleEdition
+                    ? 'Försäljningen har tagits bort.'
+                    : 'Fordon '.$vehicle->reg_num.' har tagits bort.',
                 'icon' => 'custom-car',
                 'metadata' => json_encode([
                     'vehicle_id' => $vehicle->id,
@@ -424,11 +430,11 @@ class VehicleController extends Controller
                 'entity_type' => 'vehicles',
                 'action_type' => 'send_vehicle',
                 'title' => $isSaleEdition
-                    ? 'Fordon '.$vehicle->reg_num.' försäljning uppdaterad'
-                    : 'Fordon '.$vehicle->reg_num.' såld',
+                    ? 'Fordon '.$vehicle->reg_num.' - försäljning uppdaterad'
+                    : 'Fordon sålt',
                 'description' => $isSaleEdition
-                    ? 'En fordonsförsäljning har uppdaterats.'
-                    : 'Ett fordon har sålts.',
+                    ? 'Försäljningen har uppdaterats.'
+                    : 'Fordon '.$vehicle->reg_num.' har sålts.',
                 'icon' => 'custom-car',
                 'route' => '/dashboard/admin/sold?vehicle_id='.$vehicle->id,
                 'metadata' => json_encode([
@@ -487,8 +493,8 @@ class VehicleController extends Controller
                 'entity_id' => $vehicle->id,
                 'entity_type' => 'vehicles',
                 'action_type' => 'cancel_vehicle',
-                'title' => 'Fordon '.$vehicle->reg_num.' avbruten försäljning',
-                'description' => 'En fordonsförsäljning har avbrutits.',
+                'title' => 'Fordon '.$vehicle->reg_num.' - avbruten försäljning',
+                'description' => 'Försäljningen har avbrutits.',
                 'icon' => 'custom-car',
                 'route' => '/dashboard/admin/stock?vehicle_id='.$vehicle->id,
                 'metadata' => json_encode([

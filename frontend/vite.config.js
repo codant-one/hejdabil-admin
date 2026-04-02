@@ -105,6 +105,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['vuetify'],
+    include: ['vue-clipboard2'],
     entries: [
       './src/**/*.vue',
     ],

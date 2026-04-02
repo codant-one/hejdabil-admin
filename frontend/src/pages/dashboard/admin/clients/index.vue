@@ -564,9 +564,9 @@ const closeDialog = () => {
       selectedClient.value = { ...lastEditedClientDraft.value }
     }
     if (openedClientFormSource.value === 'mobile') {
-      isDialogOpen.value = true
+      isDialogOpen.value = false
     } else {
-      isAddNewClientDrawerVisible.value = true
+      isAddNewClientDrawerVisible.value = false
     }
     return
   }
@@ -1431,7 +1431,7 @@ onBeforeUnmount(() => {
       <!-- Dialog Content -->
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-info" />
+          <VIcon size="72" icon="custom-user-close" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
           <div class="dialog-title text-center">Kunden kan inte raderas!</div>
@@ -1744,7 +1744,7 @@ onBeforeUnmount(() => {
 
       <VCard>
         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-          <VIcon size="72" icon="custom-f-user" />
+          <VIcon size="72" :icon="isEdit ? 'custom-f-checkmark' : 'custom-f-user'" />
         </VCardText>
         <VCardText class="dialog-title-box justify-center">
           <div class="dialog-title">
@@ -1757,7 +1757,7 @@ onBeforeUnmount(() => {
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
           <VBtn class="btn-gradient" @click="closeDialog">
-             {{ isEdit ? 'Redigera kund' : 'Skapa en ny kund' }}
+             {{ isEdit ? 'Klar' : 'Skapa en ny kund' }}
           </VBtn>
         </VCardText>
       </VCard>
