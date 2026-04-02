@@ -1062,8 +1062,8 @@ class SignatureController extends Controller
             'entity_id' => $agreement->id,
             'entity_type' => 'agreements',
             'action_type' => 'send_signature_agreement',
-            'title' => $this->agreementActivityTitle($agreement, 'skickad för signering'),
-            'description' => 'Ett avtal har skickats för signering.',
+            'title' => $this->agreementActivityTitle($agreement, ' - skickat för signering'),
+            'description' => 'Skickades för signering.',
             'icon' => 'custom-contract',
             'route' => $this->agreementActivityRoute($agreement->id),
             'metadata' => json_encode([
