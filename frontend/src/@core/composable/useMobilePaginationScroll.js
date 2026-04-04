@@ -17,7 +17,7 @@ const getScrollableParent = element => {
   return document.scrollingElement || document.documentElement
 }
 
-const scrollElementIntoScrollableParent = ({ element, offset, behavior }) => {
+export const scrollElementIntoScrollableParent = ({ element, offset, behavior }) => {
   const scrollParent = getScrollableParent(element)
 
   if (!scrollParent)

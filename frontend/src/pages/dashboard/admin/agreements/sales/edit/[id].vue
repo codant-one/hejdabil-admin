@@ -11,6 +11,7 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
+import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import router from '@/router'
@@ -1732,6 +1733,25 @@ const isDirty = computed(() => {
   } catch (e) {
     return true
   }
+})
+
+const scrollToSectionTop = async () => {
+    if (!mdAndDown.value || !sectionEl.value)
+        return
+
+    await nextTick()
+    scrollElementIntoScrollableParent({
+        element: sectionEl.value,
+        offset: 16,
+        behavior: 'smooth',
+    })
+}
+
+watch(currentTab, async (newTab, oldTab) => {
+    if (newTab === oldTab)
+        return
+
+    await scrollToSectionTop()
 })
 
 const confirmLeave = () => {
