@@ -141,7 +141,6 @@ const agreement_type_id = ref(null)
 const status = ref(null);
 
 const sectionEl = ref(null);
-const agreementsListStartEl = ref(null);
 const shouldScrollAgreementsListOnMobile = ref(false);
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
@@ -337,7 +336,7 @@ const scrollToAgreementsListStart = () => {
   if (!mdAndDown.value)
     return
 
-  const el = agreementsListStartEl.value
+  const el = sectionEl.value
   if (!el)
     return
 
@@ -1141,7 +1140,7 @@ onBeforeUnmount(() => {
           $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
         ]"
       >
-        <div ref="agreementsListStartEl" class="d-flex align-center w-100 w-md-auto font-blauer">
+        <div class="d-flex align-center w-100 w-md-auto font-blauer">
           <h2>Avtal <span v-if="hasLoaded">({{ totalAgreements }})</span></h2>
         </div>
 
