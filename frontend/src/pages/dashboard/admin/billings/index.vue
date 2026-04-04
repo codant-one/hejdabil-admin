@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useBillingsStores } from "@/stores/useBillings";
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -97,8 +98,6 @@ const setCompany = (value) => {
 };
 
 const sectionEl = ref(null);
-const billingsListStartEl = ref(null);
-const shouldScrollBillingsListOnMobile = ref(false);
 
 const advisor = ref({
   type: "",
@@ -113,6 +112,13 @@ watch(isExportMenuVisible, isVisible => {
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => (mdAndDown.value ? "" : "top end"));
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -285,7 +291,6 @@ const editBilling = (billingData) => {
 };
 
 const updateStateId = (newStateId) => {
-  // Si ya está seleccionado, desmarcarlo (poner null)
   if (state_id.value === newStateId) {
     newStateId = null;
   }
@@ -299,7 +304,7 @@ const resolveStatus = state_id => {
   if (state_id === 4)
     return { class: 'pending' }
   if (state_id === 7)
-    return { class: 'success' }   
+    return { class: 'success' }
   if (state_id === 8)
     return { class: 'error' }
   if (state_id === 9)

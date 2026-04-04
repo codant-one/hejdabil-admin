@@ -2,6 +2,7 @@
 
 import { ref, nextTick } from 'vue'
 import { useDisplay } from 'vuetify'
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useNotesStores } from '@/stores/useNotes'
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -61,6 +62,13 @@ const { mdAndDown } = useDisplay()
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end")
 const sectionEl = ref(null);
 const hasLoaded = ref(false);
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);

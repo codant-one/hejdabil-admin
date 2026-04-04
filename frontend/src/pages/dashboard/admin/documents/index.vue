@@ -2,6 +2,7 @@
 
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
@@ -27,6 +28,13 @@ const { width: windowWidth } = useWindowSize();
 const sectionEl = ref(null);
 const hasLoaded = ref(false);
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 const userData = ref(null)
 const role = ref(null)

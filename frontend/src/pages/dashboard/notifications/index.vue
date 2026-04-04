@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useRouter } from 'vue-router'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
@@ -18,6 +19,13 @@ const { width: windowWidth } = useWindowSize()
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 const notifications = ref([])
 const searchQuery = ref('')

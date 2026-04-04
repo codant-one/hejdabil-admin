@@ -2,6 +2,7 @@
 
 import { useRoute } from 'vue-router'
 import { useDisplay } from 'vuetify'
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -113,6 +114,13 @@ const advisor = ref({
 
 const { mdAndDown } = useDisplay()
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end")
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 const isFilterDialogVisible = ref(false)
 

@@ -2,6 +2,7 @@
 
 import { ref, toRaw } from "vue";
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll';
 import { useSuppliersStores } from "@/stores/useSuppliers";
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -106,6 +107,13 @@ const lastEditedClientDraft = ref(null);
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+});
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {

@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from 'vuetify'
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import { excelParser } from '@/plugins/csv/excelParser'
 import show from './show.vue' 
@@ -13,6 +14,7 @@ import router from '@/router'
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null)
 
 const usersStores = useSuppliersStores()
 
@@ -46,6 +48,13 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
 })
 
 const emit = defineEmits([
@@ -243,7 +252,7 @@ const downloadCSV = async () => {
 </script>
 
 <template>
-  <section>
+  <section ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
