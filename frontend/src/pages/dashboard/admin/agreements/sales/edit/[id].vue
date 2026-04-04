@@ -11,9 +11,9 @@ import { useConfigsStores } from '@/stores/useConfigs'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
-import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import router from '@/router'
 
 const { width: windowWidth } = useWindowSize();
@@ -1735,25 +1735,6 @@ const isDirty = computed(() => {
   }
 })
 
-const scrollToSectionTop = async () => {
-    if (!mdAndDown.value || !sectionEl.value)
-        return
-
-    await nextTick()
-    scrollElementIntoScrollableParent({
-        element: sectionEl.value,
-        offset: 16,
-        behavior: 'smooth',
-    })
-}
-
-watch(currentTab, async (newTab, oldTab) => {
-    if (newTab === oldTab)
-        return
-
-    await scrollToSectionTop()
-})
-
 const confirmLeave = () => {
     isConfirmLeaveVisible.value = false;
     allowNavigation.value = true;
@@ -1863,7 +1844,8 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     :model-value="currentTab"
                     @update:modelValue="onTabChange"
                     grow
@@ -1890,7 +1872,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
                       
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">
