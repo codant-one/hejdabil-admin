@@ -1885,7 +1885,8 @@ onBeforeRouteLeave((to, from, next) => {
                     
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
                     
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     :model-value="currentTab" 
                     @update:modelValue="onTabChange"
                     grow
@@ -1895,8 +1896,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-autofordon" />
                         <span>Fordon</span>
-                    <MobileScrollTabs 
-                        :target-ref="sectionEl"
+                    </VTab>
                     <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-pris-information" />
                         <span>Prisinformation</span>
