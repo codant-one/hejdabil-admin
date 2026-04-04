@@ -1201,6 +1201,8 @@ onBeforeUnmount(() => {
 
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
 
+      <div ref="agreementsListStartEl" />
+
       <VCardText
         class="d-flex align-center justify-space-between gap-1"
         :class="$vuetify.display.smAndDown ? 'pa-6' : 'pa-4'"
@@ -1249,8 +1251,6 @@ onBeforeUnmount(() => {
           />
         </div>
       </VCardText>
-
-      <div ref="agreementsListStartEl" />
 
       <VTable
         v-if="!$vuetify.display.smAndDown"
