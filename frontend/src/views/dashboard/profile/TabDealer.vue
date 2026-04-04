@@ -1,6 +1,7 @@
 <script setup>
 
 import { nextTick } from 'vue'; // nextTick para asegurar que el DOM esté listo
+import { useDisplay } from 'vuetify'
 import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator } from '@/@core/utils/validators'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -9,9 +10,12 @@ import { Cropper } from 'vue-advanced-cropper'
 import banner from '@images/logos/banner2.jpg'
 import SignaturePad from 'signature_pad';
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import 'vue-advanced-cropper/dist/style.css'
 
 const { width: windowWidth } = useWindowSize();
+const { mdAndDown } = useDisplay();
+const sectionEl = ref(null)
 
 const authStores = useAuthStores()
 const profileStores = useProfileStores()
@@ -70,6 +74,18 @@ const emit = defineEmits([
   'window',
   'alert'
 ])
+
+const scrollToSectionTop = async () => {
+    if (!mdAndDown.value || !sectionEl.value)
+        return
+
+    await nextTick()
+    scrollElementIntoScrollableParent({
+        element: sectionEl.value,
+        offset: 16,
+        behavior: 'smooth',
+    })
+}
 
 watch(form.value, () => {
   emit('window', true);
@@ -244,7 +260,7 @@ const cropImage = async () => {
         profileStores.updateLogo(formData)
             .then(async response => {    
 
-                window.scrollTo(0, 0)
+                await scrollToSectionTop()
                 
                 isRequestOngoing.value = false
                 localStorage.setItem('user_data', JSON.stringify(response.user_data))     
@@ -313,7 +329,7 @@ const cropSignatureImage = async () => {
         profileStores.updateSignature(formData)
             .then(async response => {    
 
-                window.scrollTo(0, 0)
+                await scrollToSectionTop()
                 
                 isRequestOngoing.value = false
                 localStorage.setItem('user_data', JSON.stringify(response.user_data))     
@@ -384,7 +400,7 @@ const saveSignatureFromPad = async () => {
     // Llamamos a la misma acción de Pinia que usa la subida de archivo
     profileStores.updateSignature(formData)
       .then(async response => {    
-        window.scrollTo(0, 0);
+        await scrollToSectionTop();
         localStorage.setItem('user_data', JSON.stringify(response.user_data));
         
         // Actualizamos la imagen visible en la página con la nueva firma
@@ -454,9 +470,9 @@ const onSubmit = () => {
             isRequestOngoing.value = true 
 
             profileStores.updateCompany(formData)
-                .then(response => {    
+                .then(async response => {    
 
-                    window.scrollTo(0, 0)
+                    await scrollToSectionTop()
                     
                     isRequestOngoing.value = false
 
@@ -496,7 +512,7 @@ const onSubmit = () => {
 </script>
 
 <template>
-  <section>
+    <section ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VCardText class="px-0">

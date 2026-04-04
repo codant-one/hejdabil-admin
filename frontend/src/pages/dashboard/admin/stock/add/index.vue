@@ -16,6 +16,7 @@ import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import router from '@/router'
@@ -1855,7 +1856,8 @@ onBeforeRouteLeave((to, from, next) => {
                     <VTab :value="0" :class="{ 'tab-completed': currentTab > 0 }">
                         <VIcon size="24" icon="custom-autofordon" />
                         <span>Fordon</span>
-                    </VTab>
+                    <MobileScrollTabs 
+                        :target-ref="sectionEl"
                     <VTab :value="1" :class="{ 'tab-completed': currentTab > 1 }">
                         <VIcon size="24" icon="custom-pris-information" />
                         <span>Prisinformation</span>
@@ -1872,7 +1874,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VIcon size="24" icon="custom-dokument-ilager" />
                         <span>Dokument</span>
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
 
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">

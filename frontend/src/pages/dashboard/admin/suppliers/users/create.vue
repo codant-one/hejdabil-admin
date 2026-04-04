@@ -5,6 +5,7 @@ import { onBeforeRouteLeave } from 'vue-router';
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -442,7 +443,8 @@ const goToProfile = () => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     v-model="currentTab" 
                     grow             
                     :show-arrows="false"
@@ -456,7 +458,7 @@ const goToProfile = () => {
                         <VIcon size="24" icon="custom-settings-light" />
                         Behörigheter
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
                       
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">
