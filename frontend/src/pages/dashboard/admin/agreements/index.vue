@@ -141,6 +141,8 @@ const agreement_type_id = ref(null)
 const status = ref(null);
 
 const sectionEl = ref(null);
+const agreementsListStartEl = ref(null);
+const shouldScrollAgreementsListOnMobile = ref(false);
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -313,6 +315,74 @@ function resizeSectionToRemainingViewport() {
   const remaining = Math.max(0, window.innerHeight - rect.top - 25);
   el.style.minHeight = `${remaining}px`;
 }
+
+const getScrollableParent = element => {
+  let current = element?.parentElement ?? null
+
+  while (current) {
+    const styles = window.getComputedStyle(current)
+    const overflowY = styles.overflowY
+    const canScroll = ['auto', 'scroll', 'overlay'].includes(overflowY)
+
+    if (canScroll && current.scrollHeight > current.clientHeight)
+      return current
+
+    current = current.parentElement
+  }
+
+  return document.scrollingElement || document.documentElement
+}
+
+const scrollToAgreementsListStart = () => {
+  if (!mdAndDown.value)
+    return
+
+  const el = agreementsListStartEl.value
+  if (!el)
+    return
+
+  const scrollParent = getScrollableParent(el)
+
+  if (!scrollParent)
+    return
+
+  if (scrollParent === document.scrollingElement || scrollParent === document.documentElement || scrollParent === document.body) {
+    const top = window.scrollY + el.getBoundingClientRect().top - 16
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: 'smooth',
+    })
+
+    return
+  }
+
+  const parentRect = scrollParent.getBoundingClientRect()
+  const elementRect = el.getBoundingClientRect()
+  const top = scrollParent.scrollTop + elementRect.top - parentRect.top - 16
+
+  scrollParent.scrollTo({
+    top: Math.max(0, top),
+    behavior: 'smooth',
+  })
+}
+
+watch(currentPage, (newPage, oldPage) => {
+  if (!mdAndDown.value || newPage === oldPage)
+    return
+
+  shouldScrollAgreementsListOnMobile.value = true
+})
+
+watch(isRequestOngoing, async isLoading => {
+  if (!mdAndDown.value || isLoading || !shouldScrollAgreementsListOnMobile.value)
+    return
+
+  await nextTick()
+  scrollToAgreementsListStart()
+
+  shouldScrollAgreementsListOnMobile.value = false
+})
 
 watchEffect(fetchData)
 
@@ -1179,6 +1249,8 @@ onBeforeUnmount(() => {
           />
         </div>
       </VCardText>
+
+      <div ref="agreementsListStartEl" />
 
       <VTable
         v-if="!$vuetify.display.smAndDown"
