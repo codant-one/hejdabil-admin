@@ -1141,7 +1141,7 @@ onBeforeUnmount(() => {
           $vuetify.display.mdAndDown ? 'pa-6' : 'pa-4'
         ]"
       >
-        <div class="d-flex align-center w-100 w-md-auto font-blauer">
+        <div ref="agreementsListStartEl" class="d-flex align-center w-100 w-md-auto font-blauer">
           <h2>Avtal <span v-if="hasLoaded">({{ totalAgreements }})</span></h2>
         </div>
 
@@ -1200,8 +1200,6 @@ onBeforeUnmount(() => {
       </VCardTitle>
 
       <VDivider :class="$vuetify.display.smAndDown ? 'm-0' : 'mt-2 mx-4'" />
-
-      <div ref="agreementsListStartEl" />
 
       <VCardText
         class="d-flex align-center justify-space-between gap-1"
