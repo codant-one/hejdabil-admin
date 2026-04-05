@@ -18,6 +18,7 @@ const props = defineProps({
 })
 
 const route = useRoute()
+const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'))
 
 const handleClick = (item) => {
   const currentRoute = route.name;
@@ -42,9 +43,14 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
     :class="[{ disabled: item.disable }, item.class]"
   >
     <Component
-      :is="item.to ? 'RouterLink' : 'a'"
       v-bind="getComputedNavLinkToProp(item)"
-      :class="{ 'router-link-active router-link-exact-active': isNavLinkActive(item, $router) }"
+      :is="item.to ? 'RouterLink' : 'a'"
+      :class="[
+        isSettingsRoute ? 'nav-link-setting' : '',
+        isSettingsRoute && isNavLinkActive(item, $router) ? 'nav-link-setting-active' : '',
+      ]"
+      :active-class="isSettingsRoute ? 'nav-link-setting-active' : undefined"
+      :exact-active-class="isSettingsRoute ? 'nav-link-setting-active' : undefined"
       @click.prevent="handleClick(item)"
     >
       <Component
@@ -87,6 +93,16 @@ const hideTitleAndBadge = isVerticalNavMini(windowWidth)
   .nav-link a {
     display: flex;
     align-items: center;
+  }
+
+  .nav-link-setting {
+    background: #FFFFFF;
+    border-radius: 8px !important;
+  }
+
+  .nav-link-setting-active {
+    background: #E7E7E7;
+    border-radius: 8px !important;
   }
 }
 </style>

@@ -7,9 +7,18 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const authStores = useAuthStores();
 const router = useRouter();
+const route = useRoute();
 const ability = useAppAbility();
 const userData_ = ref(null)
 const role = ref(null)
+
+const { width: windowWidth } = useWindowSize();
+const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'));
+const profileButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? 'box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;'
+    : undefined
+));
 
 watchEffect(fetchData)
 
@@ -74,6 +83,7 @@ const logout = async () => {
 <template>
   <VBtn
     class="btn-icon-profile"
+    :style="profileButtonStyle"
   >
     <VAvatar
       class="cursor-pointer"
@@ -183,6 +193,22 @@ const logout = async () => {
             </template>
 
             <VListItemTitle>Profil</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 Settings -->
+          <VListItem 
+            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            :to="{ name: 'dashboard-settings' }"
+            >
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="custom-settings"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Inställningar</VListItemTitle>
           </VListItem>
 
           <!-- 👉 Logout -->
