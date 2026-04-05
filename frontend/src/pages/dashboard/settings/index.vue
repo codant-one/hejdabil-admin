@@ -1,18 +1,32 @@
 <script setup>
 
 import settingsNavItems from "@/navigation/settings";
+import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import { can } from "@layouts/plugins/casl";
 
 const { width: windowWidth } = useWindowSize()
+const isRequestOngoing = ref(true);
+const shouldRenderContent = ref(false);
 const router = useRouter()
 const sectionEl = ref(null)
 
 const visibleSettingsNavItems = computed(() => settingsNavItems.filter(item => can(item.action, item.subject)))
 
-watch(windowWidth, width => {
+watch(windowWidth, async width => {
+  isRequestOngoing.value = true
+  shouldRenderContent.value = false
+
   if (width >= 1024) {
-    router.replace('/dashboard/settings/profile')
+    try {
+      await router.replace('/dashboard/settings/profile')
+      return
+    } catch (error) {
+      console.error(error)
+    }
   }
+
+  shouldRenderContent.value = true
+  isRequestOngoing.value = false
 }, { immediate: true })
 
 function resizeSectionToRemainingViewport() {
@@ -36,7 +50,8 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="page-section bg-white" ref="sectionEl">
-    <VCard class="card-fill">
+    <LoadingOverlay :is-loading="isRequestOngoing" />
+    <VCard v-if="shouldRenderContent" class="card-fill">
       <VCardText class="pb-0">
         <div class="d-flex flex-column gap-4 flex-1">
           <VBtn
@@ -123,18 +138,6 @@ onBeforeUnmount(() => {
     line-height: 16px;
     letter-spacing: 0;
     color: #454545;
-  }
-
-  .title-settings {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1C2925;
-  }
-
-  .border-bottom-settings {
-    border-bottom: 1px solid #E7E7E7;
   }
 
 </style>
