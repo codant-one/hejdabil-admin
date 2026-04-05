@@ -747,7 +747,7 @@ onBeforeUnmount(() => {
         </div>
       </VCardText>
 
-      <VCardText class="pb-0">
+      <VCardText :class="windowWidth < 1024 ? '' : 'pb-0'">
         <div class="settings-layout">
           <div class="settings-layout__sidebar">
             <div class="d-flex flex-column gap-4">
