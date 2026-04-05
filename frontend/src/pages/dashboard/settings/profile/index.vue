@@ -10,6 +10,7 @@ import avatar5 from '@/assets/images/avatars/5.svg'
 import avatar6 from '@/assets/images/avatars/6.svg'
 import PresetAvatarImage from '@/components/common/PresetAvatarImage.vue'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import modalWarningIcon from '@/assets/images/icons/alerts/modal-warning-icon.svg'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
@@ -32,6 +33,12 @@ const avatarPreview = ref(null)
 
 const isConfirmEditAvatarVisible = ref(false)
 const selectedDialogAvatar = ref(null)
+const dialog = ref(false)
+const isFormEdited = ref(false)
+const isHydratingProfile = ref(false)
+const initialProfileSnapshot = ref('')
+
+let nextRoute = null
 
 const isRequestOngoing = ref(false);
 const advisor = ref({
@@ -51,8 +58,40 @@ const avatarOptions = [
   { id: 6, src: avatar6 },
 ]
 
+const getAvatarSnapshotValue = value => {
+  if (!value)
+    return null
+
+  if (typeof value === 'string')
+    return value
+
+  return JSON.stringify({
+    name: value.name ?? null,
+    size: value.size ?? null,
+    type: value.type ?? null,
+    lastModified: value.lastModified ?? null,
+  })
+}
+
+const getProfileSnapshot = () => JSON.stringify({
+  email: email.value,
+  name: name.value,
+  last_name: last_name.value,
+  phone: phone.value,
+  address: address.value,
+  avatarId: avatarId.value,
+  avatarPreview: avatarPreview.value ?? null,
+  avatarOld: getAvatarSnapshotValue(avatarOld.value),
+})
+
+const syncInitialProfileSnapshot = () => {
+  initialProfileSnapshot.value = getProfileSnapshot()
+  isFormEdited.value = false
+}
+
 function loadUserData() {
   isRequestOngoing.value = true
+  isHydratingProfile.value = true
   const storedUser = JSON.parse(localStorage.getItem('user_data') || 'null')
   userData.value = storedUser
 
@@ -66,8 +105,37 @@ function loadUserData() {
   avatarId.value = storedUser?.user_detail?.avatar_id ?? null
   avatarOld.value = storedUser?.avatar ?? null
   avatarPreview.value = storedUser?.avatar ?? null
+  syncInitialProfileSnapshot()
+  isHydratingProfile.value = false
   isRequestOngoing.value = false 
 }
+
+onBeforeRouteLeave((to, from, next) => {
+  if (isFormEdited.value) {
+    dialog.value = true
+    nextRoute = next
+
+    return
+  }
+
+  next()
+})
+
+watch([
+  email,
+  name,
+  last_name,
+  phone,
+  address,
+  avatarId,
+  avatarOld,
+  avatarPreview,
+], () => {
+  if (isHydratingProfile.value)
+    return
+
+  isFormEdited.value = getProfileSnapshot() !== initialProfileSnapshot.value
+})
 
 const resetAvatar = () => {
   avatarPreview.value = null
@@ -107,6 +175,7 @@ const applySelectedAvatar = () => {
 
   avatarPreview.value = selected.src
   avatarOld.value = selected.src
+  avatarId.value = selected.id
   isConfirmEditAvatarVisible.value = false
 }
 
@@ -125,6 +194,18 @@ const triggerAvatarUpload = () => {
   nextTick(() => {
     refAvatarFileInput.value?.click()
   })
+}
+
+const confirmLeave = () => {
+  dialog.value = false
+  nextRoute?.()
+  nextRoute = null
+}
+
+const cancelLeave = () => {
+  dialog.value = false
+  nextRoute?.(false)
+  nextRoute = null
 }
 
 const onSubmit = () => {
@@ -178,15 +259,12 @@ const onSubmit = () => {
         }
 
         advisor.value.type = 'success'
-        advisor.value.message = 'Uppgifterna har sparats. Sidan laddas om automatiskt för att visa ändringarna.'
+        advisor.value.message = 'Uppgifterna har sparats.'
         advisor.value.show = true
 
         localStorage.setItem('user_data', JSON.stringify(response.user_data))
         isRequestOngoing.value = false
-
-        setTimeout(() => {
-          location.reload()
-        }, 3000)
+        syncInitialProfileSnapshot()
       })
       .catch(() => {
         advisor.value.type = 'error'
@@ -391,6 +469,46 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
       </VCard>
+
+      <VDialog
+        v-model="dialog"
+        persistent
+        class="action-dialog"
+      >
+        <VBtn
+          icon
+          class="btn-white close-btn"
+          @click="cancelLeave"
+        >
+          <VIcon size="16" icon="custom-close" />
+        </VBtn>
+
+        <VCard>
+          <VCardText class="dialog-title-box">
+            <img :src="modalWarningIcon" alt="Warning" class="action-icon">
+            <div class="dialog-title">
+              Avsluta utan att spara
+            </div>
+          </VCardText>
+          <VCardText class="dialog-text">
+            <strong>Du har osparade ändringar.</strong> Är du säker på att du vill lämna sidan?
+          </VCardText>
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+            <VBtn
+              class="btn-light"
+              @click="cancelLeave"
+            >
+              Avbryt
+            </VBtn>
+            <VBtn
+              class="btn-gradient"
+              @click="confirmLeave"
+            >
+              Ja, fortsätt
+            </VBtn>
+          </VCardText>
+        </VCard>
+      </VDialog>
 
       <VDialog
         v-model="isConfirmEditAvatarVisible"
