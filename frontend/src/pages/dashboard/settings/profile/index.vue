@@ -14,6 +14,7 @@
 
 <route lang="yaml">
   meta:
+    navActiveLink: dashboard-settings
     action: view
     subject: dashboard
 </route>

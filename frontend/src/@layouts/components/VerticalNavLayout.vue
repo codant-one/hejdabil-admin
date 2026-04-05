@@ -135,10 +135,13 @@ export default defineComponent({
 
     &.settings-route {
       background-color: #fff !important;
-      border-bottom: 1px solid #E7E7E7;
 
       .navbar-content-container {
         background-color: #fff !important;        
+      }
+
+      @media (min-width: 1024px) {
+        border-bottom: 1px solid #E7E7E7;
       }
     }
 

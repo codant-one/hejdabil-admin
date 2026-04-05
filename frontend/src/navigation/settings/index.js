@@ -2,7 +2,7 @@ export default [
   { 
     title: 'Min profil', 
     icon: { icon: 'custom-profile' },
-    to: 'dashboard-settings', 
+    to: 'dashboard-settings-profile', 
     action: 'view', 
     subject: 'dashboard'
   },
