@@ -1,17 +1,13 @@
 <script setup>
 
-import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import settingsNavItems from "@/navigation/settings";
 import { can } from "@layouts/plugins/casl";
-import { isNavLinkActive } from "@layouts/utils";
 
-const router = useRouter()
-const route = useRoute()
-const sectionEl = ref(null)
 const { width: windowWidth } = useWindowSize()
-const isRequestOngoing = ref(false)
-const visibleSettingsNavItems = computed(() => settingsNavItems.filter(item => can(item.action, item.subject)))
+const router = useRouter()
+const sectionEl = ref(null)
 
+const visibleSettingsNavItems = computed(() => settingsNavItems.filter(item => can(item.action, item.subject)))
 
 watch(windowWidth, width => {
   if (width >= 1024) {
@@ -36,13 +32,10 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener("resize", resizeSectionToRemainingViewport);
 });
-
 </script>
 
 <template>
   <section class="page-section bg-white" ref="sectionEl">
-    <LoadingOverlay :is-loading="isRequestOngoing" />
-
     <VCard class="card-fill">
       <VCardText class="pb-0">
         <div class="d-flex flex-column gap-4 flex-1">
