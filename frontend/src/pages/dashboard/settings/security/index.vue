@@ -287,7 +287,7 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="pb-0">
-          <div class="settings-layout border-bottom-settings pb-5">
+          <div class="settings-layout border-bottom-settings pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Byt lösenord</span>
@@ -347,7 +347,7 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="pb-0">
-          <div class="settings-layout border-bottom-settings pb-5">
+          <div class="settings-layout border-bottom-settings pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Tvåfaktorsautentisering (2FA)</span>
@@ -382,7 +382,7 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="pb-0" v-if="role === 'Supplier' && csrUrl !== null">
-          <div class="settings-layout border-bottom-settings pb-5">
+          <div class="settings-layout border-bottom-settings pb-4">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
                 <span class="subtitle-settings">Säkerhetslösenord</span>
@@ -433,7 +433,7 @@ onBeforeUnmount(() => {
           </div>
         </VCardText>
 
-        <VCardText v-if="role === 'Supplier' && csrUrl !== null">
+        <VCardText class="pb-0" v-if="role === 'Supplier' && csrUrl !== null">
           <div class="settings-layout">
             <div class="settings-layout__sidebar">
               <div class="d-flex flex-column gap-4">
