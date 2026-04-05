@@ -133,6 +133,10 @@ onBeforeUnmount(() => {
     color: #1C2925;
   }
 
+  .border-bottom-settings {
+    border-bottom: 1px solid #E7E7E7;
+  }
+
 </style>
 
 <route lang="yaml">

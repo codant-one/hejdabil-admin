@@ -29,6 +29,7 @@ onBeforeUnmount(() => {
 <template>
     <section class="page-section bg-white" ref="sectionEl">
       <LoadingOverlay :is-loading="isRequestOngoing" />
+
       <VCard class="card-fill">
         <VCardText class="pb-0" v-if="windowWidth < 1024">
           <div class="d-flex flex-column gap-4 flex-1">
@@ -46,23 +47,14 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </VCardText>
+        <VCardText> el diseno
+        </VCardText>
       </VCard>
     </section>
 </template>
 
 <style lang="scss">
-
-  .title-settings {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1C2925;
-  }
-
-  .border-bottom-settings {
-    border-bottom: 1px solid #E7E7E7;
-  }
+  
 </style>
 
 <route lang="yaml">

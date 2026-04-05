@@ -51,18 +51,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
-
-  .title-settings {
-    font-weight: 700;
-    font-size: 24px;
-    line-height: 100%;
-    letter-spacing: 0;
-    color: #1C2925;
-  }
-
-  .border-bottom-settings {
-    border-bottom: 1px solid #E7E7E7;
-  }
+  
 </style>
 
 <route lang="yaml">
