@@ -1954,7 +1954,7 @@ const onDatePickerUpdate = value => {
           <div class="dialog-title">Betalningen lyckades!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din betalning via Swich har genomförts och skickats till mottagaren. Du hittar kvittot i din betalningshistorik.
+          Din betalning via Swish har genomförts och skickats till mottagaren. Du hittar kvittot i din betalningshistorik.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
@@ -1991,7 +1991,7 @@ const onDatePickerUpdate = value => {
           <div class="dialog-title">Betalningen har inte genomförts!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din betalning via Swich har inte behandlats korrekt, försök igen.
+          Din betalning via Swish har inte behandlats korrekt, försök igen.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
