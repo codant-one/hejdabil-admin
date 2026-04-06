@@ -20,6 +20,9 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\User;
 use App\Models\UserRegisterToken;
+use App\Models\Agreement;
+use App\Models\Billing;
+use App\Models\Payout;
 use App\Models\Supplier;
 use App\Models\UserDetails;
 use App\Jobs\SendEmailJob;
@@ -535,28 +538,161 @@ class SupplierController extends Controller
             $limit = $request->has('limit') ? $request->limit : 10;
 
             $query = Supplier::with(['user.roles.permissions','user.permissions', 'user.userDetail'])
-                        //  ->whereHas('user.roles', function ($query) {
-                        //     $query->where('name', 'User');
-                        //  })
                          ->when(Auth::user()->getRoleNames()[0] === 'Supplier', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->id);
                          })
                          ->when(Auth::user()->getRoleNames()[0] === 'User', function ($query){
                             $query->where('boss_id', Auth::user()->supplier->boss->id)
                                   ->where('id', '!=', Auth::user()->supplier->id);
-                         })
-                         ->applyFilters(
-                            $request->only([
-                                'id',
-                                'search',
-                                'orderByField',
-                                'orderBy'
-                            ])
-                        );
+                         });
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('user', function ($uq) use ($search) {
+                        $uq->withTrashed()
+                            ->where(function ($inner) use ($search) {
+                                $inner->where('name', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('email', 'LIKE', '%' . $search . '%')
+                                      ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                            });
+                    })
+                    ->orWhereHas('user.userDetail', function ($dq) use ($search) {
+                        $dq->where('personal_phone', 'LIKE', '%' . $search . '%');
+                    });
+                });
+            }
+
+            $query->applyFilters(
+                $request->only([
+                    'orderByField',
+                    'orderBy'
+                ])
+            );
 
             $count = $query->count();
 
             $users = ($limit == -1) ? $query->paginate($query->count()) : $query->paginate($limit);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'users' => $users,
+                    'usersTotalCount' => $count
+                ]
+            ], 200);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+              'success' => false,
+              'message' => 'database_error',
+              'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function reportUsers(Request $request): JsonResponse
+    {
+        try {
+            $limit = $request->has('limit') ? (int) $request->limit : 10;
+            $page = max(1, (int) $request->input('page', 1));
+            $supplierId = $this->getCurrentSupplierId();
+
+            $query = Supplier::with(['user.roles.permissions', 'user.permissions', 'user.userDetail'])
+                ->where('boss_id', $supplierId);
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->whereHas('user', function ($uq) use ($search) {
+                        $uq->withTrashed()
+                            ->where(function ($inner) use ($search) {
+                                $inner->where('name', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                                      ->orWhere('email', 'LIKE', '%' . $search . '%')
+                                      ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                            });
+                    })
+                    ->orWhereHas('user.userDetail', function ($dq) use ($search) {
+                        $dq->where('personal_phone', 'LIKE', '%' . $search . '%');
+                    });
+                });
+            }
+
+            $teamSuppliers = $query->applyFilters(
+                    $request->only([
+                        'orderByField',
+                        'orderBy'
+                    ])
+                )
+                ->orderBy('order_id')
+                ->orderBy('id')
+                ->get();
+
+            $teamUserIds = $teamSuppliers
+                ->pluck('user_id')
+                ->filter()
+                ->values()
+                ->all();
+
+            $billingCountsByUser = $this->getTeamDocumentCountsByUser(
+                Billing::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+            );
+            $payoutCountsByUser = $this->getTeamDocumentCountsByUser(
+                Payout::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+            );
+            $agreementCountsByUser = $this->getTeamDocumentCountsByUser(
+                Agreement::query()->where('supplier_id', $supplierId),
+                $teamUserIds,
+            );
+
+            $usersCollection = $teamSuppliers->map(function ($teamSupplier) use (
+                $billingCountsByUser,
+                $payoutCountsByUser,
+                $agreementCountsByUser,
+            ) {
+                $user = $teamSupplier->user;
+                $userId = $teamSupplier->user_id;
+                $invoices = (int) ($billingCountsByUser->get($userId, 0));
+                $swish = (int) ($payoutCountsByUser->get($userId, 0));
+                $agreements = (int) ($agreementCountsByUser->get($userId, 0));
+
+                return [
+                    'id' => $teamSupplier->id,
+                    'user_id' => $teamSupplier->user_id,
+                    'order_id' => $teamSupplier->order_id,
+                    'deleted_at' => $teamSupplier->deleted_at,
+                    'user' => $user,
+                    'name' => $user?->name,
+                    'last_name' => $user?->last_name,
+                    'email' => $user?->email,
+                    'avatar' => $user?->avatar,
+                    'user_detail' => $user?->userDetail,
+                    'invoices' => $invoices,
+                    'swish' => $swish,
+                    'agreements' => $agreements,
+                    'total_actions' => $invoices + $swish + $agreements,
+                ];
+            })
+                ->sortByDesc('total_actions')
+                ->values();
+
+            $count = $usersCollection->count();
+            $perPage = $limit === -1 ? max(1, $count) : max(1, $limit);
+
+            $users = new \Illuminate\Pagination\LengthAwarePaginator(
+                $usersCollection->forPage($page, $perPage)->values(),
+                $count,
+                $perPage,
+                $page,
+                [
+                    'path' => $request->url(),
+                    'query' => $request->query(),
+                ]
+            );
 
             return response()->json([
                 'success' => true,
@@ -832,6 +968,32 @@ class SupplierController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function getCurrentSupplierId(): int
+    {
+        $user = Auth::user();
+        $role = $user->getRoleNames()[0] ?? null;
+
+        return match ($role) {
+            'Supplier' => $user->supplier->id,
+            'User' => $user->supplier->boss_id,
+            default => $user->supplier->id,
+        };
+    }
+
+    private function getTeamDocumentCountsByUser($query, array $userIds)
+    {
+        if (empty($userIds)) {
+            return collect();
+        }
+
+        return (clone $query)
+            ->whereNotNull('user_id')
+            ->whereIn('user_id', $userIds)
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
     }
 
 }

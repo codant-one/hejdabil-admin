@@ -28,6 +28,9 @@ const isRequestOngoing = ref(false)
 const isFormEdited = ref(false);
 let nextRoute = null;
 
+const tabMyTeamRef = ref(null)
+const tabReportsRef = ref(null)
+
 const advisor = ref({
   type: '',
   message: '',
@@ -90,6 +93,11 @@ watch(() => [route.query.tab, route.hash], ([tab, hash]) => {
 
 watch(role, () => {
   setTabFromRoute(route.query.tab, route.hash)
+})
+
+watch(userTab, () => {
+  tabMyTeamRef.value?.resetFilters()
+  tabReportsRef.value?.resetFilters()
 })
 
 onBeforeRouteLeave((to, from, next) => {
@@ -198,10 +206,10 @@ onBeforeUnmount(() => {
           :touch="false"
         >
           <VWindowItem v-if="hasMyTeamAccess">
-            <TabMyTeam @alert="showAlert"/>
+            <TabMyTeam ref="tabMyTeamRef" @alert="showAlert"/>
           </VWindowItem>
           <VWindowItem v-if="hasReportsAccess">
-            <TabReports @alert="showAlert"/>
+            <TabReports ref="tabReportsRef" @alert="showAlert"/>
           </VWindowItem>
         </VWindow>
       </div>

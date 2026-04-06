@@ -3,11 +3,11 @@ import Suppliers from '@/api/suppliers'
 
 export const useSuppliersStores = defineStore('suppliers', {
     state: () => ({
-        suppliers: {},
+        suppliers: [],
         loading: false,
         last_page: 1,
         suppliersTotalCount: 6,
-        users: {},
+        users: [],
         users_last_page: 1,
         usersTotalCount: 6,
     }),
@@ -32,7 +32,10 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.last_page = response.data.data.suppliers.last_page
                     this.suppliersTotalCount = response.data.data.suppliersTotalCount
                 })
-                .catch(error => console.log(error))
+                .catch(error => {
+                    this.suppliers = []
+                    console.log(error)
+                })
                 .finally(() => {
                     this.setLoading(false)
                 })
@@ -174,7 +177,32 @@ export const useSuppliersStores = defineStore('suppliers', {
                     this.users_last_page = response.data.data.users.last_page
                     this.usersTotalCount = response.data.data.usersTotalCount
                 })
-                .catch(error => console.log(error))
+                .catch(error => {
+                    this.users = []
+                    this.users_last_page = 1
+                    this.usersTotalCount = 0
+                    console.log(error)
+                })
+                .finally(() => {
+                    this.setLoading(false)
+                })
+            
+        },
+        fetchReportUsers(params) {
+            this.setLoading(true)
+            
+            return Suppliers.getReportUsers(params)
+                .then((response) => {
+                    this.users = response.data.data.users.data
+                    this.users_last_page = response.data.data.users.last_page
+                    this.usersTotalCount = response.data.data.usersTotalCount
+                })
+                .catch(error => {
+                    this.users = []
+                    this.users_last_page = 1
+                    this.usersTotalCount = 0
+                    console.log(error)
+                })
                 .finally(() => {
                     this.setLoading(false)
                 })

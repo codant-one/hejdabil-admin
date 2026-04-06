@@ -271,6 +271,7 @@
 
             <VBtn
                class="btn-ghost"
+               :to="{ name : 'dashboard-admin-suppliers-users-create' }"
             >
                Bjud in medarbetare
                <VIcon icon="custom-arrow-right" size="24" />
