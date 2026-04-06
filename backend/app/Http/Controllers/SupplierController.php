@@ -604,19 +604,13 @@ class SupplierController extends Controller
 
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->whereHas('user', function ($uq) use ($search) {
-                        $uq->withTrashed()
-                            ->where(function ($inner) use ($search) {
-                                $inner->where('name', 'LIKE', '%' . $search . '%')
-                                      ->orWhere('last_name', 'LIKE', '%' . $search . '%')
-                                      ->orWhere('email', 'LIKE', '%' . $search . '%')
-                                      ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
-                            });
-                    })
-                    ->orWhereHas('user.userDetail', function ($dq) use ($search) {
-                        $dq->where('personal_phone', 'LIKE', '%' . $search . '%');
-                    });
+                $query->whereHas('user', function ($uq) use ($search) {
+                    $uq->withTrashed()
+                        ->where(function ($inner) use ($search) {
+                            $inner->where('name', 'LIKE', '%' . $search . '%')
+                                  ->orWhere('last_name', 'LIKE', '%' . $search . '%')
+                                  ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
+                        });
                 });
             }
 
