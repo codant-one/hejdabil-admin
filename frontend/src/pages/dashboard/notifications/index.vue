@@ -20,13 +20,6 @@ const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 
-useMobilePaginationScroll({
-  targetRef: sectionEl,
-  currentPage,
-  isRequestOngoing,
-  enabled: mdAndDown,
-})
-
 const notifications = ref([])
 const searchQuery = ref('')
 const rowPerPage = ref(10)
@@ -41,6 +34,13 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
 })
 
 // 👉 Computing pagination data

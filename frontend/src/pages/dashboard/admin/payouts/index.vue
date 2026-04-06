@@ -30,13 +30,6 @@ const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
 const hasLoaded = ref(false);
 
-useMobilePaginationScroll({
-  targetRef: sectionEl,
-  currentPage,
-  isRequestOngoing,
-  enabled: mdAndDown,
-})
-
 const authStores = useAuthStores()
 const clientsStores = useClientsStores()
 const payoutsStores = usePayoutsStores()
@@ -97,6 +90,13 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
 })
 
 watch(isExportMenuVisible, isVisible => {
