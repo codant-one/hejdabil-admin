@@ -452,7 +452,8 @@ const hasAssignedPermission = permission => {
                                 $can('view','my-team') ||
                                 $can('create','my-team') ||
                                 $can('edit','my-team') ||
-                                $can('delete','my-team')
+                                $can('delete','my-team') ||
+                                $can('view','team-reports')
                             "
                         >
                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
@@ -480,6 +481,12 @@ const hasAssignedPermission = permission => {
                                     class="permission-label"
                                 >
                                     delete my-team
+                                </div>
+                                <div
+                                    v-if="$can('view','team-reports') && hasAssignedPermission('view team-reports')"
+                                    class="permission-label"
+                                >
+                                    view team-reports
                                 </div>
                             </div>
                         </div>

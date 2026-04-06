@@ -27,6 +27,13 @@ async function fetchData(cleanFilters = false) {
   role.value = userData_.value.roles[0].name
 }
 
+
+const hasMyTeamAccess = computed(() => {
+  if (role.value === 'Supplier') return true
+
+  return role.value === 'User' && ability.can('view', 'my-team')
+})
+
 const userData = field =>{
   let values = JSON.parse(localStorage.getItem('user_data') || 'null')
 
@@ -183,7 +190,7 @@ const logout = async () => {
           </VListItem>
 
           <!--  👉 Profile -->
-          <VListItem :to="{ name: 'dashboard-profile' }">
+          <VListItem :to="{ name: 'dashboard-profile' }" class="d-none">
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -193,6 +200,22 @@ const logout = async () => {
             </template>
 
             <VListItemTitle>Profil</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 My team -->
+          <VListItem 
+            :to="{ name: 'dashboard-my-team' }"
+            v-if="hasMyTeamAccess"
+            >
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="custom-users"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Mitt team</VListItemTitle>
           </VListItem>
 
           <!--  👉 Settings -->

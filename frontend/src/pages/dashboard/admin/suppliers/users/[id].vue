@@ -307,7 +307,7 @@ const goToProfile = () => {
         error: false
     }
 
-    router.push({ name : 'dashboard-profile', query: { tab: 'mitt-team' } })
+    router.push({ name : 'dashboard-my-team'})
     emitter.emit('toast', data)  
 
 };
@@ -353,7 +353,7 @@ const goToProfile = () => {
                             :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
                             class="btn-light"
                             style="width: 120px;"
-                            :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }"
+                            :to="{ name: 'dashboard-my-team' }"
                         >
                             <VIcon icon="custom-return" size="24" />
                             Gå ut
@@ -373,7 +373,7 @@ const goToProfile = () => {
                             <VBtn
                                 class="btn-light w-auto" 
                                 block
-                                :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }">
+                                :to="{ name: 'dashboard-my-team' }">
                                 <VIcon icon="custom-return" size="24" />
                                 Avbryt
                             </VBtn>
@@ -823,7 +823,8 @@ const goToProfile = () => {
                                                 $can('view','my-team') ||
                                                 $can('create','my-team') ||
                                                 $can('edit','my-team') ||
-                                                $can('delete','my-team')
+                                                $can('delete','my-team') ||
+                                                $can('view','team-reports')
                                             "
                                         >
                                             <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
@@ -854,6 +855,13 @@ const goToProfile = () => {
                                                     v-model="assignedPermissions"
                                                     label="delete my-team"
                                                     value="delete my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('view','team-reports')"
+                                                    v-model="assignedPermissions"
+                                                    label="view team-reports"
+                                                    value="view team-reports"
                                                     :readonly="readonly"
                                                 />
                                             </div>

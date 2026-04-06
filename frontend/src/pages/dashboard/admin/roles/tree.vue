@@ -86,6 +86,9 @@ const closeTreeDialog  = function(){
                             <li class="tab n3">
                                 <strong>Radera mitt team</strong>&emsp;/&emsp;<code>Tillåter borttagning av mitt team</code>
                             </li>
+                            <li class="tab n3">
+                                <strong>Visa teamrapporter</strong>&emsp;/&emsp;<code>Tillåter visning av teamrapporter</code>
+                            </li>
                         </ul>
                     </ul>
                     <ul class="tab">

@@ -740,7 +740,7 @@ onBeforeUnmount(() => {
                 </div>
               </div>
               <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                <-- Color Settings -->
+                
               </div>
             </div>
           </div>          

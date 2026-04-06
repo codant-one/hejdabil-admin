@@ -200,6 +200,12 @@ const closeRoleDetailDialog = function(){
                                 value="delete my-team"
                                 :readonly="readonly"
                             />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view team-reports"
+                                value="view team-reports"
+                                :readonly="readonly"
+                            />
                         </div>
                     </div>
                 </VCardText>

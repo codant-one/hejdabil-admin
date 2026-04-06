@@ -349,7 +349,7 @@
            <VBtn
               class="btn-light px-3 h-40"
               :class="windowWidth < 1024 ? 'w-100' : ''"
-              :to="{ name: 'dashboard-profile', hash: '#tab-team' }"
+              :to="{ name: 'dashboard-my-team', hash: '#tab-report' }"
            >
             Visa alla rapporter
          </VBtn>

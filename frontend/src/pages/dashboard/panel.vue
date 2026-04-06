@@ -420,7 +420,7 @@ onBeforeUnmount(() => {
             />
           </div>
 
-          <div class="dashboard-grid__item dashboard-grid__item--md-12" v-if="$can('view','my-team')">
+          <div class="dashboard-grid__item dashboard-grid__item--md-12" v-if="$can('view','team-reports')">
             <Team
               :team-members="team?.teamMembers"
               :team-totals="team?.teamTotals"

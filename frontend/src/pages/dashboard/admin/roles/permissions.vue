@@ -132,6 +132,11 @@ const closeModal = function(){
                                 label="delete my-team"
                                 value="delete my-team"
                             />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view team-reports"
+                                value="view team-reports"
+                            />
                         </div>
                     </div>
                 </VCardText>

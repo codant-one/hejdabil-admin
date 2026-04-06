@@ -63,6 +63,7 @@ class MorePermissionSeeder extends Seeder
             ['name' => 'create my-team'],
             ['name' => 'edit my-team'],
             ['name' => 'delete my-team'],
+            ['name' => 'view team-reports'],
 
         ]; 
         // Crear o actualizar permisos
