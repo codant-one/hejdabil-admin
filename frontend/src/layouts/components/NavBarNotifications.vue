@@ -48,7 +48,7 @@ const onNotificationClick = async (notification) => {
 
 <template>
   <Notifications 
-    :notifications="notificationsStore.notifications" 
+    :notifications="notificationsStore.recentNotifications" 
     @click:readAllNotifications="onReadAll" 
     @click:notification="onNotificationClick"
   />  

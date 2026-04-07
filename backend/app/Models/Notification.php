@@ -81,6 +81,12 @@ class Notification extends Model
     }
 
     /**** Public methods ****/
+    public static function deleteNotificationsByRoute($route) {
+        return self::query()
+            ->where('route', 'LIKE', '%' . $route . '%')
+            ->delete();
+    }
+
     public static function deleteNotification($id) {
         self::deleteNotifications(array($id));
     }

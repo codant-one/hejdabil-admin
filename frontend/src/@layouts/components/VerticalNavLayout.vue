@@ -17,6 +17,7 @@ export default defineComponent({
     const { y: windowScrollY } = useWindowScroll()
     const { width: windowWidth } = useWindowSize()
     const { _layoutClasses: layoutClasses, isLessThanOverlayNavBreakpoint, isNavbarBlurEnabled } = useLayouts()
+    const route = useRoute()
     const isOverlayNavActive = ref(false)
     const isLayoutOverlayVisible = ref(false)
     const toggleIsOverlayNavActive = useToggle(isOverlayNavActive)
@@ -41,6 +42,7 @@ export default defineComponent({
     })
 
     const router = useRouter()
+    const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'))
     const shallShowPageLoading = ref(false)
     
     return () => {
@@ -56,8 +58,11 @@ export default defineComponent({
 
 
       // 👉 Navbar
-      const navbar = h('header', { class: ['layout-navbar', { 'navbar-blur': isNavbarBlurEnabled.value }] }, [
-        h('div', { class: 'navbar-content-container' }, slots.navbar?.({
+      const navbarStyle = isSettingsRoute.value ? 'background: #fff !important; background-color: #fff !important;' : undefined
+      const navbarContentStyle = isSettingsRoute.value ? 'background: #fff !important; background-color: #fff !important;' : undefined
+
+      const navbar = h('header', { class: ['layout-navbar', { 'navbar-blur': isNavbarBlurEnabled.value, 'settings-route': isSettingsRoute.value }], style: navbarStyle }, [
+        h('div', { class: 'navbar-content-container', style: navbarContentStyle }, slots.navbar?.({
           toggleVerticalOverlayNavActive: toggleIsOverlayNavActive,
         })),
       ])
@@ -127,6 +132,18 @@ export default defineComponent({
 
   .layout-navbar {
     z-index: variables.$layout-vertical-nav-layout-navbar-z-index;
+
+    &.settings-route {
+      background-color: #fff !important;
+
+      .navbar-content-container {
+        background-color: #fff !important;        
+      }
+
+      @media (min-width: 1024px) {
+        border-bottom: 1px solid #E7E7E7;
+      }
+    }
 
     .navbar-content-container {
       block-size: variables.$layout-vertical-nav-navbar-height;

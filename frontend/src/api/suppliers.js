@@ -38,6 +38,10 @@ class Suppliers {
         return axios.get('suppliers/supplier/users', {params})
     }
 
+    getReportUsers(params) {
+        return axios.get('suppliers/supplier/report-users', {params})
+    }
+
     getInactiveUserByEmail(data) {
         return axios.post('suppliers/supplier/inactive-user', data)
     }

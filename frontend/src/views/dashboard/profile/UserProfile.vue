@@ -30,6 +30,11 @@ const props = defineProps({
   avatarId: {
     type: [String, Number, null],
     required: true
+  },
+  showButton: {
+    type: Boolean,
+    default: true,
+    required: false
   }
 })
 
@@ -372,6 +377,7 @@ const closeUserEditDialog = ()=>{
           <!-- 👉 Edit and Suspend button -->
           <div
             :class="windowWidth < 1024 ? 'w-100' : 'px-0'"
+            v-if="props.showButton"
           >
             <div class="d-flex gap-4"
               :class="windowWidth < 1024 ? 'w-100' : 'align-center'"

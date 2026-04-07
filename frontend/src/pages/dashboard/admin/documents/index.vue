@@ -2,6 +2,7 @@
 
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect } from 'vue'
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useSignableDocumentsStores } from '@/stores/useSignableDocuments'
 import { useClientsStores } from '@/stores/useClients'
 import { useNotificationsStore } from '@/stores/useNotifications'
@@ -217,6 +218,13 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
 })
 
 // 👉 Computing pagination data

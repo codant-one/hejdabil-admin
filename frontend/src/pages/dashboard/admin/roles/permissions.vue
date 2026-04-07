@@ -108,6 +108,36 @@ const closeModal = function(){
                                 value="delete users"
                             />
                         </div>
+                        <VLabel style="font-weight: bold;">
+                            Mitt team
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view my-team"
+                                value="view my-team"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="create my-team"
+                                value="create my-team"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="edit my-team"
+                                value="edit my-team"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="delete my-team"
+                                value="delete my-team"
+                            />
+                            <VCheckbox
+                                v-model="assignedPermissions"
+                                label="view team-reports"
+                                value="view team-reports"
+                            />
+                        </div>
                     </div>
                 </VCardText>
                 <VCardTitle>

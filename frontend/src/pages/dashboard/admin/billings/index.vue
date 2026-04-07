@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useBillingsStores } from "@/stores/useBillings";
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -74,6 +75,8 @@ const filtreraMobile = ref(false);
 const isFilterDialogVisible = ref(false);
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
 
+const exporteraMobile = ref(false);
+
 const readCachedCompany = () => {
   try {
     const cached = localStorage.getItem(COMPANY_STORAGE_KEY);
@@ -109,6 +112,13 @@ watch(isExportMenuVisible, isVisible => {
 
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => (mdAndDown.value ? "" : "top end"));
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 // 👉 Computing pagination data
 const paginationData = computed(() => {
@@ -281,7 +291,6 @@ const editBilling = (billingData) => {
 };
 
 const updateStateId = (newStateId) => {
-  // Si ya está seleccionado, desmarcarlo (poner null)
   if (state_id.value === newStateId) {
     newStateId = null;
   }
@@ -295,7 +304,7 @@ const resolveStatus = state_id => {
   if (state_id === 4)
     return { class: 'pending' }
   if (state_id === 7)
-    return { class: 'success' }   
+    return { class: 'success' }
   if (state_id === 8)
     return { class: 'error' }
   if (state_id === 9)
@@ -574,6 +583,7 @@ const sendMails = async () => {
 };
 
 const downloadCSV = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true;
 
   try {
@@ -679,6 +689,7 @@ const getDateRangePayload = () => {
 }
 
 const downloadPDF = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
@@ -819,6 +830,7 @@ const exportPDFAndCloseMenu = async () => {
 }
 
 const openExportDateMenu = type => {
+  exporteraMobile.value = false
   selectedExportType.value = type
   isExportTypeMenuVisible.value = false
 
@@ -901,6 +913,74 @@ const onDatePickerUpdate = value => {
     exportPDFAndCloseMenu()
 }
 
+const getScrollableParent = element => {
+  let current = element?.parentElement ?? null
+
+  while (current) {
+    const styles = window.getComputedStyle(current)
+    const overflowY = styles.overflowY
+    const canScroll = ['auto', 'scroll', 'overlay'].includes(overflowY)
+
+    if (canScroll && current.scrollHeight > current.clientHeight)
+      return current
+
+    current = current.parentElement
+  }
+
+  return document.scrollingElement || document.documentElement
+}
+
+const scrollToBillingsListStart = () => {
+  if (!mdAndDown.value)
+    return
+
+  const el = billingsListStartEl.value
+  if (!el)
+    return
+
+  const scrollParent = getScrollableParent(el)
+
+  if (!scrollParent)
+    return
+
+  if (scrollParent === document.scrollingElement || scrollParent === document.documentElement || scrollParent === document.body) {
+    const top = window.scrollY + el.getBoundingClientRect().top - 16
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: 'smooth',
+    })
+
+    return
+  }
+
+  const parentRect = scrollParent.getBoundingClientRect()
+  const elementRect = el.getBoundingClientRect()
+  const top = scrollParent.scrollTop + elementRect.top - parentRect.top - 16
+
+  scrollParent.scrollTo({
+    top: Math.max(0, top),
+    behavior: 'smooth',
+  })
+}
+
+watch(currentPage, (newPage, oldPage) => {
+  if (!mdAndDown.value || newPage === oldPage)
+    return
+
+  shouldScrollBillingsListOnMobile.value = true
+})
+
+watch(isRequestOngoing, async isLoading => {
+  if (!mdAndDown.value || isLoading || !shouldScrollBillingsListOnMobile.value)
+    return
+
+  await nextTick()
+  scrollToBillingsListStart()
+
+  shouldScrollBillingsListOnMobile.value = false
+})
+
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
   if (!el) return;
@@ -952,7 +1032,9 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VMenu v-model="isExportTypeMenuVisible">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -974,6 +1056,17 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <ExportDateMenu
             v-model="date"
@@ -1169,6 +1262,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </VCardText>
+
+      <div ref="billingsListStartEl" />
 
       <VTable
         v-if="!$vuetify.display.mdAndDown"
@@ -1395,7 +1490,7 @@ onBeforeUnmount(() => {
                     @click="updateBilling(billing)"
                   >
                     <template #prepend>
-                      <VIcon icon="custom-return" size="24" class="mr-2" />
+                      <VIcon icon="custom-unpaid" size="24" class="mr-2" />
                     </template>
                     <VListItemTitle>Markera som obetald</VListItemTitle>
                   </VListItem>
@@ -1915,7 +2010,7 @@ onBeforeUnmount(() => {
             @click="updateBilling(selectedBillingForAction); isMobileActionDialogVisible = false;"
           >
             <template #prepend>
-              <VIcon icon="custom-return" size="24" class="mr-2" />
+              <VIcon icon="custom-unpaid" size="24" class="mr-2" />
             </template>
             <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
@@ -1984,6 +2079,25 @@ onBeforeUnmount(() => {
               <VIcon icon="custom-cancel-contract" size="24" />
             </template>
             <VListItemTitle>Kreditera</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="openExportDateMenu('pdf')">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="openExportDateMenu('excel')">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

@@ -29,6 +29,7 @@ const inteSkapatsDialog = ref(false);
 const isMobileActionDialogVisible = ref(false);
 const isConfirmStateDialogVisible = ref(false);
 const isConfirmSendMailReminder = ref(false);
+const isConfirmKreditera = ref(false);
 
 const advisor = ref({
   type: "",
@@ -129,10 +130,41 @@ const sendMails = async () => {
 };
 
 const credit = () => {
-  router.push({
-    name: "dashboard-admin-billings-credit-id",
-    params: { id: invoice.value.id },
-  });
+  isConfirmKreditera.value = true;
+};
+
+const kreditera = () => {
+  isRequestOngoing.value = true;
+  isConfirmKreditera.value = false;
+
+  billingsStores.credit(Number(invoice.value.id))
+    .then((res) => {
+      let data = {
+        message: 'Framgångsrik kredit',
+        error: false,
+      };
+
+      isRequestOngoing.value = false;
+
+      router.push({
+        name: 'dashboard-admin-billings-id',
+        params: { id: res.data.data.billing.id },
+      });
+      emitter.emit('toast', data);
+    })
+    .catch((err) => {
+      advisor.value.show = true;
+      advisor.value.type = 'error';
+      advisor.value.message = Object.values(err.message).flat().join('<br>');
+
+      setTimeout(() => {
+        advisor.value.show = false;
+        advisor.value.type = '';
+        advisor.value.message = '';
+      }, 3000);
+
+      isRequestOngoing.value = false;
+    });
 };
 
 const send = () => {
@@ -447,7 +479,7 @@ onBeforeUnmount(() => {
               @click="updateBilling"
             >
               <template #prepend>
-                <VIcon icon="custom-return" size="24" />
+                <VIcon icon="custom-unpaid" size="24" />
               </template>
               Markera som obetald
             </VBtn>
@@ -507,7 +539,7 @@ onBeforeUnmount(() => {
             <VBtn
               v-if="$can('edit', 'billings') && invoice.state_id !== 9 && invoice.client.deleted_at === null && invoice.is_credit === 0"
               class="btn-light w-100"
-              @click="credit"
+              @click="credit(invoice)"
             >
               <template #prepend>
                 <VIcon icon="custom-cancel-contract" size="24" />
@@ -541,7 +573,7 @@ onBeforeUnmount(() => {
             @click="updateBilling(); isMobileActionDialogVisible = false"
           >
             <template #prepend>
-              <VIcon icon="custom-return" size="24" />
+              <VIcon icon="custom-unpaid" size="24" />
             </template>
             <VListItemTitle>Markera som obetald</VListItemTitle>
           </VListItem>
@@ -583,7 +615,7 @@ onBeforeUnmount(() => {
           </VListItem>
           <VListItem
             v-if="$can('edit', 'billings') && invoice.client.deleted_at === null && invoice.state_id !== 9 && invoice.is_credit === 0"
-            @click="credit(); isMobileActionDialogVisible = false"
+            @click="credit(invoice); isMobileActionDialogVisible = false"
           >
             <template #prepend>
               <VIcon icon="custom-cancel-contract" size="24" />
@@ -798,6 +830,45 @@ onBeforeUnmount(() => {
             Avbryt
           </VBtn>
           <VBtn class="btn-gradient" @click="reminder"> Skicka </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Confirm kreditera -->
+    <VDialog 
+      v-model="isConfirmKreditera" 
+      persistent
+      class="action-dialog"
+    >
+      <!-- Dialog close btn -->
+      <VBtn
+        icon
+        class="btn-white close-btn"
+        @click="isConfirmKreditera = !isConfirmKreditera"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <!-- Dialog Content -->
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <VIcon size="32" icon="custom-cancel-contract" class="action-icon" />
+          <div class="dialog-title">
+            Kreditera faktura
+          </div>
+        </VCardText>
+        <VCardText class="dialog-text">
+          En hel kreditering innebär att du tar bort din fordran på kunden till fullo. 
+          Är du säker på att du vill kreditera fakturan
+          <strong>#{{ invoice.invoice_id }}</strong
+          >?
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light" @click="isConfirmKreditera = false">
+            Avbryt
+          </VBtn>
+          <VBtn class="btn-gradient" @click="kreditera"> Kreditera </VBtn>
         </VCardText>
       </VCard>
     </VDialog>

@@ -7,9 +7,18 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const authStores = useAuthStores();
 const router = useRouter();
+const route = useRoute();
 const ability = useAppAbility();
 const userData_ = ref(null)
 const role = ref(null)
+
+const { width: windowWidth } = useWindowSize();
+const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'));
+const profileButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? 'box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;'
+    : undefined
+));
 
 watchEffect(fetchData)
 
@@ -17,6 +26,13 @@ async function fetchData(cleanFilters = false) {
   userData_.value = JSON.parse(localStorage.getItem('user_data') || 'null')
   role.value = userData_.value.roles[0].name
 }
+
+
+const hasMyTeamAccess = computed(() => {
+  if (role.value === 'Supplier') return true
+
+  return role.value === 'User' && ability.can('view', 'my-team')
+})
 
 const userData = field =>{
   let values = JSON.parse(localStorage.getItem('user_data') || 'null')
@@ -37,10 +53,10 @@ const userData = field =>{
   }
 
   if (values && field === "avatar_id") {
-    return values.user_detail.avatar_id;
+    return values.user_detail?.avatar_id ?? null;
   }
 
-  return false;
+  return null;
 };
 
 const truncateText = (text, length = 28) => {
@@ -51,30 +67,30 @@ const truncateText = (text, length = 28) => {
 };
 
 const logout = async () => {
-  await nextTick(() => {
-    router.replace("/login");
-  });
+  const token = localStorage.getItem("accessToken");
 
-  authStores.logout().then((response) => {
-    // Remove "user_data" from localStorage
-    localStorage.removeItem("user_data");
+  // Clear auth data BEFORE calling the API to prevent 401s on in-flight requests
+  localStorage.removeItem("user_data");
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("userAbilities");
+  ability.update(initialAbility);
 
-    // Remove "accessToken" from localStorage
-    localStorage.removeItem("accessToken");
+  // Navigate to login immediately
+  router.replace("/login");
 
-    // Remove "userAbilities" from localStorage
-    localStorage.removeItem("userAbilities");
-
-    // Reset ability to initial ability
-    ability.update(initialAbility);
-    router.push("/login");
-  });
+  // Then notify the server (best-effort, token already cleared)
+  try {
+    await authStores.logout(token);
+  } catch (e) {
+    // Ignore errors since we already cleaned up locally
+  }
 };
 </script>
 
 <template>
   <VBtn
     class="btn-icon-profile"
+    :style="profileButtonStyle"
   >
     <VAvatar
       class="cursor-pointer"
@@ -174,7 +190,7 @@ const logout = async () => {
           </VListItem>
 
           <!--  👉 Profile -->
-          <VListItem :to="{ name: 'dashboard-profile' }">
+          <VListItem :to="{ name: 'dashboard-profile' }" class="d-none">
             <template #prepend>
               <VIcon
                 class="me-2"
@@ -184,6 +200,38 @@ const logout = async () => {
             </template>
 
             <VListItemTitle>Profil</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 My team -->
+          <VListItem 
+            :to="{ name: 'dashboard-my-team' }"
+            v-if="hasMyTeamAccess"
+            >
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="custom-users"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Mitt team</VListItemTitle>
+          </VListItem>
+
+          <!--  👉 Settings -->
+          <VListItem 
+            :class="windowWidth < 1024 ? 'd-flex' : 'd-none'"
+            :to="{ name: 'dashboard-settings' }"
+            >
+            <template #prepend>
+              <VIcon
+                class="me-2"
+                icon="custom-settings"
+                size="22"
+              />
+            </template>
+
+            <VListItemTitle>Inställningar</VListItemTitle>
           </VListItem>
 
           <!-- 👉 Logout -->

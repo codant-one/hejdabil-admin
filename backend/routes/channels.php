@@ -20,4 +20,4 @@ Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
 // Private notification channel per user
 Broadcast::channel('notifications.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
-});
+}, ['guards' => ['api']]);

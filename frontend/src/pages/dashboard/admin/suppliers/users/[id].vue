@@ -5,6 +5,7 @@ import { onBeforeRouteLeave } from 'vue-router';
 import { requiredValidator, emailValidator, phoneValidator } from '@/@core/utils/validators'
 import { useSuppliersStores } from '@/stores/useSuppliers'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -306,7 +307,7 @@ const goToProfile = () => {
         error: false
     }
 
-    router.push({ name : 'dashboard-profile', query: { tab: 'mitt-team' } })
+    router.push({ name : 'dashboard-my-team'})
     emitter.emit('toast', data)  
 
 };
@@ -352,7 +353,7 @@ const goToProfile = () => {
                             :class="windowWidth < 1024 ? 'd-flex' : 'd-none'" 
                             class="btn-light"
                             style="width: 120px;"
-                            :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }"
+                            :to="{ name: 'dashboard-my-team' }"
                         >
                             <VIcon icon="custom-return" size="24" />
                             Gå ut
@@ -372,7 +373,7 @@ const goToProfile = () => {
                             <VBtn
                                 class="btn-light w-auto" 
                                 block
-                                :to="{ name: 'dashboard-profile', query: { tab: 'mitt-team' } }">
+                                :to="{ name: 'dashboard-my-team' }">
                                 <VIcon icon="custom-return" size="24" />
                                 Avbryt
                             </VBtn>
@@ -382,7 +383,8 @@ const goToProfile = () => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     v-model="currentTab" 
                     grow             
                     :show-arrows="false"
@@ -396,7 +398,7 @@ const goToProfile = () => {
                         <VIcon size="24" icon="custom-settings-light" />
                         Behörigheter
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
                       
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">
@@ -811,6 +813,55 @@ const goToProfile = () => {
                                                     v-model="assignedPermissions"
                                                     label="delete notes"
                                                     value="delete notes"
+                                                    :readonly="readonly"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div class="permissions-card p-2" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'"
+                                            v-if="
+                                                $can('view','my-team') ||
+                                                $can('create','my-team') ||
+                                                $can('edit','my-team') ||
+                                                $can('delete','my-team') ||
+                                                $can('view','team-reports')
+                                            "
+                                        >
+                                            <VLabel class="mb-4 text-body-3 text-high-emphasis" text="Mitt team" />
+                                            <div class="ml-2 permissions-grid">
+                                                <VCheckbox
+                                                    v-if="$can('view','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="view my-team"
+                                                    value="view my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('create','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="create my-team"
+                                                    value="create my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('edit','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="edit my-team"
+                                                    value="edit my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('delete','my-team')"
+                                                    v-model="assignedPermissions"
+                                                    label="delete my-team"
+                                                    value="delete my-team"
+                                                    :readonly="readonly"
+                                                />
+                                                <VCheckbox
+                                                    v-if="$can('view','team-reports')"
+                                                    v-model="assignedPermissions"
+                                                    label="view team-reports"
+                                                    value="view team-reports"
                                                     :readonly="readonly"
                                                 />
                                             </div>
@@ -1243,6 +1294,9 @@ const goToProfile = () => {
 
 <route lang="yaml">
     meta:
-      action: create
-      subject: users
+      permissionsAny:
+        - action: edit
+          subject: users
+        - action: edit
+          subject: my-team
 </route>

@@ -2,7 +2,6 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Broadcast;
 
 use App\Http\Controllers\Testing\TestingController;
 
@@ -40,6 +39,7 @@ use App\Http\Controllers\{
     PayoutController,
     NotificationController,
     CountryController,
+    ReminderController
 };
 
 use App\Http\Controllers\Services\{
@@ -82,9 +82,6 @@ Route::group([
     });
 });
 
-// Broadcasting Authentication (para canales privados de WebSocket)
-Broadcast::routes(['middleware' => ['cors', 'jwt']]);
-
 //Private Endpoints
 Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
      
@@ -112,9 +109,20 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::apiResource('payouts', PayoutController::class);
     Route::apiResource('countries', CountryController::class);
     Route::apiResource('notifications', NotificationController::class);
+    Route::apiResource('reminders', ReminderController::class);
 
     /* DASHBOARD */
-    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::group(['prefix' => 'dashboard'], function () {
+        Route::get('/statisticians', [DashboardController::class, 'statisticians'])->name('dashboard.statisticians');
+        Route::get('/indicators', [DashboardController::class, 'indicators'])->name('dashboard.indicators');
+        Route::get('/profit', [DashboardController::class, 'profit'])->name('dashboard.profit');
+        Route::get('/measures', [DashboardController::class, 'measures'])->name('dashboard.measures');
+        Route::get('/team', [DashboardController::class, 'team'])->name('dashboard.team');
+        Route::get('/vehicles', [DashboardController::class, 'vehicles'])->name('dashboard.vehicles');
+        Route::get('/reminders', [DashboardController::class, 'reminders'])->name('dashboard.reminders');
+        Route::get('/activities', [DashboardController::class, 'activities'])->name('dashboard.activities');
+        Route::get('/notifications', [DashboardController::class, 'notifications'])->name('dashboard.notifications');
+    });
 
     /* NOTIFICATIONS */
     Route::group(['prefix' => 'notifications'], function () {
@@ -163,6 +171,7 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::get('/deletion-info/{id}', [SupplierController::class, 'deletionInfo']);
         Route::post('/resend-invitation/{id}', [SupplierController::class, 'resendInvitation']);
         Route::get('supplier/users', [SupplierController::class, 'users']);
+        Route::get('supplier/report-users', [SupplierController::class, 'reportUsers']);
         Route::post('supplier/inactive-user', [SupplierController::class, 'inactiveRelatedUser']);
         Route::post('supplier/adduser', [SupplierController::class, 'addRelatedUser']);
         Route::get('supplier/deleteuser/{id}', [SupplierController::class, 'deleteRelatedUser']);
@@ -245,6 +254,12 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
         Route::post('/{payout}/cancel', [PayoutController::class, 'cancel'])->name('payouts.cancel');
         Route::post('/{payout}/save-receipt-image', [PayoutController::class, 'saveReceiptImage'])->name('payouts.saveReceiptImage');
         Route::post('/send', [PayoutController::class, 'send']);
+    });
+
+    //Reminders
+    Route::group(['prefix' => 'reminders'], function () {
+        Route::post('updateState/{id}', [ReminderController::class, 'updateState'])->name('reminders.updateState');
+        Route::delete('destroy/completed', [ReminderController::class, 'destroyCompleted'])->name('reminders.destroyCompleted');
     });
 
     //Configs

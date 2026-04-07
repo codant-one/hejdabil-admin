@@ -1,8 +1,16 @@
 <script setup>
 
 import { useDisplay } from 'vuetify'
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useSuppliersStores } from '@/stores/useSuppliers'
+import { useAuthStores } from '@/stores/useAuth'
+import { useConfigsStores } from '@/stores/useConfigs'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { excelParser } from '@/plugins/csv/excelParser'
+import { themeConfig } from '@themeConfig'
+import { formatNumber, formatNumberInteger, formatDateTime } from '@/@core/utils/formatters'
+import { buildPdfTopHeader } from '@/@core/utils/pdfHeaderTemplate'
+import html2pdf from 'html2pdf.js'
 import show from './show.vue' 
 import showMobile from './showMobile.vue' 
 import password from './password.vue'
@@ -13,8 +21,12 @@ import router from '@/router'
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+const sectionEl = ref(null)
 
 const usersStores = useSuppliersStores()
+const authStores = useAuthStores()
+const configsStores = useConfigsStores()
+const ability = useAppAbility()
 
 const users = ref([])
 const searchQuery = ref('')
@@ -39,6 +51,33 @@ const userOnline = ref([])
 const isRequestOngoing = ref(true)
 const hasLoaded = ref(false);
 
+const isExportTypeMenuVisible = ref(false)
+const exporteraMobile = ref(false)
+
+const userData = ref(null)
+const role = ref(null)
+const COMPANY_STORAGE_KEY = 'clients_company_snapshot'
+
+const readCachedCompany = () => {
+  try {
+    const cached = localStorage.getItem(COMPANY_STORAGE_KEY)
+    if (!cached) return {}
+
+    const parsed = JSON.parse(cached)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+const company = ref(readCachedCompany())
+
+const setCompany = (value) => {
+  const normalized = value && typeof value === 'object' ? { ...value } : {}
+  company.value = normalized
+  localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(normalized))
+}
+
 const permissionsRol = ref([])
 const readonly = ref(false)
 
@@ -46,6 +85,13 @@ const advisor = ref({
   type: '',
   message: '',
   show: false
+})
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
 })
 
 const emit = defineEmits([
@@ -87,6 +133,10 @@ const paginationData = computed(() => {
 watchEffect(() => {
   if (currentPage.value > totalPages.value)
     currentPage.value = totalPages.value
+})
+
+watch(searchQuery, () => {
+  currentPage.value = 1
 })
 
 watchEffect(fetchData)
@@ -185,10 +235,52 @@ const activateUser = async () => {
   return true
 }
 
-onMounted(()=>{
+onMounted(async () => {
   interval = setInterval(()=>{
     onlineList()
   }, 60000)
+
+  try {
+    userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+    role.value = userData.value?.roles?.[0]?.name ?? null
+
+    if (!role.value) return
+
+    const { user_data, userAbilities } = await authStores.me(userData.value)
+
+    localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+    ability.update(userAbilities)
+    localStorage.setItem('user_data', JSON.stringify(user_data))
+
+    if (role.value === 'Supplier') {
+      setCompany({
+        ...(user_data?.user_detail ?? {}),
+        email: user_data?.email ?? '',
+        name: user_data?.name ?? '',
+        last_name: user_data?.last_name ?? '',
+      })
+    } else if (role.value === 'User') {
+      setCompany({
+        ...(user_data?.supplier?.boss?.user?.user_detail ?? {}),
+        email: user_data?.supplier?.boss?.user?.email ?? '',
+        name: user_data?.supplier?.boss?.user?.name ?? '',
+        last_name: user_data?.supplier?.boss?.user?.last_name ?? '',
+      })
+    } else {
+      await configsStores.getFeature('company')
+      await configsStores.getFeature('logo')
+
+      const companyConfig = configsStores.getFeaturedConfig('company') ?? {}
+      const logoConfig = configsStores.getFeaturedConfig('logo') ?? {}
+
+      setCompany({
+        ...companyConfig,
+        logo: logoConfig.logo ?? companyConfig.logo ?? '',
+      })
+    }
+  } catch (error) {
+    console.error('Failed to load company data:', error)
+  }
 })
 
 onUnmounted(()=>{
@@ -214,36 +306,148 @@ const truncateText = (text, length = 15) => {
 };
 
 const downloadCSV = async () => {
-
+  exporteraMobile.value = false
   isRequestOngoing.value = true
 
-  let data = { limit: -1 }
+  try {
+    const data = {
+      limit: -1,
+      orderByField: 'order_id',
+      orderBy: 'desc',
+    }
 
-  await usersStores.fetchUsers(data)
+    await usersStores.fetchUsers(data)
 
-  let dataArray = []
-  
-  usersStores.getUsers.forEach(element => {
-    let data = {
+    const dataArray = usersStores.getUsers.map(element => ({
       NAMN: element.user.name,
       EFTERNAMN: (element.user.last_name ?? ''),
       E_POST: element.user.email,
-      TELEFON: element.user.user_detail.personal_phone ?? ''
-    }
-        
-    dataArray.push(data)
-  })
+      TELEFON: element.user.user_detail?.personal_phone ?? ''
+    }))
 
-  excelParser()
-    .exportDataFromJSON(dataArray, "users", "csv")
-
-  isRequestOngoing.value = false
+    excelParser().exportDataFromJSON(dataArray, "users", "csv")
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
+
+const downloadPDF = async () => {
+  exporteraMobile.value = false
+  isRequestOngoing.value = true
+  const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
+
+  const escapeHtml = value => String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+  let pdfContainer = null
+
+  try {
+    const data = {
+      limit: -1,
+      orderByField: 'order_id',
+      orderBy: 'desc',
+    }
+
+    await usersStores.fetchUsers(data)
+
+    if (document.fonts?.load) {
+      await Promise.all([
+        document.fonts.load(`400 12px ${pdfFontFamily}`),
+        document.fonts.load(`600 32px ${pdfFontFamily}`),
+      ])
+    }
+
+    const columnWidth = '25%'
+
+    const rows = usersStores.getUsers.map(element => ({
+      name: element.user.name ?? '',
+      lastName: element.user.last_name ?? '',
+      email: element.user.email ?? '',
+      phone: element.user.user_detail?.personal_phone ?? '',
+    }))
+
+    const { headerMarkup } = await buildPdfTopHeader({
+      company: company.value,
+      title: 'Medarbetare',
+      themeConfig,
+      escapeHtml,
+      showCompanyDetailsWhenLogo: true,
+    })
+
+    const rowsMarkup = rows.map(item => `
+      <tr style="height: 48px;">
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.name)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.lastName)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.email)}</td>
+        <td style="width: ${columnWidth}; padding: 0 8px; border-bottom: 1px solid #E7E7E7; text-align: center; vertical-align: middle;">${escapeHtml(item.phone)}</td>
+      </tr>
+    `).join('')
+
+    pdfContainer = document.createElement('div')
+    pdfContainer.innerHTML = `
+      <div style="font-family: ${pdfFontFamily} !important; color: #454545; background-color: #FFFFFF; letter-spacing: 0; width: 100%;">
+        <table style="width: 100%; border-spacing: 0; border-collapse: separate; font-size: 11px; font-weight: 400;">
+          <tbody>
+            <tr>
+              <td>
+                ${headerMarkup}
+            
+                <table style="width: 100%; table-layout: fixed; border-spacing: 0; border-collapse: separate; margin-top: 10px; font-family: ${pdfFontFamily} !important; font-size: 11px;">
+                  <thead>
+                    <tr style="height: 48px;">
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-left-radius: 32px; border-bottom-left-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Namn</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Efternamn</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">E-post</td>
+                      <td style="text-align: center; width: ${columnWidth}; padding: 0 8px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; background-color: #F6F6F6; font-weight: 400; vertical-align: middle;">Telefon</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  ${rowsMarkup}
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `
+
+    document.body.appendChild(pdfContainer)
+
+    await html2pdf()
+      .set({
+        margin: [12, 10, 12, 10],
+        filename: 'users.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#FFFFFF' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] },
+      })
+      .from(pdfContainer)
+      .save()
+  } finally {
+    if (pdfContainer?.parentNode)
+      pdfContainer.parentNode.removeChild(pdfContainer)
+
+    isRequestOngoing.value = false
+  }
+}
+
+defineExpose({
+  resetFilters() {
+    searchQuery.value = ''
+    currentPage.value = 1
+  }
+})
 
 </script>
 
 <template>
-  <section>
+  <section class="page-section p-0" ref="sectionEl">
     <LoadingOverlay :is-loading="isRequestOngoing" />
 
     <VSnackbar
@@ -256,17 +460,17 @@ const downloadCSV = async () => {
       {{ advisor.message }}
     </VSnackbar> 
 
-    <VCard v-if="users" class="card-fill" id="rol-list" >
+    <VCard v-if="users" id="rol-list" >
       <VCardText class="px-0" :class="windowWidth < 1024 ? 'pb-0' : 'd-none'">
         <div class="title-tabs-profile">
           Mitt team
         </div>
       </VCardText>
       <VCardTitle
-        class="d-flex gap-6 justify-space-between"
+        class="d-flex gap-6 justify-space-between px-0"
         :class="[
           windowWidth < 1024 ? 'flex-column' : 'flex-row',
-          $vuetify.display.mdAndDown ? 'py-6 pa-0' : 'pa-4'
+          $vuetify.display.mdAndDown ? 'py-6 pa-0' : 'py-4'
         ]"
       >
         <div class="d-flex align-center flex-wrap gap-4 w-100 w-md-auto mobile-search-block"> 
@@ -281,16 +485,43 @@ const downloadCSV = async () => {
           </div>
         </div>
         <div class="d-flex mobile-actions-block" :class="windowWidth < 1024 ? 'gap-2' : 'gap-4'">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
+            <template #activator="{ props }">
+              <VBtn
+                id="users-export-button"
+                class="btn-light w-auto"
+                block
+                v-bind="props"
+              >
+                <VIcon icon="custom-export" size="24" />
+                Exportera
+              </VBtn>
+            </template>
+
+            <VList>
+              <VListItem @click="isExportTypeMenuVisible = false; downloadPDF()">
+                <VListItemTitle>Exportera PDF</VListItemTitle>
+              </VListItem>
+              <VListItem @click="isExportTypeMenuVisible = false; downloadCSV()">
+                <VListItemTitle>Exportera Excel</VListItemTitle>
+              </VListItem>
+            </VList>
+          </VMenu>
+
           <VBtn
+            v-if="windowWidth < 1024"
             class="btn-light w-auto"
             block
-            @click="downloadCSV">
+            @click="exporteraMobile = true"
+          >
             <VIcon icon="custom-export" size="24" />
             Exportera
           </VBtn>
 
           <VBtn
-            v-if="$can('create', 'users')"
+            v-if="$can('create', 'users') || $can('create', 'my-team')"
             class="btn-gradient"
             block
             @click="createUser">
@@ -304,7 +535,7 @@ const downloadCSV = async () => {
       <VTable 
         v-if="!$vuetify.display.mdAndDown"
         v-show="users.length"
-        class="pt-2 px-4 pb-6 text-no-wrap rol-list-table"
+        class="pt-2 px-0 pb-6 text-no-wrap rol-list-table"
         style="border-radius: 0 !important"
       >
         <!-- 👉 Table head -->
@@ -315,7 +546,10 @@ const downloadCSV = async () => {
             <th class="text-center" scope="col"> E-post </th>
             <th class="text-center" scope="col"> Telefon </th>
             <th scope="col" class="text-center">Adress</th>
-            <th scope="col" v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users')"> </th>
+            <th scope="col" 
+              v-if="$can('view', 'users') || $can('edit', 'users') || $can('delete','users') ||
+                    $can('view', 'my-team') || $can('edit', 'my-team') || $can('delete','my-team')"> 
+            </th>
           </tr>
         </thead>
 
@@ -382,7 +616,7 @@ const downloadCSV = async () => {
                 </template>
                 <VList>
                   <VListItem
-                      v-if="$can('view', 'users')"
+                      v-if="$can('view', 'users') || $can('view', 'my-team')"
                       @click="showUserDetailDialog(user.user, false)">
                     <template #prepend>
                        <VIcon icon="custom-eye" size="24" />
@@ -390,7 +624,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Visa</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      v-if="($can('edit', 'users') || $can('edit', 'my-team')) && user.deleted_at === null"
                       @click="showUserPasswordDialog(user.user)">
                     <template #prepend>
                       <VIcon icon="custom-password-outlined" size="24" />
@@ -398,7 +632,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Ändra lösenord</VListItemTitle>
                   </VListItem>
                   <VListItem
-                      v-if="$can('edit', 'users') && user.deleted_at === null"
+                      v-if="($can('edit', 'users') || $can('edit', 'my-team')) && user.deleted_at === null"
                       @click="showUserEditDialog(user)">
                     <template #prepend>
                       <VIcon icon="custom-pencil" size="24" />
@@ -406,7 +640,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Redigera</VListItemTitle>
                   </VListItem>
                   <VListItem 
-                    v-if="$can('delete','users') && user.deleted_at === null"
+                    v-if="($can('delete','users') || $can('delete','my-team')) && user.deleted_at === null"
                     @click="showUserDeleteDialog(user.user)">
                     <template #prepend>
                       <VIcon icon="custom-waste" size="24" />
@@ -414,7 +648,7 @@ const downloadCSV = async () => {
                     <VListItemTitle>Ta bort</VListItemTitle>
                   </VListItem>
                   <VListItem
-                    v-if="$can('delete','users') && user.deleted_at !== null"
+                    v-if="($can('delete','users') || $can('delete','my-team')) && user.deleted_at !== null"
                     @click="showActivateDialog(user)">
                     <template #prepend>
                       <VIcon icon="tabler-rosette-discount-check" />
@@ -477,7 +711,7 @@ const downloadCSV = async () => {
         </div>
         <VBtn
           class="btn-ghost"
-          v-if="$can('create', 'users') && !$vuetify.display.mdAndDown"
+          v-if="($can('create', 'users') || $can('create', 'my-team')) && !$vuetify.display.mdAndDown"
           @click="createUser"
         >
           Lägg till medarbetare
@@ -486,7 +720,7 @@ const downloadCSV = async () => {
 
         <VBtn
           class="btn-ghost"
-          v-if="$vuetify.display.mdAndDown && $can('create', 'users')"
+          v-if="$vuetify.display.mdAndDown && ($can('create', 'users') || $can('create', 'my-team'))"
           @click="createUser"
         >
           Lägg till ny användare
@@ -499,7 +733,7 @@ const downloadCSV = async () => {
       <VCardText
         v-if="users.length"
         :class="windowWidth < 1024 ? 'd-block' : 'd-flex'"
-        class="align-center flex-wrap gap-4 pt-0 px-6"
+        class="align-center flex-wrap gap-4 p-0"
       >
         <span class="text-pagination-results">
           {{ paginationData }}
@@ -586,7 +820,7 @@ const downloadCSV = async () => {
       <VCard>
         <VList>
           <VListItem
-              v-if="$can('view', 'users')"
+              v-if="$can('view', 'users') || $can('view', 'my-team')"
               @click="showUserDetailDialog(selectedUserForAction.user, true); isMobileActionDialogVisible = false;">
             <template #prepend>
                <VIcon icon="custom-eye" size="24" />
@@ -594,7 +828,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Visa</VListItemTitle>
           </VListItem>
           <VListItem
-              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              v-if="($can('edit', 'users') || $can('edit', 'my-team')) && selectedUserForAction.deleted_at === null"
               @click="showUserPasswordDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-password-outlined" size="24" />
@@ -602,7 +836,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Ändra lösenord</VListItemTitle>
           </VListItem>
           <VListItem
-              v-if="$can('edit', 'users') && selectedUserForAction.deleted_at === null"
+              v-if="($can('edit', 'users') || $can('edit', 'my-team')) && selectedUserForAction.deleted_at === null"
               @click="showUserEditDialog(selectedUserForAction)">
             <template #prepend>
               <VIcon icon="custom-pencil" size="24" />
@@ -610,7 +844,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Redigera</VListItemTitle>
           </VListItem>
           <VListItem 
-            v-if="$can('delete','users') && selectedUserForAction.deleted_at === null"
+            v-if="($can('delete','users') || $can('delete','my-team')) && selectedUserForAction.deleted_at === null"
             @click="showUserDeleteDialog(selectedUserForAction.user); isMobileActionDialogVisible = false;">
             <template #prepend>
               <VIcon icon="custom-waste" size="24" />
@@ -618,7 +852,7 @@ const downloadCSV = async () => {
             <VListItemTitle>Ta bort</VListItemTitle>
           </VListItem>
           <VListItem
-            v-if="$can('delete','users') && selectedUserForAction.deleted_at !== null"
+            v-if="($can('delete','users') || $can('delete','my-team')) && selectedUserForAction.deleted_at !== null"
             @click="showActivateDialog(selectedUserForAction.user)">
             <template #prepend>
               <VIcon icon="tabler-rosette-discount-check" />
@@ -628,10 +862,37 @@ const downloadCSV = async () => {
         </VList>
       </VCard>
     </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="exporteraMobile = false; downloadPDF()">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="exporteraMobile = false; downloadCSV()">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
 <style lang="scss">
+
+  .title-tabs-profile {
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 100%;
+    color: #454545;
+  }
+
   .v-dialog {
     z-index: 1999 !important;
   }
@@ -767,6 +1028,9 @@ const downloadCSV = async () => {
 
 <route lang="yaml">
   meta:
-    action: view
-    subject: users
+    permissionsAny:
+      - action: view
+        subject: users
+      - action: view
+        subject: my-team
 </route>

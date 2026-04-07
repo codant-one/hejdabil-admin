@@ -12,6 +12,7 @@ import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import { formatNumber, formatDateSwedish } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import router from '@/router'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 
@@ -1324,7 +1325,8 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
              
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     :model-value="currentTab"
                     @update:modelValue="onTabChange"
                     grow             
@@ -1347,7 +1349,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VIcon size="24" icon="custom-cash" />
                         Villkor
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
 
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">
@@ -2212,7 +2214,7 @@ onBeforeRouteLeave((to, from, next) => {
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
-                    <VIcon size="90" icon="custom-steering-wheel" />
+                    <VIcon size="90" icon="custom-vehicle-exist" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
                     <div class="dialog-title">Kunde inte skapa avtalet</div>

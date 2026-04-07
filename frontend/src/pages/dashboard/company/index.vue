@@ -10,6 +10,7 @@ import banner from '@images/logos/banner2.jpg'
 import SignaturePad from 'signature_pad';
 import router from '@/router'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import 'vue-advanced-cropper/dist/style.css'
 
@@ -18,6 +19,18 @@ const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => (mdAndDown.value ? "" : "top end"));
 const sectionEl = ref(null);
+
+const scrollToSectionTop = async () => {
+    if (!mdAndDown.value || !sectionEl.value)
+        return
+
+    await nextTick()
+    scrollElementIntoScrollableParent({
+        element: sectionEl.value,
+        offset: 16,
+        behavior: 'smooth',
+    })
+}
 
 const avatar = ref('')
 const avatarOld = ref('')
@@ -215,7 +228,7 @@ const cropSignatureImage = async () => {
         // Llamamos a la acción 'postSignature' en el store de CONFIGS
         configsStores.postSignature(data)
             .then(async response => {    
-                window.scrollTo(0, 0)
+                await scrollToSectionTop()
                 
                 // Actualizamos la imagen visible en la página con la nueva firma
                 let r = await blobToBase64(blob)
@@ -297,7 +310,7 @@ const saveSignatureFromPad = async () => {
     // Llamamos a la misma acción 'postSignature' en el store de CONFIGS
     configsStores.postSignature(data)
       .then(async response => {    
-        window.scrollTo(0, 0);
+        await scrollToSectionTop();
         
         // Actualizamos la imagen visible con el dibujo
         signature.value = signatureDataUrl;
@@ -463,7 +476,7 @@ const cropImage = async () => {
         configsStores.postLogo(data)
             .then(async response => {    
 
-                window.scrollTo(0, 0)
+                await scrollToSectionTop()
                 
                 isRequestOngoing.value = false 
 
@@ -525,9 +538,9 @@ const onSubmit = () => {
             }
 
             configsStores.postFeature(data)
-                .then(response => {    
+                .then(async response => {    
 
-                    window.scrollTo(0, 0)
+                    await scrollToSectionTop()
                     
                     isRequestOngoing.value = false
 

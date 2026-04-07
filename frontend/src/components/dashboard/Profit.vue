@@ -1,280 +1,230 @@
 <script setup>
+import { formatNumber } from '@/@core/utils/formatters'
+
+const props = defineProps({
+  profit: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
 const { width: windowWidth } = useWindowSize();
 
-const series = [{
-  name: '2020',
-  data: [
-    60,
-    50,
-    20,
-    45,
-    50,
-    30,
-    70,
-  ],
-}]
+const profitData = computed(() => props.profit?.profit ?? props.profit ?? {})
 
-const chartOptions = computed(() => {
-  return {
-    chart: {
-      height: 90,
-      parentHeightOffset: 0,
-      type: 'bar',
-      toolbar: { show: false },
-    },
-    tooltip: { enabled: false },
-    plotOptions: {
-      bar: {
-        barHeight: '100%',
-        columnWidth: '30%',
-        startingShape: 'rounded',
-        endingShape: 'rounded',
-        borderRadius: 4,
-        colors: {
-          backgroundBarColors: [
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-            'rgba(var(--v-track-bg))',
-          ],
-          backgroundBarRadius: 4,
-        },
-      },
-    },
-    colors: ['rgba(var(--v-theme-primary),1)'],
-    grid: {
-      show: false,
-      padding: {
-        top: -30,
-        left: -16,
-        bottom: 0,
-        right: -6,
-      },
-    },
-    dataLabels: { enabled: false },
-    legend: { show: false },
-    xaxis: {
-      categories: [
-        'M',
-        'T',
-        'W',
-        'T',
-        'F',
-        'S',
-        'S',
-      ],
-      axisBorder: { show: false },
-      axisTicks: { show: false },
-      labels: { show: false },
-    },
-    yaxis: { labels: { show: false } },
-    responsive: [
-      {
-        breakpoint: 1441,
-        options: {
-          plotOptions: {
-            bar: {
-              columnWidth: '30%',
-              borderRadius: 4,
-            },
-          },
-        },
-      },
-      {
-        breakpoint: 1368,
-        options: { plotOptions: { bar: { columnWidth: '48%' } } },
-      },
-      {
-        breakpoint: 1264,
-        options: {
-          plotOptions: {
-            bar: {
-              borderRadius: 6,
-              columnWidth: '30%',
-              colors: { backgroundBarRadius: 6 },
-            },
-          },
-        },
-      },
-      {
-        breakpoint: 960,
-        options: {
-          plotOptions: {
-            bar: {
-              columnWidth: '15%',
-              borderRadius: 4,
-            },
-          },
-        },
-      },
-      {
-        breakpoint: 883,
-        options: { plotOptions: { bar: { columnWidth: '20%' } } },
-      },
-      {
-        breakpoint: 768,
-        options: { plotOptions: { bar: { columnWidth: '25%' } } },
-      },
-      {
-        breakpoint: 600,
-        options: {
-          plotOptions: {
-            bar: {
-              columnWidth: '15%',
-              borderRadius: 4,
-            },
-            colors: { backgroundBarRadius: 9 },
-          },
-        },
-      },
-      {
-        breakpoint: 479,
-        options: {
-          plotOptions: {
-            bar: { borderRadius: 4 },
-            colors: { backgroundBarRadius: 9 },
-          },
-          grid: {
-            padding: {
-              right: -15,
-              left: -15,
-            },
-          },
-        },
-      },
-      {
-        breakpoint: 400,
-        options: { plotOptions: { bar: { borderRadius: 3 } } },
-      },
-    ],
-  }
+const hasProfitLoaded = computed(() => {
+  const source = props.profit?.profit ?? props.profit
+
+  return !!source && typeof source === 'object' && Object.keys(source).length > 0
 })
 
-import { useTheme } from 'vuetify'
+const isProfitEmptyState = computed(() => !hasProfitLoaded.value || (profitData.value?.vehicles ?? 0) === 0)
 
-const vuetifyTheme = useTheme()
-const currentTheme = vuetifyTheme.current.value.colors
+const formatAmount = value => formatNumber(value ?? 0)
 
-const series2 = [{
-  name: 'Subscribers',
-  data: [
-    200,
-    55,
-    400,
-    250,
-  ],
-}]
+const getAbbreviatedAmount = field => profitData.value?.[`${field}Abbreviated`] ?? formatAmount(profitData.value?.[field] ?? 0)
 
-const chartOptions2 = {
-  chart: {
-    type: 'area',
-    parentHeightOffset: 0,
-    toolbar: { show: false },
-    sparkline: { enabled: true },
-  },
-  markers: {
-    colors: 'transparent',
-    strokeColors: 'transparent',
-  },
-  grid: { show: false },
-  colors: [currentTheme.success],
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 0.9,
-      opacityFrom: 0.5,
-      opacityTo: 0.07,
-      stops: [
-        0,
-        80,
-        100,
-      ],
-    },
-  },
-  dataLabels: { enabled: false },
-  stroke: {
-    width: 2,
-    curve: 'smooth',
-  },
-  xaxis: {
-    show: true,
-    lines: { show: false },
-    labels: { show: false },
-    stroke: { width: 0 },
-    axisBorder: { show: false },
-  },
-  yaxis: {
-    stroke: { width: 0 },
-    show: false,
-  },
-  tooltip: { enabled: false },
+const getDisplayAmount = field => hasProfitLoaded.value ? getAbbreviatedAmount(field) : '--'
+
+const formatVariation = value => {
+  const numericValue = Number(value ?? 0)
+  const roundedValue = Math.round(numericValue)
+  const prefix = roundedValue > 0 ? '+' : ''
+
+  return `${prefix}${roundedValue}% denna månad`
 }
+
+const getDisplayVariation = value => hasProfitLoaded.value ? formatVariation(value) : '-- denna månad'
+
 </script>
 
 <template>
-   <div class="d-flex gap-4 justify-between" :class="windowWidth < 1024 ? '' : 'flex-column'">
-
-      <VCard title="" class="card-dashboard">
-         <VCardItem class="pb-3">
-            <VCardTitle>Total vinst</VCardTitle>
-            <VCardSubtitle>Last Week</VCardSubtitle>
-         </VCardItem>
-
-         <VCardText>
-            <VueApexCharts
-            :options="chartOptions"
-            :series="series"
-            :height="70"
+  <div class="profit-cards">
+    <VCard title="" 
+      class="card-dashboard profit-card" 
+      :class="isProfitEmptyState ? 'bg-neutral-2' : 'bg-aqua-1'"
+    >
+      <VCardText class="px-4 pt-4 pb-0">
+          <VAvatar
+            rounded="lg"
+            size="48"
+            style="background-color: #FFFFFF !important;"
+          >
+            <VIcon
+              icon="custom-profit"
+              size="24"
+                :color="isProfitEmptyState ? '#878787' : '#04585D'" 
             />
+          </VAvatar>          
+      </VCardText>
 
-            <div class="d-flex align-center justify-space-between gap-x-2 mt-3">
-            <h4 class="text-h4 text-center">
-               124k
-            </h4>
-            <div class="text-sm text-success">
-               +12.6%
-            </div>
-            </div>
-         </VCardText>
-      </VCard>
-
-      <VCard title="" class="card-dashboard">
-      <VCardItem class="pb-3">
-      <VCardTitle>
-        Sales
+      <VCardTitle 
+          class="title-box px-4 py-0 border-none"
+          :class="windowWidth < 1024 ? 'flex-row' : ''"
+      >
+        <div class="d-flex flex-column gap-2" :class="isProfitEmptyState ? 'title-text-empty' : 'title-text'">
+            Total vinst
+            <span>Sedan start</span>
+        </div>
       </VCardTitle>
-      <VCardSubtitle>
-        Last Year
-      </VCardSubtitle>
-    </VCardItem>
 
-    <VueApexCharts
-      :options="chartOptions2"
-      :series="series2"
-      :height="76"
-    />
+      <VCardText class="profit-card__content px-4 py-0">
+        <div class="d-flex align-center">
+          <span class="text-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-aqua-5'">
+            {{ getDisplayAmount('totalProfit') }}
+          </span>
+          <span class="currency-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-aqua-5'">
+            SEK
+          </span>
+        </div>
+      </VCardText>
+      <VCardText class="px-4 pt-0 pb-4">
+        <VChip
+          label
+          size="small"
+          class="chip-profit"
+          :class="isProfitEmptyState ? 'chip-profit-empty' : ''"
+        >
+            {{ getDisplayVariation(profitData?.totalProfitMonthlyVariation) }}
+        </VChip>
+      </VCardText>
+    </VCard>
 
-    <VCardText class="pt-1">
-      <div class="d-flex align-center justify-space-between gap-x-2">
-        <h4 class="text-h4 text-center">
-          175k
-        </h4>
-        <span class="text-sm text-error">
-          -16.2%
-        </span>
-      </div>
-    </VCardText>
+    <VCard 
+      title="" 
+      class="card-dashboard profit-card"
+      :class="isProfitEmptyState ? 'bg-neutral-2' : 'bg-green-1'">
+
+      <VCardText class="px-4 pt-4 pb-0">
+        <VAvatar
+          rounded="lg"
+          size="48"
+          style="background-color: #FFFFFF !important;"
+        >
+          <VIcon
+            icon="custom-car-open"
+            size="24"
+            :color="isProfitEmptyState ? '#878787' : '#0C5B27'"
+          />
+        </VAvatar>          
+      </VCardText>
+
+      <VCardTitle 
+        class="title-box px-4 py-0 border-none"
+        :class="windowWidth < 1024 ? 'flex-row' : ''"
+      >
+        <div class="d-flex flex-column gap-2" :class="isProfitEmptyState ? 'title-text-empty' : 'title-text'">
+            Total försäljning
+            <span>Sedan start</span>
+        </div>
+      </VCardTitle>
+
+      <VCardText class="profit-card__content px-4 py-0">
+        <div class="d-flex align-center">
+          <span class="text-number-grafic" :class="isProfitEmptyState ? 'text-neutral-3' : 'text-green-5'">
+            {{ getDisplayAmount('totalSale') }}
+          </span>
+          <span class="currency-number-grafic"  :class="isProfitEmptyState ? 'text-neutral-3' : 'text-green-5'">
+            SEK
+          </span>
+        </div>
+      </VCardText>
+      <VCardText class="px-4 pt-0 pb-4">
+        <VChip
+          label
+          size="small"
+          class="chip-profit"
+          :class="isProfitEmptyState ? 'chip-profit-empty' : ''"
+        >
+            {{ getDisplayVariation(profitData?.totalSaleMonthlyVariation) }}
+        </VChip>
+      </VCardText>
    </VCard>
    </div>
 </template>
+
+<style lang="scss">
+  .chip-profit.v-chip {
+    border-radius: 4px;
+    opacity: 1;
+    padding-top: 4px !important;
+    padding-right: 8px !important;
+    padding-bottom: 4px !important;
+    padding-left: 8px !important;
+    gap: 8px;
+    background-color: #FFFFFF !important;
+
+    font-weight: 400;
+    font-size: 10px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    vertical-align: middle;
+    color: #5D5D5D;
+  }
+
+  .chip-profit-empty.v-chip {
+    color: #878787;
+  }
+
+  .chip-profit .v-chip__underlay {
+    background-color: transparent !important;
+  }
+
+  .v-chip.v-chip--density-default {
+    height: 24px !important;
+  }
+
+  .profit-cards {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+  }
+
+  .profit-card {
+    min-width: 0;
+    gap: 16px;
+  }
+
+  .profit-card__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .profit-card__content--compact {
+    padding-top: 4px;
+  }
+
+  @media (min-width: 1024px) {
+    .profit-cards {
+      height: 100%;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .profit-card {
+      height: 210px !important;
+    }
+  }
+
+  .text-number-grafic {
+    font-weight: 600;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    vertical-align: middle;
+  }
+
+  .currency-number-grafic {
+    margin-left: 4px;
+    font-weight: 300;
+    font-size: 20px;
+    line-height: 100%;
+    letter-spacing: 0px;
+    vertical-align: middle;
+  }
+</style>

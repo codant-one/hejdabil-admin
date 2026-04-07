@@ -172,6 +172,41 @@ const closeRoleDetailDialog = function(){
                                 :readonly="readonly"
                             />
                         </div>
+                        <VLabel style="font-weight: bold;">
+                            Mitt team
+                        </VLabel>
+                        <div class="demo-space-x ml-5">
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view my-team"
+                                value="view my-team"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="create my-team"
+                                value="create my-team"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="edit my-team"
+                                value="edit my-team"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="delete my-team"
+                                value="delete my-team"
+                                :readonly="readonly"
+                            />
+                            <VCheckbox
+                                v-model="permissions"
+                                label="view team-reports"
+                                value="view team-reports"
+                                :readonly="readonly"
+                            />
+                        </div>
                     </div>
                 </VCardText>
                 <VCardTitle>

@@ -19,6 +19,7 @@ use App\Models\Billing;
 use App\Models\VehicleClient;
 use App\Models\Agreement;
 use App\Models\Client;
+use App\Models\SupplierActivity;
 
 class ClientController extends Controller
 {
@@ -105,6 +106,24 @@ class ClientController extends Controller
 
             $client->order_id = $order_id + 1;
             $client->update();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $client->id,
+                'entity_type' => 'clients',
+                'action_type' => 'create_client',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' tillagd',
+                'description' => 'En ny kund har lagts till.',
+                'icon' => 'custom-clients',
+                'route' => '/dashboard/admin/clients/'.$client->id,
+                'metadata' => json_encode([
+                    'client_id' => $client->id,
+                    'new_values' => $request->only([
+                        'client_type_id', 'country_id', 'email', 'fullname',
+                        'organization_number', 'address', 'street', 'postal_code',
+                        'phone', 'reference', 'num_iva', 'comments'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -203,7 +222,32 @@ class ClientController extends Controller
                     'message' => 'Kunden hittades inte'
                 ], 404);
 
+            $fields = [
+                'client_type_id', 'country_id', 'email', 'fullname',
+                'organization_number', 'address', 'street', 'postal_code',
+                'phone', 'reference', 'num_iva', 'comments'
+            ];
+
+            $oldValues = $client->only($fields);
+
             $client->updateClient($request, $client); 
+
+            $newValues = $request->only($fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $client->id,
+                'entity_type' => 'clients',
+                'action_type' => 'update_client',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' uppdaterad',
+                'description' => 'Kunden har uppdaterats.',
+                'icon' => 'custom-clients',
+                'route' => '/dashboard/admin/clients/'.$client->id,
+                'metadata' => json_encode([
+                    'client_id' => $client->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -265,6 +309,31 @@ class ClientController extends Controller
                 ], 400);
             
             $client->deleteClient($id);
+
+            $fields = [
+                'client_type_id', 'country_id', 'email', 'fullname',
+                'organization_number', 'address', 'street', 'postal_code',
+                'phone', 'reference', 'num_iva', 'comments'
+            ];
+
+            $oldValues = $client->only($fields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $client->id,
+                'entity_type' => 'clients',
+                'action_type' => 'delete_client',
+                'title' => 'Kund #'.$client->order_id.' '.$client->fullname.' borttagen',
+                'description' => 'Kunden har tagits bort.',
+                'icon' => 'custom-clients',
+                'metadata' => json_encode([
+                    'client_id' => $client->id,
+                    'old_values' => $oldValues
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $client->id)
+                ->where('entity_type', 'clients')
+                ->update(['route' => null]);
 
             return response()->json([
                 'success' => true,

@@ -77,19 +77,26 @@ class Supplier extends Model
     public function scopeWhereSearch($query, $search) {
         $query->where(function ($q) use ($search) {
             $q->whereHas('user', function ($uq) use ($search) {
-                $uq->where(function ($inner) use ($search) {
+                $uq->withTrashed()
+                    ->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
                          ->orWhere('last_name', 'LIKE', '%' . $search . '%')
                          ->orWhere('email', 'LIKE', '%' . $search . '%')
                          ->orWhereRaw("CONCAT(name, ' ', last_name) LIKE ?", ['%' . $search . '%']);
                 });
             })
-            ->orWhereHas('user.userDetail', function ($dq) use ($search) {
-                $dq->where('company', 'LIKE', '%' . $search . '%')
-                   ->orWhere('organization_number', 'LIKE', '%' . $search . '%');
+            ->orWhereHas('user', function ($uq) use ($search) {
+                $uq->withTrashed()
+                    ->whereHas('userDetail', function ($dq) use ($search) {
+                    $dq->where(function ($inner) use ($search) {
+                        $inner->where('company', 'LIKE', '%' . $search . '%')
+                              ->orWhere('organization_number', 'LIKE', '%' . $search . '%');
+                    });
+                });
             })
             ->orWhereHas('creator', function ($uq) use ($search) {
-                $uq->where(function ($inner) use ($search) {
+                $uq->withTrashed()
+                    ->where(function ($inner) use ($search) {
                     $inner->where('name', 'LIKE', '%' . $search . '%')
                          ->orWhere('last_name', 'LIKE', '%' . $search . '%')
                          ->orWhere('email', 'LIKE', '%' . $search . '%')

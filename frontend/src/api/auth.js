@@ -10,8 +10,14 @@ class Auth {
         return axios.post('auth/login', data)
     }
 
-    logout() {
-        return axios.post('auth/logout')
+    logout(token) {
+        return axios.post('auth/logout', {}, {
+            skipAuthHeader: true,
+            skipAuthRedirect: true,
+            headers: token ? {
+                Authorization: `Bearer ${token}`,
+            } : {},
+        })
     }
 
     validate(data) {

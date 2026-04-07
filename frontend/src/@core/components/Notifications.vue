@@ -22,6 +22,13 @@ const props = defineProps({
 const emit = defineEmits(["click:readAllNotifications", "click:notification"]);
 
 const isMenuOpen = ref(false);
+const route = useRoute();
+const isSettingsRoute = computed(() => route.path.startsWith('/dashboard/settings'));
+const notificationButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? 'box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;'
+    : undefined
+));
 
 const handleNotificationClick = (notification) => {
   emit('click:notification', notification);
@@ -33,7 +40,7 @@ const closeMenu = () => {
 </script>
 
 <template>
-  <VBtn icon variant="text" class="btn-custom-notifications">
+  <VBtn icon variant="text" class="btn-custom-notifications" :style="notificationButtonStyle">
     <VIcon icon="custom-bell" size="24" />
     <span>+{{ props.notifications.filter(n => !n.read).length }}</span>
     <VMenu

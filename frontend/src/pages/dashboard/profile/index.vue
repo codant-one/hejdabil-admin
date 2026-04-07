@@ -1,6 +1,7 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import TabSecurity from '@/views/dashboard/profile/TabSecurity.vue'
 import TabDealer from '@/views/dashboard/profile/TabDealer.vue'
 import TabMyTeam from '@/pages/dashboard/admin/suppliers/users/index.vue'
@@ -12,6 +13,7 @@ import Toaster from "@/components/common/Toaster.vue";
 const sectionEl = ref(null);
 const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
+const ability = useAppAbility()
 const route = useRoute();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
@@ -48,14 +50,20 @@ const tabs = [
   },
 ]
 
+const hasMyTeamAccess = computed(() => {
+  if (role.value === 'Supplier') return true
+
+  return role.value === 'User' && ability.can('view', 'my-team')
+})
+
 const visibleTabs = computed(() => {
-  if (role.value === 'Supplier') return tabs
+  if (hasMyTeamAccess.value) return tabs
 
   return tabs.filter(tab => tab.title !== 'Mitt team')
 })
 
-const setTabFromRoute = (tabQuery) => {
-  if (tabQuery === 'mitt-team' && role.value === 'Supplier') {
+const setTabFromRoute = (tabQuery, hash) => {
+  if ((hash === '#tab-team' || tabQuery === 'mitt-team') && hasMyTeamAccess.value) {
     userTab.value = 2
     return
   }
@@ -70,12 +78,12 @@ const setTabFromRoute = (tabQuery) => {
   }
 }
 
-watch(() => route.query.tab, tab => {
-  setTabFromRoute(tab)
+watch(() => [route.query.tab, route.hash], ([tab, hash]) => {
+  setTabFromRoute(tab, hash)
 }, { immediate: true })
 
 watch(role, () => {
-  setTabFromRoute(route.query.tab)
+  setTabFromRoute(route.query.tab, route.hash)
 })
 
 onBeforeRouteLeave((to, from, next) => {
@@ -271,7 +279,7 @@ onBeforeUnmount(() => {
               @alert="showAlert"
               @window="showWindow"/>
           </VWindowItem>
-          <VWindowItem v-if="role === 'Supplier'">
+          <VWindowItem v-if="hasMyTeamAccess">
             <TabMyTeam 
               @alert="showAlert"/>
           </VWindowItem>

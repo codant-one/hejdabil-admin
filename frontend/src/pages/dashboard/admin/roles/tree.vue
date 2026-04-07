@@ -39,7 +39,7 @@ const closeTreeDialog  = function(){
                         <strong>Administratör</strong>&emsp;/&emsp;<code>Tillgång till hela applikationen</code>
                     </li>
                     <li class="n1">
-                        <strong>Visa instrumentpanel</strong>&emsp;/&emsp;<code>Gör att du kan visa kontrollpanelen</code>
+                        <strong>Visa Översikt</strong>&emsp;/&emsp;<code>Gör att du kan visa kontrollpanelen</code>
                     </li>
                     <ul class="tab">
                         <li class="n1">
@@ -71,6 +71,23 @@ const closeTreeDialog  = function(){
                             </li>
                             <li class="tab n3">
                                 <strong>Radera användare</strong>&emsp;/&emsp;<code>Tillåter borttagning av användare</code>
+                            </li>
+                        </ul>
+                        <li class="tab n2">
+                            <strong>Mitt team</strong>&emsp;/&emsp;<code>Skrivskyddad åtkomst till mitt team-modulen</code>
+                        </li>
+                        <ul class="tab">
+                            <li class="tab n3">
+                                <strong>Skapa mitt team</strong>&emsp;/&emsp;<code>Möjliggör skapande av mitt team</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Redigera mitt team</strong>&emsp;/&emsp;<code>Tillåter redigering av mitt team</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Radera mitt team</strong>&emsp;/&emsp;<code>Tillåter borttagning av mitt team</code>
+                            </li>
+                            <li class="tab n3">
+                                <strong>Visa teamrapporter</strong>&emsp;/&emsp;<code>Tillåter visning av teamrapporter</code>
                             </li>
                         </ul>
                     </ul>

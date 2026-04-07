@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\NotificationRequest;
 use App\Events\NotificationsWebsocketEvent;
 use App\Events\UserNotificationEvent;
-use App\Models\Notification;
+use App\Http\Requests\NotificationRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -13,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\Supplier;
+use App\Models\Notification;
 
 class NotificationController extends Controller
 {

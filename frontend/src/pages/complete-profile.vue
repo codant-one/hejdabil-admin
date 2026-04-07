@@ -14,6 +14,8 @@ import { Cropper } from "vue-advanced-cropper";
 import { themeConfig } from "@themeConfig";
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
+import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import background from "@images/pages/complete-profile/complete-profile-background.jpg";
 import logo_gradient from "@images/logo.svg";
 import avatar1 from "@/assets/images/avatars/1.svg";
@@ -30,6 +32,7 @@ import { nextTick } from "vue";
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const { width: windowWidth } = useWindowSize();
+const sectionEl = ref(null)
 
 const authStores = useAuthStores();
 const profileStores = useProfileStores();
@@ -100,6 +103,18 @@ const controlledTab = computed({
     currentTab.value = nextTab;
   },
 });
+
+const scrollToSectionTop = async () => {
+  if (!mdAndDown.value || !sectionEl.value)
+    return
+
+  await nextTick()
+  scrollElementIntoScrollableParent({
+    element: sectionEl.value,
+    offset: 16,
+    behavior: 'smooth',
+  })
+}
 
 // Validate only the fields belonging to Tab 0
 const validateTab0 = async () => {
@@ -454,8 +469,8 @@ const submitCompleteProfile = async () => {
 
       profileStores
         .updateData(formData)
-        .then((response) => {
-          window.scrollTo(0, 0);
+        .then(async (response) => {
+          await scrollToSectionTop();
 
           alert.value.type = "success";
           alert.value.message = "Uppgifterna har sparats. Sidan laddas om automatiskt för att visa ändringarna.";
@@ -634,7 +649,7 @@ const cropImage = async () => {
     profileStores
       .updateLogo(formData)
       .then(async (response) => {
-        window.scrollTo(0, 0);
+        await scrollToSectionTop();
 
         isRequestOngoing.value = false;
         localStorage.setItem("user_data", JSON.stringify(response.user_data));
@@ -682,7 +697,7 @@ const cropSignatureImage = async () => {
     profileStores
       .updateSignature(formData)
       .then(async (response) => {
-        window.scrollTo(0, 0);
+        await scrollToSectionTop();
 
         isRequestOngoing.value = false;
         localStorage.setItem("user_data", JSON.stringify(response.user_data));
@@ -744,7 +759,7 @@ const saveSignatureFromPad = async () => {
     profileStores
       .updateSignature(formData)
       .then(async (response) => {
-        window.scrollTo(0, 0);
+        await scrollToSectionTop();
         localStorage.setItem("user_data", JSON.stringify(response.user_data));
 
         // Actualizamos la imagen visible en la página con la nueva firma
@@ -823,7 +838,7 @@ const dataURLtoBlob = (dataURL) => {
     {{ alert.message }}
   </VSnackbar> 
   <LoadingOverlay :is-loading="isRequestOngoing" />
-  <div class="d-flex justify-center m-0 p-0 bg-white">
+  <div ref="sectionEl" class="d-flex justify-center m-0 p-0 bg-white">
     <div class="d-none d-md-flex p-0">
       <div
         style="
@@ -857,9 +872,10 @@ const dataURLtoBlob = (dataURL) => {
 
           <h2 class="profile-title">Kom igång - fyll i din profil</h2>
         </div>
-        <VTabs
+        <MobileScrollTabs
           v-if="role === 'Supplier' || role === 'User'"
           v-model="controlledTab"
+          :target-ref="sectionEl"
           grow
           :show-arrows="false"
           class="profile-tabs"
@@ -868,7 +884,7 @@ const dataURLtoBlob = (dataURL) => {
             <VIcon size="24" :icon="tab.icon" />
             <span>{{ tab.title }}</span>
           </VTab>
-        </VTabs>
+        </MobileScrollTabs>
       </div>
 
       <VForm

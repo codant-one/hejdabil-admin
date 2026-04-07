@@ -17,6 +17,10 @@ const {
 } = useThemeConfig()
 
 const { global } = useTheme()
+const route = useRoute()
+const appBackgroundStyle = computed(() => route.path.startsWith('/dashboard/settings')
+  ? 'background: #fff !important; background-color: #fff !important;'
+  : undefined)
 
 // ℹ️ Sync current theme with initial loader theme
 syncInitialLoaderTheme()
@@ -48,7 +52,7 @@ me()
     <GlobalEvents />
     <VLocaleProvider :rtl="isAppRtl">
       <!-- ℹ️ This is required to set the background color of active nav link based on currently active global theme's primary -->
-      <VApp :style="`--v-global-theme-primary: ${hexToRgb(global.current.value.colors.primary)}`">
+      <VApp :class="{ 'settings-route': route.path.startsWith('/dashboard/settings') }" :style="`--v-global-theme-primary: ${hexToRgb(global.current.value.colors.primary)}; ${appBackgroundStyle || ''}`">
         <RouterView :key="$route.fullPath"/>
       </VApp>
     </VLocaleProvider>

@@ -2,6 +2,7 @@
 
 import { watch } from 'vue'
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useAgreementsStores } from '@/stores/useAgreements'
 import { useNotificationsStore } from '@/stores/useNotifications'
 import { requiredValidator, emailValidator } from '@/@core/utils/validators'
@@ -143,6 +144,13 @@ const status = ref(null);
 const sectionEl = ref(null);
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
+
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
 
 const advisor = ref({
   type: '',

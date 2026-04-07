@@ -1,20 +1,23 @@
 <script setup>
-  import avatarImg from "@/assets/images/avatar-example.jpg";
 
-  const activeTab = ref(0);
+  import { useRouter } from 'vue-router'
+  import { themeConfig } from '@themeConfig'
+  import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
+  
+  const props = defineProps({
+    activities: {
+      type: Array,
+      default: () => []
+    },
+    notifications: {
+      type: Array,
+      default: () => []
+    }
+  })
+
+  const router = useRouter()
+  const activeTab = ref(1);
   const { width: windowWidth } = useWindowSize()
-
-  const now = new Date();
-
-  const notifications = ref([
-    { id: 1, read: 0, color: 'primary', icon: 'custom-contract', title: 'Avtal signerat', text: 'Avtalet har signerats korrekt. Avtals ID: 1042', created_at: new Date(now.getTime() - 15 * 60000).toISOString() },
-    { id: 2, read: 1, color: 'primary', icon: 'custom-signature', title: 'Dokument signerat', text: 'Dokumentet har signerats korrekt. Dokument ID: 2087', created_at: new Date(now.getTime() - 2 * 3600000).toISOString() },
-    { id: 3, read: 0, color: 'primary', icon: 'custom-contract', title: 'Avtal signerat', text: 'Avtalet har signerats korrekt. Avtals ID: 1039', created_at: new Date(now.getTime() - 5 * 3600000).toISOString() },
-    { id: 4, read: 1, color: 'primary', icon: 'custom-signature', title: 'Dokument signerat', text: 'Dokumentet har signerats korrekt. Dokument ID: 2081', created_at: new Date(now.getTime() - 10 * 3600000).toISOString() },
-    { id: 5, read: 0, color: 'primary', icon: 'custom-contract', title: 'Avtal signerat', text: 'Avtalet har signerats korrekt. Avtals ID: 1035', created_at: new Date(now.getTime() - 24 * 3600000).toISOString() },
-    { id: 6, read: 1, color: 'primary', icon: 'custom-signature', title: 'Dokument signerat', text: 'Dokumentet har signerats korrekt. Dokument ID: 2076', created_at: new Date(now.getTime() - 36 * 3600000).toISOString() },
-    { id: 7, read: 0, color: 'primary', icon: 'custom-contract', title: 'Avtal signerat', text: 'Avtalet har signerats korrekt. Avtals ID: 1030', created_at: new Date(now.getTime() - 47 * 3600000).toISOString() },
-  ]);
 
   const formatTime = (date) => {
     const d = new Date(date);
@@ -28,29 +31,32 @@
     return `${diffDays} dagar sedan`;
   };
 
-  const activities = ref([
-    { id: 1, icon: 'custom-facture', color: 'primary', title: 'Faktura #2847 betald', text: '125,000 kr mottagen via Swish från Andersson Bil AB', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 2 * 3600000).toISOString() },
-    { id: 2, icon: 'custom-contract', color: 'primary', title: 'Avtal signerat', text: 'Köpeavtal för Volvo XC90 2023 - Kund: Maria Svensson', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 5 * 3600000).toISOString() },
-    { id: 3, icon: 'custom-autofordon', color: 'primary', title: 'Nytt fordon tillagt', text: 'BMW 330e 2024 - Reg.nr: ABC123', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 26 * 3600000).toISOString() },
-    { id: 4, icon: 'custom-signature', color: 'primary', title: 'Dokument signerat', text: 'Leveransavtal för Audi A4 2023 - Dokument ID: 2090', user: 'Anna Karlsson', created_at: new Date(now.getTime() - 28 * 3600000).toISOString() },
-    { id: 5, icon: 'custom-facture', color: 'primary', title: 'Faktura #2843 betald', text: '89,500 kr mottagen via faktura från Nordic Cars AB', user: 'Erik Svensson', created_at: new Date(now.getTime() - 32 * 3600000).toISOString() },
-    { id: 6, icon: 'custom-sold', color: 'primary', title: 'Fordon sålt', text: 'Tesla Model 3 2023 - Reg.nr: DEF456 - Kund: Johan Berg', user: 'Elias Lundgren', created_at: new Date(now.getTime() - 40 * 3600000).toISOString() },
-    { id: 7, icon: 'custom-contract', color: 'primary', title: 'Avtal skapat', text: 'Nytt köpeavtal för Mercedes GLC 2024', user: 'Anna Karlsson', created_at: new Date(now.getTime() - 46 * 3600000).toISOString() },
-  ]);
+  const getUserName = (activity) => {
+    if (activity.user) {
+      return `${activity.user.name ?? ''} ${activity.user.last_name ?? ''}`.trim()
+    }
+    return ''
+  }
 
   const onNotificationClick = (notification) => {
-    console.log('Clicked notification:', notification.id);
+    if (notification.route) {
+      router.push(notification.route)
+    }
   };
 
   const onActivityClick = (activity) => {
-    console.log('Clicked activity:', activity.id);
+    if (activity.route) {
+      router.push(activity.route)
+    }
   };
 </script>
 
 <template>
-  <VCard title="" class="card-dashboard activities-scroll">
+  <VCard title="" class="card-dashboard">
     <VCardTitle class="title-box">
-      <div class="title-text">Senaste aktivitet</div>
+      <div class="title-text">
+        {{ activeTab === 0 ? 'Senaste notiser' : 'Senaste aktiviteter' }}
+      </div>
 
       <VTabs
         v-model="activeTab"
@@ -58,7 +64,7 @@
         class="dashboard-tabs-1"
       >
         <VTab :value="0">
-          <span>Meddelanden</span>
+          <span>Notiser</span>
         </VTab>
         <VTab :value="1">
           <span>Aktiviteter</span>
@@ -66,11 +72,29 @@
       </VTabs>
     </VCardTitle>
 
-    <VCardText class="p-0">
-      <VWindow v-model="activeTab">
-        <VWindowItem :value="0" class="px-md-0">
+    <VCardText class="p-0 flex-grow-1 d-flex min-h-0">
+      <VWindow v-model="activeTab" class="activities-window flex-grow-1">
+        <VWindowItem :value="0" class="px-md-0 activities-window-item">
+          <div
+            v-if="!props.notifications || props.notifications.length === 0"
+            class="empty-state mb-0"
+            :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+          >
+            <VIcon
+              size="80"
+              icon="custom-f-notifications"
+            />
+            <div class="empty-state-content w-100 pa-4">
+              <div class="empty-state-title">Inga nya meddelanden</div>
+              <div class="empty-state-text">
+                Här visas viktiga notiser, till exempel när ett avtal har signerats eller när en faktura har betalats.
+              </div>
+            </div>
+          </div>
+
           <VCardText 
-            v-for="notification in notifications"
+            v-for="notification in props.notifications"
+            v-else
             :key="notification.id"
             class="bg-white py-2 mx-0 card-activity d-flex align-center cursor-pointer"
             :class="windowWidth < 1024 ? 'gap-3' : 'gap-6'"
@@ -104,18 +128,37 @@
             
             <div class="d-flex flex-column gap-1 w-100">
               <span class="activity-title d-flex justify-between align-center gap-2">
-                {{ notification.title }} {{ windowWidth }}
+                {{ notification.title }}
                 <span class="activity-time">{{ formatTime(notification.created_at) }}</span>
               </span>
               <span class="activity-text">{{ notification.text }}</span>
             </div>
           </VCardText>
         </VWindowItem>
-        <VWindowItem :value="1" class="px-md-0">
+        <VWindowItem :value="1" class="px-md-0 activities-window-item">
+          <div
+            v-if="!props.activities || props.activities.length === 0"
+            class="empty-state mb-0"
+            :class="$vuetify.display.mdAndDown ? 'py-0' : 'pa-4'"
+          >
+            <VIcon
+              size="80"
+              icon="custom-f-hourglass"
+            />
+            <div class="empty-state-content w-100 pa-4">
+              <div class="empty-state-title">Ingen aktivitet ännu</div>
+              <div class="empty-state-text">
+                Här visas allt som händer i systemet - till exempel när fordon läggs till, fakturor skapas eller affärer uppdateras.
+              </div>
+            </div>
+          </div>
+
           <VCardText 
-            v-for="activity in activities"
+            v-for="activity in props.activities"
+            v-else
             :key="activity.id"
-            class="bg-white pt-4 mx-0 card-activity d-flex gap-6 align-start cursor-pointer"
+            class="bg-white pt-4 mx-0 card-activity d-flex gap-6 align-start"
+            :class="activity.route ? 'cursor-pointer' : ''"
             @click="onActivityClick(activity)"
           >
             <VAvatar
@@ -132,18 +175,23 @@
                 {{ activity.title }}
                 <span class="activity-time">{{ formatTime(activity.created_at) }}</span>
               </span>
-              <span class="activity-text">{{ activity.text }}</span>
+              <span class="activity-text">{{ activity.description }}</span>
               <span class="activity-user d-flex align-center gap-1">
                 <VAvatar
                   variant="outlined"
                   size="16"
                 >
                   <VImg
+                    v-if="activity.user.avatar"
                     style="border-radius: 50%"
-                    :src="avatarImg"
+                    :src="themeConfig.settings.urlStorage + activity.user.avatar"
+                  />
+                  <PresetAvatarImage
+                    v-else
+                    :avatar-id="activity.user.user_detail?.avatar_id"
                   />
                 </VAvatar>
-                {{ activity.user }}
+                {{ getUserName(activity) }}
               </span>
             </div>            
           </VCardText>
@@ -159,19 +207,56 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0;
     overflow: hidden;
   }
 
-  .activities-scroll {
-    flex: 1;
+  .activities-window {
+    height: 100%;
     min-height: 0;
-    overflow-y: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+
+    .v-window__container,
+    .v-window-item {
+      height: 100%;
+      min-height: 0;
+    }
   }
 
-  .activities-scroll::-webkit-scrollbar {
-    display: none;
+  .activities-window-item {
+    height: 100%;
+  }
+
+  .empty-state {
+    height: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 24px;
+  }
+
+  .empty-state-content {
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-state-title {
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 24px;
+    color: #454545;
+  }
+
+  .empty-state-text {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 22px;
+    color: #878787;
   }
 
   .card-activity {

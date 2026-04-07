@@ -65,6 +65,7 @@ const datepickerConfig = computed(() => {
 
   svLocale.sv.time_24hr = false
   config.locale = svLocale.sv
+  config.disableMobile = true
 
   return config
 })

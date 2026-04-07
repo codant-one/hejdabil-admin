@@ -16,6 +16,7 @@ import { useDocumentsStores } from '@/stores/useDocuments'
 import { useAppAbility } from '@/plugins/casl/useAppAbility'
 import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 import router from '@/router'
@@ -1845,7 +1846,8 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
                 
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     :model-value="currentTab" 
                     @update:modelValue="onTabChange"
                     grow
@@ -1872,7 +1874,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VIcon size="24" icon="custom-dokument-ilager" />
                         <span>Dokument</span>
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
 
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab">
@@ -3792,7 +3794,7 @@ onBeforeRouteLeave((to, from, next) => {
             </VBtn>
             <VCard>
                 <VCardText class="dialog-title-box big-icon justify-center pb-0">
-                    <VIcon size="90" icon="custom-steering-wheel" />
+                    <VIcon size="90" icon="custom-vehicle-exist" />
                 </VCardText>
                 <VCardText class="dialog-title-box justify-center">
                     <div class="dialog-title">Kunde inte lägga till fordonet</div>

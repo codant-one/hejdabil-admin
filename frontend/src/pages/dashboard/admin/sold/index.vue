@@ -1,6 +1,8 @@
 <script setup>
 
+import { useRoute } from 'vue-router'
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useVehiclesStores } from '@/stores/useVehicles'
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -22,6 +24,7 @@ import PresetAvatarImage from "@/components/common/PresetAvatarImage.vue";
 
 const { width: windowWidth } = useWindowSize();
 
+const route = useRoute()
 const vehiclesStores = useVehiclesStores()
 const configsStores = useConfigsStores();
 const authStores = useAuthStores();
@@ -85,6 +88,8 @@ const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
 
 const selectedVehicleForAction = ref({});
 const isMobileActionDialogVisible = ref(false);
+
+const exporteraMobile = ref(false);
 
 const readCachedCompany = () => {
   try {
@@ -170,6 +175,13 @@ const hasLoaded = ref(false);
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
+
 // 👉 Computing pagination data
 const paginationData = computed(() => {
   const firstIndex = vehicles.value.length
@@ -180,6 +192,73 @@ const paginationData = computed(() => {
   return `${totalVehicles.value} resultat`;
   // return `Visar ${firstIndex} till ${lastIndex} av ${totalClients.value} register`;
 });
+
+// 👉 Open vehicle detail when vehicle_id query param is present
+watch(() => route.query.vehicle_id, async (vehicleId) => {
+  if (vehicleId && hasLoaded.value) {
+    const id = parseInt(vehicleId)
+    let vehicle = vehicles.value.find(v => v.id === id)
+
+    if (!vehicle) {
+      try {
+        vehicle = await vehiclesStores.showVehicle(id)
+      } catch (error) {
+        console.error('Vehicle not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Fordonet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (vehicle) {
+      selectedVehicle.value = vehicle
+      isMobile.value = windowWidth.value < 1024
+      isVehicleDetailDialog.value = true
+    }
+  }
+}, { immediate: true })
+
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.vehicle_id) {
+    const id = parseInt(route.query.vehicle_id)
+    let vehicle = vehicles.value.find(v => v.id === id)
+
+    if (!vehicle) {
+      try {
+        vehicle = await vehiclesStores.showVehicle(id)
+      } catch (error) {
+        console.error('Vehicle not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Fordonet kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (vehicle) {
+      selectedVehicle.value = vehicle
+      isMobile.value = windowWidth.value < 1024
+      isVehicleDetailDialog.value = true
+    }
+  }
+})
+
+// Limpiar vehicle_id query param cuando se cierra el detalle
+watch(
+  () => isVehicleDetailDialog.value,
+  (isOpen) => {
+    if (!isOpen && route.query.vehicle_id) {
+      router.replace({ name: route.name, query: {} });
+    }
+  }
+);
 
 // 👉 watching current page
 watchEffect(() => {
@@ -366,7 +445,7 @@ const truncateText = (text, length = 15) => {
 };
 
 const downloadCSV = async () => {
-
+  exporteraMobile.value = false
   isRequestOngoing.value = true
 
   try {
@@ -481,6 +560,7 @@ const getDateRangePayload = () => {
 }
 
 const downloadPDF = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
@@ -630,6 +710,7 @@ const exportPDFAndCloseMenu = async () => {
 }
 
 const openExportDateMenu = type => {
+  exporteraMobile.value = false
   selectedExportType.value = type
   isExportTypeMenuVisible.value = false
 
@@ -812,7 +893,9 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VMenu v-model="isExportTypeMenuVisible">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -834,6 +917,17 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <ExportDateMenu
             v-model="date"
@@ -1529,6 +1623,25 @@ onBeforeUnmount(() => {
               Bekräfta
           </VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="openExportDateMenu('pdf')">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="openExportDateMenu('excel')">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
 

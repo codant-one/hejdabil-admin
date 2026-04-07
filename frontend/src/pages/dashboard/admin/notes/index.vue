@@ -2,6 +2,7 @@
 
 import { ref, nextTick } from 'vue'
 import { useDisplay } from 'vuetify'
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
 import { useNotesStores } from '@/stores/useNotes'
 import { useAuthStores } from '@/stores/useAuth';
 import { useConfigsStores } from '@/stores/useConfigs';
@@ -62,6 +63,13 @@ const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end")
 const sectionEl = ref(null);
 const hasLoaded = ref(false);
 
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
+
 const isDialogOpen = ref(false);
 const isNoteFormEdited = ref(false);
 const isEdit = ref(false);
@@ -74,6 +82,8 @@ const leaveContext = ref(null); // 'mobile' | 'route' | 'noteEdit' | 'noteEditMo
 const originalNoteData = ref(null);
 
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
+
+const exporteraMobile = ref(false)
 
 const readCachedCompany = () => {
   try {
@@ -545,6 +555,7 @@ const submitUpdate = noteData => {
 const downloadCSV = async () => {
 
   isRequestOngoing.value = true
+  exporteraMobile.value = false
 
   try {
 
@@ -652,6 +663,7 @@ const getDateRangePayload = () => {
 
 const downloadPDF = async () => {
   isRequestOngoing.value = true
+  exporteraMobile.value = false
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
   const escapeHtml = value => String(value ?? '')
@@ -791,6 +803,7 @@ const exportPDFAndCloseMenu = async () => {
 }
 
 const openExportDateMenu = type => {
+  exporteraMobile.value = false
   selectedExportType.value = type
   isExportTypeMenuVisible.value = false
 
@@ -992,7 +1005,9 @@ onBeforeUnmount(() => {
         <VSpacer :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"/>
 
         <div class="d-flex gap-4">
-          <VMenu v-model="isExportTypeMenuVisible">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -1014,6 +1029,17 @@ onBeforeUnmount(() => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <ExportDateMenu
             v-model="date"
@@ -1729,6 +1755,25 @@ onBeforeUnmount(() => {
           <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
           <VBtn class="btn-gradient" @click="cancelLeave">Stanna kvar</VBtn>
         </VCardText>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="openExportDateMenu('pdf')">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="openExportDateMenu('excel')">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
+          </VListItem>
+        </VList>
       </VCard>
     </VDialog>
   </section>

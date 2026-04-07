@@ -3,6 +3,7 @@
 import { useThemeConfig } from "@core/composable/useThemeConfig";
 import MobileBottomBar from "@/layouts/components/MobileBottomBar.vue";
 import navItems from "@/navigation/vertical";
+import settingsNavItems from "@/navigation/settings";
 import router from "@/router";
 
 // Components
@@ -16,6 +17,13 @@ import NavBarNotifications from "@/layouts/components/NavBarNotifications.vue";
 
 const { appRouteTransition, isLessThanOverlayNavBreakpoint } = useThemeConfig();
 const { width: windowWidth } = useWindowSize();
+const route = useRoute();
+const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
+const settingsButtonStyle = computed(() => (
+  isSettingsRoute.value
+    ? "box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;"
+    : undefined
+));
 
 const redirectTo = (path) => {
   router.push({
@@ -26,7 +34,7 @@ const redirectTo = (path) => {
 </script>
 
 <template>
-  <VerticalNavLayout :nav-items="navItems">
+  <VerticalNavLayout :nav-items="isSettingsRoute ? settingsNavItems : navItems">
     <!-- 👉 navbar -->
     <template #navbar="{ toggleVerticalOverlayNavActive }">
       <div :class="windowWidth < 1024 ? 'd-none' : 'd-flex'" class="sticky-container">
@@ -58,10 +66,15 @@ const redirectTo = (path) => {
           <NavBarNotifications />
           <VBtn
             variant="flat"
-            :class="windowWidth < 1024 ? 'd-none' : 'd-flex'"
+            :class="[
+              windowWidth < 1024 ? 'd-none' : 'd-flex',
+              { 'shadow-button-settings': isSettingsRoute },
+            ]"
+            :style="settingsButtonStyle"
             class="btn-white-3"
             height="48"
             width="48"
+            :to="{ name: 'dashboard-settings' }"
           >
             <VIcon icon="custom-settings" size="24" />
           </VBtn>
@@ -83,6 +96,14 @@ const redirectTo = (path) => {
 </template>
 
 <style>
+
+  body .v-btn.shadow-button-settings,
+  body .v-btn.shadow-button-settings:hover,
+  body .v-btn.shadow-button-settings:focus,
+  body .v-btn.shadow-button-settings:active {
+    box-shadow: 0px 0px 40px 0px rgba(0, 0, 0, 0.15) !important;
+  }
+  
   .sticky-container {
     position: sticky;
     top: 2.5%;      

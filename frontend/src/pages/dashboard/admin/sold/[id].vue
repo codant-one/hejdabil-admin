@@ -8,6 +8,7 @@ import { useVehiclesStores } from '@/stores/useVehicles';
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
 import modalWarningIcon from "@/assets/images/icons/alerts/modal-warning-icon.svg";
 import router from '@/router'
 
@@ -837,7 +838,8 @@ onBeforeRouteLeave((to, from, next) => {
 
                 <VDivider :class="windowWidth < 1024 ? 'mb-4' : 'mb-8'" />
 
-                <VTabs 
+                <MobileScrollTabs 
+                    :target-ref="sectionEl"
                     :model-value="currentTab"
                     @update:modelValue="onTabChange"
                     grow             
@@ -852,7 +854,7 @@ onBeforeRouteLeave((to, from, next) => {
                         <VIcon size="24" icon="custom-clients" />
                         Kund
                     </VTab>
-                </VTabs>
+                </MobileScrollTabs>
 
                 <VCardText class="px-0">
                     <VWindow v-model="currentTab" class="pt-3">

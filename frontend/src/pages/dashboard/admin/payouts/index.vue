@@ -1,6 +1,8 @@
 <script setup>
 
 import { useDisplay } from "vuetify";
+import { useMobilePaginationScroll } from '@/@core/composable/useMobilePaginationScroll'
+import { useRoute } from 'vue-router'
 import { useClientsStores } from '@/stores/useClients'
 import { usePayoutsStores } from '@/stores/usePayouts'
 import { useConfigsStores } from '@/stores/useConfigs'
@@ -34,6 +36,7 @@ const payoutsStores = usePayoutsStores()
 const configsStores = useConfigsStores()
 const ability = useAppAbility()
 const emitter = inject("emitter")
+const route = useRoute()
 
 const payouts = ref([])
 const searchQuery = ref('')
@@ -81,15 +84,77 @@ const isExportMenuVisible = ref(false)
 const isExportingFile = ref(false)
 const lastExportSelectionKey = ref(null)
 
+const exporteraMobile = ref(false);
+
 const advisor = ref({
   type: '',
   message: '',
   show: false
 })
 
+useMobilePaginationScroll({
+  targetRef: sectionEl,
+  currentPage,
+  isRequestOngoing,
+  enabled: mdAndDown,
+})
+
 watch(isExportMenuVisible, isVisible => {
   if (isVisible)
     lastExportSelectionKey.value = null
+})
+
+// 👉 Open payout detail when payout_id query param is present
+watch(() => route.query.payout_id, async (payoutId) => {
+  if (payoutId && hasLoaded.value) {
+    const id = parseInt(payoutId)
+    let payout = payouts.value.find(p => p.id === id)
+
+    if (!payout) {
+      try {
+        payout = await payoutsStores.showPayout(id)
+      } catch (error) {
+        console.error('Payout not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Utbetalningen kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (payout) {
+      seePayout(payout, windowWidth.value < 1024)
+    }
+  }
+}, { immediate: true })
+
+watch(hasLoaded, async (loaded) => {
+  if (loaded && route.query.payout_id) {
+    const id = parseInt(route.query.payout_id)
+    let payout = payouts.value.find(p => p.id === id)
+
+    if (!payout) {
+      try {
+        payout = await payoutsStores.showPayout(id)
+      } catch (error) {
+        console.error('Payout not found:', error)
+        advisor.value = {
+          type: 'error',
+          message: 'Utbetalningen kunde inte hittas.',
+          show: true
+        }
+        setTimeout(() => { advisor.value.show = false }, 3000)
+        return
+      }
+    }
+
+    if (payout) {
+      seePayout(payout, windowWidth.value < 1024)
+    }
+  }
 })
 
 // 👉 Computing pagination data
@@ -234,6 +299,12 @@ const seePayout = (payoutData, isMobile = false) => {
 const closePayoutDetailDialog = () => {
   isPayoutDetailDialogVisible.value = false
   isPayoutDetailMobileDialogVisible.value = false
+
+  // Limpiar query param payout_id al cerrar
+  if (route.query.payout_id) {
+    const { payout_id, ...rest } = route.query
+    history.replaceState(null, '', location.pathname + (Object.keys(rest).length ? '?' + new URLSearchParams(rest).toString() : ''))
+  }
 
   // Retrasar el reset para evitar errores mientras el diálogo se cierra
   setTimeout(() => {
@@ -725,6 +796,7 @@ const getDateRangePayload = () => {
 }
 
 const downloadCSV = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
 
   try {
@@ -765,6 +837,7 @@ const downloadCSV = async () => {
 }
 
 const downloadPDF = async () => {
+  exporteraMobile.value = false
   isRequestOngoing.value = true
   const pdfFontFamily = "'Gelion Regular', 'DM Sans', sans-serif"
 
@@ -906,6 +979,7 @@ const exportPDFAndCloseMenu = async () => {
 }
 
 const openExportDateMenu = type => {
+  exporteraMobile.value = false
   selectedExportType.value = type
   isExportTypeMenuVisible.value = false
 
@@ -1015,7 +1089,9 @@ const onDatePickerUpdate = value => {
         </div>
 
         <div class="d-flex gap-4">
-          <VMenu v-model="isExportTypeMenuVisible">
+          <VMenu 
+            v-if="windowWidth >= 1024"
+            v-model="isExportTypeMenuVisible">
             <template #activator="{ props }">
               <VBtn
                 id="payout-export-button"
@@ -1037,6 +1113,17 @@ const onDatePickerUpdate = value => {
               </VListItem>
             </VList>
           </VMenu>
+
+          <VBtn
+            v-if="windowWidth < 1024"
+            id="payout-export-button"
+            class="btn-light w-auto"
+            block
+            @click="exporteraMobile = true"
+          >
+            <VIcon icon="custom-export" size="24" />
+            Exportera
+          </VBtn>
 
           <ExportDateMenu
             v-model="date"
@@ -1867,7 +1954,7 @@ const onDatePickerUpdate = value => {
           <div class="dialog-title">Betalningen lyckades!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din betalning via Swich har genomförts och skickats till mottagaren. Du hittar kvittot i din betalningshistorik.
+          Din betalning via Swish har genomförts och skickats till mottagaren. Du hittar kvittot i din betalningshistorik.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
@@ -1904,7 +1991,7 @@ const onDatePickerUpdate = value => {
           <div class="dialog-title">Betalningen har inte genomförts!</div>
         </VCardText>
         <VCardText class="dialog-text text-center">
-          Din betalning via Swich har inte behandlats korrekt, försök igen.
+          Din betalning via Swish har inte behandlats korrekt, försök igen.
         </VCardText>
 
         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
@@ -2016,6 +2103,25 @@ const onDatePickerUpdate = value => {
               /></VListItemAction>
             </template>
             <VListItemTitle>Misslyckad</VListItemTitle>
+          </VListItem>
+        </VList>
+      </VCard>
+    </VDialog>
+
+    <!-- 👉 Export Mobile Dialog -->
+    <VDialog
+      v-model="exporteraMobile"
+      transition="dialog-bottom-transition"
+      content-class="dialog-bottom-full-width"
+    >
+      <VCard>
+        <VList>
+          <VListItem @click="openExportDateMenu('pdf')">
+            <VListItemTitle>Exportera PDF</VListItemTitle>
+          </VListItem>
+
+          <VListItem @click="openExportDateMenu('excel')">
+            <VListItemTitle>Exportera Excel</VListItemTitle>
           </VListItem>
         </VList>
       </VCard>

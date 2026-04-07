@@ -19,6 +19,8 @@ use App\Models\Invoice;
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Models\SupplierActivity;
+
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
 
@@ -130,6 +132,27 @@ class BillingController extends Controller
 
             $billing = Billing::createBilling($request);
 
+            $total = $billing->total + $billing->amount_discount;
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'create_billing',
+                'title' => 'Faktura #'.$billing->invoice_id.' - tillagd',
+                'description' => 'En ny faktura har lagts till.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'new_values' => $request->only([
+                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                        'payment_terms', 'reference', 'subtotal', 'tax',
+                        'total', 'rabatt', 'discount', 'amount_discount',
+                        'detail'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'billing' => Billing::with('state')->find($billing->id)
@@ -208,7 +231,35 @@ class BillingController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
 
-            $billing->updateBilling($request, $billing); 
+            $billingFields = [
+                'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                'payment_terms', 'reference', 'subtotal', 'tax',
+                'total', 'rabatt', 'discount', 'amount_discount',
+                'state_id', 'detail'
+            ];
+
+            $oldValues = $billing->only($billingFields);
+
+            $billing->updateBilling($request, $billing);
+
+            $newValues = $request->only($billingFields);
+
+            $total = $billing->total + $billing->amount_discount;
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'update_billing',
+                'title' => 'Faktura #'.$billing->invoice_id.' - uppdaterad',
+                'description' => 'Fakturan har uppdaterats.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues
+                ])
+            ]);
             
             return response()->json([
                 'success' => true,
@@ -274,8 +325,24 @@ class BillingController extends Controller
                     'message' => 'Fakturan hittades inte'
                 ], 404);
             
+            $oldStateId = $billing->state_id;
             $billing->state_id = $billing->state_id == 4 ? 7 : 4; // Toggle between pending and paid
             $billing->update();
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'update_billing_state',
+                'title' => 'Faktura #'.$billing->invoice_id.' - ' . ($billing->state_id == 7 ? 'betald' : 'obetald'),
+                'description' => $billing->state_id == 7 ? 'Markerades som betald.' : 'Markerades som obetald.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'old_values' => ['state_id' => $oldStateId],
+                    'new_values' => ['state_id' => $billing->state_id]
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -361,6 +428,26 @@ class BillingController extends Controller
             
             $billing = Billing::createCredit($billing);
 
+            $total = $billing->total + $billing->amount_discount;
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'create_credit',
+                'title' => 'Kreditfaktura #'.$billing->invoice_id.' - skapad',
+                'description' => 'En kreditfaktura har skapats.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'new_values' => $billing->only([
+                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                        'payment_terms', 'reference', 'subtotal', 'tax',
+                        'total', 'rabatt', 'discount', 'amount_discount'
+                    ])
+                ])
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [ 
@@ -391,6 +478,26 @@ class BillingController extends Controller
                 ], 404);
             
             $billing = Billing::createReminder($billing);
+
+            $total = $billing->total + $billing->amount_discount;
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'create_reminder',
+                'title' => 'Påminnelse #'.$billing->invoice_id.' - skickad',
+                'description' => 'En påminnelse har skickats till kunden.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'new_values' => $billing->only([
+                        'client_id', 'invoice_id', 'invoice_date', 'due_date',
+                        'payment_terms', 'reference', 'subtotal', 'tax',
+                        'total', 'rabatt', 'discount', 'amount_discount'
+                    ])
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -524,6 +631,28 @@ class BillingController extends Controller
                     $attachments
                 );
             }
+
+            $allEmails = collect($request->emails);
+            if ($request->emailDefault === true) {
+                $allEmails->prepend($billing->client->email);
+            }
+
+            $total = $billing->total + $billing->amount_discount;
+
+            SupplierActivity::createActivity([
+                'entity_id' => $billing->id,
+                'entity_type' => 'billings',
+                'action_type' => 'send_billing_email',
+                'title' => 'Faktura #'.$billing->invoice_id.' - skickad',
+                'description' => 'Fakturan skickades via e-post.',
+                'icon' => 'custom-facture',
+                'route' => '/dashboard/admin/billings/'.$billing->id,
+                'metadata' => json_encode([
+                    'billing_id' => $billing->id,
+                    'emails' => $allEmails->values()->all(),
+                    'email_default' => $request->emailDefault ?? false
+                ])
+            ]);
 
             return response()->json([
                 'success' => true

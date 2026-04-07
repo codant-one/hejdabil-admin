@@ -12,6 +12,7 @@ use Spatie\Permission\Middlewares\PermissionMiddleware;
 
 use App\Models\Note;
 use App\Models\Supplier;
+use App\Models\SupplierActivity;
 use App\Services\CacheService;
 
 class NoteController extends Controller
@@ -97,7 +98,25 @@ class NoteController extends Controller
     {
         try {
 
+            $noteFields = [
+                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
+            ];
+
             $note = Note::createNote($request);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'create_note',
+                'title' => $this->noteActivityTitle($note, ' - skapad'),
+                'description' => 'Skapades.',
+                'icon' => 'custom-cash',
+                'route' => '/dashboard/admin/notes',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'new_values' => $note->only($noteFields),
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -154,6 +173,10 @@ class NoteController extends Controller
     {
         try {
             $note = Note::with(['user'])->find($id);
+
+            $noteFields = [
+                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
+            ];
         
             if (!$note)
                 return response()->json([
@@ -162,7 +185,24 @@ class NoteController extends Controller
                     'message' => 'Egen värdering hittades inte'
                 ], 404);
 
+            $oldValues = $note->only($noteFields);
+
             $note->updateNote($request, $note); 
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'update_note',
+                'title' => $this->noteActivityTitle($note, ' - uppdaterad'),
+                'description' => 'Uppdaterades.',
+                'icon' => 'custom-cash',
+                'route' => '/dashboard/admin/notes',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $note->only($noteFields),
+                ])
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -188,6 +228,10 @@ class NoteController extends Controller
         try {
 
             $note = Note::with(['user'])->find($id);
+
+            $noteFields = [
+                'supplier_id', 'reg_num', 'note', 'name', 'phone', 'email', 'comment'
+            ];
         
             if (!$note)
                 return response()->json([
@@ -195,6 +239,25 @@ class NoteController extends Controller
                     'feedback' => 'not_found',
                     'message' => 'Egen värdering hittades inte'
                 ], 404);
+
+            $oldValues = $note->only($noteFields);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'delete_note',
+                'title' => $this->noteActivityTitle($note, ' - borttagen'),
+                'description' => 'Togs bort.',
+                'icon' => 'custom-cash',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'old_values' => $oldValues,
+                ])
+            ]);
+
+            SupplierActivity::where('entity_id', $note->id)
+                ->where('entity_type', 'notes')
+                ->update(['route' => null]);
             
             $note->deleteNote($id);
 
@@ -219,7 +282,30 @@ class NoteController extends Controller
     {
         try {
 
+            $note = Note::find($request->id);
+
+            if (!$note)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+
             Note::sendComment($request);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'send_comment_note',
+                'title' => $this->noteActivityTitle($note, ' - kommentar tillagd'),
+                'description' => 'Lades till.',
+                'icon' => 'custom-cash',
+                'route' => '/dashboard/admin/notes',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'comment' => $request->comment,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true
@@ -238,7 +324,48 @@ class NoteController extends Controller
     {
         try {
 
-            Note::updateComment($request, $id);
+            $note = Note::find($request->note_id);
+
+            if (!$note)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+
+            $existingComment = $note->comments()->find($id);
+
+            if (!$existingComment)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Kommentar hittades inte'
+                ], 404);
+
+            $oldValues = [
+                'comment_id' => $existingComment->id,
+                'comment' => $existingComment->comment,
+            ];
+
+            $updatedComment = Note::updateComment($request, $id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'update_comment_note',
+                'title' => $this->noteActivityTitle($note, ' - kommentar uppdaterad'),
+                'description' => 'Uppdaterades.',
+                'icon' => 'custom-cash',
+                'route' => '/dashboard/admin/notes',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'old_values' => $oldValues,
+                    'new_values' => [
+                        'comment_id' => $updatedComment?->id ?? $id,
+                        'comment' => $updatedComment?->comment ?? $request->comment,
+                    ],
+                ])
+            ]);
 
             return response()->json([
                 'success' => true
@@ -257,7 +384,44 @@ class NoteController extends Controller
     {
         try {
 
+            $note = Note::find($request->note_id);
+
+            if (!$note)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Egen värdering hittades inte'
+                ], 404);
+
+            $existingComment = $note->comments()->find($id);
+
+            if (!$existingComment)
+                return response()->json([
+                    'success' => false,
+                    'feedback' => 'not_found',
+                    'message' => 'Kommentar hittades inte'
+                ], 404);
+
+            $oldValues = [
+                'comment_id' => $existingComment->id,
+                'comment' => $existingComment->comment,
+            ];
+
             Note::deleteComment($id);
+
+            SupplierActivity::createActivity([
+                'entity_id' => $note->id,
+                'entity_type' => 'notes',
+                'action_type' => 'delete_comment_note',
+                'title' => $this->noteActivityTitle($note, ' - kommentar borttagen'),
+                'description' => 'Togs bort.',
+                'icon' => 'custom-cash',
+                'route' => '/dashboard/admin/notes',
+                'metadata' => json_encode([
+                    'note_id' => $note->id,
+                    'old_values' => $oldValues,
+                ])
+            ]);
 
             return response()->json([
                 'success' => true
@@ -270,5 +434,23 @@ class NoteController extends Controller
                 'exception' => $ex->getMessage()
             ], 500);
         }
+    }
+
+    private function noteActivityTitle(Note $note, string $suffix): string
+    {
+        return "Vardering '{$this->noteActivityIdentifier($note)}' {$suffix}";
+    }
+
+    private function noteActivityIdentifier(Note $note): string
+    {
+        if (!empty($note->reg_num)) {
+            return $note->reg_num;
+        }
+
+        if (!empty($note->name)) {
+            return $note->name;
+        }
+
+        return '#' . $note->id;
     }
 }

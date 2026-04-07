@@ -1,4 +1,5 @@
 <script setup>
+
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
 import { VNodeRenderer } from "./VNodeRenderer";
 import { injectionKeyIsVerticalNavHovered, useLayouts } from "@layouts";
@@ -8,9 +9,9 @@ import {
   VerticalNavSectionTitle,
 } from "@layouts/components";
 import { config } from "@layouts/config";
-import { openGroups } from "@layouts/utils";
 
 import toggleNav from "@/assets/images/icons/figma/toggleNav.svg";
+import toggleNavClose from "@/assets/images/icons/figma/toggleNavClose.svg";
 
 const props = defineProps({
   tag: {
@@ -34,7 +35,6 @@ const props = defineProps({
 
 const refNav = ref();
 const { width: windowWidth } = useWindowSize();
-const titleAPP = ref(import.meta.env.VITE_APP_TITLE);
 
 // Provide hover state so children can inject it
 const isHovered = ref(false)
@@ -49,17 +49,6 @@ const {
 
 const hideTitleAndIcon = isVerticalNavMini(windowWidth, isHovered);
 
-// const wasCollapsed = ref(isCollapsed.value);
-
-// watch(isHovered, val => {
-//   if (val) {
-//     wasCollapsed.value = isCollapsed.value;
-//     isCollapsed.value = false;
-//   } else {
-//     isCollapsed.value = wasCollapsed.value;
-//   }
-// });
-
 const resolveNavItemComponent = (item) => {
   if ("heading" in item) return VerticalNavSectionTitle;
   if ("children" in item) return VerticalNavGroup;
@@ -68,6 +57,8 @@ const resolveNavItemComponent = (item) => {
 };
 
 const route = useRoute();
+
+const isSettingsRoute = computed(() => route.path.startsWith("/dashboard/settings"));
 
 watch(
   () => route.name,
@@ -93,6 +84,7 @@ const handleNavScroll = (evt) => {
     class="layout-vertical-nav"
     :class="[
       {
+        'settings-route': isSettingsRoute,
         'overlay-nav': isLessThanOverlayNavBreakpoint(windowWidth),
         visible: isOverlayNavActive,
         scrolled: isVerticalNavScrolled,
@@ -101,7 +93,7 @@ const handleNavScroll = (evt) => {
     ]"
   >
     <!-- 👉 Header -->
-    <div class="nav-header-logo">
+    <div :class="isSettingsRoute ? 'nav-header-logo-settings' : 'nav-header-logo'">
       <RouterLink
         to="/info"
         :class="hideTitleAndIcon ? 'justify-center' : ''"
@@ -110,31 +102,9 @@ const handleNavScroll = (evt) => {
         <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" />
       </RouterLink>
     </div>
-    <div class="nav-header">
-      <slot name="nav-header">
-        <!-- <RouterLink
-          to="/info"
-          class="app-logo d-flex align-center gap-x-1 app-title-wrapper"
-        >
-        <VNodeRenderer :nodes="(hideTitleAndIcon) ? config.app.logoWhite : config.app.logoFull" /> -->
-
-        <!-- <Transition name="vertical-nav-app-title">
-            <h4
-              v-show="!hideTitleAndIcon"
-              class="app-title font-weight-bold leading-normal"
-            >
-            {{ titleAPP }}
-            </h4>
-          </Transition> -->
-        <!-- </RouterLink> -->
-
+    <div class="nav-header" :class="isSettingsRoute ? 'nav-items-settings' : ''">
+      <slot name="nav-header" v-if="!isSettingsRoute">
         <span v-show="!hideTitleAndIcon">Meny</span>
-        <!-- <VIcon
-          icon="tabler-arrows-minimize"
-          size="small"
-          class="me-2"
-          @click="closeAll"
-        /> -->
 
         <!-- 👉 Vertical nav actions -->
         <!-- Show toggle collapsible in >md and close button in <md -->
@@ -144,7 +114,7 @@ const handleNavScroll = (evt) => {
             aria-label="toggle vertical navigation"
             @click="isCollapsed = !isCollapsed"
           >
-            <img :src="toggleNav" alt="Toggle Nav Icon" class="" />
+            <img :src="isCollapsed ? toggleNavClose : toggleNav" alt="Toggle Nav Icon" />
           </VBtn>
         </template>
         <template v-else>
@@ -156,10 +126,23 @@ const handleNavScroll = (evt) => {
           />
         </template>
       </slot>
+      <slot name="nav-header" v-else>
+        <div class="d-flex flex-column gap-4">
+          <VBtn
+            class="btn-light w-auto"
+            :to="{ name: 'dashboard-panel' }"
+          >
+            <VIcon icon="custom-return" size="24" />
+            Tillbaka
+          </VBtn>
+
+          <span class="title-settings">
+            Inställningar
+          </span>
+        </div>
+      </slot>
     </div>
-    <!-- <slot name="before-nav-items">
-      <div class="vertical-nav-items-shadow" />
-    </slot> -->
+
     <slot
       name="nav-items"
       :update-is-vertical-nav-scrolled="updateIsVerticalNavScrolled"
@@ -168,6 +151,7 @@ const handleNavScroll = (evt) => {
         :key="isAppRtl"
         tag="ul"
         class="nav-items"
+        :class="isSettingsRoute ? 'nav-items-settings' : ''"
         :options="{ wheelPropagation: false }"
         @ps-scroll-y="handleNavScroll"
       >
@@ -200,12 +184,45 @@ const handleNavScroll = (evt) => {
   background-color: transparent !important;
   box-shadow: none !important;
 
+  &.settings-route {
+    background-color: #fff !important;
+  }
+
   .nav-header-logo {
     margin: 30px 24px 0 24px;
   }
 
+  .nav-header-logo-settings {
+    padding: 30px 24px 26px 24px;
+    border-bottom: 1px solid #E7E7E7;
+  }
+
+  .nav-items-settings {
+    border-right: 1px solid #E7E7E7;
+
+    .nav-item-icon {
+      color: #454545 !important;
+    }
+
+    a:hover {
+      background-color: #E7E7E7 !important;
+    }
+
+    a:hover span {
+      color: #454545 !important;
+    }
+  }
+
+  .title-settings {
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 16px;
+    letter-spacing: 0;
+    color: #1C2925;
+  }
+
   .nav-header {
-    margin: 30px 24px 24px 24px;
+    padding: 30px 24px 24px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
