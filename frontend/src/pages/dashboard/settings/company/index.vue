@@ -915,7 +915,7 @@ onBeforeUnmount(() => {
                   <VImg :src="logo" class="logo-store-img" contain />
                 </div>
               </div>
-              <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+              <div class="d-none flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                 <span class="avatar-text">
                   Varumärkets färg
                   <VTooltip location="bottom" max-width="200"> 

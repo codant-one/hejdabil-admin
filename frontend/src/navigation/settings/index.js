@@ -20,7 +20,7 @@ export default [
     action: 'view' , 
     subject: 'dashboard'
   },
-  { 
+  /*{ 
     title: 'Meddelanden', 
     icon: { icon: 'custom-alarm' },
     to: 'dashboard-settings-notifications', 
@@ -40,6 +40,6 @@ export default [
     to: 'dashboard-settings-agreements', 
     action: 'view', 
     subject: 'dashboard'
-  }
+  }*/
 ]
   

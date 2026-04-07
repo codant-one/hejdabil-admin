@@ -269,7 +269,7 @@
                Bilar i lager
             </VTab>
             <VTab :value="1">
-               <VIcon size="24" icon="custom-car-close" />
+               <VIcon size="24" icon="custom-car-open" />
                Sålda bilar
             </VTab>
         </VTabs>
