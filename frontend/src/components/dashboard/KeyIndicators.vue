@@ -621,7 +621,7 @@ const tabData = computed(() => ({
             grow          
             :show-arrows="false"
             class="vehicles-dashboard-tabs"
-        >
+         >
             <VTab :value="0" >
                <VIcon size="24" icon="custom-autofordon" />
                Bilar i lager
@@ -638,8 +638,7 @@ const tabData = computed(() => ({
       </VCardText>
 
       <VCardText class="pt-0 flex-grow-1 d-flex flex-column">
-        <VWindow v-model="activeTab" class="flex-grow-1">
-         <VWindowItem v-for="tab in 3" :key="tab" :value="tab - 1" class="px-md-0 h-100">
+         <div v-for="tab in 3" :key="tab" v-show="activeTab === tab - 1" class="flex-grow-1">
             <div class="indicator-tab-content">
                <div class="indicator-grid">
                   <div v-for="(card, i) in tabData[tab - 1]" :key="i" class="indicator-card">
@@ -675,8 +674,7 @@ const tabData = computed(() => ({
 
                </div>
             </div>
-         </VWindowItem>
-      </VWindow>
+         </div>
       </VCardText>
    </VCard>
 
@@ -747,16 +745,11 @@ const tabData = computed(() => ({
       }
    }
 
-   .v-window {
-      .v-window__container {
-         height: 100%;
-      }
-   }
-
    .indicator-tab-content {
       display: flex;
       flex-direction: column;
       height: 100%;
+      min-height: 160px;
    }
 
    .indicator-grid {
