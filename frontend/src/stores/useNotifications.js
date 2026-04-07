@@ -29,6 +29,7 @@ const playNotificationSound = () => {
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     notifications: [],
+    recentNotifications: [],
     initialized: false,
     privateChannelSubscribed: false,
     privateChannelUserId: null,
@@ -123,14 +124,14 @@ export const useNotificationsStore = defineStore('notifications', {
       try {
         const { data } = await Notifications.listRecent()
         if (data.success && Array.isArray(data.data)) {
-          this.notifications = data.data.map(notification => ({
+          this.recentNotifications = data.data.map(notification => ({
             id: notification.id,
             title: notification.title,
             subtitle: notification.subtitle,
             time: this.formatTime(notification.created_at),
             text: notification.text,
             route: notification.route,
-            read: notification.read === 1,
+            read: false,
             color: notification.color ?? 'primary',
             icon: notification.icon ?? 'tabler-bell',
           }))
@@ -273,7 +274,13 @@ export const useNotificationsStore = defineStore('notifications', {
         read: data?.read ?? false,
       }
       
-      this.notifications.unshift(mapped)
+      this.recentNotifications.unshift(mapped)
+
+      // Mantener solo las últimas 4 no leídas
+      if (this.recentNotifications.length > 4) {
+        this.recentNotifications = this.recentNotifications.slice(0, 4)
+      }
+
       playNotificationSound()
       
       // Llamar al callback global si existe
@@ -298,11 +305,8 @@ export const useNotificationsStore = defineStore('notifications', {
       try {
         await Notifications.markAsRead(notificationId)
         
-        // Actualizar en el store local
-        const notification = this.notifications.find(n => n.id === notificationId)
-        if (notification) {
-          notification.read = true
-        }
+        // Eliminar del dropdown
+        this.recentNotifications = this.recentNotifications.filter(n => n.id !== notificationId)
       } catch (error) {
         console.error('Error marking notification as read:', error)
         throw error
@@ -323,10 +327,8 @@ export const useNotificationsStore = defineStore('notifications', {
       try {
         await Notifications.markAllAsRead()
         
-        // Actualizar todas como leídas en el store local
-        this.notifications.forEach(n => {
-          n.read = true
-        })
+        // Limpiar el dropdown
+        this.recentNotifications = []
       } catch (error) {
         console.error('Error marking all notifications as read:', error)
       }

@@ -16,7 +16,7 @@
   })
 
   const router = useRouter()
-  const activeTab = ref(0);
+  const activeTab = ref(1);
   const { width: windowWidth } = useWindowSize()
 
   const formatTime = (date) => {
@@ -54,7 +54,9 @@
 <template>
   <VCard title="" class="card-dashboard">
     <VCardTitle class="title-box">
-      <div class="title-text">Senaste aktivitet</div>
+      <div class="title-text">
+        {{ activeTab === 0 ? 'Senaste notiser' : 'Senaste aktiviteter' }}
+      </div>
 
       <VTabs
         v-model="activeTab"
@@ -62,7 +64,7 @@
         class="dashboard-tabs-1"
       >
         <VTab :value="0">
-          <span>Meddelanden</span>
+          <span>Notiser</span>
         </VTab>
         <VTab :value="1">
           <span>Aktiviteter</span>
