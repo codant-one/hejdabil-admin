@@ -322,7 +322,7 @@ const downloadPDF = async () => {
 
       const { headerMarkup } = await buildPdfTopHeader({
          company: props.company,
-         title: 'Nyckeltal',
+         title: 'Översikt',
          themeConfig,
          escapeHtml,
          showCompanyDetailsWhenLogo: true,
@@ -543,7 +543,7 @@ const tabData = computed(() => ({
 <template>
    <VCard title="" class="card-dashboard">
       <VCardTitle class="title-box">
-         <div class="title-text">Nyckeltal</div>
+         <div class="title-text">Översikt</div>
 
          <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
             <VMenu v-if="windowWidth >= 1024">
