@@ -29,6 +29,7 @@ use App\Models\Currency;
 use App\Models\Supplier;
 use App\Models\VehicleDocument;
 use App\Models\SupplierActivity;
+use App\Models\Notification;
 
 use App\Services\CacheService;
 
@@ -379,6 +380,9 @@ class VehicleController extends Controller
             SupplierActivity::where('entity_id', $vehicle->id)
                 ->where('entity_type', 'vehicles')
                 ->update(['route' => null]);
+
+            //Delete notifications related to the vehicle's stock edit page to prevent access to deleted vehicle through notifications
+            Notification::deleteNotificationsByRoute('stock/edit/'.$id);
 
             $vehicle->deleteVehicle($id);
 

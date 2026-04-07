@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use App\Services\CacheService;
+use App\Jobs\SendEmailJob;
 
 use App\Models\Agreement;
 use App\Models\AgreementType;
@@ -29,7 +30,6 @@ use App\Models\Client;
 use App\Models\ClientType;
 use App\Models\AgreementClient;
 use App\Models\VehicleClient;
-use App\Jobs\SendEmailJob;
 use App\Models\GuarantyType;
 use App\Models\InsuranceType;
 use App\Models\Currency;
@@ -44,6 +44,7 @@ use App\Models\SupplierActivity;
 use App\Models\User;;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\Notification;
 
 class AgreementController extends Controller
 {
@@ -351,6 +352,8 @@ class AgreementController extends Controller
                 ->where('entity_type', 'agreements')
                 ->update(['route' => null]);
             
+            //Delete notifications related to the vehicle's stock edit page to prevent access to deleted vehicle through notifications
+            Notification::deleteNotificationsByRoute('agreements?file_id='.$id);
 
             $agreement->deleteAgreement($id);
 

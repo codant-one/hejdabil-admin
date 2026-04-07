@@ -20,6 +20,8 @@ use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
 use App\Models\SupplierActivity;
+use App\Models\Notification;
+
 use App\Jobs\SendEmailJob;
 use App\Services\CacheService;
 
@@ -259,6 +261,9 @@ class DocumentController extends Controller
             SupplierActivity::where('entity_id', $document->id)
                 ->where('entity_type', 'documents')
                 ->update(['route' => null]);
+
+            //Delete notifications related to the vehicle's stock edit page to prevent access to deleted vehicle through notifications
+            Notification::deleteNotificationsByRoute('documents?file_id='.$id);
 
             Document::deleteDocument($id);
 
