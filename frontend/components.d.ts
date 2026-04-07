@@ -15,7 +15,6 @@ declare module '@vue/runtime-core' {
     AppCombobox: typeof import('./src/@core/components/app-form-elements/AppCombobox.vue')['default']
     AppDateTimePicker: typeof import('./src/@core/components/AppDateTimePicker.vue')['default']
     AppOtpInput: typeof import('./src/@core/components/AppOtpInput.vue')['default']
-    AppPagination: typeof import('./src/@core/components/AppPagination.vue')['default']
     AppPricing: typeof import('./src/@core/components/AppPricing.vue')['default']
     AppSearchHeader: typeof import('./src/@core/components/AppSearchHeader.vue')['default']
     AppSelect: typeof import('./src/@core/components/app-form-elements/AppSelect.vue')['default']

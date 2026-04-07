@@ -53,7 +53,6 @@ const advisor = ref({
 
 const isRequestOngoing = ref(false)
 const sectionEl = ref(null)
-const environment = ref(null)
 
 const COMPANY_STORAGE_KEY = 'clients_company_snapshot';
 
@@ -141,7 +140,6 @@ async function fetchData() {
   name.value = userDataJ.value?.name + " " + userDataJ.value?.last_name
 
   role.value = userDataJ.value.roles[0].name
-  environment.value = themeConfig.settings.enviroment
 
   if (role.value === 'Supplier' || role.value === 'User') {
     await loadProfit()
@@ -338,7 +336,7 @@ onBeforeUnmount(() => {
     </VSnackbar>
 
     <!-- 👉 Administrador -->
-    <VCard title="" class="card-fill" v-if="(role !== 'Supplier' && role !== 'User') || environment === 'production'">
+    <VCard title="" class="card-fill" v-if="(role !== 'Supplier' && role !== 'User')">
       <VRow class="py-6 px-md-6 px-2">
         <VCol
           cols="12"
