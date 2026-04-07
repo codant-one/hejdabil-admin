@@ -39,7 +39,7 @@ const closeTreeDialog  = function(){
                         <strong>Administratör</strong>&emsp;/&emsp;<code>Tillgång till hela applikationen</code>
                     </li>
                     <li class="n1">
-                        <strong>Visa instrumentpanel</strong>&emsp;/&emsp;<code>Gör att du kan visa kontrollpanelen</code>
+                        <strong>Visa Översikt</strong>&emsp;/&emsp;<code>Gör att du kan visa kontrollpanelen</code>
                     </li>
                     <ul class="tab">
                         <li class="n1">

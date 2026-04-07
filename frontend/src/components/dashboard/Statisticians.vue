@@ -689,10 +689,7 @@ import Dashboard from '@/api/dashboard'
 <template>
   <VCard title="" class="card-dashboard">
     <VCardTitle class="title-box">
-        <div class="title-text d-flex flex-column gap-2">
-          Viktiga statistikuppgifter
-          <span>Inköpta bilar</span>
-        </div>
+        <div class="title-text">Affärsstatistik</div>
 
         <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
           <VMenu 

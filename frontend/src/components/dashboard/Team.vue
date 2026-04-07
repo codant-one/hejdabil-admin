@@ -122,7 +122,7 @@
 <template>
    <VCard title="" class="card-dashboard border-team">
       <VCardTitle class="title-box">
-         <div class="title-text">Teamstatistik</div>
+         <div class="title-text">Teamöversikt</div>
 
          <div class="d-flex gap-2" :class="windowWidth < 1024 ? 'flex-column w-100' : ''">
             <VBtn
@@ -162,7 +162,7 @@
       </VCardTitle>
       <VCardText class="px-0 py-0">
          <div class="team-stats-panel" :class="teamMembers.length > 0 ? 'bg-green-1' : 'bg-neutral-1'">
-            <div class="team-stats-heading">Företagets total</div>
+            <div class="team-stats-heading">Totalt i företaget</div>
 
             <div class="team-stats-grid">
                <article
@@ -186,7 +186,7 @@
          class="title-box border-none"
          :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
       >
-         <div class="title-text">Individuell prestation</div>
+         <div class="title-text">Prestation per användare</div>
       </VCardTitle>
       <VCardText class="pb-0">
          <VTable

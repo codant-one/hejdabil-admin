@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
 
     <!-- 👉 Supplier / User -->
     <template  v-else>
-      <span class="title-dashboard" v-if="windowWidth < 1024">Instrumentpanel</span>
+      <span class="title-dashboard" v-if="windowWidth < 1024">Översikt</span>
     
       <VCard title="" class="card-transparent">
         

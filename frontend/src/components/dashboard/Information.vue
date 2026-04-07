@@ -211,7 +211,7 @@
 <template>
    <VCard title="" class="card-dashboard">
       <VCardTitle class="title-box border-none" :class="windowWidth < 1024 ? '' : 'pb-2'">
-         <div class="title-text mb-2">Mina uppgifter</div>
+         <div class="title-text mb-2">Mina anteckningar</div>
 
          <VBtn
             v-if="taskItems.some(item => item.completed)"

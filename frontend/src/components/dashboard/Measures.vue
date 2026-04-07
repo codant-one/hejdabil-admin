@@ -137,7 +137,7 @@
          class="title-box"
          :class="windowWidth < 1024 ? 'flex-row align-center' : ''"
       >
-         <div class="title-text">Åtgärder</div>
+         <div class="title-text">Planerade åtgärder</div>
 
          <VBtn
             class="btn-white-2 px-3 h-24"
