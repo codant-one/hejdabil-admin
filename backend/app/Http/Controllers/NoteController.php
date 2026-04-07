@@ -413,7 +413,7 @@ class NoteController extends Controller
                 'entity_id' => $note->id,
                 'entity_type' => 'notes',
                 'action_type' => 'delete_comment_note',
-                'title' => $this->noteActivityTitle($note, ' - borttagen'),
+                'title' => $this->noteActivityTitle($note, ' - kommentar borttagen'),
                 'description' => 'Togs bort.',
                 'icon' => 'custom-cash',
                 'route' => '/dashboard/admin/notes',
