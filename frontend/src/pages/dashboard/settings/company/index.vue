@@ -32,6 +32,7 @@ const isRequestOngoing = ref(true)
 const isConfirmChangeLogoVisible = ref(false)
 const isConfirmChangeSignatureVisible = ref(false)
 const isSignaturePadDialogVisible = ref(false)
+const isBrandColorPickerVisible = ref(false)
 const isFormEdited = ref(false)
 const dialog = ref(false)
 
@@ -82,6 +83,177 @@ const form = ref({
 const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
 
 const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
+
+const brandColorOptions = [
+  '#C1272D',
+  '#F15A24',
+  '#FBB03B',
+  '#39B54A',
+  '#29ABE2',
+  '#0071BC',
+  '#662D91',
+  '#9E005D',
+  '#ED1E79',
+  '#E7E7E7',
+]
+
+const customBrandColorSwatch = brandColorOptions[brandColorOptions.length - 2]
+const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
+const customBrandColor = ref(customBrandColorSwatch)
+const savedBrandColor = ref(null)
+
+const selectedBrandColor = ref(brandColorOptions[3])
+
+// ── Hue bar helpers ──
+
+const hueBarRef = ref(null)
+const currentHue = ref(0)
+const isDraggingHue = ref(false)
+
+const hexToRgb = hex => {
+  const h = hex.replace('#', '')
+
+  return {
+    r: Number.parseInt(h.slice(0, 2), 16),
+    g: Number.parseInt(h.slice(2, 4), 16),
+    b: Number.parseInt(h.slice(4, 6), 16),
+  }
+}
+
+const rgbToHsv = (r, g, b) => {
+  r /= 255
+  g /= 255
+  b /= 255
+
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  let h = 0
+  const s = max === 0 ? 0 : d / max
+  const v = max
+
+  if (d !== 0) {
+    if (max === r)
+      h = ((g - b) / d + 6) % 6
+    else if (max === g)
+      h = (b - r) / d + 2
+    else
+      h = (r - g) / d + 4
+
+    h *= 60
+  }
+
+  return { h, s, v }
+}
+
+const hsvToRgb = (h, s, v) => {
+  const c = v * s
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1))
+  const m = v - c
+  let r, g, b
+
+  if (h < 60) { r = c; g = x; b = 0 }
+  else if (h < 120) { r = x; g = c; b = 0 }
+  else if (h < 180) { r = 0; g = c; b = x }
+  else if (h < 240) { r = 0; g = x; b = c }
+  else if (h < 300) { r = x; g = 0; b = c }
+  else { r = c; g = 0; b = x }
+
+  return {
+    r: Math.round((r + m) * 255),
+    g: Math.round((g + m) * 255),
+    b: Math.round((b + m) * 255),
+  }
+}
+
+const rgbToHex = (r, g, b) => `#${[r, g, b].map(c => c.toString(16).padStart(2, '0')).join('')}`
+
+const hexToHsv = hex => {
+  const { r, g, b } = hexToRgb(hex)
+
+  return rgbToHsv(r, g, b)
+}
+
+const hsvToHex = (h, s, v) => {
+  const { r, g, b } = hsvToRgb(h, s, v)
+
+  return rgbToHex(r, g, b)
+}
+
+const hueThumbTop = computed(() => `${(currentHue.value / 360) * 100}%`)
+
+const updateHueFromPointer = e => {
+  const rect = hueBarRef.value.getBoundingClientRect()
+  const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height))
+
+  currentHue.value = y * 360
+
+  const hsv = hexToHsv(customBrandColor.value)
+  const s = hsv.s < 0.1 ? 1 : hsv.s
+  const v = hsv.v < 0.1 ? 1 : hsv.v
+
+  customBrandColor.value = hsvToHex(currentHue.value, s, v)
+}
+
+const onHuePointerMove = e => {
+  e.preventDefault()
+  updateHueFromPointer(e)
+}
+
+const onHuePointerUp = () => {
+  isDraggingHue.value = false
+  window.removeEventListener('pointermove', onHuePointerMove)
+  window.removeEventListener('pointerup', onHuePointerUp)
+}
+
+const onHuePointerDown = e => {
+  isDraggingHue.value = true
+  updateHueFromPointer(e)
+  window.addEventListener('pointermove', onHuePointerMove)
+  window.addEventListener('pointerup', onHuePointerUp)
+}
+
+watch(customBrandColor, hex => {
+  if (isDraggingHue.value)
+    return
+
+  const hsv = hexToHsv(hex)
+
+  currentHue.value = hsv.h
+}, { immediate: true })
+
+const getBrandColorSwatchColor = color => color === customBrandColorSwatch && savedBrandColor.value ? savedBrandColor.value : color
+
+const getBrandColorIconColor = color => {
+  const hexColor = color.replace('#', '')
+  const normalizedHexColor = hexColor.length === 3
+    ? hexColor.split('').map(char => `${char}${char}`).join('')
+    : hexColor
+
+  const red = Number.parseInt(normalizedHexColor.slice(0, 2), 16)
+  const green = Number.parseInt(normalizedHexColor.slice(2, 4), 16)
+  const blue = Number.parseInt(normalizedHexColor.slice(4, 6), 16)
+  const brightness = (red * 299 + green * 587 + blue * 114) / 1000
+
+  return brightness > 160 ? '#1C2925' : '#FFFFFF'
+}
+
+const selectBrandColor = color => {
+  if (color === customBrandColorOption) {
+    customBrandColor.value = savedBrandColor.value || selectedBrandColor.value
+    isBrandColorPickerVisible.value = true
+
+    return
+  }
+
+  selectedBrandColor.value = color
+}
+
+const applyCustomBrandColor = () => {
+  savedBrandColor.value = customBrandColor.value
+  selectedBrandColor.value = customBrandColorSwatch
+  isBrandColorPickerVisible.value = false
+}
 
 const companyDetail = computed(() => {
   if (role.value === 'User')
@@ -720,8 +892,12 @@ onBeforeUnmount(() => {
               :class="windowWidth < 1024 ? 'flex-column' : 'flex-row'"
               :style="windowWidth >= 1024 ? 'gap: 24px;' : 'gap: 16px;'"
             >
-              <div class="d-flex justify-start" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+              <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                 
+                <span class="avatar-text">
+                  Logotyp
+                </span>
+
                 <div class="logo-store">
                   <VBtn
                     v-if="role !== 'User'"
@@ -739,8 +915,47 @@ onBeforeUnmount(() => {
                   <VImg :src="logo" class="logo-store-img" contain />
                 </div>
               </div>
-              <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
-                
+              <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                <span class="avatar-text">
+                  Varumärkets färg
+                  <VTooltip location="bottom" max-width="200"> 
+                  <template #activator="{ props }">
+                    <span v-bind="props" class="cursor-pointer">
+                      <VIcon icon="custom-circle-help" size="24" />
+                    </span>
+                  </template>
+                  ??? texto
+                </VTooltip>
+                </span>
+                <div class="brand-color-grid">
+                  <button
+                    v-for="color in brandColorOptions"
+                    :key="color"
+                    type="button"
+                    class="brand-color-grid__item"
+                    :class="{ 'brand-color-grid__item--selected': selectedBrandColor === color && color !== customBrandColorOption }"
+                    :style="{ backgroundColor: getBrandColorSwatchColor(color) }"
+                    :aria-label="`Färg ${color}`"
+                    @click="selectBrandColor(color)"
+                  >
+                    <VIcon
+                      v-if="color === customBrandColorOption"
+                      icon="custom-plus"
+                      size="13"
+                      class="brand-color-grid__plus"
+                      :style="{ color: getBrandColorIconColor(getBrandColorSwatchColor(color)) }"
+                    />
+                    <VIcon
+                      v-else-if="selectedBrandColor === color"
+                      icon="custom-checked"
+                      size="16"
+                      class="brand-color-grid__check"
+                    />
+                  </button>
+                </div>
+                <span class="avatar-text text-neutral-3">
+                  Välj en färg som representerar ditt varumärke. Den används i dina dokument.
+                </span>
               </div>
             </div>
           </div>          
@@ -1203,6 +1418,60 @@ onBeforeUnmount(() => {
         </VCardText>
       </VCard>
     </VDialog>
+
+    <VDialog
+      v-model="isBrandColorPickerVisible"
+      :persistent="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : ''"
+      :max-width="windowWidth >= 1024 ? 402 : undefined"
+      :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+      :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
+    >
+      <VBtn
+        v-if="windowWidth >= 1024"
+        icon
+        class="btn-white close-btn"
+        @click="isBrandColorPickerVisible = false"
+      >
+        <VIcon size="16" icon="custom-close" />
+      </VBtn>
+
+      <VCard>
+        <VCardText class="dialog-title-box">
+          <div class="dialog-title">Colors</div>
+        </VCardText>
+
+        <VCardText class="dialog-text py-0 brand-color-picker-wrapper">
+          <div class="brand-picker-layout">
+            <VColorPicker
+              v-model="customBrandColor"
+              mode="hex"
+              :modes="['hex']"
+              :canvas-height="260"
+              width="100%"
+              hide-sliders
+            />
+            <div
+              ref="hueBarRef"
+              class="brand-hue-bar"
+              @pointerdown="onHuePointerDown"
+            >
+              <div class="brand-hue-bar__thumb" :style="{ top: hueThumbTop }" />
+            </div>
+          </div>
+          <div class="d-flex flex-column gap-4 mt-4">
+            <span class="text-color-picker">HEX</span>
+            <span class="box-color-picker">{{ customBrandColor }}</span>             
+          </div>
+        </VCardText>
+
+        <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
+          <VBtn class="btn-light w-100" @click="applyCustomBrandColor">
+            Spara
+          </VBtn>
+        </VCardText>
+      </VCard>
+    </VDialog>
   </section>
 </template>
 
@@ -1267,6 +1536,151 @@ onBeforeUnmount(() => {
 .logo-store {
   z-index: 2;
   position: relative;
+  width: fit-content;
+}
+
+.text-color-picker {
+  font-family: "SF Pro", Arial, sans-serif;
+  font-weight: 590;
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: 0;
+  color: #000000;
+}
+
+.box-color-picker {
+  background-color:  #78787833;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-family: "SF Pro", Arial, sans-serif;
+  font-weight: 590;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  color: #000000;
+}
+
+.brand-color-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  max-width: 224px;
+}
+
+.brand-color-grid__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 32px;
+  border: 2px solid transparent;
+}
+
+.brand-color-grid__item--selected {
+  border: 2px solid #1C2925;
+}
+
+.brand-color-grid__check {
+  color: #FFFFFF;
+}
+
+.brand-color-grid__plus {
+  color: #1C2925;
+}
+
+/* ── Brand Color Picker ── */
+
+.brand-picker-layout {
+  display: grid;
+  grid-template-columns: 1fr 30px;
+  column-gap: 12px;
+}
+
+:deep(.brand-picker-layout .v-color-picker) {
+  display: contents;
+}
+
+:deep(.brand-picker-layout .v-color-picker-canvas) {
+  grid-column: 1;
+  border-radius: 0 !important;
+  width: 100% !important;
+  height: 260px !important;
+}
+
+:deep(.brand-picker-layout .v-color-picker__controls) {
+  display: none;
+}
+
+:deep(.brand-picker-layout .v-color-picker-canvas canvas) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Edit section below canvas — spans both columns */
+:deep(.brand-picker-layout .v-color-picker-edit) {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+  padding: 0 !important;
+}
+
+:deep(.brand-picker-layout .v-color-picker-edit__input) {
+  flex-direction: column-reverse !important;
+  display: flex !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+:deep(.brand-picker-layout .v-color-picker-edit__input span) {
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1C2925;
+  text-align: left !important;
+  margin-bottom: 6px;
+}
+
+:deep(.brand-picker-layout .v-color-picker-edit__input input) {
+  background: #f0f0f0 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  text-align: left !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  color: #1C2925 !important;
+  height: auto !important;
+}
+
+:deep(.brand-picker-layout .v-color-picker-edit .v-btn) {
+  display: none !important;
+}
+
+/* Custom vertical hue bar */
+.brand-hue-bar {
+  position: relative;
+  width: 30px;
+  height: 260px;
+  background: linear-gradient(to bottom, #F00 0%, #FF0 16.66%, #0F0 33.33%, #0FF 50%, #00F 66.66%, #F0F 83.33%, #F00 100%);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.brand-hue-bar__thumb {
+  position: absolute;
+  left: -3px;
+  width: 36px;
+  height: 12px;
+  margin-top: -6px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  background: transparent;
 }
 
 .logo-store-img {
@@ -1336,6 +1750,10 @@ onBeforeUnmount(() => {
     left: 50%;
     right: auto;
     transform: translate(-50%, -50%);
+  }
+
+  .brand-color-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .signature-preview-box,
