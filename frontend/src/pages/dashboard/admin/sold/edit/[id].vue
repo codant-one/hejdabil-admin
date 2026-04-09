@@ -113,6 +113,7 @@ const currentData = computed(() => ({
     postal_code: postal_code.value,
     phone: phone.value,
     email: email.value,
+    purchase_price: purchase_price.value
 }))
 
 const isDirty = computed(() => {
@@ -258,7 +259,7 @@ async function fetchData() {
         color.value = vehicle.value.color
         fuel_id.value = vehicle.value.fuel_id
         gearbox_id.value = vehicle.value.gearbox_id
-        purchase_price.value = vehicle.value.purchase_price
+        purchase_price.value = formatDecimal(vehicle.value.purchase_price) ?? formatDecimal(purchase_price.value)
         iva_purchase_id.value = vehicle.value.iva_purchase_id
         purchase_date.value = vehicle.value.purchase_date
         currency_id.value = vehicle.value.currency_purchase_id ?? 1
@@ -284,13 +285,27 @@ async function fetchData() {
 }
 
 const formatDecimal = (value) => {
+    if (value === null || value === undefined || value === '') {
+        return null
+    }
+
     const number = parseFloat(value);
+
+    if (!Number.isFinite(number)) {
+        return null
+    }
 
     if (number % 1 !== 0) {
         return number.toFixed(2);
     }
 
     return number.toString();
+}
+
+const isInvalidRequiredNumber = (value) => {
+    if (value === null || value === undefined || value === '') return true
+
+    return !Number.isFinite(Number(value))
 }
 
 const formatDate = (date) => {
@@ -607,7 +622,9 @@ const onTabChange = async (targetTab) => {
 
 const onSubmit = async () => {
     // Tab-1: Försäljningsuppgifter
-    const hasTab0Errors = !sale_price.value || !sale_date.value || !iva_sale_id.value ||
+    const hasTab0Errors =
+        isInvalidRequiredNumber(purchase_price.value) ||
+        !sale_price.value || !sale_date.value || !iva_sale_id.value ||
         iva_sale_amount.value === null || iva_sale_exclusive.value === null ||
         discount.value === null || registration_fee.value === null || total_sale.value === null;
 
@@ -716,6 +733,7 @@ const onSubmit = async () => {
                 formData.append('total_sale', total_sale.value);
                 formData.append('iva_sale_id', iva_sale_id.value);
                 formData.append('sale_comments', sale_comments.value);
+                formData.append('purchase_price', purchase_price.value)
 
                 formData.append('client_type_id', client_type_id.value);
                 formData.append('country_id', country_id.value)
@@ -971,10 +989,13 @@ onBeforeRouteLeave((to, from, next) => {
                                         </div>
                                         <div class="info-item d-flex flex-column gap-2">
                                             <span>Inköpspris</span>
-                                              <div class="value-field">
-                                                {{ formatNumber(purchase_price ?? 0) }} 
-                                                {{ currencies.filter(item => item.id === currency_id)[0]?.code }}
-                                            </div>
+                                            <VTextField
+                                                type="number"
+                                                v-model="purchase_price"
+                                                min="0"
+                                                suffix="KR"
+                                                :rules="[requiredValidator]"
+                                            />
                                         </div>
                                         <div class="info-item d-flex flex-column gap-2">
                                             <span>VMB / Moms</span>

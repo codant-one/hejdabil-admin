@@ -79,25 +79,6 @@
       formInstanceKey.value += 1
    }
 
-   const showError = () => {
-      inteSkapatsDialog.value = false
-
-      const responseData = err.value?.response?.data
-      let message = ''
-
-      if (responseData?.message) {
-         message = responseData.message
-      } else if (responseData?.errors) {
-         message = Object.values(responseData.errors).flat().join('<br>')
-      } else if (err.value?.message) {
-         message = err.value.message
-      } else {
-         message = 'Ett serverfel uppstod. Försök igen.'
-      }
-
-      emit('advisor', { type: 'error', message })
-   }
-
    const onSubmit = async () => {
       const { valid } = await refVForm.value?.validate()
 
@@ -115,9 +96,25 @@
          }, 3000)
 
          emit('refresh')
-      } catch (error) {
-         err.value = error
+      } catch (error) {error
+
+         const responseData = error?.response?.data
+
+         if (responseData?.message) {
+            err.value = responseData.message
+         } else if (responseData?.errors) {
+            err.value = Object.values(responseData.errors).flat().join('<br>')
+         } else if (error?.message) {
+            err.value = error.message
+         } else {
+            err.value = 'Ett fel uppstod när uppgiften skulle sparas. Försök igen.'
+         }
+
          inteSkapatsDialog.value = true
+
+         setTimeout(() => {
+            inteSkapatsDialog.value = false
+         }, 3000)
       } finally {
          isSubmitting.value = false
       }
@@ -308,6 +305,17 @@
                Alla slutförda uppgifter har tagits bort.
             </InlineBanner>
 
+            <InlineBanner
+               v-if="inteSkapatsDialog"
+               variant="error"
+               title="Kunde inte skapa uppgiften"
+               icon="custom-risk"
+               class="alert-no-shrink"
+               style="flex: none;"
+            >
+              {{ err }}
+            </InlineBanner>
+
             <div
                v-for="item in taskItems"
                :key="item.id"
@@ -369,38 +377,6 @@
       </VCardText>
    </VCard>
 
-   <!-- 👉 Inte Skapats Dialog (error) -->
-   <VDialog
-      v-model="inteSkapatsDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-   >
-      <VBtn
-         icon
-         class="btn-white close-btn"
-         @click="inteSkapatsDialog = false"
-      >
-         <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-f-cancel" />
-         </VCardText>
-         <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Kunde inte skapa uppgiften</div>
-         </VCardText>
-         <VCardText class="dialog-text text-center">
-            Ett fel uppstod. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
-         </VCardText>
-         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-            <VBtn class="btn-light" @click="showError">
-               Stäng
-            </VBtn>
-         </VCardText>
-      </VCard>
-   </VDialog>
-
    <!-- 👉 Confirm Delete Dialog -->
    <VDialog
       v-model="confirmDeleteDialog"
@@ -417,7 +393,7 @@
 
       <VCard>
          <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-f-cancel" />
+            <VIcon size="72" icon="custom-warning-triangle" />
          </VCardText>
          <VCardText class="dialog-title-box justify-center">
             <div class="dialog-title">Ta bort alla slutförda uppgifter?</div>
