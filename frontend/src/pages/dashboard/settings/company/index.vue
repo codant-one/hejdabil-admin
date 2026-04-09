@@ -97,9 +97,8 @@ const brandColorOptions = [
   '#E7E7E7',
 ]
 
-const customBrandColorSwatch = brandColorOptions[brandColorOptions.length - 2]
 const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
-const customBrandColor = ref(customBrandColorSwatch)
+const customBrandColor = ref(customBrandColorOption)
 const savedBrandColor = ref(null)
 
 const selectedBrandColor = ref(brandColorOptions[3])
@@ -222,7 +221,7 @@ watch(customBrandColor, hex => {
   currentHue.value = hsv.h
 }, { immediate: true })
 
-const getBrandColorSwatchColor = color => color === customBrandColorSwatch && savedBrandColor.value ? savedBrandColor.value : color
+const getBrandColorSwatchColor = color => color
 
 const getBrandColorIconColor = color => {
   const hexColor = color.replace('#', '')
@@ -238,6 +237,29 @@ const getBrandColorIconColor = color => {
   return brightness > 160 ? '#1C2925' : '#FFFFFF'
 }
 
+const SECONDARY_TINT_STRENGTH = 0.13
+
+const primaryColorHex = computed(() => customBrandColor.value.toUpperCase())
+
+const secondaryColorHex = computed(() => {
+  const { r, g, b } = hexToRgb(customBrandColor.value)
+
+  // 13% del color base sobre fondo blanco para obtener un HEX guardable.
+  const blendWithWhite = channel => Math.round((channel * SECONDARY_TINT_STRENGTH) + (255 * (1 - SECONDARY_TINT_STRENGTH)))
+
+  return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b)).toUpperCase()
+})
+
+const primaryColorPreviewStyle = computed(() => ({
+  backgroundColor: primaryColorHex.value,
+  color: getBrandColorIconColor(customBrandColor.value),
+}))
+
+const secondaryColorPreviewStyle = computed(() => ({
+  backgroundColor: secondaryColorHex.value,
+  color: '#454545',
+}))
+
 const selectBrandColor = color => {
   if (color === customBrandColorOption) {
     customBrandColor.value = savedBrandColor.value || selectedBrandColor.value
@@ -251,7 +273,7 @@ const selectBrandColor = color => {
 
 const applyCustomBrandColor = () => {
   savedBrandColor.value = customBrandColor.value
-  selectedBrandColor.value = customBrandColorSwatch
+  selectedBrandColor.value = customBrandColorOption
   isBrandColorPickerVisible.value = false
 }
 
@@ -933,8 +955,14 @@ onBeforeUnmount(() => {
                     :key="color"
                     type="button"
                     class="brand-color-grid__item"
-                    :class="{ 'brand-color-grid__item--selected': selectedBrandColor === color && color !== customBrandColorOption }"
-                    :style="{ backgroundColor: getBrandColorSwatchColor(color) }"
+                    :class="{
+                      'brand-color-grid__item--selected': selectedBrandColor === color,
+                      'brand-color-grid__item--customized': color === customBrandColorOption && !!savedBrandColor,
+                    }"
+                    :style="{
+                      backgroundColor: getBrandColorSwatchColor(color),
+                      '--custom-brand-color': color === customBrandColorOption && savedBrandColor ? savedBrandColor : 'transparent',
+                    }"
                     :aria-label="`Färg ${color}`"
                     @click="selectBrandColor(color)"
                   >
@@ -945,12 +973,7 @@ onBeforeUnmount(() => {
                       class="brand-color-grid__plus"
                       :style="{ color: getBrandColorIconColor(getBrandColorSwatchColor(color)) }"
                     />
-                    <VIcon
-                      v-else-if="selectedBrandColor === color"
-                      icon="custom-checked"
-                      size="16"
-                      class="brand-color-grid__check"
-                    />
+                    
                   </button>
                 </div>
                 <span class="avatar-text text-neutral-3">
@@ -1459,9 +1482,13 @@ onBeforeUnmount(() => {
               <div class="brand-hue-bar__thumb" :style="{ top: hueThumbTop }" />
             </div>
           </div>
-          <div class="d-flex flex-column gap-4 mt-4">
-            <span class="text-color-picker">HEX</span>
-            <span class="box-color-picker">{{ customBrandColor }}</span>             
+          <div class="d-flex flex-column gap-1 mt-4">
+            <span class="text-color-picker">Primary</span>
+            <span class="box-color-picker" :style="primaryColorPreviewStyle">{{ primaryColorHex }}</span>
+          </div>
+          <div class="d-flex flex-column gap-1 mt-2">
+            <span class="text-color-picker">Secondary</span>
+            <span class="box-color-picker" :style="secondaryColorPreviewStyle">{{ secondaryColorHex }}</span>
           </div>
         </VCardText>
 
@@ -1539,12 +1566,19 @@ onBeforeUnmount(() => {
   width: fit-content;
 }
 
+.dialog-title {
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #5d5d5d;
+}
+
 .text-color-picker {
-  font-family: "SF Pro", Arial, sans-serif;
-  font-weight: 590;
+  font-weight: 600;
   font-size: 15px;
   line-height: 20px;
-  letter-spacing: 0;
+  letter-spacing: 0px;
   color: #000000;
 }
 
@@ -1552,8 +1586,7 @@ onBeforeUnmount(() => {
   background-color:  #78787833;
   border-radius: 8px;
   padding: 9px 14px;
-  font-family: "SF Pro", Arial, sans-serif;
-  font-weight: 590;
+  font-weight: 500;
   font-size: 17px;
   line-height: 22px;
   letter-spacing: -0.43px;
@@ -1572,14 +1605,31 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: visible;
   width: 32px;
   height: 32px;
   border-radius: 32px;
   border: 2px solid transparent;
 }
 
-.brand-color-grid__item--selected {
-  border: 2px solid #1C2925;
+.brand-color-grid__item--selected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #5D5D5D;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.brand-color-grid__item--customized {
+  border-color: var(--custom-brand-color);
+  background:
+    radial-gradient(circle, #D9D9D9 0 38%, var(--custom-brand-color) 39% 70%, transparent 71%);
 }
 
 .brand-color-grid__check {
