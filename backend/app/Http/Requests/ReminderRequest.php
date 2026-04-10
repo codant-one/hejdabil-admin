@@ -28,14 +28,9 @@ class ReminderRequest extends FormRequest
                 'required',
                 'string'
             ],
-            'start_date' => [
+            'date' => [
                 'required',
                 'date'
-            ],
-            'end_date' => [
-                'required',
-                'date',
-                'after_or_equal:start_date'
             ]
         ];
 
@@ -48,11 +43,8 @@ class ReminderRequest extends FormRequest
         return [
             'description.required' => 'Beskrivning är obligatorisk',
             'description.string' => 'Beskrivning måste vara en text',
-            'start_date.required' => 'Startdatum är obligatoriskt',
-            'start_date.date' => 'Startdatum måste vara ett giltigt datum',
-            'end_date.required' => 'Slutdatum är obligatoriskt',
-            'end_date.date' => 'Slutdatum måste vara ett giltigt datum',
-            'end_date.after_or_equal' => 'Slutdatum måste vara samma datum som eller senare än startdatum'
+            'date.required' => 'Datum är obligatoriskt',
+            'date.date' => 'Datum måste vara ett giltigt datum',
         ];
     }
 
