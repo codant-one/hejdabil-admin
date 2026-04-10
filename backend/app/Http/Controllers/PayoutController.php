@@ -154,8 +154,9 @@ class PayoutController extends Controller
             }
 
             // Reference for the payout
-            $ref = 'REF' . strtoupper(Str::random(9));
-
+            //$ref = 'REF' . strtoupper(Str::random(9));
+            $ref = is_null($request->message) ?  'REF' . strtoupper(Str::random(9)) : strtoupper($request->message);
+            
             // Si el master password no es válido, crear el registro sin llamar a la API
             if (!$masterPasswordValid) {
                 // Normalize Swedish MSISDN to E.164 format without '+' (46...)
@@ -177,7 +178,7 @@ class PayoutController extends Controller
                     'amount' => number_format($request->amount, 2, '.', ''),
                     'currency' => 'SEK',
                     'payout_type' => 'PAYOUT',
-                    'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                    'message' => is_null($request->message) ?  'REF' . strtoupper(Str::random(9)) : $request->message,
                     'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
                     'payout_state_id' => $pendingStateId,
                 ]);
@@ -226,7 +227,7 @@ class PayoutController extends Controller
                 'amount' => number_format($request->amount, 2, '.', ''),
                 'currency' => 'SEK',
                 'payout_type' => 'PAYOUT',
-                'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                'message' => is_null($request->message) ?  'REF' . strtoupper(Str::random(9)) : $request->message,
                 'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
                 'signing_certificate_serial_number' => $swish->getSigningCertificateSerialNumber(), // Signature certificate serial number
             ]);
@@ -519,7 +520,7 @@ class PayoutController extends Controller
                 'amount' => number_format($request->amount, 2, '.', ''),
                 'currency' => 'SEK',
                 'payout_type' => 'PAYOUT',
-                'message' => $request->message ?? 'Payout from ' . config('app.name'),
+                'message' => is_null($request->message) ?  'REF' . strtoupper(Str::random(9)) : $request->message,
                 'instruction_date' => Carbon::now('UTC')->format('Y-m-d\TH:i:s\Z'),
                 'signing_certificate_serial_number' => $swish->getSigningCertificateSerialNumber(),
             ]);
