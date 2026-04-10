@@ -465,7 +465,7 @@ const truncateText = (text, length = 30) => {
 <template>
   <!-- 👉 Form -->
   <VForm
-    class="card-form"
+    class="card-form client-mobile"
     ref="refForm"
     v-model="isFormValid"
     validate-on="submit"
@@ -707,58 +707,75 @@ const truncateText = (text, length = 30) => {
 </style>
 
 <style lang="scss">
-.card-form {
-  .v-list {
-    padding: 28px 24px 40px !important;
+@media (max-width: 1023px) {
+  .card-form.client-mobile {
+    .v-list {
+      padding: 28px 24px 40px !important;
 
-    .v-list-item {
-      margin-bottom: 0px;
-      padding: 4px 0 !important;
-      gap: 0px !important;
+      .v-list-item {
+        margin-bottom: 0px;
+        padding: 4px 0 !important;
+        gap: 0px !important;
 
-      .v-input--density-compact {
-        --v-input-control-height: 48px !important;
-      }
-
-      .v-select .v-field {
-        .v-select__selection {
-          align-items: center;
+        .v-input--density-compact {
+          --v-input-control-height: 48px !important;
         }
 
-        .v-field__input > input {
-          top: 0px;
-          left: 0px;
+        .v-select .v-field {
+          .v-select__selection {
+            align-items: center;
+          }
+
+          .v-field__input > input {
+            top: 0px;
+            left: 0px;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
         }
 
-        .v-field__append-inner {
-          align-items: center;
-          padding-top: 0px;
+        .selector-country {
+          .v-input__prepend {
+            margin-inline-end: 6px !important;
+          }
         }
-      }
 
-      .selector-country {
-        .v-input__prepend {
-          margin-inline-end: 6px !important;
+        .v-autocomplete .v-field {
+          .v-autocomplete__selection-text {
+            align-items: center;
+            display: flex;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
         }
-      }
 
-      .v-text-field {
-        .v-input__control {
-          padding-top: 0;
-          input {
-            min-height: 48px;
-            padding: 12px 16px;
+        .v-text-field {
+          .v-input__control {
+            padding-top: 0;
+            input {
+              min-height: 48px !important;
+              height: 48px !important;
+              padding: 12px 16px;
+            }
           }
         }
       }
     }
-  }
-  & .v-input {
-    & .v-input__control {
-      .v-field {
-        background-color: #f6f6f6;
-        .v-field-label {
-          top: 12px !important;
+    & .v-input:not(.v-textarea) {
+      & .v-input__control {
+        .v-field {
+          background-color: #f6f6f6;
+          min-height: 48px !important;
+          height: 48px !important;
+          .v-field-label {
+            top: 12px !important;
+          }
         }
       }
     }

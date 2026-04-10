@@ -493,7 +493,7 @@ const onCountryFlagError = country => {
     @update:model-value="handleDrawerModelValueUpdate"
   >
     <!-- 👉 Title -->
-    <div class="d-flex align-center pa-6 pb-1">
+    <div class="d-flex align-center pa-6">
       <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
@@ -510,12 +510,12 @@ const onCountryFlagError = country => {
       </VBtn>
     </div>
 
-    <VDivider class="mt-4" />
+    <VDivider />
 
     <PerfectScrollbar 
       :options="{ wheelPropagation: false }" 
       class="scrollbar-no-border">
-      <VCard flat class="card-form">
+      <VCard flat class="card-form client-desktop">
         <VCardText>
           <!-- 👉 Form -->
           <VForm 
@@ -584,7 +584,7 @@ const onCountryFlagError = country => {
                   />                
                   <VBtn
                     v-if="client_type_id !== 3"
-                    class="btn-ghost w-auto px-3"
+                    class="btn-ghost w-auto px-3 h-40"
                     @click="searchEntity"
                   >
                     <VIcon icon="custom-search" size="24" />
@@ -647,7 +647,7 @@ const onCountryFlagError = country => {
                     <VAvatar
                       start
                       style="margin-top: -7px;"
-                      size="44">
+                      size="36">
                       <VImg
                         :src="getFlagCountry(country_id)"
                         cover
@@ -749,65 +749,80 @@ const onCountryFlagError = country => {
   .btn-close-client {
     height: 32px !important;
   }
-  .card-form {
-    .v-input {
-      .v-input__control {
-        .v-field {
-          background-color: #f6f6f6 !important;
-          min-height: 48px !important;
 
-          .v-text-field__suffix {
-            padding: 12px 16px !important;
-          }
+  .h-40 {
+    height: 40px !important;
+  }
 
-          .v-field__input {
-            min-height: 48px !important;
-            padding: 12px 16px !important;
+  .v-btn.h-40 {
+    height: 40px !important;
+    min-height: 40px !important;
+  }
 
-            input {
-                min-height: 48px !important;
+  @media (min-width: 1024px) {
+    .card-form.client-desktop {
+      .v-input:not(.v-textarea) {
+        .v-input__control {
+          .v-field {
+            background-color: #f6f6f6 !important;
+            min-height: 40px !important;
+            height: 40px !important;
+
+            .v-text-field__suffix {
+              padding: 8px 16px !important;
+            }
+
+            .v-field__input {
+              min-height: 40px !important;
+              height: 40px !important;
+              padding: 8px 16px !important;
+
+              input {
+                min-height: 40px !important;
+                height: 40px !important;
+              }
+            }
+
+            .v-field-label {
+              top: 12px !important;
+            }
+
+            .v-field__append-inner {
+              align-items: center;
+              padding-top: 0px;
             }
           }
+        }
+      }
 
-          .v-field-label {
-            top: 12px !important;
-          }
-
-          .v-field__append-inner {
+      .v-select .v-field {
+        .v-select__selection {
             align-items: center;
-            padding-top: 0px;
+            color: #454545;
+        }
+
+        .v-field__input > input {
+          top: 0px;
+          left: 18px;
+
+        }
+
+        .v-field__input input::placeholder,
+        input.v-field__input::placeholder,
+        .v-field__input textarea::placeholder,
+        textarea.v-field__input::placeholder {
+            color: #454545 !important;
+            opacity: 1 !important;
           }
+      }
+
+      .selector-country {
+        .v-input__prepend {
+          margin-inline-end: 6px !important;
         }
       }
+
     }
-
-    .v-select .v-field {
-      .v-select__selection {
-          align-items: center;
-          color: #454545;
-      }
-
-      .v-field__input > input {
-        top: 0px;
-        left: 18px;
-
-      }
-
-      .v-field__input input::placeholder,
-      input.v-field__input::placeholder,
-      .v-field__input textarea::placeholder,
-      textarea.v-field__input::placeholder {
-          color: #454545 !important;
-          opacity: 1 !important;
-        }
-    }
-
-    .selector-country {
-      .v-input__prepend {
-        margin-inline-end: 6px !important;
-      }
-    }
-
   }
 
   .org-number-duplicate {

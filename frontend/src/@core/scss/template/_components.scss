@@ -623,8 +623,19 @@ body .v-btn {
 }
 
 // 👉 checkbox size and box shadow
+.v-checkbox,
 .v-checkbox-btn {
+  &:not(.v-selection-control--dirty) {
+    .v-selection-control__input > .v-icon {
+      color: #e7e7e7 !important;
+    }
+  }
+
   &.v-selection-control--dirty {
+    .v-selection-control__input > .v-icon {
+      color: #454545 !important;
+    }
+
     .v-selection-control__input {
       .v-icon.custom-checkbox-checked {
         // ℹ️ Using filter: drop-shadow() instead of box-shadow because box-shadow creates white background for SVG
@@ -1539,19 +1550,25 @@ body {
         
         .v-field__field {
           align-items: center;
-          top: 4px;
+          top: 6px;
         }
 
         .v-field__input {
           height: 48px;
           min-height: 48px;
-          padding: 4px 12px 12px 12px;
+          padding: 0 12px 12px 12px;
           color: #454545;
           font-size: 14px;
           font-weight: 400;
+
+          .v-combobox__selection {
+            margin: 0 !important;
+            height: 32px !important;
+          }
         }
 
         .v-field__outline {
+          --v-field-border-width: 0;
           color: #454545 !important;
           border-color: #e7e7e7 !important;
         }
@@ -1766,8 +1783,14 @@ body {
     .v-input__control {
       .v-field {
         background-color: #f6f6f6;
+
         .v-field__outline {
           color: #454545 !important;
+        }
+
+        .v-field__outline__start,
+        .v-field__outline__notch,
+        .v-field__outline__end {
           border-color: #e7e7e7 !important;
         }
       }
@@ -1782,7 +1805,12 @@ body {
         background-color: #f6f6f6;
         .v-field__outline {
           color: #878787 !important;
-          border-color: #E7E7E7 !important;
+        }
+
+        .v-field__outline__start,
+        .v-field__outline__notch,
+        .v-field__outline__end {
+          border-color: #e7e7e7 !important;
         }
       }
     }
