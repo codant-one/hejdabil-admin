@@ -452,7 +452,7 @@ onBeforeUnmount(() => {
 
                 <!-- 👉 Form Actions -->
                 <div 
-                  class="d-flex justify-start gap-3 flex-wrap dialog-actions4"
+                  class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                   :class="windowWidth < 1024 ? 'mt-4' : 'mt-8'"
                 >
                 

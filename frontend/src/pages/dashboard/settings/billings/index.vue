@@ -236,6 +236,20 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
               </VRadioGroup>
+
+              <!-- 👉 Form Actions -->
+              <div 
+                class="d-flex justify-start gap-3 flex-wrap dialog-actions"
+              >
+              
+                <VBtn 
+                  type="submit" 
+                  class="btn-gradient"
+                  :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
+                >
+                  Spara
+                </VBtn>
+              </div>
             </div>
           </div>
         </VCardText>
@@ -345,7 +359,7 @@ onBeforeUnmount(() => {
   }
 
   .delivery-method-option {
-    margin-bottom: 12px;
+    margin-bottom: 24px;
   }
 
   .delivery-method-option .v-selection-control {
@@ -371,7 +385,6 @@ onBeforeUnmount(() => {
 
   .delivery-method-title {
     font-weight: 700;
-    font-style: Bold;
     font-size: 16px;
     line-height: 24px;
     letter-spacing: 0;
