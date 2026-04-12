@@ -53,6 +53,22 @@ const isDirty = computed(() => {
   }
 })
 
+const hasAnyInputFilled = computed(() => {
+  const values = [
+    reg_num.value,
+    note.value,
+    name.value,
+    phone.value,
+    email.value,
+    comment.value,
+  ]
+
+  return values.some(value => {
+    if (value === null || value === undefined) return false
+    return String(value).trim() !== ''
+  })
+})
+
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera värdering': 'Ny värdering'
 })
@@ -104,11 +120,21 @@ const reallyCloseAndReset = () => {
 }
 
 const closeNavigationDrawer = () => {
-  if (isDirty.value) {
+  if (hasAnyInputFilled.value) {
     isConfirmLeaveVisible.value = true
     return
   }
   reallyCloseAndReset()
+}
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false
+  reallyCloseAndReset()
+}
+
+const cancelLeave = () => {
+  isConfirmLeaveVisible.value = false
+  emit('update:isDrawerOpen', true)
 }
 
 const onSubmit = () => {
@@ -135,7 +161,7 @@ const onSubmit = () => {
 
 const handleDrawerModelValueUpdate = val => {
   if (val === false) {
-    if (isDirty.value) {
+    if (hasAnyInputFilled.value) {
       // keep drawer open and show confirm dialog
       emit('update:isDrawerOpen', true)
       isConfirmLeaveVisible.value = true
@@ -177,7 +203,7 @@ watch(currentData, () => {
         class="btn-white"
         @click="closeNavigationDrawer"
       >
-        <VIcon size="32" icon="custom-cancel" />
+        <VIcon size="32" icon="custom-cancel-2" />
       </VBtn>
     </div>
     
@@ -241,7 +267,7 @@ watch(currentData, () => {
               <!-- 👉 Submit and Cancel -->
               <VCol cols="12">
                 <VBtn
-                  type="reset"
+                  type="button"
                   class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
@@ -270,7 +296,7 @@ watch(currentData, () => {
     <VBtn
       icon
       class="btn-white close-btn"
-      @click="isConfirmLeaveVisible = false"
+      @click="cancelLeave"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
@@ -283,8 +309,8 @@ watch(currentData, () => {
         Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
       </VCardText>
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Lämna sidan</VBtn>
-        <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Stanna kvar</VBtn>
+        <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+        <VBtn class="btn-gradient" @click="cancelLeave">Stanna kvar</VBtn>
       </VCardText>
     </VCard>
   </VDialog>

@@ -3018,7 +3018,7 @@ onBeforeRouteLeave((to, from, next) => {
                 class="btn-white"
                 @click="closeTask"
             >
-                <VIcon size="32" icon="custom-cancel" />
+                <VIcon size="32" icon="custom-cancel-2" />
             </VBtn>
             </div>
 
@@ -3223,7 +3223,7 @@ onBeforeRouteLeave((to, from, next) => {
                     class="btn-white"
                     @click="closeTask"
                 >
-                    <VIcon size="32" icon="custom-cancel" />
+                    <VIcon size="32" icon="custom-cancel-2" />
                 </VBtn>
             </div>
 
@@ -3588,7 +3588,7 @@ onBeforeRouteLeave((to, from, next) => {
                     class="btn-white"
                     @click="closeDocument"
                 >
-                    <VIcon size="32" icon="custom-cancel" />
+                    <VIcon size="32" icon="custom-cancel-2" />
                 </VBtn>
             </div>
 

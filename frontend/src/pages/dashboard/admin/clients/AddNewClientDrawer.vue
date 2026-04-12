@@ -506,7 +506,7 @@ const onCountryFlagError = country => {
         class="btn-white"
         @click="closeNavigationDrawer"
       >
-        <VIcon size="32" icon="custom-cancel" />
+        <VIcon size="32" icon="custom-cancel-2" />
       </VBtn>
     </div>
 

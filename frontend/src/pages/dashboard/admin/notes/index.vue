@@ -1401,7 +1401,7 @@ onBeforeUnmount(() => {
           class="btn-white"
           @click="closeNote()"
         >
-          <VIcon size="32" icon="custom-cancel" />
+          <VIcon size="32" icon="custom-cancel-2" />
         </VBtn>
       </div>
 
