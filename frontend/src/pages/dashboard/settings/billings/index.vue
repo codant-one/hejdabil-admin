@@ -1,11 +1,11 @@
 <script setup>
 
+import { requiredValidator } from '@/@core/utils/validators'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import billing1 from '@images/billings/1.svg'
 import billing2 from '@images/billings/2.svg'
 import billing3 from '@images/billings/3.svg'
 import billing4 from '@images/billings/4.svg'
-import { requiredValidator } from '@/@core/utils/validators'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
