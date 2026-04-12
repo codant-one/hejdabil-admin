@@ -1,9 +1,20 @@
 <script setup>
 
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
+import billing1 from '@images/billings/1.svg'
+import billing2 from '@images/billings/2.svg'
+import billing3 from '@images/billings/3.svg'
+import billing4 from '@images/billings/4.svg'
+import { requiredValidator } from '@/@core/utils/validators'
 
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
+const selectedBillingTemplate = ref('classic')
+const automaticRemindersEnabled = ref(true)
+const deliveryMethod = ref('email')
+
+const due_date = ref(5);
+const terms_and_conditions = ref('Efter förfallodagen debiteras ränta enligt räntelagen');
 
 const isRequestOngoing = ref(false);
 
@@ -46,12 +57,367 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-4">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Fakturautseende</span>
+                <span class="text-settings">
+                  Välj en design som representerar ditt företag. Förhandsgranska hur fakturan visas för kunden.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <span class="avatar-text">
+                Välj fakturamall
+              </span>
+
+              <div class="d-flex gap-4 mt-2 billing-options">
+                <button
+                  type="button"
+                  class="billing-option d-flex flex-column gap-2"
+                  :class="{ 'billing-option--selected': selectedBillingTemplate === 'classic' }"
+                  @click="selectedBillingTemplate = 'classic'"
+                >
+                  <div class="billing-option__preview">
+                    <img :src="billing1" alt="Billing 1" />
+                  </div>
+                  <span class="avatar-text text-neutral-3 ps-3">Klassisk</span>
+                </button>
+                <button
+                  type="button"
+                  class="billing-option d-flex flex-column gap-2"
+                  :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-1' }"
+                  @click="selectedBillingTemplate = 'modern-1'"
+                >
+                  <div class="billing-option__preview">
+                    <img :src="billing2" alt="Billing 2" />
+                  </div>
+                  <span class="avatar-text text-neutral-3 ps-3">Modern 1</span>
+                </button>
+                <button
+                  type="button"
+                  class="billing-option d-flex flex-column gap-2"
+                  :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-2' }"
+                  @click="selectedBillingTemplate = 'modern-2'"
+                >
+                  <div class="billing-option__preview">
+                    <img :src="billing3" alt="Billing 3" />
+                  </div>
+                  <span class="avatar-text text-neutral-3 ps-3">Modern 2</span>
+                </button>
+                <button
+                  type="button"
+                  class="billing-option d-flex flex-column gap-2"
+                  :class="{ 'billing-option--selected': selectedBillingTemplate === 'compact' }"
+                  @click="selectedBillingTemplate = 'compact'"
+                >
+                  <div class="billing-option__preview">
+                    <img :src="billing4" alt="Billing 4" />
+                  </div>
+                  <span class="avatar-text text-neutral-3 ps-3">Kompakt</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-6">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Betalningsvillkor & Ränta</span>
+                <span class="text-settings">
+                  Ställ in betalningsvillkor och dröjsmålsränta för dina fakturor.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex flex-column gap-6 card-form">
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Betalningsvillkor (Dagar)*" />
+                    <VTextField
+                      type="number"
+                      v-model="due_date"
+                      min="1"
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+                <div :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(100% - 12px);'">
+                    <VLabel class="mb-1 text-body-2 me-2 text-high-emphasis" text="Dröjsmålsränta*" />
+                    <VTooltip location="bottom" max-width="200"> 
+                      <template #activator="{ props }">
+                        <span v-bind="props" class="cursor-pointer">
+                          <VIcon icon="custom-circle-help" size="24" />
+                        </span>
+                      </template>
+                      Den ränta som debiteras vid sen betalning enligt dina villkor.
+                    </VTooltip>
+                    <VTextField
+                      v-model="terms_and_conditions"
+                      :rules="[requiredValidator]"
+                    />
+                </div>
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout border-bottom-settings pb-4">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Automatiska påminnelser</span>
+                <span class="text-settings">
+                  Skicka påminnelser automatiskt till kunden när en faktura passerar förfallodatum.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <div class="d-flex gap-4 align-start">
+                <VSwitch
+                  v-model="automaticRemindersEnabled"
+                  class="reminders-switch"
+                  hide-details
+                  inset
+                >
+                  <template v-slot:label>
+                    <div class="d-flex flex-column">
+                      <span class="reminders-title">Aktivera påminnelser</span>
+                      <span class="reminders-description">
+                        En påminnelse skickas till kunden via vald leveransmetod en dag efter förfallodatum.
+                      </span>
+                    </div>
+                  </template>
+                </VSwitch>                
+              </div>
+            </div>
+          </div>
+        </VCardText>
+
+        <VCardText class="pb-0">
+          <div class="settings-layout pb-4">
+            <div class="settings-layout__sidebar">
+              <div class="d-flex flex-column gap-4">
+                <span class="subtitle-settings">Leveransmetod</span>
+                <span class="text-settings">
+                  Välj hur fakturor skickas till dina kunder.
+                </span>
+              </div>
+            </div>
+            <div class="settings-layout__content">
+              <VRadioGroup
+                v-model="deliveryMethod"
+                hide-details
+                false-icon="custom-settings-checkbox-false"
+                true-icon="custom-settings-checkbox-true"
+                class="delivery-method-group"
+              >
+                <VRadio value="email" class="delivery-method-option">
+                  <template #label>
+                    <div class="delivery-method-content">
+                      <span class="delivery-method-title">Endast E-post</span>
+                      <span class="delivery-method-description">
+                        Fakturan skickas som en PDF-lank till kundens e-post. Standardalternativ utan extra kostnad.
+                      </span>
+                    </div>
+                  </template>
+                </VRadio>
+
+                <VRadio value="email-sms" class="delivery-method-option">
+                  <template #label>
+                    <div class="delivery-method-content">
+                      <span class="delivery-method-title">E-post + SMS</span>
+                      <span class="delivery-method-description">
+                        Fakturan skickas via e-post och avisering skickas via SMS. SMS medfor en extra kostnad.
+                      </span>
+                    </div>
+                  </template>
+                </VRadio>
+              </VRadioGroup>
+            </div>
+          </div>
+        </VCardText>
+
       </VCard>
     </section>
 </template>
 
 <style lang="scss">
-  
+  .avatar-text {
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .billing-options {
+    flex-wrap: wrap;
+  }
+
+  .billing-option {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .billing-option__preview {
+    padding: 8px;
+    border-radius: 13px;
+    border: 2px solid transparent;
+    overflow: hidden;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+  }
+
+  .billing-option__preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .billing-option:hover .billing-option__preview {
+    background-color: #ffffff;
+  }
+
+  .billing-option--selected .billing-option__preview {
+    border-color: #BFBFBF;
+    background-color: #ffffff;
+  }
+
+  /*.billing-option--selected .avatar-text.ps-3 {
+    padding-left: 0 !important;
+  }*/
+
+  .billing-option:focus-visible {
+    outline: 2px solid #22a9e1;
+    outline-offset: 2px;
+  }
+
+  .reminders-title {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .reminders-description {
+    margin-top: 4px;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .reminders-switch {
+    width: 100%;
+  }
+
+  .reminders-switch .v-label {
+    display: block;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .delivery-method-group .v-selection-control {
+    align-items: start !important;
+  }
+
+  .delivery-method-group .v-radio.v-selection-control--dirty .v-selection-control__input .iconify--custom, .v-radio-btn.v-selection-control--dirty .v-selection-control__input .iconify--custom {
+    box-shadow: none !important;
+  }
+
+  .delivery-method-group .v-radio .v-selection-control__input .iconify--custom, .v-radio-btn .v-selection-control__input .iconify--custom {
+    block-size: 24px !important;
+    font-size: 24px !important;
+    inline-size: 24px!important;
+  }
+
+  .delivery-method-group {
+    width: 100%;
+  }
+
+  .delivery-method-option {
+    margin-bottom: 12px;
+  }
+
+  .delivery-method-option .v-selection-control {
+    align-items: flex-start;
+  }
+
+  .delivery-method-option .v-label {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .delivery-method-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    margin-left: 16px;
+  }
+
+  .delivery-method-title {
+    font-weight: 700;
+    font-style: Bold;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+    color: #454545;
+  }
+
+  .delivery-method-description {
+    margin-top: 2px;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0;
+
+    color: #454545;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  @media (max-width: 1023px) {
+    .billing-options {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding-bottom: 4px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .billing-options::-webkit-scrollbar {
+      display: none;
+    }
+
+    .billing-option {
+      flex: 0 0 auto;
+    }
+
+    .reminders-switch .v-label {
+      max-width: 100%;
+    }
+
+    .delivery-method-description {
+      font-size: 14px;
+      line-height: 22px;
+    }
+  }
 </style>
 
 <route lang="yaml">

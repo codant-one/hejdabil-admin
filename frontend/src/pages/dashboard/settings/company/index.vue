@@ -1071,13 +1071,13 @@ onBeforeUnmount(() => {
                 <span class="avatar-text">
                   Varumärkets färg
                   <VTooltip location="bottom" max-width="200"> 
-                  <template #activator="{ props }">
-                    <span v-bind="props" class="cursor-pointer">
-                      <VIcon icon="custom-circle-help" size="24" />
-                    </span>
-                  </template>
-                  Påverkar utseendet på dina fakturor och avtal.
-                </VTooltip>
+                    <template #activator="{ props }">
+                      <span v-bind="props" class="cursor-pointer">
+                        <VIcon icon="custom-circle-help" size="24" />
+                      </span>
+                    </template>
+                    Påverkar utseendet på dina fakturor och avtal.
+                  </VTooltip>
                 </span>
                 <div class="brand-color-grid">
                   <button
@@ -1640,6 +1640,15 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+
+.avatar-text {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0;
+  color: #454545;
+}
+
 :deep(.vue-simple-handler) {
   background: #57F287 !important;
 }

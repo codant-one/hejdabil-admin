@@ -26,7 +26,7 @@ export default [
     to: 'dashboard-settings-notifications', 
     action: 'view', 
     subject: 'dashboard'
-  },
+  },*/
   { 
     title: 'Fakturor', 
     icon: { icon: 'custom-facture' },
@@ -40,6 +40,6 @@ export default [
     to: 'dashboard-settings-agreements', 
     action: 'view', 
     subject: 'dashboard'
-  }*/
+  }
 ]
   
