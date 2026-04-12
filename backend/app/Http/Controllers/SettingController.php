@@ -58,15 +58,7 @@ class SettingController extends Controller
         try {
 
             $settings = Setting::where('supplier_id', $id)->first();
-        
-            if (!$settings)
-                return response()->json([
-                    'success' => false,
-                    'feedback' => 'not_found',
-                    'message' => 'Inställningar hittades inte'
-                ], 404);
-            
-            $settings->colors($request, $settings);
+            $settings = Setting::colors($request, $settings);
 
             return response()->json([
                 'success' => true,
@@ -75,10 +67,10 @@ class SettingController extends Controller
                 ]
             ], 200);
 
-        } catch(\Illuminate\Database\QueryException $ex) {
+        } catch(\Throwable $ex) {
             return response()->json([
                 'success' => false,
-                'message' => 'database_error',
+                'message' => 'server_error',
                 'exception' => $ex->getMessage()
             ], 500);
         }

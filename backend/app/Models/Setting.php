@@ -38,18 +38,28 @@ class Setting extends Model
 
         $supplier_id = self::resolveSupplierId($request);
 
-        $settings->query()->updateOrCreate([
+        $settings = self::query()->updateOrCreate([
             'user_id' => Auth::user()->id,
             'supplier_id' => $supplier_id,
         ], [
-            'setting_color_id' => $request->setting_color_id === 'null' ? null : $request->setting_color_id,
-            'setting_billing_id' => $request->setting_billing_id === 'null' ? null : $request->setting_billing_id,
-            'setting_agreement_id' => $request->setting_agreement_id === 'null' ? null : $request->setting_agreement_id,
-            'primary_color' => $request->primary_color === 'null' ? null : $request->primary_color,
-            'secondary_color' => $request->secondary_color === 'null' ? null : $request->secondary_color
+            'setting_color_id' => self::resolveOptionalField($request, 'setting_color_id', $settings->setting_color_id ?? null),
+            'setting_billing_id' => null,
+            'setting_agreement_id' => null,
+            'primary_color' => self::resolveOptionalField($request, 'primary_color', $settings->primary_color ?? null),
+            'secondary_color' => self::resolveOptionalField($request, 'secondary_color', $settings->secondary_color ?? null)
         ]);
 
         return $settings;
+    }
+
+    private static function resolveOptionalField($request, $key, $fallback = null) {
+        if (!$request->exists($key)) {
+            return $fallback;
+        }
+
+        $value = $request->input($key);
+
+        return $value === 'null' ? null : $value;
     }
 
     private static function resolveSupplierId($request) {

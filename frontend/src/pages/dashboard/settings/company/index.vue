@@ -7,6 +7,7 @@ import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobileP
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
 import { useConfigsStores } from '@/stores/useConfigs'
+import { useSettingsStore } from '@/stores/useSettings'
 import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -27,6 +28,7 @@ const signaturePadInstance = ref(null)
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const profileStores = useProfileStores()
+const settingsStore = useSettingsStore()
 
 const isRequestOngoing = ref(true)
 const isConfirmChangeLogoVisible = ref(false)
@@ -98,10 +100,12 @@ const brandColorOptions = [
 ]
 
 const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
+const defaultBrandColorIndex = 3
+const presetBrandColorCount = brandColorOptions.length - 1
 const customBrandColor = ref(customBrandColorOption)
 const savedBrandColor = ref(null)
 
-const selectedBrandColor = ref(brandColorOptions[3])
+const selectedBrandColor = ref(brandColorOptions[defaultBrandColorIndex])
 
 // ── Hue bar helpers ──
 
@@ -260,7 +264,108 @@ const secondaryColorPreviewStyle = computed(() => ({
   color: '#454545',
 }))
 
-const selectBrandColor = color => {
+const normalizeHexColor = value => {
+  if (typeof value !== 'string')
+    return ''
+
+  const normalized = value.trim().toUpperCase()
+
+  return /^#[0-9A-F]{6}$/.test(normalized) ? normalized : ''
+}
+
+const getSettingColorIdFromOption = color => {
+  const index = brandColorOptions.indexOf(color)
+
+  if (index < 0 || index >= presetBrandColorCount)
+    return null
+
+  return index + 1
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const syncSettingsInLocalUserData = payload => {
+  const supplier = userData.value?.supplier
+
+  if (!supplier)
+    return
+
+  if (!supplier.settings || typeof supplier.settings !== 'object')
+    supplier.settings = {}
+
+  supplier.settings = {
+    ...supplier.settings,
+    ...payload,
+  }
+
+  if (payload.setting_color_id === 'null')
+    supplier.settings.setting_color_id = null
+
+  localStorage.setItem('user_data', JSON.stringify(userData.value))
+}
+
+const persistBrandColorSettings = async payload => {
+  const supplierId = resolveSettingsSupplierId()
+
+  if (!supplierId)
+    return false
+
+  isRequestOngoing.value = true
+
+  try {
+    await settingsStore.colors({
+      id: supplierId,
+      data: payload,
+    })
+
+    syncSettingsInLocalUserData(payload)
+
+    return true
+  } catch {
+    setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
+    clearAdvisorLater(5000)
+
+    return false
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+const applyBrandColorFromSettings = () => {
+  const supplierSettings = userData.value?.supplier?.settings
+  const settingColorId = Number(supplierSettings?.setting_color_id)
+
+  if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= presetBrandColorCount) {
+    const mappedColor = brandColorOptions[settingColorId - 1]
+
+    selectedBrandColor.value = mappedColor
+    customBrandColor.value = mappedColor
+    savedBrandColor.value = null
+
+    return
+  }
+
+  const customPrimaryColor = normalizeHexColor(supplierSettings?.primary_color)
+
+  if (customPrimaryColor) {
+    selectedBrandColor.value = customBrandColorOption
+    customBrandColor.value = customPrimaryColor
+    savedBrandColor.value = customPrimaryColor
+
+    return
+  }
+
+  selectedBrandColor.value = brandColorOptions[defaultBrandColorIndex]
+  customBrandColor.value = brandColorOptions[defaultBrandColorIndex]
+  savedBrandColor.value = null
+}
+
+const selectBrandColor = async color => {
   if (color === customBrandColorOption) {
     customBrandColor.value = savedBrandColor.value || selectedBrandColor.value
     isBrandColorPickerVisible.value = true
@@ -269,12 +374,36 @@ const selectBrandColor = color => {
   }
 
   selectedBrandColor.value = color
+  savedBrandColor.value = null
+
+  const settingColorId = getSettingColorIdFromOption(color)
+
+  if (!settingColorId)
+    return
+
+  await persistBrandColorSettings({
+    setting_color_id: settingColorId,
+  })
 }
 
-const applyCustomBrandColor = () => {
-  savedBrandColor.value = customBrandColor.value
+const applyCustomBrandColor = async () => {
+  const normalizedCustomColor = normalizeHexColor(customBrandColor.value)
+
+  if (!normalizedCustomColor)
+    return
+
+  savedBrandColor.value = normalizedCustomColor
+  customBrandColor.value = normalizedCustomColor
   selectedBrandColor.value = customBrandColorOption
-  isBrandColorPickerVisible.value = false
+
+  const isSaved = await persistBrandColorSettings({
+    setting_color_id: 'null',
+    primary_color: primaryColorHex.value,
+    secondary_color: secondaryColorHex.value,
+  })
+
+  if (isSaved)
+    isBrandColorPickerVisible.value = false
 }
 
 const companyDetail = computed(() => {
@@ -405,6 +534,7 @@ async function fetchData() {
       })
     }
 
+    applyBrandColorFromSettings()
     syncInitialFormSnapshot()
   } catch {
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')

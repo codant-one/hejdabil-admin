@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('supplier_id')->nullable();
             $table->unsignedBigInteger('setting_color_id')->nullable();
-            $table->unsignedBigInteger('setting_billing_id');
-            $table->unsignedBigInteger('setting_agreement_id');
+            $table->unsignedBigInteger('setting_billing_id')->nullable();
+            $table->unsignedBigInteger('setting_agreement_id')->nullable();
             $table->string('primary_color')->nullable();
             $table->string('secondary_color')->nullable();
             $table->timestamps();
