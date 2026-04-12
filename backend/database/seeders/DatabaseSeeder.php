@@ -50,7 +50,10 @@ class DatabaseSeeder extends Seeder
 
             CommissionTypeSeeder::class,
 
-            PayoutStateSeeder::class
+            PayoutStateSeeder::class,
+
+            //settings
+            SettingColorSeeder::class
         ]);
 
     }
