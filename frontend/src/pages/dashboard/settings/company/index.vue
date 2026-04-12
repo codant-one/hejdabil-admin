@@ -1444,24 +1444,29 @@ onBeforeUnmount(() => {
 
     <VDialog
       v-model="isBrandColorPickerVisible"
-      :persistent="windowWidth >= 1024"
-      :class="windowWidth >= 1024 ? 'action-dialog' : ''"
+      :fullscreen="windowWidth < 1024"
+      persistent
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
       :max-width="windowWidth >= 1024 ? 402 : undefined"
       :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
       :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     >
       <VBtn
-        v-if="windowWidth >= 1024"
         icon
         class="btn-white close-btn"
         @click="isBrandColorPickerVisible = false"
       >
-        <VIcon size="16" icon="custom-close" />
+        <VIcon size="24" icon="custom-close" />
       </VBtn>
 
       <VCard>
-        <VCardText class="dialog-title-box">
-          <div class="dialog-title">Colors</div>
+        <VCardText class="dialog-title-box d-flex flex-column align-start gap-4">
+          <div class="dialog-title-colors">Färger</div>
+          <div class="dialog-subtitle-colors">
+            Välj en primär färg. En matchande färg skapas automatiskt.
+          </div>
         </VCardText>
 
         <VCardText class="dialog-text py-0 brand-color-picker-wrapper">
@@ -1483,11 +1488,13 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <div class="d-flex flex-column gap-1 mt-4">
-            <span class="text-color-picker">Primary</span>
+            <span class="text-color-picker">Primär färg</span>
+            <span class="hex-color-picker">HEX</span>
             <span class="box-color-picker" :style="primaryColorPreviewStyle">{{ primaryColorHex }}</span>
           </div>
           <div class="d-flex flex-column gap-1 mt-2">
-            <span class="text-color-picker">Secondary</span>
+            <span class="text-color-picker">Sekundär färg (anpassas automatiskt)</span>
+            <span class="hex-color-picker">HEX</span>
             <span class="box-color-picker" :style="secondaryColorPreviewStyle">{{ secondaryColorHex }}</span>
           </div>
         </VCardText>
@@ -1566,15 +1573,32 @@ onBeforeUnmount(() => {
   width: fit-content;
 }
 
-.dialog-title {
+.dialog-title-colors {
   font-weight: 600;
-  font-size: 24px;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  text-align: center;
+  color: #1A1A1A;
+}
+
+.dialog-subtitle-colors {
+  font-weight: 400;
+  font-size: 14px;
   line-height: 100%;
   letter-spacing: 0;
-  color: #5d5d5d;
+  color: #878787;
 }
 
 .text-color-picker {
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  color: #1A1A1A;
+}
+
+.hex-color-picker {
   font-weight: 600;
   font-size: 15px;
   line-height: 20px;
@@ -1586,7 +1610,7 @@ onBeforeUnmount(() => {
   background-color:  #78787833;
   border-radius: 8px;
   padding: 9px 14px;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 17px;
   line-height: 22px;
   letter-spacing: -0.43px;
