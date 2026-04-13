@@ -146,9 +146,9 @@ class BillingController extends Controller
                     'billing_id' => $billing->id,
                     'new_values' => $request->only([
                         'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'reference', 'subtotal', 'tax',
-                        'total', 'rabatt', 'discount', 'amount_discount',
-                        'detail'
+                        'payment_terms', 'terms_and_conditions', 'reference', 
+                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
+                        'amount_discount', 'detail'
                     ])
                 ])
             ]);
@@ -233,9 +233,9 @@ class BillingController extends Controller
 
             $billingFields = [
                 'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                'payment_terms', 'reference', 'subtotal', 'tax',
-                'total', 'rabatt', 'discount', 'amount_discount',
-                'state_id', 'detail'
+                'payment_terms', 'terms_and_conditions', 'reference', 
+                'subtotal', 'tax', 'total', 'rabatt', 'discount', 
+                'amount_discount', 'detail'
             ];
 
             $oldValues = $billing->only($billingFields);
@@ -442,8 +442,9 @@ class BillingController extends Controller
                     'billing_id' => $billing->id,
                     'new_values' => $billing->only([
                         'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'reference', 'subtotal', 'tax',
-                        'total', 'rabatt', 'discount', 'amount_discount'
+                        'payment_terms', 'terms_and_conditions', 'reference', 
+                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
+                        'amount_discount', 'detail'
                     ])
                 ])
             ]);
@@ -493,8 +494,9 @@ class BillingController extends Controller
                     'billing_id' => $billing->id,
                     'new_values' => $billing->only([
                         'client_id', 'invoice_id', 'invoice_date', 'due_date',
-                        'payment_terms', 'reference', 'subtotal', 'tax',
-                        'total', 'rabatt', 'discount', 'amount_discount'
+                        'payment_terms', 'terms_and_conditions', 'reference', 
+                        'subtotal', 'tax', 'total', 'rabatt', 'discount', 
+                        'amount_discount', 'detail'
                     ])
                 ])
             ]);

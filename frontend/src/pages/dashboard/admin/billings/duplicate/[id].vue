@@ -108,6 +108,7 @@ async function fetchData() {
         invoice.value.invoice_date = billing.value.invoice_date
         invoice.value.due_date = billing.value.due_date
         invoice.value.days = extractDaysFromNetTermSplit(billing.value.payment_terms)
+        invoice.value.terms = billing.value.terms_and_conditions;
         invoice.value.supplier_id = billing.value.supplier_id ?? null
         invoice.value.client_id = billing.value.client_id
         invoice.value.subtotal = billing.value.subtotal 
@@ -329,6 +330,7 @@ const onSubmit = () => {
         formData.append('amount_discount', amount_discount.value)
         formData.append('reference', invoice.value.reference)
         formData.append('payment_terms', invoice.value.days)
+        formData.append("terms_and_conditions", invoice.value.terms)
 
         invoice.value.details.forEach((element, index) => {
           formData.append(`details[]`, JSON.stringify(element));
@@ -454,6 +456,8 @@ onBeforeRouteLeave((to, from, next) => {
               :isCredit="false"
               :hasUnsavedChanges="hasChangedSinceSave"
               :title="'Duplicera fakturan'"
+              :days="invoice.days"
+              :terms="invoice.terms"
               @push="addProduct"
               @remove="removeProduct"
               @delete="deleteProduct"

@@ -237,7 +237,7 @@
                                         </tr>
                                     </table>
  
-                                    <p class="mt-20 m-0">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
+                                    <p class="mt-20 m-0">{{ $billing->terms_and_conditions }}</p>           
                                 </td>
                                 <td width="35%" class="data-from pt-0" style="vertical-align: top;">
                                     <h3 class="m-0" style="text-align: right;">

@@ -50,7 +50,10 @@ const isConfirmLeaveVisible = ref(false);
 
 const userData = ref(null);
 const role = ref(null);
-const company = ref([]);
+const company = ref({});
+
+const DEFAULT_BILLING_DUE_DATES = 5;
+const DEFAULT_BILLING_TERMS = "Efter forfallodagen debiteras ranta enligt rantelagen.";
 
 const discount = ref(0);
 const rabattApplied = ref(false);
@@ -93,6 +96,13 @@ watchEffect(fetchData);
 async function fetchData() {
   isRequestOngoing.value = true;
 
+  const applyBillingSettings = (settings) => {
+    company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
+    company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
+      ? settings.terms_and_conditions
+      : DEFAULT_BILLING_TERMS;
+  };
+
   let response = await billingsStores.all();
 
   clients.value = response.data.data.clients;
@@ -117,12 +127,14 @@ async function fetchData() {
     company.value.billings = user_data.supplier.billings;
     company.value.name = user_data.name;
     company.value.last_name = user_data.last_name;
+    applyBillingSettings(user_data?.supplier?.settings?.billing);
   } else if (role.value === "User") {
     company.value = user_data.supplier.boss.user.user_detail;
     company.value.email = user_data.supplier.boss.user.email;
     company.value.billings = user_data.supplier.boss.billings;
     company.value.name = user_data.supplier.boss.user.name;
     company.value.last_name = user_data.supplier.boss.user.last_name;
+    applyBillingSettings(user_data?.supplier?.boss?.settings?.billing);
   } else {
     await configsStores.getFeature("company");
     await configsStores.getFeature("logo");
@@ -130,6 +142,7 @@ async function fetchData() {
     company.value = configsStores.getFeaturedConfig("company");
     company.value.billings = response.data.data.billings;
     company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+    applyBillingSettings(configsStores.getFeaturedConfig("billings"));
   }
 
   var item = {};
@@ -311,6 +324,7 @@ const onSubmit = () => {
       formData.append("amount_discount", amount_discount.value);
       formData.append("reference", invoice.value.reference);
       formData.append("payment_terms", invoice.value.days);
+      formData.append("terms_and_conditions", invoice.value.terms);
 
       invoice.value.details.forEach((element, index) => {
         formData.append(`details[]`, JSON.stringify(element));
@@ -424,6 +438,8 @@ onBeforeRouteLeave((to, from, next) => {
             :isCreated="true"
             :isCredit="false"
             :hasUnsavedChanges="hasChangedSinceSave"
+            :days="company.days"
+            :terms="company.terms"
             @push="addProduct"
             @remove="removeProduct"
             @delete="deleteProduct"

@@ -16,6 +16,10 @@ class Kernel extends ConsoleKernel
                  ->daily()
                  ->at('00:00');
 
+        $schedule->command('reminder-billings:send')
+                 ->daily()
+                 ->at('00:00');
+
         $schedule->command('notifications:send')
                  ->daily()
                  ->at('00:00');
