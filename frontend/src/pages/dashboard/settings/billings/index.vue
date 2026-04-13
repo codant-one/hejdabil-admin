@@ -7,6 +7,21 @@ import billing2 from '@images/billings/2.svg'
 import billing3 from '@images/billings/3.svg'
 import billing4 from '@images/billings/4.svg'
 
+const DEFAULT_PRIMARY_COLOR = '#29ABE2'
+const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const SECONDARY_TINT_STRENGTH = 0.13
+const brandColorOptions = [
+  '#C1272D',
+  '#F15A24',
+  '#FBB03B',
+  '#39B54A',
+  '#29ABE2',
+  '#0071BC',
+  '#662D91',
+  '#9E005D',
+  '#ED1E79',
+]
+
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
 const selectedBillingTemplate = ref('classic')
@@ -17,6 +32,101 @@ const due_date = ref(5);
 const terms_and_conditions = ref('Efter förfallodagen debiteras ränta enligt räntelagen');
 
 const isRequestOngoing = ref(false);
+const billingPreviewSources = ref({
+  classic: billing1,
+  modern1: billing2,
+  modern2: billing3,
+  compact: billing4,
+})
+
+const hexToRgb = hex => {
+  const normalized = (hex || '').replace('#', '')
+
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  }
+}
+
+const rgbToHex = (r, g, b) => `#${[r, g, b].map(channel => channel.toString(16).padStart(2, '0')).join('')}`.toUpperCase()
+
+const normalizeHexColor = value => {
+  if (typeof value !== 'string')
+    return ''
+
+  const normalized = value.trim().toUpperCase()
+
+  return /^#[0-9A-F]{6}$/.test(normalized) ? normalized : ''
+}
+
+const getSecondaryColorFromPrimary = primary => {
+  const { r, g, b } = hexToRgb(primary)
+  const blendWithWhite = channel => Math.round((channel * SECONDARY_TINT_STRENGTH) + (255 * (1 - SECONDARY_TINT_STRENGTH)))
+
+  return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
+}
+
+const resolveBillingPreviewColors = () => {
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+  const supplierSettings = userData?.supplier?.settings
+  const settingColorId = Number(supplierSettings?.setting_color_id)
+
+  if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
+    const primaryColor = brandColorOptions[settingColorId - 1]
+
+    return {
+      primaryColor,
+      secondaryColor: getSecondaryColorFromPrimary(primaryColor),
+    }
+  }
+
+  const primaryColor = normalizeHexColor(supplierSettings?.primary_color)
+  const secondaryColor = normalizeHexColor(supplierSettings?.secondary_color)
+
+  if (primaryColor) {
+    return {
+      primaryColor,
+      secondaryColor: secondaryColor || getSecondaryColorFromPrimary(primaryColor),
+    }
+  }
+
+  return {
+    primaryColor: DEFAULT_PRIMARY_COLOR,
+    secondaryColor: DEFAULT_SECONDARY_COLOR,
+  }
+}
+
+const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) => {
+  const response = await fetch(assetUrl)
+  const svgMarkup = await response.text()
+  const updatedSvgMarkup = svgMarkup
+    .replace(/#29ABE2/gi, primaryColor)
+    .replace(/#E2F2FC/gi, secondaryColor)
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvgMarkup)}`
+}
+
+const loadBillingPreviewSources = async () => {
+  const { primaryColor, secondaryColor } = resolveBillingPreviewColors()
+
+  try {
+    isRequestOngoing.value = true
+
+    const [classic, modern1, modern2, compact] = await Promise.all([
+      buildRecoloredSvgDataUrl(billing1, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(billing2, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(billing3, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(billing4, primaryColor, secondaryColor),
+    ])
+
+    billingPreviewSources.value = { classic, modern1, modern2, compact }
+  } catch {
+    billingPreviewSources.value = { classic: billing1, modern1: billing2, modern2: billing3, compact: billing4 }
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -28,6 +138,7 @@ function resizeSectionToRemainingViewport() {
 }
 
 onMounted(() => {
+  loadBillingPreviewSources();
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -81,7 +192,7 @@ onBeforeUnmount(() => {
                   @click="selectedBillingTemplate = 'classic'"
                 >
                   <div class="billing-option__preview">
-                    <img :src="billing1" alt="Billing 1" />
+                    <img :src="billingPreviewSources.classic" alt="Billing 1" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Klassisk</span>
                 </button>
@@ -92,7 +203,7 @@ onBeforeUnmount(() => {
                   @click="selectedBillingTemplate = 'modern-1'"
                 >
                   <div class="billing-option__preview">
-                    <img :src="billing2" alt="Billing 2" />
+                    <img :src="billingPreviewSources.modern1" alt="Billing 2" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Modern 1</span>
                 </button>
@@ -103,7 +214,7 @@ onBeforeUnmount(() => {
                   @click="selectedBillingTemplate = 'modern-2'"
                 >
                   <div class="billing-option__preview">
-                    <img :src="billing3" alt="Billing 3" />
+                    <img :src="billingPreviewSources.modern2" alt="Billing 3" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Modern 2</span>
                 </button>
@@ -114,7 +225,7 @@ onBeforeUnmount(() => {
                   @click="selectedBillingTemplate = 'compact'"
                 >
                   <div class="billing-option__preview">
-                    <img :src="billing4" alt="Billing 4" />
+                    <img :src="billingPreviewSources.compact" alt="Billing 4" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Kompakt</span>
                 </button>

@@ -6,6 +6,21 @@ import agreement1 from '@images/agreements/1.svg'
 import agreement2 from '@images/agreements/2.svg'
 import agreement3 from '@images/agreements/3.svg'
 
+const DEFAULT_PRIMARY_COLOR = '#29ABE2'
+const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const SECONDARY_TINT_STRENGTH = 0.13
+const brandColorOptions = [
+  '#C1272D',
+  '#F15A24',
+  '#FBB03B',
+  '#39B54A',
+  '#29ABE2',
+  '#0071BC',
+  '#662D91',
+  '#9E005D',
+  '#ED1E79',
+]
+
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
 const selectedagreementTemplate = ref('classic')
@@ -20,6 +35,99 @@ const automaticRemindersEnabled = ref(true)
 const deliveryMethod = ref('email')
 
 const isRequestOngoing = ref(false);
+const agreementPreviewSources = ref({
+  classic: agreement1,
+  modern: agreement2,
+  compact: agreement3,
+})
+
+const hexToRgb = hex => {
+  const normalized = (hex || '').replace('#', '')
+
+  return {
+    r: Number.parseInt(normalized.slice(0, 2), 16),
+    g: Number.parseInt(normalized.slice(2, 4), 16),
+    b: Number.parseInt(normalized.slice(4, 6), 16),
+  }
+}
+
+const rgbToHex = (r, g, b) => `#${[r, g, b].map(channel => channel.toString(16).padStart(2, '0')).join('')}`.toUpperCase()
+
+const normalizeHexColor = value => {
+  if (typeof value !== 'string')
+    return ''
+
+  const normalized = value.trim().toUpperCase()
+
+  return /^#[0-9A-F]{6}$/.test(normalized) ? normalized : ''
+}
+
+const getSecondaryColorFromPrimary = primary => {
+  const { r, g, b } = hexToRgb(primary)
+  const blendWithWhite = channel => Math.round((channel * SECONDARY_TINT_STRENGTH) + (255 * (1 - SECONDARY_TINT_STRENGTH)))
+
+  return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
+}
+
+const resolveAgreementPreviewColors = () => {
+  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
+  const supplierSettings = userData?.supplier?.settings
+  const settingColorId = Number(supplierSettings?.setting_color_id)
+
+  if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
+    const primaryColor = brandColorOptions[settingColorId - 1]
+
+    return {
+      primaryColor,
+      secondaryColor: getSecondaryColorFromPrimary(primaryColor),
+    }
+  }
+
+  const primaryColor = normalizeHexColor(supplierSettings?.primary_color)
+  const secondaryColor = normalizeHexColor(supplierSettings?.secondary_color)
+
+  if (primaryColor) {
+    return {
+      primaryColor,
+      secondaryColor: secondaryColor || getSecondaryColorFromPrimary(primaryColor),
+    }
+  }
+
+  return {
+    primaryColor: DEFAULT_PRIMARY_COLOR,
+    secondaryColor: DEFAULT_SECONDARY_COLOR,
+  }
+}
+
+const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) => {
+  const response = await fetch(assetUrl)
+  const svgMarkup = await response.text()
+  const updatedSvgMarkup = svgMarkup
+    .replace(/#29ABE2/gi, primaryColor)
+    .replace(/#E2F2FC/gi, secondaryColor)
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(updatedSvgMarkup)}`
+}
+
+const loadAgreementPreviewSources = async () => {
+  const { primaryColor, secondaryColor } = resolveAgreementPreviewColors()
+
+  try {
+    isRequestOngoing.value = true
+
+    const [classic, modern, compact] = await Promise.all([
+      buildRecoloredSvgDataUrl(agreement1, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(agreement2, primaryColor, secondaryColor),
+      buildRecoloredSvgDataUrl(agreement3, primaryColor, secondaryColor),
+    ])
+
+    agreementPreviewSources.value = { classic, modern, compact }
+  } catch {
+    agreementPreviewSources.value = { classic: agreement1, modern: agreement2, compact: agreement3 }
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
 
 function resizeSectionToRemainingViewport() {
   const el = sectionEl.value;
@@ -31,6 +139,7 @@ function resizeSectionToRemainingViewport() {
 }
 
 onMounted(() => {
+  loadAgreementPreviewSources();
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -84,7 +193,7 @@ onBeforeUnmount(() => {
                   @click="selectedagreementTemplate = 'classic'"
                 >
                   <div class="agreement-option__preview">
-                    <img :src="agreement1" alt="Agreement 1" />
+                    <img :src="agreementPreviewSources.classic" alt="Agreement 1" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Klassisk</span>
                 </button>
@@ -95,7 +204,7 @@ onBeforeUnmount(() => {
                   @click="selectedagreementTemplate = 'modern-1'"
                 >
                   <div class="agreement-option__preview">
-                    <img :src="agreement2" alt="Agreement 2" />
+                    <img :src="agreementPreviewSources.modern" alt="Agreement 2" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Modern</span>
                 </button>
@@ -106,7 +215,7 @@ onBeforeUnmount(() => {
                   @click="selectedagreementTemplate = 'modern-2'"
                 >
                   <div class="agreement-option__preview">
-                    <img :src="agreement3" alt="Agreement 3" />
+                    <img :src="agreementPreviewSources.compact" alt="Agreement 3" />
                   </div>
                   <span class="avatar-text text-neutral-3 ps-3">Kompakt</span>
                 </button>
