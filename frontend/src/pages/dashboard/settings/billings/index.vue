@@ -2,6 +2,7 @@
 
 import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
+import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import billing1 from '@images/billings/1.svg'
 import billing2 from '@images/billings/2.svg'
@@ -35,9 +36,11 @@ const selectedBillingTemplate = ref('classic')
 const automaticRemindersEnabled = ref(DEFAULT_BILLING_SEND_REMINDER)
 const deliveryMethod = ref(DEFAULT_BILLING_DELIVERY_METHOD)
 const settingsStore = useSettingsStore()
+const configsStores = useConfigsStores()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
+const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const isBillingPreviewReady = ref(false)
 
 const advisor = ref({
@@ -93,7 +96,11 @@ const resolveLoggedUserId = () => {
 }
 
 const resolveBillingPreviewColors = () => {
-  const settingColorId = Number(settingsData.value?.setting_color_id)
+  const colorSource = isAdminRole.value
+    ? configsStores.getFeaturedConfig('color') ?? {}
+    : settingsData.value ?? {}
+
+  const settingColorId = Number(colorSource?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
     const primaryColor = brandColorOptions[settingColorId - 1]
@@ -104,8 +111,8 @@ const resolveBillingPreviewColors = () => {
     }
   }
 
-  const primaryColor = normalizeHexColor(settingsData.value?.primary_color)
-  const secondaryColor = normalizeHexColor(settingsData.value?.secondary_color)
+  const primaryColor = normalizeHexColor(colorSource?.primary_color)
+  const secondaryColor = normalizeHexColor(colorSource?.secondary_color)
 
   if (primaryColor) {
     return {
@@ -191,6 +198,9 @@ const syncBillingSettingsLocalState = (settings, billingPayload = null) => {
 }
 
 const getStoredBillingSettings = () => {
+  if (isAdminRole.value)
+    return configsStores.getFeaturedConfig('billings') ?? null
+
   return settingsData.value?.billing || settingsData.value?.setting_billing || null
 }
 
@@ -220,19 +230,10 @@ const onSubmit = async () => {
   if (role.value === 'User')
     return
 
-  const supplierId = resolveSettingsSupplierId()
-
-  if (!supplierId)
-    return
-
   isRequestOngoing.value = true
 
   try {
     const payload = {
-      billing_id: settingsData.value?.setting_billing_id
-        ?? settingsData.value?.billing?.id
-        ?? settingsData.value?.setting_billing?.id
-        ?? null,
       type: getSelectedBillingType(),
       due_dates: Number(due_date.value) || 1,
       terms_and_conditions: terms_and_conditions.value,
@@ -240,35 +241,48 @@ const onSubmit = async () => {
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
 
-    const response = await settingsStore.billings({
-      id: supplierId,
-      data: payload,
-    })
+    if (isAdminRole.value) {
+      await configsStores.postFeature({
+        key: 'billings',
+        params: { value: payload },
+      })
 
-    const settingBillingId = response?.data?.data?.settings?.setting_billing_id
-      ?? settingsData.value?.setting_billing_id
-      ?? null
+      configsStores.configs['billings'] = payload
 
-    const persistedBilling = {
-      ...payload,
-      id: settingBillingId,
-    }
+      advisor.value = { type: 'success', message: 'Uppdaterad konfiguration!', show: true }
+    } else {
+      const supplierId = resolveSettingsSupplierId()
 
-    advisor.value = {
-      type: response.data.success ? 'success' : 'error',
-      message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
-      show: true
-    }
+      if (!supplierId)
+        return
 
-    setTimeout(() => {
+      const response = await settingsStore.billings({
+        id: supplierId,
+        data: {
+          ...payload,
+          billing_id: settingsData.value?.setting_billing_id
+            ?? settingsData.value?.billing?.id
+            ?? settingsData.value?.setting_billing?.id
+            ?? null,
+        },
+      })
+
+      const settingBillingId = response?.data?.data?.settings?.setting_billing_id
+        ?? settingsData.value?.setting_billing_id
+        ?? null
+
+      const persistedBilling = { ...payload, id: settingBillingId }
+
       advisor.value = {
-        type: '',
-        message: '',
-        show: false
+        type: response.data.success ? 'success' : 'error',
+        message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+        show: true,
       }
-    }, 3000)
 
-    syncBillingSettingsLocalState(response?.data?.data?.settings, persistedBilling)
+      syncBillingSettingsLocalState(response?.data?.data?.settings, persistedBilling)
+    }
+
+    setTimeout(() => { advisor.value = { type: '', message: '', show: false } }, 3000)
   } finally {
     isRequestOngoing.value = false
   }
@@ -288,11 +302,18 @@ onMounted(async () => {
   role.value = userData.value?.roles?.[0]?.name ?? ''
 
   try {
-    const loggedUserId = resolveLoggedUserId()
+    if (isAdminRole.value) {
+      await Promise.all([
+        configsStores.getFeature('billings'),
+        configsStores.getFeature('color'),
+      ])
+    } else {
+      const loggedUserId = resolveLoggedUserId()
 
-    settingsData.value = loggedUserId
-      ? await settingsStore.showSettings(loggedUserId)
-      : null
+      settingsData.value = loggedUserId
+        ? await settingsStore.showSettings(loggedUserId)
+        : null
+    }
   } catch {
     settingsData.value = null
   }

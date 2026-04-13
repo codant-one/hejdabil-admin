@@ -2,6 +2,7 @@
 
 import { requiredValidator } from '@/@core/utils/validators'
 import { useSettingsStore } from '@/stores/useSettings'
+import { useConfigsStores } from '@/stores/useConfigs'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import agreement1 from '@images/agreements/1.svg'
 import agreement2 from '@images/agreements/2.svg'
@@ -35,9 +36,11 @@ const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end
 const sectionEl = ref(null)
 const selectedagreementTemplate = ref('classic')
 const settingsStore = useSettingsStore()
+const configsStores = useConfigsStores()
 const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
+const isAdminRole = computed(() => role.value === 'SuperAdmin' || role.value === 'Administrator')
 const isAgreementPreviewReady = ref(false)
 
 const advisor = ref({
@@ -98,7 +101,11 @@ const resolveLoggedUserId = () => {
 }
 
 const resolveAgreementPreviewColors = () => {
-  const settingColorId = Number(settingsData.value?.setting_color_id)
+  const colorSource = isAdminRole.value
+    ? configsStores.getFeaturedConfig('color') ?? {}
+    : settingsData.value ?? {}
+
+  const settingColorId = Number(colorSource?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
     const primaryColor = brandColorOptions[settingColorId - 1]
@@ -109,8 +116,8 @@ const resolveAgreementPreviewColors = () => {
     }
   }
 
-  const primaryColor = normalizeHexColor(settingsData.value?.primary_color)
-  const secondaryColor = normalizeHexColor(settingsData.value?.secondary_color)
+  const primaryColor = normalizeHexColor(colorSource?.primary_color)
+  const secondaryColor = normalizeHexColor(colorSource?.secondary_color)
 
   if (primaryColor) {
     return {
@@ -192,7 +199,12 @@ const syncAgreementSettingsLocalState = (settings, agreementPayload = null) => {
   }
 }
 
-const getStoredAgreementSettings = () => settingsData.value?.agreement || settingsData.value?.setting_agreement || null
+const getStoredAgreementSettings = () => {
+  if (isAdminRole.value)
+    return configsStores.getFeaturedConfig('agreements') ?? null
+
+  return settingsData.value?.agreement || settingsData.value?.setting_agreement || null
+}
 
 const hydrateAgreementForm = () => {
   const agreementSettings = getStoredAgreementSettings()
@@ -231,20 +243,11 @@ const hydrateAgreementForm = () => {
 const onSubmit = async () => {
   if (role.value === 'User')
     return
-  
-  const supplierId = resolveSettingsSupplierId()
-
-  if (!supplierId)
-    return
 
   isRequestOngoing.value = true
 
   try {
     const payload = {
-      setting_agreement_id: settingsData.value?.setting_agreement_id
-        ?? settingsData.value?.agreement?.id
-        ?? settingsData.value?.setting_agreement?.id
-        ?? null,
       type: getSelectedAgreementType(),
       due_dates: Number(due_date.value) || DEFAULT_AGREEMENT_DUE_DATES,
       terms_and_conditions_purchase: terms_and_conditions_purchase.value,
@@ -255,35 +258,48 @@ const onSubmit = async () => {
       send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
     }
 
-    const response = await settingsStore.agreements({
-      id: supplierId,
-      data: payload,
-    })
+    if (isAdminRole.value) {
+      await configsStores.postFeature({
+        key: 'agreements',
+        params: { value: payload },
+      })
 
-    const settingAgreementId = response?.data?.data?.settings?.setting_agreement_id
-      ?? settingsData.value?.setting_agreement_id
-      ?? null
+      configsStores.configs['agreements'] = payload
 
-    const persistedAgreement = {
-      ...payload,
-      id: settingAgreementId,
-    }
+      advisor.value = { type: 'success', message: 'Uppdaterad konfiguration!', show: true }
+    } else {
+      const supplierId = resolveSettingsSupplierId()
 
-    advisor.value = {
-      type: response.data.success ? 'success' : 'error',
-      message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
-      show: true
-    }
+      if (!supplierId)
+        return
 
-    setTimeout(() => {
+      const response = await settingsStore.agreements({
+        id: supplierId,
+        data: {
+          ...payload,
+          setting_agreement_id: settingsData.value?.setting_agreement_id
+            ?? settingsData.value?.agreement?.id
+            ?? settingsData.value?.setting_agreement?.id
+            ?? null,
+        },
+      })
+
+      const settingAgreementId = response?.data?.data?.settings?.setting_agreement_id
+        ?? settingsData.value?.setting_agreement_id
+        ?? null
+
+      const persistedAgreement = { ...payload, id: settingAgreementId }
+
       advisor.value = {
-        type: '',
-        message: '',
-        show: false
+        type: response.data.success ? 'success' : 'error',
+        message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+        show: true,
       }
-    }, 3000)
 
-    syncAgreementSettingsLocalState(response?.data?.data?.settings, persistedAgreement)
+      syncAgreementSettingsLocalState(response?.data?.data?.settings, persistedAgreement)
+    }
+
+    setTimeout(() => { advisor.value = { type: '', message: '', show: false } }, 3000)
   } finally {
     isRequestOngoing.value = false
   }
@@ -303,11 +319,18 @@ onMounted(async () => {
   role.value = userData.value?.roles?.[0]?.name ?? ''
 
   try {
-    const loggedUserId = resolveLoggedUserId()
+    if (isAdminRole.value) {
+      await Promise.all([
+        configsStores.getFeature('agreements'),
+        configsStores.getFeature('color'),
+      ])
+    } else {
+      const loggedUserId = resolveLoggedUserId()
 
-    settingsData.value = loggedUserId
-      ? await settingsStore.showSettings(loggedUserId)
-      : null
+      settingsData.value = loggedUserId
+        ? await settingsStore.showSettings(loggedUserId)
+        : null
+    }
   } catch {
     settingsData.value = null
   }

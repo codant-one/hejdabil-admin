@@ -299,23 +299,44 @@ const resolveSettingsSupplierId = () => {
 }
 
 const persistBrandColorSettings = async payload => {
-  const supplierId = resolveSettingsSupplierId()
-
-  if (!supplierId)
+  if (role.value === 'User')
     return false
 
   isRequestOngoing.value = true
 
   try {
-    const response = await settingsStore.colors({
-      id: supplierId,
-      data: payload,
-    })
+    if (isAdminRole.value) {
+      const currentColorConfig = configsStores.getFeaturedConfig('color') ?? {}
+      const mergedPayload = {
+        ...currentColorConfig,
+        ...payload,
+        setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+      }
 
-    settingsData.value = response?.data?.data?.settings ?? {
-      ...(settingsData.value || {}),
-      ...payload,
-      setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+      await configsStores.postFeature({
+        key: 'color',
+        params: {
+          value: mergedPayload,
+        },
+      })
+
+      configsStores.configs['color'] = mergedPayload
+    } else {
+      const supplierId = resolveSettingsSupplierId()
+
+      if (!supplierId)
+        return false
+
+      const response = await settingsStore.colors({
+        id: supplierId,
+        data: payload,
+      })
+
+      settingsData.value = response?.data?.data?.settings ?? {
+        ...(settingsData.value || {}),
+        ...payload,
+        setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+      }
     }
 
     return true
@@ -330,7 +351,11 @@ const persistBrandColorSettings = async payload => {
 }
 
 const applyBrandColorFromSettings = () => {
-  const settingColorId = Number(settingsData.value?.setting_color_id)
+  const colorSource = isAdminRole.value
+    ? configsStores.getFeaturedConfig('color') ?? {}
+    : settingsData.value ?? {}
+
+  const settingColorId = Number(colorSource?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= presetBrandColorCount) {
     const mappedColor = brandColorOptions[settingColorId - 1]
@@ -342,7 +367,7 @@ const applyBrandColorFromSettings = () => {
     return
   }
 
-  const customPrimaryColor = normalizeHexColor(settingsData.value?.primary_color)
+  const customPrimaryColor = normalizeHexColor(colorSource?.primary_color)
 
   if (customPrimaryColor) {
     selectedBrandColor.value = customBrandColorOption
@@ -511,6 +536,7 @@ async function fetchData() {
         configsStores.getFeature('company'),
         configsStores.getFeature('logo'),
         configsStores.getFeature('signature'),
+        configsStores.getFeature('color'),
       ])
 
       const detail = configsStores.getFeaturedConfig('company') ?? {}
