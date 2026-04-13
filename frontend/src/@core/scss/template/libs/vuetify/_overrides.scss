@@ -147,6 +147,12 @@ body {
   inline-size: 16px !important;
 }
 
+// 👉 VSwitch readonly: mismo estilo, solo opacado
+.v-switch.v-input--readonly {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 // 👉 Expansion Panels: forzar bordes redondeados (más especificidad para prod)
 body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active),
 body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active),

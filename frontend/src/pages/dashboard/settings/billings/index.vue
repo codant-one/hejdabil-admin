@@ -85,7 +85,12 @@ const getSecondaryColorFromPrimary = primary => {
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
 
-const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
 
 const resolveBillingPreviewColors = () => {
   const settingColorId = Number(settingsData.value?.setting_color_id)
@@ -212,6 +217,9 @@ const hydrateBillingForm = () => {
 }
 
 const onSubmit = async () => {
+  if (role.value === 'User')
+    return
+
   const supplierId = resolveSettingsSupplierId()
 
   if (!supplierId)
@@ -349,6 +357,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'classic' }"
                   @click="selectedBillingTemplate = 'classic'"
                 >
@@ -360,6 +369,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-1' }"
                   @click="selectedBillingTemplate = 'modern-1'"
                 >
@@ -371,6 +381,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'modern-2' }"
                   @click="selectedBillingTemplate = 'modern-2'"
                 >
@@ -382,6 +393,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'billing-option--selected': selectedBillingTemplate === 'compact' }"
                   @click="selectedBillingTemplate = 'compact'"
                 >
@@ -413,6 +425,7 @@ onBeforeUnmount(() => {
                     <VTextField
                       type="number"
                       v-model="due_date"
+                      :disabled="role === 'User'"
                       min="1"
                       :rules="[requiredValidator]"
                     />
@@ -429,6 +442,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions"
+                      :disabled="role === 'User'"
                       :rules="[requiredValidator]"
                     />
                 </div>
@@ -451,6 +465,7 @@ onBeforeUnmount(() => {
               <div class="d-flex gap-4 align-start">
                 <VSwitch
                   v-model="automaticRemindersEnabled"
+                  :readonly="role === 'User'"
                   class="reminders-switch"
                   hide-details
                   inset
@@ -482,6 +497,7 @@ onBeforeUnmount(() => {
             <div class="settings-layout__content">
               <VRadioGroup
                 v-model="deliveryMethod"
+                :disabled="role === 'User'"
                 hide-details
                 false-icon="custom-settings-checkbox-false"
                 true-icon="custom-settings-checkbox-true"
@@ -512,6 +528,7 @@ onBeforeUnmount(() => {
 
               <!-- 👉 Form Actions -->
               <div 
+                v-if="role !== 'User'"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
               >
@@ -553,6 +570,11 @@ onBeforeUnmount(() => {
     transition: background-color 0.2s ease;
     cursor: pointer;
     text-align: left;
+  }
+
+  .billing-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .billing-option__preview {

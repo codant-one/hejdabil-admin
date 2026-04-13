@@ -90,7 +90,12 @@ const getSecondaryColorFromPrimary = primary => {
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
 
-const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
 
 const resolveAgreementPreviewColors = () => {
   const settingColorId = Number(settingsData.value?.setting_color_id)
@@ -224,6 +229,9 @@ const hydrateAgreementForm = () => {
 }
 
 const onSubmit = async () => {
+  if (role.value === 'User')
+    return
+  
   const supplierId = resolveSettingsSupplierId()
 
   if (!supplierId)
@@ -364,6 +372,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="agreement-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'agreement-option--selected': selectedagreementTemplate === 'classic' }"
                   @click="selectedagreementTemplate = 'classic'"
                 >
@@ -375,6 +384,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="agreement-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'agreement-option--selected': selectedagreementTemplate === 'modern-1' }"
                   @click="selectedagreementTemplate = 'modern-1'"
                 >
@@ -386,6 +396,7 @@ onBeforeUnmount(() => {
                 <button
                   type="button"
                   class="agreement-option d-flex flex-column gap-2"
+                  :disabled="role === 'User'"
                   :class="{ 'agreement-option--selected': selectedagreementTemplate === 'modern-2' }"
                   @click="selectedagreementTemplate = 'modern-2'"
                 >
@@ -424,6 +435,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions_purchase"
+                      :disabled="role === 'User'"
                       :rules="[requiredValidator]"
                     />
                 </div>
@@ -439,6 +451,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions_sales"
+                      :disabled="role === 'User'"
                       :rules="[requiredValidator]"
                     />
                 </div>
@@ -454,6 +467,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions_mediation"
+                      :disabled="role === 'User'"
                       :rules="[requiredValidator]"
                     />
                 </div>
@@ -469,6 +483,7 @@ onBeforeUnmount(() => {
                     </VTooltip>
                     <VTextField
                       v-model="terms_and_conditions_business"
+                      :disabled="role === 'User'"
                       :rules="[requiredValidator]"
                     />
                 </div>
@@ -494,6 +509,7 @@ onBeforeUnmount(() => {
                     <VTextField
                       type="number"
                       v-model="due_date"
+                      :disabled="role === 'User'"
                       min="1"
                       :rules="[requiredValidator]"
                     />
@@ -502,6 +518,7 @@ onBeforeUnmount(() => {
                 <div class="d-flex gap-4 align-start">
                   <VSwitch
                     v-model="automaticRemindersEnabled"
+                    :readonly="role === 'User'"
                     class="reminders-switch"
                     hide-details
                     inset
@@ -531,6 +548,7 @@ onBeforeUnmount(() => {
             <div class="settings-layout__content">
               <VRadioGroup
                 v-model="deliveryMethod"
+                :disabled="role === 'User'"
                 hide-details
                 false-icon="custom-settings-checkbox-false"
                 true-icon="custom-settings-checkbox-true"
@@ -561,6 +579,7 @@ onBeforeUnmount(() => {
 
               <!-- 👉 Form Actions -->
               <div 
+                v-if="role !== 'User'"
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
                 :class="windowWidth < 1024 ? 'pb-4' : ''"
               >
@@ -601,6 +620,11 @@ onBeforeUnmount(() => {
     transition: background-color 0.2s ease;
     cursor: pointer;
     text-align: left;
+  }
+
+  .agreement-option:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 
   .agreement-option__preview {

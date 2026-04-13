@@ -284,7 +284,12 @@ const getSettingColorIdFromOption = color => {
   return index + 1
 }
 
-const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
 
 const resolveSettingsSupplierId = () => {
   if (role.value === 'User')
@@ -353,6 +358,9 @@ const applyBrandColorFromSettings = () => {
 }
 
 const selectBrandColor = async color => {
+  if (role.value === 'User')
+    return
+
   if (color === customBrandColorOption) {
     customBrandColor.value = savedBrandColor.value || selectedBrandColor.value
     isBrandColorPickerVisible.value = true
@@ -374,6 +382,9 @@ const selectBrandColor = async color => {
 }
 
 const applyCustomBrandColor = async () => {
+  if (role.value === 'User')
+    return
+
   const normalizedCustomColor = normalizeHexColor(customBrandColor.value)
 
   if (!normalizedCustomColor)
@@ -1082,6 +1093,7 @@ onBeforeUnmount(() => {
                     :key="color"
                     type="button"
                     class="brand-color-grid__item"
+                    :disabled="role === 'User'"
                     :class="{
                       'brand-color-grid__item--selected': isBrandPaletteReady && selectedBrandColor === color,
                       'brand-color-grid__item--customized': isBrandPaletteReady && color === customBrandColorOption && !!savedBrandColor,
@@ -1771,6 +1783,11 @@ onBeforeUnmount(() => {
   height: 32px;
   border-radius: 32px;
   border: 2px solid transparent;
+}
+
+.brand-color-grid__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .brand-color-grid__item--selected::after {
