@@ -35,11 +35,13 @@ const isConfirmChangeLogoVisible = ref(false)
 const isConfirmChangeSignatureVisible = ref(false)
 const isSignaturePadDialogVisible = ref(false)
 const isBrandColorPickerVisible = ref(false)
+const isBrandPaletteReady = ref(false)
 const isFormEdited = ref(false)
 const dialog = ref(false)
 
 const data = ref(null)
 const userData = ref(null)
+const settingsData = ref(null)
 const role = ref('')
 const logo = ref(null)
 const logoCropped = ref(null)
@@ -100,7 +102,7 @@ const brandColorOptions = [
 ]
 
 const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
-const defaultBrandColorIndex = 3
+const defaultBrandColorIndex = 4
 const presetBrandColorCount = brandColorOptions.length - 1
 const customBrandColor = ref(customBrandColorOption)
 const savedBrandColor = ref(null)
@@ -282,31 +284,13 @@ const getSettingColorIdFromOption = color => {
   return index + 1
 }
 
+const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+
 const resolveSettingsSupplierId = () => {
   if (role.value === 'User')
     return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
 
   return userData.value?.supplier?.id ?? null
-}
-
-const syncSettingsInLocalUserData = payload => {
-  const supplier = userData.value?.supplier
-
-  if (!supplier)
-    return
-
-  if (!supplier.settings || typeof supplier.settings !== 'object')
-    supplier.settings = {}
-
-  supplier.settings = {
-    ...supplier.settings,
-    ...payload,
-  }
-
-  if (payload.setting_color_id === 'null')
-    supplier.settings.setting_color_id = null
-
-  localStorage.setItem('user_data', JSON.stringify(userData.value))
 }
 
 const persistBrandColorSettings = async payload => {
@@ -318,12 +302,16 @@ const persistBrandColorSettings = async payload => {
   isRequestOngoing.value = true
 
   try {
-    await settingsStore.colors({
+    const response = await settingsStore.colors({
       id: supplierId,
       data: payload,
     })
 
-    syncSettingsInLocalUserData(payload)
+    settingsData.value = response?.data?.data?.settings ?? {
+      ...(settingsData.value || {}),
+      ...payload,
+      setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+    }
 
     return true
   } catch {
@@ -337,8 +325,7 @@ const persistBrandColorSettings = async payload => {
 }
 
 const applyBrandColorFromSettings = () => {
-  const supplierSettings = userData.value?.supplier?.settings
-  const settingColorId = Number(supplierSettings?.setting_color_id)
+  const settingColorId = Number(settingsData.value?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= presetBrandColorCount) {
     const mappedColor = brandColorOptions[settingColorId - 1]
@@ -350,7 +337,7 @@ const applyBrandColorFromSettings = () => {
     return
   }
 
-  const customPrimaryColor = normalizeHexColor(supplierSettings?.primary_color)
+  const customPrimaryColor = normalizeHexColor(settingsData.value?.primary_color)
 
   if (customPrimaryColor) {
     selectedBrandColor.value = customBrandColorOption
@@ -495,11 +482,18 @@ const applyCompanyMedia = async ({ logoPath = null, signaturePath = null }) => {
 
 async function fetchData() {
   isRequestOngoing.value = true
+  isBrandPaletteReady.value = false
   isHydratingForm.value = true
 
   try {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value?.roles?.[0]?.name ?? ''
+
+    const loggedUserId = resolveLoggedUserId()
+
+    settingsData.value = loggedUserId
+      ? await settingsStore.showSettings(loggedUserId)
+      : null
 
     if (isAdminRole.value) {
       await Promise.all([
@@ -535,8 +529,11 @@ async function fetchData() {
     }
 
     applyBrandColorFromSettings()
+    isBrandPaletteReady.value = true
     syncInitialFormSnapshot()
   } catch {
+    applyBrandColorFromSettings()
+    isBrandPaletteReady.value = true
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
     clearAdvisorLater(5000)
   } finally {
@@ -1086,8 +1083,8 @@ onBeforeUnmount(() => {
                     type="button"
                     class="brand-color-grid__item"
                     :class="{
-                      'brand-color-grid__item--selected': selectedBrandColor === color,
-                      'brand-color-grid__item--customized': color === customBrandColorOption && !!savedBrandColor,
+                      'brand-color-grid__item--selected': isBrandPaletteReady && selectedBrandColor === color,
+                      'brand-color-grid__item--customized': isBrandPaletteReady && color === customBrandColorOption && !!savedBrandColor,
                     }"
                     :style="{
                       backgroundColor: getBrandColorSwatchColor(color),

@@ -1,6 +1,7 @@
 <script setup>
 
 import { requiredValidator } from '@/@core/utils/validators'
+import { useSettingsStore } from '@/stores/useSettings'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import billing1 from '@images/billings/1.svg'
 import billing2 from '@images/billings/2.svg'
@@ -9,6 +10,10 @@ import billing4 from '@images/billings/4.svg'
 
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const DEFAULT_BILLING_DUE_DATES = 5
+const DEFAULT_BILLING_TERMS_AND_CONDITIONS = 'Efter förfallodagen debiteras ränta enligt räntelagen'
+const DEFAULT_BILLING_SEND_REMINDER = true
+const DEFAULT_BILLING_DELIVERY_METHOD = 'email'
 const SECONDARY_TINT_STRENGTH = 0.13
 const brandColorOptions = [
   '#C1272D',
@@ -25,18 +30,23 @@ const brandColorOptions = [
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
 const selectedBillingTemplate = ref('classic')
-const automaticRemindersEnabled = ref(true)
-const deliveryMethod = ref('email')
+const automaticRemindersEnabled = ref(DEFAULT_BILLING_SEND_REMINDER)
+const deliveryMethod = ref(DEFAULT_BILLING_DELIVERY_METHOD)
+const settingsStore = useSettingsStore()
+const userData = ref(null)
+const settingsData = ref(null)
+const role = ref('')
+const isBillingPreviewReady = ref(false)
 
-const due_date = ref(5);
-const terms_and_conditions = ref('Efter förfallodagen debiteras ränta enligt räntelagen');
+const due_date = ref(null)
+const terms_and_conditions = ref('')
 
-const isRequestOngoing = ref(false);
+const isRequestOngoing = ref(true);
 const billingPreviewSources = ref({
-  classic: billing1,
-  modern1: billing2,
-  modern2: billing3,
-  compact: billing4,
+  classic: '',
+  modern1: '',
+  modern2: '',
+  compact: '',
 })
 
 const hexToRgb = hex => {
@@ -67,10 +77,10 @@ const getSecondaryColorFromPrimary = primary => {
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
 
+const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+
 const resolveBillingPreviewColors = () => {
-  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-  const supplierSettings = userData?.supplier?.settings
-  const settingColorId = Number(supplierSettings?.setting_color_id)
+  const settingColorId = Number(settingsData.value?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
     const primaryColor = brandColorOptions[settingColorId - 1]
@@ -81,8 +91,8 @@ const resolveBillingPreviewColors = () => {
     }
   }
 
-  const primaryColor = normalizeHexColor(supplierSettings?.primary_color)
-  const secondaryColor = normalizeHexColor(supplierSettings?.secondary_color)
+  const primaryColor = normalizeHexColor(settingsData.value?.primary_color)
+  const secondaryColor = normalizeHexColor(settingsData.value?.secondary_color)
 
   if (primaryColor) {
     return {
@@ -109,6 +119,7 @@ const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) 
 
 const loadBillingPreviewSources = async () => {
   const { primaryColor, secondaryColor } = resolveBillingPreviewColors()
+  isBillingPreviewReady.value = false
 
   try {
     isRequestOngoing.value = true
@@ -124,6 +135,111 @@ const loadBillingPreviewSources = async () => {
   } catch {
     billingPreviewSources.value = { classic: billing1, modern1: billing2, modern2: billing3, compact: billing4 }
   } finally {
+    isBillingPreviewReady.value = true
+    isRequestOngoing.value = false
+  }
+}
+
+const getSelectedBillingType = () => {
+  const mapping = {
+    classic: 1,
+    'modern-1': 2,
+    'modern-2': 3,
+    compact: 4,
+  }
+
+  return mapping[selectedBillingTemplate.value] || 1
+}
+
+const getBillingTemplateByType = type => {
+  const mapping = {
+    1: 'classic',
+    2: 'modern-1',
+    3: 'modern-2',
+    4: 'compact',
+  }
+
+  return mapping[Number(type)] || 'classic'
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const syncBillingSettingsLocalState = (settings, billingPayload = null) => {
+  settingsData.value = {
+    ...(settingsData.value || {}),
+    ...(settings || {}),
+    billing: billingPayload || settingsData.value?.billing || settingsData.value?.setting_billing || null,
+  }
+}
+
+const getStoredBillingSettings = () => {
+  return settingsData.value?.billing || settingsData.value?.setting_billing || null
+}
+
+const hydrateBillingForm = () => {
+  const billingSettings = getStoredBillingSettings()
+
+  selectedBillingTemplate.value = getBillingTemplateByType(billingSettings?.type ?? 1)
+
+  due_date.value = billingSettings?.due_dates !== undefined && billingSettings?.due_dates !== null
+    ? Number(billingSettings.due_dates) || DEFAULT_BILLING_DUE_DATES
+    : DEFAULT_BILLING_DUE_DATES
+
+  terms_and_conditions.value = typeof billingSettings?.terms_and_conditions === 'string' && billingSettings.terms_and_conditions.trim()
+    ? billingSettings.terms_and_conditions
+    : DEFAULT_BILLING_TERMS_AND_CONDITIONS
+
+  automaticRemindersEnabled.value = billingSettings?.send_reminder !== undefined && billingSettings?.send_reminder !== null
+    ? Number(billingSettings.send_reminder) === 1
+    : DEFAULT_BILLING_SEND_REMINDER
+
+  deliveryMethod.value = billingSettings?.send_notifications !== undefined && billingSettings?.send_notifications !== null
+    ? (Number(billingSettings.send_notifications) === 1 ? 'email-sms' : 'email')
+    : DEFAULT_BILLING_DELIVERY_METHOD
+}
+
+const saveBillingSettings = async () => {
+  const supplierId = resolveSettingsSupplierId()
+
+  if (!supplierId)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const payload = {
+      billing_id: settingsData.value?.setting_billing_id
+        ?? settingsData.value?.billing?.id
+        ?? settingsData.value?.setting_billing?.id
+        ?? null,
+      type: getSelectedBillingType(),
+      due_dates: Number(due_date.value) || 1,
+      terms_and_conditions: terms_and_conditions.value,
+      send_reminder: automaticRemindersEnabled.value ? 1 : 0,
+      send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
+    }
+
+    const response = await settingsStore.billings({
+      id: supplierId,
+      data: payload,
+    })
+
+    const settingBillingId = response?.data?.data?.settings?.setting_billing_id
+      ?? settingsData.value?.setting_billing_id
+      ?? null
+
+    const persistedBilling = {
+      ...payload,
+      id: settingBillingId,
+    }
+
+    syncBillingSettingsLocalState(response?.data?.data?.settings, persistedBilling)
+  } finally {
     isRequestOngoing.value = false
   }
 }
@@ -137,8 +253,22 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
-onMounted(() => {
-  loadBillingPreviewSources();
+onMounted(async () => {
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? ''
+
+  try {
+    const loggedUserId = resolveLoggedUserId()
+
+    settingsData.value = loggedUserId
+      ? await settingsStore.showSettings(loggedUserId)
+      : null
+  } catch {
+    settingsData.value = null
+  }
+
+  hydrateBillingForm()
+  loadBillingPreviewSources()
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -184,7 +314,7 @@ onBeforeUnmount(() => {
                 Välj fakturamall
               </span>
 
-              <div class="d-flex gap-4 mt-2 billing-options">
+              <div v-if="isBillingPreviewReady" class="d-flex gap-4 mt-2 billing-options">
                 <button
                   type="button"
                   class="billing-option d-flex flex-column gap-2"
@@ -230,6 +360,7 @@ onBeforeUnmount(() => {
                   <span class="avatar-text text-neutral-3 ps-3">Kompakt</span>
                 </button>
               </div>
+              <div v-else class="mt-2" style="min-height: 180px;" />
             </div>
           </div>
         </VCardText>
@@ -336,7 +467,7 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
 
-                <VRadio value="email-sms" class="delivery-method-option">
+                <VRadio value="email-sms" class="delivery-method-option" disabled>
                   <template #label>
                     <div class="delivery-method-content">
                       <span class="delivery-method-title">E-post + SMS</span>
@@ -357,6 +488,7 @@ onBeforeUnmount(() => {
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
+                  @click="saveBillingSettings"
                 >
                   Spara
                 </VBtn>

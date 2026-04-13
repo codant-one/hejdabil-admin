@@ -1,6 +1,7 @@
 <script setup>
 
 import { requiredValidator } from '@/@core/utils/validators'
+import { useSettingsStore } from '@/stores/useSettings'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import agreement1 from '@images/agreements/1.svg'
 import agreement2 from '@images/agreements/2.svg'
@@ -8,6 +9,13 @@ import agreement3 from '@images/agreements/3.svg'
 
 const DEFAULT_PRIMARY_COLOR = '#29ABE2'
 const DEFAULT_SECONDARY_COLOR = '#E2F2FC'
+const DEFAULT_AGREEMENT_DUE_DATES = 7
+const DEFAULT_TERMS_AND_CONDITIONS_PURCHASE = 'Fordonet säljs i befintligt skick om inget annat avtalats. Säljaren intygar att denne är rättmätig ägare och att fordonet är fritt från skulder och andra belastningar, om inget annat anges. Köparen har haft möjlighet att undersöka fordonet och godkänner dess skick. Äganderätten övergår först när full betalning har erlagts.'
+const DEFAULT_TERMS_AND_CONDITIONS_SALES = 'Fordonet säljs i befintligt skick med eventuella garantier enligt avtalet. Köparen ansvarar för att kontrollera fordonet vid leverans. Reklamation ska ske inom skälig tid. Vid försenad betalning kan avgifter tillkomma. Äganderätten kvarstår hos säljaren tills full betalning skett.'
+const DEFAULT_TERMS_AND_CONDITIONS_MEDIATION = 'Förmedlaren säljer fordonet för uppdragsgivarens räkning. Fordonet ägs av uppdragsgivaren tills försäljning genomförts. Uppdragsgivaren ansvarar för fordonets skick och uppgifter. Förmedlaren har rätt till provision enligt avtal.'
+const DEFAULT_TERMS_AND_CONDITIONS_BUSINESS = 'Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.'
+const DEFAULT_AGREEMENT_SEND_REMINDER = true
+const DEFAULT_AGREEMENT_DELIVERY_METHOD = 'email'
 const SECONDARY_TINT_STRENGTH = 0.13
 const brandColorOptions = [
   '#C1272D',
@@ -24,21 +32,26 @@ const brandColorOptions = [
 const { width: windowWidth } = useWindowSize()
 const sectionEl = ref(null)
 const selectedagreementTemplate = ref('classic')
+const settingsStore = useSettingsStore()
+const userData = ref(null)
+const settingsData = ref(null)
+const role = ref('')
+const isAgreementPreviewReady = ref(false)
 
-const due_date = ref(7);
-const terms_and_conditions_purchase = ref('Fordonet säljs i befintligt skick om inget annat avtalats. Säljaren intygar att denne är rättmätig ägare och att fordonet är fritt från skulder och andra belastningar, om inget annat anges. Köparen har haft möjlighet att undersöka fordonet och godkänner dess skick. Äganderätten övergår först när full betalning har erlagts.');
-const terms_and_conditions_sales = ref('Fordonet säljs i befintligt skick med eventuella garantier enligt avtalet. Köparen ansvarar för att kontrollera fordonet vid leverans. Reklamation ska ske inom skälig tid. Vid försenad betalning kan avgifter tillkomma. Äganderätten kvarstår hos säljaren tills full betalning skett.');
-const terms_and_conditions_mediation = ref('Förmedlaren säljer fordonet för uppdragsgivarens räkning. Fordonet ägs av uppdragsgivaren tills försäljning genomförts. Uppdragsgivaren ansvarar för fordonets skick och uppgifter. Förmedlaren har rätt till provision enligt avtal.');
-const terms_and_conditions_business = ref('Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.');
+const due_date = ref(null)
+const terms_and_conditions_purchase = ref('')
+const terms_and_conditions_sales = ref('')
+const terms_and_conditions_mediation = ref('')
+const terms_and_conditions_business = ref('')
 
-const automaticRemindersEnabled = ref(true)
-const deliveryMethod = ref('email')
+const automaticRemindersEnabled = ref(DEFAULT_AGREEMENT_SEND_REMINDER)
+const deliveryMethod = ref(DEFAULT_AGREEMENT_DELIVERY_METHOD)
 
-const isRequestOngoing = ref(false);
+const isRequestOngoing = ref(true);
 const agreementPreviewSources = ref({
-  classic: agreement1,
-  modern: agreement2,
-  compact: agreement3,
+  classic: '',
+  modern: '',
+  compact: '',
 })
 
 const hexToRgb = hex => {
@@ -69,10 +82,10 @@ const getSecondaryColorFromPrimary = primary => {
   return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b))
 }
 
+const resolveLoggedUserId = () => userData.value?.id ?? userData.value?.user?.id ?? null
+
 const resolveAgreementPreviewColors = () => {
-  const userData = JSON.parse(localStorage.getItem('user_data') || 'null')
-  const supplierSettings = userData?.supplier?.settings
-  const settingColorId = Number(supplierSettings?.setting_color_id)
+  const settingColorId = Number(settingsData.value?.setting_color_id)
 
   if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= brandColorOptions.length) {
     const primaryColor = brandColorOptions[settingColorId - 1]
@@ -83,8 +96,8 @@ const resolveAgreementPreviewColors = () => {
     }
   }
 
-  const primaryColor = normalizeHexColor(supplierSettings?.primary_color)
-  const secondaryColor = normalizeHexColor(supplierSettings?.secondary_color)
+  const primaryColor = normalizeHexColor(settingsData.value?.primary_color)
+  const secondaryColor = normalizeHexColor(settingsData.value?.secondary_color)
 
   if (primaryColor) {
     return {
@@ -111,6 +124,7 @@ const buildRecoloredSvgDataUrl = async (assetUrl, primaryColor, secondaryColor) 
 
 const loadAgreementPreviewSources = async () => {
   const { primaryColor, secondaryColor } = resolveAgreementPreviewColors()
+  isAgreementPreviewReady.value = false
 
   try {
     isRequestOngoing.value = true
@@ -125,6 +139,122 @@ const loadAgreementPreviewSources = async () => {
   } catch {
     agreementPreviewSources.value = { classic: agreement1, modern: agreement2, compact: agreement3 }
   } finally {
+    isAgreementPreviewReady.value = true
+    isRequestOngoing.value = false
+  }
+}
+
+const getAgreementTemplateByType = type => {
+  const mapping = {
+    1: 'classic',
+    2: 'modern-1',
+    3: 'modern-2',
+  }
+
+  return mapping[Number(type)] || 'classic'
+}
+
+const getSelectedAgreementType = () => {
+  const mapping = {
+    classic: 1,
+    'modern-1': 2,
+    'modern-2': 3,
+  }
+
+  return mapping[selectedagreementTemplate.value] || 1
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const syncAgreementSettingsLocalState = (settings, agreementPayload = null) => {
+  settingsData.value = {
+    ...(settingsData.value || {}),
+    ...(settings || {}),
+    agreement: agreementPayload || settingsData.value?.agreement || settingsData.value?.setting_agreement || null,
+  }
+}
+
+const getStoredAgreementSettings = () => settingsData.value?.agreement || settingsData.value?.setting_agreement || null
+
+const hydrateAgreementForm = () => {
+  const agreementSettings = getStoredAgreementSettings()
+
+  selectedagreementTemplate.value = getAgreementTemplateByType(agreementSettings?.type ?? 1)
+
+  due_date.value = agreementSettings?.due_dates !== undefined && agreementSettings?.due_dates !== null
+    ? Number(agreementSettings.due_dates) || DEFAULT_AGREEMENT_DUE_DATES
+    : DEFAULT_AGREEMENT_DUE_DATES
+
+  terms_and_conditions_purchase.value = typeof agreementSettings?.terms_and_conditions_purchase === 'string' && agreementSettings.terms_and_conditions_purchase.trim()
+    ? agreementSettings.terms_and_conditions_purchase
+    : DEFAULT_TERMS_AND_CONDITIONS_PURCHASE
+
+  terms_and_conditions_sales.value = typeof agreementSettings?.terms_and_conditions_sales === 'string' && agreementSettings.terms_and_conditions_sales.trim()
+    ? agreementSettings.terms_and_conditions_sales
+    : DEFAULT_TERMS_AND_CONDITIONS_SALES
+
+  terms_and_conditions_mediation.value = typeof agreementSettings?.terms_and_conditions_mediation === 'string' && agreementSettings.terms_and_conditions_mediation.trim()
+    ? agreementSettings.terms_and_conditions_mediation
+    : DEFAULT_TERMS_AND_CONDITIONS_MEDIATION
+
+  terms_and_conditions_business.value = typeof agreementSettings?.terms_and_conditions_business === 'string' && agreementSettings.terms_and_conditions_business.trim()
+    ? agreementSettings.terms_and_conditions_business
+    : DEFAULT_TERMS_AND_CONDITIONS_BUSINESS
+
+  automaticRemindersEnabled.value = agreementSettings?.send_reminder !== undefined && agreementSettings?.send_reminder !== null
+    ? Number(agreementSettings.send_reminder) === 1
+    : DEFAULT_AGREEMENT_SEND_REMINDER
+
+  deliveryMethod.value = agreementSettings?.send_notifications !== undefined && agreementSettings?.send_notifications !== null
+    ? (Number(agreementSettings.send_notifications) === 1 ? 'email-sms' : 'email')
+    : DEFAULT_AGREEMENT_DELIVERY_METHOD
+}
+
+const saveAgreementSettings = async () => {
+  const supplierId = resolveSettingsSupplierId()
+
+  if (!supplierId)
+    return
+
+  isRequestOngoing.value = true
+
+  try {
+    const payload = {
+      setting_agreement_id: settingsData.value?.setting_agreement_id
+        ?? settingsData.value?.agreement?.id
+        ?? settingsData.value?.setting_agreement?.id
+        ?? null,
+      type: getSelectedAgreementType(),
+      due_dates: Number(due_date.value) || DEFAULT_AGREEMENT_DUE_DATES,
+      terms_and_conditions_purchase: terms_and_conditions_purchase.value,
+      terms_and_conditions_sales: terms_and_conditions_sales.value,
+      terms_and_conditions_mediation: terms_and_conditions_mediation.value,
+      terms_and_conditions_business: terms_and_conditions_business.value,
+      send_reminder: automaticRemindersEnabled.value ? 1 : 0,
+      send_notifications: deliveryMethod.value === 'email-sms' ? 1 : 0,
+    }
+
+    const response = await settingsStore.agreements({
+      id: supplierId,
+      data: payload,
+    })
+
+    const settingAgreementId = response?.data?.data?.settings?.setting_agreement_id
+      ?? settingsData.value?.setting_agreement_id
+      ?? null
+
+    const persistedAgreement = {
+      ...payload,
+      id: settingAgreementId,
+    }
+
+    syncAgreementSettingsLocalState(response?.data?.data?.settings, persistedAgreement)
+  } finally {
     isRequestOngoing.value = false
   }
 }
@@ -138,8 +268,22 @@ function resizeSectionToRemainingViewport() {
   el.style.minHeight = `${remaining}px`;
 }
 
-onMounted(() => {
-  loadAgreementPreviewSources();
+onMounted(async () => {
+  userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+  role.value = userData.value?.roles?.[0]?.name ?? ''
+
+  try {
+    const loggedUserId = resolveLoggedUserId()
+
+    settingsData.value = loggedUserId
+      ? await settingsStore.showSettings(loggedUserId)
+      : null
+  } catch {
+    settingsData.value = null
+  }
+
+  hydrateAgreementForm()
+  loadAgreementPreviewSources()
   resizeSectionToRemainingViewport();
   window.addEventListener("resize", resizeSectionToRemainingViewport);
 });
@@ -185,7 +329,7 @@ onBeforeUnmount(() => {
                 Välj avtalsmall
               </span>
 
-              <div class="d-flex gap-4 mt-2 agreement-options">
+              <div v-if="isAgreementPreviewReady" class="d-flex gap-4 mt-2 agreement-options">
                 <button
                   type="button"
                   class="agreement-option d-flex flex-column gap-2"
@@ -220,6 +364,7 @@ onBeforeUnmount(() => {
                   <span class="avatar-text text-neutral-3 ps-3">Kompakt</span>
                 </button>
               </div>
+              <div v-else class="mt-2" style="min-height: 180px;" />
             </div>
           </div>
         </VCardText>
@@ -371,7 +516,7 @@ onBeforeUnmount(() => {
                   </template>
                 </VRadio>
 
-                <VRadio value="email-sms" class="delivery-method-option">
+                <VRadio value="email-sms" class="delivery-method-option" disabled>
                   <template #label>
                     <div class="delivery-method-content">
                       <span class="delivery-method-title">E-post + SMS</span>
@@ -392,6 +537,7 @@ onBeforeUnmount(() => {
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
+                  @click="saveAgreementSettings"
                 >
                   Spara
                 </VBtn>

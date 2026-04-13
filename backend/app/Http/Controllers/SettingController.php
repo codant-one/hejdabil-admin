@@ -34,7 +34,30 @@ class SettingController extends Controller
      */
     public function show($id)
     {
-        //
+        try {
+
+            $settings = Setting::with([
+                'user',
+                'supplier',
+                'color',
+                'billing',
+                'agreement'
+            ])->where('user_id', $id)->first();
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'settings' => $settings ?? null
+                ]
+            ]);
+
+        } catch(\Illuminate\Database\QueryException $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'database_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -59,6 +82,52 @@ class SettingController extends Controller
 
             $settings = Setting::where('supplier_id', $id)->first();
             $settings = Setting::colors($request, $settings);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'settings' => $settings
+                ]
+            ], 200);
+
+        } catch(\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function billings(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $settings = Setting::where('supplier_id', $id)->first();
+            $settings = Setting::billings($request, $settings);
+
+            return response()->json([
+                'success' => true,
+                'data' => [ 
+                    'settings' => $settings
+                ]
+            ], 200);
+
+        } catch(\Throwable $ex) {
+            return response()->json([
+                'success' => false,
+                'message' => 'server_error',
+                'exception' => $ex->getMessage()
+            ], 500);
+        }
+    }
+
+    public function agreements(Request $request, $id): JsonResponse
+    {
+        try {
+
+            $settings = Setting::where('supplier_id', $id)->first();
+            $settings = Setting::agreements($request, $settings);
 
             return response()->json([
                 'success' => true,
