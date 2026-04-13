@@ -30,6 +30,8 @@ const brandColorOptions = [
 ]
 
 const { width: windowWidth } = useWindowSize()
+const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
+
 const sectionEl = ref(null)
 const selectedagreementTemplate = ref('classic')
 const settingsStore = useSettingsStore()
@@ -37,6 +39,12 @@ const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
 const isAgreementPreviewReady = ref(false)
+
+const advisor = ref({
+  message: '',
+  show: false,
+  type: '',
+})
 
 const due_date = ref(null)
 const terms_and_conditions_purchase = ref('')
@@ -215,7 +223,7 @@ const hydrateAgreementForm = () => {
     : DEFAULT_AGREEMENT_DELIVERY_METHOD
 }
 
-const saveAgreementSettings = async () => {
+const onSubmit = async () => {
   const supplierId = resolveSettingsSupplierId()
 
   if (!supplierId)
@@ -252,6 +260,20 @@ const saveAgreementSettings = async () => {
       ...payload,
       id: settingAgreementId,
     }
+
+    advisor.value = {
+      type: response.data.success ? 'success' : 'error',
+      message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+      show: true
+    }
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
 
     syncAgreementSettingsLocalState(response?.data?.data?.settings, persistedAgreement)
   } finally {
@@ -296,6 +318,15 @@ onBeforeUnmount(() => {
 <template>
     <section class="page-section bg-white" ref="sectionEl">
       <LoadingOverlay :is-loading="isRequestOngoing" />
+      <VSnackbar
+        v-model="advisor.show"
+        transition="scroll-y-reverse-transition"
+        :location="snackbarLocation"
+        :color="advisor.type"
+        class="snackbar-alert snackbar-dashboard"
+      >
+        {{ advisor.message }}
+      </VSnackbar>
       <VCard class="card-fill">
         <VCardText class="pb-0" v-if="windowWidth < 1024">
           <div class="d-flex flex-column gap-4 flex-1">
@@ -531,13 +562,14 @@ onBeforeUnmount(() => {
               <!-- 👉 Form Actions -->
               <div 
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
+                :class="windowWidth < 1024 ? 'pb-4' : ''"
               >
               
                 <VBtn 
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
-                  @click="saveAgreementSettings"
+                  @click="onSubmit"
                 >
                   Spara
                 </VBtn>

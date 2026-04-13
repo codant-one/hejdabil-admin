@@ -28,6 +28,8 @@ const brandColorOptions = [
 ]
 
 const { width: windowWidth } = useWindowSize()
+const snackbarLocation = computed(() => windowWidth.value < 1024 ? '' : 'top end')
+
 const sectionEl = ref(null)
 const selectedBillingTemplate = ref('classic')
 const automaticRemindersEnabled = ref(DEFAULT_BILLING_SEND_REMINDER)
@@ -37,6 +39,12 @@ const userData = ref(null)
 const settingsData = ref(null)
 const role = ref('')
 const isBillingPreviewReady = ref(false)
+
+const advisor = ref({
+  message: '',
+  show: false,
+  type: '',
+})
 
 const due_date = ref(null)
 const terms_and_conditions = ref('')
@@ -203,7 +211,7 @@ const hydrateBillingForm = () => {
     : DEFAULT_BILLING_DELIVERY_METHOD
 }
 
-const saveBillingSettings = async () => {
+const onSubmit = async () => {
   const supplierId = resolveSettingsSupplierId()
 
   if (!supplierId)
@@ -237,6 +245,20 @@ const saveBillingSettings = async () => {
       ...payload,
       id: settingBillingId,
     }
+
+    advisor.value = {
+      type: response.data.success ? 'success' : 'error',
+      message: response.data.success ? 'Uppdaterad konfiguration!' : response.data.message,
+      show: true
+    }
+
+    setTimeout(() => {
+      advisor.value = {
+        type: '',
+        message: '',
+        show: false
+      }
+    }, 3000)
 
     syncBillingSettingsLocalState(response?.data?.data?.settings, persistedBilling)
   } finally {
@@ -281,6 +303,15 @@ onBeforeUnmount(() => {
 <template>
     <section class="page-section bg-white" ref="sectionEl">
       <LoadingOverlay :is-loading="isRequestOngoing" />
+      <VSnackbar
+        v-model="advisor.show"
+        transition="scroll-y-reverse-transition"
+        :location="snackbarLocation"
+        :color="advisor.type"
+        class="snackbar-alert snackbar-dashboard"
+      >
+        {{ advisor.message }}
+      </VSnackbar>
       <VCard class="card-fill">
         <VCardText class="pb-0" v-if="windowWidth < 1024">
           <div class="d-flex flex-column gap-4 flex-1">
@@ -482,13 +513,14 @@ onBeforeUnmount(() => {
               <!-- 👉 Form Actions -->
               <div 
                 class="d-flex justify-start gap-3 flex-wrap dialog-actions"
+                :class="windowWidth < 1024 ? 'pb-4' : ''"
               >
               
                 <VBtn 
                   type="submit" 
                   class="btn-gradient"
                   :class="windowWidth < 1024 ? 'w-100' : 'w-25'"
-                  @click="saveBillingSettings"
+                  @click="onSubmit"
                 >
                   Spara
                 </VBtn>
