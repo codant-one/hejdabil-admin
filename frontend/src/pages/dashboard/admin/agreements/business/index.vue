@@ -11,6 +11,7 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { useConfigsStores } from "@/stores/useConfigs";
 import { formatNumber } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
@@ -24,6 +25,7 @@ const carInfoStores = useCarInfoStores()
 const agreementsStores = useAgreementsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
+const configsStores = useConfigsStores();
 const ability = useAppAbility()
 
 const { width: windowWidth } = useWindowSize();
@@ -131,12 +133,18 @@ watchEffect(async () => {
 
     localStorage.setItem('user_data', JSON.stringify(user_data))
 
-    if(role.value === 'Supplier') {
+    const defaultTerms = 'Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.'
+
+    if (role.value === 'Supplier') {
       offer_id.value = user_data.supplier.user.offers.length + 1
-    } else if(role.value === 'User') {
+      terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
+    } else if (role.value === 'User') {
       offer_id.value = user_data.supplier.boss.user.offers.length + 1
+      terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
     } else {
       offer_id.value = agreementsStores.offer_id + 1
+      await configsStores.getFeature("agreements")
+      terms_other_conditions.value = configsStores.getFeaturedConfig("agreements")?.terms_and_conditions_business ?? defaultTerms
     }
 
     brands.value = agreementsStores.brands

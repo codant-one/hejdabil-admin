@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Event;
 
 use App\Models\Config;
 use App\Models\Billing;
+use App\Models\Agreement;
 
 class SendReminder extends Command
 {
@@ -15,14 +16,14 @@ class SendReminder extends Command
      *
      * @var string
      */
-    protected $signature = 'reminder-billings:send';
+    protected $signature = 'reminders:send';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Send reminders for overdue billings';
+    protected $description = 'Send reminders for overdue billings and agreements';
 
     /**
      * Create a new command instance.
@@ -41,16 +42,27 @@ class SendReminder extends Command
      */
     public function handle()
     {
-        // Facturas con al menos 1 dia de vencimiento
+        self::billings();
+        self::agreements();
+
+        return 0;
+    }
+
+    private function billings()
+    {
+        $delayCounter = 0;
+        $delayStep = 3; // segundos de pausa entre cada correo
+
+        // Facturas vencidas
         $billings = Billing::with(['supplier.settings.billing'])
             ->where('state_id', 8)
-            ->whereDate('due_date', '<=', now()->subDay())
             ->get();
 
         foreach($billings as $billing){
             
             if($billing?->supplier) { // la crea un supplier                
                 $send_reminder = ((int) ($billing?->supplier?->settings?->billing?->send_reminder ?? 0)) === 1;
+                $days = (int) ($billing?->supplier?->settings?->billing?->due_date ?? 1);
             } else {//es administrativa
                 $billingConfig = Config::getByKey('billings') ?? ['value' => '{}'];
 
@@ -74,11 +86,14 @@ class SendReminder extends Command
                 }
 
                 $send_reminder = ((int) ($billingRaw['send_reminder'] ?? 0)) === 1;
+                $days = (int) ($billingRaw['due_date'] ?? 1);
             }
 
             $this->info('Billing: #' . $billing->id . ' - Send reminder: ' . ($send_reminder ? 'Yes' : 'No'));
 
-            if($send_reminder) { // envio el recordatorio
+            $isOverdue = $billing->due_date && \Carbon\Carbon::parse($billing->due_date)->lte(now()->subDays($days));
+
+            if($send_reminder && $isOverdue) {
                 try {
                     $billingToSend = Billing::find($billing->id);
 
@@ -87,9 +102,90 @@ class SendReminder extends Command
                         continue;
                     }
 
+                    if ($delayCounter > 0) {
+                        sleep($delayStep);
+                    }
+
                     Billing::createReminder($billingToSend);
+                    $delayCounter++;
+
+                    $this->info('Billing: #' . $billing->id . ' - Reminder sent (' . $delayCounter . ').');
                 } catch (\Throwable $e) {
                     $this->error('Error creating reminder for billing ' . $billing->id . ': ' . $e->getMessage());
+                    continue;
+                }
+            }
+        }    
+
+        return 0;
+    }
+
+    private function agreements()
+    {
+        $delayCounter = 0;
+        $delayStep = 3; // segundos de pausa entre cada correo
+
+        // Contratos enviados pero no firmados
+        $agreements = Agreement::with(['supplier.settings.agreement', 'token'])
+            ->whereHas('token', function ($query) {
+                $query->where('signature_status', 'delivered');
+            })
+            ->get();
+
+        foreach($agreements as $agreement){
+            
+            if($agreement?->supplier) { // la crea un supplier                
+                $send_reminder = ((int) ($agreement?->supplier?->settings?->agreement?->send_reminder ?? 0)) === 1;
+                $days = (int) ($agreement?->supplier?->settings?->agreement?->due_dates ?? 1);
+            } else {//es administrativa
+                $agreementConfig = Config::getByKey('agreements') ?? ['value' => '{}'];
+
+                // Extract the "value" supporting array or object
+                $getValue = function ($cfg) {
+                    if (is_array($cfg)) 
+                        return $cfg['value'] ?? '{}';
+                    if (is_object($cfg) && isset($cfg->value))
+                        return $cfg->value;
+                    return '{}';
+                };
+                
+                $agreementRaw = $getValue($agreementConfig);
+
+                if (is_string($agreementRaw)) {
+                    $agreementRaw = json_decode($agreementRaw, true) ?? [];
+                }
+
+                if (!is_array($agreementRaw)) {
+                    $agreementRaw = [];
+                }
+
+                $send_reminder = ((int) ($agreementRaw['send_reminder'] ?? 0)) === 1;
+                $days = (int) ($agreementRaw['due_date'] ?? 1);
+            }
+
+            $this->info('Agreement: #' . $agreement->id . ' - Send reminder: ' . ($send_reminder ? 'Yes' : 'No'));
+
+            $isOverdue = $agreement->token?->updated_at && \Carbon\Carbon::parse($agreement->token->updated_at)->lte(now()->subDays($days));
+
+           if($send_reminder && $isOverdue) { // envio el recordatorio
+                try {
+                    $agreementToSend = Agreement::find($agreement->id);
+
+                    if (!$agreementToSend) {
+                        $this->warn('The agreement could not be found: ' . $agreement->id);
+                        continue;
+                    }
+
+                    if ($delayCounter > 0) {
+                        sleep($delayStep);
+                    }
+
+                    Agreement::createReminder($agreementToSend);
+                    $delayCounter++;
+
+                    $this->info('Agreement: #' . $agreement->id . ' - Reminder sent (' . $delayCounter . ').');
+                } catch (\Throwable $e) {
+                    $this->error('Error creating reminder for agreement ' . $agreement->id . ': ' . $e->getMessage());
                     continue;
                 }
             }

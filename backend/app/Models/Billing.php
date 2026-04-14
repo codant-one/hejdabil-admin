@@ -18,6 +18,7 @@ use App\Models\Supplier;
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Jobs\SendEmailJob;
 
 class Billing extends Model
 {
@@ -457,7 +458,7 @@ class Billing extends Model
         return $billing;
     }
 
-    public static function createReminder($billing) {
+    public static function createReminder($billing, int $delaySeconds = 0) {
 
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
@@ -516,7 +517,7 @@ class Billing extends Model
         $billing->reminder = 'pdfs/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
-        self::sendMail($billing);
+        self::sendMail($billing, $delaySeconds);
 
         return $billing;
     }
@@ -535,7 +536,7 @@ class Billing extends Model
         }
     }
 
-    public static function sendMail($billing) { //para recordatorios
+    public static function sendMail($billing, int $delaySeconds = 0) {
       
         $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
@@ -599,21 +600,30 @@ class Billing extends Model
         $subject = 'Påminnelse: förfallen faktura från ' . $company->company;
 
         try {
-            \Mail::send(
-                'emails.invoices.reminder'
-                , $data
-                , function ($message) use ($clientEmail, $subject, $billing) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
+            $pathToFile = storage_path('app/public/' . $billing->reminder);
+            $attachments = [];
 
-                    $pathToFile = storage_path('app/public/' . $billing->reminder);
-                    if (file_exists($pathToFile)) {
-                        $message->attach($pathToFile, [
-                            'as' => Str::replaceFirst('pdfs/', '', $billing->reminder),
-                            'mime' => 'application/pdf',
-                        ]);
-                    }
-            });
+            if (file_exists($pathToFile)) {
+                $attachments[] = [
+                    'path' => $pathToFile,
+                    'as' => Str::replaceFirst('pdfs/', '', $billing->reminder),
+                    'mime' => 'application/pdf',
+                ];
+            }
+
+            $job = SendEmailJob::dispatch(
+                'emails.invoices.reminder',
+                $data,
+                $clientEmail,
+                $subject,
+                null,
+                null,
+                $attachments
+            )->onQueue('emails');
+
+            if ($delaySeconds > 0) {
+                $job->delay(now()->addSeconds($delaySeconds));
+            }
 
             return true;
         } catch (\Exception $e){
