@@ -60,7 +60,7 @@ class TokenHistory extends Model
             'event_type' => $eventType,
             'description' => $description,
             'ip_address' => $ipAddress,
-            'user_agent' => $userAgent,
+            'user_agent' => $userAgent ? mb_substr($userAgent, 0, 1000) : null,
             'metadata' => $metadata,
         ]);
     }

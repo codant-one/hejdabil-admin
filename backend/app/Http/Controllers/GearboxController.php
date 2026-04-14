@@ -36,7 +36,7 @@ class GearboxController extends Controller
                 $gearboxes = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allGearboxes,
                     $allGearboxes->count(),
-                    $allGearboxes->count(),
+                    max($allGearboxes->count(), 1),
                     1
                 );
             } else {

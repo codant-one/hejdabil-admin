@@ -44,7 +44,7 @@ class BrandController extends Controller
                 $brands = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allBrands,
                     $allBrands->count(),
-                    $allBrands->count(),
+                    max($allBrands->count(), 1),
                     1
                 );
             } else {

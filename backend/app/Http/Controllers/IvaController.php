@@ -37,7 +37,7 @@ class IvaController extends Controller
                 $ivas = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allIvas,
                     $allIvas->count(),
-                    $allIvas->count(),
+                    max($allIvas->count(), 1),
                     1
                 );
             } else {

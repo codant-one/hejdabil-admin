@@ -46,7 +46,7 @@ class ModelController extends Controller
                 $models = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allModels,
                     $allModels->count(),
-                    $allModels->count(),
+                    max($allModels->count(), 1),
                     1
                 );
             } else {

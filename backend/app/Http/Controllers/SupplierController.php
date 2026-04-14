@@ -72,7 +72,7 @@ class SupplierController extends Controller
                 $suppliers = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allSuppliers,
                     $allSuppliers->count(),
-                    $allSuppliers->count(),
+                    max($allSuppliers->count(), 1),
                     1
                 );
             } else {

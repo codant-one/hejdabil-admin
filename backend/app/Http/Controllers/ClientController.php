@@ -63,7 +63,7 @@ class ClientController extends Controller
                 $clients = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allClients,
                     $allClients->count(),
-                    $allClients->count(),
+                    max($allClients->count(), 1),
                     1
                 );
             } else {

@@ -43,7 +43,7 @@ class NotificationController extends Controller
                 $notifications = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allNotifications,
                     $allNotifications->count(),
-                    $allNotifications->count(),
+                    max($allNotifications->count(), 1),
                     1
                 );
             } else {

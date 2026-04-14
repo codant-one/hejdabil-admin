@@ -45,7 +45,7 @@ class InvoiceController extends Controller
                 $invoices = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allInvoices,
                     $allInvoices->count(),
-                    $allInvoices->count(),
+                    max($allInvoices->count(), 1),
                     1
                 );
             } else {
