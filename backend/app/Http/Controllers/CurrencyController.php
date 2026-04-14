@@ -46,7 +46,7 @@ class CurrencyController extends Controller
                 $currencies = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allCurrencies,
                     $allCurrencies->count(),
-                    $allCurrencies->count(),
+                    max($allCurrencies->count(), 1),
                     1
                 );
             } else {

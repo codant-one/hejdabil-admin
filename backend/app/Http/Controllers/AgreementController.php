@@ -111,7 +111,7 @@ class AgreementController extends Controller
                 $agreements = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allAgreements,
                     $allAgreements->count(),
-                    $allAgreements->count(),
+                    max($allAgreements->count(), 1),
                     1
                 );
             } else {

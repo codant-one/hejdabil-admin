@@ -47,7 +47,7 @@ class CountryController extends Controller
                 $countries = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allCountries,
                     $allCountries->count(),
-                    $allCountries->count(),
+                    max($allCountries->count(), 1),
                     1
                 );
             } else {

@@ -36,7 +36,7 @@ class EquipmentController extends Controller
                 $equipments = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allEquipments,
                     $allEquipments->count(),
-                    $allEquipments->count(),
+                    max($allEquipments->count(), 1),
                     1
                 );
             } else {

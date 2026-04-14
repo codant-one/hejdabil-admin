@@ -71,7 +71,7 @@ class DocumentController extends Controller
                 $documents = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allDocuments,
                     $allDocuments->count(),
-                    $allDocuments->count(),
+                    max($allDocuments->count(), 1),
                     1
                 );
             } else {

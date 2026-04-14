@@ -34,7 +34,7 @@ class CarBodyController extends Controller
                 $carbodies = new \Illuminate\Pagination\LengthAwarePaginator(
                     $allCarbodies,
                     $allCarbodies->count(),
-                    $allCarbodies->count(),
+                    max($allCarbodies->count(), 1),
                     1
                 );
             } else {
