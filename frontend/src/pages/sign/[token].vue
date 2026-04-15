@@ -146,12 +146,20 @@ const pdfRenderScale = computed(() => {
   const pageW = Number(pdfPageSize.value?.width || 0)
   const pageH = Number(pdfPageSize.value?.height || 0)
   if (!pageW || !pageH) return 1
-  const visualScale = pdfVisualWidth.value / pageW
-  let scale = visualScale * pdfQuality.value
+  const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
+  // vue-pdf-embed ya multiplica internamente por dpr.
+  // pdfQuality es el multiplicador adicional sobre dpr para supersampling.
+  // Con :width pasado, vue-pdf-embed calcula el viewport scale internamente,
+  // así que NO multiplicamos por visualScale aquí (sería doble).
+  let scale = pdfQuality.value
   // Limitar para no exceder dimensiones máximas de canvas del navegador
-  const maxByWidth = MAX_CANVAS_DIM.value / pageW
-  const maxByHeight = MAX_CANVAS_DIM.value / pageH
-  scale = Math.min(scale, maxByWidth, maxByHeight)
+  // Canvas final = pageW * (pdfVisualWidth/pageW) * dpr * scale = pdfVisualWidth * dpr * scale
+  const maxDim = Math.max(pageW, pageH)
+  const visualScale = pdfVisualWidth.value / pageW
+  const canvasLargestSide = maxDim * visualScale * dpr * scale
+  if (canvasLargestSide > MAX_CANVAS_DIM.value) {
+    scale = MAX_CANVAS_DIM.value / (maxDim * visualScale * dpr)
+  }
   return Math.max(0.5, scale)
 })
 
@@ -786,6 +794,7 @@ onMounted(loadSignatureData);
               <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed 
                   :source="pdfSource"
+                  :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
                 />
@@ -907,6 +916,7 @@ onMounted(loadSignatureData);
                   :key="`pdf-${pdfSource}`"
                   ref="pdfViewerRef"
                   :source="pdfSource"
+                  :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
                 />
