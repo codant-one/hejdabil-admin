@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Fakturamall</title>
+        <title>Påminnelse</title>
     </head>
     <style>
 
@@ -21,7 +21,7 @@
         table {
             border-radius: 16px !important;
             border-spacing: unset;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: 400;
         }
 
@@ -29,9 +29,9 @@
             font-family: 'gelion', 'dm sans', sans-serif;
             font-size: 32px;
             font-weight: 600;
-            color: #454545;
-            border-top: 1px solid #454545;
-            border-bottom: 1px solid #454545;
+            color: #FFFFFF;
+            border-top: 1px solid #FFFFFF;
+            border-bottom: 1px solid #FFFFFF;
             padding: 8px 16px 4px 16px;
             line-height: 0.6;
             display: inline-block;
@@ -43,7 +43,7 @@
             margin-top: 10px;
             border-radius: 32px !important;
             letter-spacing: 0 !important;
-            line-height: 0.6;
+            line-height: 100%;
         }
 
         .table-supplier {
@@ -52,11 +52,13 @@
         }
 
         .invoice-background {
-            background-color: #E7E7E7;
+            background-color: {{ $company->primary_color ?? '#E7E7E7' }};
+            color: #FFFFFF !important;
         }
 
         .bg-items {
-            background-color: #F6F6F6;
+            background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
+            font-weight: 600 !important;
         }
 
         .bg-items td:first-child {
@@ -130,6 +132,7 @@
 
         .info-total table tr {
             height: 20px;
+            font-size: 12px;
         }
 
         .info-total .text {
@@ -139,6 +142,12 @@
         .info-total .numbers {
             width: auto !important;
             text-align: end;
+        }
+
+        .info-total .summary {
+            font-size: 20px;
+            font-weight: 700;
+            color: {{ $company->primary_color ?? '#E7E7E7' }};
         }
 
         .border-top {
@@ -161,7 +170,7 @@
         .table-supplier td {
             vertical-align: top;
         }
-    </style> 
+    </style>
     <body>
         <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
             <tbody>
@@ -170,7 +179,7 @@
                         <table width="100%" class="invoice-background table-background-top">
                             <tr>
                                 <td width="35%" class="data-from">
-                                    <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
+                                     <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
                                         @if($company->logo)
                                             <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
@@ -182,20 +191,12 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td width="65%" class="data-from">
+                               <td width="65%" class="data-from">
                                     <div style="text-align: right;">
                                         <span class="m-0 faktura">
-                                            {{ 
-                                                $billing->state_id === 9 ? 
-                                                'KREDIT FAKTURA' : 
-                                                ( 
-                                                    $billing->payment_terms === '0 dagar netto' ?
-                                                    'KONTANT FAKTURA' :
-                                                    'FAKTURA'
-                                                )
-                                            }}
+                                            PÅMINNELSE
                                         </span>
-                                    </div>                                    
+                                    </div>
                                 </td>
                             </tr>
                         </table>
@@ -273,7 +274,7 @@
                                             text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
                                             width: {{$type->type_id === 1 ? '40' : '15' }}%; 
                                             {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 16px !important;
-                                            height: 48px !important;"> 
+                                            height: 48px !important;">
                                         {{ $type->name }}
                                     </td>
                                     @endforeach
@@ -306,12 +307,9 @@
                                                     : $column['value'] 
                                                 }}
                                                 </span>
-                                                @if($column['id'] === 3 || $column['id'] === 4)
-                                                <span>kr</span>
-                                                @endif
                                             </td>
                                             @elseif($column['id'] === 5 && $billing->rabatt)
-                                            <td 
+                                           <td 
                                                 style="
                                                 text-align: right!important;
                                                 padding-right: 16px!important;
@@ -378,15 +376,9 @@
                                 </td>
                             </tr>
                             @endif
-                            <tr>
+                            <tr class="summary">
                                 <td style="text-align: right;">
-                                    <strong>
-                                        @if($billing->state_id === 9)
-                                            Krediterad belopp:
-                                        @else
-                                            Summa att betala:
-                                        @endif
-                                    </strong>
+                                    <strong>Summa att betala:</strong>
                                 </td>
                                 <td class="numbers" style="text-align: right;">
                                     <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>

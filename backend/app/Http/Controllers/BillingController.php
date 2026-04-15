@@ -326,7 +326,7 @@ class BillingController extends Controller
                 ], 404);
             
             $oldStateId = $billing->state_id;
-            $billing->state_id = $billing->state_id == 4 ? 7 : 4; // Toggle between pending and paid
+            $billing->state_id = ($billing->state_id === 4 || $billing->state_id === 8) ? 7 : 4; // Toggle between pending and paid
             $billing->update();
 
             SupplierActivity::createActivity([
