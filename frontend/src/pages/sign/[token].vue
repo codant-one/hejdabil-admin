@@ -22,6 +22,15 @@ const signaturesStore = useSignaturesStore()
 
 const { width: windowWidth } = useWindowSize()
 
+// --- Cleanup tracking ---
+const cleanupHandlers = []
+const pendingTimeouts = []
+const safeTimeout = (fn, delay) => {
+  const id = setTimeout(fn, delay)
+  pendingTimeouts.push(id)
+  return id
+}
+
 // --- Refs de Estado (Ahora más simples) ---
 const pdfSource = ref(null)
 const signaturePlacement = ref({ x: null, y: null, page: 1, isStatic: false, visible: false, alignment: 'left' })
@@ -54,10 +63,21 @@ const zoomStep = 0.25
 // --- Lógica del Tema (para el lienzo de firma) ---
 const { global } = useTheme()
 
+// --- Detección de plataforma ---
+const isIOS = computed(() => {
+  if (typeof navigator === 'undefined') return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+})
+
+const isMobile = computed(() => windowWidth.value < 1024)
+
 // --- PDF Computed Properties ---
 const pdfQuality = computed(() => {
+  // iOS Safari tiene límites de memoria de canvas muy estrictos
+  if (isIOS.value) return 1
   const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
-  return Math.min(3, Math.max(2, dpr))
+  return Math.min(2, Math.max(1.5, dpr))
 })
 
 const pdfPageAspect = computed(() => {
@@ -68,14 +88,14 @@ const pdfPageAspect = computed(() => {
 })
 
 const pdfFitPageWidth = computed(() => {
-  const isMobile = window.innerWidth < 1024
-  const vw = Math.max(100, Number(pdfViewportSize.value?.width || 0) - (isMobile ? 8 : 24))
+  const mobile = isMobile.value
+  const vw = Math.max(100, Number(pdfViewportSize.value?.width || 0) - (mobile ? 8 : 24))
   const vh = Math.max(100, Number(pdfViewportSize.value?.height || 0) - 24)
   const aspect = pdfPageAspect.value
   const numPages = Number(pdfNumPages.value || 0)
   
   // Para múltiples páginas verticales en mobile, usar todo el ancho disponible
-  if (numPages > 1 && isMobile) {
+  if (numPages > 1 && mobile) {
     return vw
   }
   
@@ -90,7 +110,7 @@ const pdfFitPageWidth = computed(() => {
 })
 
 const pdfVisualWidth = computed(() => {
-  const isMobile = window.innerWidth < 1024
+  const mobile = isMobile.value
   const viewportWidth = Number(pdfViewportSize.value?.width || 0)
   const fitWidth = pdfFitPageWidth.value
   
@@ -98,7 +118,7 @@ const pdfVisualWidth = computed(() => {
   if (viewportWidth < 100) return 700
   
   // En mobile, usar el 100% del ancho sin márgenes para evitar scroll horizontal
-  if (isMobile) {
+  if (mobile) {
     return viewportWidth
   }
   
@@ -108,11 +128,25 @@ const pdfVisualWidth = computed(() => {
   return Math.max(300, Math.min(calculatedWidth, viewportWidth - margin))
 })
 
+// iOS Safari tiene un budget total de canvas (~256-450 megapixels según dispositivo)
+// Limitar agresivamente para evitar jetsam (kill del tab)
+const MAX_CANVAS_DIM = computed(() => {
+  if (isIOS.value) return 2048
+  if (isMobile.value) return 4096
+  return 8192
+})
+
 const pdfRenderScale = computed(() => {
   const pageW = Number(pdfPageSize.value?.width || 0)
-  if (!pageW) return 1
+  const pageH = Number(pdfPageSize.value?.height || 0)
+  if (!pageW || !pageH) return 1
   const visualScale = pdfVisualWidth.value / pageW
-  return visualScale * pdfQuality.value
+  let scale = visualScale * pdfQuality.value
+  // Limitar para no exceder dimensiones máximas de canvas del navegador
+  const maxByWidth = MAX_CANVAS_DIM.value / pageW
+  const maxByHeight = MAX_CANVAS_DIM.value / pageH
+  scale = Math.min(scale, maxByWidth, maxByHeight)
+  return Math.max(0.5, scale)
 })
 
 // --- PDF Zoom Functions ---
@@ -139,7 +173,9 @@ const initPdfResizeObserver = () => {
   const el = pdfViewportEl.value
   if (!el || typeof ResizeObserver === 'undefined') return
   if (pdfResizeObserver) pdfResizeObserver.disconnect()
-  pdfResizeObserver = new ResizeObserver(() => updatePdfViewportSize())
+  pdfResizeObserver = new ResizeObserver(() => {
+    try { updatePdfViewportSize() } catch (e) { /* ignore resize errors */ }
+  })
   pdfResizeObserver.observe(el)
   updatePdfViewportSize()
 }
@@ -157,8 +193,8 @@ const handlePdfLoaded = async (doc) => {
     
     // Calcular posición del placeholder después de que el PDF se haya cargado
     if (!isAlreadySigned.value) {
-      setTimeout(() => calculatePlaceholderPosition(false), 300)
-      setTimeout(() => calculatePlaceholderPosition(true), 1500)
+      safeTimeout(() => calculatePlaceholderPosition(false), 300)
+      safeTimeout(() => calculatePlaceholderPosition(true), 1500)
     }
     
     // Forzar actualización del tamaño del viewport
@@ -193,19 +229,25 @@ watchEffect(async () => {
 // Watch zoom changes to trigger recalculation
 watch(pdfZoom, () => {
   if (!isAlreadySigned.value && signaturePlacement.value.visible) {
-    setTimeout(() => calculatePlaceholderPosition(false), 100)
+    safeTimeout(() => calculatePlaceholderPosition(false), 100)
   }
 })
 
 // Watch pdfPageSize to recalculate position when PDF loads
 watch(pdfPageSize, () => {
   if (!isAlreadySigned.value && signaturePlacement.value.visible) {
-    setTimeout(() => calculatePlaceholderPosition(false), 100)
+    safeTimeout(() => calculatePlaceholderPosition(false), 100)
   }
 }, { deep: true })
 
 onBeforeUnmount(() => {
   if (pdfResizeObserver) pdfResizeObserver.disconnect()
+  // Liberar blob URL
+  revokePdfSource()
+  // Cancelar todos los timeouts pendientes
+  pendingTimeouts.forEach(id => clearTimeout(id))
+  // Remover event listeners
+  cleanupHandlers.forEach(fn => { try { fn() } catch(e) { /* ignore */ } })
 })
 
 // Recargar la página al crear otro acuerdo
@@ -287,19 +329,27 @@ const checkTokenStatus = async () => {
   }
 }
 
+// Liberar blob URL anterior si existe
+const revokePdfSource = () => {
+  if (pdfSource.value) {
+    try { URL.revokeObjectURL(pdfSource.value) } catch (e) { /* ignore */ }
+    pdfSource.value = null
+  }
+}
+
 // Cargar el PDF según el estado
 const loadPdf = async () => {
   try {
     let pdfResponse
     
     if (isAlreadySigned.value) {
-      // Cargar el PDF firmado
       pdfResponse = await signaturesStore.getSignedPdf(props.token)
     } else {
-      // Cargar el PDF sin firmar
       pdfResponse = await signaturesStore.getUnsignedPdf(props.token)
     }
     
+    // Liberar blob anterior antes de crear uno nuevo
+    revokePdfSource()
     pdfSource.value = URL.createObjectURL(pdfResponse.data)
   } catch (error) {
     console.error("Kunde inte ladda PDF:", error)
@@ -341,6 +391,9 @@ const loadSignatureDetails = async () => {
 
 // Calcula la posición del placeholder considerando múltiples páginas
 // y desplaza el scroll del contenedor para poner el placeholder en vista
+let placeholderRetries = 0
+const MAX_PLACEHOLDER_RETRIES = 10
+
 const calculatePlaceholderPosition = (shouldScroll = false) => {
   if (!signaturePlacement.value.visible) {
     return
@@ -348,15 +401,22 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
   const container = pdfContainer.value
   if (!container) {
-    setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
+    if (placeholderRetries < MAX_PLACEHOLDER_RETRIES) {
+      placeholderRetries++
+      safeTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
+    }
     return
   }
 
   const pages = Array.from(container.querySelectorAll('canvas, svg, img'))
   if (pages.length === 0) {
-    setTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
+    if (placeholderRetries < MAX_PLACEHOLDER_RETRIES) {
+      placeholderRetries++
+      safeTimeout(() => calculatePlaceholderPosition(shouldScroll), 200)
+    }
     return
   }
+  placeholderRetries = 0
 
   // Para posición estática, usar la última página
   const targetPageIndex = signaturePlacement.value.isStatic 
@@ -384,9 +444,9 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
   const contentHeight = targetPage.clientHeight
   
   // Para mobile, necesitamos ajustar el cálculo considerando el padding del contenedor
-  const isMobile = window.innerWidth < 1024
-  const containerPaddingLeft = isMobile ? 0 : 0
-  const containerPaddingTop = isMobile ? 0 : 0
+  const mobile = isMobile.value
+  const containerPaddingLeft = 0
+  const containerPaddingTop = 0
   
   // Detectar si el PDF es horizontal (landscape) o vertical (portrait)
   const isLandscape = contentWidth > contentHeight
@@ -407,7 +467,7 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
     // Escalar el botón según el zoom del PDF y la orientación
     // En mobile con PDF horizontal (landscape), usar scale más pequeño
     let baseScale = 1
-    if (isMobile) {
+    if (mobile) {
       baseScale = isLandscape ? 0.4 : 0.7  // 40% para horizontal, 70% para vertical
     }
     const scale = pdfZoom.value * baseScale
@@ -428,7 +488,7 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
     // Escalar el botón según el zoom del PDF y la orientación
     // En mobile con PDF horizontal (landscape), usar scale más pequeño
     let baseScale = 1
-    if (isMobile) {
+    if (mobile) {
       baseScale = isLandscape ? 0.4 : 0.7  // 40% para horizontal, 70% para vertical
     }
     const scale = pdfZoom.value * baseScale
@@ -437,11 +497,11 @@ const calculatePlaceholderPosition = (shouldScroll = false) => {
 
   // Desplazar la VENTANA para que el placeholder quede visible
   if (shouldScroll) {
-    setTimeout(() => {
+    safeTimeout(() => {
       const placeholder = document.querySelector('.signature-placeholder-admin')
       if (placeholder) {
         const rect = placeholder.getBoundingClientRect()
-        const offsetFactor = window.innerWidth <= 768 ? 0.5 : 0.35
+        const offsetFactor = windowWidth.value <= 768 ? 0.5 : 0.35
         const scrollY = window.scrollY + rect.top - (window.innerHeight * offsetFactor)
         window.scrollTo({ top: scrollY, behavior: 'smooth' })
       }
@@ -472,13 +532,13 @@ const loadSignatureData = async () => {
     
     // Inicializar el ResizeObserver después de cargar el PDF
     await nextTick()
-    setTimeout(() => {
+    safeTimeout(() => {
       initPdfResizeObserver()
     }, 100)
     
     // Si ya está firmado, solo esperar a que se renderice el PDF
     if (isAlreadySigned.value) {
-      setTimeout(() => {
+      safeTimeout(() => {
         updatePdfViewportSize()
       }, 300)
     }
@@ -490,17 +550,17 @@ const loadSignatureData = async () => {
       // Esperar a que el PDF se renderice y calcular posición
       await nextTick()
       // Primer cálculo sin scroll - esperar más para que el PDF se renderice completamente
-      setTimeout(() => {
+      safeTimeout(() => {
         calculatePlaceholderPosition(false)
       }, 500)
       
       // Segundo cálculo para asegurar que el PDF está completamente renderizado
-      setTimeout(() => {
+      safeTimeout(() => {
         calculatePlaceholderPosition(false)
       }, 1000)
       
       // Después de que el video termine (aprox 3 segundos), hacer scroll al placeholder
-      setTimeout(() => {
+      safeTimeout(() => {
         calculatePlaceholderPosition(true)
       }, 3500)
       
@@ -520,6 +580,13 @@ const loadSignatureData = async () => {
       if (pdfContainer.value) {
         pdfContainer.value.addEventListener('scroll', recalculateHandler, { passive: true })
       }
+      
+      // Registrar handlers para cleanup
+      cleanupHandlers.push(
+        () => window.removeEventListener('resize', recalculateHandler),
+        () => window.removeEventListener('scroll', recalculateHandler),
+        () => pdfContainer.value?.removeEventListener('scroll', recalculateHandler)
+      )
     }
     
   } catch (error) {
@@ -580,10 +647,7 @@ const submitFinalSignature = async (signatureImage) => {
     const response = await signaturesStore.submitSignature(props.token, payload)
 
     // Liberar el blob del PDF sin firmar
-    if (pdfSource.value) {
-      URL.revokeObjectURL(pdfSource.value)
-      pdfSource.value = null
-    }
+    revokePdfSource()
 
     // Cargar el PDF firmado para mostrar y descargar
     try {
@@ -799,11 +863,10 @@ onMounted(loadSignatureData);
               <VBtn class="btn-light w-100" @click="resetZoom">Justera</VBtn>
             </div>
 
-            <!-- Miniaturas de páginas -->
+            <!-- Miniaturas de páginas (solo desktop - v-if evita crear canvases en mobile) -->
             <div
-              v-if="pdfSource && pdfNumPages >= 1"
+              v-if="pdfSource && pdfNumPages >= 1 && !isMobile"
               class="my-4 flex-grow-1 overflow-auto placement-thumbnails-scroll"
-              :class="windowWidth < 1024 ? 'd-none' : ''"
             >
               <div class="d-flex flex-column justify-center align-center gap-2">
                 <div
@@ -1009,12 +1072,14 @@ onMounted(loadSignatureData);
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* iOS Safari: respeta la barra dinámica del navegador */
   overflow: hidden;
   background: linear-gradient(90deg, #D8FFE4 0%, #C6FFEB 50%, #C0FEFF 100%);
 
   @media (max-width: 1023px) {
     height: auto;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: visible;
   }
 }
