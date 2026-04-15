@@ -74,10 +74,10 @@ const isMobile = computed(() => windowWidth.value < 1024)
 
 // --- PDF Computed Properties ---
 const pdfQuality = computed(() => {
-  // iOS Safari tiene límites de memoria de canvas muy estrictos
-  if (isIOS.value) return 1
   const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
-  return Math.min(2, Math.max(1.5, dpr))
+  // iOS Safari: permitir hasta 2x para nitidez Retina, el MAX_CANVAS_DIM protege la memoria
+  if (isIOS.value) return Math.min(2, dpr)
+  return Math.min(3, Math.max(2, dpr))
 })
 
 const pdfPageAspect = computed(() => {
@@ -129,11 +129,17 @@ const pdfVisualWidth = computed(() => {
 })
 
 // iOS Safari tiene un budget total de canvas (~256-450 megapixels según dispositivo)
-// Limitar agresivamente para evitar jetsam (kill del tab)
+// Ajustar el límite según la cantidad de páginas para repartir el budget
 const MAX_CANVAS_DIM = computed(() => {
-  if (isIOS.value) return 2048
+  const numPages = Math.max(1, Number(pdfNumPages.value || 1))
+  if (isIOS.value) {
+    // ~256 megapixels de budget total. A más páginas, menor dimensión por canvas.
+    if (numPages <= 1) return 4096
+    if (numPages <= 3) return 3072
+    return 2560
+  }
   if (isMobile.value) return 4096
-  return 8192
+  return 16384
 })
 
 const pdfRenderScale = computed(() => {
