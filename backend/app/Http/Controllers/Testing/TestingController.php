@@ -176,10 +176,10 @@ class TestingController extends Controller
         foreach($details as $row)
             $invoices[] = $row;
 
-        $company->primary_color = '#3490dc';
-        $company->secondary_color = '#ffed4a';
+        $company->primary_color = '#09DAD9';
+        $company->secondary_color = '#DFFAFA';
 
-        return view('pdfs.invoices.modern1', 
+        return view('pdfs.invoices.classic', 
             compact(
                 'company',
                 'billing',
