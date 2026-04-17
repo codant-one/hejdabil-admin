@@ -41,13 +41,13 @@
         table {
             border-radius: 16px !important;
             border-spacing: unset;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 400;
         }
 
         .faktura {
             font-family: 'gelion', 'dm sans', sans-serif;
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 600;
             color: #454545;
             line-height: 0.6;
@@ -143,7 +143,7 @@
         }
 
         .info-total .summary {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: {{ $company->primary_color ?? '#E7E7E7' }};
         }
@@ -355,7 +355,7 @@
                             @php
                                 $rowCount = count($invoices);
                                 $usedHeight = 250 + ($rowCount * 48);
-                                $availableHeight = 980 - 45 - 45 - 200;
+                                $availableHeight = 930 - 45 - 45 - 200;
                                 $spacerPadding = max(16, $availableHeight - $usedHeight);
                             @endphp
                             <tr>

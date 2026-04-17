@@ -21,7 +21,7 @@
         table {
             border-radius: 16px !important;
             border-spacing: unset;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 400;
         }
 

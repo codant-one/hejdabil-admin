@@ -20,14 +20,15 @@
 
         table {
             border-radius: 16px !important;
-            border-spacing: unset;
-            font-size: 10px;
+            border-collapse: collapse;
+            border-spacing: 0;
+            font-size: 12px;
             font-weight: 400;
         }
 
         .faktura {
             font-family: 'gelion', 'dm sans', sans-serif;
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 600;
             color: #FFFFFF;
             border-top: 1px solid #FFFFFF;
@@ -145,7 +146,7 @@
         }
 
         .info-total .summary {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: {{ $company->primary_color ?? '#E7E7E7' }};
         }
@@ -176,7 +177,7 @@
             <tbody>
                 <tr>
                     <td>
-                        <table width="100%" class="invoice-background table-background-top">
+                        <table width="100%" class="invoice-background">
                             <tr>
                                 <td width="35%" class="data-from">
                                      <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
@@ -199,8 +200,6 @@
                                     </div>
                                 </td>
                             </tr>
-                        </table>
-                        <table width="100%" class="invoice-background table-background-bottom">
                             <tr>
                                 <td width="65%" class="data-from pt-0">
                                     <table width="100%" class="invoice-background">
