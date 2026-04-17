@@ -74,10 +74,10 @@ const isMobile = computed(() => windowWidth.value < 1024)
 
 // --- PDF Computed Properties ---
 const pdfQuality = computed(() => {
-  // iOS Safari tiene límites de memoria de canvas muy estrictos
-  if (isIOS.value) return 1
   const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
-  return Math.min(2, Math.max(1.5, dpr))
+  // iOS Safari: permitir hasta 2x para nitidez Retina, el MAX_CANVAS_DIM protege la memoria
+  if (isIOS.value) return Math.min(2, dpr)
+  return Math.min(3, Math.max(2, dpr))
 })
 
 const pdfPageAspect = computed(() => {
@@ -129,23 +129,37 @@ const pdfVisualWidth = computed(() => {
 })
 
 // iOS Safari tiene un budget total de canvas (~256-450 megapixels según dispositivo)
-// Limitar agresivamente para evitar jetsam (kill del tab)
+// Ajustar el límite según la cantidad de páginas para repartir el budget
 const MAX_CANVAS_DIM = computed(() => {
-  if (isIOS.value) return 2048
+  const numPages = Math.max(1, Number(pdfNumPages.value || 1))
+  if (isIOS.value) {
+    // ~256 megapixels de budget total. A más páginas, menor dimensión por canvas.
+    if (numPages <= 1) return 4096
+    if (numPages <= 3) return 3072
+    return 2560
+  }
   if (isMobile.value) return 4096
-  return 8192
+  return 16384
 })
 
 const pdfRenderScale = computed(() => {
   const pageW = Number(pdfPageSize.value?.width || 0)
   const pageH = Number(pdfPageSize.value?.height || 0)
   if (!pageW || !pageH) return 1
-  const visualScale = pdfVisualWidth.value / pageW
-  let scale = visualScale * pdfQuality.value
+  const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1
+  // vue-pdf-embed ya multiplica internamente por dpr.
+  // pdfQuality es el multiplicador adicional sobre dpr para supersampling.
+  // Con :width pasado, vue-pdf-embed calcula el viewport scale internamente,
+  // así que NO multiplicamos por visualScale aquí (sería doble).
+  let scale = pdfQuality.value
   // Limitar para no exceder dimensiones máximas de canvas del navegador
-  const maxByWidth = MAX_CANVAS_DIM.value / pageW
-  const maxByHeight = MAX_CANVAS_DIM.value / pageH
-  scale = Math.min(scale, maxByWidth, maxByHeight)
+  // Canvas final = pageW * (pdfVisualWidth/pageW) * dpr * scale = pdfVisualWidth * dpr * scale
+  const maxDim = Math.max(pageW, pageH)
+  const visualScale = pdfVisualWidth.value / pageW
+  const canvasLargestSide = maxDim * visualScale * dpr * scale
+  if (canvasLargestSide > MAX_CANVAS_DIM.value) {
+    scale = MAX_CANVAS_DIM.value / (maxDim * visualScale * dpr)
+  }
   return Math.max(0.5, scale)
 })
 
@@ -780,6 +794,7 @@ onMounted(loadSignatureData);
               <div v-if="pdfSource" class="pdf-host" :style="{ width: pdfVisualWidth + 'px' }">
                 <VuePdfEmbed 
                   :source="pdfSource"
+                  :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
                 />
@@ -901,6 +916,7 @@ onMounted(loadSignatureData);
                   :key="`pdf-${pdfSource}`"
                   ref="pdfViewerRef"
                   :source="pdfSource"
+                  :width="pdfVisualWidth"
                   :scale="pdfRenderScale"
                   @loaded="handlePdfLoaded"
                 />
