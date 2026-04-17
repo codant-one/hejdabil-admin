@@ -177,7 +177,7 @@ const logout = async () => {
           </VListItem>
 
           <!--  👉 Company -->
-          <VListItem :to="{ name: 'dashboard-company' }" v-if="role === 'SuperAdmin' || role === 'Administrator'">
+          <VListItem class="d-none" :to="{ name: 'dashboard-company' }" v-if="role === 'SuperAdmin' || role === 'Administrator'">
             <template #prepend>
               <VIcon
                 class="me-2"

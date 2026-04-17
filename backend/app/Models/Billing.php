@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
+use App\Jobs\SendEmailJob;
 use Carbon\Carbon;
 use PDF;
 
@@ -18,6 +19,9 @@ use App\Models\Supplier;
 use App\Models\UserDetails;
 use App\Models\User;
 use App\Models\Config;
+use App\Models\Setting;
+use App\Models\SettingColor;
+use App\Models\SettingBilling;
 
 class Billing extends Model
 {
@@ -172,6 +176,7 @@ class Billing extends Model
             'invoice_date' =>  $request->invoice_date,
             'due_date' =>  $request->due_date,
             'payment_terms' =>  $request->payment_terms . ' dagar netto',
+            'terms_and_conditions' => $request->terms_and_conditions,
             'reference' => $request->reference === 'null' ? null : $request->reference,
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
@@ -191,6 +196,8 @@ class Billing extends Model
             //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configBillings = Config::getByKey('billings')    ?? ['value' => '[]'];
             
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
@@ -203,6 +210,8 @@ class Billing extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
+            $colorRaw   = $getValue($configColor);
+            $billingsRaw   = $getValue($configBillings);
             
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -218,14 +227,49 @@ class Billing extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
-            
+            $colorObj   = $decodeSafe($colorRaw);
+            $billingsObj   = $decodeSafe($billingsRaw);
+
             $company->logo = $logoObj->logo ?? null;
+            $company->type = $billingsObj->type ?? 1;
+
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? null;
+                $company->secondary_color = $colorObj->secondary_color ?? null;
+            }
+            
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
+
+            $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+
+            if($setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $setting->primary_color ?? null;
+                $company->secondary_color = $setting->secondary_color ?? null;
+            }
+
+            if($setting->setting_billing_id) {//existe un id de billing
+                $billingSetting = SettingBilling::find($setting->setting_billing_id);
+
+                $company->type = $billingSetting->type;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
+
         }
 
         foreach($details as $row)
@@ -235,7 +279,22 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+        switch ($company->type) {
+            case 1:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 2:
+                PDF::loadView('pdfs.invoices.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 3:
+                PDF::loadView('pdfs.invoices.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 4:
+                PDF::loadView('pdfs.invoices.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            default:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+        }
 
         $billing->file = 'pdfs/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
@@ -278,6 +337,7 @@ class Billing extends Model
             'invoice_date' =>  $request->invoice_date,
             'due_date' =>  $request->due_date,
             'payment_terms' =>  $request->payment_terms . ' dagar netto',
+            'terms_and_conditions' => $request->terms_and_conditions,
             'reference' => $request->reference === 'null' ? null : $request->reference,
             'subtotal' =>  $request->subtotal,
             'tax' =>  $request->tax,
@@ -297,6 +357,8 @@ class Billing extends Model
             //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configBillings = Config::getByKey('billings')    ?? ['value' => '[]'];
             
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
@@ -309,6 +371,8 @@ class Billing extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
+            $colorRaw   = $getValue($configColor);
+            $billingsRaw   = $getValue($configBillings);
             
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -324,14 +388,47 @@ class Billing extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
+            $colorObj   = $decodeSafe($colorRaw);
+            $billingsObj   = $decodeSafe($billingsRaw);
             
             $company->logo = $logoObj->logo ?? null;
+            $company->type = $billingsObj->type ?? 1;
+
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? null;
+                $company->secondary_color = $colorObj->secondary_color ?? null;
+            }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
+
+            $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+
+            if($setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $setting->primary_color ?? null;
+                $company->secondary_color = $setting->secondary_color ?? null;
+            }
+
+            if($setting->setting_billing_id) {//existe un id de billing
+                $billingSetting = SettingBilling::find($setting->setting_billing_id);
+
+                $company->type = $billingSetting->type;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
         }
 
         foreach($details as $row)
@@ -341,7 +438,22 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+        switch ($company->type) {
+            case 1:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 2:
+                PDF::loadView('pdfs.invoices.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 3:
+                PDF::loadView('pdfs.invoices.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 4:
+                PDF::loadView('pdfs.invoices.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            default:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+        }
 
         $billing->file = 'pdfs/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
@@ -383,6 +495,7 @@ class Billing extends Model
             'invoice_date' => now(),
             'due_date' =>  now(),
             'payment_terms' =>  '0 dagar netto',
+            'terms_and_conditions' => $billing->terms_and_conditions,
             'reference' => $billing->reference,
             'rabatt' =>  $billing->rabatt,
             'discount' =>  $billing->discount,
@@ -402,6 +515,8 @@ class Billing extends Model
             //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configBillings = Config::getByKey('billings')    ?? ['value' => '[]'];
             
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
@@ -414,6 +529,8 @@ class Billing extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
+            $colorRaw   = $getValue($configColor);
+            $billingsRaw   = $getValue($configBillings);
             
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -429,14 +546,48 @@ class Billing extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
+            $colorObj   = $decodeSafe($colorRaw);
+            $billingsObj   = $decodeSafe($billingsRaw);
             
             $company->logo = $logoObj->logo ?? null;
+            $company->type = $billingsObj->type ?? 1;
+
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? null;
+                $company->secondary_color = $colorObj->secondary_color ?? null;
+            }
+
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
+
+            $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+
+            if($setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $setting->primary_color ?? null;
+                $company->secondary_color = $setting->secondary_color ?? null;
+            }
+
+            if($setting->setting_billing_id) {//existe un id de billing
+                $billingSetting = SettingBilling::find($setting->setting_billing_id);
+
+                $company->type = $billingSetting->type;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
         }
 
         foreach($details as $row)
@@ -446,7 +597,22 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.invoice', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf');
+        switch ($company->type) {
+            case 1:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 2:
+                PDF::loadView('pdfs.invoices.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 3:
+                PDF::loadView('pdfs.invoices.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 4:
+                PDF::loadView('pdfs.invoices.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            default:
+                PDF::loadView('pdfs.invoices.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-faktura-'.$billing->invoice_id.'.pdf');
+        }
 
         $billing->file = 'pdfs/'.Str::slug($company->company).'-kredit-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
@@ -454,7 +620,7 @@ class Billing extends Model
         return $billing;
     }
 
-    public static function createReminder($billing) {
+    public static function createReminder($billing, int $delaySeconds = 0) {
 
         $billing = self::with(['supplier.user'])->find($billing->id);
         $types = Invoice::all();
@@ -464,6 +630,8 @@ class Billing extends Model
             //Admin
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configBillings = Config::getByKey('billings')    ?? ['value' => '[]'];
             
             // Extraer el "value" soportando array u object
             $getValue = function ($cfg) {
@@ -476,6 +644,8 @@ class Billing extends Model
             
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
+            $colorRaw   = $getValue($configColor);
+            $billingsRaw   = $getValue($configBillings);
             
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -493,12 +663,43 @@ class Billing extends Model
             $logoObj    = $decodeSafe($logoRaw);
             
             $company->logo = $logoObj->logo ?? null;
+            $company->type = $billingsObj->type ?? 1;
+
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? null;
+                $company->secondary_color = $colorObj->secondary_color ?? null;
+            }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
+
+            $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
+
+            if($setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $setting->primary_color ?? null;
+                $company->secondary_color = $setting->secondary_color ?? null;
+            }
+
+            if($setting->setting_billing_id) {//existe un id de billing
+                $billingSetting = SettingBilling::find($setting->setting_billing_id);
+
+                $company->type = $billingSetting->type;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
         }
 
         foreach($details as $row)
@@ -508,12 +709,27 @@ class Billing extends Model
             mkdir(storage_path('app/public/pdfs'), 0755,true);
         } //create a folder
 
-        PDF::loadView('pdfs.reminder', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+        switch ($company->type) {
+            case 1:
+                PDF::loadView('pdfs.reminders.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 2:
+                PDF::loadView('pdfs.reminders.modern1', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 3:
+                PDF::loadView('pdfs.reminders.modern2', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            case 4:
+                PDF::loadView('pdfs.reminders.compact', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+                break;
+            default:
+                PDF::loadView('pdfs.reminders.classic', compact('company', 'billing', 'types', 'invoices'))->save(storage_path('app/public/pdfs').'/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf');
+        }
 
         $billing->reminder = 'pdfs/'.Str::slug($company->company).'-påminnelse-faktura-'.$billing->invoice_id.'.pdf';
         $billing->update();
 
-        self::sendMail($billing);
+        self::sendMail($billing, $delaySeconds);
 
         return $billing;
     }
@@ -532,7 +748,7 @@ class Billing extends Model
         }
     }
 
-    public static function sendMail($billing) { //para recordatorios
+    public static function sendMail($billing, int $delaySeconds = 0) {
       
         $billing = self::with(['client', 'supplier.user'])->find($billing->id);
 
@@ -596,21 +812,30 @@ class Billing extends Model
         $subject = 'Påminnelse: förfallen faktura från ' . $company->company;
 
         try {
-            \Mail::send(
-                'emails.invoices.reminder'
-                , $data
-                , function ($message) use ($clientEmail, $subject, $billing) {
-                    $message->from(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
-                    $message->to($clientEmail)->subject($subject);
+            $pathToFile = storage_path('app/public/' . $billing->reminder);
+            $attachments = [];
 
-                    $pathToFile = storage_path('app/public/' . $billing->reminder);
-                    if (file_exists($pathToFile)) {
-                        $message->attach($pathToFile, [
-                            'as' => Str::replaceFirst('pdfs/', '', $billing->reminder),
-                            'mime' => 'application/pdf',
-                        ]);
-                    }
-            });
+            if (file_exists($pathToFile)) {
+                $attachments[] = [
+                    'path' => $pathToFile,
+                    'as' => Str::replaceFirst('pdfs/', '', $billing->reminder),
+                    'mime' => 'application/pdf',
+                ];
+            }
+
+            $job = SendEmailJob::dispatch(
+                'emails.invoices.reminder',
+                $data,
+                $clientEmail,
+                $subject,
+                null,
+                null,
+                $attachments
+            )->onQueue('emails');
+
+            if ($delaySeconds > 0) {
+                $job->delay(now()->addSeconds($delaySeconds));
+            }
 
             return true;
         } catch (\Exception $e){

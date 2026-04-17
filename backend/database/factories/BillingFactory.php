@@ -51,6 +51,7 @@ class BillingFactory extends Factory
             'invoice_date' => now(),
             'due_date' => now(),
             'payment_terms' => '5 dagar netto',
+            'terms_and_conditions' => 'Efter förfallodagen debiteras ränta enligt räntelagen.',
             'reference' => $this->faker->name,
             'subtotal' => $subtotal,
             'tax' => $tax,

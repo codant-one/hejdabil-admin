@@ -101,8 +101,7 @@ class Reminder extends Model
             'user_id' => Auth::user()->id,
             'supplier_id' => $supplier_id,
             'description' => $request->description,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'date' => $request->date,
             'is_done' => $request->is_done ?? 0
         ]);
         
@@ -113,8 +112,7 @@ class Reminder extends Model
 
         $reminder->update([
             'description' => $request->description,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
+            'date' => $request->date,
             'is_done' => $request->is_done ?? 0
         ]);
         

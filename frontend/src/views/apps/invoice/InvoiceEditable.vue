@@ -71,6 +71,16 @@ const props = defineProps({
     required: false,
     default: false
   },
+  days: {
+    type: [Number, String],
+    required: false,
+    default: 5
+  },
+  terms: {
+    type: String,
+    required: false,
+    default: 'Efter förfallodagen debiteras ränta enligt räntelagen.'
+  }
 });
 
 const emit = defineEmits([
@@ -160,7 +170,8 @@ defineExpose({
 
 const invoice = ref({
   id: 1,
-  days: 1,
+  days: props.days,
+  terms: props.terms,
   client_id: null,
   supplier_id: null,
   invoice_date: null,
@@ -209,6 +220,31 @@ watch(
     } else {
       invoice.value.id = getNextInvoiceId(company.value?.billings, props.invoice_id);
     }
+  }
+);
+
+watch(
+  () => props.days,
+  (val) => {
+    if (props.billing) return;
+
+    const parsedDays = Number(val);
+    if (Number.isFinite(parsedDays) && parsedDays > 0) {
+      invoice.value.days = parsedDays;
+    }
+  }
+);
+
+watch(
+  () => props.terms,
+  (val) => {
+    if (props.billing) return;
+
+    invoice.value.terms = typeof val === "string" && val.trim()
+      ? val
+      : invoice.value.terms;
+
+    emit("data", invoice.value);
   }
 );
 
@@ -712,7 +748,7 @@ const handleFocus = (element, fieldId) => {
             </span>
           </div>
           <p class="mt-5 mb-0 text-sm" v-if="client">
-            Efter förfallodagen debiteras ränta enligt räntelagen.
+            {{ invoice.terms }}
           </p>
         </div>
         <div class="text-right d-flex flex-column w-100 w-md-50">
@@ -1270,7 +1306,7 @@ const handleFocus = (element, fieldId) => {
                 </span>
               </div>
               <p class="mt-5 mb-0 text-sm" v-if="client">
-                Efter förfallodagen debiteras ränta enligt räntelagen.
+                {{ invoice.terms }}
               </p>
             </div>
 

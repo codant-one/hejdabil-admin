@@ -896,6 +896,77 @@ class Agreement extends Model
         $commission->updateCommission($request, $commission);
     }
 
+    public static function createReminder($agreement, int $delaySeconds = 0) {
+        $agreement = self::with(['agreement_type', 'agreement_client', 'token', 'supplier.user'])->find($agreement->id);
+
+        if (!$agreement || !$agreement->token) {
+            return null;
+        }
+
+        // Obtener datos de la empresa
+        if ($agreement->supplier_id === null) {
+            $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
+            $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
+
+            $getValue = function ($cfg) {
+                if (is_array($cfg)) return $cfg['value'] ?? '[]';
+                if (is_object($cfg) && isset($cfg->value)) return $cfg->value;
+                return '[]';
+            };
+
+            $companyRaw = $getValue($configCompany);
+            $logoRaw    = $getValue($configLogo);
+
+            $decodeSafe = function ($raw) {
+                $decoded = json_decode($raw);
+                if (is_string($decoded)) $decoded = json_decode($decoded);
+                if (!is_object($decoded)) $decoded = (object) [];
+                return $decoded;
+            };
+
+            $company = $decodeSafe($companyRaw);
+            $logoObj = $decodeSafe($logoRaw);
+            $company->logo = $logoObj->logo ?? null;
+            $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+        } else {
+            $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
+            $company = $user->user->userDetail;
+            $company->email = $user->user->email;
+            $company->name = $user->user->name;
+            $company->last_name = $user->user->last_name;
+            $logo = $user->user->userDetail->logo_url ?? null;
+        }
+
+        $signingUrl = env('APP_DOMAIN') . '/sign/' . $agreement->token->signing_token;
+
+        $data = [
+            'agreement' => $agreement,
+            'signingUrl' => $signingUrl,
+            'company' => $company,
+            'user' => $agreement->agreement_client->fullname ?? '',
+            'title' => 'Påminnelse: ' . strtolower($agreement->agreement_type->name),
+            'icon' => asset('/images/agreements.png'),
+            'logo' => $logo ?? null
+        ];
+
+        $clientEmail = $agreement->token->recipient_email;
+        $typeName = $agreement->agreement_type->name ?? 'Avtal';
+        $subject = 'Påminnelse: ' . $typeName . ' från ' . ($company->company ?? '');
+
+        $job = \App\Jobs\SendEmailJob::dispatch(
+            'emails.agreements.signature_request',
+            $data,
+            $clientEmail,
+            $subject
+        )->onQueue('emails');
+
+        if ($delaySeconds > 0) {
+            $job->delay(now()->addSeconds($delaySeconds));
+        }
+
+        return $agreement;
+    }
+
     public static function coordinates($agreement, $coordinateType) {
         switch ($agreement->agreement_type_id) {
             case 1: // Sales

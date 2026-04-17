@@ -7,6 +7,7 @@ import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobileP
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
 import { useConfigsStores } from '@/stores/useConfigs'
+import { useSettingsStore } from '@/stores/useSettings'
 import { themeConfig } from '@themeConfig'
 import { Cropper } from 'vue-advanced-cropper'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
@@ -27,17 +28,20 @@ const signaturePadInstance = ref(null)
 const authStores = useAuthStores()
 const configsStores = useConfigsStores()
 const profileStores = useProfileStores()
+const settingsStore = useSettingsStore()
 
 const isRequestOngoing = ref(true)
 const isConfirmChangeLogoVisible = ref(false)
 const isConfirmChangeSignatureVisible = ref(false)
 const isSignaturePadDialogVisible = ref(false)
 const isBrandColorPickerVisible = ref(false)
+const isBrandPaletteReady = ref(false)
 const isFormEdited = ref(false)
 const dialog = ref(false)
 
 const data = ref(null)
 const userData = ref(null)
+const settingsData = ref(null)
 const role = ref('')
 const logo = ref(null)
 const logoCropped = ref(null)
@@ -97,12 +101,13 @@ const brandColorOptions = [
   '#E7E7E7',
 ]
 
-const customBrandColorSwatch = brandColorOptions[brandColorOptions.length - 2]
 const customBrandColorOption = brandColorOptions[brandColorOptions.length - 1]
-const customBrandColor = ref(customBrandColorSwatch)
+const defaultBrandColorIndex = 4
+const presetBrandColorCount = brandColorOptions.length - 1
+const customBrandColor = ref(customBrandColorOption)
 const savedBrandColor = ref(null)
 
-const selectedBrandColor = ref(brandColorOptions[3])
+const selectedBrandColor = ref(brandColorOptions[defaultBrandColorIndex])
 
 // ── Hue bar helpers ──
 
@@ -222,7 +227,7 @@ watch(customBrandColor, hex => {
   currentHue.value = hsv.h
 }, { immediate: true })
 
-const getBrandColorSwatchColor = color => color === customBrandColorSwatch && savedBrandColor.value ? savedBrandColor.value : color
+const getBrandColorSwatchColor = color => color
 
 const getBrandColorIconColor = color => {
   const hexColor = color.replace('#', '')
@@ -238,7 +243,149 @@ const getBrandColorIconColor = color => {
   return brightness > 160 ? '#1C2925' : '#FFFFFF'
 }
 
-const selectBrandColor = color => {
+const SECONDARY_TINT_STRENGTH = 0.13
+
+const primaryColorHex = computed(() => customBrandColor.value.toUpperCase())
+
+const secondaryColorHex = computed(() => {
+  const { r, g, b } = hexToRgb(customBrandColor.value)
+
+  // 13% del color base sobre fondo blanco para obtener un HEX guardable.
+  const blendWithWhite = channel => Math.round((channel * SECONDARY_TINT_STRENGTH) + (255 * (1 - SECONDARY_TINT_STRENGTH)))
+
+  return rgbToHex(blendWithWhite(r), blendWithWhite(g), blendWithWhite(b)).toUpperCase()
+})
+
+const primaryColorPreviewStyle = computed(() => ({
+  backgroundColor: primaryColorHex.value,
+  color: getBrandColorIconColor(customBrandColor.value),
+}))
+
+const secondaryColorPreviewStyle = computed(() => ({
+  backgroundColor: secondaryColorHex.value,
+  color: '#454545',
+}))
+
+const normalizeHexColor = value => {
+  if (typeof value !== 'string')
+    return ''
+
+  const normalized = value.trim().toUpperCase()
+
+  return /^#[0-9A-F]{6}$/.test(normalized) ? normalized : ''
+}
+
+const getSettingColorIdFromOption = color => {
+  const index = brandColorOptions.indexOf(color)
+
+  if (index < 0 || index >= presetBrandColorCount)
+    return null
+
+  return index + 1
+}
+
+const resolveLoggedUserId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss?.user_id ?? userData.value?.supplier?.boss?.user?.id ?? null
+
+  return userData.value?.id ?? userData.value?.user?.id ?? null
+}
+
+const resolveSettingsSupplierId = () => {
+  if (role.value === 'User')
+    return userData.value?.supplier?.boss_id ?? userData.value?.supplier?.boss?.id ?? null
+
+  return userData.value?.supplier?.id ?? null
+}
+
+const persistBrandColorSettings = async payload => {
+  if (role.value === 'User')
+    return false
+
+  isRequestOngoing.value = true
+
+  try {
+    if (isAdminRole.value) {
+      const currentColorConfig = configsStores.getFeaturedConfig('color') ?? {}
+      const mergedPayload = {
+        ...currentColorConfig,
+        ...payload,
+        setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+      }
+
+      await configsStores.postFeature({
+        key: 'color',
+        params: {
+          value: mergedPayload,
+        },
+      })
+
+      configsStores.configs['color'] = mergedPayload
+    } else {
+      const supplierId = resolveSettingsSupplierId()
+
+      if (!supplierId)
+        return false
+
+      const response = await settingsStore.colors({
+        id: supplierId,
+        data: payload,
+      })
+
+      settingsData.value = response?.data?.data?.settings ?? {
+        ...(settingsData.value || {}),
+        ...payload,
+        setting_color_id: payload.setting_color_id === 'null' ? null : payload.setting_color_id,
+      }
+    }
+
+    return true
+  } catch {
+    setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
+    clearAdvisorLater(5000)
+
+    return false
+  } finally {
+    isRequestOngoing.value = false
+  }
+}
+
+const applyBrandColorFromSettings = () => {
+  const colorSource = isAdminRole.value
+    ? configsStores.getFeaturedConfig('color') ?? {}
+    : settingsData.value ?? {}
+
+  const settingColorId = Number(colorSource?.setting_color_id)
+
+  if (Number.isInteger(settingColorId) && settingColorId >= 1 && settingColorId <= presetBrandColorCount) {
+    const mappedColor = brandColorOptions[settingColorId - 1]
+
+    selectedBrandColor.value = mappedColor
+    customBrandColor.value = mappedColor
+    savedBrandColor.value = null
+
+    return
+  }
+
+  const customPrimaryColor = normalizeHexColor(colorSource?.primary_color)
+
+  if (customPrimaryColor) {
+    selectedBrandColor.value = customBrandColorOption
+    customBrandColor.value = customPrimaryColor
+    savedBrandColor.value = customPrimaryColor
+
+    return
+  }
+
+  selectedBrandColor.value = brandColorOptions[defaultBrandColorIndex]
+  customBrandColor.value = brandColorOptions[defaultBrandColorIndex]
+  savedBrandColor.value = null
+}
+
+const selectBrandColor = async color => {
+  if (role.value === 'User')
+    return
+
   if (color === customBrandColorOption) {
     customBrandColor.value = savedBrandColor.value || selectedBrandColor.value
     isBrandColorPickerVisible.value = true
@@ -247,12 +394,39 @@ const selectBrandColor = color => {
   }
 
   selectedBrandColor.value = color
+  savedBrandColor.value = null
+
+  const settingColorId = getSettingColorIdFromOption(color)
+
+  if (!settingColorId)
+    return
+
+  await persistBrandColorSettings({
+    setting_color_id: settingColorId,
+  })
 }
 
-const applyCustomBrandColor = () => {
-  savedBrandColor.value = customBrandColor.value
-  selectedBrandColor.value = customBrandColorSwatch
-  isBrandColorPickerVisible.value = false
+const applyCustomBrandColor = async () => {
+  if (role.value === 'User')
+    return
+
+  const normalizedCustomColor = normalizeHexColor(customBrandColor.value)
+
+  if (!normalizedCustomColor)
+    return
+
+  savedBrandColor.value = normalizedCustomColor
+  customBrandColor.value = normalizedCustomColor
+  selectedBrandColor.value = customBrandColorOption
+
+  const isSaved = await persistBrandColorSettings({
+    setting_color_id: 'null',
+    primary_color: primaryColorHex.value,
+    secondary_color: secondaryColorHex.value,
+  })
+
+  if (isSaved)
+    isBrandColorPickerVisible.value = false
 }
 
 const companyDetail = computed(() => {
@@ -344,17 +518,25 @@ const applyCompanyMedia = async ({ logoPath = null, signaturePath = null }) => {
 
 async function fetchData() {
   isRequestOngoing.value = true
+  isBrandPaletteReady.value = false
   isHydratingForm.value = true
 
   try {
     userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
     role.value = userData.value?.roles?.[0]?.name ?? ''
 
+    const loggedUserId = resolveLoggedUserId()
+
+    settingsData.value = loggedUserId
+      ? await settingsStore.showSettings(loggedUserId)
+      : null
+
     if (isAdminRole.value) {
       await Promise.all([
         configsStores.getFeature('company'),
         configsStores.getFeature('logo'),
         configsStores.getFeature('signature'),
+        configsStores.getFeature('color'),
       ])
 
       const detail = configsStores.getFeaturedConfig('company') ?? {}
@@ -383,8 +565,12 @@ async function fetchData() {
       })
     }
 
+    applyBrandColorFromSettings()
+    isBrandPaletteReady.value = true
     syncInitialFormSnapshot()
   } catch {
+    applyBrandColorFromSettings()
+    isBrandPaletteReady.value = true
     setAdvisor('error', 'Ett serverfel uppstod. Försök igen.')
     clearAdvisorLater(5000)
   } finally {
@@ -915,17 +1101,17 @@ onBeforeUnmount(() => {
                   <VImg :src="logo" class="logo-store-img" contain />
                 </div>
               </div>
-              <div class="d-none flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
+              <div class="d-flex flex-column gap-6" :style="windowWidth < 1024 ? 'width: 100%;' : 'width: calc(50% - 12px);'">
                 <span class="avatar-text">
                   Varumärkets färg
                   <VTooltip location="bottom" max-width="200"> 
-                  <template #activator="{ props }">
-                    <span v-bind="props" class="cursor-pointer">
-                      <VIcon icon="custom-circle-help" size="24" />
-                    </span>
-                  </template>
-                  ??? texto
-                </VTooltip>
+                    <template #activator="{ props }">
+                      <span v-bind="props" class="cursor-pointer">
+                        <VIcon icon="custom-circle-help" size="24" />
+                      </span>
+                    </template>
+                    Påverkar utseendet på dina fakturor och avtal.
+                  </VTooltip>
                 </span>
                 <div class="brand-color-grid">
                   <button
@@ -933,8 +1119,15 @@ onBeforeUnmount(() => {
                     :key="color"
                     type="button"
                     class="brand-color-grid__item"
-                    :class="{ 'brand-color-grid__item--selected': selectedBrandColor === color && color !== customBrandColorOption }"
-                    :style="{ backgroundColor: getBrandColorSwatchColor(color) }"
+                    :disabled="role === 'User'"
+                    :class="{
+                      'brand-color-grid__item--selected': isBrandPaletteReady && selectedBrandColor === color,
+                      'brand-color-grid__item--customized': isBrandPaletteReady && color === customBrandColorOption && !!savedBrandColor,
+                    }"
+                    :style="{
+                      backgroundColor: getBrandColorSwatchColor(color),
+                      '--custom-brand-color': color === customBrandColorOption && savedBrandColor ? savedBrandColor : 'transparent',
+                    }"
                     :aria-label="`Färg ${color}`"
                     @click="selectBrandColor(color)"
                   >
@@ -945,12 +1138,7 @@ onBeforeUnmount(() => {
                       class="brand-color-grid__plus"
                       :style="{ color: getBrandColorIconColor(getBrandColorSwatchColor(color)) }"
                     />
-                    <VIcon
-                      v-else-if="selectedBrandColor === color"
-                      icon="custom-checked"
-                      size="16"
-                      class="brand-color-grid__check"
-                    />
+                    
                   </button>
                 </div>
                 <span class="avatar-text text-neutral-3">
@@ -1421,24 +1609,29 @@ onBeforeUnmount(() => {
 
     <VDialog
       v-model="isBrandColorPickerVisible"
-      :persistent="windowWidth >= 1024"
-      :class="windowWidth >= 1024 ? 'action-dialog' : ''"
+      :fullscreen="windowWidth < 1024"
+      persistent
+      :scrim="windowWidth < 1024 ? false : true"
+      :scrollable="windowWidth >= 1024"
+      :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
       :max-width="windowWidth >= 1024 ? 402 : undefined"
       :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
       :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     >
       <VBtn
-        v-if="windowWidth >= 1024"
         icon
         class="btn-white close-btn"
         @click="isBrandColorPickerVisible = false"
       >
-        <VIcon size="16" icon="custom-close" />
+        <VIcon size="24" icon="custom-close" />
       </VBtn>
 
       <VCard>
-        <VCardText class="dialog-title-box">
-          <div class="dialog-title">Colors</div>
+        <VCardText class="dialog-title-box d-flex flex-column align-start gap-4">
+          <div class="dialog-title-colors">Färger</div>
+          <div class="dialog-subtitle-colors">
+            Välj en primär färg. En matchande färg skapas automatiskt.
+          </div>
         </VCardText>
 
         <VCardText class="dialog-text py-0 brand-color-picker-wrapper">
@@ -1459,9 +1652,15 @@ onBeforeUnmount(() => {
               <div class="brand-hue-bar__thumb" :style="{ top: hueThumbTop }" />
             </div>
           </div>
-          <div class="d-flex flex-column gap-4 mt-4">
-            <span class="text-color-picker">HEX</span>
-            <span class="box-color-picker">{{ customBrandColor }}</span>             
+          <div class="d-flex flex-column gap-1 mt-4">
+            <span class="text-color-picker">Primär färg</span>
+            <span class="hex-color-picker">HEX</span>
+            <span class="box-color-picker" :style="primaryColorPreviewStyle">{{ primaryColorHex }}</span>
+          </div>
+          <div class="d-flex flex-column gap-1 mt-2">
+            <span class="text-color-picker">Sekundär färg (anpassas automatiskt)</span>
+            <span class="hex-color-picker">HEX</span>
+            <span class="box-color-picker" :style="secondaryColorPreviewStyle">{{ secondaryColorHex }}</span>
           </div>
         </VCardText>
 
@@ -1476,6 +1675,15 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+
+.avatar-text {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0;
+  color: #454545;
+}
+
 :deep(.vue-simple-handler) {
   background: #57F287 !important;
 }
@@ -1539,12 +1747,36 @@ onBeforeUnmount(() => {
   width: fit-content;
 }
 
+.dialog-title-colors {
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  text-align: center;
+  color: #1A1A1A;
+}
+
+.dialog-subtitle-colors {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #878787;
+}
+
 .text-color-picker {
-  font-family: "SF Pro", Arial, sans-serif;
-  font-weight: 590;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+  color: #1A1A1A;
+}
+
+.hex-color-picker {
+  font-weight: 600;
   font-size: 15px;
   line-height: 20px;
-  letter-spacing: 0;
+  letter-spacing: 0px;
   color: #000000;
 }
 
@@ -1552,8 +1784,7 @@ onBeforeUnmount(() => {
   background-color:  #78787833;
   border-radius: 8px;
   padding: 9px 14px;
-  font-family: "SF Pro", Arial, sans-serif;
-  font-weight: 590;
+  font-weight: 600;
   font-size: 17px;
   line-height: 22px;
   letter-spacing: -0.43px;
@@ -1572,14 +1803,36 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: visible;
   width: 32px;
   height: 32px;
   border-radius: 32px;
   border: 2px solid transparent;
 }
 
-.brand-color-grid__item--selected {
-  border: 2px solid #1C2925;
+.brand-color-grid__item:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.brand-color-grid__item--selected::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #5D5D5D;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.brand-color-grid__item--customized {
+  border-color: var(--custom-brand-color);
+  background:
+    radial-gradient(circle, #D9D9D9 0 38%, var(--custom-brand-color) 39% 70%, transparent 71%);
 }
 
 .brand-color-grid__check {
@@ -1722,7 +1975,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 104px;
   border-radius: 8px;
-  border: solid 1px #878787;
+  border: solid 1px #e7e7e7;
   opacity: 0.8;
   background-color: #f6f6f6;
 }

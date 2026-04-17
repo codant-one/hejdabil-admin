@@ -3,6 +3,7 @@
 
    import { useRemindersStores } from '@/stores/useReminders';
    import { requiredValidator } from '@validators';
+   import { formatDate, formatDateYMD } from '@/@core/utils/formatters'
    import InlineBanner from '@/components/common/InlineBanner.vue'
 
    const emit = defineEmits(['refresh', 'advisor'])
@@ -34,68 +35,26 @@
    const isSubmitting = ref(false)
    const form = ref({
       description: '',
-      start_date: '',
-      end_date: '',
+      date: '',
       is_done: 0,
    })
 
    const startDateTimePickerConfig = computed(() => ({
-      dateFormat: 'Y-m-d',
-      position: 'auto right',
+      enableTime: true, 
+      dateFormat: 'Y-m-d H:i',
+      position: 'auto right'
    }))
-
-   const endDateTimePickerConfig = computed(() => {
-      const config = {
-         dateFormat: 'Y-m-d',
-         position: 'auto right',
-      }
-
-      if (form.value.start_date)
-         config.minDate = form.value.start_date
-
-      return config
-   })
-
-   const endDateAfterOrEqualValidator = value => {
-      if (!value)
-         return true
-
-      if (!form.value.start_date)
-         return true
-
-      return value >= form.value.start_date || 'Slutdatum måste vara samma datum som eller senare än startdatum'
-   }
 
    const resetForm = async () => {
       form.value = {
          description: '',
-         start_date: '',
-         end_date: '',
+         date: '',
          is_done: 0,
       }
       refVForm.value?.resetValidation()
 
       await nextTick()
       formInstanceKey.value += 1
-   }
-
-   const showError = () => {
-      inteSkapatsDialog.value = false
-
-      const responseData = err.value?.response?.data
-      let message = ''
-
-      if (responseData?.message) {
-         message = responseData.message
-      } else if (responseData?.errors) {
-         message = Object.values(responseData.errors).flat().join('<br>')
-      } else if (err.value?.message) {
-         message = err.value.message
-      } else {
-         message = 'Ett serverfel uppstod. Försök igen.'
-      }
-
-      emit('advisor', { type: 'error', message })
    }
 
    const onSubmit = async () => {
@@ -115,9 +74,25 @@
          }, 3000)
 
          emit('refresh')
-      } catch (error) {
-         err.value = error
+      } catch (error) {error
+
+         const responseData = error?.response?.data
+
+         if (responseData?.message) {
+            err.value = responseData.message
+         } else if (responseData?.errors) {
+            err.value = Object.values(responseData.errors).flat().join('<br>')
+         } else if (error?.message) {
+            err.value = error.message
+         } else {
+            err.value = 'Ett fel uppstod när uppgiften skulle sparas. Försök igen.'
+         }
+
          inteSkapatsDialog.value = true
+
+         setTimeout(() => {
+            inteSkapatsDialog.value = false
+         }, 3000)
       } finally {
          isSubmitting.value = false
       }
@@ -126,8 +101,7 @@
    const mapReminderItem = item => ({
       id: item?.id,
       title: item?.description ?? '',
-      startDate: item?.start_date,
-      endDate: item?.end_date,
+      date: item?.date,
       completed: Boolean(item?.is_done),
       raw: item,
    })
@@ -210,7 +184,7 @@
 
 <template>
    <VCard title="" class="card-dashboard">
-      <VCardTitle class="title-box border-none" :class="windowWidth < 1024 ? '' : 'pb-2'">
+      <VCardTitle class="title-box border-none">
          <div class="title-text mb-2">Mina anteckningar</div>
 
          <VBtn
@@ -227,9 +201,8 @@
       </VCardTitle>
 
       <VCardText 
-         class="pt-2 form-dashboard" 
-         :class="windowWidth < 1024 ? 'px-4' : 'px-6'"
-         style="height: 70px;">
+         class="form-dashboard flex-0 pb-4" 
+         :class="windowWidth < 1024 ? 'px-4' : 'px-6'">
          <VForm :key="formInstanceKey" ref="refVForm" @submit.prevent="onSubmit">
             <div class="d-flex flex-column gap-2">
                <div class="information-form__field information-form__field--full">
@@ -244,24 +217,12 @@
                   <div class="information-form__field">
                      <AppDateTimePicker
                         :key="JSON.stringify(startDateTimePickerConfig)"
-                        v-model="form.start_date"
+                        v-model="form.date"
                         density="default"
                         :config="startDateTimePickerConfig"
                         class="field-solo-flat"
-                        placeholder="Startdatum"
+                        placeholder="Datum"
                         :rules="[requiredValidator]"
-                        hide-details="auto"
-                     />
-                  </div>
-                  <div class="information-form__field">
-                     <AppDateTimePicker
-                        :key="JSON.stringify(endDateTimePickerConfig)"
-                        v-model="form.end_date"
-                        density="default"
-                        :config="endDateTimePickerConfig"
-                        class="field-solo-flat"
-                        placeholder="Slutdatum"
-                        :rules="[requiredValidator, endDateAfterOrEqualValidator]"
                         hide-details="auto"
                      />
                   </div>
@@ -308,6 +269,17 @@
                Alla slutförda uppgifter har tagits bort.
             </InlineBanner>
 
+            <InlineBanner
+               v-if="inteSkapatsDialog"
+               variant="error"
+               title="Kunde inte skapa uppgiften"
+               icon="custom-risk"
+               class="alert-no-shrink"
+               style="flex: none;"
+            >
+              {{ err }}
+            </InlineBanner>
+
             <div
                v-for="item in taskItems"
                :key="item.id"
@@ -344,7 +316,15 @@
 
                   <div class="information-item__meta d-flex align-center">
                      <VIcon icon="custom-calendar" size="16" />
-                     <span>{{ item.startDate }} - {{ item.endDate }}</span>
+                     <div class="d-flex align-center gap-1" style="margin-top: 1px;">
+                       
+                           {{ formatDateYMD(item.date) }}
+                      
+                        <VIcon size="16" icon="custom-clock" />
+                      
+                           {{ item.date ? formatDate(item.date, { hour: '2-digit', minute: '2-digit', hour12: false }) : ''}}
+                      
+                     </div>
                   </div>
                </div>
             </div>
@@ -369,38 +349,6 @@
       </VCardText>
    </VCard>
 
-   <!-- 👉 Inte Skapats Dialog (error) -->
-   <VDialog
-      v-model="inteSkapatsDialog"
-      persistent
-      class="action-dialog dialog-big-icon"
-   >
-      <VBtn
-         icon
-         class="btn-white close-btn"
-         @click="inteSkapatsDialog = false"
-      >
-         <VIcon size="16" icon="custom-close" />
-      </VBtn>
-
-      <VCard>
-         <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-f-cancel" />
-         </VCardText>
-         <VCardText class="dialog-title-box justify-center">
-            <div class="dialog-title">Kunde inte skapa uppgiften</div>
-         </VCardText>
-         <VCardText class="dialog-text text-center">
-            Ett fel uppstod. Kontrollera att alla obligatoriska fält är korrekt ifyllda och försök igen.
-         </VCardText>
-         <VCardText class="d-flex justify-center gap-3 flex-wrap dialog-actions">
-            <VBtn class="btn-light" @click="showError">
-               Stäng
-            </VBtn>
-         </VCardText>
-      </VCard>
-   </VDialog>
-
    <!-- 👉 Confirm Delete Dialog -->
    <VDialog
       v-model="confirmDeleteDialog"
@@ -417,7 +365,7 @@
 
       <VCard>
          <VCardText class="dialog-title-box big-icon justify-center pb-0">
-            <VIcon size="72" icon="custom-f-cancel" />
+            <VIcon size="72" icon="custom-warning-triangle" />
          </VCardText>
          <VCardText class="dialog-title-box justify-center">
             <div class="dialog-title">Ta bort alla slutförda uppgifter?</div>
@@ -614,9 +562,7 @@
          font-size: 14px;
          line-height: 20px;
          letter-spacing: 0px;
-         vertical-align: middle;
          gap: 4px;
-         line-height: 22px;
       }
 
       .information-item__empty {

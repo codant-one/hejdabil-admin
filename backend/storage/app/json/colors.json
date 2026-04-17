@@ -1,0 +1,11 @@
+[
+  { "id": 1, "primary_color": "#C1272D", "secondary_color": "#F7E3E4" },
+  { "id": 2, "primary_color": "#F15A24", "secondary_color": "#FDEAE3" },
+  { "id": 3, "primary_color": "#FBB03B", "secondary_color": "#FEF5E6" },
+  { "id": 4, "primary_color": "#39B54A", "secondary_color": "#E5F5E7" },
+  { "id": 5, "primary_color": "#29ABE2", "secondary_color": "#E3F4FB" },
+  { "id": 6, "primary_color": "#0071BC", "secondary_color": "#DEEDF6" },
+  { "id": 7, "primary_color": "#662D91", "secondary_color": "#EBE4F1" },
+  { "id": 8, "primary_color": "#9E005D", "secondary_color": "#F2DEEA" },
+  { "id": 9, "primary_color": "#ED1E79", "secondary_color": "#FDE2EE" }
+]

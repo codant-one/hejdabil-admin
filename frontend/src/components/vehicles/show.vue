@@ -250,7 +250,7 @@ const setThumbsSwiper = (swiper) => {
                     class="btn-white"
                     @click="closeVehicleDetailDialog"
                 >
-                    <VIcon size="24" icon="custom-cancel" />
+                    <VIcon size="24" icon="custom-cancel-2" />
                 </VBtn>
             </VCardText>
             <VDivider />

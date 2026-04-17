@@ -39,7 +39,8 @@ use App\Http\Controllers\{
     PayoutController,
     NotificationController,
     CountryController,
-    ReminderController
+    ReminderController,
+    SettingController
 };
 
 use App\Http\Controllers\Services\{
@@ -260,6 +261,14 @@ Route::group(['middleware' => ['cors','jwt','throttle:crm_limit']], function(){
     Route::group(['prefix' => 'reminders'], function () {
         Route::post('updateState/{id}', [ReminderController::class, 'updateState'])->name('reminders.updateState');
         Route::delete('destroy/completed', [ReminderController::class, 'destroyCompleted'])->name('reminders.destroyCompleted');
+    });
+
+    //Settings
+    Route::group(['prefix' => 'settings'], function () {
+        Route::get('/{id}', [SettingController::class, 'show'])->name('settings.show');
+        Route::post('colors/{id}', [SettingController::class, 'colors'])->name('settings.colors');
+        Route::post('billings/{id}', [SettingController::class, 'billings'])->name('settings.billings');
+        Route::post('agreements/{id}', [SettingController::class, 'agreements'])->name('settings.agreements');
     });
 
     //Configs

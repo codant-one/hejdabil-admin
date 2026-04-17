@@ -53,6 +53,22 @@ const isDirty = computed(() => {
   }
 })
 
+const hasAnyInputFilled = computed(() => {
+  const values = [
+    reg_num.value,
+    note.value,
+    name.value,
+    phone.value,
+    email.value,
+    comment.value,
+  ]
+
+  return values.some(value => {
+    if (value === null || value === undefined) return false
+    return String(value).trim() !== ''
+  })
+})
+
 const getTitle = computed(() => {
   return isEdit.value ? 'Uppdatera värdering': 'Ny värdering'
 })
@@ -104,11 +120,21 @@ const reallyCloseAndReset = () => {
 }
 
 const closeNavigationDrawer = () => {
-  if (isDirty.value) {
+  if (hasAnyInputFilled.value) {
     isConfirmLeaveVisible.value = true
     return
   }
   reallyCloseAndReset()
+}
+
+const confirmLeave = () => {
+  isConfirmLeaveVisible.value = false
+  reallyCloseAndReset()
+}
+
+const cancelLeave = () => {
+  isConfirmLeaveVisible.value = false
+  emit('update:isDrawerOpen', true)
 }
 
 const onSubmit = () => {
@@ -135,7 +161,7 @@ const onSubmit = () => {
 
 const handleDrawerModelValueUpdate = val => {
   if (val === false) {
-    if (isDirty.value) {
+    if (hasAnyInputFilled.value) {
       // keep drawer open and show confirm dialog
       emit('update:isDrawerOpen', true)
       isConfirmLeaveVisible.value = true
@@ -164,7 +190,7 @@ watch(currentData, () => {
     @update:model-value="handleDrawerModelValueUpdate"
   >
     <!-- 👉 Title -->
-    <div class="d-flex align-center pa-6 pb-1">
+    <div class="d-flex align-center pa-6">
       <h6 class="title-modal font-blauer">
         {{ getTitle }}
       </h6>
@@ -177,14 +203,14 @@ watch(currentData, () => {
         class="btn-white"
         @click="closeNavigationDrawer"
       >
-        <VIcon size="32" icon="custom-cancel" />
+        <VIcon size="20" icon="custom-close" />
       </VBtn>
     </div>
     
-    <VDivider class="mt-4"/>
+    <VDivider />
 
     <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
-      <VCard flat class="card-form">
+      <VCard flat class="card-form note-desktop">
         <VCardText>
           <!-- 👉 Form -->
           <VForm
@@ -241,7 +267,7 @@ watch(currentData, () => {
               <!-- 👉 Submit and Cancel -->
               <VCol cols="12">
                 <VBtn
-                  type="reset"
+                  type="button"
                   class="btn-light me-3"
                   @click="closeNavigationDrawer"
                 >
@@ -270,7 +296,7 @@ watch(currentData, () => {
     <VBtn
       icon
       class="btn-white close-btn"
-      @click="isConfirmLeaveVisible = false"
+      @click="cancelLeave"
     >
       <VIcon size="16" icon="custom-close" />
     </VBtn>
@@ -283,8 +309,8 @@ watch(currentData, () => {
         Om du lämnar den här sidan nu kommer den information du har angett inte att sparas.
       </VCardText>
       <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-        <VBtn class="btn-light" @click="isConfirmLeaveVisible = false">Lämna sidan</VBtn>
-        <VBtn class="btn-gradient" @click="() => { isConfirmLeaveVisible = false; reallyCloseAndReset(); }">Stanna kvar</VBtn>
+        <VBtn class="btn-light" @click="confirmLeave">Lämna sidan</VBtn>
+        <VBtn class="btn-gradient" @click="cancelLeave">Stanna kvar</VBtn>
       </VCardText>
     </VCard>
   </VDialog>
@@ -294,23 +320,27 @@ watch(currentData, () => {
   .btn-close-client {
     height: 32px !important;
   }
-  .card-form {
-    .v-input {
+
+  .card-form.note-desktop {
+    .v-input:not(.v-textarea) {
       .v-input__control {
         .v-field {
           background-color: #f6f6f6 !important;
-          min-height: 48px !important;
+          min-height: 40px !important;
+          height: 40px !important;
 
           .v-text-field__suffix {
-            padding: 12px 16px !important;
+            padding: 8px 16px !important;
           }
 
           .v-field__input {
-            min-height: 48px !important;
-            padding: 12px 16px !important;
+            min-height: 40px !important;
+            height: 40px !important;
+            padding: 8px 16px !important;
 
             input {
-                min-height: 48px !important;
+              min-height: 40px !important;
+              height: 40px !important;
             }
           }
 
@@ -326,19 +356,35 @@ watch(currentData, () => {
       }
     }
 
-    .v-select .v-field,
-    .v-autocomplete .v-field {
-      .v-select__selection,
-      .v-autocomplete__selection {
+    .v-select .v-field {
+      .v-select__selection {
           align-items: center;
+          color: #454545;
       }
 
       .v-field__input > input {
-          top: 0px;
-          left: 0px;
+        top: 0px;
+        left: 18px;
+
+      }
+
+      .v-field__input input::placeholder,
+      input.v-field__input::placeholder,
+      .v-field__input textarea::placeholder,
+      textarea.v-field__input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+    }
+
+    .selector-country {
+      .v-input__prepend {
+        margin-inline-end: 6px !important;
       }
     }
+
   }
+  
   .border-img {
     border: 1.8px solid rgba(var(--v-border-color), var(--v-border-opacity));
     border-radius: 6px;

@@ -181,16 +181,19 @@ const onSubmit = async () => {
 <template>
   <VDialog
     :model-value="props.isDialogOpen"
+    :fullscreen="windowWidth < 1024"
     persistent
-    scrollable
-    class="action-dialog"
-    content-class="scrollable-dialog-content"
+    :scrim="windowWidth < 1024 ? false : true"
+    :scrollable="windowWidth >= 1024"
+    :class="windowWidth >= 1024 ? 'action-dialog' : 'action-dialog dialog-fullscreen'"
+    :transition="windowWidth < 1024 ? 'dialog-bottom-transition' : undefined"
+    :content-class="windowWidth < 1024 ? 'dialog-bottom-full-width' : undefined"
     @update:model-value="val => emit('update:isDialogOpen', val)"
   >
 
     <VBtn
       icon
-      class="btn-ghost close-btn me-3"
+      class="btn-ghost close-btn me-5"
       @click="closeDialog"
     >
       <VIcon size="16" icon="custom-close" />
@@ -200,11 +203,13 @@ const onSubmit = async () => {
       ref="refForm"
       v-model="isFormValid"
       @submit.prevent="onSubmit"
+      :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''"
     >
-      <VCard>
+      <VCard :class="windowWidth < 1024 ? 'h-100 d-flex flex-column' : ''">
         <VCardText 
           class="dialog-title-box flex-row"
           :class="[
+            windowWidth < 1024 ? 'pb-0' : '',
             windowWidth < 1024 && (props.payoutData && Object.keys(props.payoutData).length > 0) ? 'gap-modal' : ''
           ]">
           <VIcon size="32" icon="custom-surface" class="action-icon" />
@@ -216,7 +221,10 @@ const onSubmit = async () => {
           Överför pengar till dina kunder via Swish
         </VCardText>
 
-        <VCardText class="dialog-text mt-2">        
+        <VCardText 
+          class="dialog-text" 
+          :class="windowWidth < 1024 ? '' : 'mt-2'"
+          :style="windowWidth < 1024 ? 'overflow-y: auto; overflow-x: hidden;' : ''">        
           <!-- Stepper Header -->
           <VTabs 
             v-model="currentStep" 
@@ -280,7 +288,7 @@ const onSubmit = async () => {
                       v-model="message"
                       placeholder="Meddelande (valfritt)"
                       persistent-placeholder
-                      rows="3"
+                      rows="2"
                     />
                   </div>
                 </div>
@@ -327,7 +335,7 @@ const onSubmit = async () => {
           </VWindow>
 
           <!-- Buttons -->
-          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0">
+          <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions px-0" :class="windowWidth < 1024 ? 'pb-1' : ''">
             <VBtn
               v-if="currentStep === 2"
               class="btn-ghost"

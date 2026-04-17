@@ -518,6 +518,7 @@ class Vehicle extends Model
         $vehicle->update([
             'state_id' => 12,           
             'chassis' => $request->chassis === 'null' ? null : $request->chassis,
+            'purchase_price' => $request->purchase_price === 'null' ? null : $request->purchase_price,
             'sale_price' => $request->sale_price === 'null' ? null : $request->sale_price,
             'sale_date' => $request->sale_date === 'null' ? null : $request->sale_date,
             'iva_sale_id' => $request->iva_sale_id === 'null' ? null : $request->iva_sale_id,

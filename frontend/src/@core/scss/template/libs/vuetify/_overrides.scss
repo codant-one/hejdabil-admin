@@ -120,6 +120,39 @@ body {
   }
 }
 
+// 👉 VSwitch global sizing and custom active track
+.v-switch .v-selection-control {
+  align-items: start !important;
+}
+
+.v-switch--inset .v-switch__track {
+  height: 24px !important;
+  width: 40px !important;
+  border-radius: 32px !important;
+}
+
+.v-switch.v-switch--inset .v-switch__track,
+.v-switch.v-switch--inset .v-selection-control__wrapper {
+  block-size: 24px !important;
+  inline-size: 40px !important;
+}
+
+.v-switch.v-switch--inset .v-selection-control--dirty .text-primary .v-switch__track {
+  border-color: transparent !important;
+  background: linear-gradient(90deg, #57F287 0%, #00EEB0 50%, #00FFFF 100%) !important;
+}
+
+.v-switch.v-switch--inset .v-selection-control__input .v-switch__thumb {
+  block-size: 16px !important;
+  inline-size: 16px !important;
+}
+
+// 👉 VSwitch readonly: mismo estilo, solo opacado
+.v-switch.v-input--readonly {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 // 👉 Expansion Panels: forzar bordes redondeados (más especificidad para prod)
 body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :first-child:not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--before-active),
 body .v-application .v-expansion-panels:not(.v-expansion-panels--variant-accordion) > :not(:first-child):not(:last-child):not(.v-expansion-panel--active):not(.v-expansion-panel--after-active),

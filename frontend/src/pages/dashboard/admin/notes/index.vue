@@ -1401,14 +1401,14 @@ onBeforeUnmount(() => {
           class="btn-white"
           @click="closeNote()"
         >
-          <VIcon size="32" icon="custom-cancel" />
+          <VIcon size="20" icon="custom-close" />
         </VBtn>
       </div>
 
       <VDivider class="mt-4" />
 
       <PerfectScrollbar :options="{ wheelPropagation: false }" class="scrollbar-no-border">
-        <VCard flat class="card-form">
+        <VCard flat class="card-form note-index">
           <VCardText>
             <!-- 👉 Form -->
             <VForm
@@ -1577,10 +1577,10 @@ onBeforeUnmount(() => {
       </VBtn>
       <VForm
         ref="refUpdate"
-        class="h-100 d-flex flex-column"
+        class="h-100 d-flex flex-column card-form note-index"
         @submit.prevent="submitFormFromDrawer">
         <VCard flat class="card-drawer-form h-100 d-flex flex-column">
-            <VCardText class="dialog-title-box mt-8 mb-2 pb-0 flex-0">
+            <VCardText class="dialog-title-box mb-2 pb-0 flex-0">
                 <div class="dialog-title">
                   {{ isEdit ? 'Uppdatera värdering' : 'Kommentera värdering' }}
                 </div>
@@ -1780,6 +1780,70 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss">
+
+  .card-form.note-index {
+    .v-input:not(.v-textarea) {
+      .v-input__control {
+        .v-field {
+          background-color: #f6f6f6 !important;
+          min-height: 40px !important;
+          height: 40px !important;
+
+          .v-text-field__suffix {
+            padding: 8px 16px !important;
+          }
+
+          .v-field__input {
+            min-height: 40px !important;
+            height: 40px !important;
+            padding: 8px 16px !important;
+
+            input {
+              min-height: 40px !important;
+              height: 40px !important;
+            }
+          }
+
+          .v-field-label {
+            top: 12px !important;
+          }
+
+          .v-field__append-inner {
+            align-items: center;
+            padding-top: 0px;
+          }
+        }
+      }
+    }
+
+    .v-select .v-field {
+      .v-select__selection {
+          align-items: center;
+          color: #454545;
+      }
+
+      .v-field__input > input {
+        top: 0px;
+        left: 18px;
+
+      }
+
+      .v-field__input input::placeholder,
+      input.v-field__input::placeholder,
+      .v-field__input textarea::placeholder,
+      textarea.v-field__input::placeholder {
+          color: #454545 !important;
+          opacity: 1 !important;
+        }
+    }
+
+    .selector-country {
+      .v-input__prepend {
+        margin-inline-end: 6px !important;
+      }
+    }
+
+  }
 
   .dialog-fullscreen.v-overlay--active .v-overlay__content {
     width: 100% !important;

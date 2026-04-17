@@ -43,9 +43,9 @@ const variantMap = {
       iconColor: '#FAAD14',
    },
    error: {
-      bg: '#FFEBEE',
-      border: '#6E9383',
-      iconColor: '#FF4D4F',
+      bg: '#FFF1F1',
+      border: '#FFC5C6',
+      iconColor: '#9B191B',
    },
 }
 

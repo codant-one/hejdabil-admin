@@ -7,15 +7,24 @@
     </head>
     <style>
 
+        @page {
+            margin: 0;
+        }
+
         /* Using fonts from storage/fonts - synced between local and server */
         body {
             font-family: 'gelion', 'dm sans', sans-serif !important;
-            background-color: #FFFFFF;
             padding: 0;
             margin: 0;
             color: #454545;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
+        }
+
+        .table-main {
+            position: relative;
+            z-index: 1;
+            padding: 45px;
         }
 
         table {
@@ -27,12 +36,9 @@
 
         .faktura {
             font-family: 'gelion', 'dm sans', sans-serif;
-            font-size: 32px;
+            font-size: 36px;
             font-weight: 600;
-            color: #454545;
-            border-top: 1px solid #454545;
-            border-bottom: 1px solid #454545;
-            padding: 8px 16px 4px 16px;
+            color: {{ $company->primary_color ?? '#E7E7E7' }} !important;
             line-height: 0.6;
             display: inline-block;
             letter-spacing: 0 !important;
@@ -43,30 +49,23 @@
             margin-top: 10px;
             border-radius: 32px !important;
             letter-spacing: 0 !important;
-            line-height: 0.6;
+            line-height: 100%;
         }
 
         .table-supplier {
             font-family: 'gelion', 'dm sans', sans-serif !important;
             letter-spacing: 0 !important;
+            margin-top: 10px;
         }
 
-        .invoice-background {
-            background-color: #E7E7E7;
+        .classic-items {
+            color: {{ $company->primary_color ?? '#E7E7E7' }};
+            font-weight: 600 !important;
         }
 
-        .bg-items {
-            background-color: #F6F6F6;
-        }
-
-        .bg-items td:first-child {
-            border-top-left-radius: 32px !important;
-            border-bottom-left-radius: 32px !important;
-        }
-
-        .bg-items td:last-child {
-            border-top-right-radius: 32px !important;
-            border-bottom-right-radius: 32px !important;
+        .classic-items td {
+            border-bottom: 1px solid #E7E7E7 !important;
+            border-top: 1px solid #E7E7E7 !important;
         }
 
         .box-logo {
@@ -86,18 +85,16 @@
             transform: translate(-50%, -50%);
         }
 
-        .table-background-top {
-            border-bottom-left-radius: 0 !important;
-            border-bottom-right-radius: 0 !important;
-        }
-
-        .table-background-bottom {
-            border-top-left-radius: 0 !important;
-            border-top-right-radius: 0 !important;
-        }
-
         .data-from {
-            padding: 16px;
+            padding: 16px 0;
+        }
+
+        .card-classic {
+            background-color: #FFFFFF;
+        }
+
+        .card-classic .title-classic {
+            color: {{ $company->primary_color ?? '#E7E7E7' }} 
         }
 
         .m-0 {
@@ -116,20 +113,9 @@
             margin-top: 20px;
         }
 
-        .pr-0 {
-            padding-right: 0;
-        }
-
-        .pt-0 {
-            padding-top: 0;
-        }
-
-        .pb-0 {
-            padding-bottom: 0;
-        }
-
         .info-total table tr {
             height: 20px;
+            font-size: 12px;
         }
 
         .info-total .text {
@@ -141,11 +127,14 @@
             text-align: end;
         }
 
-        .border-top {
-            border-top-width: thin !important;
-            border-top-style: solid !important;
-            border-top-color: #E7E7E7 !important;
-            border-radius: 0 !important;
+        .info-total .summary {
+            font-size: 24px;
+            font-weight: 700;
+            color: {{ $company->primary_color ?? '#E7E7E7' }};
+        }
+
+        .info-total .summary td {
+            padding-top: 10px;
         }
 
         .info-supplier {
@@ -161,16 +150,23 @@
         .table-supplier td {
             vertical-align: top;
         }
-    </style>
+    </style> 
     <body>
         <table class="table-main" width="100%" cellspacing="0" cellpadding="0">
             <tbody>
                 <tr>
                     <td>
-                        <table width="100%" class="invoice-background table-background-top">
+                        <table width="100%">
                             <tr>
-                                <td width="35%" class="data-from">
-                                     <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }} ">
+                                <td width="65%">
+                                    <div style="text-align: left;">
+                                        <span class="m-0 faktura">
+                                            PÅMINNELSE
+                                        </span>
+                                    </div> 
+                                </td>
+                                <td width="35%">
+                                    <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }}" style="margin-left: auto;">
                                         @if($company->logo)
                                             <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
                                         @else
@@ -180,29 +176,26 @@
                                                 {{ $company->email }}
                                             </div>
                                         @endif
-                                    </div>
-                                </td>
-                               <td width="65%" class="data-from">
-                                    <div style="text-align: right;">
-                                        <span class="m-0 faktura">
-                                            PÅMINNELSE
-                                        </span>
-                                    </div>
+                                    </div>                                                                       
                                 </td>
                             </tr>
                         </table>
-                        <table width="100%" class="invoice-background table-background-bottom">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table width="100%">
                             <tr>
-                                <td width="65%" class="data-from pt-0">
-                                    <table width="100%" class="invoice-background">
+                                <td width="65%" class="data-from card-classic">
+                                    <table width="100%">
                                         <tr class="font-weight-medium m-0 d-flex">
                                             <td width="30%">
-                                                <h4 class="font-weight-medium m-0 d-flex">
+                                                <h4 class="font-weight-medium m-0 d-flex title-classic">
                                                     Faktura nr:
                                                 </h4>
                                             </td>
                                             <td>
-                                                <h4 class="font-weight-medium m-0 d-flex">
+                                                <h4 class="font-weight-medium m-0 d-flex title-classic">
                                                     {{ $billing->invoice_id }}
                                                 </h4>
                                             </td>
@@ -229,10 +222,11 @@
                                         </tr>
                                     </table>
  
-                                    <p class="mt-20 m-0">Efter förfallodagen debiteras ränta enligt räntelagen.</p>           
+                                    <p class="mt-20 m-0">{{ $billing->terms_and_conditions }}</p>           
                                 </td>
-                                <td width="35%" class="data-from pt-0" style="vertical-align: top;">
-                                    <h3 class="m-0" style="text-align: right;">
+                                <td style="width: 16px;"></td>
+                                <td width="35%" class="data-from card-classic" style="vertical-align: top;">
+                                    <h3 class="m-0 title-classic" style="text-align: right;">
                                         {{$billing->client->fullname}}
                                     </h3> 
                                     @if($billing->reference)
@@ -256,8 +250,8 @@
                 <!------------------------TABLE ITEMS--------------------->    
                 <tr>
                     <td>
-                        <table width="100%" class="table-items">
-                            <thead class="bg-items">
+                        <table width="100%" class="table-items card-classic">
+                            <thead class="classic-items">
                                 <tr>
                                     @foreach($types as $key => $type)
                                     <td 
@@ -265,7 +259,7 @@
                                             text-align: {{ $key === 0 ? 'start' : 'right' }}!important;
                                             width: {{$type->type_id === 1 ? '40' : '15' }}%; 
                                             {{ $key === 0 ? 'padding-left' : 'padding-right' }}: 16px !important;
-                                            height: 48px !important;">
+                                            height: 48px !important;"> 
                                         {{ $type->name }}
                                     </td>
                                     @endforeach
@@ -300,7 +294,7 @@
                                                 </span>
                                             </td>
                                             @elseif($column['id'] === 5 && $billing->rabatt)
-                                           <td 
+                                            <td 
                                                 style="
                                                 text-align: right!important;
                                                 padding-right: 16px!important;
@@ -327,63 +321,76 @@
                                     @endforeach
                                 </tr>
                             @endforeach
+                            <!------------------------SUMMARY--------------------->  
+                            <tr>
+                                <td colspan="{{ $billing->rabatt ? 5 : 4 }}">
+                                    <table width="100%" class="table-supplier">
+                                        <tr>
+                                            <td width="15%"></td>
+                                            <td width="15%"></td>
+                                            <td width="15%"></td>
+                                            <td width="55%" class="info-total">
+                                                <table width="100%">
+                                                    <tr>
+                                                        <td style="text-align: right;">
+                                                            Netto:
+                                                        </td>
+                                                        <td class="numbers" style="text-align: right;">
+                                                            <span>{{ formatCurrency($billing->subtotal) }} kr</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td style="text-align: right;">
+                                                            Moms {{$billing->tax}}% (beräknad på {{ formatCurrency($billing->subtotal) }} kr):
+                                                        </td>
+                                                        <td class="numbers" style="text-align: right;">
+                                                            <span>{{ formatCurrency($billing->amount_tax) }} kr</span>
+                                                        </td>
+                                                    </tr>
+                                                    @if($billing->discount > 0)
+                                                    <tr>
+                                                        <td style="text-align: right;">
+                                                            Preliminär skattereduktion {{$billing->discount}}% av {{ formatCurrency($billing->subtotal) }} kr:
+                                                        </td>
+                                                        <td class="numbers" style="text-align: right;">
+                                                            <span>- {{ formatCurrency($billing->amount_discount) }} kr</span>
+                                                        </td>
+                                                    </tr>
+                                                    @endif
+                                                    <tr class="summary">
+                                                        <td style="text-align: right;">
+                                                            <strong>Summa att betala:</strong>
+                                                        </td>
+                                                        <td class="numbers" style="text-align: right;">
+                                                            <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
                         </table>     
                     </td>
                 </tr>
             </tbody>
         </table>
         <!------------------------- BILL TO---------------------------------->
-        <div style="position: fixed; bottom: 0; width: 100%;">
-            <table width="100%" class="table-supplier">
-                <tr>
-                    <td width="15%"></td>
-                    <td width="15%"></td>
-                    <td width="15%"></td>
-                    <td width="55%" class="info-total">
-                        <table width="100%">
-                            <tr>
-                                <td style="text-align: right;">
-                                    Netto:
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>{{ formatCurrency($billing->subtotal) }} kr</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="text-align: right;">
-                                    Moms {{$billing->tax}}% (beräknad på {{ formatCurrency($billing->subtotal) }} kr):
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>{{ formatCurrency($billing->amount_tax) }} kr</span>
-                                </td>
-                            </tr>
-                            @if($billing->discount > 0)
-                            <tr>
-                                <td style="text-align: right;">
-                                    Preliminär skattereduktion {{$billing->discount}}% av {{ formatCurrency($billing->subtotal) }} kr:
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <span>- {{ formatCurrency($billing->amount_discount) }} kr</span>
-                                </td>
-                            </tr>
-                            @endif
-                            <tr>
-                                <td style="text-align: right;">
-                                    <strong>Summa att betala:</strong>
-                                </td>
-                                <td class="numbers" style="text-align: right;">
-                                    <strong><span>{{ formatCurrency($billing->total) }} kr</span></strong>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-            <table width="100%" class="table-supplier border-top mt-10 style-supplier">
+        <div style="
+            position: fixed; 
+            bottom: 45px; 
+            left: 45px; 
+            right: 45px; 
+            padding-bottom: 16px; 
+            border-bottom: 1px solid #E7E7E7 !important;
+            border-top: 1px solid #E7E7E7 !important;" 
+            class="card-classic">
+            <table width="100%" class="table-supplier style-supplier">
                 <tr>
                     <td width="25%">
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Adress
                             </h4>
                             <span class="info-supplier">
@@ -407,7 +414,7 @@
                     <td width="25%">
                         @if(!is_null($company->organization_number))
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Org.nr.
                             </h4>
                             <span class="info-supplier">
@@ -449,7 +456,7 @@
                     <td width="25%">
                         @if(!is_null($company->link))
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Webbplats
                             </h4>
                             <span class="info-supplier">
@@ -470,7 +477,7 @@
                     <td width="25%">
                         @if(!is_null($company->bank))
                         <p class="m-0 info-supplier">
-                            <h4 class="font-weight-medium m-0 mt-10">
+                            <h4 class="font-weight-medium m-0">
                                 Bank
                             </h4>
                             <span class="info-supplier">
