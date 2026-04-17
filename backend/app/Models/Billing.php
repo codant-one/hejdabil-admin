@@ -233,8 +233,8 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($company->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($company->setting_color_id);
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
 
                 $company->primary_color = $color->primary ?? null;
                 $company->secondary_color = $color->secondary ?? null;
@@ -394,8 +394,8 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($company->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($company->setting_color_id);
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
 
                 $company->primary_color = $color->primary ?? null;
                 $company->secondary_color = $color->secondary ?? null;
@@ -552,8 +552,8 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($company->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($company->setting_color_id);
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
 
                 $company->primary_color = $color->primary ?? null;
                 $company->secondary_color = $color->secondary ?? null;
@@ -665,8 +665,8 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($company->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($company->setting_color_id);
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
 
                 $company->primary_color = $color->primary ?? null;
                 $company->secondary_color = $color->secondary ?? null;
