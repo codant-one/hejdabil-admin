@@ -179,7 +179,7 @@ class TestingController extends Controller
         $company->primary_color = '#09DAD9';
         $company->secondary_color = '#DFFAFA';
 
-        return view('pdfs.invoices.compact', 
+        return view('pdfs.invoices.modern2', 
             compact(
                 'company',
                 'billing',
