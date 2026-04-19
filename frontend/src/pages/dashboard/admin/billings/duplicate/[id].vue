@@ -55,7 +55,10 @@ const invoice_id = ref(0)
 
 const userData = ref(null)
 const role = ref(null)
-const company = ref({})
+const company = ref({});
+
+const DEFAULT_BILLING_DUE_DATES = 5;
+const DEFAULT_BILLING_TERMS = "Efter forfallodagen debiteras ranta enligt rantelagen.";
 
 const discount = ref(0)
 const rabattApplied = ref(false)
@@ -100,6 +103,13 @@ async function fetchData() {
 
     if(Number(route.params.id) && route.name === 'dashboard-admin-billings-duplicate-id') {
         isRequestOngoing.value = true
+
+        const applyBillingSettings = (settings) => {
+          company.value.days = Number(settings?.due_dates) || DEFAULT_BILLING_DUE_DATES;
+          company.value.terms = typeof settings?.terms_and_conditions === "string" && settings.terms_and_conditions.trim()
+            ? settings.terms_and_conditions
+            : DEFAULT_BILLING_TERMS;
+        };
 
         billing.value = await billingsStores.showBilling(Number(route.params.id))
 
@@ -152,6 +162,9 @@ async function fetchData() {
           company.value = configsStores.getFeaturedConfig("company");
           company.value.billings = response.data.data.billings;
           company.value.logo = configsStores.getFeaturedConfig("logo").logo;
+
+          applyBillingSettings(configsStores.getFeaturedConfig("billings"));
+
         } else {
           //supplier
           company.value = billing.value.supplier.user.user_detail;
@@ -159,6 +172,12 @@ async function fetchData() {
           company.value.billings = billing.value.supplier.billings;          
           company.value.name = billing.value.supplier.user.name;
           company.value.last_name = billing.value.supplier.user.last_name;
+
+          if (role.value === "Supplier") {
+            applyBillingSettings(user_data?.supplier?.settings?.billing);
+          } else if (role.value === "User") {
+            applyBillingSettings(user_data?.supplier?.boss?.settings?.billing);
+          }
         }
 
         JSON.parse(billing.value.detail).forEach(details => {
@@ -456,8 +475,8 @@ onBeforeRouteLeave((to, from, next) => {
               :isCredit="false"
               :hasUnsavedChanges="hasChangedSinceSave"
               :title="'Duplicera fakturan'"
-              :days="invoice.days"
-              :terms="invoice.terms"
+              :days="company.days"
+              :terms="company.terms"
               @push="addProduct"
               @remove="removeProduct"
               @delete="deleteProduct"

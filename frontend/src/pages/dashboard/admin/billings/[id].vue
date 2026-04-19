@@ -41,6 +41,10 @@ const { width: windowWidth } = useWindowSize();
 const { mdAndDown } = useDisplay();
 const snackbarLocation = computed(() => mdAndDown.value ? "" : "top end");
 const sectionEl = ref(null);
+const pdfScale = computed(() => {
+  const dpr = window.devicePixelRatio || 1;
+  return Math.max(dpr, 2.5);
+});
 
 watchEffect(fetchData);
 
@@ -418,6 +422,7 @@ onBeforeUnmount(() => {
           <div class="invoice-panel">
             <VuePdfEmbed
               text-layer
+              :scale="pdfScale"
               :source="
                 themeConfig.settings.urlbase +
                 'proxy-image?url=' +
@@ -945,11 +950,16 @@ onBeforeUnmount(() => {
   
   .vue-pdf-embed {
     border-radius: 8px;
+    width: 100%;
   }
   
   canvas {
     border-radius: 8px;
     display: block;
+    width: 100% !important;
+    height: auto !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
   }
 }
 

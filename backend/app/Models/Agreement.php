@@ -25,6 +25,9 @@ use App\Models\Commission;
 use App\Models\User;
 use App\Models\UserDetails;
 use App\Models\Config;
+use App\Models\Setting;
+use App\Models\SettingColor;
+use App\Models\SettingAgreement;
 
 class Agreement extends Model
 {
@@ -420,6 +423,8 @@ class Agreement extends Model
             $configCompany = Config::getByKey('company') ?? ['value' => '[]'];
             $configLogo    = Config::getByKey('logo')    ?? ['value' => '[]'];
             $configSignature   = Config::getByKey('signature')    ?? ['value' => '[]'];
+            $configColor   = Config::getByKey('color')    ?? ['value' => '[]'];
+            $configAgreements = Config::getByKey('agreements')    ?? ['value' => '[]'];
 
             // Extract the "value" supporting array or object
             $getValue = function ($cfg) {
@@ -433,6 +438,8 @@ class Agreement extends Model
             $companyRaw = $getValue($configCompany);
             $logoRaw    = $getValue($configLogo);
             $signatureRaw    = $getValue($configSignature);
+            $colorRaw   = $getValue($configColor);
+            $agreementsRaw   = $getValue($configAgreements);
 
             $decodeSafe = function ($raw) {
                 $decoded = json_decode($raw);
@@ -449,16 +456,49 @@ class Agreement extends Model
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
             $signatureObj    = $decodeSafe($signatureRaw);
-            
+            $colorObj   = $decodeSafe($colorRaw);
+            $agreementsObj   = $decodeSafe($agreementsRaw);
+
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
             $logo = $company->logo ? asset('storage/' . $company->logo) : null;
+            $company->type = $agreementsObj->type ?? 1;
+
+            if($colorObj->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($colorObj->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $colorObj->primary_color ?? null;
+                $company->secondary_color = $colorObj->secondary_color ?? null;
+            }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
             $company = $user->user->userDetail;
             $company->email = $user->user->email;
             $company->name = $user->user->name;
             $company->last_name = $user->user->last_name;
+
+            $setting = Setting::where('supplier_id', $agreement->supplier_id)->first();
+
+            if($setting->setting_color_id) {//existe un id de color
+                $color = SettingColor::find($setting->setting_color_id);
+
+                $company->primary_color = $color->primary ?? null;
+                $company->secondary_color = $color->secondary ?? null;
+            } else {
+                $company->primary_color = $setting->primary_color ?? null;
+                $company->secondary_color = $setting->secondary_color ?? null;
+            }
+
+            if($setting->setting_agreement_id) {//existe un id de agreement
+                $agreementSetting = SettingAgreement::find($setting->setting_agreement_id);
+
+                $company->type = $agreementSetting->type;
+            } else {
+                $company->type = 1; // Default type if not set
+            }
         }
 
         switch ($request->agreement_type_id) {

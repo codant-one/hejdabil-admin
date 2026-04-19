@@ -238,7 +238,7 @@ watch(
 watch(
   () => props.terms,
   (val) => {
-    if (props.billing) return;
+    //if (props.billing) return;
 
     invoice.value.terms = typeof val === "string" && val.trim()
       ? val

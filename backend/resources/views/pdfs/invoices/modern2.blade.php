@@ -28,14 +28,14 @@
             right: -50px;
             left: -50px;
             bottom: auto;
-            height: 465px;
+            height: 470px;
             background-color: {{ $company->primary_color ?? '#E7E7E7' }};
             z-index: -2;
         }
 
         .page-background-bottom {
             position: fixed;
-            top: 465px;
+            top: 470px;
             right: -50px;
             bottom: -50px;
             left: -50px;
@@ -76,6 +76,9 @@
             border-radius: 32px !important;
             letter-spacing: 0 !important;
             line-height: 100%;
+            border-collapse: separate !important;
+            border-spacing: 0 4px !important;
+            background-color: transparent;
         }
 
         .table-supplier {
@@ -93,6 +96,14 @@
             font-weight: 600 !important;
         }
 
+        .bg-items td {
+            background-color: {{ $company->secondary_color ?? '#F6F6F6' }} !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            border-left: 2px solid {{ $company->secondary_color ?? '#F6F6F6' }} !important;
+            border-right: 2px solid {{ $company->secondary_color ?? '#F6F6F6' }} !important;
+        }
+
         .bg-items td:first-child {
             border-top-left-radius: 32px !important;
             border-bottom-left-radius: 32px !important;
@@ -104,11 +115,19 @@
         }
 
         .table-items tbody tr:nth-child(odd) {
-            background-color: #FFFFFF;
+            background-color: transparent;
         }
 
         .table-items tbody tr:nth-child(even) {
-            background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
+           background-color: transparent;
+        }
+
+        .table-items tbody tr td {
+            background-color: #FFFFFF !important;
+            border-top: 0 !important;
+            border-bottom: 0 !important;
+            border-left: 2px solid #FFFFFF !important;
+            border-right: 2px solid #FFFFFF !important;
         }
 
         .table-items tbody tr td:first-child {
