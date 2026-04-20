@@ -327,7 +327,7 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(82);
+        ])->find(163);
 
         $user = User::with(['userDetail','roles'])->find(1);
  
@@ -339,10 +339,10 @@ class TestingController extends Controller
                 $pdf = 'pdfs.purchase';
                 break;
             case 3:
-                $pdf = 'pdfs.mediation';
+                $pdf = 'pdfs.mediations.compact';
                 break;
             case 4:
-                $pdf = 'pdfs.business';
+                $pdf = 'pdfs.business.compact';
                 break;
         }
 
