@@ -73,6 +73,14 @@ export const alphaValidator = value => {
   return /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(String(value)) || 'Fältet kan endast innehålla alfabetiska tecken'
 }
 
+// 👉 Hex Color Validator
+export const hexColorValidator = value => {
+  if (isEmpty(value))
+    return true
+
+  return /^#[0-9A-Fa-f]{6}$/.test(String(value).trim()) || 'Ange en giltig hexadecimal färgkod (t.ex. #FF5500)'
+}
+
 // 👉 URL Validator
 export const urlValidator = value => {
   if (isEmpty(value))

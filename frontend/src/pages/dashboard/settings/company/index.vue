@@ -2,7 +2,7 @@
 
 import { nextTick } from 'vue'
 import { useDisplay } from 'vuetify'
-import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator, emailValidator } from '@/@core/utils/validators'
+import { requiredValidator, phoneValidator, urlValidator, minLengthDigitsValidator, emailValidator, hexColorValidator } from '@/@core/utils/validators'
 import { scrollElementIntoScrollableParent } from '@/@core/composable/useMobilePaginationScroll'
 import { useProfileStores } from '@/stores/useProfile'
 import { useAuthStores } from '@/stores/useAuth'
@@ -106,6 +106,7 @@ const defaultBrandColorIndex = 4
 const presetBrandColorCount = brandColorOptions.length - 1
 const customBrandColor = ref(customBrandColorOption)
 const savedBrandColor = ref(null)
+const manualHexInput = ref('')
 
 const selectedBrandColor = ref(brandColorOptions[defaultBrandColorIndex])
 
@@ -225,7 +226,31 @@ watch(customBrandColor, hex => {
   const hsv = hexToHsv(hex)
 
   currentHue.value = hsv.h
+  manualHexInput.value = hex.toUpperCase()
 }, { immediate: true })
+
+const hexInputValidationResult = computed(() => {
+  const required = requiredValidator(manualHexInput.value)
+
+  if (required !== true)
+    return required
+
+  return hexColorValidator(manualHexInput.value)
+})
+
+const isManualHexValid = computed(() => hexInputValidationResult.value === true)
+
+const onManualHexInput = event => {
+  let value = event.target.value.trim()
+
+  if (value && !value.startsWith('#'))
+    value = `#${value}`
+
+  manualHexInput.value = value
+
+  if (/^#[0-9A-Fa-f]{6}$/.test(value))
+    customBrandColor.value = value
+}
 
 const getBrandColorSwatchColor = color => color
 
@@ -1655,7 +1680,17 @@ onBeforeUnmount(() => {
           <div class="d-flex flex-column gap-1 mt-4">
             <span class="text-color-picker">Primär färg</span>
             <span class="hex-color-picker">HEX</span>
-            <span class="box-color-picker" :style="primaryColorPreviewStyle">{{ primaryColorHex }}</span>
+            <input
+              class="box-color-picker box-color-picker--editable"
+              :class="{ 'box-color-picker--error': !isManualHexValid }"
+              :style="primaryColorPreviewStyle"
+              :value="manualHexInput"
+              maxlength="7"
+              @input="onManualHexInput"
+            >
+            <span v-if="!isManualHexValid" class="box-color-picker-error">
+              {{ hexInputValidationResult }}
+            </span>
           </div>
           <div class="d-flex flex-column gap-1 mt-2">
             <span class="text-color-picker">Sekundär färg (anpassas automatiskt)</span>
@@ -1665,7 +1700,7 @@ onBeforeUnmount(() => {
         </VCardText>
 
         <VCardText class="d-flex justify-end gap-3 flex-wrap dialog-actions">
-          <VBtn class="btn-light w-100" @click="applyCustomBrandColor">
+          <VBtn class="btn-light w-100" :disabled="!isManualHexValid" @click="applyCustomBrandColor">
             Spara
           </VBtn>
         </VCardText>
@@ -1789,6 +1824,20 @@ onBeforeUnmount(() => {
   line-height: 22px;
   letter-spacing: -0.43px;
   color: #000000;
+}
+
+.box-color-picker--editable {
+  border: none;
+  outline: none;
+  width: 100%;
+  cursor: text;
+}
+
+.box-color-picker-error {
+  font-size: 12px;
+  line-height: 16px;
+  color: #FF4D4F;
+  margin-top: 4px;
 }
 
 .brand-color-grid {
