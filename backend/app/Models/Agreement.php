@@ -503,15 +503,57 @@ class Agreement extends Model
 
         switch ($request->agreement_type_id) {
             case 1:
-                PDF::loadView('pdfs.sales', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                 switch ($company->type) {
+                    case 1:
+                        PDF::loadView('pdfs.sales.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    case 2:
+                        PDF::loadView('pdfs.sales.modern', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    case 3:
+                        PDF::loadView('pdfs.sales.compact', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    default:
+                        PDF::loadView('pdfs.sales.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                }
+
+                //PDF::loadView('pdfs.sales', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'försäljningsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 2:
-                PDF::loadView('pdfs.purchase', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                switch ($company->type) {
+                    case 1:
+                        PDF::loadView('pdfs.purchases.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    case 2:
+                        PDF::loadView('pdfs.purchases.modern', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    case 3:
+                        PDF::loadView('pdfs.purchases.compact', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                        break;
+                    default:
+                        PDF::loadView('pdfs.purchases.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
+                }
+
+                //PDF::loadView('pdfs.purchase', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf');
                 $agreement->file = 'pdfs/'.'inköpsavtal-'.$agreement->vehicle_client->vehicle->reg_num.'-'.$agreement->agreement_id.'.pdf';
                 break;
             case 3:
-                PDF::loadView('pdfs.mediation', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                switch ($company->type) {
+                    case 1:
+                        PDF::loadView('pdfs.mediation.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                        break;
+                    case 2:
+                        PDF::loadView('pdfs.mediation.modern', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                        break;
+                    case 3:
+                        PDF::loadView('pdfs.mediation.compact', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                        break;
+                    default:
+                        PDF::loadView('pdfs.mediation.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
+                }
+
+                //PDF::loadView('pdfs.mediation', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf');
                 $agreement->file = 'pdfs/'.'förmedlingsavtal-'.$agreement->commission->vehicle->reg_num.'-'.$agreement->commission_id.'.pdf';
                 break;
             case 4:
@@ -528,6 +570,7 @@ class Agreement extends Model
                     default:
                         PDF::loadView('pdfs.business.classic', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
                 }
+
                 //PDF::loadView('pdfs.business', compact('company', 'agreement'))->save(storage_path('app/public/pdfs').'/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf');
                 $agreement->file = 'pdfs/'.'prisförslag-'.$agreement->offer->reg_num.'-'.$agreement->offer->offer_id.'.pdf';
                 break;

@@ -104,7 +104,7 @@
             font-size: 10px;
             background-color: #F6F6F6;
             padding: 8px;
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid #E7E7E7;
             color: #5D5D5D;
         }
@@ -199,7 +199,7 @@
             <!-- === HEADER === -->
             <tr>
                 <td colspan="2" style="padding-bottom: 4px; border-bottom: 2px solid #E7E7E7;">
-                    <table style="width: 100%;">
+                    <table style="width: 100%; border-spacing: 0; border-collapse: collapse;">
                         <tr>                            
                             <td class="header-title-cell">
                                 <h1>Prisförslag</h1>
@@ -428,7 +428,7 @@
                     </table>                           
                 </td>
                 <td class="column-cell column-cell-right">
-                    <div style="height: 30px;"></div>                 
+                    <div style="height: 27px;"></div>                 
                     <table class="info-table">     
                         @if($agreement->offer->control_inspection && $agreement->offer->number_keys)
                         <tr>
@@ -572,7 +572,7 @@
                         </tbody>
                         <tfoot>
                             <tr class="total-row">
-                                <td>SUMMA</td>
+                                <td>Summa</td>
                                 <td>{{ formatCurrency($agreement->offer->price) }} kr</td>
                             </tr>
                         </tfoot>
@@ -603,7 +603,7 @@
 
     <!-- === FOOTER & SIGNATURE (fixed for DOMPDF) === -->
     <div class="footer-section">
-        <div class="thank-you-text">TACK FÖR DIN FÖRFRÅGAN!</div>
+        <div class="thank-you-text">Tack För Din Förfrågan!</div>
         <table class="signatures-table">
             <tr>
                 <!-- Left: Kund (köpare) -->
