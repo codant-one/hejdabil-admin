@@ -41,7 +41,7 @@
             position: relative;
             z-index: 1;
             padding: 15px 35px;
-            border-spacing: 2px;
+            border-spacing: 3px;
         }
 
         .table-spacing {
