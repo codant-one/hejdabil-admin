@@ -80,9 +80,6 @@
 
         /* --- HEADER --- */
         .header-logo {
-            display: inline-block;
-            text-align: right;
-
             width: 160px;
             height: 72px;
             background: white;
@@ -92,8 +89,11 @@
         }
 
         .header-logo img {
-            height: 60px;
-            width: auto;
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .header-logo-cell {
