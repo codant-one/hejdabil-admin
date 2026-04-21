@@ -328,22 +328,22 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(166);
+        ])->find(167);
 
         $user = User::with(['userDetail','roles'])->find(1);
  
         switch ($agreement->agreement_type_id) {
             case 1:
-                $pdf = 'pdfs.sales.classic';
+                $pdf = 'pdfs.sales.modern';
                 break;
             case 2:
-                $pdf = 'pdfs.purchases.classic';
+                $pdf = 'pdfs.purchases.modern';
                 break;
             case 3:
-                $pdf = 'pdfs.mediation.classic';
+                $pdf = 'pdfs.mediation.modern';
                 break;
             case 4:
-                $pdf = 'pdfs.business.classic';
+                $pdf = 'pdfs.business.modern';
                 break;
         }
 
