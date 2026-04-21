@@ -82,6 +82,13 @@
         .header-logo {
             display: inline-block;
             text-align: right;
+
+            width: 160px;
+            height: 72px;
+            background: white;
+            border-radius: 8px;
+            position: relative;
+            padding: 8px;
         }
 
         .header-logo img {
