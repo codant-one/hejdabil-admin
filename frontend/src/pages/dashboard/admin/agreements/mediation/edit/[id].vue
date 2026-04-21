@@ -205,6 +205,8 @@ async function fetchData() {
 
         localStorage.setItem('user_data', JSON.stringify(user_data))
 
+        const defaultTerms = 'Förmedlaren säljer fordonet för uppdragsgivarens räkning. Fordonet ägs av uppdragsgivaren tills försäljning genomförts. Uppdragsgivaren ansvarar för fordonets skick och uppgifter. Förmedlaren har rätt till provision enligt avtal.'
+
         if(role.value === 'Supplier') {
             company.value = user_data.user_detail
             company.value.email = user_data.email
@@ -215,6 +217,9 @@ async function fetchData() {
             account_number.value = user_data.user_detail.account_number
 
             commission_id.value = user_data.supplier.user.commissions.length + 1
+
+            terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_mediation ?? defaultTerms
+
         } else if(role.value === 'User') {
             company.value = user_data.supplier.boss.user.user_detail
             company.value.email = user_data.supplier.boss.user.email
@@ -225,9 +230,12 @@ async function fetchData() {
             account_number.value = user_data.supplier.boss.user.user_detail.account_number
 
             commission_id.value = user_data.supplier.boss.user.commissions.length + 1
+
+            terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_mediation ?? defaultTerms
         } else {
             await configsStores.getFeature('company')
             await configsStores.getFeature('logo')
+            await configsStores.getFeature('agreements')
 
             company.value = configsStores.getFeaturedConfig('company')
             company.value.logo = configsStores.getFeaturedConfig('logo').logo
@@ -236,6 +244,8 @@ async function fetchData() {
             account_number.value = company.value.account_number
 
             commission_id.value = agreementsStores.commission_id + 1
+
+            terms_other_conditions.value = configsStores.getFeaturedConfig('agreements')?.terms_and_conditions_mediation ?? defaultTerms
         }
 
         await agreementsStores.info()
@@ -311,7 +321,6 @@ async function fetchData() {
         start_date.value = agreement.value.commission.start_date
         end_date.value = agreement.value.commission.end_date
 
-        terms_other_conditions.value = agreement.value.terms_other_conditions
         terms_other_information.value = agreement.value.terms_other_information
 
         isRequestOngoing.value = false

@@ -39,6 +39,7 @@ const refForm = ref()
 const currentTab = ref(0)
 
 const userData = ref(null)
+const role = ref(null)
 const currencies = ref([])
 const currency_id = ref(1)
 
@@ -120,6 +121,7 @@ async function fetchData() {
         await agreementsStores.info()
 
         userData.value = JSON.parse(localStorage.getItem('user_data') || 'null')
+        role.value = userData.value.roles[0].name
 
         brands.value = agreementsStores.brands
         models.value = agreementsStores.models 
@@ -141,7 +143,6 @@ async function fetchData() {
         price.value =  formatDecimal(agreement.value.offer.price)
         comment.value = agreement.value.offer.comment
         mileage.value = agreement.value.offer.mileage
-        terms_other_conditions.value = agreement.value.terms_other_conditions
 
         generation.value = agreement.value.offer.generation ?? generation.value
         car_body_id.value = agreement.value.offer.car_body_id ?? car_body_id.value
@@ -183,6 +184,17 @@ async function fetchData() {
             brand_id.value = brandId
             model_id.value = agreement.value.offer.model_id
         }      
+
+        const defaultTerms = 'Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.'
+
+        if (role.value === 'Supplier') {
+          terms_other_conditions.value = user_data?.supplier?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
+        } else if (role.value === 'User') {
+          terms_other_conditions.value = user_data?.supplier?.boss?.settings?.agreement?.terms_and_conditions_business ?? defaultTerms
+        } else {
+          await configsStores.getFeature("agreements")
+          terms_other_conditions.value = configsStores.getFeaturedConfig("agreements")?.terms_and_conditions_business ?? defaultTerms
+        }
 
         isRequestOngoing.value = false
         
