@@ -28,7 +28,7 @@
         h2 {
             font-size: 14px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
-            margin-top: 10px;
+            margin-top: 6px;
             margin-bottom: 6px;
         }
 
@@ -124,7 +124,7 @@
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 100px;
             white-space: pre-line;
         }
 
@@ -172,7 +172,6 @@
 
         .signatures-table {
             width: 100%;
-            margin-top: 12px;
             table-layout: fixed;
             border-collapse: collapse;
         }
@@ -480,7 +479,7 @@
                     <table class="info-table">  
                         @if($agreement->vehicle_client->vehicle->last_service || $agreement->vehicle_client->vehicle->last_service_date)                       
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
                                     {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
@@ -510,7 +509,7 @@
                         @if($agreement->vehicle_client->vehicle->dist_belt === 0)
                             @if($agreement->vehicle_client->vehicle->last_dist_belt || $agreement->vehicle_client->vehicle->last_dist_belt_date)
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
                                         {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}

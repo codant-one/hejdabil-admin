@@ -12,10 +12,6 @@
             height: 100%;
         }
 
-        html, body {
-            height: 100%;
-        }
-
         body {
             font-family: 'gelion', 'dm sans', sans-serif !important;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
