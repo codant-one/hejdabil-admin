@@ -339,10 +339,10 @@ class TestingController extends Controller
                 $pdf = 'pdfs.purchase';
                 break;
             case 3:
-                $pdf = 'pdfs.mediation.compact';
+                $pdf = 'pdfs.mediation.classic';
                 break;
             case 4:
-                $pdf = 'pdfs.business.compact';
+                $pdf = 'pdfs.business.classic';
                 break;
         }
 
@@ -394,6 +394,9 @@ class TestingController extends Controller
             $company->logo = $logoObj->logo ?? null;
             $company->img_signature = $signatureObj->img_signature ?? null;
         }
+
+        $company->primary_color = '#09DAD9';
+        $company->secondary_color = '#DFFAFA';
 
         return view($pdf, 
             compact(

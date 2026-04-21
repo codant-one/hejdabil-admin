@@ -451,7 +451,7 @@
                         </tr>  
                         @if($agreement->commission->vehicle->last_service || $agreement->commission->vehicle->last_service_date)
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
                                     {{ $agreement->commission->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
@@ -481,7 +481,7 @@
                         @if($agreement->commission->vehicle->dist_belt === 0)
                             @if($agreement->commission->vehicle->last_dist_belt || $agreement->commission->vehicle->last_dist_belt_date) 
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
                                         {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->commission->vehicle->dist_belt] ?? 'Vet ej' }}
@@ -590,7 +590,7 @@
                                     {{ $agreement->commission->outstanding_debt === 0 ? 'Ja' : 'Nej' }}
                                 </div>
                             </td>
-                            <td>
+                            <td class="column-cell column-cell-right-2">
                                 <div class="label">Vem betalar restskulden?</div>
                                 <div class="value">
                                     {{ $agreement->commission->residual_debt === 0 ? 'Bilhandlare' : 'Kund' }}

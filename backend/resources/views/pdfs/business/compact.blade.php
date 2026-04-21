@@ -480,7 +480,7 @@
                         </tr>  
                         @if($agreement->offer->last_service || $agreement->offer->last_service_date)                        
                         <tr>
-                            <td>
+                            <td class="column-cell column-cell-left-2">
                                 <div class="label">Vinterdäck finns?</div>
                                 <div class="value">
                                     {{ $agreement->offer->winter_tire === 0 ? 'Ja' : 'Nej' }}
@@ -510,7 +510,7 @@
                         @if($agreement->offer->dist_belt === 0)
                             @if($agreement->offer->last_dist_belt || $agreement->offer->last_dist_belt_date) 
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Kamrem bytt?</div>
                                     <div class="value">
                                         {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->offer->dist_belt] ?? 'Vet ej' }}
