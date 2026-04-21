@@ -54,7 +54,7 @@
             background-color: #FFFFFF;
             border-radius: 8px !important;
             border: 1px solid #E7E7E7 !important;
-            padding: 12px 8px 4px 8px !important;
+            padding: 8px 8px 4px 8px !important;
         }
 
         .card-header {
