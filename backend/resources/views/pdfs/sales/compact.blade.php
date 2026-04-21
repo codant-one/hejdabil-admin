@@ -496,7 +496,7 @@
                         @if($agreement->vehicle_interchange)
                             @if($agreement->vehicle_client->vehicle->last_service !== null)
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Vinterdäck finns?</div>
                                     <div class="value">
                                         {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
@@ -526,7 +526,7 @@
                             @if($agreement->vehicle_client->vehicle->dist_belt === 0)
                                 @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
                                 <tr>
-                                    <td>
+                                    <td class="column-cell column-cell-left-2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
                                             {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}
@@ -794,7 +794,7 @@
                             </tr>    
                             @if($agreement->vehicle_interchange && $agreement->vehicle_interchange->last_service !== null)
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Vinterdäck finns?</div>
                                     <div class="value">
                                         @if($agreement->vehicle_interchange)
@@ -832,7 +832,7 @@
                             @if($agreement->vehicle_interchange?->dist_belt === 0)
                                 @if($agreement->vehicle_interchange?->last_dist_belt !== null)
                                 <tr>
-                                    <td>
+                                    <td class="column-cell column-cell-left-2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
                                             {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_interchange?->dist_belt] ?? 'Vet ej' }}
@@ -936,7 +936,7 @@
                         @else
                             @if($agreement->vehicle_client->vehicle->last_service !== null)
                             <tr>
-                                <td>
+                                <td class="column-cell column-cell-left-2">
                                     <div class="label">Vinterdäck finns?</div>
                                     <div class="value">
                                         {{ $agreement->vehicle_client->vehicle->winter_tire === 0 ? 'Ja' : 'Nej' }}
@@ -966,7 +966,7 @@
                             @if($agreement->vehicle_client->vehicle->dist_belt === 0)
                                 @if($agreement->vehicle_client->vehicle->last_dist_belt !== null)
                                 <tr>
-                                    <td>
+                                    <td class="column-cell column-cell-left-2">
                                         <div class="label">Kamrem bytt?</div>
                                         <div class="value">
                                             {{ ['Ja', 'Nej', 'Kamkedja', 'Vet ej'][(int) $agreement->vehicle_client->vehicle->dist_belt] ?? 'Vet ej' }}

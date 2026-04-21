@@ -21,6 +21,7 @@ use App\Models\Payout;
 
 class TestingController extends Controller
 {
+
     public function emails() {
 
         $user = User::find(1);
@@ -327,13 +328,13 @@ class TestingController extends Controller
             'vehicle_client.vehicle.gearbox',
             'vehicle_client.vehicle.payment.payment_types',
             'supplier.user'
-        ])->find(165);
+        ])->find(166);
 
         $user = User::with(['userDetail','roles'])->find(1);
  
         switch ($agreement->agreement_type_id) {
             case 1:
-                $pdf = 'pdfs.sales';
+                $pdf = 'pdfs.sales.classic';
                 break;
             case 2:
                 $pdf = 'pdfs.purchases.classic';
