@@ -171,7 +171,7 @@
             position: absolute;
             left: 45px;
             right: 45px;
-            bottom: 15px;
+            bottom: 8px;
             padding: 0;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
         }
