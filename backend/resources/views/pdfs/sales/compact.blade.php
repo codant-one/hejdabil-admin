@@ -1248,7 +1248,7 @@
                 <td style="vertical-align: bottom; position: relative;" class="card-footer">
                     <div style="min-height: 150px; text-align: center;">
                         @if(isset($signature_url))  
-                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 150px;">
                         @endif
                     </div>
                     <div class="signature-box">(Köparens underskrift)</div>
@@ -1258,7 +1258,7 @@
                 <td style="vertical-align: bottom;" class="card-footer">
                     <div style="min-height: 150px; text-align: center;">
                         @if($company->img_signature)
-                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 150px;">
                         @endif
                     </div>
                     <div class="signature-box">(Säljföretagets underskrift)</div>
