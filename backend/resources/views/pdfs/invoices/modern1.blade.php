@@ -31,10 +31,7 @@
             font-family: 'DM Sans', Arial, sans-serif !important;
             font-size: 36px;
             font-weight: 600;
-            color: #FFFFFF;
-            border-top: 1px solid #FFFFFF;
-            border-bottom: 1px solid #FFFFFF;
-            padding: 8px 16px 4px 16px;
+            color: {{ $company->primary_color ?? '#E7E7E7' }} !important;
             line-height: 0.6;
             display: inline-block;
             letter-spacing: 0 !important;
