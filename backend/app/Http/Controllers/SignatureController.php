@@ -568,10 +568,16 @@ class SignatureController extends Controller
         
         // Support both agreements and documents
         if ($token->agreement_id) {
-            $response['agreement_id'] = $token->agreement->id;
+            $agreement = $token->agreement;
+            if ($agreement) {
+                $response['agreement_id'] = $agreement->id;
+            }
         } elseif ($token->document_id) {
-            $response['document_id'] = $token->document->id;
-            $response['document_title'] = $token->document->title;
+            $document = $token->document;
+            if ($document) {
+                $response['document_id'] = $document->id;
+                $response['document_title'] = $document->title;
+            }
         }
         
         if ($token->signature_status === 'signed') {
@@ -894,16 +900,23 @@ class SignatureController extends Controller
                 'download_url' => Storage::disk('public')->url($signedPdfPath),
                 'signed_by'    => $token->recipient_email,
                 'user_id'      => $userId, // ID del usuario que debe recibir la notificación
+                'order_id'     => null,
             ];
 
             // Add document or agreement ID for download
             if ($token->agreement_id) {
                 $response['agreement_id'] = $token->agreement_id;
-                $response['order_id'] = $token->agreement->agreement_type_id === 4 ? $token->agreement->offer_id : $token->agreement->agreement_id;
+                $agreement = $token->agreement;
+                if ($agreement) {
+                    $response['order_id'] = $agreement->agreement_type_id === 4 ? $agreement->offer_id : $agreement->agreement_id;
+                }
                 $response['is_agreement'] = true;
             } elseif ($token->document_id) {
                 $response['document_id'] = $token->document_id;
-                $response['order_id'] = $token->document->order_id;
+                $document = $token->document;
+                if ($document) {
+                    $response['order_id'] = $document->order_id;
+                }
                 $response['is_agreement'] = false;
             }
 

@@ -190,14 +190,14 @@
                                     </div> 
                                 </td>
                                 <td width="35%">
-                                    <div class="d-flex align-center mb-6 {{ $company->logo ? 'box-logo' : '' }}" style="margin-left: auto;">
-                                        @if($company->logo)
-                                            <img src="{{ asset('storage/'.$company->logo) }}" width="150" alt="logo-main">
+                                    <div class="d-flex align-center mb-6 {{ ($company->logo ?? null) ? 'box-logo' : '' }}" style="margin-left: auto;">
+                                        @if($company->logo ?? null)
+                                            <img src="{{ asset('storage/'.($company->logo ?? '')) }}" width="150" alt="logo-main">
                                         @else
-                                            <h1 style="margin: 0 !important;">{{ $company->company }} </h1>
+                                            <h1 style="margin: 0 !important;">{{ $company->company ?? '' }} </h1>
                                             <div class="contract-details">
-                                                {{ $company->name }} {{ $company->last_name }} <br>
-                                                {{ $company->email }}
+                                                {{ $company->name ?? '' }} {{ $company->last_name ?? '' }} <br>
+                                                {{ $company->email ?? '' }}
                                             </div>
                                         @endif
                                     </div>                                                                       
@@ -425,73 +425,73 @@
                                 Adress
                             </h4>
                             <span class="info-supplier">
-                                <p class="m-0">{{ $company->address }}</p>
-                                <p class="m-0">{{ $company->postal_code }}</p>
-                                <p class="m-0">{{ $company->street }}</p>
-                                <p class="m-0">{{ $company->phone }}</p>
+                                <p class="m-0">{{ $company->address ?? '' }}</p>
+                                <p class="m-0">{{ $company->postal_code ?? '' }}</p>
+                                <p class="m-0">{{ $company->street ?? '' }}</p>
+                                <p class="m-0">{{ $company->phone ?? '' }}</p>
                             </span>
                         </p>
-                        @if(!is_null($company->swish))
+                        @if(!is_null($company->swish ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Swish
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->swish }}</span>
+                                <span>{{ $company->swish ?? '' }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
-                        @if(!is_null($company->organization_number))
+                        @if(!is_null($company->organization_number ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Org.nr.
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->organization_number }}</span>
+                                <span>{{ $company->organization_number ?? '' }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(!is_null($company->vat))
+                        @if(!is_null($company->vat ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Vat
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->vat }}</span>
+                                <span>{{ $company->vat ?? '' }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(!is_null($company->bic))
+                        @if(!is_null($company->bic ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 BIC
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->bic }}</span>
+                                <span>{{ $company->bic ?? '' }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(!is_null($company->plus_spin))
+                        @if(!is_null($company->plus_spin ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Plusgiro
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->plus_spin }}</span>
+                                <span>{{ $company->plus_spin ?? '' }}</span>
                             </span>
                         </p>
                         @endif
                     </td>
                     <td width="25%">
-                        @if(!is_null($company->link))
+                        @if(!is_null($company->link ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Webbplats
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->link }}</span>
+                                <span>{{ $company->link ?? '' }}</span>
                             </span>
                         </p>
                         @endif
@@ -501,28 +501,28 @@
                                 Företagets e-post
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->email }}</span>
+                                <span>{{ $company->email ?? '' }}</span>
                             </span>
                         </p>
                     </td>
                     <td width="25%">
-                        @if(!is_null($company->bank))
+                        @if(!is_null($company->bank ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Bank
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->bank }}</span>
+                                <span>{{ $company->bank ?? '' }}</span>
                             </span>
                         </p>
                         @endif
-                        @if(!is_null($company->iban))
+                        @if(!is_null($company->iban ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Bankgiro
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->iban }}</span>
+                                <span>{{ $company->iban ?? '' }}</span>
                             </span>
                         </p>
                         @endif
@@ -531,16 +531,16 @@
                                 Kontonummer
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->account_number }}</span>
+                                <span>{{ $company->account_number ?? '' }}</span>
                             </span>
                         </p>
-                        @if(!is_null($company->iban_number))
+                        @if(!is_null($company->iban_number ?? null))
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
                                 Iban nummer
                             </h4>
                             <span class="info-supplier">
-                                <span>{{ $company->iban_number }}</span>
+                                <span>{{ $company->iban_number ?? '' }}</span>
                             </span>
                         </p>
                         @endif

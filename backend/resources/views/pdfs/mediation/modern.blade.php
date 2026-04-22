@@ -66,7 +66,6 @@
 
         .card-header {
             color: #FFFFFF;
-            padding: 0 0 4px 0 !important;
         }
 
         h2 {
@@ -80,21 +79,31 @@
         .header-logo {
             display: inline-block;
             text-align: right;
+
+            width: 130px;
+            height: 50px;
+            background: white;
+            border-radius: 8px;
+            position: relative;
+            padding: 8px;
         }
 
         .header-logo img {
-            height: 60px;
-            width: auto;
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         .header-logo-cell {
-            vertical-align: bottom;
+            vertical-align: top;
             text-align: right;
         }
 
         .header-title-cell {
             text-align: left;
-            vertical-align: bottom;
+            vertical-align: top;
         }
 
         .header-title-cell h1, .header-logo-cell h1 {

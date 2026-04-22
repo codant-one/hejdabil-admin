@@ -464,14 +464,16 @@ class Agreement extends Model
             $logo = $company->logo ? asset('storage/' . $company->logo) : null;
             $company->type = $agreementsObj->type ?? 1;
 
-            if($colorObj->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($colorObj->setting_color_id);
+            $colorSettingId = $colorObj->setting_color_id ?? null;
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $colorObj->primary_color ?? null;
-                $company->secondary_color = $colorObj->secondary_color ?? null;
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB';
             }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $agreement->supplier->user_id)->first();
@@ -482,20 +484,20 @@ class Agreement extends Model
 
             $setting = Setting::where('supplier_id', $agreement->supplier_id)->first();
 
-            if($setting->setting_color_id) {//existe un id de color
+            if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary ?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting->primary_color ?? null;
-                $company->secondary_color = $setting->secondary_color ?? null;
+                $company->primary_color = $setting->primary_color ?? '#29ABE2';
+                $company->secondary_color = $setting->secondary_color ?? '#E3F4FB';
             }
 
-            if($setting->setting_agreement_id) {//existe un id de agreement
+            if($setting && $setting->setting_agreement_id) {//existe un id de agreement
                 $agreementSetting = SettingAgreement::find($setting->setting_agreement_id);
 
-                $company->type = $agreementSetting->type;
+                $company->type = $agreementSetting ? $agreementSetting->type : 1;
             } else {
                 $company->type = 1; // Default type if not set
             }

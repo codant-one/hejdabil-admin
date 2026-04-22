@@ -9,6 +9,8 @@ import { useAgreementsStores } from '@/stores/useAgreements'
 import { useCarInfoStores } from '@/stores/useCarInfo'
 import { useCompanyInfoStores } from '@/stores/useCompanyInfo'
 import { usePersonInfoStores } from '@/stores/usePersonInfo'
+import { useAppAbility } from '@/plugins/casl/useAppAbility'
+import { useAuthStores } from '@/stores/useAuth'
 import { formatNumber } from '@/@core/utils/formatters'
 import LoadingOverlay from "@/components/common/LoadingOverlay.vue";
 import MobileScrollTabs from "@/components/common/MobileScrollTabs.vue";
@@ -29,10 +31,12 @@ const advisor = ref({
 })
 
 const route = useRoute()
+const authStores = useAuthStores()
 const carInfoStores = useCarInfoStores()
 const agreementsStores = useAgreementsStores()
 const companyInfoStores = useCompanyInfoStores()
 const personInfoStores = usePersonInfoStores()
+const ability = useAppAbility()
 
 const isRequestOngoing = ref(false)
 const refForm = ref()
@@ -184,6 +188,14 @@ async function fetchData() {
             brand_id.value = brandId
             model_id.value = agreement.value.offer.model_id
         }      
+
+        const { user_data, userAbilities } = await authStores.me(userData.value)
+
+        localStorage.setItem('userAbilities', JSON.stringify(userAbilities))
+
+        ability.update(userAbilities)
+
+        localStorage.setItem('user_data', JSON.stringify(user_data))
 
         const defaultTerms = 'Offerten är giltig under angiven period och är inte bindande förrän den accepterats. Priset baseras på tillgänglig information och kan justeras. Säljaren har rätt att återkalla offerten innan accept.'
 

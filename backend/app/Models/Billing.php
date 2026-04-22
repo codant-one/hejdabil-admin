@@ -233,14 +233,16 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($colorObj->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($colorObj->setting_color_id);
+            $colorSettingId = $colorObj->setting_color_id ?? null;
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $colorObj->primary_color ?? null;
-                $company->secondary_color = $colorObj->secondary_color ?? null;
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB';
             }
             
         } else {
@@ -252,20 +254,20 @@ class Billing extends Model
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
 
-            if($setting->setting_color_id) {//existe un id de color
+            if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting->primary_color ?? null;
-                $company->secondary_color = $setting->secondary_color ?? null;
+                $company->primary_color = $setting ? $setting->primary_color : '#29ABE2';
+                $company->secondary_color = $setting ? $setting->secondary_color : '#E3F4FB';
             }
 
-            if($setting->setting_billing_id) {//existe un id de billing
+            if($setting && $setting->setting_billing_id) {//existe un id de billing
                 $billingSetting = SettingBilling::find($setting->setting_billing_id);
 
-                $company->type = $billingSetting->type;
+                $company->type = $billingSetting ? $billingSetting->type : 1;
             } else {
                 $company->type = 1; // Default type if not set
             }
@@ -394,14 +396,16 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($colorObj->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($colorObj->setting_color_id);
+            $colorSettingId = $colorObj->setting_color_id ?? null;
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $colorObj->primary_color ?? null;
-                $company->secondary_color = $colorObj->secondary_color ?? null;
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB';
             }
         } else {
             $user = UserDetails::with(['user'])->where('user_id', $billing->supplier->user_id)->first();
@@ -412,20 +416,20 @@ class Billing extends Model
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
 
-            if($setting->setting_color_id) {//existe un id de color
+            if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting->primary_color ?? null;
-                $company->secondary_color = $setting->secondary_color ?? null;
+                $company->primary_color = $setting ? $setting->primary_color : '#29ABE2';
+                $company->secondary_color = $setting ? $setting->secondary_color : '#E3F4FB';
             }
 
-            if($setting->setting_billing_id) {//existe un id de billing
+            if($setting && $setting->setting_billing_id) {//existe un id de billing
                 $billingSetting = SettingBilling::find($setting->setting_billing_id);
 
-                $company->type = $billingSetting->type;
+                $company->type = $billingSetting ? $billingSetting->type : 1;
             } else {
                 $company->type = 1; // Default type if not set
             }
@@ -552,14 +556,16 @@ class Billing extends Model
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($colorObj->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($colorObj->setting_color_id);
+            $colorSettingId = $colorObj->setting_color_id ?? null;
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $colorObj->primary_color ?? null;
-                $company->secondary_color = $colorObj->secondary_color ?? null;
+                $company->primary_color = $colorObj->primary_color ?? '#29ABE2';
+                $company->secondary_color = $colorObj->secondary_color ?? '#E3F4FB';
             }
 
         } else {
@@ -571,20 +577,20 @@ class Billing extends Model
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
 
-            if($setting->setting_color_id) {//existe un id de color
+            if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting->primary_color ?? null;
-                $company->secondary_color = $setting->secondary_color ?? null;
+                $company->primary_color = $setting ? $setting->primary_color : '#29ABE2';
+                $company->secondary_color = $setting ? $setting->secondary_color : '#E3F4FB';
             }
 
-            if($setting->setting_billing_id) {//existe un id de billing
+            if($setting && $setting->setting_billing_id) {//existe un id de billing
                 $billingSetting = SettingBilling::find($setting->setting_billing_id);
 
-                $company->type = $billingSetting->type;
+                $company->type = $billingSetting ? $billingSetting->type : 1;
             } else {
                 $company->type = 1; // Default type if not set
             }
@@ -661,15 +667,19 @@ class Billing extends Model
             
             $company = $decodeSafe($companyRaw);
             $logoObj    = $decodeSafe($logoRaw);
+            $colorObj   = $decodeSafe($colorRaw);
+            $billingsObj   = $decodeSafe($billingsRaw);
             
             $company->logo = $logoObj->logo ?? null;
             $company->type = $billingsObj->type ?? 1;
 
-            if($colorObj->setting_color_id) {//existe un id de color
-                $color = SettingColor::find($colorObj->setting_color_id);
+            $colorSettingId = $colorObj->setting_color_id ?? null;
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+            if($colorSettingId) {//existe un id de color
+                $color = SettingColor::find($colorSettingId);
+
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
                 $company->primary_color = $colorObj->primary_color ?? null;
                 $company->secondary_color = $colorObj->secondary_color ?? null;
@@ -683,20 +693,20 @@ class Billing extends Model
 
             $setting = Setting::where('supplier_id', $billing->supplier_id)->first();
 
-            if($setting->setting_color_id) {//existe un id de color
+            if($setting && $setting->setting_color_id) {//existe un id de color
                 $color = SettingColor::find($setting->setting_color_id);
 
-                $company->primary_color = $color->primary ?? null;
-                $company->secondary_color = $color->secondary ?? null;
+                $company->primary_color = $color->primary ?? '#29ABE2';
+                $company->secondary_color = $color->secondary?? '#E3F4FB';
             } else {
-                $company->primary_color = $setting->primary_color ?? null;
-                $company->secondary_color = $setting->secondary_color ?? null;
+                $company->primary_color = $setting ? $setting->primary_color : null;
+                $company->secondary_color = $setting ? $setting->secondary_color : null;
             }
 
-            if($setting->setting_billing_id) {//existe un id de billing
+            if($setting && $setting->setting_billing_id) {//existe un id de billing
                 $billingSetting = SettingBilling::find($setting->setting_billing_id);
 
-                $company->type = $billingSetting->type;
+                $company->type = $billingSetting ? $billingSetting->type : 1;
             } else {
                 $company->type = 1; // Default type if not set
             }
