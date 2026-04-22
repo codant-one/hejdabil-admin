@@ -231,11 +231,17 @@
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
         }
 
+        .card-footer {
+            background-color: #FFFFFF;
+            border-radius: 8px !important;
+            padding: 8px !important;
+        }
+
         .signatures-table {
             width: 100%;
             margin-top: 6px;
             table-layout: fixed;
-            border-collapse: collapse;
+            border-spacing: 8px;
         }
 
         .signatures-table td {
@@ -1485,8 +1491,8 @@
         <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->
-                <td style="width: 50%; padding-right: 20px; vertical-align: bottom; position: relative;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
+                    <div style="min-height: 150px; text-align: center;">
                         @if(isset($signature_url))  
                             <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
                         @endif
@@ -1495,8 +1501,8 @@
                 </td>
                 
                 <!-- Celda Derecha: Firma del Vendedor (Säljföretagets) - VACÍA -->
-                <td style="width: 50%; padding-left: 20px; vertical-align: bottom;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom;" class="card-footer">
+                    <div style="min-height: 150px; text-align: center;">
                         @if($company->img_signature)
                             <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
                         @endif
