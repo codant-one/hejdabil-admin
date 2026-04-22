@@ -15,6 +15,8 @@
 
         body {
             font-family: 'DM Sans', Arial, sans-serif !important;
+            font-size: 10px;
+            color: #454545;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
             padding: 0;
             margin: 0;

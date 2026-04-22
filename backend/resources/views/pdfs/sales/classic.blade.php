@@ -15,6 +15,8 @@
 
         body {
             font-family: 'DM Sans', Arial, sans-serif !important;
+            font-size: 10px;
+            color: #454545;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
             padding: 0;
             margin: 0;
@@ -64,7 +66,7 @@
             font-size: 14px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
             margin-top: 0;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         /* --- HEADER --- */
@@ -124,7 +126,7 @@
 
         .info-table td {
             padding: 0;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
 
         .info-table .label {
@@ -153,13 +155,13 @@
         }
 
         .info-table .value2-text {
-            font-size: 12px;
-            line-height: 12px;
+            font-size: 10px;
+            line-height: 10px;
             color: #878787;
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 100px;
+            min-height: 80px;
             white-space: pre-line;
         }
 
@@ -183,6 +185,7 @@
 
         .financials-table .total-row td {
             font-weight: 700;
+            font-size: 16px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
             border-top: 2px solid #E7E7E7;
             border-bottom: none;
@@ -203,24 +206,6 @@
             bottom: 35px;
             padding: 0;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
-        }
-
-        .consent-box {
-            background-color: {{ $company->primary_color ?? '#008C91' }};
-            border-radius: 4px;
-            padding-left: 2px;
-            margin-bottom: 0;
-            line-height: 0;
-            font-size: 0;
-        }
-
-        .consent-text {
-            font-size: 8px;
-            color: #878787;
-            background-color: #E7E7E7;
-            padding: 8px;
-            border-radius: 3px 4px 4px 3px;
-            line-height: 0.8;
         }
 
         .signatures-table {
@@ -1424,8 +1409,7 @@
                     </table>
                 </td>
             </tr>
-
-                        @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
+            @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
             <tr>
                 <td colspan="2" class="section-cell">
                     <h2>Villkor</h2>
@@ -1433,8 +1417,8 @@
             </tr>
             @endif
             @if($agreement->terms_other_conditions!==null)
-            <tr>                 
-                <td colspan="2" class="section-cell">
+            <tr>                  
+                <td colspan="2" class="column-cell">
                     <h2>Övriga villkor</h2>
                     <table class="info-table">
                         <tr>
@@ -1447,10 +1431,10 @@
                     </table>
                 </td>
             </tr>
-            @endif               
+            @endif
             @if($agreement->terms_other_information!==null)
             <tr>
-                <td colspan="2" class="section-cell">
+                <td colspan="2" class="column-cell">
                     <h2>Övriga upplysningar</h2>
                     <table class="info-table">
                         <tr>
@@ -1461,20 +1445,13 @@
                             </td>
                         </tr>
                     </table>
-                </td>
+                </td>                
             </tr>
             @endif
         </tbody>
     </table>
     <!-- === FOOTER === -->
     <div class="footer-section">
-        <div class="consent-box">
-            <div class="consent-text">
-                <p style="margin: 0;">
-                    Köparen samtycker till att personuppgifter behandlas och lagras för att uppfylla rättsliga skyldigheter avseende räkenskapsinformation enligt bokföringslagen (2010:1514), 2 kap. 8 § första stycket 8 b.
-                </p>
-            </div>
-        </div>
         <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->

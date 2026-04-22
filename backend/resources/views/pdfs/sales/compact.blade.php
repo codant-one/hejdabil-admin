@@ -11,6 +11,8 @@
 
         body {
             font-family: 'DM Sans', Arial, sans-serif !important;
+            font-size: 10px;
+            color: #454545;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -30,7 +32,7 @@
             font-size: 14px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
             margin-top: 10px;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         /* --- HEADER --- */
@@ -90,7 +92,7 @@
 
         .info-table td {
             padding: 0;
-            padding-bottom: 6px;
+            padding-bottom: 8px;
         }
 
         .info-table .label {
@@ -120,12 +122,12 @@
 
         .info-table .value2-text {
             font-size: 10px;
-            line-height: 1;
+            line-height: 10px;
             color: #878787;
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 80px;
             white-space: pre-line;
         }
 
@@ -149,6 +151,7 @@
 
         .financials-table .total-row td {
             font-weight: 700;
+            font-size: 16px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
             border-top: 2px solid #E7E7E7;
             border-bottom: none;
@@ -169,24 +172,6 @@
             bottom: 0px;
             padding: 0;
             background: #FFFFFF;
-        }
-
-        .consent-box {
-            background-color: {{ $company->primary_color ?? '#008C91' }};
-            border-radius: 4px;
-            padding-left: 2px;
-            margin-bottom: 0;
-            line-height: 0;
-            font-size: 0;
-        }
-
-        .consent-text {
-            font-size: 8px;
-            color: #878787;
-            background-color: #E7E7E7;
-            padding: 8px;
-            border-radius: 3px 4px 4px 3px;
-            line-height: 0.8;
         }
 
         .signatures-table {
@@ -630,7 +615,7 @@
                     @if($agreement->vehicle_interchange)
                         <h2>Inbytesfordon</h2>   
                     @else
-                        <div style="height: 27px;"></div>     
+                        <div style="height: 30px;"></div>     
                     @endif                 
                     <table class="info-table">
                         @if($agreement->vehicle_interchange)
@@ -1208,17 +1193,16 @@
                     </table>
                 </td>
             </tr>
-
-                        @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
+            @if($agreement->terms_other_conditions!==null || $agreement->terms_other_information!==null)
             <tr>
                 <td colspan="2" class="section-cell">
                     <h2>Villkor</h2>
                 </td>
             </tr>
             @endif
-            <tr>  
-                @if($agreement->terms_other_conditions!==null)
-                <td class="column-cell column-cell-left section-cell">
+            @if($agreement->terms_other_conditions!==null)
+            <tr>                  
+                <td colspan="2" class="column-cell">
                     <h2>Övriga villkor</h2>
                     <table class="info-table">
                         <tr>
@@ -1230,9 +1214,11 @@
                         </tr>
                     </table>
                 </td>
-                @endif
-                @if($agreement->terms_other_information!==null)
-                <td class="column-cell column-cell-right section-cell">
+            </tr>
+            @endif
+            @if($agreement->terms_other_information!==null)
+            <tr>
+                <td colspan="2" class="column-cell">
                     <h2>Övriga upplysningar</h2>
                     <table class="info-table">
                         <tr>
@@ -1243,20 +1229,13 @@
                             </td>
                         </tr>
                     </table>
-                </td>
-                @endif
+                </td>                
             </tr>
+            @endif
         </tbody>
     </table>
     <!-- === FOOTER === -->
     <div class="footer-section">
-        <div class="consent-box">
-            <div class="consent-text">
-                <p style="margin: 0;">
-                    Köparen samtycker till att personuppgifter behandlas och lagras för att uppfylla rättsliga skyldigheter avseende räkenskapsinformation enligt bokföringslagen (2010:1514), 2 kap. 8 § första stycket 8 b.
-                </p>
-            </div>
-        </div>
         <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - CON LA FIRMA DEL CLIENTE -->

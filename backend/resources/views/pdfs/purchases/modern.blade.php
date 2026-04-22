@@ -16,6 +16,8 @@
 
         body {
             font-family: 'DM Sans', Arial, sans-serif !important;
+            font-size: 10px;
+            color: #454545;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
             padding: 0;
             margin: 0;
@@ -205,6 +207,7 @@
 
         .financials-table .total-row td {
             font-weight: 700;
+            font-size: 16px;
             color: {{ $company->primary_color ?? '#008C91' }} !important;
             border-top: 2px solid #E7E7E7;
             border-bottom: none;

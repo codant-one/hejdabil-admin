@@ -11,6 +11,8 @@
 
         body {
             font-family: 'DM Sans', Arial, sans-serif !important;
+            font-size: 10px;
+            color: #454545;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
