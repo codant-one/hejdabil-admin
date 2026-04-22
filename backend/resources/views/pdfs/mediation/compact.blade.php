@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+    @include('pdfs.shared.fonts')
     <meta charset="UTF-8">
     <title>Förmedlingsavtal - PDF</title>
     <style>
@@ -9,13 +10,13 @@
         }
 
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 0.6;
+            line-height: 0.5;
             position: relative;
         }
 
@@ -124,7 +125,7 @@
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 130px;
             white-space: pre-line;
         }
 

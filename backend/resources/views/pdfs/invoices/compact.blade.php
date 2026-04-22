@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">  
     <head>
+    @include('pdfs.shared.fonts')
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Fakturamall</title>
@@ -13,7 +14,7 @@
 
         /* Using fonts from storage/fonts - synced between local and server */
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             padding: 0;
             margin: 0;
             color: #454545;
@@ -35,7 +36,7 @@
         }
 
         .faktura {
-            font-family: 'gelion', 'dm sans', sans-serif;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             font-size: 36px;
             font-weight: 600;
             color: {{ $company->primary_color ?? '#E7E7E7' }} !important;
@@ -45,7 +46,7 @@
         }
 
         .table-items {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             margin-top: 10px;
             border-radius: 32px !important;
             letter-spacing: 0 !important;
@@ -53,7 +54,7 @@
         }
 
         .table-supplier {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             letter-spacing: 0 !important;
             margin-top: 10px;
         }

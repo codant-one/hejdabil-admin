@@ -1,8 +1,9 @@
 {
     "dm sans": {
-        "normal": "dm_sans_normal_e990fb77b31a6cd9b056a115c3ae7640",
-        "600": "dm_sans_600_0b35db328db811a914b2406ef52ba29c",
-        "bold": "dm_sans_bold_0b35db328db811a914b2406ef52ba29c"
+        "normal": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/dm_sans_normal_763a119ab7658c7bc93b2824a4e4d3f9",
+        "600": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/dm_sans_600_d1eb0de94a48d72bf78e9e8f6d120aff",
+        "bold": "dm_sans_bold_81443c9b12a6fd5351f00fc12ae1753b",
+        "italic": "C:\\laragon\\www\\hejdabil-admin\\backend\\storage\\fonts\/dm_sans_italic_e18bf66599fe27a908c82898deddb509"
     },
     "gelion": {
         "normal": "gelion_normal_e990fb77b31a6cd9b056a115c3ae7640",

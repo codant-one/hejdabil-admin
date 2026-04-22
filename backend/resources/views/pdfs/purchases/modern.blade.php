@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+    @include('pdfs.shared.fonts')
     <meta charset="UTF-8">
     <title>Inköpsavtal - PDF</title>
     <style>
@@ -14,14 +15,14 @@
         }
 
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
             padding: 0;
             margin: 0;
             color: #454545;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 0.6;
+            line-height: 0.5;
         }
 
         .page-background-top {
@@ -180,7 +181,7 @@
             background-color: #E7E7E7;
             padding: 5px 6px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 100px;
+            min-height: 120px;
             white-space: pre-line;
         }
 

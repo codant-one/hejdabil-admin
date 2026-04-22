@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    @include('pdfs.shared.fonts')
     <meta charset="utf-8">
     <title>Swish-betalningskvitto - PDF</title>
     <style>
@@ -9,7 +10,7 @@
         }
 
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -52,3 +53,4 @@
     @endif
 </body>
 </html>
+

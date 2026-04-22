@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">  
     <head>
+    @include('pdfs.shared.fonts')
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Sammanställning</title>
@@ -9,7 +10,7 @@
 
         /* Using fonts from storage/fonts - synced between local and server */
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
@@ -76,7 +77,7 @@
         }
 
        .faktura {
-            font-family: 'gelion', 'dm sans', sans-serif;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             font-size: 32px;
             font-weight: 700;
             color: #454545;
@@ -143,7 +144,7 @@
         }
 
         .table-supplier {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             letter-spacing: 0 !important;
         }
 

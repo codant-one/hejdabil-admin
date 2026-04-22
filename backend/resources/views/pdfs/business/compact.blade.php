@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
+    @include('pdfs.shared.fonts')
     <meta charset="UTF-8">
     <title>Prisförslag - PDF</title>
     <style>
@@ -9,13 +10,13 @@
         }
 
         body {
-            font-family: 'gelion', 'dm sans', sans-serif !important;
+            font-family: 'DM Sans', Arial, sans-serif !important;
             background-color: #FFFFFF;
             padding: 0;
             margin: 0;
             letter-spacing: 0 !important;
             word-spacing: normal !important;
-            line-height: 0.6;
+            line-height: 0.5;
             position: relative;
         }
         
