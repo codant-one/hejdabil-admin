@@ -95,8 +95,8 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            max-width: 114px;
-            max-height: 34px;
+            max-width: 125px;
+            max-height: 45px;
         }
 
         .header-logo-cell {
