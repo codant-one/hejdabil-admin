@@ -939,7 +939,7 @@ const onTabChange = async (targetTab) => {
         currentTab.value = nextTab
 }
 
-const onSubmit = async () => {
+const onSubmit = async (forceSave = false) => {
     // Validación manual ANTES de usar VForm.validate()
     // Verificar tab 0 (Inköpsavtal)
     const hasTab0Errors = !reg_num.value || 
@@ -975,8 +975,10 @@ const onSubmit = async () => {
                           (is_loan.value === 0 && (!loan_amount.value || !lessor.value)) ||
                           (payment_type_id.value === 0 && (!payment_type.value))
 
+    const shouldSubmitAll = forceSave === true || Number(currentTab.value) === 3
+
     // Lógica de navegación entre tabs (0, 1, 2)
-    if (currentTab.value === 0) {
+    if (!shouldSubmitAll && currentTab.value === 0) {
         if (hasTab0Errors) {
             // Validar el formulario para mostrar errores visuales
             await nextTick()
@@ -1004,7 +1006,7 @@ const onSubmit = async () => {
         }
     }
     
-    if (currentTab.value === 1) {
+    if (!shouldSubmitAll && currentTab.value === 1) {
         if (hasTab1Errors) {
             await nextTick()
             refForm.value?.validate()
@@ -1031,7 +1033,7 @@ const onSubmit = async () => {
         }
     }
 
-    if (currentTab.value === 2) {
+    if (!shouldSubmitAll && currentTab.value === 2) {
         if (hasTab2Errors) {
             await nextTick()
             refForm.value?.validate()
@@ -1059,7 +1061,7 @@ const onSubmit = async () => {
     }
 
     // Si estamos en el último tab (3), verificar TODOS los tabs antes de enviar
-    if (currentTab.value === 3) {
+    if (shouldSubmitAll) {
         // Si hay errores en tabs anteriores, regresar al primero con error
         if (hasTab0Errors) {
             currentTab.value = 0
@@ -1381,7 +1383,7 @@ onBeforeRouteLeave((to, from, next) => {
             class="card-form"
             v-model="isFormValid"
             validate-on="submit"
-            @submit.prevent="onSubmit"
+            @submit.prevent="onSubmit()"
         >
             <VCard
                 flat 
@@ -2236,7 +2238,7 @@ onBeforeRouteLeave((to, from, next) => {
                     <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
                         <VBtn
                             v-if="currentTab > 0"
-                            class="btn-light"
+                            class="btn-ghost"
                             :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                             :block="windowWidth < 1024"
                             @click="currentTab--"
@@ -2247,12 +2249,23 @@ onBeforeRouteLeave((to, from, next) => {
                         <VBtn 
                             type="button" 
                             :block="windowWidth < 1024"
-                            class="btn-gradient"
-                            :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                            @click="onSubmit"
+                            :class="[
+                                windowWidth < 1024 ? 'w-40' : 'w-auto',
+                                currentTab !== 3 ? 'btn-light' : 'btn-gradient'
+                            ]"
+                            @click="onSubmit()"
                         >
                             <VIcon v-if="currentTab === 3" icon="custom-save"  size="24" />
                             {{ (currentTab === 3) ? 'Uppdatering' : 'Nästa' }}
+                        </VBtn>
+                        <VBtn 
+                            v-if="currentTab !== 3"
+                            type="button"
+                            class="btn-gradient w-auto"
+                            @click="onSubmit(true)"
+                        >
+                            <VIcon v-if="currentTab !== 3" icon="custom-save"  size="24" />
+                            <span :class="windowWidth < 1024 ? 'd-none' : ''">Uppdatering</span>
                         </VBtn>
                     </div>
                 </VCardText>

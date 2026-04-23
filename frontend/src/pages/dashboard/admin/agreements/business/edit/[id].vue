@@ -689,7 +689,7 @@ const onTabChange = async (targetTab) => {
     currentTab.value = nextTab
 }
 
-const onSubmit = async () => {
+const onSubmit = async (forceSave = false) => {
   // Validación manual ANTES de usar VForm.validate()
   // Verificar tab 0 (Erbjudande)
   const hasTab0Errors = !reg_num.value || 
@@ -719,8 +719,10 @@ const onSubmit = async () => {
                         (email.value && emailValidator(email.value) !== true) ||
                         (client_type_id.value === 3 && !country_id.value)
 
+    const shouldSubmitAll = forceSave === true || Number(currentTab.value) === 1
+
     // Si estamos en el tab 0, solo validar y avanzar (NO guardar)
-    if (currentTab.value === 0) {
+    if (!shouldSubmitAll && currentTab.value === 0) {
         if (hasTab0Errors) {
             await nextTick()
             refForm.value?.validate()
@@ -748,7 +750,7 @@ const onSubmit = async () => {
     }
     
     // Si estamos en el tab 1, verificar TODOS los tabs y GUARDAR
-    if (currentTab.value === 1) {
+    if (shouldSubmitAll) {
         // Si hay errores en el tab 0, regresar
         if (hasTab0Errors) {
             currentTab.value = 0
@@ -996,7 +998,7 @@ onBeforeRouteLeave((to, from, next) => {
       ref="refForm"
       class="card-form"
       validate-on="submit"
-      @submit.prevent="onSubmit"
+      @submit.prevent="onSubmit()"
     >
       <VCard
         flat 
@@ -1535,7 +1537,7 @@ onBeforeRouteLeave((to, from, next) => {
           <div class="d-flex mb-4" :class="windowWidth < 1024 ? 'w-100 gap-2' : 'gap-4'">
               <VBtn
                   v-if="currentTab > 0"
-                  class="btn-light"
+              class="btn-ghost"
                   :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
                   :block="windowWidth < 1024"
                   @click="currentTab--"
@@ -1546,13 +1548,24 @@ onBeforeRouteLeave((to, from, next) => {
               <VBtn 
                   type="button" 
                   :block="windowWidth < 1024"
-                  class="btn-gradient"
-                  :class="windowWidth < 1024 ? 'w-40' : 'w-auto'"
-                  @click="onSubmit"
+              :class="[
+                windowWidth < 1024 ? 'w-40' : 'w-auto',
+                currentTab !== 1 ? 'btn-light' : 'btn-gradient'
+              ]"
+                  @click="onSubmit()"
               >
                   <VIcon v-if="currentTab === 1" icon="custom-save"  size="24" />
                   {{ (currentTab === 1) ? 'Uppdatering' : 'Nästa' }}
               </VBtn>
+            <VBtn 
+              v-if="currentTab !== 1"
+              type="button"
+              class="btn-gradient w-auto"
+              @click="onSubmit(true)"
+            >
+              <VIcon v-if="currentTab !== 1" icon="custom-save"  size="24" />
+              <span :class="windowWidth < 1024 ? 'd-none' : ''">Uppdatering</span>
+            </VBtn>
           </div>
         </VCardText>
       </VCard>
