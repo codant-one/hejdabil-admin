@@ -563,6 +563,28 @@ class SignatureController extends Controller
                 'message' => 'Signeringslänken har löpt ut'
             ], 410);
         }
+
+        if ($token->agreement_id) {
+            $agreement = $token->agreement;
+
+            if (!$agreement || !$agreement->file || !Storage::disk('public')->exists($agreement->file)) {
+                return response()->json([
+                    'status' => 'deleted',
+                    'code' => 'DOCUMENT_DELETED',
+                    'message' => 'Avtalet har redan tagits bort'
+                ], 410);
+            }
+        } elseif ($token->document_id) {
+            $document = $token->document;
+
+            if (!$document || !$document->file || !Storage::disk('public')->exists($document->file)) {
+                return response()->json([
+                    'status' => 'deleted',
+                    'code' => 'DOCUMENT_DELETED',
+                    'message' => 'Dokumentet har redan tagits bort'
+                ], 410);
+            }
+        }
         
         $response = [
             'status' => $token->signature_status,
@@ -1230,12 +1252,24 @@ class SignatureController extends Controller
             if ($agreement && $agreement->file && Storage::disk('public')->exists($agreement->file)) {
                 $path = storage_path('app/public/' . $agreement->file);
                 return response()->file($path);
+            } else {
+                return response()->json([
+                    'status' => 'deleted',
+                    'code' => 'DOCUMENT_DELETED',
+                    'message' => 'Avtalet har redan tagits bort',
+                ], 410);
             }
         } elseif ($token->document_id) {
             $document = $token->document;
             if ($document && $document->file && Storage::disk('public')->exists($document->file)) {
                 $path = storage_path('app/public/' . $document->file);
                 return response()->file($path);
+            } else {
+                return response()->json([
+                    'status' => 'deleted',
+                    'code' => 'DOCUMENT_DELETED',
+                    'message' => 'Dokumentet har redan tagits bort',
+                ], 410);
             }
         }
         

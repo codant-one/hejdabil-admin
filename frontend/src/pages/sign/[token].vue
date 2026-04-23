@@ -348,6 +348,14 @@ const checkTokenStatus = async () => {
       }
 
       return false
+    } else if (response.data.status === 'deleted') {
+      finalState.value = {
+        type: 'error',
+        title: 'Dokument borttaget',
+        message: 'Detta dokument har tagits bort och kan inte signeras.',
+      }
+
+      return false
     } else if (response.data.status === 'failed') {
       finalState.value = {
         type: 'error',
@@ -370,6 +378,22 @@ const checkTokenStatus = async () => {
     return ['sent', 'delivered', 'reviewed'].includes(response.data.status)
   } catch (error) {
     console.error("Kunde inte verifiera token status:", error)
+
+    const statusCode = Number(error?.response?.status || 0)
+    const backendStatus = String(error?.response?.data?.status || '').toLowerCase()
+    const backendMessage = String(error?.response?.data?.message || '').toLowerCase()
+    const isDeletedDocument = statusCode === 410
+      && (backendStatus === 'deleted' || backendMessage.includes('eliminado') || backendMessage.includes('deleted'))
+
+    if (isDeletedDocument) {
+      finalState.value = {
+        type: 'error',
+        title: 'Dokument borttaget',
+        message: 'Detta dokument har tagits bort och kan inte signeras.',
+      }
+
+      return false
+    }
 
     finalState.value = {
       type: 'error',
@@ -440,6 +464,66 @@ const loadSignatureDetails = async () => {
     console.error("Kunde inte ladda signeringsdetaljer:", error)
     throw error
   }
+}
+
+const parseErrorPayloadMessage = payload => {
+  if (typeof payload !== 'string')
+    return ''
+
+  const trimmed = payload.trim()
+  if (!trimmed)
+    return ''
+
+  const lowered = trimmed.toLowerCase()
+  const deletedTokens = ['document_deleted', 'eliminado', 'deleted', 'borttaget']
+  const detectedDeletedToken = deletedTokens.find(token => lowered.includes(token))
+
+  if (detectedDeletedToken)
+    return detectedDeletedToken
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+
+      if (typeof parsed?.message === 'string')
+        return parsed.message.trim()
+
+      if (typeof parsed?.code === 'string')
+        return parsed.code.trim()
+
+      if (typeof parsed?.status === 'string')
+        return parsed.status.trim()
+    } catch {
+      return ''
+    }
+  }
+
+  // Avoid rendering full HTML exception pages as user-facing message.
+  if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html'))
+    return ''
+
+  return trimmed
+}
+
+const extractRequestErrorMessage = async error => {
+  const responseData = error?.response?.data
+
+  if (typeof responseData === 'string')
+    return parseErrorPayloadMessage(responseData)
+
+  if (typeof Blob !== 'undefined' && responseData instanceof Blob) {
+    try {
+      const blobText = await responseData.text()
+      return parseErrorPayloadMessage(blobText)
+    } catch {
+      return ''
+    }
+  }
+
+  if (responseData && typeof responseData === 'object' && typeof responseData.message === 'string')
+    return responseData.message.trim()
+
+  return typeof error?.message === 'string' ? error.message : ''
 }
 
 // Calcula la posición del placeholder considerando múltiples páginas
@@ -649,11 +733,24 @@ const loadSignatureData = async () => {
     
   } catch (error) {
     console.error("Ett fel uppstod:", error)
+
+    const backendMessage = (await extractRequestErrorMessage(error)).toLowerCase()
+    const statusCode = Number(error?.response?.status || 0)
+    const requestUrl = String(error?.config?.url || error?.response?.config?.url || '').toLowerCase()
+    const isPdfRequest = requestUrl.includes('/get-unsigned-pdf') || requestUrl.includes('/get-signed-pdf')
+    const isDeletedDocument = backendMessage.includes('eliminado')
+      || backendMessage.includes('deleted')
+      || backendMessage.includes('document_deleted')
+      || backendMessage.includes('borttaget')
+      || (statusCode === 410 && isPdfRequest)
+
     if (!finalState.value) {
       finalState.value = {
         type: 'error',
-        title: 'Fel',
-        message: 'Kunde inte ladda dokumentet.',
+        title: isDeletedDocument ? 'Dokument borttaget' : 'Fel',
+        message: isDeletedDocument
+          ? 'Detta dokument har tagits bort och kan inte signeras.'
+          : 'Kunde inte ladda dokumentet.',
       }
     }
   } finally {
