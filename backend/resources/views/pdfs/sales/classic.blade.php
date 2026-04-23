@@ -39,7 +39,7 @@
         .main-container {
             position: relative;
             z-index: 1;
-            padding: 35px;
+            padding: 35px 60px;
             border-spacing: 6px;
         }
 
@@ -201,8 +201,8 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
-            left: 35px;
-            right: 35px;
+            left: 60px;
+            right: 60px;
             bottom: 35px;
             padding: 0;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};

@@ -51,7 +51,7 @@
         .main-container {
             position: relative;
             z-index: 1;
-            padding: 35px;
+            padding: 35px 60px;
             border-spacing: 8px;
         }
 
@@ -197,11 +197,17 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
-            left: 45px;
-            right: 45px;
+            left: 60px;
+            right: 60px;
             bottom: 35px;
             padding: 0;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
+        }
+
+        .card-footer {
+            background-color: #FFFFFF;
+            border-radius: 8px !important;
+            padding: 8px !important;
         }
 
         .notes-box {
@@ -225,9 +231,9 @@
 
         .signatures-table {
             width: 100%;
-            margin-top: 12px;
+            margin-top: 4px;
             table-layout: fixed;
-            border-collapse: collapse;
+            border-spacing: 8px;
         }
         
         .signatures-table td {
@@ -240,13 +246,6 @@
             padding-top: 8px;
             font-size: 12px; /* Ajustado para consistencia */
             color: #454545;
-        }
-        
-        .thank-you-text {
-            font-size: 14px;
-            font-weight: bold;
-            color: {{ $company->primary_color ?? '#008C91' }} !important;
-            margin-bottom: 8px;
         }
     </style>
 </head>
@@ -668,16 +667,15 @@
 
     <!-- === FOOTER & SIGNATURE (fixed for DOMPDF) === -->
     <div class="footer-section">
-        <div class="thank-you-text">Tack För Din Förfrågan!</div>
-        <table class="signatures-table">
+        <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Left: Kund (köpare) -->
-                <td style="padding-right: 20px; vertical-align: bottom; position: relative;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td style="height: 70px; vertical-align: bottom;">
+                            <td style="height: 120px; text-align: center;">
                                 @if(isset($signature_url))
-                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                                    <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 120px;">
                                 @endif
                             </td>
                         </tr>
@@ -693,12 +691,12 @@
                 </td>
 
                 <!-- Right: Säljföretaget -->
-                <td style="padding-left: 20px; vertical-align: bottom; text-align: right;">
+                <td style="vertical-align: bottom;" class="card-footer">
                     <table style="width: 100%; border-collapse: collapse;">
                         <tr>
-                            <td style="height: 70px; vertical-align: bottom; text-align: right;">
+                            <td style="height: 120px; text-align: center;">
                                 @if($company->img_signature)
-                                    <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                                    <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 120px;">
                                 @endif
                             </td>
                         </tr>

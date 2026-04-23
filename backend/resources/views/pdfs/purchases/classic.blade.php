@@ -39,7 +39,7 @@
         .main-container {
             position: relative;
             z-index: 1;
-            padding: 35px;
+            padding: 15px 50px;
             border-spacing: 3px;
         }
 
@@ -159,9 +159,9 @@
             line-height: 0.8;
             color: #878787;
             background-color: #E7E7E7;
-            padding: 5px 6px;
+            padding: 4px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 115px;
             white-space: pre-line;
         }
 
@@ -201,17 +201,23 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
-            left: 35px;
-            right: 35px;
-            bottom: 20px;
+            left: 40px;
+            right: 40px;
+            bottom: 10px;
             padding: 0;
             background-color: {{ $company->secondary_color ?? '#F6F6F6' }};
+        }
+
+        .card-footer {
+            background-color: #FFFFFF;
+            border-radius: 8px !important;
+            padding: 8px !important;
         }
 
         .signatures-table {
             width: 100%;
             table-layout: fixed;
-            border-collapse: collapse;
+            border-spacing: 14px;
         }
 
         .signatures-table td {
@@ -778,23 +784,23 @@
     </table>
     <!-- === FOOTER === -->
     <div class="footer-section">
-        <table class="signatures-table">
+        <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - VACÍA -->
-                <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
+                    <div style="min-height: 100px; text-align: center;">
                         @if($company->img_signature)
-                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
+                            <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 100px;">
                         @endif
                     </div>
                     <div class="signature-box">(Köparens underskrift)</div>
                 </td>
 
                 <!-- Celda Derecha: Firma del Vendedor (Säljarens) - CON LA FIRMA DEL CLIENTE -->
-                <td style="width: 50%; padding-left: 20px; vertical-align: bottom; position: relative;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
+                    <div style="min-height: 100px; text-align: center;">
                         @if(isset($signature_url))
-                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 100px;">
                         @endif
                     </div>
                     <div class="signature-box">(Säljarens underskrift)</div>

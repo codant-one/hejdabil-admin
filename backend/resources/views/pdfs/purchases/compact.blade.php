@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <title>Inköpsavtal - PDF</title>
     <style>
+        @page {
+            margin: 0;
+        }
+
         html, body {
             height: 100%;
         }
@@ -25,7 +29,8 @@
         .main-container {
             width: 100%;
             border-collapse: collapse;
-            border-spacing: 0;
+            padding: 35px 60px;
+            border-spacing: 3px;
         }
 
         h2 {
@@ -125,9 +130,9 @@
             line-height: 0.8;
             color: #878787;
             background-color: #E7E7E7;
-            padding: 5px 6px;
+            padding: 4px;
             border-radius: 4px 8px 8px 4px;
-            min-height: 120px;
+            min-height: 115px;
             white-space: pre-line;
         }
 
@@ -167,17 +172,23 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0px;
+            left: 50px;
+            right: 50px;
+            bottom: 10px;
             padding: 0;
             background: #FFFFFF;
+        }
+
+        .card-footer {
+            background-color: #FFFFFF;
+            border-radius: 8px !important;
+            padding: 8px !important;
         }
 
         .signatures-table {
             width: 100%;
             table-layout: fixed;
-            border-collapse: collapse;
+            border-spacing: 4px;
         }
 
         .signatures-table td {
@@ -707,7 +718,7 @@
             </tr>
             @if($agreement->terms_other_conditions || $agreement->terms_other_information)
             <tr>
-                <td class="column-cell column-cell-left">
+                <td class="column-cell-left">
                     <h2>Villkor</h2>
                     <table class="info-table">
                         <tr>
@@ -719,7 +730,7 @@
                         </tr>
                     </table>
                 </td>
-                <td class="column-cell column-cell-right">
+                <td class="column-cell-right">
                     <h2>Övriga upplysningar</h2>
                     <table class="info-table">
                         <tr>
@@ -737,11 +748,11 @@
     </table>
     <!-- === FOOTER === -->
     <div class="footer-section">
-        <table class="signatures-table">
+        <table class="signatures-table" style="width: 100%;">
             <tr>
                 <!-- Celda Izquierda: Firma del Comprador (Köparens) - VACÍA -->
-                <td style="width: 50%; padding-right: 20px; vertical-align: bottom;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
+                    <div style="min-height: 100px; text-align: center;">
                         @if($company->img_signature)
                             <img src="{{ asset('storage/' . $company->img_signature) }}" alt="Firma Förmedlaren" style="width: auto; height: 70px;">
                         @endif
@@ -750,10 +761,10 @@
                 </td>
 
                 <!-- Celda Derecha: Firma del Vendedor (Säljarens) - CON LA FIRMA DEL CLIENTE -->
-                <td style="width: 50%; padding-left: 20px; vertical-align: bottom; position: relative;">
-                    <div style="min-height: 70px;">
+                <td style="vertical-align: bottom; position: relative;" class="card-footer">
+                    <div style="min-height: 100px; text-align: center;">
                         @if(isset($signature_url))
-                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 70px;">
+                            <img src="{{ $signature_url }}" alt="Firma" style="width: auto; height: 100px;">
                         @endif
                     </div>
                     <div class="signature-box">(Säljarens underskrift)</div>

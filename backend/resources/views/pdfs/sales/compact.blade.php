@@ -5,6 +5,10 @@
     <meta charset="UTF-8">
     <title>Försäljningsavtal - PDF</title>
     <style>
+        @page {
+            margin: 0;
+        }
+
         html, body {
             height: 100%;
         }
@@ -26,6 +30,7 @@
             width: 100%;
             border-collapse: collapse;
             border-spacing: 0;
+            padding: 35px 60px;
         }
 
         h2 {
@@ -167,8 +172,8 @@
         /* --- PIE DE PÁGINA --- */
         .footer-section {
             position: absolute;
-            left: 0;
-            right: 0;
+            left: 60px;
+            right: 60px;
             bottom: 0px;
             padding: 0;
             background: #FFFFFF;
@@ -201,6 +206,14 @@
 
         .page-break {
             page-break-before: always;
+        }
+
+        .page-break td.section-cell {
+            padding-top: 0 !important;
+        }
+
+        .page-break td.section-cell h2 {
+            margin-top: 35px !important;
         }
     </style>
 </head>
