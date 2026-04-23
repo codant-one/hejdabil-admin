@@ -264,10 +264,12 @@
                                     </div>
                                     @endif 
                                     <div style="text-align: right;" class="mt-5 number-invoice">
-                                        <span class="number-invoice" style="line-height: 0.8;">
+                                        <span class="number-invoice" style="line-height: 100%">
+                                            <p class="m-0">Org.nr. {{ $billing->client->organization_number }}</p>
+                                            <p class="m-0">{{ $billing->client->phone }}</p>
+                                            <p class="m-0">{{ $billing->client->email }}</p>
                                             <p class="m-0">{{ $billing->client->address }}</p>
-                                            <p class="m-0">{{ $billing->client->postal_code }}</p>
-                                            <p class="m-0">{{ $billing->client->street }}</p>
+                                            <p class="m-0">{{ $billing->client->postal_code }}, {{ $billing->client->street }}</p>
                                         </span>
                                     </div>
                                 </td>
@@ -356,7 +358,7 @@
                             @php
                                 $rowCount = count($invoices);
                                 $usedHeight = 250 + ($rowCount * 48);
-                                $availableHeight = 900 - 45 - 45 - 200;
+                                $availableHeight = 870 - 45 - 45 - 200;
                                 $spacerPadding = max(16, $availableHeight - $usedHeight);
                             @endphp
                             <tr>
@@ -423,13 +425,27 @@
                     <td width="25%">
                         <p class="m-0 info-supplier">
                             <h4 class="font-weight-medium m-0">
+                                Företagsnamn
+                            </h4>
+                            <span class="info-supplier">
+                                <p class="m-0">{{ $company->company ?? '' }}</p>
+                            </span>
+                        </p>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
+                                Telefon
+                            </h4>
+                            <span class="info-supplier">
+                                <p class="m-0">{{ $company->phone ?? '' }}</p>
+                            </span>
+                        </p>
+                        <p class="m-0 info-supplier">
+                            <h4 class="font-weight-medium m-0">
                                 Adress
                             </h4>
                             <span class="info-supplier">
                                 <p class="m-0">{{ $company->address ?? '' }}</p>
-                                <p class="m-0">{{ $company->postal_code ?? '' }}</p>
-                                <p class="m-0">{{ $company->street ?? '' }}</p>
-                                <p class="m-0">{{ $company->phone ?? '' }}</p>
+                                <p class="m-0">{{ $company->postal_code ?? '' }}, {{ $company->street ?? '' }}</p>
                             </span>
                         </p>
                         @if(!is_null($company->swish ?? null))

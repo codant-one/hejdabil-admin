@@ -764,10 +764,15 @@ const handleFocus = (element, fieldId) => {
           <h3 class="mb-0 mt-2" v-if="client">
             {{ client.fullname }}
           </h3>
-          <p class="mb-0 mt-2" v-if="client" style="min-width: 250px">
+          <span class="d-flex flex-column w-100"  v-if="client">
+            <span>Org.nr. {{ client.organization_number }}</span>
+            <span>{{ client.phone }}</span>
+            <span>{{ client.email }}</span>
+          </span>
+          <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
+            <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
             <VTextField
               v-model="invoice.reference"
-              label="Vår referens"
               :disabled="props.isCredit"
               @input="$emit('data', invoice)"
             />
@@ -781,8 +786,7 @@ const handleFocus = (element, fieldId) => {
             </span>
             <span class="d-flex flex-column w-100">
               <span>{{ client.address }}</span>
-              <span>{{ client.postal_code }}</span>
-              <span>{{ client.street }}</span>
+              <span>{{ client.postal_code }}, {{ client.street }}</span>
             </span>
           </div>
         </div>
@@ -1096,12 +1100,18 @@ const handleFocus = (element, fieldId) => {
       <VCardText class="mb-sm-4 p-0 text-black">
         <VRow>
           <VCol cols="12" md="3" class="d-flex flex-column">
-            <span class="me-2 text-bold text-footer"> Adress </span>
+            <span class="me-2 text-bold text-footer" v-if="company.company"> Företagsnamn </span>
+            <span class="text-footer" v-if="company.company">
+              {{ company.company }}
+            </span>
+            <span class="me-2 mt-4 text-bold text-footer" v-if="company.phone"> Telefon </span>
+            <span class="text-footer" v-if="company.phone">
+              {{ company.phone }}
+            </span>
+            <span class="me-2 mt-4 text-bold text-footer"> Adress </span>
             <span class="d-flex flex-column">
               <span class="text-footer">{{ company.address }}</span>
-              <span class="text-footer">{{ company.postal_code }}</span>
-              <span class="text-footer">{{ company.street }}</span>
-              <span class="text-footer">{{ company.phone }}</span>
+              <span class="text-footer">{{ company.postal_code }}, {{ company.street }}</span>
             </span>
             <span class="me-2 mt-4 text-bold text-footer" v-if="company.swish">
               Swish
@@ -1192,7 +1202,7 @@ const handleFocus = (element, fieldId) => {
             class="d-flex flex-column gap-6 bg-white pa-6"
             value="redigera"
           >
-            <div class="w-100 invoice-box d-flex flex-column pa-6 gap-4">
+            <div class="w-100 invoice-box d-flex flex-column pa-6 gap-2">
               <!-- 👉 Invoice Id -->
               <div class="">
                 <span class="mb-2 me-2 text-start w-40 text-black"
@@ -1305,9 +1315,41 @@ const handleFocus = (element, fieldId) => {
                   </div>
                 </span>
               </div>
+
               <p class="mt-5 mb-0 text-sm" v-if="client">
                 {{ invoice.terms }}
               </p>
+
+              <div class="text-right d-flex flex-column w-100 w-md-50">
+                <h3 class="mb-0 mt-2" v-if="client">
+                  {{ client.fullname }}
+                </h3>
+                <span class="d-flex flex-column w-100"  v-if="client">
+                  <span>Org.nr. {{ client.organization_number }}</span>
+                  <span>{{ client.phone }}</span>
+                  <span>{{ client.email }}</span>
+                </span>
+                <p class="mb-0 mt-2 form-field" v-if="client" style="min-width: 250px">
+                  <VLabel class="mb-1 text-body-2 text-high-emphasis" text="Vår referens" />
+                  <VTextField
+                    v-model="invoice.reference"
+                    :disabled="props.isCredit"
+                    @input="$emit('data', invoice)"
+                  />
+                </p>
+                <div
+                  class="d-flex flex-column align-center justify-sm-end mb-0 mt-auto"
+                  v-if="client"
+                >
+                  <span class="text-h6 font-weight-medium w-100 my-3">
+                    Faktureringsadress
+                  </span>
+                  <span class="d-flex flex-column w-100">
+                    <span>{{ client.address }}</span>
+                    <span>{{ client.postal_code }}, {{ client.street }}</span>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div 
@@ -1692,12 +1734,30 @@ const handleFocus = (element, fieldId) => {
                   {{ company.iban_number }}
                 </span>
 
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.company"
+                >
+                  Företagsnamn
+                </span>
+                <span class="text-footer" v-if="company.company">
+                  {{ company.company }}
+                </span>
+
+                <span
+                  class="me-2 mt-4 text-bold text-footer"
+                  v-if="company.phone"
+                >
+                  Telefon
+                </span>
+                <span class="text-footer" v-if="company.phone">
+                  {{ company.phone }}
+                </span>
+
                 <span class="me-2 mt-4 text-bold text-footer"> Adress </span>
                   <span class="d-flex flex-column">
                     <span class="text-footer">{{ company.address }}</span>
-                    <span class="text-footer">{{ company.postal_code }}</span>
-                    <span class="text-footer">{{ company.street }}</span>
-                    <span class="text-footer">{{ company.phone }}</span>
+                    <span class="text-footer">{{ company.postal_code }}, {{ company.street }}</span>
                   </span>
                 <span
                   class="me-2 mt-4 text-bold text-footer"
@@ -1913,7 +1973,7 @@ const handleFocus = (element, fieldId) => {
 .invoice-box {
   border-radius: 16px;
   padding: 16px;
-  gap: 24px;
+  gap: 8px;
   background-color: #f6f6f6;
 }
 

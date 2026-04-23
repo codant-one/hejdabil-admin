@@ -98,6 +98,8 @@ const setCompany = (value) => {
 };
 
 const sectionEl = ref(null);
+const billingsListStartEl = ref(null)
+const shouldScrollBillingsListOnMobile = ref(false)
 
 const advisor = ref({
   type: "",
