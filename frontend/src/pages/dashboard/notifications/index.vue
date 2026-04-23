@@ -103,10 +103,13 @@ const redirectTo = (path) => {
 
 const onReadAll = async () => {
   isRequestOngoing.value = true
-  
-  await notificationsStore.markAllRead()
 
-  isRequestOngoing.value = false
+  try {
+    await notificationsStore.markAllRead()
+    await fetchData()
+  } finally {
+    isRequestOngoing.value = false
+  }
 }
 
 const onNotificationClick = async (notification) => {
